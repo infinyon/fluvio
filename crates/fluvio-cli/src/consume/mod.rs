@@ -479,9 +479,9 @@ impl ConsumeOpt {
                                 &pb,
                             );
 
-                            if self.stats {
-                                println!("{:?}\n", consumer.stats().await);
-                            }
+                            //if self.stats {
+                            //    pb.println(&format!("{:?}\n", consumer.stats().await));
+                            //}
 
                             if let Some(potential_offset) = maybe_potential_offset {
                                 if record.offset >= potential_offset {
@@ -536,9 +536,9 @@ impl ConsumeOpt {
                     &pb,
                 );
 
-                if self.stats {
-                    println!("{:?}\n", consumer.stats().await);
-                }
+                //if self.stats {
+                //    pb.println(&format!("{:?}\n", consumer.stats().await));
+                //}
 
                 if let Some(potential_offset) = maybe_potential_offset {
                     if record.offset >= potential_offset {

@@ -1000,6 +1000,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e1f025f441cdfb75831bec89b9d6a6ed02e5e763f78fc5e1ff30d4870fefaec"
+
+[[package]]
 name = "cookie"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1776,6 +1782,7 @@ dependencies = [
  "base64",
  "built",
  "bytes",
+ "bytesize",
  "cfg-if",
  "chrono",
  "derive_builder",
@@ -1794,6 +1801,7 @@ dependencies = [
  "futures-util",
  "once_cell",
  "pin-project-lite",
+ "quantities",
  "semver 1.0.12",
  "serde",
  "serde_json",
@@ -4389,6 +4397,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd89aa18fbf9533a581355a22438101fe9c2ed8c9e2f0dcf520552a3afddf2"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "qty-macros"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c15e80809ef9585a2cc30e79254ca41b281b8562ca7e155744e65b9e99b89394"
+dependencies = [
+ "convert_case",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "quantities"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c73f29491e39aa6bf96a7c26bdf8eb18e091824cf5f9a94b25b9dd4c6f4abdbe"
+dependencies = [
+ "qty-macros",
 ]
 
 [[package]]

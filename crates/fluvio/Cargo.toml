@@ -42,6 +42,8 @@ derive_builder = "0.10"
 async-trait = "0.1.51"
 chrono = "0.4"
 sysinfo = "0.24"
+bytesize = "1.1.0"
+quantities = { version = "0.9.0", features = ["datavolume", "datathroughput", "duration"] }
 
 
 # Fluvio dependencies

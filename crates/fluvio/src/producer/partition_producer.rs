@@ -12,7 +12,6 @@ use dataplane::record::RecordSet;
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
-use fluvio_socket::SocketError;
 use tracing::{debug, info, instrument, error, trace};
 
 use crate::error::{Result, FluvioError};
@@ -27,7 +26,9 @@ use super::event::EventHandler;
 use crate::stats::{ClientStats, ClientStatsUpdate};
 use std::time::Instant;
 
-use sysinfo::{SystemExt, ProcessExt};
+use quantities::prelude::*;
+use quantities::datavolume::BYTE;
+use quantities::duration::SECOND;
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
@@ -232,7 +233,7 @@ impl PartitionProducer {
 
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
-            flush_total_bytes += BATCH_FILE_HEADER_SIZE + &raw_batch.records().0.len();
+            flush_total_bytes += BATCH_FILE_HEADER_SIZE + raw_batch.records().0.len();
 
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
@@ -245,10 +246,7 @@ impl PartitionProducer {
 
         let (response, stats_update) = Self::measure_send_receive(&spu_socket, request).await?;
 
-        for (i, (batch_notifier, response)) in batch_notifiers
-            .into_iter()
-            .zip(response.responses.iter())
-            .enumerate()
+        for (batch_notifier, response) in batch_notifiers.into_iter().zip(response.responses.iter())
         {
             let base_offset = response.partitions[0].base_offset;
             let fluvio_error = response.partitions[0].error_code.clone();
@@ -264,9 +262,13 @@ impl PartitionProducer {
                 return Err(FluvioError::from(ProducerError::from(fluvio_error)));
             }
 
+            // Type conversion for `quantities` crate
+            let scratch: AmountT = flush_total_bytes as f64;
+            let flush_total_bytes = Some(scratch * BYTE);
+
             // Update stats
             let mut stats_handle = self.client_stats.write().await;
-            stats_handle.update(stats_update.bytes(Some(flush_total_bytes)));
+            stats_handle.update(stats_update.bytes(flush_total_bytes));
             drop(stats_handle);
         }
 
@@ -277,36 +279,15 @@ impl PartitionProducer {
         socket: &VersionedSerialSocket,
         request: ProduceRequest<RecordSet<RawRecords>>,
     ) -> Result<(ProduceResponse, ClientStatsUpdate)> {
-        let mut sysinfo = sysinfo::System::new();
-        let pid = sysinfo::get_current_pid().map_err(|e| FluvioError::Other(e.to_string()))?;
-        let cpu_cores = sysinfo.physical_core_count().ok_or(FluvioError::Other(
-            "Unable to get number of CPU cores".to_string(),
-        ))? as f32;
-
-        sysinfo.refresh_process(pid);
-
         let send_start_time = Instant::now();
 
         let response = socket.send_receive(request).await?;
 
-        let send_latency = Some(send_start_time.elapsed());
+        let send_latency = send_start_time.elapsed();
+        let scratch = send_latency.as_secs_f64();
+        let send_latency = Some(scratch * SECOND);
 
-        sysinfo.refresh_process(pid);
-
-        let proc = sysinfo.process(pid.clone()).ok_or(FluvioError::Other(
-            "Unable to read current process".to_string(),
-        ))?;
-
-        // Take a cpu/memory sample here
-        let mem_used = Some(proc.memory());
-
-        // FIXME: This is occasionally zero, which is unlikely to be the case
-        let cpu_used = Some(proc.cpu_usage() / cpu_cores);
-
-        let stats_update = ClientStatsUpdate::new()
-            .cpu(cpu_used)
-            .mem(mem_used)
-            .latency(send_latency);
+        let stats_update = ClientStatsUpdate::new().latency(send_latency);
 
         Ok((response, stats_update))
     }

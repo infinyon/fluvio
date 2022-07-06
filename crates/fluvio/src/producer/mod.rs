@@ -357,6 +357,8 @@ impl TopicProducer {
             };
 
         let client_stats = ClientStats::new_shared();
+        // Update resource usage in background
+        ClientStats::start(client_stats.clone());
 
         let record_accumulator =
             RecordAccumulator::new(config.batch_size, partition_count, compression);
