@@ -15,7 +15,7 @@ use crate::{Encoder as FluvioEncoder, Decoder as FluvioDecoder, Version};
 pub struct FluvioCodec {}
 
 /// Type used as input by the [`FluvioCodec`] encoder implementation.
-/// Contains the data of the message and the [`crate::core:Version`].
+/// Contains the data of the message and the [`crate::core::Version`].
 pub type FluvioCodecData<T> = (T, Version);
 
 impl FluvioCodec {

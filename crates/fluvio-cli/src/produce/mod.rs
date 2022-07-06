@@ -6,13 +6,13 @@ use std::path::PathBuf;
 
 use futures::future::join_all;
 use clap::Parser;
-use tracing::error;
+use tracing::{error, warn};
 use std::time::Duration;
 use humantime::parse_duration;
 
 use fluvio::{
     Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-    ProduceOutput,
+    ProduceOutput, DeliverySemantic, RetryPolicy,
 };
 use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
@@ -104,6 +104,12 @@ pub struct ProduceOpt {
     /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
     #[clap(long)]
     pub stats_summary: bool,
+
+    /// Delivery guarantees that producer must respect. Supported values:
+    /// at_most_once (AtMostOnce) - send records without waiting from response,
+    /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
+    #[clap(long, parse(try_from_str = parse_delivery_semantic))]
+    pub delivery_semantic: Option<DeliverySemantic>,
 }
 
 fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
@@ -161,6 +167,16 @@ impl ProduceOpt {
             _ => config_builder,
         };
 
+        // Delivery Semantic
+        let config_builder = if let Some(delivery_semantic) = self.delivery_semantic {
+            if delivery_semantic == DeliverySemantic::AtMostOnce && self.isolation.is_some() {
+                warn!("Isolation is ignored for AtMostOnce delivery semantic");
+            }
+            config_builder.delivery_semantic(delivery_semantic)
+        } else {
+            config_builder
+        };
+
         let config = config_builder.build().map_err(FluvioError::from)?;
 
         let producer = Arc::new(
@@ -208,7 +224,9 @@ impl ProduceOpt {
 
             let produce_output = producer.send(RecordKey::NULL, buffer).await?;
 
-            produce_output.wait().await?;
+            if self.delivery_semantic != Some(DeliverySemantic::AtMostOnce) {
+                produce_output.wait().await?;
+            }
 
             #[cfg(feature = "stats")]
             if self.is_stats_collect() && self.is_print_live_stats() {
@@ -286,15 +304,17 @@ impl ProduceOpt {
                     }
                 }
 
-                // ensure all records were properly sent
-                join_all(
-                    produce_outputs
-                        .into_iter()
-                        .map(|produce_output| produce_output.wait()),
-                )
-                .await
-                .into_iter()
-                .collect::<Result<Vec<_>, _>>()?;
+                if self.delivery_semantic != Some(DeliverySemantic::AtMostOnce) {
+                    // ensure all records were properly sent
+                    join_all(
+                        produce_outputs
+                            .into_iter()
+                            .map(|produce_output| produce_output.wait()),
+                    )
+                    .await
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+                }
             }
             None => {
                 let mut lines = BufReader::new(std::io::stdin()).lines();
@@ -306,8 +326,10 @@ impl ProduceOpt {
                     let produce_output = self.produce_line(&producer, &line).await?;
 
                     if let Some(produce_output) = produce_output {
-                        // ensure it was properly sent
-                        produce_output.wait().await?;
+                        if self.delivery_semantic != Some(DeliverySemantic::AtMostOnce) {
+                            // ensure it was properly sent
+                            produce_output.wait().await?;
+                        }
                     }
 
                     #[cfg(feature = "stats")]
@@ -452,4 +474,12 @@ async fn init_ctrlc(
         .into());
     }
     Ok(())
+}
+
+pub(crate) fn parse_delivery_semantic(s: &str) -> Result<DeliverySemantic, String> {
+    match s {
+        "at_most_once" | "AtMostOnce" | "atMostOnce" | "atmostonce" => Ok(DeliverySemantic::AtMostOnce),
+        "at_least_once" | "AtLeastOnce" | "atLeastOnce" | "atleastonce" => Ok(DeliverySemantic::AtLeastOnce(RetryPolicy::default())),
+        _ => Err(format!("unrecognized delivery semantic: {}. Supported: at_most_once (AtMostOnce), at_least_once (AtLeastOnce)", s)),
+    }
 }

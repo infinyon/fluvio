@@ -184,7 +184,7 @@ impl TryFrom<Batch> for Batch<RawRecords> {
         let compression = f.get_compression()?;
         let compressed_records = compression.compress(&buf)?;
         let compressed_records_len = compressed_records.len() as i32;
-        let records = RawRecords(compressed_records);
+        let records = RawRecords(Bytes::from(compressed_records));
 
         Ok(Batch {
             base_offset: f.base_offset,
