@@ -29,7 +29,7 @@ use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::PartitionerConfig;
-use crate::stats::{ClientStats, ClientStatsUpdate, SharedClientStats};
+use crate::stats::{ClientStats, ClientStatsDataPoint, ClientStatsDataCollect};
 
 use self::accumulator::{BatchHandler};
 pub use self::config::{
@@ -68,7 +68,7 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        client_stats: Option<SharedClientStats>,
+        client_stats: Arc<ClientStats>,
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
@@ -106,7 +106,7 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        client_stats: Option<SharedClientStats>,
+        client_stats: Arc<ClientStats>,
     ) -> Arc<Self> {
         Arc::new(ProducerPool::new(
             config,
@@ -165,7 +165,7 @@ struct InnerTopicProducer {
     spu_pool: Arc<SpuPool>,
     record_accumulator: RecordAccumulator,
     producer_pool: Arc<ProducerPool>,
-    client_stats: Option<SharedClientStats>,
+    client_stats: Arc<ClientStats>,
 }
 
 impl InnerTopicProducer {
@@ -200,11 +200,6 @@ impl InnerTopicProducer {
             .record_accumulator
             .push_record(record, partition)
             .await?;
-
-        // Increase record count stat
-        if let Some(client_stats) = self.client_stats.as_ref() {
-            ClientStats::shared_update(client_stats, ClientStatsUpdate::new().records(Some(1)));
-        }
 
         Ok(push_record)
     }
@@ -354,16 +349,13 @@ impl TopicProducer {
                 },
             };
 
-        // Init client stat collection
-        let client_stats = if config.stats {
-            let client_stats = ClientStats::new_shared();
+        let client_stats = ClientStats::new_shared(config.stats_collect);
 
-            // Update resource usage in background
-            ClientStats::start(client_stats.clone());
-
-            Some(client_stats)
-        } else {
-            None
+        // Only start background system monitoring when requested
+        if config.stats_collect == ClientStatsDataCollect::All
+            || config.stats_collect == ClientStatsDataCollect::System
+        {
+            ClientStats::start_system_monitor(client_stats.clone());
         };
 
         let record_accumulator =
@@ -487,10 +479,11 @@ impl TopicProducer {
     }
 
     /// Return the stats from the last batch sent
-    pub async fn stats(&self) -> Option<ClientStats> {
-        self.inner
-            .client_stats
-            .as_ref()
-            .map(|client_stats| client_stats.load().snapshot())
+    pub async fn stats(&self) -> Option<ClientStatsDataPoint> {
+        if self.inner.client_stats.stats_collect() != ClientStatsDataCollect::None {
+            Some(self.inner.client_stats.get_datapoint())
+        } else {
+            None
+        }
     }
 }

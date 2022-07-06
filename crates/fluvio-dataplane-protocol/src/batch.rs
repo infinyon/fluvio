@@ -158,13 +158,14 @@ impl<R> Batch<R> {
     }
 
     /// Return the size of the batch header + records
-    pub fn batch_len(&self) -> usize {
-        self.len()
-    }
+    pub fn batch_len(&self) -> i32 {
+        //println!(
+        //    "BATCH_PREAMBLE_SIZE {} + BATCH_HEADER_SIZE {}",
+        //    BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE
+        //);
+        //println!("Calculating batch len: header (header len: {BATCH_FILE_HEADER_SIZE}, records len: {}, batch len {})", self.records_len(), self.batch_len);
 
-    /// Return the size of the batch header + records
-    pub fn len(&self) -> usize {
-        self.batch_len as usize
+        (BATCH_FILE_HEADER_SIZE as i32) + self.batch_len
     }
 }
 

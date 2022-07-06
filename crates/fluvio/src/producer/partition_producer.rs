@@ -12,16 +12,13 @@ use tracing::{debug, info, instrument, error, trace};
 
 use crate::error::{Result, FluvioError};
 use crate::spu::SpuPool;
-use crate::TopicProducerConfig;
+use crate::{TopicProducerConfig};
 
 use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
-use crate::stats::{ClientStats, ClientStatsUpdate, SharedClientStats};
-
-use quantities::prelude::*;
-use quantities::datavolume::BYTE;
+use crate::stats::{ClientStats, ClientStatsUpdate, ClientStatsDataCollect};
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
@@ -31,7 +28,7 @@ pub(crate) struct PartitionProducer {
     batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
-    client_stats: Option<SharedClientStats>,
+    client_stats: Arc<ClientStats>,
 }
 
 impl PartitionProducer {
@@ -42,7 +39,7 @@ impl PartitionProducer {
         batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
-        client_stats: Option<SharedClientStats>,
+        client_stats: Arc<ClientStats>,
     ) -> Self {
         Self {
             config,
@@ -62,7 +59,7 @@ impl PartitionProducer {
         batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
-        client_stats: Option<SharedClientStats>,
+        client_stats: Arc<ClientStats>,
     ) -> Arc<Self> {
         Arc::new(PartitionProducer::new(
             config,
@@ -85,7 +82,7 @@ impl PartitionProducer {
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
-        maybe_client_stats: Option<SharedClientStats>,
+        client_stats: Arc<ClientStats>,
     ) {
         let producer = PartitionProducer::shared(
             config,
@@ -94,7 +91,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             error,
-            maybe_client_stats,
+            client_stats,
         );
         fluvio_future::task::spawn(async move {
             producer.run(end_event, flush_event).await;
@@ -223,21 +220,35 @@ impl PartitionProducer {
             let notify = p_batch.notify.clone();
             let batch = p_batch.batch();
 
+            //println!("record len before convert: {}", batch.records_len());
+            //println!("batch len before convert: {}", batch.batch_len());
+
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
+
+            //println!("record len after convert: {}", raw_batch.records_len());
+            //println!("batch len after convert: {}", raw_batch.batch_len());
 
             // If we are collecting stats, then record
             // the size of all batches about to be sent
-            if self.client_stats.is_some() {
-                // Type conversion for `quantities` crate
-                #[cfg(not(target_arch = "wasm32"))]
-                let scratch: AmountT = raw_batch.len() as f64;
-                #[cfg(target_arch = "wasm32")]
-                let scratch: AmountT = raw_batch.len() as f32;
+            if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
+                //println!(
+                //    "Adding to batch from partition_producer: {:#?}",
+                //    raw_batch.batch_len()
+                //);
+                //println!("Checking unit convert: {:#?}", raw_batch.batch_len() as u64);
+                client_stats_update.set_bytes(Some(raw_batch.batch_len() as u64));
 
-                let batch_bytes = Some(scratch * BYTE);
+                // This doesn't update from here, but it does earlier?
+                //println!(
+                //    "Adding to records from partition_producer: {:#?}",
+                //    raw_batch.records_len()
+                //);
+                client_stats_update.set_records(Some(raw_batch.records_len() as u64));
 
-                client_stats_update.bytes(batch_bytes);
+                //println!("About to leave bytes and records: {client_stats_update:#?}");
             }
+
+            //println!("After bytes and records: {client_stats_update:#?}");
 
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
@@ -248,11 +259,13 @@ impl PartitionProducer {
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
 
-        let response = if let Some(shared) = self.client_stats.as_ref() {
-            let (response, send_latency) = shared
-                .load()
+        let response = if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
+            let (response, send_latency) = self
+                .client_stats
                 .send_and_measure_latency(&spu_socket, request)
                 .await?;
+
+            //println!("Should be adding latency to client_stats_update");
             client_stats_update += send_latency;
             response
         } else {
@@ -278,11 +291,9 @@ impl PartitionProducer {
         }
 
         // Commit stats update
-        if let Some(client_stats) = self.client_stats.as_ref() {
-            ClientStats::shared_update(
-                client_stats,
-                client_stats_update.offset(Some(base_offset as i32)),
-            );
+        if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
+            self.client_stats
+                .update(client_stats_update.set_offset(Some(base_offset as i32)))
         }
 
         Ok(())

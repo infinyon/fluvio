@@ -88,7 +88,7 @@ mod fluvio;
 pub mod consumer;
 mod producer;
 mod offset;
-mod stats;
+pub mod stats;
 mod sync;
 pub mod spu;
 
@@ -109,7 +109,6 @@ pub use offset::Offset;
 
 pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
-pub use crate::stats::{ClientStats, ClientStatsUpdate};
 
 pub use fluvio_compression::Compression;
 

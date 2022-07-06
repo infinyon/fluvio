@@ -1,4 +1,5 @@
 use std::sync::Arc;
+//use async_std::fs::File;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::{io::Error as IoError, path::PathBuf};
@@ -10,11 +11,13 @@ use indicatif::ProgressBar;
 use tracing::{debug, error};
 use std::time::Duration;
 use humantime::parse_duration;
+use comfy_table::{Table, Row, Cell, CellAlignment};
 
 use fluvio::{
     Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-    ProduceOutput, ClientStats,
+    ProduceOutput,
 };
+use fluvio::stats::{ClientStatsDataCollect, ClientStatsDataPoint};
 use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
@@ -76,9 +79,17 @@ pub struct ProduceOpt {
     #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
 
-    /// Display producer session statistics
+    /// Display basic producer session statistics
     #[clap(long)]
     pub stats: bool,
+
+    /// Display all producer session statistics (Implies --stats)
+    #[clap(long)]
+    pub stats_plus: bool,
+
+    /// Save producer session stats to file
+    #[clap(long)]
+    pub stats_path: Option<PathBuf>,
 }
 
 fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
@@ -127,13 +138,14 @@ impl ProduceOpt {
         };
 
         // Stats
-        let config_builder = if self.stats {
-            config_builder.stats(self.stats)
-        } else {
-            config_builder
+        let config_builder = match (self.stats, self.stats_plus) {
+            (_, true) => config_builder.stats_collect(ClientStatsDataCollect::All),
+            (true, false) => config_builder.stats_collect(ClientStatsDataCollect::Data),
+            _ => config_builder,
         };
 
         let config = config_builder.build().map_err(FluvioError::from)?;
+
         let producer = Arc::new(
             fluvio
                 .topic_producer_with_config(&self.topic, config)
@@ -141,7 +153,7 @@ impl ProduceOpt {
         );
 
         let maybe_stats_bar = if io::stdout().is_tty() {
-            if self.stats {
+            if self.stats || self.stats_plus {
                 let stats_bar = indicatif::ProgressBar::with_draw_target(
                     100,
                     indicatif::ProgressDrawTarget::stderr(),
@@ -173,11 +185,11 @@ impl ProduceOpt {
 
             let produce_output = producer.send(RecordKey::NULL, buffer).await?;
 
-            if self.stats {
+            if self.stats || self.stats_plus {
                 if let (Some(stats_bar), Some(producer_stats)) =
                     (&maybe_stats_bar, producer.stats().await)
                 {
-                    stats_bar.set_message(format_current_stats(producer_stats.snapshot()).await);
+                    stats_bar.set_message(format_current_stats(producer_stats).await);
                 }
             }
 
@@ -188,7 +200,7 @@ impl ProduceOpt {
                 .await?;
         };
 
-        if self.stats {
+        if self.stats || self.stats_plus {
             if let Some(stats_bar) = &maybe_stats_bar {
                 producer_summary(producer.clone(), stats_bar).await;
             }
@@ -266,11 +278,11 @@ impl ProduceOpt {
             Some(producer.send(RecordKey::NULL, line).await?)
         };
 
-        if self.stats {
+        if self.stats || self.stats_plus {
             if let (Some(stats_bar), Some(producer_stats)) =
                 (maybe_stats_bar, producer.stats().await)
             {
-                stats_bar.set_message(format_current_stats(producer_stats.snapshot()).await);
+                stats_bar.set_message(format_current_stats(producer_stats).await);
 
                 if self.interactive_mode() {
                     stats_bar.println(line);
@@ -321,25 +333,85 @@ impl ProduceOpt {
 }
 
 /// Return String with details the current stats
-async fn format_current_stats(client_stats: ClientStats) -> String {
-    format!(
-        "throughput: {:<15.3} latency: {:<15.3} memory: {:<10.3} CPU: {:<5.2}",
-        client_stats.throughput(),
-        client_stats.last_latency(),
-        client_stats.memory(),
-        client_stats.cpu()
-    )
+async fn format_current_stats(client_stats: ClientStatsDataPoint) -> String {
+    //println!("Datapoint: {:#?}", client_stats);
+
+    let mut t = Table::new();
+    t.load_preset(comfy_table::presets::NOTHING);
+
+    let mut r = Row::new();
+
+    if client_stats.stats_collect() == ClientStatsDataCollect::All
+        || client_stats.stats_collect() == ClientStatsDataCollect::Data
+    {
+        r.add_cell(Cell::new("throughput").set_alignment(CellAlignment::Center))
+            .add_cell(
+                Cell::new(format!("{:<15.3}", client_stats.throughput()))
+                    .set_alignment(CellAlignment::Right),
+            );
+        r.add_cell(Cell::new("latency").set_alignment(CellAlignment::Center))
+            .add_cell(
+                Cell::new(format!("{:<15.3}", client_stats.last_latency()))
+                    .set_alignment(CellAlignment::Right),
+            );
+    }
+
+    if client_stats.stats_collect() == ClientStatsDataCollect::All
+        || client_stats.stats_collect() == ClientStatsDataCollect::System
+    {
+        r.add_cell(Cell::new("memory").set_alignment(CellAlignment::Center))
+            .add_cell(
+                Cell::new(format!("{:<15.3}", client_stats.memory()))
+                    .set_alignment(CellAlignment::Right),
+            );
+        r.add_cell(Cell::new("CPU").set_alignment(CellAlignment::Center))
+            .add_cell(
+                Cell::new(format!("{:<15.3}", client_stats.cpu()))
+                    .set_alignment(CellAlignment::Right),
+            );
+    }
+
+    t.add_row(r);
+
+    format!("{t}")
 }
 
 /// Return String with a formatted summary of the current stats
-async fn format_summary_stats(client_stats: ClientStats) -> String {
-    format!(
-         "total throughput: {:<15.3} total data: {:<10.3} records transferred: {:<10} uptime: {:<10.3}",
-         client_stats.total_throughput(),
-         client_stats.total_bytes(),
-         client_stats.records(),
-         client_stats.uptime(),
-     )
+async fn format_summary_stats(client_stats: ClientStatsDataPoint) -> String {
+    let mut t = Table::new();
+    t.load_preset(comfy_table::presets::NOTHING);
+
+    let mut r = Row::new();
+
+    if client_stats.stats_collect() == ClientStatsDataCollect::All
+        || client_stats.stats_collect() == ClientStatsDataCollect::Data
+    {
+        r.add_cell(Cell::new("total throughput").set_alignment(CellAlignment::Center))
+            .add_cell(
+                Cell::new(format!("{:<15.3}", client_stats.total_throughput()))
+                    .set_alignment(CellAlignment::Right),
+            );
+        r.add_cell(Cell::new("total data").set_alignment(CellAlignment::Center))
+            .add_cell(
+                Cell::new(format!("{:<10.3}", client_stats.total_bytes()))
+                    .set_alignment(CellAlignment::Right),
+            );
+        r.add_cell(Cell::new("records transferred").set_alignment(CellAlignment::Center))
+            .add_cell(
+                Cell::new(format!("{:<10.3}", client_stats.records()))
+                    .set_alignment(CellAlignment::Right),
+            );
+    }
+
+    r.add_cell(Cell::new("uptime").set_alignment(CellAlignment::Center))
+        .add_cell(
+            Cell::new(format!("{:<10.3}", client_stats.uptime()))
+                .set_alignment(CellAlignment::Right),
+        );
+
+    t.add_row(r);
+
+    format!("{t}")
 }
 
 /// Initialize Ctrl-C event handler to print session summary when we are collecting stats
@@ -366,8 +438,8 @@ async fn init_ctrlc(producer: Arc<TopicProducer>, stats_bar: ProgressBar) -> Res
 /// Report the producer summary to stdout with the `ProgressBar`
 async fn producer_summary(producer: Arc<TopicProducer>, stats_bar: &ProgressBar) {
     if let Some(producer_stats) = producer.stats().await {
-        stats_bar.println(format_current_stats(producer_stats).await);
-        stats_bar.println(" ");
         stats_bar.set_message(format_summary_stats(producer_stats).await);
+        stats_bar.println(" ");
+        //stats_bar.println(format_current_stats(producer_stats).await);
     }
 }
