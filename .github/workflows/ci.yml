@@ -253,7 +253,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, crate-version, crate-audit, crate-publish-check, stats-validate]
+        check: [fmt, clippy, doc, test, crate-version, crate-audit, crate-publish-check]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -674,7 +674,7 @@ jobs:
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
       - name: Start fluvio cluster
-        if: matrix.test == 'smoke-test-k8'
+        if: matrix.test == 'smoke-test-k8' || matrix.test == 'stats-test'
         timeout-minutes: 10
         run: |
           fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
