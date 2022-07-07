@@ -607,7 +607,7 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean, stats-validation]
+        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean, stats-test]
         k8: [k3d, minikube]
         spu: [3]
     steps:
@@ -695,9 +695,6 @@ jobs:
           date
           sleep 15
           make ${{ matrix.test }}
-      - name: Client stats validation
-        if: matrix.test == 'stats-validation'
-        run: make stats-test
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
