@@ -37,5 +37,3 @@ teardown_file() {
     assert_output --partial "abcdefghijklmnopqrstuvwxyz"
     assert_success
 }
-
-

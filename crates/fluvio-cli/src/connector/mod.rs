@@ -114,7 +114,7 @@ pub struct ConnectorConfig {
     pub(crate) topic: String,
     pub(crate) version: Option<String>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     parameters: BTreeMap<String, ManageConnectorParameterValue>,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
