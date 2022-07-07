@@ -49,7 +49,7 @@ pub struct StatsTestOption {
     #[clap(long, default_value = "16384")]
     pub batch_size: usize,
 
-    /// Percentage of tolerated error
+    /// Percentage of tolerated error between calculation and actual
     #[clap(long, default_value = "10.0")]
     pub tolerance: f64,
 }

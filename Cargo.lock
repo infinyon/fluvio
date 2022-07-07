@@ -1782,7 +1782,6 @@ dependencies = [
  "base64",
  "built",
  "bytes",
- "bytesize",
  "cfg-if",
  "chrono",
  "derive_builder",
@@ -2253,7 +2252,6 @@ dependencies = [
  "sysinfo 0.23.13",
  "tokio",
  "tracing",
- "tracing-futures",
 ]
 
 [[package]]
@@ -2567,7 +2565,6 @@ dependencies = [
  "futures-lite",
  "hdrhistogram",
  "humantime",
- "humantime-serde",
  "inventory",
  "once_cell",
  "proc-macro2",
@@ -5606,16 +5603,6 @@ checksum = "7b7358be39f2f274f322d2aaed611acc57f382e8eb1e5b48cb9ae30933495ce7"
 dependencies = [
  "once_cell",
  "valuable",
-]
-
-[[package]]
-name = "tracing-futures"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
-dependencies = [
- "pin-project",
- "tracing",
 ]
 
 [[package]]

@@ -198,7 +198,11 @@ impl ClientStats {
 
         let bytes = update.data.iter().find_map(|d| {
             if let ClientStatsMetricRaw::Bytes(b) = d {
-                Some(*b as f64)
+                #[cfg(not(target_arch = "wasm32"))]
+                let report_bytes = Some(*b as f64);
+                #[cfg(target_arch = "wasm32")]
+                let report_bytes = Some(*b as f32);
+                report_bytes
             } else {
                 None
             }
@@ -267,7 +271,7 @@ impl ClientStats {
                     #[cfg(not(target_arch = "wasm32"))]
                     let seconds = u as f64 * NANOSECOND.scale();
                     #[cfg(target_arch = "wasm32")]
-                    let seconds = *u as f32 * NANOSECOND.scale();
+                    let seconds = u as f32 * NANOSECOND.scale();
 
                     //println!("seconds {seconds}");
                     Some(seconds)
