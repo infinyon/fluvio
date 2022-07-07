@@ -1,6 +1,5 @@
-version: v1
+version: latest
 name: my-test-connector
 type: test-connector
 topic: my-test-connector-topic
-create_topic: true 
-direction: source
+create_topic: true

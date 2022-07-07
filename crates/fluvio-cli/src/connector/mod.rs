@@ -1,16 +1,20 @@
 use std::sync::Arc;
 use clap::Parser;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::Read;
 use std::time::Duration;
+use std::str::FromStr;
 use bytesize::ByteSize;
 
 use fluvio::{Fluvio, Compression};
-use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString, ManageConnectorParameterValue};
+use fluvio::metadata::connector::{
+    ManagedConnectorSpec, SecretString, ManageConnectorParameterValue,
+    ManageConnectorParameterValueInner,
+};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -19,6 +23,7 @@ mod update;
 mod delete;
 mod list;
 mod logs;
+mod show_config;
 
 use crate::Result;
 use create::CreateManagedConnectorOpt;
@@ -26,6 +31,7 @@ use update::UpdateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
 use logs::LogsManagedConnectorOpt;
+use show_config::GetConfigManagedConnectorOpt;
 use crate::CliError;
 
 #[derive(Debug, Parser)]
@@ -64,6 +70,13 @@ pub enum ManagedConnectorCmd {
         help_template = COMMAND_TEMPLATE,
     )]
     List(ListManagedConnectorsOpt),
+
+    /// Show the connector spec
+    #[clap(
+        name = "config",
+        help_template = COMMAND_TEMPLATE,
+    )]
+    Config(GetConfigManagedConnectorOpt),
 }
 
 impl ManagedConnectorCmd {
@@ -84,12 +97,15 @@ impl ManagedConnectorCmd {
             Self::List(list) => {
                 list.process(out, fluvio).await?;
             }
+            Self::Config(describe) => {
+                describe.process(out, fluvio).await?;
+            }
         }
         Ok(())
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ConnectorConfig {
     name: String,
     #[serde(rename = "type")]
@@ -98,38 +114,38 @@ pub struct ConnectorConfig {
     pub(crate) topic: String,
     pub(crate) version: Option<String>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     parameters: BTreeMap<String, ManageConnectorParameterValue>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     secrets: BTreeMap<String, SecretString>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     producer: Option<ProducerParameters>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     consumer: Option<ConsumerParameters>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     partition: Option<i32>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     linger: Option<Duration>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     compression: Option<Compression>,
 
     // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
     // feature to populate `batch_size`.
     #[serde(rename = "batch-size")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     batch_size_string: Option<String>,
 
     #[serde(skip)]
@@ -168,7 +184,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
                 parameters.insert("producer-linger".to_string(), linger.into());
             }
             if let Some(compression) = producer.compression {
-                let compression = format!("{:?}", compression);
+                let compression = format!("{:?}", compression).to_lowercase();
                 parameters.insert("producer-compression".to_string(), compression.into());
             }
             if let Some(batch_size) = producer.batch_size {
@@ -194,6 +210,76 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
         }
     }
 }
+impl From<ManagedConnectorSpec> for ConnectorConfig {
+    fn from(spec: ManagedConnectorSpec) -> ConnectorConfig {
+        let mut parameters = spec.parameters;
+        let mut producer: ProducerParameters = ProducerParameters {
+            linger: None,
+            compression: None,
+            batch_size_string: None,
+            batch_size: None,
+        };
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+            linger,
+        ))) = parameters.remove("producer-linger")
+        {
+            producer.linger = humantime::parse_duration(&linger).ok();
+        }
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+            compression,
+        ))) = parameters.remove("producer-compression")
+        {
+            producer.compression = Compression::from_str(&compression).ok();
+        }
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+            batch_size_string,
+        ))) = parameters.remove("producer-batch-size")
+        {
+            let batch_size = batch_size_string.parse::<ByteSize>().ok();
+            producer.batch_size_string = Some(batch_size_string);
+            producer.batch_size = batch_size;
+        }
+
+        let producer = if producer.linger.is_none()
+            && producer.compression.is_none()
+            && producer.batch_size_string.is_none()
+        {
+            None
+        } else {
+            Some(producer)
+        };
+
+        let consumer = if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(partition),
+        )) = parameters.remove("consumer-partition")
+        {
+            Some(ConsumerParameters {
+                partition: partition.parse::<i32>().ok(),
+            })
+        } else {
+            None
+        };
+        ConnectorConfig {
+            name: spec.name,
+            type_: spec.type_,
+            topic: spec.topic,
+            version: spec.version,
+            parameters,
+            secrets: spec.secrets,
+            producer,
+            consumer,
+        }
+    }
+}
+#[test]
+fn full_yaml_in_and_out() {
+    use pretty_assertions::assert_eq;
+    let connector_input = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
+        .expect("Failed to load test config");
+    let spec_middle: ManagedConnectorSpec = connector_input.clone().into();
+    let connector_output: ConnectorConfig = spec_middle.into();
+    assert_eq!(connector_input, connector_output);
+}
 
 #[test]
 fn full_yaml_test() {
@@ -210,7 +296,7 @@ fn full_yaml_test() {
         ),
         (
             "producer-compression".to_string(),
-            "Gzip".to_string().into(),
+            "gzip".to_string().into(),
         ),
         ("param_1".to_string(), "mqtt.hsl.fi".to_string().into()),
         (
