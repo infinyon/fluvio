@@ -42,7 +42,7 @@ impl ClientStatsHistogram {
             let _ = self.second_window.pop_front();
         }
 
-        let _ = self.total.push_back(dataframe);
+        self.total.push_back(dataframe);
     }
 
     // this is maybe a hack way to achieve a sliding window

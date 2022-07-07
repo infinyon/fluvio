@@ -253,7 +253,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, crate-version, crate-audit, crate-publish-check]
+        check: [fmt, clippy, doc, test, crate-version, crate-audit, crate-publish-check, stats-validate]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -454,6 +454,7 @@ jobs:
             reconnection,
             batch-failure,
             batch,
+            stats-validation,
           ]
     steps:
       - uses: actions/checkout@v2
@@ -537,6 +538,9 @@ jobs:
         timeout-minutes: 5
         run: |
           make batching-test
+      - name: Client stats validation
+        if: matrix.test == 'stats-validation'
+        run: make stats-test
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
@@ -603,7 +607,7 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
+        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean, stats-validation]
         k8: [k3d, minikube]
         spu: [3]
     steps:
@@ -691,8 +695,9 @@ jobs:
           date
           sleep 15
           make ${{ matrix.test }}
-        env:
-          SKIP_TEST_CONNECTOR: true
+      - name: Client stats validation
+        if: matrix.test == 'stats-validation'
+        run: make stats-test
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5

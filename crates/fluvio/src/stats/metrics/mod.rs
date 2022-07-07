@@ -7,10 +7,10 @@ pub use frame::ClientStatsDataFrame;
 mod histogram;
 pub use histogram::ClientStatsHistogram;
 
-use strum::EnumIter;
+use strum::{EnumIter, Display};
 
 // Used as a selector
-#[derive(Debug, Clone, Copy, EnumIter)]
+#[derive(Debug, Clone, Copy, EnumIter, Display)]
 pub enum ClientStatsMetric {
     #[strum(serialize = "start_time")]
     StartTime,

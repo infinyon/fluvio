@@ -14,7 +14,7 @@ impl Add for ClientStatsUpdateBuilder {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        let mut add = self.data.clone();
+        let mut add = self.data;
 
         add.extend(other.data);
 

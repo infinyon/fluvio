@@ -74,14 +74,6 @@ fn write_line_to_file(
 /// Table contents dependent on what stats producer configured to collect
 /// Resulting `String` is printed by `indicatif::ProgressBar`
 pub(crate) async fn format_current_stats(client_stats: ClientStatsDataFrame) -> String {
-    //println!("dataframe: {:#?}", client_stats);
-    //println!(
-    //    "T: {}",
-    //    client_stats
-    //        .get_format(ClientStatsMetric::LastThroughput)
-    //        .value_to_string()
-    //);
-
     let mut t = Table::new();
     t.load_preset(comfy_table::presets::NOTHING);
 
@@ -211,7 +203,7 @@ pub(crate) async fn producer_summary(
             stats_bar.println(" ");
         } else if force_print_stats {
             println!("{}", format_summary_stats(producer_stats).await);
-            println!("");
+            println!();
         }
     } else if force_print_stats {
         println!("Stats were not collected for summary")

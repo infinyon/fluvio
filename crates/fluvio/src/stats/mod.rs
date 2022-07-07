@@ -462,9 +462,7 @@ impl ClientStats {
 
     /// Return the current `ClientStats` as `ClientStatsDataFrame`
     pub fn get_dataframe(&self) -> ClientStatsDataFrame {
-        let frame = self.into();
-        //println!("Internal Dataframe: {frame:#?}");
-        frame
+        self.into()
     }
 
     /// Returns the current running time of the client in nanoseconds

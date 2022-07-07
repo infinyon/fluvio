@@ -3,7 +3,6 @@ mod convert;
 use crate::FluvioError;
 use crate::stats::{
     ClientStatsDataCollect, ClientStatsMetric, ClientStatsMetricRaw, ClientStatsMetricFormat,
-    unix_timestamp_nanos,
 };
 use serde::{Serialize, Deserialize};
 
@@ -243,9 +242,9 @@ impl ClientStatsDataFrame {
     // This should not need ClientStatsMetricRaw. Just *Metric
     // Can I get strum to help me with this?
     /// Generates a CSV header string. Columns returned based on client's configured `ClientStatsDataCollect`
-    pub fn csv_header(&self, stats: &Vec<ClientStatsMetric>) -> Result<String, FluvioError> {
+    pub fn csv_header(&self, stats: &[ClientStatsMetric]) -> Result<String, FluvioError> {
         let h_list: Vec<String> = stats
-            .into_iter()
+            .iter()
             .map(|s| {
                 let d = self.get(*s);
                 d.to_string()
@@ -259,9 +258,9 @@ impl ClientStatsDataFrame {
     }
 
     /// Generates a CSV row. Columns returned based on client request using Vec<ClientStatsMetric>
-    pub fn csv_dataframe(&self, stats: &Vec<ClientStatsMetric>) -> Result<String, FluvioError> {
+    pub fn csv_dataframe(&self, stats: &[ClientStatsMetric]) -> Result<String, FluvioError> {
         let d: Vec<String> = stats
-            .into_iter()
+            .iter()
             .map(|s| {
                 let d = self.get(*s);
 
@@ -284,16 +283,11 @@ impl ClientStatsDataFrame {
 
     /// Format time units for Display
     fn format_duration_from_nanos(nanoseconds: u64) -> QuantDuration {
-        //println!("at fn call: {}", nanoseconds);
         #[cfg(not(target_arch = "wasm32"))]
-        let scalar: AmountT = (nanoseconds as f64).into();
+        let scalar: AmountT = nanoseconds as f64;
         #[cfg(target_arch = "wasm32")]
-        let scalar: AmountT = (nanoseconds as f32).into();
-        //println!("Pre format: {}", scalar);
-        //println!("Pre convert: {}", (scalar * NANOSECOND));
-        let convert = ClientStatsDataFrame::convert_to_largest_time_unit(scalar * NANOSECOND);
-        //println!("Post format: {}", convert);
-        convert
+        let scalar: AmountT = nanoseconds as f32;
+        ClientStatsDataFrame::convert_to_largest_time_unit(scalar * NANOSECOND)
     }
 
     /// Convert given time quantity into largest divisible unit type of `second`
