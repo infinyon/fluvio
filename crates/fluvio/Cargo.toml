@@ -40,11 +40,11 @@ siphasher = "0.3.5"
 cfg-if = "1.0.0"
 derive_builder = "0.10"
 async-trait = "0.1.51"
-chrono = "0.4"
 sysinfo = "0.24"
 quantities = { version = "0.9.0", features = ["datavolume", "datathroughput", "duration"] }
 hdrhistogram = "7.5.0"
 strum = { version = "0.24", features = ["derive"] }
+num-traits = "0.2"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.3.12", features = [

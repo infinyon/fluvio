@@ -16,13 +16,11 @@ use quantities::datavolume::{DataVolume, BYTE, KILOBYTE, MEGABYTE, GIGABYTE, TER
 use quantities::duration::{
     Duration as QuantDuration, MINUTE, SECOND, MILLISECOND, MICROSECOND, NANOSECOND,
 };
+use num_traits::Zero;
 
 /// This is a complete collection of client data being collected for the session:
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct ClientStatsDataFrame {
-    /// Start time when struct was created
-    /// This is Unix Epoch time, in nanoseconds
-    start_time: i64,
     /// This is the elapsed time of when the frame was created, in nanoseconds
     run_time: i64,
     /// PID of the client process
@@ -30,59 +28,86 @@ pub struct ClientStatsDataFrame {
     /// Offset from last batch seen
     offset: i32,
     /// The number of batches process in last transfer
+    #[serde(skip_serializing_if = "is_zero")]
     last_batches: u64,
     /// Data volume of last data transfer, in bytes
+    #[serde(skip_serializing_if = "is_zero")]
     last_bytes: u64,
     /// Time it took to complete last data transfer, in nanoseconds
+    #[serde(skip_serializing_if = "is_zero")]
     last_latency: u64,
     /// The number of records in the last transfer
+    #[serde(skip_serializing_if = "is_zero")]
     last_records: u64,
     /// The throughput of the last transfer, in bytes per second
+    #[serde(skip_serializing_if = "is_zero")]
     last_throughput: u64,
     /// Last time any struct values were updated
     /// This is Unix Epoch time, in nanoseconds
+    #[serde(skip_serializing_if = "is_zero")]
     last_updated: i64,
     /// Total number of batches processed
+    #[serde(skip_serializing_if = "is_zero")]
     batches: u64,
     /// Data volume of all data transferred, in bytes
+    #[serde(skip_serializing_if = "is_zero")]
     bytes: u64,
     /// Last polled CPU usage in percent, adjusted for host system's # of CPU cores
+    #[serde(skip_serializing_if = "is_zero")]
     cpu: f32,
     /// Total time spent waiting for data transfer, in nanoseconds
+    #[serde(skip_serializing_if = "is_zero")]
     latency: u64,
     /// Last polled memory usage of client process, in kilobytes
+    #[serde(skip_serializing_if = "is_zero")]
     mem: u64,
     /// Total number of records processed
+    #[serde(skip_serializing_if = "is_zero")]
     records: u64,
     /// The throughput of current session, in bytes per second
+    #[serde(skip_serializing_if = "is_zero")]
     throughput: u64,
     /// Batches per second
+    #[serde(skip_serializing_if = "is_zero")]
     second_batches: u64,
     /// Latency in nanoseconds per second
+    #[serde(skip_serializing_if = "is_zero")]
     second_latency: u64,
     /// Records per second
+    #[serde(skip_serializing_if = "is_zero")]
     second_records: u64,
     /// Throughput in bytes per second
+    #[serde(skip_serializing_if = "is_zero")]
     second_throughput: u64,
     /// Mean Latency per second
+    #[serde(skip_serializing_if = "is_zero")]
     second_mean_latency: u64,
     /// Mean Throughput per second
+    #[serde(skip_serializing_if = "is_zero")]
     second_mean_throughput: u64,
     /// Maximum throughput recorded
+    #[serde(skip_serializing_if = "is_zero")]
     max_throughput: u64,
     /// Mean Throughput
+    #[serde(skip_serializing_if = "is_zero")]
     mean_throughput: u64,
     /// Mean latency
+    #[serde(skip_serializing_if = "is_zero")]
     mean_latency: u64,
     /// Standard deviation latency
+    #[serde(skip_serializing_if = "is_zero")]
     std_dev_latency: u64,
     /// P50 latency
+    #[serde(skip_serializing_if = "is_zero")]
     p50_latency: u64,
     /// P90 latency
+    #[serde(skip_serializing_if = "is_zero")]
     p90_latency: u64,
     /// P99 latency
+    #[serde(skip_serializing_if = "is_zero")]
     p99_latency: u64,
     /// P999 latency
+    #[serde(skip_serializing_if = "is_zero")]
     p999_latency: u64,
     /// Configuration of what data client is to collect
     stats_collect: ClientStatsDataCollect,
@@ -91,7 +116,6 @@ pub struct ClientStatsDataFrame {
 impl ClientStatsDataFrame {
     pub fn get(&self, stat: ClientStatsMetric) -> ClientStatsMetricRaw {
         match stat {
-            ClientStatsMetric::StartTime => ClientStatsMetricRaw::StartTime(self.start_time),
             ClientStatsMetric::RunTime => ClientStatsMetricRaw::RunTime(self.run_time),
             ClientStatsMetric::Pid => ClientStatsMetricRaw::Pid(self.pid),
             ClientStatsMetric::Offset => ClientStatsMetricRaw::Offset(self.offset),
@@ -150,7 +174,6 @@ impl ClientStatsDataFrame {
     pub fn get_format(&self, stat: ClientStatsMetric) -> ClientStatsMetricFormat {
         //println!("Bytes {} Throughput {}", self.bytes, self.throughput);
         match stat {
-            ClientStatsMetric::StartTime => ClientStatsMetricFormat::StartTime(self.start_time),
             ClientStatsMetric::RunTime => ClientStatsMetricFormat::RunTime(
                 Self::format_duration_from_nanos(self.run_time as u64),
             ),
@@ -384,4 +407,8 @@ impl ClientStatsDataFrame {
             ref_value
         }
     }
+}
+
+fn is_zero<N: Zero>(value: &N) -> bool {
+    value.is_zero()
 }

@@ -15,7 +15,6 @@ pub use update_builder::ClientStatsUpdateBuilder;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU32, AtomicU64, AtomicI64, AtomicI32, Ordering};
 use std::time::Instant;
-use chrono::Utc;
 use std::sync::Arc;
 use sysinfo::{self, PidExt};
 
@@ -32,9 +31,8 @@ pub(crate) const STATS_MEM_ORDER: Ordering = Ordering::Relaxed;
 /// Main struct for recording client stats
 #[derive(Debug)]
 pub struct ClientStats {
-    /// Start time when struct was created
-    /// This is Unix Epoch time, in nanoseconds
-    start_time: AtomicI64,
+    /// Mark the start of `ClientStats`
+    start: Instant,
     /// PID of the client process
     pid: AtomicU32,
     /// Offset from last batch seen
@@ -50,7 +48,7 @@ pub struct ClientStats {
     /// Throughput the last transfer, in bytes per second
     last_throughput: AtomicU64,
     /// Last time any struct values were updated
-    /// This is Unix Epoch time, in nanoseconds
+    /// with respect to `self.start`. In nanoseconds
     last_updated: AtomicI64,
     /// Total number of batches processed
     batches: AtomicU64,
@@ -100,11 +98,6 @@ pub struct ClientStats {
     stats_collect: ClientStatsDataCollect,
 }
 
-/// Helper function. Get Unix Epoch time for Utc timezone, in nanoseconds
-pub(crate) fn unix_timestamp_nanos() -> i64 {
-    Utc::now().timestamp_nanos()
-}
-
 impl Default for ClientStats {
     fn default() -> Self {
         // Get pid
@@ -114,10 +107,8 @@ impl Default for ClientStats {
             0
         };
 
-        let unix_epoch = unix_timestamp_nanos();
-
         ClientStats {
-            start_time: AtomicI64::new(unix_epoch),
+            start: Instant::now(),
             pid: AtomicU32::new(pid),
             offset: AtomicI32::new(0),
             last_batches: AtomicU64::new(0),
@@ -125,7 +116,7 @@ impl Default for ClientStats {
             last_latency: AtomicU64::new(0),
             last_records: AtomicU64::new(0),
             last_throughput: AtomicU64::new(0),
-            last_updated: AtomicI64::new(unix_epoch),
+            last_updated: AtomicI64::new(0),
             batches: AtomicU64::new(0),
             bytes: AtomicU64::new(0),
             cpu: AtomicU32::new(0),
@@ -219,14 +210,9 @@ impl ClientStats {
         Ok(())
     }
 
-    pub fn get(&self, stat: ClientStatsMetric) -> ClientStatsMetricRaw {
-        match stat {
-            ClientStatsMetric::StartTime => {
-                ClientStatsMetricRaw::StartTime(self.start_time.load(STATS_MEM_ORDER))
-            }
-            ClientStatsMetric::RunTime => ClientStatsMetricRaw::RunTime(
-                unix_timestamp_nanos() - self.start_time.load(STATS_MEM_ORDER),
-            ),
+    pub fn get(&self, stat: ClientStatsMetric) -> Result<ClientStatsMetricRaw, FluvioError> {
+        let raw = match stat {
+            ClientStatsMetric::RunTime => ClientStatsMetricRaw::RunTime(self.run_time()),
             ClientStatsMetric::Pid => ClientStatsMetricRaw::Pid(self.pid.load(STATS_MEM_ORDER)),
             ClientStatsMetric::Offset => {
                 ClientStatsMetricRaw::Offset(self.offset.load(STATS_MEM_ORDER))
@@ -264,7 +250,7 @@ impl ClientStats {
                 ClientStatsMetricRaw::Records(self.records.load(STATS_MEM_ORDER))
             }
             ClientStatsMetric::Throughput => {
-                let run_time = if let ClientStatsMetricRaw::RunTime(u) =
+                let run_time = if let Ok(ClientStatsMetricRaw::RunTime(u)) =
                     self.get(ClientStatsMetric::RunTime)
                 {
                     // Convert Nanoseconds to seconds
@@ -339,7 +325,9 @@ impl ClientStats {
             ClientStatsMetric::P999Latency => {
                 ClientStatsMetricRaw::P999Latency(self.p999_latency.load(STATS_MEM_ORDER))
             }
-        }
+        };
+
+        Ok(raw)
     }
 
     /// Update the instance with values from `ClientStatsUpdateBuilder`
@@ -350,8 +338,7 @@ impl ClientStats {
             .data
             .into_iter()
             .map(|data| match data {
-                ClientStatsMetricRaw::StartTime(_)
-                | ClientStatsMetricRaw::RunTime(_)
+                ClientStatsMetricRaw::RunTime(_)
                 | ClientStatsMetricRaw::Pid(_)
                 | ClientStatsMetricRaw::LastBatches(_)
                 | ClientStatsMetricRaw::LastBytes(_)
@@ -457,8 +444,7 @@ impl ClientStats {
             })
             .collect();
 
-        self.last_updated
-            .store(unix_timestamp_nanos(), STATS_MEM_ORDER);
+        self.last_updated.store(self.run_time(), STATS_MEM_ORDER);
 
         //println!("After update: {:#?}", &self);
         Ok(())
@@ -471,7 +457,7 @@ impl ClientStats {
 
     /// Returns the current running time of the client in nanoseconds
     pub fn run_time(&self) -> i64 {
-        unix_timestamp_nanos() - self.start_time.load(STATS_MEM_ORDER)
+        self.start.elapsed().as_nanos() as i64
     }
 
     /// Record the latency of a producer request

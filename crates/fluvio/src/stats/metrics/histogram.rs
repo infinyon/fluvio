@@ -73,8 +73,16 @@ impl ClientStatsHistogram {
             total_throughput += n.get(ClientStatsMetric::LastThroughput).as_u64();
         }
 
-        let mean_latency_per_second = latency_per_second / self.second_window.len() as u64;
-        let mean_throughput_per_second = bytes_per_second / self.second_window.len() as u64;
+        let mean_latency_per_second = if self.second_window.len() > 0 {
+            latency_per_second / self.second_window.len() as u64
+        } else {
+            0
+        };
+        let mean_throughput_per_second = if self.second_window.len() > 0 {
+            bytes_per_second / self.second_window.len() as u64
+        } else {
+            0
+        };
 
         let total_frame = ClientStatsHistogram::load_histogram(&self.total)?;
 

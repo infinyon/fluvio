@@ -12,8 +12,6 @@ use strum::{EnumIter, Display};
 // Used as a selector
 #[derive(Debug, Clone, Copy, EnumIter, Display)]
 pub enum ClientStatsMetric {
-    #[strum(serialize = "start_time")]
-    StartTime,
     #[strum(serialize = "run_time")]
     RunTime,
     #[strum(serialize = "pid")]

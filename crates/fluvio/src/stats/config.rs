@@ -31,19 +31,29 @@ impl ClientStatsDataCollect {
             }
             Self::Data => {
                 vec![
-                    ClientStatsMetric::StartTime,
                     ClientStatsMetric::LastUpdated,
                     ClientStatsMetric::RunTime,
-                    ClientStatsMetric::Pid,
                     ClientStatsMetric::Offset,
-                    ClientStatsMetric::Records,
+                    ClientStatsMetric::LastBatches,
                     ClientStatsMetric::LastRecords,
                     ClientStatsMetric::LastBytes,
                     ClientStatsMetric::LastLatency,
                     ClientStatsMetric::LastThroughput,
-                    ClientStatsMetric::MaxThroughput,
-                    ClientStatsMetric::SecondThroughput,
+                    ClientStatsMetric::Batches,
+                    ClientStatsMetric::Records,
+                    ClientStatsMetric::Bytes,
+                    ClientStatsMetric::Latency,
+                    ClientStatsMetric::Throughput,
+                    ClientStatsMetric::SecondBatches,
                     ClientStatsMetric::SecondRecords,
+                    ClientStatsMetric::SecondLatency,
+                    ClientStatsMetric::SecondThroughput,
+                    ClientStatsMetric::SecondMeanLatency,
+                    ClientStatsMetric::SecondMeanThroughput,
+                    ClientStatsMetric::MaxThroughput,
+                    ClientStatsMetric::MeanThroughput,
+                    ClientStatsMetric::MeanLatency,
+                    ClientStatsMetric::StdDevLatency,
                     ClientStatsMetric::P50Latency,
                     ClientStatsMetric::P90Latency,
                     ClientStatsMetric::P99Latency,
@@ -52,7 +62,6 @@ impl ClientStatsDataCollect {
             }
             Self::System => {
                 vec![
-                    ClientStatsMetric::StartTime,
                     ClientStatsMetric::LastUpdated,
                     ClientStatsMetric::RunTime,
                     ClientStatsMetric::Pid,

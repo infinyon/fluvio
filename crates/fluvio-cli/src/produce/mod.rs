@@ -243,7 +243,7 @@ impl ProduceOpt {
         };
 
         // Avoid writing duplicate data to disk
-        let mut stats_dataframe_check = String::new();
+        let mut stats_dataframe_check = 0;
 
         match &self.file {
             Some(path) => {
@@ -264,7 +264,7 @@ impl ProduceOpt {
 
                         stats_dataframe_check = write_csv_dataframe(
                             &producer,
-                            stats_dataframe_check.as_str(),
+                            stats_dataframe_check,
                             maybe_stats_file.as_mut(),
                         )
                         .await?;
@@ -303,7 +303,7 @@ impl ProduceOpt {
 
                         stats_dataframe_check = write_csv_dataframe(
                             &producer,
-                            stats_dataframe_check.as_str(),
+                            stats_dataframe_check,
                             maybe_stats_file.as_mut(),
                         )
                         .await?;

@@ -2,8 +2,6 @@ use strum::{Display, EnumIter};
 
 #[derive(Clone, Copy, Debug, Display, EnumIter)]
 pub enum ClientStatsMetricRaw {
-    #[strum(serialize = "start_time_ns")]
-    StartTime(i64),
     #[strum(serialize = "run_time_ns")]
     RunTime(i64),
     #[strum(serialize = "pid")]
@@ -69,7 +67,6 @@ pub enum ClientStatsMetricRaw {
 impl ClientStatsMetricRaw {
     pub fn value_to_string(&self) -> String {
         match self {
-            Self::StartTime(n) => n.to_string(),
             Self::RunTime(n) => n.to_string(),
             Self::Pid(n) => n.to_string(),
             Self::Offset(n) => n.to_string(),
@@ -105,7 +102,6 @@ impl ClientStatsMetricRaw {
 
     pub fn as_u32(&self) -> u32 {
         match self {
-            Self::StartTime(n) => *n as u32,
             Self::RunTime(n) => *n as u32,
             Self::Pid(n) => *n as u32,
             Self::Offset(n) => *n as u32,
@@ -141,7 +137,6 @@ impl ClientStatsMetricRaw {
 
     pub fn as_u64(&self) -> u64 {
         match self {
-            Self::StartTime(n) => *n as u64,
             Self::RunTime(n) => *n as u64,
             Self::Pid(n) => *n as u64,
             Self::Offset(n) => *n as u64,
@@ -177,7 +172,6 @@ impl ClientStatsMetricRaw {
 
     pub fn as_i64(&self) -> i64 {
         match self {
-            Self::StartTime(n) => *n as i64,
             Self::RunTime(n) => *n as i64,
             Self::Pid(n) => *n as i64,
             Self::Offset(n) => *n as i64,

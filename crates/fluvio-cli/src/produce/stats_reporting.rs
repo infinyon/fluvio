@@ -3,7 +3,9 @@ use std::sync::Arc;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use comfy_table::{Table, Row, Cell, CellAlignment};
-use fluvio::stats::{ClientStatsDataCollect, ClientStatsDataFrame, ClientStatsMetric};
+use fluvio::stats::{
+    ClientStatsDataCollect, ClientStatsDataFrame, ClientStatsMetric, ClientStatsMetricRaw,
+};
 use indicatif::ProgressBar;
 use fluvio::TopicProducer;
 use crate::Result;
@@ -39,24 +41,32 @@ pub(crate) async fn start_csv_report(
 /// Header contents dependent on what stats producer configured to collect
 pub(crate) async fn write_csv_dataframe(
     producer: &Arc<TopicProducer>,
-    dataframe_check: &str,
+    last_update_check: i64,
     maybe_stats_file: Option<&mut BufWriter<File>>,
-) -> Result<String, CliError> {
-    let dataframe = if let Some(dataframe_sample) = &producer.stats().await {
-        let dataframe =
-            dataframe_sample.csv_dataframe(&dataframe_sample.stats_collect().to_metrics())?;
-
-        if dataframe != *dataframe_check {
-            write_line_to_file(maybe_stats_file, dataframe.as_bytes())?;
-            dataframe
+) -> Result<i64, CliError> {
+    let last_update = if let Some(dataframe_sample) = &producer.stats().await {
+        let last_update = if let ClientStatsMetricRaw::LastUpdated(last) =
+            dataframe_sample.get(ClientStatsMetric::LastUpdated)
+        {
+            last
         } else {
-            dataframe_check.to_string()
+            0
+        };
+
+        if last_update != last_update_check {
+            let dataframe =
+                dataframe_sample.csv_dataframe(&dataframe_sample.stats_collect().to_metrics())?;
+
+            write_line_to_file(maybe_stats_file, dataframe.as_bytes())?;
+            last_update
+        } else {
+            last_update
         }
     } else {
-        dataframe_check.to_string()
+        last_update_check
     };
 
-    Ok(dataframe)
+    Ok(last_update)
 }
 
 /// Helper function for writing CSV data to file
@@ -170,12 +180,6 @@ pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataFrame) -> 
                 .set_alignment(CellAlignment::Right),
             );
     }
-
-    use fluvio::stats::ClientStatsMetricRaw;
-    if let ClientStatsMetricRaw::RunTime(t) = client_stats.get(ClientStatsMetric::RunTime) {
-        println!("raw runtime: {t}")
-    };
-
     r.add_cell(Cell::new("run time").set_alignment(CellAlignment::Center))
         .add_cell(
             Cell::new(

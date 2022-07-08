@@ -10,19 +10,8 @@ impl From<&ClientStats> for ClientStatsDataFrame {
 
         for metric in ClientStatsMetric::iter() {
             match metric {
-                ClientStatsMetric::StartTime => {
-                    let start_time = if let ClientStatsMetricRaw::StartTime(start_time) =
-                        current.get(ClientStatsMetric::StartTime)
-                    {
-                        start_time
-                    } else {
-                        0
-                    };
-
-                    data_point.start_time = start_time;
-                }
                 ClientStatsMetric::RunTime => {
-                    let run_time = if let ClientStatsMetricRaw::RunTime(run_time) =
+                    let run_time = if let Ok(ClientStatsMetricRaw::RunTime(run_time)) =
                         current.get(ClientStatsMetric::RunTime)
                     {
                         run_time
@@ -35,7 +24,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.run_time = run_time;
                 }
                 ClientStatsMetric::Pid => {
-                    let pid = if let ClientStatsMetricRaw::Pid(pid) =
+                    let pid = if let Ok(ClientStatsMetricRaw::Pid(pid)) =
                         current.get(ClientStatsMetric::Pid)
                     {
                         pid
@@ -46,7 +35,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.pid = pid;
                 }
                 ClientStatsMetric::Offset => {
-                    let offset = if let ClientStatsMetricRaw::Offset(offset) =
+                    let offset = if let Ok(ClientStatsMetricRaw::Offset(offset)) =
                         current.get(ClientStatsMetric::Offset)
                     {
                         offset
@@ -57,7 +46,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.offset = offset;
                 }
                 ClientStatsMetric::LastBatches => {
-                    let last_batches = if let ClientStatsMetricRaw::LastBatches(last_batches) =
+                    let last_batches = if let Ok(ClientStatsMetricRaw::LastBatches(last_batches)) =
                         current.get(ClientStatsMetric::LastBatches)
                     {
                         last_batches
@@ -68,7 +57,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.last_batches = last_batches;
                 }
                 ClientStatsMetric::LastBytes => {
-                    let last_bytes = if let ClientStatsMetricRaw::LastBytes(last_bytes) =
+                    let last_bytes = if let Ok(ClientStatsMetricRaw::LastBytes(last_bytes)) =
                         current.get(ClientStatsMetric::LastBytes)
                     {
                         last_bytes
@@ -78,7 +67,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.last_bytes = last_bytes;
                 }
                 ClientStatsMetric::LastLatency => {
-                    let last_latency = if let ClientStatsMetricRaw::LastLatency(last_latency) =
+                    let last_latency = if let Ok(ClientStatsMetricRaw::LastLatency(last_latency)) =
                         current.get(ClientStatsMetric::LastLatency)
                     {
                         last_latency
@@ -88,7 +77,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.last_latency = last_latency;
                 }
                 ClientStatsMetric::LastRecords => {
-                    let last_records = if let ClientStatsMetricRaw::LastRecords(last_records) =
+                    let last_records = if let Ok(ClientStatsMetricRaw::LastRecords(last_records)) =
                         current.get(ClientStatsMetric::LastRecords)
                     {
                         last_records
@@ -99,7 +88,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::LastThroughput => {
                     let last_throughput =
-                        if let ClientStatsMetricRaw::LastThroughput(last_throughput) =
+                        if let Ok(ClientStatsMetricRaw::LastThroughput(last_throughput)) =
                             current.get(ClientStatsMetric::LastThroughput)
                         {
                             last_throughput
@@ -107,16 +96,10 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                             0
                         };
 
-                    //#[cfg(not(target_arch = "wasm32"))]
-                    //let bytes_per_second = (last_throughput as f64 * NANOSECOND.scale()) as u64;
-                    //#[cfg(target_arch = "wasm32")]
-                    //let bytes_per_second = (last_throughput as f32 * NANOSECOND.scale()) as u64;
-
-                    //data_point.last_throughput = bytes_per_second;
                     data_point.last_throughput = last_throughput;
                 }
                 ClientStatsMetric::LastUpdated => {
-                    let last_updated = if let ClientStatsMetricRaw::LastUpdated(last_updated) =
+                    let last_updated = if let Ok(ClientStatsMetricRaw::LastUpdated(last_updated)) =
                         current.get(ClientStatsMetric::LastUpdated)
                     {
                         last_updated
@@ -126,7 +109,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.last_updated = last_updated;
                 }
                 ClientStatsMetric::Batches => {
-                    let batches = if let ClientStatsMetricRaw::Batches(batches) =
+                    let batches = if let Ok(ClientStatsMetricRaw::Batches(batches)) =
                         current.get(ClientStatsMetric::Batches)
                     {
                         batches
@@ -136,7 +119,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.batches = batches;
                 }
                 ClientStatsMetric::Bytes => {
-                    let bytes = if let ClientStatsMetricRaw::Bytes(bytes) =
+                    let bytes = if let Ok(ClientStatsMetricRaw::Bytes(bytes)) =
                         current.get(ClientStatsMetric::Bytes)
                     {
                         bytes
@@ -146,7 +129,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.bytes = bytes;
                 }
                 ClientStatsMetric::Cpu => {
-                    let cpu = if let ClientStatsMetricRaw::Cpu(cpu) =
+                    let cpu = if let Ok(ClientStatsMetricRaw::Cpu(cpu)) =
                         current.get(ClientStatsMetric::Cpu)
                     {
                         cpu
@@ -157,7 +140,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.cpu = Self::format_cpu_raw_to_percent(cpu);
                 }
                 ClientStatsMetric::Mem => {
-                    let mem = if let ClientStatsMetricRaw::Mem(mem) =
+                    let mem = if let Ok(ClientStatsMetricRaw::Mem(mem)) =
                         current.get(ClientStatsMetric::Mem)
                     {
                         mem
@@ -167,7 +150,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.mem = mem;
                 }
                 ClientStatsMetric::Latency => {
-                    let latency = if let ClientStatsMetricRaw::Latency(latency) =
+                    let latency = if let Ok(ClientStatsMetricRaw::Latency(latency)) =
                         current.get(ClientStatsMetric::Latency)
                     {
                         latency
@@ -177,7 +160,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.latency = latency;
                 }
                 ClientStatsMetric::Records => {
-                    let records = if let ClientStatsMetricRaw::Records(records) =
+                    let records = if let Ok(ClientStatsMetricRaw::Records(records)) =
                         current.get(ClientStatsMetric::Records)
                     {
                         records
@@ -187,7 +170,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.records = records;
                 }
                 ClientStatsMetric::Throughput => {
-                    let throughput = if let ClientStatsMetricRaw::Throughput(throughput) =
+                    let throughput = if let Ok(ClientStatsMetricRaw::Throughput(throughput)) =
                         current.get(ClientStatsMetric::Throughput)
                     {
                         throughput
@@ -199,7 +182,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::SecondBatches => {
                     let second_batches =
-                        if let ClientStatsMetricRaw::SecondBatches(second_batches) =
+                        if let Ok(ClientStatsMetricRaw::SecondBatches(second_batches)) =
                             current.get(ClientStatsMetric::SecondBatches)
                         {
                             second_batches
@@ -210,7 +193,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::SecondLatency => {
                     let second_latency =
-                        if let ClientStatsMetricRaw::SecondLatency(second_latency) =
+                        if let Ok(ClientStatsMetricRaw::SecondLatency(second_latency)) =
                             current.get(ClientStatsMetric::SecondLatency)
                         {
                             second_latency
@@ -221,7 +204,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::SecondRecords => {
                     let second_records =
-                        if let ClientStatsMetricRaw::SecondRecords(second_records) =
+                        if let Ok(ClientStatsMetricRaw::SecondRecords(second_records)) =
                             current.get(ClientStatsMetric::SecondRecords)
                         {
                             second_records
@@ -232,7 +215,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::SecondThroughput => {
                     let second_throughput =
-                        if let ClientStatsMetricRaw::SecondThroughput(second_throughput) =
+                        if let Ok(ClientStatsMetricRaw::SecondThroughput(second_throughput)) =
                             current.get(ClientStatsMetric::SecondThroughput)
                         {
                             second_throughput
@@ -243,7 +226,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::SecondMeanLatency => {
                     let second_mean_latency =
-                        if let ClientStatsMetricRaw::SecondMeanLatency(second_mean_latency) =
+                        if let Ok(ClientStatsMetricRaw::SecondMeanLatency(second_mean_latency)) =
                             current.get(ClientStatsMetric::SecondMeanLatency)
                         {
                             second_mean_latency
@@ -253,19 +236,20 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.second_mean_latency = second_mean_latency;
                 }
                 ClientStatsMetric::SecondMeanThroughput => {
-                    let second_mean_throughput =
-                        if let ClientStatsMetricRaw::SecondMeanThroughput(second_mean_throughput) =
-                            current.get(ClientStatsMetric::SecondMeanThroughput)
-                        {
-                            second_mean_throughput
-                        } else {
-                            0
-                        };
+                    let second_mean_throughput = if let Ok(
+                        ClientStatsMetricRaw::SecondMeanThroughput(second_mean_throughput),
+                    ) =
+                        current.get(ClientStatsMetric::SecondMeanThroughput)
+                    {
+                        second_mean_throughput
+                    } else {
+                        0
+                    };
                     data_point.second_mean_throughput = second_mean_throughput;
                 }
                 ClientStatsMetric::MaxThroughput => {
                     let max_throughput =
-                        if let ClientStatsMetricRaw::MaxThroughput(max_throughput) =
+                        if let Ok(ClientStatsMetricRaw::MaxThroughput(max_throughput)) =
                             current.get(ClientStatsMetric::MaxThroughput)
                         {
                             max_throughput
@@ -276,7 +260,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::MeanThroughput => {
                     let mean_throughput =
-                        if let ClientStatsMetricRaw::MeanThroughput(mean_throughput) =
+                        if let Ok(ClientStatsMetricRaw::MeanThroughput(mean_throughput)) =
                             current.get(ClientStatsMetric::MeanThroughput)
                         {
                             mean_throughput
@@ -284,15 +268,10 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                             0
                         };
 
-                    //#[cfg(not(target_arch = "wasm32"))]
-                    //let bytes_per_second = (mean_throughput as f64 * NANOSECOND.scale()) as u64;
-                    //#[cfg(target_arch = "wasm32")]
-                    //let bytes_per_second = (mean_throughput as f32 * NANOSECOND.scale()) as u64;
-
                     data_point.mean_throughput = mean_throughput;
                 }
                 ClientStatsMetric::MeanLatency => {
-                    let mean_latency = if let ClientStatsMetricRaw::MeanLatency(mean_latency) =
+                    let mean_latency = if let Ok(ClientStatsMetricRaw::MeanLatency(mean_latency)) =
                         current.get(ClientStatsMetric::MeanLatency)
                     {
                         mean_latency
@@ -303,7 +282,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                 }
                 ClientStatsMetric::StdDevLatency => {
                     let std_dev_latency =
-                        if let ClientStatsMetricRaw::StdDevLatency(std_dev_latency) =
+                        if let Ok(ClientStatsMetricRaw::StdDevLatency(std_dev_latency)) =
                             current.get(ClientStatsMetric::StdDevLatency)
                         {
                             std_dev_latency
@@ -313,7 +292,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.std_dev_latency = std_dev_latency;
                 }
                 ClientStatsMetric::P50Latency => {
-                    let p50 = if let ClientStatsMetricRaw::P50Latency(p50) =
+                    let p50 = if let Ok(ClientStatsMetricRaw::P50Latency(p50)) =
                         current.get(ClientStatsMetric::P50Latency)
                     {
                         p50
@@ -323,7 +302,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.p50_latency = p50;
                 }
                 ClientStatsMetric::P90Latency => {
-                    let p90 = if let ClientStatsMetricRaw::P90Latency(p90) =
+                    let p90 = if let Ok(ClientStatsMetricRaw::P90Latency(p90)) =
                         current.get(ClientStatsMetric::P90Latency)
                     {
                         p90
@@ -333,7 +312,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.p90_latency = p90;
                 }
                 ClientStatsMetric::P99Latency => {
-                    let p99 = if let ClientStatsMetricRaw::P99Latency(p99) =
+                    let p99 = if let Ok(ClientStatsMetricRaw::P99Latency(p99)) =
                         current.get(ClientStatsMetric::P99Latency)
                     {
                         p99
@@ -343,7 +322,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     data_point.p99_latency = p99;
                 }
                 ClientStatsMetric::P999Latency => {
-                    let p999 = if let ClientStatsMetricRaw::P999Latency(p999) =
+                    let p999 = if let Ok(ClientStatsMetricRaw::P999Latency(p999)) =
                         current.get(ClientStatsMetric::P999Latency)
                     {
                         p999
@@ -379,7 +358,7 @@ mod test {
         // Randomize the stats
         for m in ClientStatsMetric::iter() {
             let metric = match m {
-                ClientStatsMetric::StartTime => ClientStatsMetricRaw::StartTime(rng.gen()),
+                //ClientStatsMetric::StartTime => ClientStatsMetricRaw::StartTime(rng.gen()),
                 ClientStatsMetric::RunTime => ClientStatsMetricRaw::RunTime(rng.gen()),
                 ClientStatsMetric::Pid => ClientStatsMetricRaw::Pid(rng.gen()),
                 ClientStatsMetric::Offset => ClientStatsMetricRaw::Offset(rng.gen()),
@@ -436,18 +415,8 @@ mod test {
         // Verify dataframe matches client
         for metric in ClientStatsMetric::iter() {
             match metric {
-                ClientStatsMetric::StartTime => {
-                    let start_time = if let ClientStatsMetricRaw::StartTime(start_time) =
-                        client_stats.get(ClientStatsMetric::StartTime)
-                    {
-                        start_time
-                    } else {
-                        0
-                    };
-                    assert_eq!(frame.start_time, start_time);
-                }
                 ClientStatsMetric::RunTime => {
-                    let run_time = if let ClientStatsMetricRaw::RunTime(run_time) =
+                    let run_time = if let Ok(ClientStatsMetricRaw::RunTime(run_time)) =
                         client_stats.get(ClientStatsMetric::RunTime)
                     {
                         run_time
@@ -457,7 +426,7 @@ mod test {
                     assert!(frame.run_time < run_time);
                 }
                 ClientStatsMetric::Pid => {
-                    let pid = if let ClientStatsMetricRaw::Pid(pid) =
+                    let pid = if let Ok(ClientStatsMetricRaw::Pid(pid)) =
                         client_stats.get(ClientStatsMetric::Pid)
                     {
                         pid
@@ -467,7 +436,7 @@ mod test {
                     assert_eq!(frame.pid, pid);
                 }
                 ClientStatsMetric::Offset => {
-                    let offset = if let ClientStatsMetricRaw::Offset(offset) =
+                    let offset = if let Ok(ClientStatsMetricRaw::Offset(offset)) =
                         client_stats.get(ClientStatsMetric::Offset)
                     {
                         offset
@@ -477,7 +446,7 @@ mod test {
                     assert_eq!(frame.offset, offset);
                 }
                 ClientStatsMetric::LastBatches => {
-                    let last_batches = if let ClientStatsMetricRaw::LastBatches(last_batches) =
+                    let last_batches = if let Ok(ClientStatsMetricRaw::LastBatches(last_batches)) =
                         client_stats.get(ClientStatsMetric::LastBatches)
                     {
                         last_batches
@@ -487,7 +456,7 @@ mod test {
                     assert_eq!(frame.last_batches, last_batches);
                 }
                 ClientStatsMetric::LastBytes => {
-                    let last_bytes = if let ClientStatsMetricRaw::LastBytes(last_bytes) =
+                    let last_bytes = if let Ok(ClientStatsMetricRaw::LastBytes(last_bytes)) =
                         client_stats.get(ClientStatsMetric::LastBytes)
                     {
                         last_bytes
@@ -497,7 +466,7 @@ mod test {
                     assert_eq!(frame.last_bytes, last_bytes);
                 }
                 ClientStatsMetric::LastLatency => {
-                    let last_latency = if let ClientStatsMetricRaw::LastLatency(last_latency) =
+                    let last_latency = if let Ok(ClientStatsMetricRaw::LastLatency(last_latency)) =
                         client_stats.get(ClientStatsMetric::LastLatency)
                     {
                         last_latency
@@ -507,7 +476,7 @@ mod test {
                     assert_eq!(frame.last_latency, last_latency);
                 }
                 ClientStatsMetric::LastRecords => {
-                    let last_records = if let ClientStatsMetricRaw::LastRecords(last_records) =
+                    let last_records = if let Ok(ClientStatsMetricRaw::LastRecords(last_records)) =
                         client_stats.get(ClientStatsMetric::LastRecords)
                     {
                         last_records
@@ -518,7 +487,7 @@ mod test {
                 }
                 ClientStatsMetric::LastThroughput => {
                     let last_throughput =
-                        if let ClientStatsMetricRaw::LastThroughput(last_throughput) =
+                        if let Ok(ClientStatsMetricRaw::LastThroughput(last_throughput)) =
                             client_stats.get(ClientStatsMetric::LastThroughput)
                         {
                             last_throughput
@@ -528,7 +497,7 @@ mod test {
                     assert_eq!(frame.last_throughput, last_throughput);
                 }
                 ClientStatsMetric::LastUpdated => {
-                    let last_updated = if let ClientStatsMetricRaw::LastUpdated(last_updated) =
+                    let last_updated = if let Ok(ClientStatsMetricRaw::LastUpdated(last_updated)) =
                         client_stats.get(ClientStatsMetric::LastUpdated)
                     {
                         last_updated
@@ -538,7 +507,7 @@ mod test {
                     assert_eq!(frame.last_updated, last_updated);
                 }
                 ClientStatsMetric::Batches => {
-                    let batches = if let ClientStatsMetricRaw::Batches(batches) =
+                    let batches = if let Ok(ClientStatsMetricRaw::Batches(batches)) =
                         client_stats.get(ClientStatsMetric::Batches)
                     {
                         batches
@@ -548,7 +517,7 @@ mod test {
                     assert_eq!(frame.batches, batches);
                 }
                 ClientStatsMetric::Bytes => {
-                    let bytes = if let ClientStatsMetricRaw::Bytes(bytes) =
+                    let bytes = if let Ok(ClientStatsMetricRaw::Bytes(bytes)) =
                         client_stats.get(ClientStatsMetric::Bytes)
                     {
                         bytes
@@ -558,7 +527,7 @@ mod test {
                     assert_eq!(frame.bytes, bytes);
                 }
                 ClientStatsMetric::Cpu => {
-                    let cpu = if let ClientStatsMetricRaw::Cpu(cpu) =
+                    let cpu = if let Ok(ClientStatsMetricRaw::Cpu(cpu)) =
                         client_stats.get(ClientStatsMetric::Cpu)
                     {
                         cpu
@@ -568,7 +537,7 @@ mod test {
                     assert_eq!(frame.cpu, (cpu as f32 / 1_000.0));
                 }
                 ClientStatsMetric::Mem => {
-                    let mem = if let ClientStatsMetricRaw::Mem(mem) =
+                    let mem = if let Ok(ClientStatsMetricRaw::Mem(mem)) =
                         client_stats.get(ClientStatsMetric::Mem)
                     {
                         mem
@@ -578,7 +547,7 @@ mod test {
                     assert_eq!(frame.mem, mem);
                 }
                 ClientStatsMetric::Latency => {
-                    let latency = if let ClientStatsMetricRaw::Latency(latency) =
+                    let latency = if let Ok(ClientStatsMetricRaw::Latency(latency)) =
                         client_stats.get(ClientStatsMetric::Latency)
                     {
                         latency
@@ -588,7 +557,7 @@ mod test {
                     assert_eq!(frame.latency, latency);
                 }
                 ClientStatsMetric::Records => {
-                    let records = if let ClientStatsMetricRaw::Records(records) =
+                    let records = if let Ok(ClientStatsMetricRaw::Records(records)) =
                         client_stats.get(ClientStatsMetric::Records)
                     {
                         records
@@ -598,7 +567,7 @@ mod test {
                     assert_eq!(frame.records, records);
                 }
                 ClientStatsMetric::Throughput => {
-                    let throughput = if let ClientStatsMetricRaw::Throughput(throughput) =
+                    let throughput = if let Ok(ClientStatsMetricRaw::Throughput(throughput)) =
                         client_stats.get(ClientStatsMetric::Throughput)
                     {
                         throughput
@@ -609,7 +578,7 @@ mod test {
                 }
                 ClientStatsMetric::SecondBatches => {
                     let second_batches =
-                        if let ClientStatsMetricRaw::SecondBatches(second_batches) =
+                        if let Ok(ClientStatsMetricRaw::SecondBatches(second_batches)) =
                             client_stats.get(ClientStatsMetric::SecondBatches)
                         {
                             second_batches
@@ -620,7 +589,7 @@ mod test {
                 }
                 ClientStatsMetric::SecondLatency => {
                     let second_latency =
-                        if let ClientStatsMetricRaw::SecondLatency(second_latency) =
+                        if let Ok(ClientStatsMetricRaw::SecondLatency(second_latency)) =
                             client_stats.get(ClientStatsMetric::SecondLatency)
                         {
                             second_latency
@@ -631,7 +600,7 @@ mod test {
                 }
                 ClientStatsMetric::SecondRecords => {
                     let second_records =
-                        if let ClientStatsMetricRaw::SecondRecords(second_records) =
+                        if let Ok(ClientStatsMetricRaw::SecondRecords(second_records)) =
                             client_stats.get(ClientStatsMetric::SecondRecords)
                         {
                             second_records
@@ -642,7 +611,7 @@ mod test {
                 }
                 ClientStatsMetric::SecondThroughput => {
                     let second_throughput =
-                        if let ClientStatsMetricRaw::SecondThroughput(second_throughput) =
+                        if let Ok(ClientStatsMetricRaw::SecondThroughput(second_throughput)) =
                             client_stats.get(ClientStatsMetric::SecondThroughput)
                         {
                             second_throughput
@@ -653,7 +622,7 @@ mod test {
                 }
                 ClientStatsMetric::SecondMeanLatency => {
                     let second_mean_latency =
-                        if let ClientStatsMetricRaw::SecondMeanLatency(second_mean_latency) =
+                        if let Ok(ClientStatsMetricRaw::SecondMeanLatency(second_mean_latency)) =
                             client_stats.get(ClientStatsMetric::SecondMeanLatency)
                         {
                             second_mean_latency
@@ -663,19 +632,20 @@ mod test {
                     assert_eq!(frame.second_mean_latency, second_mean_latency);
                 }
                 ClientStatsMetric::SecondMeanThroughput => {
-                    let second_mean_throughput =
-                        if let ClientStatsMetricRaw::SecondMeanThroughput(second_mean_throughput) =
-                            client_stats.get(ClientStatsMetric::SecondMeanThroughput)
-                        {
-                            second_mean_throughput
-                        } else {
-                            0
-                        };
+                    let second_mean_throughput = if let Ok(
+                        ClientStatsMetricRaw::SecondMeanThroughput(second_mean_throughput),
+                    ) =
+                        client_stats.get(ClientStatsMetric::SecondMeanThroughput)
+                    {
+                        second_mean_throughput
+                    } else {
+                        0
+                    };
                     assert_eq!(frame.second_mean_throughput, second_mean_throughput);
                 }
                 ClientStatsMetric::MaxThroughput => {
                     let max_throughput =
-                        if let ClientStatsMetricRaw::MaxThroughput(max_throughput) =
+                        if let Ok(ClientStatsMetricRaw::MaxThroughput(max_throughput)) =
                             client_stats.get(ClientStatsMetric::MaxThroughput)
                         {
                             max_throughput
@@ -686,7 +656,7 @@ mod test {
                 }
                 ClientStatsMetric::MeanThroughput => {
                     let mean_throughput =
-                        if let ClientStatsMetricRaw::MeanThroughput(mean_throughput) =
+                        if let Ok(ClientStatsMetricRaw::MeanThroughput(mean_throughput)) =
                             client_stats.get(ClientStatsMetric::MeanThroughput)
                         {
                             mean_throughput
@@ -696,7 +666,7 @@ mod test {
                     assert_eq!(frame.mean_throughput, mean_throughput);
                 }
                 ClientStatsMetric::MeanLatency => {
-                    let mean_latency = if let ClientStatsMetricRaw::MeanLatency(mean_latency) =
+                    let mean_latency = if let Ok(ClientStatsMetricRaw::MeanLatency(mean_latency)) =
                         client_stats.get(ClientStatsMetric::MeanLatency)
                     {
                         mean_latency
@@ -707,7 +677,7 @@ mod test {
                 }
                 ClientStatsMetric::StdDevLatency => {
                     let std_dev_latency =
-                        if let ClientStatsMetricRaw::StdDevLatency(std_dev_latency) =
+                        if let Ok(ClientStatsMetricRaw::StdDevLatency(std_dev_latency)) =
                             client_stats.get(ClientStatsMetric::StdDevLatency)
                         {
                             std_dev_latency
@@ -717,7 +687,7 @@ mod test {
                     assert_eq!(frame.std_dev_latency, std_dev_latency);
                 }
                 ClientStatsMetric::P50Latency => {
-                    let p50 = if let ClientStatsMetricRaw::P50Latency(p50) =
+                    let p50 = if let Ok(ClientStatsMetricRaw::P50Latency(p50)) =
                         client_stats.get(ClientStatsMetric::P50Latency)
                     {
                         p50
@@ -727,7 +697,7 @@ mod test {
                     assert_eq!(frame.p50_latency, p50);
                 }
                 ClientStatsMetric::P90Latency => {
-                    let p90 = if let ClientStatsMetricRaw::P90Latency(p90) =
+                    let p90 = if let Ok(ClientStatsMetricRaw::P90Latency(p90)) =
                         client_stats.get(ClientStatsMetric::P90Latency)
                     {
                         p90
@@ -737,7 +707,7 @@ mod test {
                     assert_eq!(frame.p90_latency, p90);
                 }
                 ClientStatsMetric::P99Latency => {
-                    let p99 = if let ClientStatsMetricRaw::P99Latency(p99) =
+                    let p99 = if let Ok(ClientStatsMetricRaw::P99Latency(p99)) =
                         client_stats.get(ClientStatsMetric::P99Latency)
                     {
                         p99
@@ -747,7 +717,7 @@ mod test {
                     assert_eq!(frame.p99_latency, p99);
                 }
                 ClientStatsMetric::P999Latency => {
-                    let p999 = if let ClientStatsMetricRaw::P999Latency(p999) =
+                    let p999 = if let Ok(ClientStatsMetricRaw::P999Latency(p999)) =
                         client_stats.get(ClientStatsMetric::P999Latency)
                     {
                         p999
