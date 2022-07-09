@@ -29,6 +29,7 @@ use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::PartitionerConfig;
+#[cfg(feature = "stats")]
 use crate::stats::{ClientStats, ClientStatsDataCollect, metrics::ClientStatsDataFrame};
 
 use self::accumulator::{BatchHandler};
@@ -68,7 +69,7 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        client_stats: Arc<ClientStats>,
+        #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
@@ -88,6 +89,7 @@ impl ProducerPool {
                 error.clone(),
                 end_event.clone(),
                 flush_event.clone(),
+                #[cfg(feature = "stats")]
                 client_stats.clone(),
             );
             errors.push(error);
@@ -106,13 +108,14 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        client_stats: Arc<ClientStats>,
+        #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
     ) -> Arc<Self> {
         Arc::new(ProducerPool::new(
             config,
             topic,
             spu_pool,
             batches,
+            #[cfg(feature = "stats")]
             client_stats,
         ))
     }
@@ -165,6 +168,7 @@ struct InnerTopicProducer {
     spu_pool: Arc<SpuPool>,
     record_accumulator: RecordAccumulator,
     producer_pool: Arc<ProducerPool>,
+    #[cfg(feature = "stats")]
     client_stats: Arc<ClientStats>,
 }
 
@@ -348,14 +352,14 @@ impl TopicProducer {
                     ))),
                 },
             };
-
+        #[cfg(feature = "stats")]
         let client_stats = ClientStats::new_shared(config.stats_collect);
-
+        #[cfg(feature = "stats")]
         // start the histogram
         if config.stats_collect != ClientStatsDataCollect::None {
             ClientStats::start_stats_histogram(client_stats.clone());
         };
-
+        #[cfg(feature = "stats")]
         // Only start background system monitoring when requested
         if config.stats_collect == ClientStatsDataCollect::All
             || config.stats_collect == ClientStatsDataCollect::System
@@ -370,6 +374,7 @@ impl TopicProducer {
             topic.clone(),
             spu_pool.clone(),
             record_accumulator.batches(),
+            #[cfg(feature = "stats")]
             client_stats.clone(),
         );
 
@@ -380,6 +385,7 @@ impl TopicProducer {
                 spu_pool,
                 producer_pool,
                 record_accumulator,
+                #[cfg(feature = "stats")]
                 client_stats,
             }),
             #[cfg(feature = "smartengine")]
@@ -483,6 +489,7 @@ impl TopicProducer {
         self.inner.clear_errors().await;
     }
 
+    #[cfg(feature = "stats")]
     /// Return a `ClientStatsDataFrame` to represent the current recorded client stats
     pub async fn stats(&self) -> Option<ClientStatsDataFrame> {
         if self.inner.client_stats.stats_collect() != ClientStatsDataCollect::None {

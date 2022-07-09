@@ -6,6 +6,7 @@ use dataplane::Isolation;
 use fluvio_compression::Compression;
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
+#[cfg(feature = "stats")]
 use crate::stats::ClientStatsDataCollect;
 
 const DEFAULT_LINGER_MS: u64 = 100;
@@ -32,8 +33,9 @@ fn default_isolation() -> Isolation {
     Isolation::default()
 }
 
+#[cfg(feature = "stats")]
 fn default_stats_collect() -> ClientStatsDataCollect {
-    ClientStatsDataCollect::None
+    ClientStatsDataCollect::default()
 }
 
 /// Options used to adjust the behavior of the Producer.
@@ -70,6 +72,7 @@ pub struct TopicProducerConfig {
     #[builder(default = "default_isolation()")]
     pub(crate) isolation: Isolation,
 
+    #[cfg(feature = "stats")]
     /// Collect resource and data transfer stats used by Fluvio producer
     #[builder(default = "default_stats_collect()")]
     pub(crate) stats_collect: ClientStatsDataCollect,
@@ -84,6 +87,8 @@ impl Default for TopicProducerConfig {
             compression: None,
             timeout: default_timeout(),
             isolation: default_isolation(),
+
+            #[cfg(feature = "stats")]
             stats_collect: default_stats_collect(),
         }
     }

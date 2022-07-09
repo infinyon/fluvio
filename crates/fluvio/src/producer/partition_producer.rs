@@ -18,6 +18,7 @@ use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
+#[cfg(feature = "stats")]
 use crate::stats::{
     ClientStats, ClientStatsUpdateBuilder, ClientStatsDataCollect, ClientStatsMetricRaw,
 };
@@ -30,6 +31,7 @@ pub(crate) struct PartitionProducer {
     batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
+    #[cfg(feature = "stats")]
     client_stats: Arc<ClientStats>,
 }
 
@@ -41,7 +43,7 @@ impl PartitionProducer {
         batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
-        client_stats: Arc<ClientStats>,
+        #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
     ) -> Self {
         Self {
             config,
@@ -50,6 +52,7 @@ impl PartitionProducer {
             batches_lock,
             batch_events,
             last_error,
+            #[cfg(feature = "stats")]
             client_stats,
         }
     }
@@ -61,7 +64,7 @@ impl PartitionProducer {
         batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
-        client_stats: Arc<ClientStats>,
+        #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
     ) -> Arc<Self> {
         Arc::new(PartitionProducer::new(
             config,
@@ -70,6 +73,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             error,
+            #[cfg(feature = "stats")]
             client_stats,
         ))
     }
@@ -84,7 +88,7 @@ impl PartitionProducer {
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
-        client_stats: Arc<ClientStats>,
+        #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
     ) {
         let producer = PartitionProducer::shared(
             config,
@@ -93,6 +97,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             error,
+            #[cfg(feature = "stats")]
             client_stats,
         );
         fluvio_future::task::spawn(async move {
@@ -212,10 +217,13 @@ impl PartitionProducer {
 
         let mut batch_notifiers = vec![];
 
+        #[cfg(feature = "stats")]
         let mut client_stats_update = ClientStatsUpdateBuilder::default();
+        #[cfg(feature = "stats")]
         let mut total_batch_len = 0;
-
+        #[cfg(feature = "stats")]
         client_stats_update.push(ClientStatsMetricRaw::Batches(batches_ready.len() as u64));
+
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
                 partition_index: self.replica.partition,
@@ -226,6 +234,7 @@ impl PartitionProducer {
 
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
+            #[cfg(feature = "stats")]
             // If we are collecting stats, then record
             // the size of all batches about to be sent
             if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
@@ -244,6 +253,7 @@ impl PartitionProducer {
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
 
+        #[cfg(feature = "stats")]
         let response = if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
             let (response, send_latency) = self
                 .client_stats
@@ -255,15 +265,17 @@ impl PartitionProducer {
         } else {
             spu_socket.send_receive(request).await?
         };
-
-        let mut base_offset = 0;
+        #[cfg(not(feature = "stats"))]
+        let response = spu_socket.send_receive(request).await?;
+        #[cfg(feature = "stats")]
+        let mut last_base_offset = 0;
         for (batch_notifier, partition_response) in batch_notifiers.into_iter().zip(
             response
                 .responses
                 .into_iter()
                 .flat_map(|response| response.partitions),
         ) {
-            base_offset = partition_response.base_offset;
+            let base_offset = partition_response.base_offset;
             let fluvio_error = partition_response.error_code.clone();
 
             if let Err(_e) = batch_notifier
@@ -276,11 +288,17 @@ impl PartitionProducer {
             if fluvio_error.is_error() {
                 return Err(FluvioError::from(ProducerError::from(fluvio_error)));
             }
+
+            #[cfg(feature = "stats")]
+            {
+                last_base_offset = base_offset;
+            }
         }
 
+        #[cfg(feature = "stats")]
         // Commit stats update
         if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
-            client_stats_update.push(ClientStatsMetricRaw::Offset(base_offset as i32));
+            client_stats_update.push(ClientStatsMetricRaw::Offset(last_base_offset as i32));
             self.client_stats.update_batch(client_stats_update).await?
         }
 

@@ -1,13 +1,12 @@
 use std::sync::Arc;
 use std::fs::File;
-use std::io::{BufReader, BufRead, Write};
-use std::{io::Error as IoError, path::PathBuf};
-use std::io::{ErrorKind, self};
-use crossterm::tty::IsTty;
+use std::io::{BufReader, BufRead};
+
+use std::path::PathBuf;
+
 use futures::future::join_all;
 use clap::Parser;
-use indicatif::ProgressBar;
-use tracing::{debug, error};
+use tracing::error;
 use std::time::Duration;
 use humantime::parse_duration;
 
@@ -15,15 +14,36 @@ use fluvio::{
     Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
     ProduceOutput,
 };
-use fluvio::stats::ClientStatsDataCollect;
 use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
 use crate::parse_isolation;
 
+mod stats;
+
+#[cfg(feature = "stats")]
+use std::io::Error as IoError;
+#[cfg(feature = "stats")]
+use std::io::Write;
+
+#[cfg(feature = "stats")]
+use fluvio::stats::ClientStatsDataCollect;
+#[cfg(feature = "stats")]
 mod stats_reporting;
+#[cfg(feature = "stats")]
 use stats_reporting::{start_csv_report, write_csv_dataframe, format_current_stats, producer_summary};
+
+#[cfg(feature = "stats")]
+use tracing::debug;
+
+#[cfg(feature = "stats")]
+use indicatif::ProgressBar;
+
+#[cfg(feature = "stats")]
+use std::io::{ErrorKind, self};
+#[cfg(feature = "stats")]
+use crossterm::tty::IsTty;
 
 // -----------------------------------
 // CLI Options
@@ -146,6 +166,7 @@ impl ProduceOpt {
             config_builder
         };
 
+        #[cfg(feature = "stats")]
         // Stats
         let config_builder = match (self.stats, self.stats_summary, self.stats_plus) {
             (_, _, true) => config_builder.stats_collect(ClientStatsDataCollect::All),
@@ -163,6 +184,7 @@ impl ProduceOpt {
                 .await?,
         );
 
+        #[cfg(feature = "stats")]
         let maybe_stats_bar = if io::stdout().is_tty() {
             if self.is_stats_collect() {
                 let stats_bar = if self.is_print_live_stats() {
@@ -203,16 +225,21 @@ impl ProduceOpt {
 
             produce_output.wait().await?;
 
+            #[cfg(feature = "stats")]
             if self.is_stats_collect() && self.is_print_live_stats() {
                 self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "")
                     .await;
             }
         } else {
             // Read input line-by-line and send as individual records
+            #[cfg(feature = "stats")]
             self.produce_lines(producer.clone(), maybe_stats_bar.as_ref())
                 .await?;
+            #[cfg(not(feature = "stats"))]
+            self.produce_lines(producer.clone()).await?;
         };
 
+        #[cfg(feature = "stats")]
         if self.is_stats_collect() {
             producer_summary(&producer, maybe_stats_bar.as_ref(), self.stats_summary).await;
         }
@@ -228,8 +255,9 @@ impl ProduceOpt {
     async fn produce_lines(
         &self,
         producer: Arc<TopicProducer>,
-        maybe_stats_bar: Option<&ProgressBar>,
+        #[cfg(feature = "stats")] maybe_stats_bar: Option<&ProgressBar>,
     ) -> Result<()> {
+        #[cfg(feature = "stats")]
         // If stats file
         let mut maybe_stats_file = if self.is_stats_collect() {
             if let Some(stats_path) = &self.stats_path {
@@ -242,6 +270,7 @@ impl ProduceOpt {
             None
         };
 
+        #[cfg(feature = "stats")]
         // Avoid writing duplicate data to disk
         let mut stats_dataframe_check = 0;
 
@@ -256,6 +285,7 @@ impl ProduceOpt {
                         produce_outputs.push(produce_output);
                     }
 
+                    #[cfg(feature = "stats")]
                     if self.is_stats_collect() {
                         if self.is_print_live_stats() {
                             self.update_stats_bar(maybe_stats_bar, &producer, &line)
@@ -295,6 +325,7 @@ impl ProduceOpt {
                         produce_output.wait().await?;
                     }
 
+                    #[cfg(feature = "stats")]
                     if self.is_stats_collect() {
                         if self.is_print_live_stats() {
                             self.update_stats_bar(maybe_stats_bar, &producer, &line)
@@ -307,20 +338,22 @@ impl ProduceOpt {
                             maybe_stats_file.as_mut(),
                         )
                         .await?;
+                    }
 
-                        if self.interactive_mode() {
-                            if let Some(file) = maybe_stats_file.as_mut() {
-                                file.flush()?;
-                            }
-
-                            print_cli_ok!();
-                            eprint!("> ");
+                    if self.interactive_mode() {
+                        #[cfg(feature = "stats")]
+                        if let Some(file) = maybe_stats_file.as_mut() {
+                            file.flush()?;
                         }
+
+                        print_cli_ok!();
+                        eprint!("> ");
                     }
                 }
             }
         };
 
+        #[cfg(feature = "stats")]
         if let Some(file) = maybe_stats_file.as_mut() {
             file.flush()?;
         }
@@ -372,14 +405,17 @@ impl ProduceOpt {
         self.file.is_none() && atty::is(atty::Stream::Stdin)
     }
 
+    #[cfg(feature = "stats")]
     fn is_stats_collect(&self) -> bool {
         self.stats || self.stats_plus || self.stats_summary
     }
 
+    #[cfg(feature = "stats")]
     fn is_print_live_stats(&self) -> bool {
         !self.no_stats_bar && !self.stats_summary
     }
 
+    #[cfg(feature = "stats")]
     async fn update_stats_bar(
         &self,
         maybe_stats_bar: Option<&ProgressBar>,
@@ -409,6 +445,7 @@ impl ProduceOpt {
     }
 }
 
+#[cfg(feature = "stats")]
 /// Initialize Ctrl-C event handler to print session summary when we are collecting stats
 async fn init_ctrlc(
     producer: Arc<TopicProducer>,
