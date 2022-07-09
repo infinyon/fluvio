@@ -184,11 +184,12 @@ impl TryFrom<Batch> for Batch<RawRecords> {
 
         let compression = f.get_compression()?;
         let compressed_records = compression.compress(&buf)?;
+        let compressed_records_len = compressed_records.len() as i32;
         let records = RawRecords(compressed_records);
 
         Ok(Batch {
             base_offset: f.base_offset,
-            batch_len: f.batch_len,
+            batch_len: compressed_records_len,
             header: f.header,
             records,
         })
@@ -554,6 +555,7 @@ pub mod memory {
 
 #[cfg(test)]
 mod test {
+
     use super::*;
     use std::io::Cursor;
     use std::io::Error as IoError;
@@ -567,6 +569,9 @@ mod test {
 
     #[cfg(feature = "memory_batch")]
     use super::memory::MemoryBatch;
+
+    #[test]
+    fn test_batch_convert_compression_size() {}
 
     #[test]
     fn test_batch_size() {
@@ -883,7 +888,7 @@ mod test {
         let batch_raw_records: Batch<RawRecords> = Batch::try_from(batch).unwrap();
         assert_eq!(
             batch_raw_records.batch_len(),
-            (BATCH_HEADER_SIZE + mem_records.write_size(0)) as i32
+            mem_records.write_size(0) as i32
         );
 
         // Verify batch len is preserved during conversion
@@ -906,6 +911,40 @@ mod test {
             batch_mem_records.batch_len(),
             (BATCH_HEADER_SIZE + batch_mem_records.records.write_size(0)) as i32
         );
+
+        // Test compressed batch is smaller than non compressed when converted to Batch<RawRecords>
+        // using record with easy to compress data
+        let test_record = Record::new("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        let test_records = vec![
+            test_record.clone(),
+            test_record.clone(),
+            test_record.clone(),
+        ];
+
+        let mut batch_mem_1: Batch = Batch::new();
+        batch_mem_1.add_records(&mut test_records.clone());
+
+        let mut batch_mem_2: Batch = Batch::new();
+        batch_mem_2.add_records(&mut test_records.clone());
+
+        // Verify we're starting from the same length
+        assert_eq!(batch_mem_1.batch_len(), batch_mem_2.batch_len());
+
+        // Apply compression and compare resulting sizes
+        let no_compression = Compression::None;
+        let compression = Compression::Gzip;
+
+        let header_1 = batch_mem_1.get_mut_header();
+        let header_2 = batch_mem_2.get_mut_header();
+
+        header_1.set_compression(no_compression);
+        header_2.set_compression(compression);
+
+        let not_compressed: Batch<RawRecords> = Batch::try_from(batch_mem_1).unwrap();
+        let compressed: Batch<RawRecords> = Batch::try_from(batch_mem_2).unwrap();
+
+        assert_ne!(not_compressed.batch_len(), compressed.batch_len());
+        assert!(not_compressed.batch_len() > compressed.batch_len());
     }
 
     #[cfg(feature = "memory_batch")]
