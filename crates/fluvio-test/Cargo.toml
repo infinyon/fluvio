@@ -37,7 +37,7 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 async-channel = "1.6"
 
 # Fluvio dependencies
-fluvio = { path = "../fluvio" }
+fluvio = { path = "../fluvio", features = ["stats"] }
 fluvio-types = { path = "../fluvio-types" }
 fluvio-future = { version = "0.3.0", features = ["io", "task", "timer", "subscriber", "fixture"] }
 fluvio-command = { version = "0.2.0" }

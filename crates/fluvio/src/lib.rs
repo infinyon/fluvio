@@ -88,6 +88,8 @@ mod fluvio;
 pub mod consumer;
 mod producer;
 mod offset;
+#[cfg(feature = "stats")]
+pub mod stats;
 mod sync;
 pub mod spu;
 

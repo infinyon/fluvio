@@ -181,6 +181,11 @@ cli-smoke:
 	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
 	bats ./tests/cli/smoke_tests/non-concurrent/cluster-delete.bats
 
+
+stats-test:
+	$(TEST_BIN) stats -- $(VERBOSE_FLAG) --tolerance=5
+
+
 # test rbac
 #
 #

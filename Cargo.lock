@@ -920,8 +920,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b103d85ca6e209388771bfb7aa6b68a7aeec4afbf6f0a0264bfbf50360e5212e"
 dependencies = [
  "crossterm 0.23.2",
- "strum",
- "strum_macros",
+ "strum 0.23.0",
+ "strum_macros 0.23.1",
  "unicode-width",
 ]
 
@@ -998,6 +998,12 @@ checksum = "b7bda66e858c683005a53a9a60c69a4aca7eeaa45d124526e389f7aec8e62f38"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "convert_case"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e1f025f441cdfb75831bec89b9d6a6ed02e5e763f78fc5e1ff30d4870fefaec"
 
 [[package]]
 name = "cookie"
@@ -1766,7 +1772,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.12.14"
+version = "0.13.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1791,12 +1797,18 @@ dependencies = [
  "fluvio-types",
  "fluvio_ws_stream_wasm",
  "futures-util",
+ "hdrhistogram",
+ "num-traits",
  "once_cell",
  "pin-project-lite",
+ "quantities",
+ "rand 0.8.5",
  "semver 1.0.12",
  "serde",
  "serde_json",
  "siphasher",
+ "strum 0.24.1",
+ "sysinfo 0.24.5",
  "thiserror",
  "tokio",
  "toml",
@@ -2039,7 +2051,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2064,7 +2076,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.7.6"
+version = "0.8.0"
 dependencies = [
  "async-trait",
  "clap",
@@ -2240,7 +2252,6 @@ dependencies = [
  "sysinfo 0.23.13",
  "tokio",
  "tracing",
- "tracing-futures",
 ]
 
 [[package]]
@@ -2554,7 +2565,6 @@ dependencies = [
  "futures-lite",
  "hdrhistogram",
  "humantime",
- "humantime-serde",
  "inventory",
  "once_cell",
  "proc-macro2",
@@ -4390,6 +4400,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "qty-macros"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c15e80809ef9585a2cc30e79254ca41b281b8562ca7e155744e65b9e99b89394"
+dependencies = [
+ "convert_case",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "quantities"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c73f29491e39aa6bf96a7c26bdf8eb18e091824cf5f9a94b25b9dd4c6f4abdbe"
+dependencies = [
+ "qty-macros",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5176,12 +5208,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cae14b91c7d11c9a851d3fbc80a963198998c2a64eec840477fa92d8ce9b70bb"
 
 [[package]]
+name = "strum"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+dependencies = [
+ "strum_macros 0.24.2",
+]
+
+[[package]]
 name = "strum_macros"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5bb0dc7ee9c15cea6199cde9a127fa16a4c5819af85395457ad72d68edc85a38"
 dependencies = [
  "heck 0.3.3",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.24.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4faebde00e8ff94316c01800f9054fd2ba77d30d9e922541913051d1d978918b"
+dependencies = [
+ "heck 0.4.0",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -5243,6 +5297,7 @@ dependencies = [
  "libc",
  "ntapi",
  "once_cell",
+ "rayon",
  "winapi",
 ]
 
@@ -5548,16 +5603,6 @@ checksum = "7b7358be39f2f274f322d2aaed611acc57f382e8eb1e5b48cb9ae30933495ce7"
 dependencies = [
  "once_cell",
  "valuable",
-]
-
-[[package]]
-name = "tracing-futures"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
-dependencies = [
- "pin-project",
- "tracing",
 ]
 
 [[package]]

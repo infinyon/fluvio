@@ -33,6 +33,7 @@ k8s = [
     "k8-config",
     "fluvio-cluster",
 ]
+stats = [ "fluvio/stats" ]
 
 [dependencies]
 tracing = "0.1.19"

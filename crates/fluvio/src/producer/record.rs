@@ -35,7 +35,7 @@ pub(crate) enum BatchMetadataState {
     /// The batch is buffered and ready to be sent to the SPU
     Buffered(Receiver<(Offset, ErrorCode)>),
     /// The batch was sent to the SPU. Base offset is known
-    Sended(Offset),
+    Sent(Offset),
     /// There was an error sending the batch to the SPU
     Failed(ProducerError),
 }
@@ -65,7 +65,7 @@ impl BatchMetadata {
                 match offset_result {
                     Ok(offset) => {
                         if offset.1 == ErrorCode::None {
-                            *state = BatchMetadataState::Sended(offset.0);
+                            *state = BatchMetadataState::Sent(offset.0);
                             Ok(offset.0)
                         } else {
                             let error = ProducerError::SpuErrorCode(offset.1);
@@ -79,7 +79,7 @@ impl BatchMetadata {
                     }
                 }
             }
-            BatchMetadataState::Sended(offset) => Ok(*offset),
+            BatchMetadataState::Sent(offset) => Ok(*offset),
             BatchMetadataState::Failed(error) => Err(error.clone().into()),
         }
     }
