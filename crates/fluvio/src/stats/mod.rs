@@ -176,10 +176,11 @@ impl ClientStats {
         let latency = update.data.iter().find_map(|d| {
             if let ClientStatsMetricRaw::Latency(l) = d {
                 // Convert Nanoseconds to seconds
-                #[cfg(not(target_arch = "wasm32"))]
-                let seconds = *l as f64 * NANOSECOND.scale();
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
                 let seconds = *l as f32 * NANOSECOND.scale();
+
+                #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+                let seconds = *l as f64 * NANOSECOND.scale();
 
                 Some(seconds)
             } else {
@@ -189,10 +190,11 @@ impl ClientStats {
 
         let bytes = update.data.iter().find_map(|d| {
             if let ClientStatsMetricRaw::Bytes(b) = d {
-                #[cfg(not(target_arch = "wasm32"))]
-                let report_bytes = Some(*b as f64);
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
                 let report_bytes = Some(*b as f32);
+
+                #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+                let report_bytes = Some(*b as f64);
                 report_bytes
             } else {
                 None
@@ -254,10 +256,11 @@ impl ClientStats {
                     self.get(ClientStatsMetric::RunTime)
                 {
                     // Convert Nanoseconds to seconds
-                    #[cfg(not(target_arch = "wasm32"))]
-                    let seconds = u as f64 * NANOSECOND.scale();
-                    #[cfg(target_arch = "wasm32")]
+                    #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
                     let seconds = u as f32 * NANOSECOND.scale();
+
+                    #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+                    let seconds = u as f64 * NANOSECOND.scale();
 
                     //println!("seconds {seconds}");
                     Some(seconds)
@@ -265,10 +268,11 @@ impl ClientStats {
                     None
                 };
 
-                #[cfg(not(target_arch = "wasm32"))]
-                let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f64;
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
                 let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f32;
+
+                #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+                let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f64;
 
                 //println!("total_bytes {total_bytes}");
                 //println!("Throughput {}", total_bytes / run_time.clone().unwrap());

@@ -306,10 +306,11 @@ impl ClientStatsDataFrame {
 
     /// Format time units for Display
     fn format_duration_from_nanos(nanoseconds: u64) -> QuantDuration {
-        #[cfg(not(target_arch = "wasm32"))]
-        let scalar: AmountT = nanoseconds as f64;
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
         let scalar: AmountT = nanoseconds as f32;
+
+        #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+        let scalar: AmountT = nanoseconds as f64;
         ClientStatsDataFrame::convert_to_largest_time_unit(scalar * NANOSECOND)
     }
 
@@ -338,19 +339,21 @@ impl ClientStatsDataFrame {
 
     /// Format data volume units for Display
     fn format_data_volume(data: u64) -> DataVolume {
-        #[cfg(not(target_arch = "wasm32"))]
-        let scalar: AmountT = (data as u32).into();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
         let scalar: AmountT = (data as u16).into();
+
+        #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+        let scalar: AmountT = (data as u32).into();
         ClientStatsDataFrame::convert_to_largest_data_unit(scalar * BYTE)
     }
 
     /// Format memory units for Display
     fn format_memory(mem: u64) -> DataVolume {
-        #[cfg(not(target_arch = "wasm32"))]
-        let scalar: AmountT = (mem as u32).into();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
         let scalar: AmountT = (mem as u16).into();
+
+        #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+        let scalar: AmountT = (mem as u32).into();
         ClientStatsDataFrame::convert_to_largest_data_unit(scalar * KILOBYTE)
     }
 
@@ -379,10 +382,11 @@ impl ClientStatsDataFrame {
 
     /// Format throughput units for Display
     fn format_throughput(throughput: u64) -> DataThroughput {
-        #[cfg(not(target_arch = "wasm32"))]
-        let scalar: AmountT = (throughput as u32).into();
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "arm", target_arch = "wasm32"))]
         let scalar: AmountT = (throughput as u16).into();
+
+        #[cfg(not(any(target_arch = "arm", target_arch = "wasm32")))]
+        let scalar: AmountT = (throughput as u32).into();
         ClientStatsDataFrame::covert_to_largest_throughput_unit(scalar * BYTE_PER_SECOND)
     }
 
