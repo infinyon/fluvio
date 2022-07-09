@@ -915,17 +915,13 @@ mod test {
         // Test compressed batch is smaller than non compressed when converted to Batch<RawRecords>
         // using record with easy to compress data
         let test_record = Record::new("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-        let test_records = vec![
-            test_record.clone(),
-            test_record.clone(),
-            test_record.clone(),
-        ];
+        let mut test_records = vec![test_record.clone(), test_record.clone(), test_record];
 
         let mut batch_mem_1: Batch = Batch::new();
         batch_mem_1.add_records(&mut test_records.clone());
 
         let mut batch_mem_2: Batch = Batch::new();
-        batch_mem_2.add_records(&mut test_records.clone());
+        batch_mem_2.add_records(&mut test_records);
 
         // Verify we're starting from the same length
         assert_eq!(batch_mem_1.batch_len(), batch_mem_2.batch_len());

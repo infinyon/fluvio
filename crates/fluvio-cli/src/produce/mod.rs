@@ -20,30 +20,10 @@ use crate::common::FluvioExtensionMetadata;
 use crate::Result;
 use crate::parse_isolation;
 
+#[cfg(feature = "stats")]
 mod stats;
-
 #[cfg(feature = "stats")]
-use std::io::Error as IoError;
-#[cfg(feature = "stats")]
-use std::io::Write;
-
-#[cfg(feature = "stats")]
-use fluvio::stats::ClientStatsDataCollect;
-#[cfg(feature = "stats")]
-mod stats_reporting;
-#[cfg(feature = "stats")]
-use stats_reporting::{start_csv_report, write_csv_dataframe, format_current_stats, producer_summary};
-
-#[cfg(feature = "stats")]
-use tracing::debug;
-
-#[cfg(feature = "stats")]
-use indicatif::ProgressBar;
-
-#[cfg(feature = "stats")]
-use std::io::{ErrorKind, self};
-#[cfg(feature = "stats")]
-use crossterm::tty::IsTty;
+use stats::*;
 
 // -----------------------------------
 // CLI Options

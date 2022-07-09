@@ -14,7 +14,7 @@ use crate::error::CliError;
 /// Creates (or truncates) a new file, and writes a CSV header at top for stats report purposes
 /// Header contents dependent on what stats producer configured to collect
 /// Column names include units
-pub(crate) async fn start_csv_report(
+pub async fn start_csv_report(
     stats_path: &PathBuf,
     producer: &Arc<TopicProducer>,
 ) -> Result<BufWriter<File>, crate::error::CliError> {
@@ -39,7 +39,7 @@ pub(crate) async fn start_csv_report(
 
 /// Writes a row of CSV data to stats report file
 /// Header contents dependent on what stats producer configured to collect
-pub(crate) async fn write_csv_dataframe(
+pub async fn write_csv_dataframe(
     producer: &Arc<TopicProducer>,
     last_update_check: i64,
     maybe_stats_file: Option<&mut BufWriter<File>>,
@@ -70,7 +70,7 @@ pub(crate) async fn write_csv_dataframe(
 }
 
 /// Helper function for writing CSV data to file
-fn write_line_to_file(
+pub fn write_line_to_file(
     maybe_file: Option<&mut BufWriter<File>>,
     line: &[u8],
 ) -> Result<(), CliError> {
@@ -83,7 +83,7 @@ fn write_line_to_file(
 /// Format current stats into `comfy_table` for alignment purposes
 /// Table contents dependent on what stats producer configured to collect
 /// Resulting `String` is printed by `indicatif::ProgressBar`
-pub(crate) async fn format_current_stats(client_stats: ClientStatsDataFrame) -> String {
+pub async fn format_current_stats(client_stats: ClientStatsDataFrame) -> String {
     let mut t = Table::new();
     t.load_preset(comfy_table::presets::NOTHING);
 
@@ -143,7 +143,7 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataFrame) -> 
 /// Format summary stats into `comfy_table` for alignment purposes
 /// Table contents dependent on what stats producer configured to collect
 /// Resulting `String` is printed by `indicatif::ProgressBar`
-pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataFrame) -> String {
+pub async fn format_summary_stats(client_stats: ClientStatsDataFrame) -> String {
     let mut t = Table::new();
     t.load_preset(comfy_table::presets::NOTHING);
 
@@ -196,7 +196,7 @@ pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataFrame) -> 
 }
 
 /// Report the producer summary to stdout with the `ProgressBar`
-pub(crate) async fn producer_summary(
+pub async fn producer_summary(
     producer: &Arc<TopicProducer>,
     maybe_stats_bar: Option<&ProgressBar>,
     force_print_stats: bool,
