@@ -80,22 +80,27 @@ pub struct ProduceOpt {
     #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
 
+    #[cfg(feature = "stats")]
     /// Experimental: Collect basic producer session statistics and print in stats bar
     #[clap(long)]
     pub stats: bool,
 
+    #[cfg(feature = "stats")]
     /// Experimental: Collect all producer session statistics and print in stats bar (Implies --stats)
     #[clap(long)]
     pub stats_plus: bool,
 
+    #[cfg(feature = "stats")]
     /// Experimental: Save producer session stats to file. The resulting file formatted for spreadsheet, as comma-separated values
     #[clap(long)]
     pub stats_path: Option<PathBuf>,
 
+    #[cfg(feature = "stats")]
     /// Experimental: Don't display stats bar when using `--stats` or `--stats-plus`. Use with `--stats-path`.
     #[clap(long)]
     pub no_stats_bar: bool,
 
+    #[cfg(feature = "stats")]
     /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
     #[clap(long)]
     pub stats_summary: bool,
