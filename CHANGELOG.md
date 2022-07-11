@@ -5,6 +5,7 @@
 * Prefer ExternalIP to InternalIP if configured in kubernetes ([#2448](https://github.com/infinyon/fluvio/pull/2448))
 * Add `fluvio connector config <connector-name>`  ([#2464](https://github.com/infinyon/fluvio/pull/2464))
 * Add performance counters to producer ([#2424](https://github.com/infinyon/fluvio/issues/2424))
+* Upgrade to fluvio-future 0.4.0 ([#2470](https://github.com/infinyon/fluvio/pull/2470))
 
 ## Platform Version 0.9.30 - 2022-06-29
 * Improve CLI error output when log_dir isn't writable ([#2425](https://github.com/infinyon/fluvio/pull/2425))
