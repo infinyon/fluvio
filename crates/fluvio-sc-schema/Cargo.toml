@@ -29,4 +29,4 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
 dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.9", features = ["subscriber"] }
+fluvio-future = { version = "0.4.0", features = ["subscriber"] }

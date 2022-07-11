@@ -39,7 +39,7 @@ async-channel = "1.6"
 # Fluvio dependencies
 fluvio = { path = "../fluvio", features = ["stats"] }
 fluvio-types = { path = "../fluvio-types" }
-fluvio-future = { version = "0.3.0", features = ["io", "task", "timer", "subscriber", "fixture"] }
+fluvio-future = { version = "0.4.0", features = ["io", "task", "timer", "subscriber", "fixture"] }
 fluvio-command = { version = "0.2.0" }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-cli = { path = "../fluvio-cli" }
