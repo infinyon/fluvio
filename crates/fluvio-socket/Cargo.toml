@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.11.6"
+version = "0.12.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -31,7 +31,7 @@ pin-project = "1.0.1"
 thiserror = "1.0.20"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.3.13", features = ["net", "task"] }
+fluvio-future = { version = "0.4.0", features = ["net", "task"] }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = [
     "derive",
     "api",
@@ -39,7 +39,7 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = [
 ] }
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.13", features = [
+fluvio-future = { version = "0.4.0", features = [
     "fixture",
     "fs",
     "zero_copy",

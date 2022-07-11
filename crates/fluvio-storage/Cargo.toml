@@ -40,7 +40,7 @@ nix = "0.24.0"
 fluvio-types = { path = "../fluvio-types", features = [
     "events",
 ], version = "0.3.1" }
-fluvio-future = { version = "0.3.15", features = ["fs", "mmap", "zero_copy"] }
+fluvio-future = { version = "0.4.0", features = ["fs", "mmap", "zero_copy"] }
 fluvio-protocol = { path = "../fluvio-protocol" }
 dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
     "file",
@@ -48,7 +48,7 @@ dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.9", features = ["fixture"] }
+fluvio-future = { version = "0.4.0", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
 fluvio-storage = { path = ".", features = ["fixture"] }

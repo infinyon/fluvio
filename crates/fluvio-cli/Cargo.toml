@@ -87,10 +87,10 @@ fluvio-cli-common = { path = "../fluvio-cli-common" }
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }
-fluvio-future = { version = "0.3.14", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
+fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
 fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 indicatif = "0.16.2"
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.14", features = ["fixture"] }
+fluvio-future = { version = "0.4.0", features = ["fixture"] }
 pretty_assertions = "1.2.1"

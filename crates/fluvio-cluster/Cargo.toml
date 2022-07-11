@@ -60,7 +60,7 @@ sysinfo = { version = "0.24.0", default-features = false, optional = true }
 # Fluvio dependencies
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-helm = "0.4.1"
-fluvio-future = { version = "0.3.14" }
+fluvio-future = { version = "0.4.0" }
 fluvio-command = { version = "0.2.0" }
 fluvio-extension-common = { path = "../fluvio-extension-common", optional = true }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = [
@@ -76,4 +76,4 @@ fluvio-types = { path = "../fluvio-types" }
 fluvio-channel = { path = "../fluvio-channel" }
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.14", features = ["task", "fixture"] }
+fluvio-future = { version = "0.4.0", features = ["task", "fixture"] }
