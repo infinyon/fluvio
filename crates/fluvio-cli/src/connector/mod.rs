@@ -346,4 +346,8 @@ fn error_yaml_tests() {
         .expect_err("This yaml should error");
     #[cfg(unix)]
     assert_eq!("Other(\"couldn't parse \\\"aoeu\\\" into a known SI unit, couldn't parse unit of \\\"aoeu\\\"\")", format!("{:?}", connector_cfg));
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
+        .expect_err("This yaml should error");
+    #[cfg(unix)]
+    assert_eq!("ConnectorConfig(Message(\"missing field `version`\", Some(Pos { marker: Marker { index: 4, line: 1, col: 4 }, path: \".\" })))", format!("{:?}", connector_cfg));
 }
