@@ -117,7 +117,7 @@ impl SmartEngine {
                 version,
             )?),
             SmartModuleKind::Generic(context) => {
-                smartmodule.create_generic_smartmodule(smart_payload.params, version, context)?
+                smartmodule.create_generic_smartmodule(smart_payload.params, context, version)?
             }
         };
         Ok(smartmodule_instance)
@@ -253,30 +253,30 @@ impl SmartModuleWithEngine {
     fn create_generic_smartmodule(
         &self,
         params: SmartModuleExtraParams,
-        version: i16,
         context: &SmartModuleContextData,
+        version: i16,
     ) -> Result<Box<dyn SmartModuleInstance>, error::Error> {
         match self.create_filter(params.clone(), version) {
             Ok(filter) => return Ok(Box::new(filter)),
-            Err(error::Error::NamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_map(params.clone(), version) {
             Ok(map) => return Ok(Box::new(map)),
-            Err(error::Error::NamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_filter_map(params.clone(), version) {
             Ok(filter_map) => return Ok(Box::new(filter_map)),
-            Err(error::Error::NamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_array_map(params.clone(), version) {
             Ok(array_map) => return Ok(Box::new(array_map)),
-            Err(error::Error::NamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
@@ -286,23 +286,23 @@ impl SmartModuleWithEngine {
         };
         match self.create_aggregate(params.clone(), accumulator, version) {
             Ok(aggregate) => return Ok(Box::new(aggregate)),
-            Err(error::Error::NamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_join(params.clone(), version) {
             Ok(join) => return Ok(Box::new(join)),
-            Err(error::Error::NamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_join_stream(params, version) {
             Ok(join_stream) => return Ok(Box::new(join_stream)),
-            Err(error::Error::NamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
-        Err(error::Error::AnyExports)
+        Err(error::Error::NotValidExports)
     }
 }
 
@@ -521,5 +521,198 @@ impl RecordsCallBack {
     fn get(&self) -> Option<RecordsMemory> {
         let reader = self.0.lock().unwrap();
         reader.clone()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::path::{PathBuf, Path};
+
+    use crate::SmartEngine;
+
+    use super::DEFAULT_SMARTENGINE_VERSION;
+    const FLUVIO_WASM_FILTER: &str = "fluvio_wasm_filter";
+    const FLUVIO_WASM_MAP: &str = "fluvio_wasm_map_double";
+    const FLUVIO_WASM_ARRAY_MAP: &str = "fluvio_wasm_array_map_array";
+    const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
+    const FLUVIO_WASM_AGGREGATE: &str = "fluvio_wasm_aggregate";
+    const FLUVIO_WASM_JOIN: &str = "fluvio_wasm_join";
+
+    fn read_wasm_module(module_name: &str) -> Vec<u8> {
+        let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
+        let wasm_path = PathBuf::from(spu_dir)
+            .parent()
+            .expect("parent")
+            .join(format!(
+                "fluvio-smartmodule/examples/target/wasm32-unknown-unknown/release/{}.wasm",
+                module_name
+            ));
+        read_module_from_path(wasm_path)
+    }
+
+    fn read_module_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
+        let path = filter_path.as_ref();
+        std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()))
+    }
+
+    #[ignore]
+    #[test]
+    fn create_filter() {
+        let filter = read_wasm_module(FLUVIO_WASM_FILTER);
+        let engine = SmartEngine::default()
+            .create_module_from_binary(&filter)
+            .expect("Failed to create filter");
+
+        engine
+            .create_filter(Default::default(), DEFAULT_SMARTENGINE_VERSION)
+            .expect("failed to create filter");
+
+        // generic
+        engine
+            .create_generic_smartmodule(
+                Default::default(),
+                &Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create generic smartmodule");
+    }
+
+    #[ignore]
+    #[test]
+    fn create_map() {
+        let filter = read_wasm_module(FLUVIO_WASM_MAP);
+        let engine = SmartEngine::default()
+            .create_module_from_binary(&filter)
+            .expect("Failed to create map");
+
+        engine
+            .create_map(Default::default(), DEFAULT_SMARTENGINE_VERSION)
+            .expect("failed to create map");
+
+        // generic
+        engine
+            .create_generic_smartmodule(
+                Default::default(),
+                &Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create generic smartmodule");
+    }
+
+    #[ignore]
+    #[test]
+    fn create_filter_map() {
+        let filter = read_wasm_module(FLUVIO_WASM_FILTER_MAP);
+        let engine = SmartEngine::default()
+            .create_module_from_binary(&filter)
+            .expect("Failed to create filter map");
+
+        engine
+            .create_filter_map(Default::default(), DEFAULT_SMARTENGINE_VERSION)
+            .expect("failed to create filter map");
+
+        // generic
+        engine
+            .create_generic_smartmodule(
+                Default::default(),
+                &Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create generic smartmodule");
+    }
+
+    #[ignore]
+    #[test]
+    fn create_array_map() {
+        let arraymap = read_wasm_module(FLUVIO_WASM_ARRAY_MAP);
+        let engine = SmartEngine::default()
+            .create_module_from_binary(&arraymap)
+            .expect("Failed to create arraymap");
+
+        engine
+            .create_array_map(Default::default(), DEFAULT_SMARTENGINE_VERSION)
+            .expect("failed to create arraymap");
+
+        // generic
+        engine
+            .create_generic_smartmodule(
+                Default::default(),
+                &Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create generic smartmodule");
+    }
+
+    #[ignore]
+    #[test]
+    fn create_aggregate() {
+        let agg = read_wasm_module(FLUVIO_WASM_AGGREGATE);
+        let engine = SmartEngine::default()
+            .create_module_from_binary(&agg)
+            .expect("Failed to create aggregate");
+
+        engine
+            .create_aggregate(
+                Default::default(),
+                Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create aggregate");
+
+        // generic
+        engine
+            .create_generic_smartmodule(
+                Default::default(),
+                &Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create generic smartmodule");
+    }
+
+    #[ignore]
+    #[test]
+    fn create_join() {
+        let join = read_wasm_module(FLUVIO_WASM_JOIN);
+        let engine = SmartEngine::default()
+            .create_module_from_binary(&join)
+            .expect("Failed to create join");
+
+        engine
+            .create_join(Default::default(), DEFAULT_SMARTENGINE_VERSION)
+            .expect("failed to create join");
+
+        // generic
+        engine
+            .create_generic_smartmodule(
+                Default::default(),
+                &Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create generic smartmodule");
+    }
+
+    #[ignore]
+    #[test]
+    fn invalid_wasm_data() {
+        //we try to create a map smartmodule with a filter smartmodule
+
+        let filter = read_wasm_module(FLUVIO_WASM_FILTER);
+        let engine = SmartEngine::default()
+            .create_module_from_binary(&filter)
+            .expect("Failed to create join");
+
+        engine
+            .create_map(Default::default(), DEFAULT_SMARTENGINE_VERSION)
+            .map(|_| "SmartModuleMap")
+            .expect_err("SmartModule Map was created with a filter module");
+
+        // generic creation should work!
+        engine
+            .create_generic_smartmodule(
+                Default::default(),
+                &Default::default(),
+                DEFAULT_SMARTENGINE_VERSION,
+            )
+            .expect("failed to create generic smartmodule");
     }
 }

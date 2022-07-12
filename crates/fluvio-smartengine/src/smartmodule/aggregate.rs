@@ -48,14 +48,14 @@ impl SmartModuleAggregate {
         let aggregate_fn: AggregateFnKind = if let Ok(agg_fn) = base
             .instance
             .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
-            .map_err(|_err| Error::NamedExport(AGGREGATE_FN_NAME))
+            .map_err(|_err| Error::NotNamedExport(AGGREGATE_FN_NAME))
         {
             AggregateFnKind::New(agg_fn)
         } else {
             let agg_fn: OldAggregateFn = base
                 .instance
                 .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
-                .map_err(|_err| Error::NamedExport(AGGREGATE_FN_NAME))?;
+                .map_err(|_err| Error::NotNamedExport(AGGREGATE_FN_NAME))?;
             AggregateFnKind::Old(agg_fn)
         };
 
