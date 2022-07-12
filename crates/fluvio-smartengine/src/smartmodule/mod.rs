@@ -116,7 +116,7 @@ impl SmartEngine {
                 version,
             )?),
             SmartModuleKind::Generic(context) => {
-                smartmodule.create_smartmodule(smart_payload.params, version, context)?
+                smartmodule.create_generic_smartmodule(smart_payload.params, version, context)?
             }
         };
         Ok(smartmodule_instance)
@@ -239,7 +239,9 @@ impl SmartModuleWithEngine {
         Ok(aggregate)
     }
 
-    fn create_smartmodule(
+    /// Create smartmodule without knowing its type. This function will try to initialize the smartmodule as each one of
+    /// the available smartmodules until there is success or all the kinds of smartmodules is tried.
+    fn create_generic_smartmodule(
         &self,
         params: SmartModuleExtraParams,
         version: i16,
