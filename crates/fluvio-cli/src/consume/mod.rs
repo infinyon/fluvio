@@ -12,6 +12,7 @@ use flate2::Compression;
 use flate2::bufread::GzEncoder;
 use fluvio::dataplane::batch::NO_TIMESTAMP;
 use fluvio::metadata::tableformat::{TableFormatSpec};
+use fluvio_spu_schema::server::stream_fetch::SmartModuleContextData;
 use tracing::{debug, trace, instrument};
 use clap::{Parser, ArgEnum};
 use fluvio_future::io::StreamExt;
@@ -141,28 +142,33 @@ pub struct ConsumeOpt {
     pub derived_stream: Option<String>,
 
     /// Path to a SmartModule filter wasm file
-    #[clap(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule_group"))]
     pub filter: Option<String>,
 
     /// Path to a SmartModule map wasm file
-    #[clap(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule_group"))]
     pub map: Option<String>,
 
     /// Path to a SmartModule filter_map wasm file
-    #[clap(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule_group"))]
     pub filter_map: Option<String>,
 
     /// Path to a SmartModule array_map wasm file
-    #[clap(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule_group"))]
     pub array_map: Option<String>,
 
     /// Path to a SmartModule join wasm filee
-    #[clap(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule_group"))]
     pub join: Option<String>,
 
     /// Path to a WASM file for aggregation
-    #[clap(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule_group"))]
     pub aggregate: Option<String>,
+
+    /// Path or name to WASM module. This support any of the other
+    /// smartmodule types: filter, map, array_map, aggregate, join and filter_map
+    #[clap(long, group("smartmodule_group"))]
+    pub smartmodule: Option<String>,
 
     #[clap(long)]
     pub join_topic: Option<String>,
@@ -281,7 +287,21 @@ impl ConsumeOpt {
 
         builder.derivedstream(derivedstream);
 
-        let smartmodule = if let Some(name_or_path) = &self.filter {
+        let smartmodule = if let Some(name_or_path) = &self.smartmodule {
+            let context = if let Some(acc_path) = &self.initial {
+                let accumulator = std::fs::read(acc_path)?;
+                SmartModuleContextData::Aggregate { accumulator }
+            } else if self.join_topic.is_some() {
+                SmartModuleContextData::Join(self.join_topic.as_ref().unwrap().clone())
+            } else {
+                SmartModuleContextData::None
+            };
+            Some(create_smartmodule(
+                name_or_path,
+                SmartModuleKind::Generic(context),
+                extra_params,
+            )?)
+        } else if let Some(name_or_path) = &self.filter {
             Some(create_smartmodule(
                 name_or_path,
                 SmartModuleKind::Filter,

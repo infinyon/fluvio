@@ -9,6 +9,7 @@ use fluvio::{
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
+    SmartModuleContextData,
 };
 use futures_util::{StreamExt, stream::BoxStream};
 
@@ -69,7 +70,8 @@ impl SmartModuleContext {
         // check for right consumer stream exists, this only happens for join type
         let right_consumer_stream = match invocation.kind {
             // for join, create consumer stream
-            SmartModuleKind::Join(ref topic) => {
+            SmartModuleKind::Join(ref topic)
+            | SmartModuleKind::Generic(SmartModuleContextData::Join(ref topic)) => {
                 let consumer = ctx.leaders().partition_consumer(topic.to_owned(), 0).await;
 
                 Some(
@@ -86,7 +88,11 @@ impl SmartModuleContext {
             SmartModuleKind::JoinStream {
                 topic: ref _topic,
                 derivedstream: ref derivedstream_name,
-            } => {
+            }
+            | SmartModuleKind::Generic(SmartModuleContextData::JoinStream {
+                topic: ref _topic,
+                derivedstream: ref derivedstream_name,
+            }) => {
                 // first ensure derivedstream exists
                 if let Some(derivedstream) = ctx.derivedstream_store().spec(derivedstream_name) {
                     // find input which has topic
@@ -190,9 +196,16 @@ impl SmartModuleContext {
                     error = err.to_string().as_str(),
                     "Error Instantiating SmartModule"
                 );
-                ErrorCode::SmartModuleInvalidExports {
-                    kind: format!("{:?}", kind),
-                    error: err.to_string(),
+                if let SmartModuleKind::Generic(_) = kind {
+                    ErrorCode::SmartModuleInvalid {
+                        error: err.to_string(),
+                        name: None,
+                    }
+                } else {
+                    ErrorCode::SmartModuleInvalidExports {
+                        kind: format!("{}", kind),
+                        error: err.to_string(),
+                    }
                 }
             })
     }

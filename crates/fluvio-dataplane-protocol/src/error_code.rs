@@ -135,7 +135,7 @@ pub enum ErrorCode {
     #[error("SmartModule {name} was not found")]
     SmartModuleNotFound { name: String },
     #[fluvio(tag = 6002)]
-    #[error("SmartModule is invalid")]
+    #[error("SmartModule is invalid: {error}")]
     SmartModuleInvalid { error: String, name: Option<String> },
     #[fluvio(tag = 6003)]
     #[error("SmartModule is not a valid '{kind}' SmartModule due to {error}. Are you missing a #[smartmodule({kind})] attribute?")]

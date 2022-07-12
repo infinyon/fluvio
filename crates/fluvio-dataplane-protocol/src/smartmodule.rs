@@ -199,6 +199,8 @@ mod encoding {
         FilterMap,
         #[fluvio(min_version = 16)]
         Join,
+        #[fluvio(min_version = 17)]
+        Generic,
     }
 
     impl Default for SmartModuleKind {

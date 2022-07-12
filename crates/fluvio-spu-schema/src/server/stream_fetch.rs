@@ -43,6 +43,8 @@ pub const ARRAY_MAP_WASM_API: i16 = 15;
 // version for persistent SmartModule
 pub const SMART_MODULE_API: i16 = 16;
 
+pub const GENERIC_SMARTMODULE_API: i16 = 17;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -140,6 +142,43 @@ pub enum SmartModuleKind {
         topic: String,
         derivedstream: String,
     },
+    #[fluvio(min_version = GENERIC_SMARTMODULE_API)]
+    Generic(SmartModuleContextData),
+}
+
+impl std::fmt::Display for SmartModuleKind {
+    fn fmt(&self, out: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let name = match self {
+            SmartModuleKind::Filter => "filter",
+            SmartModuleKind::Map => "map",
+            SmartModuleKind::ArrayMap => "array_map",
+            SmartModuleKind::Aggregate { .. } => "aggregate",
+            SmartModuleKind::FilterMap => "filter_map",
+            SmartModuleKind::Join(..) => "join",
+            SmartModuleKind::JoinStream { .. } => "join_stream",
+            SmartModuleKind::Generic(..) => "smartmodule",
+        };
+        out.write_str(name)
+    }
+}
+
+#[derive(Debug, Clone, Encoder, Decoder)]
+pub enum SmartModuleContextData {
+    None,
+    Aggregate {
+        accumulator: Vec<u8>,
+    },
+    Join(String),
+    JoinStream {
+        topic: String,
+        derivedstream: String,
+    },
+}
+
+impl Default for SmartModuleContextData {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 impl Default for SmartModuleKind {

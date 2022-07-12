@@ -215,7 +215,7 @@ impl InnerTopicProducer {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
-        use fluvio_spu_schema::server::stream_fetch::{SmartModuleWasmCompressed, SmartModuleKind, LegacySmartModulePayload};
+        use fluvio_spu_schema::server::stream_fetch::{SmartModuleWasmCompressed, SmartModuleContextData, SmartModuleKind, LegacySmartModulePayload};
         use std::collections::BTreeMap;
         use fluvio_smartengine::SmartEngine;
 
@@ -299,6 +299,22 @@ cfg_if::cfg_if! {
                 let smart_payload = LegacySmartModulePayload {
                     wasm: SmartModuleWasmCompressed::Raw(map.into()),
                     kind: SmartModuleKind::Aggregate { accumulator },
+                    params: params.into(),
+                };
+                self.init_engine(smart_payload)?;
+                Ok(self)
+            }
+
+            /// Use generic smartmodule (the type is detected in smartengine)
+            pub fn with_smartmodule<T: Into<Vec<u8>>>(
+                mut self,
+                smartmodule: T,
+                params: BTreeMap<String, String>,
+                context: SmartModuleContextData,
+            ) -> Result<Self, FluvioError> {
+                let smart_payload = LegacySmartModulePayload {
+                    wasm: SmartModuleWasmCompressed::Raw(smartmodule.into()),
+                    kind: SmartModuleKind::Generic ( context ),
                     params: params.into(),
                 };
                 self.init_engine(smart_payload)?;

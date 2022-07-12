@@ -8,6 +8,7 @@ use crate::{
     smartmodule::{
         SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
     },
+    error::Error,
 };
 
 const FILTER_MAP_FN_NAME: &str = "filter_map";
@@ -38,7 +39,7 @@ impl SmartModuleFilterMap {
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         let mut base = SmartModuleContext::new(module, params, version)?;
         let filter_map_fn = if let Ok(fmap_fn) = base
             .instance
@@ -48,7 +49,8 @@ impl SmartModuleFilterMap {
         } else {
             let fmap_fn: OldFilterMapFn = base
                 .instance
-                .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)?;
+                .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
+                .map_err(|err| Error::NotNamedExport(FILTER_MAP_FN_NAME, err))?;
             FilterMapFnKind::Old(fmap_fn)
         };
 

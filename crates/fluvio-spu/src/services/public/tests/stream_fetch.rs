@@ -24,7 +24,9 @@ use dataplane::{
 };
 use dataplane::fixture::{create_batch, TEST_RECORD};
 use fluvio_spu_schema::server::{
-    stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind},
+    stream_fetch::{
+        SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartModuleContextData,
+    },
     update_offset::{UpdateOffsetsRequest, OffsetUpdate},
 };
 use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
@@ -405,6 +407,17 @@ async fn test_stream_fetch_filter_predefined() {
     .await;
 }
 
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_generic() {
+    predefined_test(
+        "test_stream_fetch_filter_generic",
+        FLUVIO_WASM_FILTER,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
+        test_stream_fetch_filter,
+    )
+    .await;
+}
+
 async fn test_stream_fetch_filter(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
@@ -596,6 +609,17 @@ async fn test_stream_fetch_filter_individual_predefined() {
     .await;
 }
 
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_individual_generic() {
+    predefined_test(
+        "test_stream_fetch_filter_individual_generic",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
+        test_stream_fetch_filter_individual,
+    )
+    .await;
+}
+
 async fn test_stream_fetch_filter_individual(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
@@ -714,6 +738,17 @@ async fn test_stream_filter_error_fetch_predefined() {
         "test_stream_filter_error_fetch_predefined",
         FLUVIO_WASM_FILTER_ODD,
         SmartModuleKind::Filter,
+        test_stream_filter_error_fetch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_filter_error_fetch_generic() {
+    predefined_test(
+        "test_stream_filter_error_fetch_generic",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
         test_stream_filter_error_fetch,
     )
     .await;
@@ -848,6 +883,17 @@ async fn test_stream_filter_max_predefined() {
         "test_stream_filter_max_predefined",
         FLUVIO_WASM_FILTER,
         SmartModuleKind::Filter,
+        test_stream_filter_max,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_filter_max_generic() {
+    predefined_test(
+        "test_stream_filter_max_generic",
+        FLUVIO_WASM_FILTER,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
         test_stream_filter_max,
     )
     .await;
@@ -1161,6 +1207,17 @@ async fn test_stream_fetch_map_error_predefined() {
     .await;
 }
 
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_map_error_generic() {
+    predefined_test(
+        "test_stream_fetch_map_error_generic",
+        FLUVIO_WASM_MAP_DOUBLE,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
+        test_stream_fetch_map_error,
+    )
+    .await;
+}
+
 async fn test_stream_fetch_map_error(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
@@ -1295,6 +1352,19 @@ async fn test_stream_aggregate_fetch_single_batch_predefined() {
         SmartModuleKind::Aggregate {
             accumulator: Vec::from("A"),
         },
+        test_stream_aggregate_fetch_single_batch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_single_batch_generic() {
+    predefined_test(
+        "test_stream_aggregate_fetch_single_batch_generic",
+        FLUVIO_WASM_AGGREGATE,
+        SmartModuleKind::Generic(SmartModuleContextData::Aggregate {
+            accumulator: Vec::from("A"),
+        }),
         test_stream_aggregate_fetch_single_batch,
     )
     .await;
@@ -1441,6 +1511,18 @@ async fn test_stream_aggregate_fetch_multiple_batch_predefined() {
         SmartModuleKind::Aggregate {
             accumulator: Vec::from("A"),
         },
+        test_stream_aggregate_fetch_multiple_batch,
+    )
+    .await;
+}
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_multiple_batch_generic() {
+    predefined_test(
+        "test_stream_aggregate_fetch_multiple_batch_generic",
+        FLUVIO_WASM_AGGREGATE,
+        SmartModuleKind::Generic(SmartModuleContextData::Aggregate {
+            accumulator: Vec::from("A"),
+        }),
         test_stream_aggregate_fetch_multiple_batch,
     )
     .await;
@@ -1752,7 +1834,7 @@ async fn test_stream_fetch_invalid_wasm_module(
     assert_eq!(
         response.partition.error_code,
         ErrorCode::SmartModuleInvalidExports {
-            kind: "Filter".to_owned(),
+            kind: "filter".to_owned(),
             error: "failed to parse WebAssembly module".to_owned()
         }
     );
@@ -1791,6 +1873,17 @@ async fn test_stream_fetch_array_map_predefined() {
         "test_stream_fetch_array_map_predefined",
         FLUVIO_WASM_ARRAY_MAP_ARRAY,
         SmartModuleKind::ArrayMap,
+        test_stream_fetch_array_map,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_array_map_generic() {
+    predefined_test(
+        "test_stream_fetch_array_map_generic",
+        FLUVIO_WASM_ARRAY_MAP_ARRAY,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
         test_stream_fetch_array_map,
     )
     .await;
@@ -1918,6 +2011,17 @@ async fn test_stream_fetch_filter_map_predefined() {
     .await;
 }
 
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_map_generic() {
+    predefined_test(
+        "test_stream_fetch_filter_map_generic",
+        FLUVIO_WASM_FILTER_MAP,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
+        test_stream_fetch_filter_map,
+    )
+    .await;
+}
+
 async fn test_stream_fetch_filter_map(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
@@ -2037,6 +2141,17 @@ async fn test_stream_fetch_filter_with_params_predefined() {
         "test_stream_fetch_filter_with_params_predefined",
         FLUVIO_WASM_FILTER_WITH_PARAMETERS,
         SmartModuleKind::Filter,
+        test_stream_fetch_filter_with_params,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_with_params_generic() {
+    predefined_test(
+        "test_stream_fetch_filter_with_params_generic",
+        FLUVIO_WASM_FILTER_WITH_PARAMETERS,
+        SmartModuleKind::Generic(SmartModuleContextData::None),
         test_stream_fetch_filter_with_params,
     )
     .await;
@@ -2309,7 +2424,7 @@ async fn test_stream_fetch_invalid_smartmodule(
 
     match response.partition.error_code {
         ErrorCode::SmartModuleInvalidExports { error: _, kind } => {
-            assert_eq!(kind, "Filter");
+            assert_eq!(kind, "filter");
         }
         _ => panic!("expected an InvalidSmartModule error"),
     }
@@ -2549,6 +2664,28 @@ async fn test_stream_fetch_join_adhoc() {
         "test_stream_fetch_join_legacy",
         FLUVIO_WASM_JOIN,
         SmartModuleKind::Join(JOIN_RIGHT_TOPIC.into()),
+        test_stream_fetch_join,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_join_predefined() {
+    predefined_test(
+        "test_stream_fetch_join_predefenided",
+        FLUVIO_WASM_JOIN,
+        SmartModuleKind::Join(JOIN_RIGHT_TOPIC.into()),
+        test_stream_fetch_join,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_join_generic() {
+    predefined_test(
+        "test_stream_fetch_join_generic",
+        FLUVIO_WASM_JOIN,
+        SmartModuleKind::Generic(SmartModuleContextData::Join(JOIN_RIGHT_TOPIC.into())),
         test_stream_fetch_join,
     )
     .await;

@@ -8,6 +8,7 @@ use dataplane::smartmodule::{
 use crate::{
     WasmSlice,
     smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
+    error::Error,
 };
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
@@ -37,7 +38,7 @@ impl SmartModuleArrayMap {
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         let mut base = SmartModuleContext::new(module, params, version)?;
         let map_fn = if let Ok(array_map_fn) = base
             .instance
@@ -47,7 +48,8 @@ impl SmartModuleArrayMap {
         } else {
             let array_map_fn = base
                 .instance
-                .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)?;
+                .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)
+                .map_err(|err| Error::NotNamedExport(ARRAY_MAP_FN_NAME, err))?;
             ArrayMapFnKind::Old(array_map_fn)
         };
 

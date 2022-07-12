@@ -43,6 +43,11 @@ setup_file() {
     assert_output --partial "$EXPECTED_OUTPUT"
     assert_success
 
+    # Consume from topic with --smartmodule
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    assert_output --partial "$EXPECTED_OUTPUT"
+    assert_success
+
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_success
@@ -85,6 +90,10 @@ setup_file() {
     EXPECTED_OUTPUT="${TEST_MESSAGE}"
     export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --filter "$SMARTMODULE_NAME"
+    refute_line "$NEGATIVE_TEST_MESSAGE"
+    assert_output "$EXPECTED_OUTPUT"
+
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
 
@@ -148,7 +157,11 @@ setup_file() {
     refute_line --partial "$DEFAULT_PARAM_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
 
- 
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME" --extra-params key=z
+    refute_line --partial "$NEGATIVE_TEST_MESSAGE"
+    refute_line --partial "$DEFAULT_PARAM_MESSAGE"
+    assert_output "$EXPECTED_OUTPUT"
+
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_success
@@ -191,6 +204,10 @@ setup_file() {
     EXPECTED_OUTPUT="${TEST_MESSAGE}"
     export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --filter-map "$SMARTMODULE_NAME"
+    refute_line "$NEGATIVE_TEST_MESSAGE"
+    assert_output "$((EXPECTED_OUTPUT/2))"
+
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$((EXPECTED_OUTPUT/2))"
 
@@ -239,6 +256,12 @@ setup_file() {
     assert_line --index 1 "$SECOND_MESSAGE"
     assert_line --index 2 "$THIRD_MESSAGE"
 
+    # Consume from topic with smart-module and verify we don't see the $NEGATIVE_TEST_MESSAGE
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    assert_line --index 0 "$FIRST_MESSAGE"
+    assert_line --index 1 "$SECOND_MESSAGE"
+    assert_line --index 2 "$THIRD_MESSAGE"
+
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_success
@@ -274,6 +297,10 @@ setup_file() {
 
     # Consume from topic
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --aggregate "$SMARTMODULE_NAME"
+    assert_line --index 0 "$TEST_MESSAGE_1"
+    assert_line --index 1 "$TEST_MESSAGE_1$TEST_MESSAGE_2"
+
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     assert_line --index 0 "$TEST_MESSAGE_1"
     assert_line --index 1 "$TEST_MESSAGE_1$TEST_MESSAGE_2"
 
@@ -322,6 +349,9 @@ setup_file() {
     EXPECTED_OUTPUT_0="$((R1_TEST_MESSAGE+L1_TEST_MESSAGE))"
     export EXPECTED_OUTPUT_0
     run timeout 15s "$FLUVIO_BIN" consume "$MAIN_TOPIC_NAME" -B -d --join "$SMARTMODULE_NAME" --join-topic $JOIN_TOPIC_NAME
+    assert_output "$EXPECTED_OUTPUT_0"
+
+    run timeout 15s "$FLUVIO_BIN" consume "$MAIN_TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME" --join-topic $JOIN_TOPIC_NAME
     assert_output "$EXPECTED_OUTPUT_0"
 
     # Delete topics

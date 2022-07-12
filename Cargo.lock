@@ -1735,7 +1735,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.13.1"
+version = "0.13.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1863,6 +1863,7 @@ dependencies = [
  "fluvio-package-index",
  "fluvio-sc-schema",
  "fluvio-socket",
+ "fluvio-spu-schema",
  "fluvio-types",
  "futures",
  "handlebars",
@@ -2274,7 +2275,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.2.11"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "cargo",
@@ -2287,6 +2288,7 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "nix",
+ "thiserror",
  "tracing",
  "wasmtime",
  "wasmtime-wasi",
@@ -2382,7 +2384,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.9.4"
+version = "0.10.0"
 dependencies = [
  "bytes",
  "flate2",
