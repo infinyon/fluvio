@@ -15,7 +15,7 @@ Thank you for joining Fluvio community. The goal of this document is to provide 
 Examples should work with the following platforms:
 
 - MacOS X
-- Linux  
+- Linux
 
 Other platforms such as Windows can be made to work, but we haven't tried them yet.
 
@@ -65,7 +65,7 @@ Fluvio supports the following Kubernetes cluster types for development:
 * [kind](https://kind.sigs.k8s.io)
 * [k3d](https://k3d.io)
 
-For these cluster types, fluvio will build a docker image and automatically imports it with `make build_k8_image`. 
+For these cluster types, fluvio will build a docker image and automatically imports it with `make build_k8_image`.
 
 For other cluster types, please file an issue.
 
@@ -77,7 +77,7 @@ Helm is used for installing Fluvio on Kubernetes.
 
 Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install helm
 
-### Testing dependencies 
+### Testing dependencies
 * curl
 * jq
 * bats
@@ -108,20 +108,20 @@ Make targets
 
 ### Build Pre-requisites
 
-Zig and LLD(version 13) is required to build the image.
+Zig and LLD(version 12 or higher) is required to build the image.
 
 For mac:
 
 ```
 ./actions/zig-install.sh macos-11
-export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm@13/bin/lld
+export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm@14/bin/lld
 ```
 
 For ubuntu:
 
 ```
 ./actions/zig-install.sh ubuntu-latest
-export FLUVIO_BUILD_LLD=lld-13
+export FLUVIO_BUILD_LLD=lld-12
 ```
 
 ### Problem installing lld-13
@@ -204,7 +204,7 @@ For minikube:
 $ ./k8-util/cluster/reset-minikube.sh
 ```
 
-For k3d: 
+For k3d:
 ```
 $ ./k8-util/cluster/reset-k3d.sh
 ```
@@ -290,7 +290,7 @@ $ RUST_LOG=fluvio=debug cargo run --bin fluvio-run -- sc
 
 After SC is started, you can start adding unmanaged (custom) SPUs.
 
-For each SPU, first register the SPU. For example, the following registers a SPU with ID 5001 with public and private ports. 
+For each SPU, first register the SPU. For example, the following registers a SPU with ID 5001 with public and private ports.
 Normally, you only need to register a SPU once.
 
 ```
@@ -309,8 +309,8 @@ Now, you should see SPU being active:
 
 ```
 $ flvd cluster spu list
- ID    NAME             STATUS  TYPE      RACK  PUBLIC        PRIVATE 
- 5001  custom-spu-5001  Online  "custom"   -    0.0.0.0:9010  0.0.0.0:9011 
+ ID    NAME             STATUS  TYPE      RACK  PUBLIC        PRIVATE
+ 5001  custom-spu-5001  Online  "custom"   -    0.0.0.0:9010  0.0.0.0:9011
 ```
 
 Can create new topic
@@ -400,7 +400,7 @@ make cli-smoke
 
 ## Troubleshooting
 
-This guide helps users to solve issues they might face during the setup process. 
+This guide helps users to solve issues they might face during the setup process.
 
 ### Connection issues
 
@@ -422,7 +422,7 @@ $ flvd cluster start --sys
 "fluvio" has been added to your repositories
 Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "fluvio" chart repository
-Update Complete. ⎈ Happy Helming!⎈ 
+Update Complete. ⎈ Happy Helming!⎈
 Exited with status code: 1
 thread 'main' panicked at 'assertion failed: false', crates/fluvio-cli/src/cluster/util.rs:115:17
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

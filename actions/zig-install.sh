@@ -3,7 +3,7 @@
 set -e
 MATRIX_OS=${1}
 ZIG_VER=0.9.1
-LLVM_VER=13
+LLVM_VER=14
 ARCH=x86_64
 echo "installing zig matrix.os=$MATRIX_OS version=$ZIG_VER"
 
@@ -17,7 +17,7 @@ if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     popd && \
     rm zig-linux-x86_64-0.9.1.tar.* && \
     sudo ${0%/*}/llvm.sh $LLVM_VER && \
-    echo "FLUVIO_BUILD_LLD=lld-13" | tee -a $GITHUB_ENV
+    echo "FLUVIO_BUILD_LLD=lld-14" | tee -a $GITHUB_ENV
 fi
 
 # remove zig
@@ -35,4 +35,4 @@ if [[ "$MATRIX_OS" == "macos-11" ]]; then
 fi
 
 
-        
+
