@@ -99,7 +99,7 @@ mod output {
                     Row::from([
                         Cell::new(&r.name).set_alignment(CellAlignment::Left),
                         Cell::new(&spec.type_.to_string()).set_alignment(CellAlignment::Left),
-                        Cell::new(&spec.version()).set_alignment(CellAlignment::Left),
+                        Cell::new(&spec.version.to_string()).set_alignment(CellAlignment::Left),
                         Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
                     ])
                 })

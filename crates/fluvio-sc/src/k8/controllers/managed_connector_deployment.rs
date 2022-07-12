@@ -264,10 +264,10 @@ impl ManagedConnectorDeploymentController {
 
         args.extend(parameters);
 
-        let (image, image_pull_policy) = match mc_spec.version.as_deref() {
-            Some("dev") => (image, ImagePullPolicy::Never),
-            Some("latest") | None => (format!("{}:latest", image), ImagePullPolicy::Always),
-            Some(version) => (
+        let (image, image_pull_policy) = match mc_spec.version.to_string().as_str() {
+            "dev" => (image, ImagePullPolicy::Never),
+            "latest" => (format!("{}:latest", image), ImagePullPolicy::Always),
+            version => (
                 format!("{}:{}", image, version),
                 ImagePullPolicy::IfNotPresent,
             ),
