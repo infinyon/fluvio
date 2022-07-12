@@ -55,7 +55,9 @@ impl ToString for ConnectorVersionInner {
     fn to_string(&self) -> String {
         match self {
             ConnectorVersionInner::String(inner) => inner.to_string(),
-            ConnectorVersionInner::Option(inner) => inner.clone().unwrap_or_else(|| "latest".to_string()),
+            ConnectorVersionInner::Option(inner) => {
+                inner.clone().unwrap_or_else(|| "latest".to_string())
+            }
         }
     }
 }
