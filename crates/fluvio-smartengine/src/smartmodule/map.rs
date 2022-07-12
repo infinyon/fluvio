@@ -8,6 +8,7 @@ use crate::{
     smartmodule::{
         SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
     },
+    error::Error,
 };
 
 const MAP_FN_NAME: &str = "map";
@@ -37,13 +38,19 @@ impl SmartModuleMap {
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         let mut base = SmartModuleContext::new(module, params, version)?;
-        let map_fn = if let Ok(map_fn) = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)
+        let map_fn = if let Ok(map_fn) = base
+            .instance
+            .get_typed_func(&mut base.store, MAP_FN_NAME)
+            .map_err(|_err| Error::NamedExport(MAP_FN_NAME))
         {
             MapFnKind::New(map_fn)
         } else {
-            let map_fn: OldMapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
+            let map_fn: OldMapFn = base
+                .instance
+                .get_typed_func(&mut base.store, MAP_FN_NAME)
+                .map_err(|_err| Error::NamedExport(MAP_FN_NAME))?;
             MapFnKind::Old(map_fn)
         };
         Ok(Self { base, map_fn })

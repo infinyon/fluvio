@@ -2288,6 +2288,7 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "nix",
+ "thiserror",
  "tracing",
  "wasmtime",
  "wasmtime-wasi",

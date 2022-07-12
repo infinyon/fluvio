@@ -32,6 +32,7 @@ pub mod aggregate;
 pub mod join;
 pub mod file_batch;
 pub mod join_stream;
+pub(crate) mod error;
 
 pub type WasmSlice = (i32, i32, u32);
 
@@ -187,12 +188,16 @@ impl SmartModuleWithEngine {
         &self,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<SmartModuleFilter> {
+    ) -> Result<SmartModuleFilter, error::Error> {
         let filter = SmartModuleFilter::new(self, params, version)?;
         Ok(filter)
     }
 
-    fn create_map(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleMap> {
+    fn create_map(
+        &self,
+        params: SmartModuleExtraParams,
+        version: i16,
+    ) -> Result<SmartModuleMap, error::Error> {
         let map = SmartModuleMap::new(self, params, version)?;
         Ok(map)
     }
@@ -201,7 +206,7 @@ impl SmartModuleWithEngine {
         &self,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<SmartModuleFilterMap> {
+    ) -> Result<SmartModuleFilterMap, error::Error> {
         let filter_map = SmartModuleFilterMap::new(self, params, version)?;
         Ok(filter_map)
     }
@@ -210,12 +215,16 @@ impl SmartModuleWithEngine {
         &self,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<SmartModuleArrayMap> {
+    ) -> Result<SmartModuleArrayMap, error::Error> {
         let map = SmartModuleArrayMap::new(self, params, version)?;
         Ok(map)
     }
 
-    fn create_join(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleJoin> {
+    fn create_join(
+        &self,
+        params: SmartModuleExtraParams,
+        version: i16,
+    ) -> Result<SmartModuleJoin, error::Error> {
         let join = SmartModuleJoin::new(self, params, version)?;
         Ok(join)
     }
@@ -224,7 +233,7 @@ impl SmartModuleWithEngine {
         &self,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<SmartModuleJoinStream> {
+    ) -> Result<SmartModuleJoinStream, error::Error> {
         let join = SmartModuleJoinStream::new(self, params, version)?;
         Ok(join)
     }
@@ -234,50 +243,66 @@ impl SmartModuleWithEngine {
         params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
         version: i16,
-    ) -> Result<SmartModuleAggregate> {
+    ) -> Result<SmartModuleAggregate, error::Error> {
         let aggregate = SmartModuleAggregate::new(self, params, accumulator, version)?;
         Ok(aggregate)
     }
 
     /// Create smartmodule without knowing its type. This function will try to initialize the smartmodule as each one of
-    /// the available smartmodules until there is success or all the kinds of smartmodules is tried.
+    /// the available smartmodules until there is success or all the kinds of smartmodules is tried.  
     fn create_generic_smartmodule(
         &self,
         params: SmartModuleExtraParams,
         version: i16,
         context: &SmartModuleContextData,
-    ) -> Result<Box<dyn SmartModuleInstance>> {
-        if let Ok(filter) = self.create_filter(params.clone(), version) {
-            return Ok(Box::new(filter));
+    ) -> Result<Box<dyn SmartModuleInstance>, error::Error> {
+        match self.create_filter(params.clone(), version) {
+            Ok(filter) => return Ok(Box::new(filter)),
+            Err(error::Error::NamedExport(_)) => {}
+            Err(any_other_error) => return Err(any_other_error),
         }
-        if let Ok(map) = self.create_map(params.clone(), version) {
-            return Ok(Box::new(map));
+
+        match self.create_map(params.clone(), version) {
+            Ok(map) => return Ok(Box::new(map)),
+            Err(error::Error::NamedExport(_)) => {}
+            Err(any_other_error) => return Err(any_other_error),
         }
-        if let Ok(filter_map) = self.create_filter_map(params.clone(), version) {
-            return Ok(Box::new(filter_map));
+
+        match self.create_filter_map(params.clone(), version) {
+            Ok(filter_map) => return Ok(Box::new(filter_map)),
+            Err(error::Error::NamedExport(_)) => {}
+            Err(any_other_error) => return Err(any_other_error),
         }
-        if let Ok(array_map) = self.create_array_map(params.clone(), version) {
-            return Ok(Box::new(array_map));
+
+        match self.create_array_map(params.clone(), version) {
+            Ok(array_map) => return Ok(Box::new(array_map)),
+            Err(error::Error::NamedExport(_)) => {}
+            Err(any_other_error) => return Err(any_other_error),
         }
+
         let accumulator = match context {
             SmartModuleContextData::Aggregate { accumulator } => accumulator.clone(),
             _ => vec![],
         };
-
-        if let Ok(aggregate) = self.create_aggregate(params.clone(), accumulator, version) {
-            return Ok(Box::new(aggregate));
+        match self.create_aggregate(params.clone(), accumulator, version) {
+            Ok(aggregate) => return Ok(Box::new(aggregate)),
+            Err(error::Error::NamedExport(_)) => {}
+            Err(any_other_error) => return Err(any_other_error),
         }
 
-        if let Ok(join) = self.create_join(params.clone(), version) {
-            return Ok(Box::new(join));
-        }
-        if let Ok(join_stream) = self.create_join_stream(params, version) {
-            return Ok(Box::new(join_stream));
+        match self.create_join(params.clone(), version) {
+            Ok(join) => return Ok(Box::new(join)),
+            Err(error::Error::NamedExport(_)) => {}
+            Err(any_other_error) => return Err(any_other_error),
         }
 
-        Err(Error::msg(
-            "Unable to initialize smartmodule. Make sure that the wasm module includes the correct imports.",
-        ))
+        match self.create_join_stream(params, version) {
+            Ok(join_stream) => return Ok(Box::new(join_stream)),
+            Err(error::Error::NamedExport(_)) => {}
+            Err(any_other_error) => return Err(any_other_error),
+        }
+
+        Err(error::Error::AnyExports)
     }
 }
 
@@ -294,7 +319,7 @@ impl SmartModuleContext {
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<Self> {
+    ) -> Result<Self, error::Error> {
         let mut store = module.engine.new_store();
         let cb = Arc::new(RecordsCallBack::new());
         let records_cb = cb.clone();
@@ -312,7 +337,8 @@ impl SmartModuleContext {
 
         let instance = module
             .engine
-            .instantiate(&mut store, &module.module, copy_records_fn)?;
+            .instantiate(&mut store, &module.module, copy_records_fn)
+            .map_err(error::Error::Instantiate)?;
         Ok(Self {
             store,
             instance,

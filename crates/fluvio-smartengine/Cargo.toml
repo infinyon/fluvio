@@ -34,6 +34,7 @@ dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", package
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", version = "0.17.0", optional = true }
 flate2 = { version = "1.0", optional = true }
 fluvio-spu-schema = { version = "0.10.0", path = "../fluvio-spu-schema" }
+thiserror = "1.0.31"
 
 [dev-dependencies]
 fluvio-types = { path = "../fluvio-types" }

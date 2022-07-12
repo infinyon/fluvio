@@ -9,6 +9,7 @@ use crate::{
     WasmSlice,
     smartmodule::{
         SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
+        error::Error,
     },
 };
 
@@ -40,17 +41,21 @@ impl SmartModuleJoinStream {
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         let mut base = SmartModuleContext::new(module, params, version)?;
-        let join_fn =
-            if let Ok(join_fn) = base.instance.get_typed_func(&mut base.store, JOIN_FN_NAME) {
-                JoinFnKind::New(join_fn)
-            } else {
-                let join_fn = base
-                    .instance
-                    .get_typed_func(&mut base.store, JOIN_FN_NAME)?;
-                JoinFnKind::Old(join_fn)
-            };
+        let join_fn = if let Ok(join_fn) = base
+            .instance
+            .get_typed_func(&mut base.store, JOIN_FN_NAME)
+            .map_err(|_err| Error::NamedExport(JOIN_FN_NAME))
+        {
+            JoinFnKind::New(join_fn)
+        } else {
+            let join_fn = base
+                .instance
+                .get_typed_func(&mut base.store, JOIN_FN_NAME)
+                .map_err(|_err| Error::NamedExport(JOIN_FN_NAME))?;
+            JoinFnKind::Old(join_fn)
+        };
         Ok(Self { base, join_fn })
     }
 }
