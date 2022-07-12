@@ -258,25 +258,25 @@ impl SmartModuleWithEngine {
     ) -> Result<Box<dyn SmartModuleInstance>, error::Error> {
         match self.create_filter(params.clone(), version) {
             Ok(filter) => return Ok(Box::new(filter)),
-            Err(error::Error::NotNamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_, _)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_map(params.clone(), version) {
             Ok(map) => return Ok(Box::new(map)),
-            Err(error::Error::NotNamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_, _)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_filter_map(params.clone(), version) {
             Ok(filter_map) => return Ok(Box::new(filter_map)),
-            Err(error::Error::NotNamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_, _)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_array_map(params.clone(), version) {
             Ok(array_map) => return Ok(Box::new(array_map)),
-            Err(error::Error::NotNamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_, _)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
@@ -286,19 +286,19 @@ impl SmartModuleWithEngine {
         };
         match self.create_aggregate(params.clone(), accumulator, version) {
             Ok(aggregate) => return Ok(Box::new(aggregate)),
-            Err(error::Error::NotNamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_, _)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_join(params.clone(), version) {
             Ok(join) => return Ok(Box::new(join)),
-            Err(error::Error::NotNamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_, _)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 
         match self.create_join_stream(params, version) {
             Ok(join_stream) => return Ok(Box::new(join_stream)),
-            Err(error::Error::NotNamedExport(_)) => {}
+            Err(error::Error::NotNamedExport(_, _)) => {}
             Err(any_other_error) => return Err(any_other_error),
         }
 

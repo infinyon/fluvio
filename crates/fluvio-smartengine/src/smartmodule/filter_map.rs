@@ -44,14 +44,13 @@ impl SmartModuleFilterMap {
         let filter_map_fn = if let Ok(fmap_fn) = base
             .instance
             .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
-            .map_err(|_err| Error::NotNamedExport(FILTER_MAP_FN_NAME))
         {
             FilterMapFnKind::New(fmap_fn)
         } else {
             let fmap_fn: OldFilterMapFn = base
                 .instance
                 .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
-                .map_err(|_err| Error::NotNamedExport(FILTER_MAP_FN_NAME))?;
+                .map_err(|err| Error::NotNamedExport(FILTER_MAP_FN_NAME, err))?;
             FilterMapFnKind::Old(fmap_fn)
         };
 

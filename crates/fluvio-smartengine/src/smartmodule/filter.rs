@@ -43,14 +43,13 @@ impl SmartModuleFilter {
         let filter_fn = if let Ok(filt_fn) = base
             .instance
             .get_typed_func(&mut base.store, FILTER_FN_NAME)
-            .map_err(|_err| Error::NotNamedExport("filter"))
         {
             FilterFnKind::New(filt_fn)
         } else {
             let filt_fn: OldFilterFn = base
                 .instance
                 .get_typed_func(&mut base.store, FILTER_FN_NAME)
-                .map_err(|_err| Error::NotNamedExport("filter"))?;
+                .map_err(|err| Error::NotNamedExport("filter", err))?;
             FilterFnKind::Old(filt_fn)
         };
 

@@ -43,14 +43,13 @@ impl SmartModuleArrayMap {
         let map_fn = if let Ok(array_map_fn) = base
             .instance
             .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)
-            .map_err(|_err| Error::NotNamedExport(ARRAY_MAP_FN_NAME))
         {
             ArrayMapFnKind::New(array_map_fn)
         } else {
             let array_map_fn = base
                 .instance
                 .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)
-                .map_err(|_err| Error::NotNamedExport(ARRAY_MAP_FN_NAME))?;
+                .map_err(|err| Error::NotNamedExport(ARRAY_MAP_FN_NAME, err))?;
             ArrayMapFnKind::Old(array_map_fn)
         };
 
