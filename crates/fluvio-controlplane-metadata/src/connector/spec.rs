@@ -252,6 +252,7 @@ parameters:
 secrets: {}
 topic: poc1
 type: kafka-sink
+version: latest
 "#;
         use super::ManagedConnectorSpec;
         let connector_spec: ManagedConnectorSpec =
