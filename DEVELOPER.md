@@ -108,7 +108,7 @@ Make targets
 
 ### Build Pre-requisites
 
-Zig and LLD(version 14) is required to build the image.
+Zig and LLD(version 12 or higher) is required to build the image.
 
 For mac:
 
@@ -121,7 +121,7 @@ For ubuntu:
 
 ```
 ./actions/zig-install.sh ubuntu-latest
-export FLUVIO_BUILD_LLD=lld-14
+export FLUVIO_BUILD_LLD=lld-12
 ```
 
 ### Problem installing lld-13
