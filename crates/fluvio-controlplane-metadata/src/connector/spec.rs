@@ -19,7 +19,7 @@ use bytes::BufMut;
 pub struct ManagedConnectorSpec {
     pub name: String,
 
-    pub version: Option<String>,
+    pub version: ConnectorVersionInner,
 
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack
@@ -29,6 +29,76 @@ pub struct ManagedConnectorSpec {
     pub parameters: BTreeMap<String, ManageConnectorParameterValue>,
 
     pub secrets: BTreeMap<String, SecretString>,
+}
+#[derive(Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase", untagged)
+)]
+pub enum ConnectorVersionInner {
+    String(String),
+    Option(Option<String>),
+}
+
+impl Default for ConnectorVersionInner {
+    fn default() -> Self {
+        Self::String(String::new())
+    }
+}
+impl From<String> for ConnectorVersionInner {
+    fn from(inner: String) -> Self {
+        Self::String(inner)
+    }
+}
+impl ToString for ConnectorVersionInner {
+    fn to_string(&self) -> String {
+        match self {
+            ConnectorVersionInner::String(inner) => inner.to_string(),
+            ConnectorVersionInner::Option(inner) => {
+                inner.clone().unwrap_or_else(|| "latest".to_string())
+            }
+        }
+    }
+}
+
+impl Decoder for ConnectorVersionInner {
+    fn decode<T: Buf>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error> {
+        if version >= 9 {
+            let mut new_string = String::new();
+            new_string.decode(src, version)?;
+            *self = ConnectorVersionInner::String(new_string);
+
+            Ok(())
+        } else {
+            let mut inner: Option<String> = None;
+            inner.decode(src, version)?;
+            *self = ConnectorVersionInner::Option(inner);
+            Ok(())
+        }
+    }
+}
+impl Encoder for ConnectorVersionInner {
+    fn write_size(&self, version: Version) -> usize {
+        if version >= 9 {
+            let inner: String = self.clone().to_string();
+            inner.write_size(version)
+        } else {
+            let inner: Option<String> = Some(self.clone().to_string());
+            inner.write_size(version)
+        }
+    }
+
+    /// encoding contents for buffer
+    fn encode<T: BufMut>(&self, dest: &mut T, version: Version) -> Result<(), std::io::Error> {
+        if version >= 9 {
+            let inner: String = self.clone().to_string();
+            inner.encode(dest, version)
+        } else {
+            let inner: Option<String> = Some(self.clone().to_string());
+            inner.encode(dest, version)
+        }
+    }
 }
 
 #[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
@@ -182,6 +252,7 @@ parameters:
 secrets: {}
 topic: poc1
 type: kafka-sink
+version: latest
 "#;
         use super::ManagedConnectorSpec;
         let connector_spec: ManagedConnectorSpec =
@@ -250,12 +321,6 @@ impl Encoder for ManageConnectorParameterValue {
                 _ => String::new().encode(dest, version),
             }
         }
-    }
-}
-
-impl ManagedConnectorSpec {
-    pub fn version(&self) -> String {
-        self.version.clone().unwrap_or_else(|| "latest".to_string())
     }
 }
 

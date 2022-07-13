@@ -112,7 +112,7 @@ pub struct ConnectorConfig {
     type_: String,
 
     pub(crate) topic: String,
-    pub(crate) version: Option<String>,
+    pub(crate) version: String,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     parameters: BTreeMap<String, ManageConnectorParameterValue>,
@@ -206,7 +206,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             topic: config.topic,
             parameters,
             secrets: config.secrets,
-            version: config.version,
+            version: config.version.into(),
         }
     }
 }
@@ -263,7 +263,7 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             name: spec.name,
             type_: spec.type_,
             topic: spec.topic,
-            version: spec.version,
+            version: spec.version.to_string(),
             parameters,
             secrets: spec.secrets,
             producer,
@@ -346,4 +346,8 @@ fn error_yaml_tests() {
         .expect_err("This yaml should error");
     #[cfg(unix)]
     assert_eq!("Other(\"couldn't parse \\\"aoeu\\\" into a known SI unit, couldn't parse unit of \\\"aoeu\\\"\")", format!("{:?}", connector_cfg));
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
+        .expect_err("This yaml should error");
+    #[cfg(unix)]
+    assert_eq!("ConnectorConfig(Message(\"missing field `version`\", Some(Pos { marker: Marker { index: 4, line: 1, col: 4 }, path: \".\" })))", format!("{:?}", connector_cfg));
 }
