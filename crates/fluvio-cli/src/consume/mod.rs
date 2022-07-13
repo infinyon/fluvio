@@ -158,29 +158,40 @@ pub struct ConsumeOpt {
     pub array_map: Option<String>,
 
     /// Path to a SmartModule join wasm filee
-    #[clap(long, group("smartmodule_group"))]
+    #[clap(long, group("smartmodule_group"), group("join_group"))]
     pub join: Option<String>,
 
     /// Path to a WASM file for aggregation
-    #[clap(long, group("smartmodule_group"))]
+    #[clap(long, group("smartmodule_group"), group("aggregate_group"))]
     pub aggregate: Option<String>,
 
     /// Path or name to WASM module. This support any of the other
     /// smartmodule types: filter, map, array_map, aggregate, join and filter_map
-    #[clap(long, group("smartmodule_group"))]
+    #[clap(
+        long,
+        group("smartmodule_group"),
+        group("aggregate_group"),
+        group("join_group")
+    )]
     pub smartmodule: Option<String>,
 
-    #[clap(long)]
+    #[clap(long, requires = "join_group")]
     pub join_topic: Option<String>,
 
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
-    #[clap(long)]
+    #[clap(long, requires = "aggregate_group")]
     pub initial: Option<String>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
     /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
-    #[clap(short = 'e', long= "extra-params", parse(try_from_str = parse_key_val), number_of_values = 1)]
+    #[clap(
+        short = 'e',
+        requires = "smartmodule_group",
+        long= "extra-params",
+        parse(try_from_str = parse_key_val),
+        number_of_values = 1
+    )]
     pub extra_params: Option<Vec<(String, String)>>,
 
     /// Isolation level that consumer must respect.
