@@ -36,7 +36,7 @@ impl LogsManagedConnectorOpt {
             ));
         }
 
-        if let Err(_) = Command::new("kubectl").output() {
+        if Command::new("kubectl").output().is_err() {
             return Err(CliError::InvalidArg(
                 "fluvio connector logs requires kubctl to be installed".to_string(),
             ));
