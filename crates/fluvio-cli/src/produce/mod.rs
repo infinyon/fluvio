@@ -230,8 +230,7 @@ impl ProduceOpt {
 
             #[cfg(feature = "stats")]
             if self.is_stats_collect() && self.is_print_live_stats() {
-                self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "")
-                    .await;
+                self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "");
             }
         } else {
             // Read input line-by-line and send as individual records
@@ -242,12 +241,13 @@ impl ProduceOpt {
             self.produce_lines(producer.clone()).await?;
         };
 
+        producer.flush().await?;
+
         #[cfg(feature = "stats")]
         if self.is_stats_collect() {
             producer_summary(&producer, maybe_stats_bar.as_ref(), self.stats_summary).await;
         }
 
-        producer.flush().await?;
         if self.interactive_mode() {
             print_cli_ok!();
         }
@@ -291,8 +291,7 @@ impl ProduceOpt {
                     #[cfg(feature = "stats")]
                     if self.is_stats_collect() {
                         if self.is_print_live_stats() {
-                            self.update_stats_bar(maybe_stats_bar, &producer, &line)
-                                .await;
+                            self.update_stats_bar(maybe_stats_bar, &producer, &line);
                         }
 
                         stats_dataframe_check = write_csv_dataframe(
@@ -335,8 +334,7 @@ impl ProduceOpt {
                     #[cfg(feature = "stats")]
                     if self.is_stats_collect() {
                         if self.is_print_live_stats() {
-                            self.update_stats_bar(maybe_stats_bar, &producer, &line)
-                                .await;
+                            self.update_stats_bar(maybe_stats_bar, &producer, &line);
                         }
 
                         stats_dataframe_check = write_csv_dataframe(
@@ -423,7 +421,7 @@ impl ProduceOpt {
     }
 
     #[cfg(feature = "stats")]
-    async fn update_stats_bar(
+    fn update_stats_bar(
         &self,
         maybe_stats_bar: Option<&ProgressBar>,
         producer: &Arc<TopicProducer>,
