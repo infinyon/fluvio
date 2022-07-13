@@ -204,7 +204,6 @@ pub async fn producer_summary(
     if let Some(producer_stats) = producer.stats().await {
         if let Some(stats_bar) = maybe_stats_bar {
             stats_bar.set_message(format_summary_stats(producer_stats).await);
-            stats_bar.println(" ");
         } else if force_print_stats {
             println!("{}", format_summary_stats(producer_stats).await);
             println!();
