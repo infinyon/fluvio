@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.31 - UNRELEASED
+## Platform Version 0.9.32 - UNRELEASED
+
+## Platform Version 0.9.31 - 2022-07-13
 * Move stream publishers to connection-level context ([#2452](https://github.com/infinyon/fluvio/pull/2452))
 * Prefer ExternalIP to InternalIP if configured in kubernetes ([#2448](https://github.com/infinyon/fluvio/pull/2448))
 * Add `fluvio connector config <connector-name>`  ([#2464](https://github.com/infinyon/fluvio/pull/2464))
