@@ -350,7 +350,7 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             ManagedConnectorParameterValueInner::String(smartmodule_name),
         )) = parameters
             .remove("filter-map")
-            .or(parameters.remove("filter_map"))
+            .or_else(|| parameters.remove("filter_map"))
         {
             (Some(smartmodule_name), Some(SmartModuleType::FilterMap))
         } else {
@@ -362,7 +362,7 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
                 ManagedConnectorParameterValueInner::String(agrgate_initial_value),
             )) = parameters
                 .remove("aggregate-initial-value")
-                .or(parameters.remove("aggregate_initial_value"))
+                .or_else(|| parameters.remove("aggregate_initial_value"))
             {
                 Some(agrgate_initial_value)
             } else {
