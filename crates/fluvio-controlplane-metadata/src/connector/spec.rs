@@ -26,7 +26,7 @@ pub struct ManagedConnectorSpec {
 
     pub topic: String,
 
-    pub parameters: BTreeMap<String, ManageConnectorParameterValue>,
+    pub parameters: BTreeMap<String, ManagedConnectorParameterValue>,
 
     pub secrets: BTreeMap<String, SecretString>,
 }
@@ -107,13 +107,13 @@ impl Encoder for ConnectorVersionInner {
     derive(serde::Serialize),
     serde(rename_all = "camelCase", untagged)
 )]
-pub enum ManageConnectorParameterValueInner {
+pub enum ManagedConnectorParameterValueInner {
     Vec(Vec<String>),
     Map(BTreeMap<String, String>),
     String(String),
 }
 
-impl Default for ManageConnectorParameterValueInner {
+impl Default for ManagedConnectorParameterValueInner {
     fn default() -> Self {
         Self::Vec(Vec::new())
     }
@@ -121,14 +121,14 @@ impl Default for ManageConnectorParameterValueInner {
 
 #[cfg(feature = "use_serde")]
 mod always_string_serialize {
-    use super::ManageConnectorParameterValueInner;
+    use super::ManagedConnectorParameterValueInner;
     use serde::{Deserializer, Deserialize};
     use serde::de::{self, Visitor, SeqAccess, MapAccess};
     use std::fmt;
     use std::collections::BTreeMap;
     struct ParameterValueVisitor;
-    impl<'de> Deserialize<'de> for ManageConnectorParameterValueInner {
-        fn deserialize<D>(deserializer: D) -> Result<ManageConnectorParameterValueInner, D::Error>
+    impl<'de> Deserialize<'de> for ManagedConnectorParameterValueInner {
+        fn deserialize<D>(deserializer: D) -> Result<ManagedConnectorParameterValueInner, D::Error>
         where
             D: Deserializer<'de>,
         {
@@ -137,7 +137,7 @@ mod always_string_serialize {
     }
 
     impl<'de> Visitor<'de> for ParameterValueVisitor {
-        type Value = ManageConnectorParameterValueInner;
+        type Value = ManagedConnectorParameterValueInner;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             formatter.write_str("string, map or sequence")
@@ -187,7 +187,7 @@ mod always_string_serialize {
         where
             E: de::Error,
         {
-            Ok(ManageConnectorParameterValueInner::String(
+            Ok(ManagedConnectorParameterValueInner::String(
                 value.to_string(),
             ))
         }
@@ -201,7 +201,7 @@ mod always_string_serialize {
                 inner.insert(key.clone(), value.clone());
             }
 
-            Ok(ManageConnectorParameterValueInner::Map(inner))
+            Ok(ManagedConnectorParameterValueInner::Map(inner))
         }
 
         fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -212,7 +212,7 @@ mod always_string_serialize {
             while let Some(param) = seq.next_element::<String>()? {
                 vec_inner.push(param);
             }
-            Ok(ManageConnectorParameterValueInner::Vec(vec_inner))
+            Ok(ManagedConnectorParameterValueInner::Vec(vec_inner))
         }
     }
 
@@ -267,43 +267,43 @@ version: latest
     derive(serde::Serialize, serde::Deserialize),
     serde(transparent)
 )]
-pub struct ManageConnectorParameterValue(pub ManageConnectorParameterValueInner);
+pub struct ManagedConnectorParameterValue(pub ManagedConnectorParameterValueInner);
 
-impl From<Vec<String>> for ManageConnectorParameterValue {
-    fn from(vec: Vec<String>) -> ManageConnectorParameterValue {
-        ManageConnectorParameterValue(ManageConnectorParameterValueInner::Vec(vec))
+impl From<Vec<String>> for ManagedConnectorParameterValue {
+    fn from(vec: Vec<String>) -> ManagedConnectorParameterValue {
+        ManagedConnectorParameterValue(ManagedConnectorParameterValueInner::Vec(vec))
     }
 }
-impl From<BTreeMap<String, String>> for ManageConnectorParameterValue {
-    fn from(map: BTreeMap<String, String>) -> ManageConnectorParameterValue {
-        ManageConnectorParameterValue(ManageConnectorParameterValueInner::Map(map))
+impl From<BTreeMap<String, String>> for ManagedConnectorParameterValue {
+    fn from(map: BTreeMap<String, String>) -> ManagedConnectorParameterValue {
+        ManagedConnectorParameterValue(ManagedConnectorParameterValueInner::Map(map))
     }
 }
-impl From<String> for ManageConnectorParameterValue {
-    fn from(inner: String) -> ManageConnectorParameterValue {
-        ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(inner))
+impl From<String> for ManagedConnectorParameterValue {
+    fn from(inner: String) -> ManagedConnectorParameterValue {
+        ManagedConnectorParameterValue(ManagedConnectorParameterValueInner::String(inner))
     }
 }
 
-impl Decoder for ManageConnectorParameterValue {
+impl Decoder for ManagedConnectorParameterValue {
     fn decode<T: Buf>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error> {
         if version >= 8 {
             self.0.decode(src, version)
         } else {
             let mut new_string = String::new();
             new_string.decode(src, version)?;
-            self.0 = ManageConnectorParameterValueInner::String(new_string);
+            self.0 = ManagedConnectorParameterValueInner::String(new_string);
             Ok(())
         }
     }
 }
-impl Encoder for ManageConnectorParameterValue {
+impl Encoder for ManagedConnectorParameterValue {
     fn write_size(&self, version: Version) -> usize {
         if version >= 8 {
             self.0.write_size(version)
         } else {
             match &self.0 {
-                ManageConnectorParameterValueInner::String(ref inner) => inner.write_size(version),
+                ManagedConnectorParameterValueInner::String(ref inner) => inner.write_size(version),
                 _ => String::new().write_size(version),
             }
         }
@@ -315,7 +315,7 @@ impl Encoder for ManageConnectorParameterValue {
             self.0.encode(dest, version)
         } else {
             match &self.0 {
-                ManageConnectorParameterValueInner::String(ref inner) => {
+                ManagedConnectorParameterValueInner::String(ref inner) => {
                     inner.encode(dest, version)
                 }
                 _ => String::new().encode(dest, version),

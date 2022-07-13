@@ -12,8 +12,8 @@ use bytesize::ByteSize;
 
 use fluvio::{Fluvio, Compression};
 use fluvio::metadata::connector::{
-    ManagedConnectorSpec, SecretString, ManageConnectorParameterValue,
-    ManageConnectorParameterValueInner,
+    ManagedConnectorSpec, SecretString, ManagedConnectorParameterValue,
+    ManagedConnectorParameterValueInner,
 };
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
@@ -115,7 +115,7 @@ pub struct ConnectorConfig {
     pub(crate) version: String,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    parameters: BTreeMap<String, ManageConnectorParameterValue>,
+    parameters: BTreeMap<String, ManagedConnectorParameterValue>,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     secrets: BTreeMap<String, SecretString>,
@@ -219,19 +219,19 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             batch_size_string: None,
             batch_size: None,
         };
-        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+        if let Some(ManagedConnectorParameterValue(ManagedConnectorParameterValueInner::String(
             linger,
         ))) = parameters.remove("producer-linger")
         {
             producer.linger = humantime::parse_duration(&linger).ok();
         }
-        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+        if let Some(ManagedConnectorParameterValue(ManagedConnectorParameterValueInner::String(
             compression,
         ))) = parameters.remove("producer-compression")
         {
             producer.compression = Compression::from_str(&compression).ok();
         }
-        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+        if let Some(ManagedConnectorParameterValue(ManagedConnectorParameterValueInner::String(
             batch_size_string,
         ))) = parameters.remove("producer-batch-size")
         {
@@ -249,8 +249,8 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             Some(producer)
         };
 
-        let consumer = if let Some(ManageConnectorParameterValue(
-            ManageConnectorParameterValueInner::String(partition),
+        let consumer = if let Some(ManagedConnectorParameterValue(
+            ManagedConnectorParameterValueInner::String(partition),
         )) = parameters.remove("consumer-partition")
         {
             Some(ConsumerParameters {
