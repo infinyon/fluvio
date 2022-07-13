@@ -1,6 +1,6 @@
-version: 0.2.0
+version: 0.3.0
 name: my-test-mqtt
-type: mqtt
+type: mqtt-source
 topic: my-mqtt
 create_topic: false
 direction: source
@@ -18,7 +18,6 @@ parameters:
   param_6:
   - -10
   - -10.0
-
 
 secrets:
   foo: bar

@@ -160,7 +160,7 @@ pub struct ProducerParameters {
 enum SmartModuleType {
     Filter,
     Map,
-    ArrayMap,
+    Arraymap,
     Aggregate,
     FilterMap,
 }
@@ -170,7 +170,7 @@ impl ToString for SmartModuleType {
         match self {
             SmartModuleType::Filter => "filter",
             SmartModuleType::Map => "map",
-            SmartModuleType::ArrayMap => "array-map",
+            SmartModuleType::Arraymap => "arraymap",
             SmartModuleType::Aggregate => "aggregate",
             SmartModuleType::FilterMap => "filter-map",
         }
@@ -244,7 +244,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             if let Some(smartmodule_type) = smartmodule.type_ {
                 parameters.insert(smartmodule_type.to_string(), smartmodule.name.into());
             } else {
-                parameters.insert("smartmodule-name".to_string(), smartmodule.name.into());
+                parameters.insert("smartmodule".to_string(), smartmodule.name.into());
             }
             // Backwards compatibility for the `aggregate-initial-value` field.
             if let Some(aggregate_initial_value) = smartmodule.aggregate_initial_value {
@@ -323,7 +323,7 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
 
         let (smartmodule_name, smartmodule_type) = if let Some(ManagedConnectorParameterValue(
             ManagedConnectorParameterValueInner::String(smartmodule_name),
-        )) = parameters.remove("smartmodule-name")
+        )) = parameters.remove("smartmodule")
         {
             (Some(smartmodule_name), None)
         } else if let Some(ManagedConnectorParameterValue(
@@ -343,12 +343,14 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             (Some(smartmodule_name), Some(SmartModuleType::Aggregate))
         } else if let Some(ManagedConnectorParameterValue(
             ManagedConnectorParameterValueInner::String(smartmodule_name),
-        )) = parameters.remove("array_map")
+        )) = parameters.remove("arraymap")
         {
-            (Some(smartmodule_name), Some(SmartModuleType::ArrayMap))
+            (Some(smartmodule_name), Some(SmartModuleType::Arraymap))
         } else if let Some(ManagedConnectorParameterValue(
             ManagedConnectorParameterValueInner::String(smartmodule_name),
-        )) = parameters.remove("filter_map")
+        )) = parameters
+            .remove("filter-map")
+            .or(parameters.remove("filter_map"))
         {
             (Some(smartmodule_name), Some(SmartModuleType::FilterMap))
         } else {
@@ -358,7 +360,9 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
         let smartmodule = if let Some(smartmodule_name) = smartmodule_name {
             let aggregate_initial_value = if let Some(ManagedConnectorParameterValue(
                 ManagedConnectorParameterValueInner::String(agrgate_initial_value),
-            )) = parameters.remove("aggregate-initial-value")
+            )) = parameters
+                .remove("aggregate-initial-value")
+                .or(parameters.remove("aggregate_initial_value"))
             {
                 Some(agrgate_initial_value)
             } else {
