@@ -27,19 +27,18 @@ impl LogsManagedConnectorOpt {
     pub async fn process(self) -> Result<(), CliError> {
         let config_file = FluvioConfigFile::load_default_or_new()?;
         let fluvio_config = config_file.config();
-        let current_cluster = fluvio_config
-            .current_cluster()?;
+        let current_cluster = fluvio_config.current_cluster()?;
         let endpoint = current_cluster.endpoint.clone();
 
         if endpoint.ends_with("infinyon.cloud:9003") {
             return Err(CliError::InvalidArg(
-                "fluvio connector logs does not work with fluvio-cloud".to_string()
+                "fluvio connector logs does not work with fluvio-cloud".to_string(),
             ));
         }
 
         if let Err(_) = Command::new("kubectl").output() {
             return Err(CliError::InvalidArg(
-                "fluvio connector logs requires kubctl to be installed".to_string()
+                "fluvio connector logs requires kubctl to be installed".to_string(),
             ));
         }
 
