@@ -171,9 +171,10 @@ pub struct ConsumeOpt {
         long,
         group("smartmodule_group"),
         group("aggregate_group"),
-        group("join_group")
+        group("join_group"),
+        alias = "smartmodule"
     )]
-    pub smartmodule: Option<String>,
+    pub smart_module: Option<String>,
 
     #[clap(long, requires = "join_group")]
     pub join_topic: Option<String>,
@@ -298,7 +299,7 @@ impl ConsumeOpt {
 
         builder.derivedstream(derivedstream);
 
-        let smartmodule = if let Some(name_or_path) = &self.smartmodule {
+        let smartmodule = if let Some(name_or_path) = &self.smart_module {
             let context = if let Some(acc_path) = &self.initial {
                 let accumulator = std::fs::read(acc_path)?;
                 SmartModuleContextData::Aggregate { accumulator }
