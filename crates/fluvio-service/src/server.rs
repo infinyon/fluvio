@@ -152,6 +152,7 @@ where
 mod test {
 
     use std::sync::Arc;
+    use std::sync::atomic::Ordering;
     use std::time::Duration;
 
     use tracing::debug;
@@ -192,7 +193,7 @@ mod test {
         FluvioSocket::connect(&addr).await
     }
 
-    async fn test_client(addr: String, shutdown: Arc<StickyEvent>) {
+    async fn test_client_sync_requests(addr: String) {
         let mut socket = create_client(addr).await.expect("client");
 
         let request = EchoRequest::new("hello".to_owned());
@@ -207,8 +208,27 @@ mod test {
         let reply2 = socket.send(&msg2).await.expect("send");
         trace!("received 2nd reply from server: {:#?}", reply2);
         assert_eq!(reply2.response.msg, "hello2");
+    }
 
-        shutdown.notify();
+    // send 2 requests and drop socket
+    async fn test_client_async_requests(addr: String) {
+        let mut socket = create_client(addr).await.expect("client");
+
+        let request = EchoRequest::new("hello".to_owned());
+        let msg = RequestMessage::new_request(request);
+        socket
+            .get_mut_sink()
+            .send_request(&msg)
+            .await
+            .expect("send");
+
+        let request2 = EchoRequest::new("hello2".to_owned());
+        let msg2 = RequestMessage::new_request(request2);
+        socket
+            .get_mut_sink()
+            .send_request(&msg2)
+            .await
+            .expect("send");
     }
 
     #[fluvio_future::test]
@@ -218,7 +238,13 @@ mod test {
 
         let socket_addr = "127.0.0.1:30001".to_owned();
 
-        let shutdown = create_server(socket_addr.clone()).run();
-        test_client(socket_addr.clone(), shutdown).await;
+        let server = create_server(socket_addr.clone());
+        let service = server.service.clone();
+        let shutdown = server.run();
+        test_client_async_requests(socket_addr.clone()).await;
+
+        test_client_sync_requests(socket_addr.clone()).await;
+        assert_eq!(service.processed_requests.load(Ordering::SeqCst), 4);
+        shutdown.notify();
     }
 }
