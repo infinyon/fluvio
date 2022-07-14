@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-dataplane-protocol"
-version = "0.11.4"
+version = "0.11.5"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "data plane protocol"
@@ -28,7 +28,7 @@ eyre = { version = "0.6", default-features = false }
 thiserror = "1"
 
 # Fluvio dependencies
-fluvio-compression = { version = "0.1.0", path = "../fluvio-compression" }
+fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
 fluvio-future = { version = "0.4.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = [
     "derive",
