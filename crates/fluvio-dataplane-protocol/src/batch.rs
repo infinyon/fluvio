@@ -1,6 +1,7 @@
 use std::io::Error;
 use std::mem::size_of;
 use std::fmt::Debug;
+use bytes::Bytes;
 use fluvio_compression::CompressionError;
 use fluvio_types::PartitionId;
 use tracing::trace;
@@ -37,8 +38,8 @@ pub type MemoryRecords = Vec<Record>;
 /// A type describing Raw records
 /// This structs decodes and encode its bytes as it is. Just the raw bytes of its internal vector.
 /// When decoding, please be sure that your src buffer have the exact number of bytes.
-#[derive(Debug, Default)]
-pub struct RawRecords(pub Vec<u8>);
+#[derive(Debug, Default, Clone)]
+pub struct RawRecords(pub Bytes);
 
 impl Encoder for RawRecords {
     fn write_size(&self, _version: Version) -> usize {
@@ -54,9 +55,7 @@ impl Encoder for RawRecords {
 impl Decoder for RawRecords {
     fn decode<T: Buf>(&mut self, buf: &mut T, _version: Version) -> Result<(), Error> {
         let len = buf.remaining();
-
-        self.0.resize(len, 0);
-        buf.copy_to_slice(&mut self.0);
+        self.0 = buf.copy_to_bytes(len);
         Ok(())
     }
 }
@@ -185,7 +184,7 @@ impl TryFrom<Batch> for Batch<RawRecords> {
         let compression = f.get_compression()?;
         let compressed_records = compression.compress(&buf)?;
         let compressed_records_len = compressed_records.len() as i32;
-        let records = RawRecords(compressed_records);
+        let records = RawRecords(Bytes::from(compressed_records));
 
         Ok(Batch {
             base_offset: f.base_offset,
@@ -364,7 +363,18 @@ where
     }
 }
 
-#[derive(Debug, Decoder, Encoder)]
+impl<R: Clone> Clone for Batch<R> {
+    fn clone(&self) -> Self {
+        Self {
+            base_offset: self.base_offset,
+            batch_len: self.batch_len,
+            header: self.header.clone(),
+            records: self.records.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Decoder, Encoder, Clone)]
 pub struct BatchHeader {
     pub partition_leader_epoch: i32,
     pub magic: i8,
