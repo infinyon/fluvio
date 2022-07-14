@@ -24,11 +24,11 @@ Review Fluvio website:
     - [ ] https://www.fluvio.io/docs/get-started/mac/
     - [ ] https://www.fluvio.io/docs/get-started/raspberry/
     - [ ] https://www.fluvio.io/docs/get-started/cloud/
-2. Sample code is correct (API docs are correct)
-    - [ ] https://www.fluvio.io/api/fluvio/rust/
-    - [ ] https://www.fluvio.io/api/fluvio/python/
-    - [ ] https://www.fluvio.io/api/fluvio/node/
-    - [ ] https://www.fluvio.io/api/fluvio/java/
+2. Sample code is correct (API docs are correct) 
+    - [ ] https://www.fluvio.io/api/official/rust/examples/
+    - [ ] https://www.fluvio.io/api/official/python/examples/
+    - [ ] https://www.fluvio.io/api/official/node/examples/
+    - [ ] https://www.fluvio.io/api/official/java/examples/
 3. Review rest of doc to ensure they are up to date.
     - [ ] https://www.fluvio.io/docs/
 
