@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.32 - UNRELEASED
+* Restrict usage of `--initial`, `--extra-params` and `--join-topic` in `fluvio consume`. Those options only should be accepted when using specific smartmodules. ([#2476](https://github.com/infinyon/fluvio/pull/2476))
 
 ## Platform Version 0.9.31 - 2022-07-13
 * Move stream publishers to connection-level context ([#2452](https://github.com/infinyon/fluvio/pull/2452))
