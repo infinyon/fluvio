@@ -5,6 +5,7 @@
 //!
 use std::process::Command;
 use clap::Parser;
+use color_eyre::owo_colors::OwoColorize;
 use crate::CliError;
 use fluvio::config::ConfigFile as FluvioConfigFile;
 
@@ -29,10 +30,9 @@ impl LogsManagedConnectorOpt {
         let fluvio_config = config_file.config();
         let current_cluster = fluvio_config.current_cluster()?;
         let endpoint = current_cluster.endpoint.clone();
-
-        if endpoint.ends_with("infinyon.cloud:9003") {
+        if endpoint.contains("infinyon.cloud") {
             return Err(CliError::InvalidArg(
-                "fluvio connector logs does not work with fluvio-cloud".to_string(),
+                "fluvio connector logs does not work with fluvio-cloud. Use fluvio cloud connector logs instead".to_string(),
             ));
         }
 
