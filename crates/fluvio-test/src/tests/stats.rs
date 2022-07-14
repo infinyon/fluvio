@@ -167,7 +167,7 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
                 total_latency += round_elapsed;
 
                 // Validate our calculations are within tolerances to the reported values
-                if let Some(frame) = producer.stats().await {
+                if let Some(frame) = producer.stats() {
                     // Print out round report before failing test
                     let mut tolerance_check = false;
                     if let ClientStatsMetricRaw::RunTime(reported) =
