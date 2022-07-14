@@ -18,3 +18,4 @@ flate2 = { version = "1.0.20"}
 snap = { version = "1" }
 lz4_flex = { version = "0.9", default-features = false, features = ["safe-decode", "safe-encode", "frame"] }
 thiserror = "1.0.30"
+bytes = { version = "1.1.0"}
