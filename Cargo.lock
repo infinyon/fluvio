@@ -1975,6 +1975,7 @@ dependencies = [
 name = "fluvio-compression"
 version = "0.1.1"
 dependencies = [
+ "bytes",
  "flate2",
  "lz4_flex",
  "serde",
