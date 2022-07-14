@@ -71,8 +71,8 @@ This is a mostly **manual** workflow
 After performing the release, the release manager should do the following in order
 to prepare for the next release and announce the current release to the community:
 
-
-1. Update files in Fluvio repo, open PR (with the `?template=release_template.md` PR template) and merge
+1. The automated workflow created an issue called [Release Checklist]: VERSION. Add that issue to the corresponding [milestone](https://github.com/infinyon/fluvio/milestone)
+2. Update files in Fluvio repo, open PR (with the `?template=release_template.md` PR template) and merge
     - Update `VERSION` file for next release
       - [ ] Minor version bump the version in the `VERSION` file.
     - Update `CHANGELOG.md` file for next release
@@ -81,8 +81,9 @@ to prepare for the next release and announce the current release to the communit
         - ```## Platform Version X.Y.Z - UNRELEASED```
       - [ ] For version just released, replace `UNRELEASED` date with current date (format as `YYYY-MM-dd`) in `CHANGELOG.md`.
     - Create PR with the `?template=release_template.md` PR template and link the [previously created release tracking issue](#create-a-tracking-issue-for-release) to close.
+3. Close the release milestone after the PR CI completes. This is located on the [milestones](https://github.com/infinyon/fluvio/milestones) page.
 
-2. Announce the release on Discord (`#announcements` channel) and Twitter ([`@fluvio_io`](https://twitter.com/fluvio_io) user).
+4. Announce the release on Discord (`#announcements` channel) and Twitter ([`@fluvio_io`](https://twitter.com/fluvio_io) user).
 
     - Discord announcement Template:
       - Aim to announce ~3 features max. If we have more, point out that release notes includes more)
