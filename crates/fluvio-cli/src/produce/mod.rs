@@ -408,10 +408,8 @@ impl ProduceOpt {
         line: &str,
     ) {
         if self.is_print_live_stats() {
-            if let (Some(stats_bar), Some(producer_stats)) =
-                (maybe_stats_bar, producer.stats().await)
-            {
-                stats_bar.set_message(format_current_stats(producer_stats).await);
+            if let (Some(stats_bar), Some(producer_stats)) = (maybe_stats_bar, producer.stats()) {
+                stats_bar.set_message(format_current_stats(producer_stats));
 
                 if self.interactive_mode() {
                     stats_bar.println(line);

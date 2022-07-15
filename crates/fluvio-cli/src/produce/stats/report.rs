@@ -25,7 +25,7 @@ pub async fn start_csv_report(
             .truncate(true)
             .open(stats_path)?,
     );
-    if let Some(stats) = producer.stats().await {
+    if let Some(stats) = producer.stats() {
         write_line_to_file(
             Some(&mut stats_file),
             stats
@@ -44,7 +44,7 @@ pub async fn write_csv_dataframe(
     last_update_check: i64,
     maybe_stats_file: Option<&mut BufWriter<File>>,
 ) -> Result<i64, CliError> {
-    let last_update = if let Some(dataframe_sample) = &producer.stats().await {
+    let last_update = if let Some(dataframe_sample) = &producer.stats() {
         let last_update = if let ClientStatsMetricRaw::LastUpdated(last) =
             dataframe_sample.get(ClientStatsMetric::LastUpdated)
         {
@@ -83,7 +83,7 @@ pub fn write_line_to_file(
 /// Format current stats into `comfy_table` for alignment purposes
 /// Table contents dependent on what stats producer configured to collect
 /// Resulting `String` is printed by `indicatif::ProgressBar`
-pub async fn format_current_stats(client_stats: ClientStatsDataFrame) -> String {
+pub fn format_current_stats(client_stats: ClientStatsDataFrame) -> String {
     let mut t = Table::new();
     t.load_preset(comfy_table::presets::NOTHING);
 
@@ -201,7 +201,7 @@ pub async fn producer_summary(
     maybe_stats_bar: Option<&ProgressBar>,
     force_print_stats: bool,
 ) {
-    if let Some(producer_stats) = producer.stats().await {
+    if let Some(producer_stats) = producer.stats() {
         if let Some(stats_bar) = maybe_stats_bar {
             stats_bar.set_message(format_summary_stats(producer_stats).await);
         } else if force_print_stats {

@@ -2,6 +2,9 @@
 
 ## Platform Version 0.9.32 - UNRELEASED
 * Restrict usage of `--initial`, `--extra-params` and `--join-topic` in `fluvio consume`. Those options only should be accepted when using specific smartmodules. ([#2476](https://github.com/infinyon/fluvio/pull/2476))
+* Add `Clone` trait to `DefaultProduceRequest`. ([#2482](https://github.com/infinyon/fluvio/pull/2482))
+* Rename `--smartmodule` option in `fluvio consume` to `--smart-module`. `--smartmodule is still an alias for backward compatibility. ([#2485](https://github.com/infinyon/fluvio/issues/2485))
+* Measure latency for stats using macro. ([#2483](https://github.com/infinyon/fluvio/pull/2483))
 * Keep serving incoming requests even if socket closed to write. ([#2484](https://github.com/infinyon/fluvio/pull/2484))
 
 ## Platform Version 0.9.31 - 2022-07-13

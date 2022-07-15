@@ -118,6 +118,37 @@ where
     }
 }
 
+impl<R: Encoder + Decoder + Default + Debug + Clone> Clone for ProduceRequest<R> {
+    fn clone(&self) -> Self {
+        Self {
+            transactional_id: self.transactional_id.clone(),
+            isolation: self.isolation,
+            timeout: self.timeout,
+            topics: self.topics.clone(),
+            data: self.data,
+        }
+    }
+}
+
+impl<R: Encoder + Decoder + Default + Debug + Clone> Clone for TopicProduceData<R> {
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            partitions: self.partitions.clone(),
+            data: self.data,
+        }
+    }
+}
+
+impl<R: Encoder + Decoder + Default + Debug + Clone> Clone for PartitionProduceData<R> {
+    fn clone(&self) -> Self {
+        Self {
+            partition_index: self.partition_index,
+            records: self.records.clone(),
+        }
+    }
+}
+
 /// Isolation is represented in binary format as i16 value (field `acks` in Kafka wire protocol).
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 struct IsolationData(i16);
@@ -245,6 +276,11 @@ mod tests {
     use fluvio_protocol::{Decoder, Encoder};
     use crate::Isolation;
     use crate::produce::DefaultProduceRequest;
+    use crate::produce::TopicProduceData;
+    use crate::produce::PartitionProduceData;
+    use fluvio_protocol::api::Request;
+    use crate::batch::Batch;
+    use crate::record::{Record, RecordData, RecordSet};
 
     #[test]
     fn test_encode_decode_produce_request_isolation_timeout() -> Result<(), Error> {
@@ -254,7 +290,7 @@ mod tests {
             ..Default::default()
         };
 
-        let version = 7;
+        let version = DefaultProduceRequest::DEFAULT_API_VERSION;
         let mut bytes = request.as_bytes(version)?;
 
         let decoded: DefaultProduceRequest = Decoder::decode_from(&mut bytes, version)?;
@@ -272,7 +308,7 @@ mod tests {
             ..Default::default()
         };
 
-        let version = 7;
+        let version = DefaultProduceRequest::DEFAULT_API_VERSION;
         let result = request.as_bytes(version).expect_err("expected error");
 
         assert_eq!(result.kind(), ErrorKind::InvalidInput);
@@ -280,5 +316,39 @@ mod tests {
             result.to_string(),
             "Timeout must fit into 4 bytes integer value"
         );
+    }
+
+    #[test]
+    fn test_default_produce_request_clone() {
+        //given
+        let request = DefaultProduceRequest {
+            transactional_id: Some("transaction_id".to_string()),
+            isolation: Default::default(),
+            timeout: Duration::from_millis(100),
+            topics: vec![TopicProduceData {
+                name: "topic".to_string(),
+                partitions: vec![PartitionProduceData {
+                    partition_index: 1,
+                    records: RecordSet {
+                        batches: vec![Batch::from(vec![Record::new(RecordData::from(
+                            "some raw data",
+                        ))])
+                        .try_into()
+                        .expect("compressed batch")],
+                    },
+                }],
+                data: Default::default(),
+            }],
+            data: Default::default(),
+        };
+        let version = DefaultProduceRequest::DEFAULT_API_VERSION;
+
+        //when
+        let cloned = request.clone();
+        let bytes = request.as_bytes(version).expect("encoded request");
+        let cloned_bytes = cloned.as_bytes(version).expect("encoded cloned request");
+
+        //then
+        assert_eq!(bytes, cloned_bytes);
     }
 }
