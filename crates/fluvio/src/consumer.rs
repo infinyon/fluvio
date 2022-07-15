@@ -401,7 +401,7 @@ where
                 }
 
                 let response_publisher = publisher.clone();
-                let update_stream = stream.map(move |item| {
+                let update_stream = StreamExt::map(stream, move |item| {
                     item.map(|response| {
                         if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                             debug!(last_offset, stream_id, "received last offset from spu");

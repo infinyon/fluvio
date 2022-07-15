@@ -6,6 +6,7 @@
 * Rename `--smartmodule` option in `fluvio consume` to `--smart-module`. `--smartmodule is still an alias for backward compatibility. ([#2485](https://github.com/infinyon/fluvio/issues/2485))
 * Measure latency for stats using macro. ([#2483](https://github.com/infinyon/fluvio/pull/2483))
 * Keep serving incoming requests even if socket closed to write. ([#2484](https://github.com/infinyon/fluvio/pull/2484))
+* Support async response in multiplexed socket. ([#2488](https://github.com/infinyon/fluvio/pull/2488))
 
 ## Platform Version 0.9.31 - 2022-07-13
 * Move stream publishers to connection-level context ([#2452](https://github.com/infinyon/fluvio/pull/2452))
