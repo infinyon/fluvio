@@ -255,10 +255,8 @@ impl PartitionProducer {
 
         #[cfg(feature = "stats")]
         let response = if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
-            let (response, send_latency) = self
-                .client_stats
-                .send_and_measure_latency(&spu_socket, request, total_batch_len)
-                .await?;
+            let (response, send_latency) =
+                crate::measure_latency!(total_batch_len, spu_socket.send_receive(request).await?);
 
             client_stats_update += send_latency;
             response

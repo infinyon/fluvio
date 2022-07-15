@@ -18,11 +18,6 @@ use std::time::Instant;
 use std::sync::Arc;
 use sysinfo::{self, PidExt};
 
-use crate::sockets::VersionedSerialSocket;
-use dataplane::produce::{ProduceRequest, ProduceResponse};
-use dataplane::record::RecordSet;
-use dataplane::batch::RawRecords;
-
 use crate::error::{Result, FluvioError};
 
 /// Ordering used by `std::sync::atomic` operations
@@ -463,30 +458,84 @@ impl ClientStats {
     pub fn run_time(&self) -> i64 {
         self.start.elapsed().as_nanos() as i64
     }
+}
 
-    /// Record the latency of a producer request
-    pub async fn send_and_measure_latency(
-        &self,
-        socket: &VersionedSerialSocket,
-        request: ProduceRequest<RecordSet<RawRecords>>,
-        batch_bytes: u64,
-    ) -> Result<(ProduceResponse, ClientStatsUpdateBuilder)> {
-        let send_start_time = Instant::now();
+#[macro_export]
+macro_rules! measure_latency {
+    ($batch_bytes:ident,$op:expr) => {{
+        let send_start_time = std::time::Instant::now();
 
-        let response = socket.send_receive(request).await?;
+        let result = $op;
 
         let send_latency = send_start_time.elapsed().as_nanos() as u64;
 
-        let mut stats_update = ClientStatsUpdateBuilder::new();
-        stats_update.push(ClientStatsMetricRaw::Latency(send_latency));
+        let mut stats_update = $crate::stats::ClientStatsUpdateBuilder::new();
+        stats_update.push($crate::stats::ClientStatsMetricRaw::Latency(send_latency));
 
-        if batch_bytes > 0 {
+        if $batch_bytes > 0 {
             // Bytes per nanosecond
-            stats_update.push(ClientStatsMetricRaw::Throughput(
-                (batch_bytes / send_latency) as u64,
+            stats_update.push($crate::stats::ClientStatsMetricRaw::Throughput(
+                ($batch_bytes / send_latency) as u64,
             ));
         }
 
-        Ok((response, stats_update))
+        (result, stats_update)
+    }};
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+    use core::matches;
+    use super::*;
+
+    #[test]
+    fn test_measure_latency_sync_operation() {
+        //given
+        let timeout = Duration::from_millis(100);
+        let batch_bytes = 1;
+
+        //when
+        let (result, mut stats_update) = measure_latency!(batch_bytes, {
+            std::thread::sleep(timeout);
+            1u8
+        });
+
+        //then
+        assert!(matches!(
+            stats_update.pop(),
+            Some(ClientStatsMetricRaw::Throughput(_))
+        ));
+        assert!(
+            matches!(stats_update.pop(), Some(ClientStatsMetricRaw::Latency(latency)) if latency > timeout.as_nanos() as u64)
+        );
+        assert_eq!(result, 1u8);
+    }
+
+    #[fluvio_future::test]
+    async fn test_measure_latency_async_operation() {
+        //given
+        let timeout = Duration::from_millis(100);
+        let batch_bytes = 1;
+
+        //when
+        let (result, mut stats_update) = measure_latency!(
+            batch_bytes,
+            async {
+                async_std::task::sleep(timeout).await;
+                1u8
+            }
+            .await
+        );
+
+        //then
+        assert!(matches!(
+            stats_update.pop(),
+            Some(ClientStatsMetricRaw::Throughput(_))
+        ));
+        assert!(
+            matches!(stats_update.pop(), Some(ClientStatsMetricRaw::Latency(latency)) if latency > timeout.as_nanos() as u64)
+        );
+        assert_eq!(result, 1u8);
     }
 }

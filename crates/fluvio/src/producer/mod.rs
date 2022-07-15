@@ -507,7 +507,7 @@ impl TopicProducer {
 
     #[cfg(feature = "stats")]
     /// Return a `ClientStatsDataFrame` to represent the current recorded client stats
-    pub async fn stats(&self) -> Option<ClientStatsDataFrame> {
+    pub fn stats(&self) -> Option<ClientStatsDataFrame> {
         if self.inner.client_stats.stats_collect() != ClientStatsDataCollect::None {
             Some(self.inner.client_stats.get_dataframe())
         } else {
