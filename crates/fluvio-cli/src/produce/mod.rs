@@ -12,7 +12,7 @@ use humantime::parse_duration;
 
 use fluvio::{
     Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-    ProduceOutput, DeliverySemantic, RetryPolicy,
+    ProduceOutput, DeliverySemantic,
 };
 use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
@@ -108,7 +108,7 @@ pub struct ProduceOpt {
     /// Delivery guarantees that producer must respect. Supported values:
     /// at_most_once (AtMostOnce) - send records without waiting from response,
     /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
-    #[clap(long, parse(try_from_str = parse_delivery_semantic))]
+    #[clap(long)]
     pub delivery_semantic: Option<DeliverySemantic>,
 }
 
@@ -472,12 +472,4 @@ async fn init_ctrlc(
         .into());
     }
     Ok(())
-}
-
-pub(crate) fn parse_delivery_semantic(s: &str) -> Result<DeliverySemantic, String> {
-    match s {
-        "at_most_once" | "AtMostOnce" | "atMostOnce" | "atmostonce" => Ok(DeliverySemantic::AtMostOnce),
-        "at_least_once" | "AtLeastOnce" | "atLeastOnce" | "atleastonce" => Ok(DeliverySemantic::AtLeastOnce(RetryPolicy::default())),
-        _ => Err(format!("unrecognized delivery semantic: {}. Supported: at_most_once (AtMostOnce), at_least_once (AtLeastOnce)", s)),
-    }
 }
