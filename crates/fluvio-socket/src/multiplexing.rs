@@ -11,6 +11,7 @@ use std::sync::atomic::Ordering::SeqCst;
 use std::sync::atomic::AtomicI32;
 use std::time::Duration;
 use std::fmt;
+use std::future::Future;
 
 use async_channel::bounded;
 use async_channel::Receiver;
@@ -22,10 +23,11 @@ use fluvio_future::net::ConnectionFd;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
-use tracing::info;
+use tracing::{info, warn};
 use tracing::{debug, error, trace, instrument};
 
 use fluvio_future::timer::sleep;
+use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
@@ -211,6 +213,17 @@ impl MultiplexerSocket {
             },
         }
     }
+    /// send request and get response asynchronously
+    #[instrument(skip(req_msg))]
+    pub async fn send_async<R>(
+        &self,
+        req_msg: RequestMessage<R>,
+    ) -> Result<AsyncResponse<R>, SocketError>
+    where
+        R: Request,
+    {
+        self.create_stream(req_msg, 1).await
+    }
 
     /// create stream response
     #[instrument(skip(self,req_msg), fields(api = R::API_KEY))]
@@ -325,6 +338,17 @@ impl<R: Request> Stream for AsyncResponse<R> {
             }
         } else {
             Poll::Ready(None)
+        }
+    }
+}
+
+impl<R: Request> Future for AsyncResponse<R> {
+    type Output = Result<R::Response, SocketError>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match ready!(self.poll_next(cx)) {
+            Some(next) => Poll::Ready(next),
+            None => Poll::Ready(Err(SocketError::SocketClosed)),
         }
     }
 }
@@ -444,7 +468,6 @@ impl MultiPlexingResponseDispatcher {
                             drop(guard); // unlock
                             serial_sender.1.notify(1);
                             trace!("found serial");
-
                             Ok(())
                         }
                         None => Err(IoError::new(
@@ -459,27 +482,31 @@ impl MultiPlexingResponseDispatcher {
                 }
                 SharedSender::Queue(queue_sender) => {
                     trace!("found stream");
-                    queue_sender.send(Some(msg)).await.map_err(|err| {
-                        IoError::new(
-                            ErrorKind::BrokenPipe,
-                            format!(
-                                "problem sending to queue socket: {}, err: {}",
-                                correlation_id, err
-                            ),
-                        )
-                        .into()
-                    })
+                    // sender was dropped before response arrives
+                    if queue_sender.is_closed() {
+                        debug!("attempt to send data to closed socket: {}", correlation_id);
+                        Ok(())
+                    } else {
+                        queue_sender.send(Some(msg)).await.map_err(|err| {
+                            IoError::new(
+                                ErrorKind::BrokenPipe,
+                                format!(
+                                    "problem sending to queue socket: {}, err: {}",
+                                    correlation_id, err
+                                ),
+                            )
+                            .into()
+                        })
+                    }
                 }
             }
         } else {
-            Err(IoError::new(
-                ErrorKind::BrokenPipe,
-                format!(
-                    "no socket receiver founded for id: {}, abandoning sending",
-                    correlation_id
-                ),
-            )
-            .into())
+            // sender was dropped and unregistered before response arrives
+            debug!(
+                "no socket receiver founded for id: {}, abandoning sending",
+                correlation_id
+            );
+            Ok(())
         }
     }
 }
@@ -550,7 +577,7 @@ mod tests {
 
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 
-        for i in 0..3u16 {
+        for i in 0..4u16 {
             debug!("server: waiting for next msg: {}", i);
             let msg = api_stream.next().await.expect("msg").expect("unwrap");
             debug!("server: msg received: {:#?}", msg);
@@ -649,6 +676,7 @@ mod tests {
             .expect("response");
 
         let multiplexor2 = multiplexer.clone();
+        let multiplexor3 = multiplexer.clone();
 
         let (slow, fast, _) = join3(
             async move {
@@ -698,6 +726,17 @@ mod tests {
         .await;
 
         assert!(slow > fast);
+
+        // create async echo response
+        let echo_request = RequestMessage::new_request(EchoRequest {
+            msg: "fast".to_string(),
+        });
+        let echo_async_response = multiplexor3
+            .send_async(echo_request)
+            .await
+            .expect("async response future");
+        let response = echo_async_response.await.expect("async response");
+        assert_eq!(response.msg, "hello");
     }
 
     #[fluvio_future::test(ignore)]
