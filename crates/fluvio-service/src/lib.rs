@@ -15,7 +15,14 @@ macro_rules! call_service {
             tracing::debug!(api = $msg, "invoking handler");
             let response = $handler.await?;
             tracing::trace!("send back response: {:#?}", &response);
-            $sink.send_response(&response, version).await?;
+            // we do not fast return here because there could be incoming requests to read
+            // even if the socket is closed to write.
+            if let Err(err) = $sink.send_response(&response, version).await {
+                tracing::warn!(
+                    "sending response failed: {}. Client could gave up waiting for the response",
+                    err
+                );
+            }
             tracing::debug!(api = $msg, "finished");
         }
     }};

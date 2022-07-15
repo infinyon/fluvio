@@ -3,6 +3,7 @@
 use std::convert::TryInto;
 use std::io::Error as IoError;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use async_trait::async_trait;
 
@@ -106,11 +107,15 @@ impl TestContext {
 pub(crate) type SharedTestContext = Arc<TestContext>;
 
 #[derive(Debug)]
-pub(crate) struct TestService {}
+pub(crate) struct TestService {
+    pub(crate) processed_requests: AtomicUsize,
+}
 
 impl TestService {
     pub fn new() -> TestService {
-        Self {}
+        Self {
+            processed_requests: Default::default(),
+        }
     }
 }
 
@@ -129,7 +134,7 @@ impl FluvioService for TestService {
     type Context = SharedTestContext;
 
     async fn respond(
-        self: Arc<Self>,
+        mut self: Arc<Self>,
         _context: Self::Context,
         socket: FluvioSocket,
         _connection: ConnectInfo,
@@ -139,14 +144,18 @@ impl FluvioService for TestService {
 
         api_loop!(
             api_stream,
-            TestApiRequest::EchoRequest(request) => call_service!(
+            TestApiRequest::EchoRequest(request) => {
+                call_service!(
                 request,
                 handle_echo_request(request),
                 sink,
                 "echo request handler"
-            ),
+                );
+                self.processed_requests.fetch_add(1, Ordering::SeqCst);
+            },
             TestApiRequest::SaveRequest(_request) =>  {
                 drop(api_stream);
+                self.processed_requests.fetch_add(1, Ordering::SeqCst);
                 //let _orig_socket: FlvSocket  = (sink,stream).into();
                 break;
             }
