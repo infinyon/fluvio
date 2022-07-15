@@ -484,7 +484,7 @@ impl MultiPlexingResponseDispatcher {
                     trace!("found stream");
                     // sender was dropped before response arrives
                     if queue_sender.is_closed() {
-                        debug!("attempt to send data to closed socket: {}", correlation_id);
+                        debug!(correlation_id, "attempt to send data to closed socket");
                         Ok(())
                     } else {
                         queue_sender.send(Some(msg)).await.map_err(|err| {
@@ -503,8 +503,8 @@ impl MultiPlexingResponseDispatcher {
         } else {
             // sender was dropped and unregistered before response arrives
             debug!(
-                "no socket receiver founded for id: {}, abandoning sending",
-                correlation_id
+                correlation_id,
+                "no socket receiver founded, abandoning sending",
             );
             Ok(())
         }
