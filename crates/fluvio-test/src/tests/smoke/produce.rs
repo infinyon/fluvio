@@ -7,6 +7,7 @@ use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::RecordKey;
 use fluvio_command::CommandExt;
+use fluvio::TopicProducerConfigBuilder;
 
 use super::SmokeTestCase;
 use super::message::*;
@@ -36,13 +37,21 @@ pub async fn produce_message_with_api(
     let partition = test_case.environment.partition;
     let produce_iteration = test_case.option.producer_iteration;
     let topic_name = test_case.environment.base_topic_name();
+    let delivery_semantic = test_case.environment.producer_delivery_semantic;
 
     println!(">> start producing message: {{ topic_name }}");
+    println!("delivery semantic: {delivery_semantic}");
 
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
-        let producer = test_driver.create_producer(&topic_name).await;
+        let config = TopicProducerConfigBuilder::default()
+            .delivery_semantic(delivery_semantic)
+            .build()
+            .expect("failed to build config");
+        let producer = test_driver
+            .create_producer_with_config(&topic_name, config)
+            .await;
 
         debug!(base_offset, "created producer");
 
