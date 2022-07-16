@@ -171,15 +171,6 @@ where
     }
 }
 
-impl<R: Clone> Clone for RequestMessage<R> {
-    fn clone(&self) -> Self {
-        Self {
-            header: self.header.clone(),
-            request: self.request.clone(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
