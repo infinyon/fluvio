@@ -116,13 +116,14 @@ impl Cleaner {
             Duration::from_secs(self.replica_config.retention_seconds.get() as u64);
         let read = self.segments.read().await;
         let expired_segments = read.find_expired_segments(&retention_secs);
+        let total = read.len();
+        drop(read);
         debug!(
             seconds = retention_secs.as_secs(),
-            total = read.len(),
+            total = total,
             expired = expired_segments.len(),
             "expired segments"
         );
-        drop(read);
         if !expired_segments.is_empty() {
             self.segments.remove_segments(&expired_segments).await;
             let read = self.segments.read().await;
