@@ -6,6 +6,7 @@
 * Measure latency for stats using macro. ([#2483](https://github.com/infinyon/fluvio/pull/2483))
 * Keep serving incoming requests even if socket closed to write. ([#2484](https://github.com/infinyon/fluvio/pull/2484))
 * Support async response in multiplexed socket. ([#2488](https://github.com/infinyon/fluvio/pull/2488))
+* Drop write lock before async IO operations. ([#2490](https://github.com/infinyon/fluvio/pull/2490))
 
 ## Platform Version 0.9.31 - 2022-07-13
 * Move stream publishers to connection-level context ([#2452](https://github.com/infinyon/fluvio/pull/2452))

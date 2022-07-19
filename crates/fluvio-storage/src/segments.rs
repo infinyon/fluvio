@@ -148,6 +148,7 @@ impl SharedSegments {
         let mut write = self.write().await;
 
         if let Some((old_segment, min_offset)) = write.remove_segment(base_offset) {
+            drop(write);
             self.min_offset.store(min_offset, MEM_ORDER);
             if let Err(err) = old_segment.remove().await {
                 error!("failed to remove segment: {:#?}", err);
