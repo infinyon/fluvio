@@ -344,14 +344,6 @@ impl<R: BatchRecords> Encoder for RecordSet<R> {
     }
 }
 
-impl<R: Clone> Clone for RecordSet<R> {
-    fn clone(&self) -> Self {
-        Self {
-            batches: self.batches.clone(),
-        }
-    }
-}
-
 #[derive(Decoder, Default, Encoder, Debug, Clone)]
 pub struct RecordHeader {
     attributes: i8,

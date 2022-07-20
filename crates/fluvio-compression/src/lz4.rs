@@ -1,14 +1,13 @@
 use std::io::{Read, Write};
-use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::error::CompressionError;
 use lz4_flex::frame::{FrameDecoder, FrameEncoder};
 
-pub fn compress(src: &[u8]) -> Result<Bytes, CompressionError> {
-    let buf = BytesMut::with_capacity(src.len());
-    let mut encoder = FrameEncoder::new(buf.writer());
+pub fn compress(src: &[u8]) -> Result<Vec<u8>, CompressionError> {
+    let buf = Vec::with_capacity(src.len());
+    let mut encoder = FrameEncoder::new(buf);
     encoder.write_all(src)?;
-    Ok(encoder.finish()?.into_inner().freeze())
+    Ok(encoder.finish()?)
 }
 
 pub fn uncompress<T: Read>(src: T) -> Result<Vec<u8>, CompressionError> {
@@ -20,7 +19,6 @@ pub fn uncompress<T: Read>(src: T) -> Result<Vec<u8>, CompressionError> {
 
 #[cfg(test)]
 mod tests {
-    use bytes::Buf;
     use super::*;
 
     #[test]
@@ -30,7 +28,7 @@ mod tests {
 
         assert!(compressed.len() < text.as_bytes().len());
 
-        let uncompressed = String::from_utf8(uncompress(compressed.reader()).unwrap()).unwrap();
+        let uncompressed = String::from_utf8(uncompress(compressed.as_slice()).unwrap()).unwrap();
 
         assert_eq!(uncompressed, text);
     }
