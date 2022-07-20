@@ -73,7 +73,7 @@ fluvio-smartengine = { path = "../fluvio-smartengine" }
 once_cell = "1.5.2"
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-future = { version = "0.4.0", features = ["fixture", "subscriber"] }
-derive_builder = { version = "0.10.0" }
+derive_builder = { version = "0.11.0" }
 dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
     "fixture",
 ] }
