@@ -62,7 +62,7 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
 dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", features = [
     "memory_batch",
 ], package = "fluvio-dataplane-protocol" }
-fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
+fluvio-compression = { version = "0.1.0", path = "../fluvio-compression" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "4.0.0"

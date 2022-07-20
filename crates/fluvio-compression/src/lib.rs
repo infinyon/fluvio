@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use bytes::Bytes;
 
 mod error;
 
@@ -59,9 +58,9 @@ impl FromStr for Compression {
 
 impl Compression {
     /// Compress the given data, returning the compressed data
-    pub fn compress(&self, src: &[u8]) -> Result<Bytes, CompressionError> {
+    pub fn compress(&self, src: &[u8]) -> Result<Vec<u8>, CompressionError> {
         match *self {
-            Compression::None => Ok(Bytes::copy_from_slice(src)),
+            Compression::None => Ok(src.to_vec()),
             Compression::Gzip => gzip::compress(src),
             Compression::Snappy => snappy::compress(src),
             Compression::Lz4 => lz4::compress(src),
