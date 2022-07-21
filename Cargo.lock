@@ -2504,7 +2504,7 @@ dependencies = [
  "futures-lite",
  "hdrhistogram",
  "indicatif",
- "inventory",
+ "inventory 0.3.0",
  "md-5",
  "nix",
  "rand 0.8.5",
@@ -2528,7 +2528,7 @@ dependencies = [
  "fluvio-future 0.4.1",
  "fluvio-test-util",
  "inflections",
- "inventory",
+ "inventory 0.1.11",
  "nix",
  "proc-macro2",
  "quote",
@@ -2568,7 +2568,7 @@ dependencies = [
  "futures-lite",
  "hdrhistogram",
  "humantime",
- "inventory",
+ "inventory 0.3.0",
  "once_cell",
  "proc-macro2",
  "quote",
@@ -3333,6 +3333,16 @@ dependencies = [
  "ctor",
  "ghost",
  "inventory-impl",
+]
+
+[[package]]
+name = "inventory"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0257e268c91daba296499206db5dd5a058875936bec3d8429b5f3e20ec9dc9a"
+dependencies = [
+ "ctor",
+ "ghost",
 ]
 
 [[package]]

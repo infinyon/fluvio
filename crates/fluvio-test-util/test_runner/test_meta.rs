@@ -6,26 +6,25 @@ use crate::test_meta::environment::EnvDetail;
 
 #[derive(Debug)]
 pub struct FluvioTestMeta {
-    pub name: String,
+    pub name: &'static str,
     pub test_fn: fn(TestDriver, TestCase) -> Result<TestResult, TestResult>,
     pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
     pub requirements: fn() -> TestRequirements,
 }
 
 inventory::collect!(FluvioTestMeta);
-
 impl FluvioTestMeta {
     pub fn all_test_names() -> Vec<&'static str> {
         inventory::iter::<Self>
             .into_iter()
-            .map(|x| x.name.as_str())
+            .map(|x| x.name)
             .collect::<Vec<&str>>()
     }
 
-    pub fn from_name<S: AsRef<str>>(test_name: S) -> Option<&'static Self> {
+    pub fn from_name(test_name: String) -> Option<&'static Self> {
         inventory::iter::<Self>
             .into_iter()
-            .find(|t| t.name == test_name.as_ref())
+            .find(|t| t.name == test_name)
     }
 
     pub fn set_topic(test_reqs: &TestRequirements, test_case: &mut TestCase) {

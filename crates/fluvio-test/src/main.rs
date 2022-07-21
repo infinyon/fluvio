@@ -35,7 +35,7 @@ fn main() {
 
     // Get test from inventory
     let test_meta =
-        FluvioTestMeta::from_name(&test_name).expect("StructOpt should have caught this error");
+        FluvioTestMeta::from_name(test_name.clone()).expect("StructOpt should have caught this error");
 
     let mut subcommand = vec![test_name.clone()];
 
