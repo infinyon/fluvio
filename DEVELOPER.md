@@ -10,21 +10,20 @@ Table of contents:
 
 ---
 
-Thank you for joining Fluvio community. The goal of this document is to provide everything you need to get started with developing Fluvio.
+Thank you for joining the Fluvio community.  The goal of this document is to provide everything you need to start developing Fluvio.
 
 Examples should work with the following platforms:
 
-- MacOS X
+- macOS X
 - Linux
 
 Other platforms such as Windows can be made to work, but we haven't tried them yet.
 
-To test and run services, you need to get access to development Kubernetes cluster.
-Our guide uses Minikube as examples because it is easy to it get it started,
-but you can use another Kubernetes cluster as well.
+To test and run services, you need to get access to the development Kubernetes cluster.
+Our guide uses Minikube as an example because it is easy to get it started, but you can use another Kubernetes cluster as well.
 Please see [Kubernetes](https://kubernetes.io) for setting up a development cluster.
 
-Please read [doc](https://www.fluvio.io) for technical arch and operation guide.
+Please read [doc](https://www.fluvio.io) for a technical arch and operation guide. 
 
 ---
 
@@ -36,7 +35,7 @@ Please read [doc](https://www.fluvio.io) for technical arch and operation guide.
 
 Please follow [setup](https://www.rust-lang.org/tools/install) instructions to install Rust and Cargo.
 
-### Buildtime dependencies
+### Build time dependencies
 * make
 * zig
 * lld (v14)
@@ -46,7 +45,7 @@ Please follow [setup](https://www.rust-lang.org/tools/install) instructions to i
 
 Kubernetes is required for running Fluvio.
 
-Following Kubernetes distribution please use one of the following supported kubernetes distros to set up Kubernetes Cluster
+Following Kubernetes distribution, please use one of the following supported kubernetes distros to set up Kubernetes Cluster.
 
 * [Rancher desktop](https://rancherdesktop.io)
 * [k3d](https://k3d.io)
@@ -57,13 +56,13 @@ Following Kubernetes distribution please use one of the following supported kube
 
 Helm is used for installing Fluvio on Kubernetes.
 
-Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install helm
+Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install the helm.
 
 ### Testing dependencies
 
 #### Installing Bats-core
 
-Bats-core is used for our CLI-based testing
+Bats-core is used for our CLI-based testing.
 
 Please follow the [bats-core](https://bats-core.readthedocs.io/en/stable/installation.html) installation guide.
 
@@ -85,7 +84,7 @@ You can build from the source code using `make`.  The following targets are avai
 
 ### Build Pre-requisites
 
-Zig and LLD(version 12 or higher) is required to build the image.
+Zig and LLD(version 12 or higher) are required to build the image.
 
 For mac:
 
@@ -103,15 +102,13 @@ export FLUVIO_BUILD_LLD=lld-12
 
 ### Problem installing lld
 
-If you have problem installing `lld-14`, please see: https://apt.llvm.org.
+If you have a problem installing `lld-14`, please see https://apt.llvm.org.
 
 ## Starting Fluvio cluster for development
 
 ### Optional: Download a published version of Fluvio
 
-Instead of building Fluvio, you would prefer to just download it and get to work,
-you can use our one-line installation script. You can use it to install the latest
-release or prerelease, or to install a specific version:
+Instead of building Fluvio, you may want to prefer just to download it and get to work.  You can use our one-line installation script.  You can use it to install the latest release or prerelease, or install a specific version:
 
 ```
 $ curl -fsS https://packages.fluvio.io/v1/install.sh | bash                 # Install latest release
@@ -120,7 +117,7 @@ $ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=x.y.z bash   # In
 ```
 
 
-### Working with both Release and develop version of Flvuio
+### Working with both Release and developed version of Flvuio
 
 The next step is very important, as it will help you to prevent subtle development
 bugs. Fluvio is built in two separate pieces, `fluvio` (the CLI), and `fluvio-run`
@@ -149,7 +146,7 @@ both `fluvio-run` and `fluvio`, then execute `fluvio` and pass the arguments to 
 
 ### Kubernetes as a requirement
 
-Kubernetes is currently a requirement for running Fluvio. We use Kubernetes to manage Fluvio's metadata. Running in "local" mode still requires kubernetes, however, Fluvio's processes run locally instead of within Kubernetes pods.
+Kubernetes is currently a requirement for running Fluvio. We use Kubernetes to manage Fluvio's metadata. Running in "local" mode still requires kubernetes.  Fluvio's processes run locally instead of within Kubernetes pods.
 
 
 * Default mode: [Kubernetes-based Fluvio cluster](#kubernetes-based-fluvio-cluster)
@@ -157,8 +154,8 @@ Kubernetes is currently a requirement for running Fluvio. We use Kubernetes to m
 
 ### Kubernetes-based Fluvio cluster
 
-If you don't have an existing Kubernetes cluster, you can use following scripts to prepare your Kubernetes cluster for running Fluvio.
-This is not required if you have an existing K8 cluster such as Rancher desktop.
+If you don't have an existing Kubernetes cluster, you can use the following scripts to prepare your Kubernetes cluster for running Fluvio.
+This is not required if you have an existing K8 cluster such as a sRancher desktop.
 
 For minikube:
 ```
@@ -252,7 +249,7 @@ Fluvio uses default storageclass used in the current Kubernetes but can be overr
 
 ### Running Fluvio cluster using native binaries
 
-In this mode, we run SC and SPU as the local process.  This makes it easier to run and troubleshoot Fluvio locally, but it is not recommended for production use.
+In this mode, we run SC and SPU as the local processes.  This makes it easier to run and troubleshoot Fluvio locally, but it is not recommended for production use.
 
 **Note: Running Kubernetes is still required**
 
