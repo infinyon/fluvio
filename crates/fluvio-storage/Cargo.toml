@@ -29,7 +29,7 @@ async-trait = "0.1.18"
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false, optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
 async-lock = "2.4.0"
-derive_builder = "0.10.2"
+derive_builder = "0.11.0"
 thiserror = "1"
 memmap = { version = "0.7.0" }
 tokio = { version = "1.3.0", features = ["macros"] }
@@ -55,4 +55,4 @@ fluvio-storage = { path = ".", features = ["fixture"] }
 dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
     "fixture",
 ] }
-derive_builder = { version = "0.10.0" }
+derive_builder = { version = "0.11.0" }
