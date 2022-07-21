@@ -917,6 +917,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "comfy-table"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "121d8a5b0346092c18a4b2fd6f620d7a06f0eb7ac0a45860939a0884bc579c56"
+dependencies = [
+ "crossterm 0.23.2",
+ "strum 0.24.1",
+ "strum_macros 0.24.2",
+ "unicode-width",
+]
+
+[[package]]
 name = "commoncrypto"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1850,7 +1862,7 @@ dependencies = [
  "clap_complete",
  "color-eyre",
  "colored",
- "comfy-table",
+ "comfy-table 5.0.1",
  "content_inspector",
  "crossterm 0.24.0",
  "ctrlc",
@@ -1926,7 +1938,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "colored",
- "comfy-table",
+ "comfy-table 5.0.1",
  "derive_builder",
  "directories",
  "duct",
@@ -2050,7 +2062,7 @@ version = "0.8.1"
 dependencies = [
  "async-trait",
  "clap",
- "comfy-table",
+ "comfy-table 5.0.1",
  "fluvio",
  "fluvio-package-index",
  "futures-lite",
@@ -2485,7 +2497,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "clap",
- "comfy-table",
+ "comfy-table 5.0.1",
  "crc",
  "crossbeam-channel",
  "fluvio",
@@ -2504,7 +2516,7 @@ dependencies = [
  "futures-lite",
  "hdrhistogram",
  "indicatif",
- "inventory 0.3.0",
+ "inventory",
  "md-5",
  "nix",
  "rand 0.8.5",
@@ -2515,7 +2527,7 @@ dependencies = [
  "sysinfo",
  "tokio",
  "tracing",
- "uuid 1.1.2",
+ "uuid",
 ]
 
 [[package]]
@@ -2528,7 +2540,7 @@ dependencies = [
  "fluvio-future 0.4.1",
  "fluvio-test-util",
  "inflections",
- "inventory 0.1.11",
+ "inventory",
  "nix",
  "proc-macro2",
  "quote",
@@ -2558,7 +2570,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "clap",
- "comfy-table",
+ "comfy-table 6.0.0",
  "dyn-clone",
  "fluvio",
  "fluvio-cluster",
@@ -2568,7 +2580,7 @@ dependencies = [
  "futures-lite",
  "hdrhistogram",
  "humantime",
- "inventory 0.3.0",
+ "inventory",
  "once_cell",
  "proc-macro2",
  "quote",
@@ -2578,7 +2590,7 @@ dependencies = [
  "syn",
  "tokio",
  "tracing",
- "uuid 0.8.2",
+ "uuid",
 ]
 
 [[package]]
@@ -3326,34 +3338,12 @@ dependencies = [
 
 [[package]]
 name = "inventory"
-version = "0.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0eb5160c60ba1e809707918ee329adb99d222888155835c6feedba19f6c3fd4"
-dependencies = [
- "ctor",
- "ghost",
- "inventory-impl",
-]
-
-[[package]]
-name = "inventory"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0257e268c91daba296499206db5dd5a058875936bec3d8429b5f3e20ec9dc9a"
 dependencies = [
  "ctor",
  "ghost",
-]
-
-[[package]]
-name = "inventory-impl"
-version = "0.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e41b53715c6f0c4be49510bb82dee2c1e51c8586d885abe65396e82ed518548"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -5715,16 +5705,6 @@ name = "utf8parse"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "936e4b492acfd135421d8dca4b1aa80a7bfc26e702ef3af710e0752684df5372"
-
-[[package]]
-name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom 0.2.7",
- "serde",
-]
 
 [[package]]
 name = "uuid"

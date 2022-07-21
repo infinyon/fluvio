@@ -34,7 +34,7 @@ impl EnvDetail for EnvironmentSetup {
     fn set_base_topic_name(&mut self, topic: String) {
         // Append a random string to the end. Multiple tests will use different topics
         let maybe_salted = if self.topic_random {
-            let salt = Uuid::new_v4().to_simple().to_string();
+            let salt = Uuid::new_v4().simple().to_string();
 
             // Save the salt for tests to use
             self.topic_salt = Some(salt.clone());
