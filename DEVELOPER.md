@@ -215,9 +215,9 @@ fluvio-sys      default         1               2022-07-20 16:41:38.112869 -0700
 ```
 
 There is always `fluvio-sys` chart installed.  For kubernetes, `fluvio` chart is installed.
-Helm charts are generated from CLI installer instead of from helm registry. 
+Helm charts are generated from CLI installer instead of from the helm registry. 
 
-You should two pods running:
+You should have two pods running:
 ```
 $> kubectl get pods
 NAME                        READY   STATUS    RESTARTS   AGE
@@ -236,7 +236,7 @@ fluvio-spg-main      ClusterIP   None           <none>        9005/TCP,9006/TCP 
 fluvio-spu-main-0    NodePort    10.43.88.71    <none>        9005:30004/TCP      5m6s
 ```
 
-Fluvio uses `NodePort` to expose SC and SPU to outside world.
+Fluvio uses `NodePort` to expose SC and SPU to the outside world.
 
 And storage provisioning:
 ```
@@ -245,7 +245,7 @@ NAME                     STATUS   VOLUME                                     CAP
 data-fluvio-spg-main-0   Bound    pvc-dff4c156-5718-4b41-a825-cee7d07fd997   10Gi       RWO            local-path     6m31s
 ```
 
-Fluvio uses default storageclass used in the current Kubernetes but can be overriden using helm config. 
+Fluvio uses the default storage class used in the current Kubernetes but can be overridden using helm config.  
 
 ### Running Fluvio cluster using native binaries
 
@@ -255,7 +255,7 @@ In this mode, we run SC and SPU as the local processes.  This makes it easier to
 
 #### Building Fluvio CLI and native binaries
 
-In the native mode, Fluvio binarie uses native OS call rather than Linux API.
+In the native mode, Fluvio binaries use native OS calls rather than Linux API.
 
 ```
 $ make build-cli build-cluster
@@ -263,7 +263,7 @@ $ make build-cli build-cluster
 
 #### Starting the Fluvio cluster using native binaries
 
-Make sure you remove existing Fluvio cluster first.
+Make sure you remove the existing Fluvio cluster first.
 
 ```
 $ flvd cluster delete
@@ -273,7 +273,7 @@ Uninstalled fluvio local components
 Objects and secrets have been cleaned up
 ```
 
-Then you can start Fluvio cluster using local mode which uses native binaries:
+Then you can start the Fluvio cluster using local mode, which uses native binaries.
 
 ```
 $ flvd cluster start --local --develop
@@ -304,7 +304,7 @@ ps -ef | grep fluvio
   501 62035   989   0  4:52PM ttys000    0:00.00 grep fluvio
 ```
 
-There are 2 processes for each SC and SPU because there are wrapper processes for SC and SPU.
+There are two processes for each SC and SPU because there are wrapper processes for SC and SPU.
 
 Since we still leverages Kubernetes CRDs, sys chart is still installed.
 ```
@@ -379,10 +379,10 @@ At this point, you can use control-c to stop the process or control-z to put in 
 
 ##### Starting SPU
 
-After SC is started, you can start adding unmanaged (custom) SPUs.
+After SC process is started, you can begin adding unmanaged (custom) SPUs.
 
-For each SPU, first register the SPU. For example, the following registers a SPU with ID 5001 with public and private ports.
-Normally, you only need to register a SPU once.
+For each SPU, first, register the SPU.  For example, the following registers an SPU with ID 5001 with public and private ports.
+Typically, you only need to register an SPU once.
 
 ```
 $ flvd cluster spu register --id 5001 --public-server 0.0.0.0:9010 --private-server  0.0.0.0:9011
@@ -403,7 +403,7 @@ $ flvd cluster spu list
  5001  custom-spu-5001  Online  "custom"   -    0.0.0.0:9010  0.0.0.0:9011
 ```
 
-You can launch additional SPU as needed, just ensure that ports doesn't conflict with each other.
+You can launch additional SPU as needed; just ensure that ports don't conflict with each other.
 For example, to add 2nd:
 
 ```
@@ -414,7 +414,7 @@ $ cargo run --bin fluvio-run -- spu -i 5002 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 
 ### Setting Log level
 
-You can set variou log level [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
+You can set various log levels [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
 
 For example, to start cluster using log level `info` using cluster start
 ```
@@ -429,13 +429,13 @@ RUST_LOG=fluvio=info cargo run --bin fluvio-run sc --local
 ### Deleting Fluvio cluster
 
 
-To remove all fluvio related object in the Kubernetes cluster, you can use the following command:
+To remove all fluvio related objects in the Kubernetes cluster, you can use the following command:
 
 ```
 $ flvd cluster delete
 ```
 
-Note that when you uninstall cluster, CLI will remove all related objects such as
+Note that when you uninstall the cluster, CLI will remove all related objects such as
 
 - Topics
 - Partitions
