@@ -1,0 +1,27 @@
+[package]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio Test - TestCase derive macro"
+edition = "2021"
+license = "Apache-2.0"
+name = "fluvio-test-case-derive"
+publish = false
+repository = "https://github.com/infinyon/fluvio"
+version = "0.0.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = {version = "1.0", features = ["full"]}
+
+[dev-dependencies]
+clap = {version = "3.1.8", features = ["std", "derive"], default-features = false}
+crossbeam-channel = "0.5"
+fluvio = {path = "../fluvio"}
+fluvio-future = {version = "0.4.0", features = ["task", "timer", "subscriber", "fixture"]}
+nix = "0.24"
+tokio = {version = "1.4", features = ["macros"]}
+tracing = "0.1"
+trybuild = {git = "https://github.com/infinyon/trybuild", branch = "check_option"}

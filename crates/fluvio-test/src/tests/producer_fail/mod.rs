@@ -1,43 +1,13 @@
-use std::any::Any;
-
 use fluvio::{RecordKey, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin, FluvioError};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_case_derive::MyTestCase;
 
-#[derive(Debug, Clone)]
-pub struct ProducerBatchTestCase {
-    pub environment: EnvironmentSetup,
-    pub option: ProduceBatchTestOption,
-}
-
-impl From<TestCase> for ProducerBatchTestCase {
-    fn from(test_case: TestCase) -> Self {
-        let producer_option = test_case
-            .option
-            .as_any()
-            .downcast_ref::<ProduceBatchTestOption>()
-            .expect("ProducerBatchTestOption")
-            .to_owned();
-        Self {
-            environment: test_case.environment,
-            option: producer_option,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio Producer Batch Test")]
 pub struct ProduceBatchTestOption {}
-
-impl TestOption for ProduceBatchTestOption {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
 
 #[fluvio_test(topic = "batch", async)]
 pub async fn produce_batch(

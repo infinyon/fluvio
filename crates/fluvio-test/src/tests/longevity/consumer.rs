@@ -16,7 +16,7 @@ use fluvio::dataplane::record::ConsumerRecord;
 use fluvio::dataplane::ErrorCode;
 use tracing::info;
 
-use super::LongevityTestCase;
+use super::MyTestCase;
 use crate::tests::TestRecord;
 
 // This is for joining multiple topic support per process
@@ -32,7 +32,7 @@ async fn consume_from_stream(
 }
 
 // supports multiple topics
-pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase, consumer_id: u32) {
+pub async fn consumer_stream(test_driver: TestDriver, option: MyTestCase, consumer_id: u32) {
     // Vec of consumer streams
     let mut streams = Vec::new();
     // Create channel here

@@ -1,40 +1,17 @@
 pub mod producer;
 
 use core::panic;
-use std::any::Any;
 use std::time::Duration;
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_case_derive::MyTestCase;
 use fluvio_test_util::{async_process, fork_and_wait};
 
 use fluvio::{Offset, RecordKey};
 use futures::StreamExt;
 
-#[derive(Debug, Clone)]
-pub struct GeneratorTestCase {
-    pub environment: EnvironmentSetup,
-    pub option: GeneratorTestOption,
-}
-
-impl From<TestCase> for GeneratorTestCase {
-    fn from(test_case: TestCase) -> Self {
-        let data_generator_option = test_case
-            .option
-            .as_any()
-            .downcast_ref::<GeneratorTestOption>()
-            .expect("GeneratorTestOption")
-            .to_owned();
-        GeneratorTestCase {
-            environment: test_case.environment,
-            option: data_generator_option,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio Longevity Test")]
 pub struct GeneratorTestOption {
     /// Opt-in to detailed output printed to stdout
@@ -42,15 +19,9 @@ pub struct GeneratorTestOption {
     verbose: bool,
 }
 
-impl TestOption for GeneratorTestOption {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 #[fluvio_test(name = "generator", topic = "generated", timeout = false)]
 pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
-    let option: GeneratorTestCase = test_case.into();
+    let option: MyTestCase = test_case.into();
 
     println!("Starting data generation");
 

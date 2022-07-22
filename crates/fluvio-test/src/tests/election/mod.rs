@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::time::Duration;
 
 use futures_lite::stream::StreamExt;
@@ -9,42 +8,14 @@ use fluvio_future::timer::sleep;
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_case_derive::MyTestCase;
 
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
 
-#[derive(Debug, Clone)]
-pub struct ElectionTestCase {
-    pub environment: EnvironmentSetup,
-    pub option: ElectionTestOption,
-}
-
-impl From<TestCase> for ElectionTestCase {
-    fn from(test_case: TestCase) -> Self {
-        let election_option = test_case
-            .option
-            .as_any()
-            .downcast_ref::<ElectionTestOption>()
-            .expect("ElectionTestOption")
-            .to_owned();
-        Self {
-            environment: test_case.environment,
-            option: election_option,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio ELECTION Test")]
 pub struct ElectionTestOption {}
-
-impl TestOption for ElectionTestOption {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
 
 #[fluvio_test(topic = "test", async)]
 pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
