@@ -1,7 +1,7 @@
-use fluvio::RecordKey;
+use fluvio::{RecordKey, TopicProducerConfig, TopicProducerConfigBuilder};
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
-use std::time::SystemTime;
+use std::time::{Duration, Instant, SystemTime};
 use tracing::debug;
 
 use super::LongevityTestCase;
@@ -9,6 +9,8 @@ use crate::tests::TestRecordBuilder;
 
 pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, producer_id: u32) {
     debug!("About to get a producer");
+
+    let linger = Duration::from_millis(option.environment.producer_linger.unwrap_or(100));
 
     let mut producers = Vec::new();
 
@@ -19,7 +21,15 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
             format!("{}-{}", option.environment.base_topic_name(), t)
         };
 
-        let producer = test_driver.create_producer(&topic_name).await;
+        let config: TopicProducerConfig = TopicProducerConfigBuilder::default()
+            .linger(linger)
+            .batch_size(option.environment.producer_batch_size.unwrap_or(16_384))
+            .build()
+            .unwrap();
+
+        let producer = test_driver
+            .create_producer_with_config(&topic_name, config)
+            .await;
 
         producers.push(producer);
     }
@@ -29,6 +39,9 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
 
     let mut records_sent = 0;
     let test_start = SystemTime::now();
+
+    let flush_period = linger * 10; // sync with producer flush pace periodically to do back pressure
+    let mut last_flush_time = Instant::now();
 
     debug!("About to start producer loop");
     while test_start.elapsed().unwrap() <= option.environment.timeout {
@@ -60,6 +73,13 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
                 .send_count(p, RecordKey::NULL, record_json.clone())
                 .await
                 .expect("Producer Send failed");
+        }
+
+        if last_flush_time.elapsed() > flush_period {
+            for p in &producers {
+                let _ = p.flush().await;
+            }
+            last_flush_time = Instant::now();
         }
 
         records_sent += 1;
