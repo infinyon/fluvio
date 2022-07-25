@@ -1,3 +1,19 @@
+
+
+# Dockerfile for SmartModule development
+
+The dev-tools/smartmodule.Dockerfile creates a container for a development environment supporting developing rust smartmodules.
+
+Build the container with:
+    
+    $ cd dev-tools
+    $ docker build -t sm-dev . -f smartmodule.Dockerfile
+
+The dockerfile will install rust and other development dependencies, including creating and building an initial example project. Start the container with:
+
+    $ docker run -it sm-dev
+
+
 # To start local cluster with custom SPU 5001,5002,5003
 
 For SPU 5001
