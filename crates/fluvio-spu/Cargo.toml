@@ -46,7 +46,7 @@ fluvio-types = { features = [
     "events",
 ], path = "../fluvio-types" }
 fluvio-storage = { path = "../fluvio-storage" }
-fluvio-compression = { version = "0.1.0", path = "../fluvio-compression" }
+fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
 fluvio-controlplane = { path = "../fluvio-controlplane" }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
 fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
