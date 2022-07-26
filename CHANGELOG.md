@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.32 - UNRELEASED
+## Platform Version 0.9.33 - UNRELEASED
+
+## Platform Version 0.9.32 - 2022-07-26
 * Restrict usage of `--initial`, `--extra-params` and `--join-topic` in `fluvio consume`. Those options only should be accepted when using specific smartmodules. ([#2476](https://github.com/infinyon/fluvio/pull/2476))
 * Rename `--smartmodule` option in `fluvio consume` to `--smart-module`. `--smartmodule is still an alias for backward compatibility. ([#2485](https://github.com/infinyon/fluvio/issues/2485))
 * Measure latency for stats using macro. ([#2483](https://github.com/infinyon/fluvio/pull/2483))
