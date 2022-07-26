@@ -48,10 +48,11 @@ strum = { version = "0.24", features = ["derive"], optional = true }
 num-traits = { version = "0.2", optional = true }
 
 # Fluvio dependencies
-fluvio-future = { version = "0.4.0", features = [
+fluvio-future = { version = "0.4.1", features = [
     "task",
     "openssl_tls",
     "task_unstable",
+    "retry"
 ] }
 fluvio-types = { version = "0.3.7", features = [
     "events",

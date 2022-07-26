@@ -1,4 +1,5 @@
 use async_channel::RecvError;
+use fluvio_future::retry::TimeoutError;
 use dataplane::ErrorCode;
 
 use super::record::RecordMetadata;
@@ -22,4 +23,6 @@ pub enum ProducerError {
     SpuErrorCode(#[from] ErrorCode),
     #[error("Invalid configuration in producer: {0}")]
     InvalidConfiguration(String),
+    #[error("the produce request retry timeout limit reached")]
+    ProduceRequestRetryTimeout(#[from] TimeoutError),
 }

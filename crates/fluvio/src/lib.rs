@@ -100,7 +100,7 @@ pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, RecordKey, ProduceOutput,
-    FutureRecordMetadata, RecordMetadata,
+    FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy, RetryStrategy,
 };
 
 pub use consumer::{
