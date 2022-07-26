@@ -139,7 +139,7 @@ mod display {
                         Cell::new(status.leader.hw.to_string()),
                         Cell::new(status.leader.leo.to_string()),
                         Cell::new(status.leader.leo.to_string()),
-                        Cell::new(status.lsr.to_string()),
+                        Cell::new(status.lrs().to_string()),
                         Cell::new(format!("{:?}", status.replicas)),
                     ])
                 })

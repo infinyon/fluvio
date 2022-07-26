@@ -31,6 +31,7 @@ pub struct PartitionStatus {
     pub leader: ReplicaStatus,
     // TODO: Next time we make a breaking protocol change, rename this to `lrs`
     // TODO: There is no such thing as `lsr`, it is a typo
+    #[cfg_attr(feature = "use_serde", serde(alias = "lrs"))]
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
     #[cfg_attr(
@@ -114,8 +115,12 @@ impl PartitionStatus {
         self.resolution != PartitionResolution::Online
     }
 
-    // TODO: At next breaking change, deprecate this and replace with `fn lrs` to fix typo
+    #[deprecated = "Replaced by lrs()"]
     pub fn lsr(&self) -> u32 {
+        self.lsr
+    }
+
+    pub fn lrs(&self) -> u32 {
         self.lsr
     }
 
