@@ -1,15 +1,22 @@
 use std::collections::{HashMap, VecDeque};
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
 
 use async_lock::Mutex;
 use async_channel::Sender;
+use futures_util::future::{BoxFuture, Either, Shared};
+use futures_util::{FutureExt, ready};
 
 use dataplane::batch::{Batch, memory::MemoryBatch};
 use fluvio_compression::Compression;
 use tracing::trace;
 
 use dataplane::{Offset, ErrorCode};
+use dataplane::produce::ProduceResponse;
 use dataplane::record::Record;
+use fluvio_socket::SocketError;
 use fluvio_types::{PartitionId, Timestamp};
 
 use crate::producer::record::{BatchMetadata, FutureRecordMetadata, PartialFutureRecordMetadata};
@@ -112,7 +119,7 @@ where {
 }
 
 pub(crate) struct ProducerBatch {
-    pub(crate) notify: Sender<(Offset, ErrorCode)>,
+    pub(crate) notify: Sender<ProducePartitionResponseFuture>,
     batch_metadata: Arc<BatchMetadata>,
     batch: MemoryBatch,
 }
@@ -191,10 +198,74 @@ impl BatchEvents {
     }
 }
 
+type ProduceResponseFuture = Shared<BoxFuture<'static, Arc<Result<ProduceResponse, SocketError>>>>;
+
+/// A Future that resolves to pair `base_offset` and `error_code`, which effectively come from
+/// [`PartitionProduceResponse`].
+pub(crate) struct ProducePartitionResponseFuture {
+    inner: Either<(ProduceResponseFuture, usize), Option<(Offset, ErrorCode)>>,
+}
+
+impl ProducePartitionResponseFuture {
+    /// Returns immediately available future from given offset and error.
+    pub(crate) fn ready(offset: Offset, error: ErrorCode) -> Self {
+        Self {
+            inner: Either::Right(Some((offset, error))),
+        }
+    }
+
+    /// Returns a future that firstly will resolve [`ProduceResponse`] from the given `response_fut`,
+    /// and then will look up the partition response using `num`. [`ProduceResponseFuture`] is usually
+    /// shared between other [`ProducePartitionResponseFuture`] and will be resolved only once and
+    ///the response will be re-used.
+    pub(crate) fn from(response_fut: ProduceResponseFuture, num: usize) -> Self {
+        Self {
+            inner: Either::Left((response_fut, num)),
+        }
+    }
+}
+
+impl Future for ProducePartitionResponseFuture {
+    type Output = (Offset, ErrorCode);
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match self.get_mut().inner {
+            Either::Left(ref mut pair) => {
+                let response = ready!((&mut pair.0).poll_unpin(cx));
+                match response.as_ref() {
+                    Ok(response) => Poll::Ready(
+                        response
+                            .responses
+                            .iter()
+                            .flat_map(|t| &t.partitions)
+                            .nth(pair.1)
+                            .map(|p| (p.base_offset, ErrorCode::None))
+                            .unwrap_or_else(|| {
+                                (
+                                    Offset::default(),
+                                    ErrorCode::Other(
+                                        "partition not found during collecting async response"
+                                            .to_string(),
+                                    ),
+                                )
+                            }),
+                    ),
+                    Err(err) => Poll::Ready((0, ErrorCode::Other(format!("{:?}", err)))),
+                }
+            }
+            Either::Right(ref mut maybe_pair) => match maybe_pair.take() {
+                None => Poll::Ready((0, ErrorCode::Other("empty response".to_string()))),
+                Some(pair) => Poll::Ready(pair),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use dataplane::{record::Record, batch::RawRecords};
+    use dataplane::produce::{PartitionProduceResponse, TopicProduceResponse};
     use fluvio_protocol::Encoder;
 
     #[test]
@@ -297,6 +368,112 @@ mod test {
             async_std::future::timeout(timeout, batches.listen_batch_full())
                 .await
                 .is_ok()
+        );
+    }
+
+    #[fluvio_future::test]
+    async fn test_produce_partition_response_future_ready() {
+        //given
+        let offset = 10;
+        let error_code = ErrorCode::default();
+        let fut = ProducePartitionResponseFuture::ready(offset, error_code.clone());
+
+        //when
+        let (resolved_offset, resolved_error) = fut.await;
+
+        //then
+        assert_eq!(offset, resolved_offset);
+        assert_eq!(error_code, resolved_error);
+    }
+
+    #[fluvio_future::test]
+    async fn test_produce_partition_response_future_on_error() {
+        //given
+        let num = 0;
+        let fut = async { Arc::new(Err(SocketError::SocketClosed)) }
+            .boxed()
+            .shared();
+        let fut = ProducePartitionResponseFuture::from(fut, num);
+
+        //when
+        let (resolved_offset, resolved_error) = fut.await;
+
+        //then
+        assert_eq!(resolved_offset, 0);
+        assert_eq!(resolved_error, ErrorCode::Other("SocketClosed".to_string()));
+    }
+
+    #[fluvio_future::test]
+    async fn test_produce_partition_response_future_resolved() {
+        //given
+        let num = 2;
+        let fut = async {
+            Arc::new(Ok(ProduceResponse {
+                responses: vec![
+                    TopicProduceResponse {
+                        name: "".to_string(),
+                        partitions: vec![
+                            PartitionProduceResponse {
+                                base_offset: 1,
+                                ..Default::default()
+                            },
+                            PartitionProduceResponse {
+                                base_offset: 2,
+                                ..Default::default()
+                            },
+                        ],
+                    },
+                    TopicProduceResponse {
+                        name: "".to_string(),
+                        partitions: vec![PartitionProduceResponse {
+                            base_offset: 3,
+                            ..Default::default()
+                        }],
+                    },
+                ],
+                throttle_time_ms: 0,
+            }))
+        }
+        .boxed()
+        .shared();
+        let fut = ProducePartitionResponseFuture::from(fut, num);
+
+        //when
+        let (resolved_offset, resolved_error) = fut.await;
+
+        //then
+        assert_eq!(resolved_offset, 3);
+        assert_eq!(resolved_error, ErrorCode::None);
+    }
+
+    #[fluvio_future::test]
+    async fn test_produce_partition_response_future_not_found() {
+        //given
+        let num = 2;
+        let fut = async {
+            Arc::new(Ok(ProduceResponse {
+                responses: vec![TopicProduceResponse {
+                    name: "".to_string(),
+                    partitions: vec![PartitionProduceResponse {
+                        base_offset: 3,
+                        ..Default::default()
+                    }],
+                }],
+                throttle_time_ms: 0,
+            }))
+        }
+        .boxed()
+        .shared();
+        let fut = ProducePartitionResponseFuture::from(fut, num);
+
+        //when
+        let (resolved_offset, resolved_error) = fut.await;
+
+        //then
+        assert_eq!(resolved_offset, 0);
+        assert_eq!(
+            resolved_error,
+            ErrorCode::Other("partition not found during collecting async response".to_string())
         );
     }
 }

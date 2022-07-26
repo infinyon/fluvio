@@ -11,8 +11,11 @@ use fluvio_types::event::StickyEvent;
 use tracing::{debug, info, instrument, error, trace};
 
 use crate::error::{Result, FluvioError};
+use crate::producer::accumulator::ProducePartitionResponseFuture;
+use crate::producer::config::DeliverySemantic;
+use crate::sockets::VersionedSerialSocket;
 use crate::spu::SpuPool;
-use crate::{TopicProducerConfig};
+use crate::TopicProducerConfig;
 
 use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
@@ -254,52 +257,84 @@ impl PartitionProducer {
         request.topics.push(topic_request);
 
         #[cfg(feature = "stats")]
-        let response = if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
-            let (response, send_latency) =
-                crate::measure_latency!(total_batch_len, spu_socket.send_receive(request).await?);
+        let (response, last_base_offset) =
+            if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
+                let (response, send_latency) = crate::measure_latency!(
+                    total_batch_len,
+                    self.send_to_socket(spu_socket, request).await?
+                );
 
-            client_stats_update += send_latency;
-            response
-        } else {
-            spu_socket.send_receive(request).await?
-        };
+                client_stats_update += send_latency;
+                response
+            } else {
+                self.send_to_socket(spu_socket, request).await?
+            };
         #[cfg(not(feature = "stats"))]
-        let response = spu_socket.send_receive(request).await?;
-        #[cfg(feature = "stats")]
-        let mut last_base_offset = 0;
-        for (batch_notifier, partition_response) in batch_notifiers.into_iter().zip(
-            response
-                .responses
-                .into_iter()
-                .flat_map(|response| response.partitions),
-        ) {
-            let base_offset = partition_response.base_offset;
-            let fluvio_error = partition_response.error_code.clone();
+        let (response, _) = self.send_to_socket(spu_socket, request).await?;
 
-            if let Err(_e) = batch_notifier
-                .send((base_offset, fluvio_error.clone()))
-                .await
-            {
+        for (batch_notifier, partition_response_fut) in
+            batch_notifiers.into_iter().zip(response.into_iter())
+        {
+            if let Err(_e) = batch_notifier.send(partition_response_fut).await {
                 trace!("Failed to notify produce result because receiver was dropped");
-            }
-
-            if fluvio_error.is_error() {
-                return Err(FluvioError::from(ProducerError::from(fluvio_error)));
-            }
-
-            #[cfg(feature = "stats")]
-            {
-                last_base_offset = base_offset;
             }
         }
 
         #[cfg(feature = "stats")]
         // Commit stats update
         if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
-            client_stats_update.push(ClientStatsMetricRaw::Offset(last_base_offset as i32));
+            if let Some(last_base_offset) = last_base_offset {
+                client_stats_update.push(ClientStatsMetricRaw::Offset(last_base_offset as i32));
+            }
             self.client_stats.update_batch(client_stats_update).await?
         }
 
         Ok(())
+    }
+
+    async fn send_to_socket(
+        &self,
+        socket: VersionedSerialSocket,
+        request: DefaultProduceRequest,
+    ) -> Result<(Vec<ProducePartitionResponseFuture>, Option<i64>)> {
+        let partition_count: usize = request.topics.iter().map(|t| t.partitions.len()).sum();
+        let mut last_offset = None;
+        trace!(%partition_count, ?self.config.delivery_semantic);
+        let response: Vec<ProducePartitionResponseFuture> = match self.config.delivery_semantic {
+            DeliverySemantic::AtMostOnce => {
+                use futures_util::FutureExt;
+                let async_response = socket.send_async(request).await?;
+                let shared = FutureExt::map(async_response, Arc::new).boxed().shared();
+                (0..partition_count)
+                    .map(|index| ProducePartitionResponseFuture::from(shared.clone(), index))
+                    .collect()
+            }
+            DeliverySemantic::AtLeastOnce(policy) => {
+                use fluvio_future::retry::RetryExt;
+                let produce_response = socket
+                    .send_receive_with_retry(request, policy.iter())
+                    .timeout(policy.timeout)
+                    .await
+                    .map_err(|timeout_err| FluvioError::Producer(timeout_err.into()))??;
+
+                let mut futures = Vec::with_capacity(partition_count);
+                for topic in produce_response.responses.into_iter() {
+                    for partition in topic.partitions {
+                        if partition.error_code.is_error() {
+                            return Err(FluvioError::from(ProducerError::from(
+                                partition.error_code,
+                            )));
+                        }
+                        futures.push(ProducePartitionResponseFuture::ready(
+                            partition.base_offset,
+                            partition.error_code,
+                        ));
+                        last_offset = Some(partition.base_offset);
+                    }
+                }
+                futures
+            }
+        };
+        Ok((response, last_offset))
     }
 }

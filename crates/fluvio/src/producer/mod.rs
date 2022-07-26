@@ -35,6 +35,7 @@ use crate::stats::{ClientStats, ClientStatsDataCollect, metrics::ClientStatsData
 use self::accumulator::{BatchHandler};
 pub use self::config::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducerConfigBuilderError,
+    DeliverySemantic, RetryPolicy, RetryStrategy,
 };
 pub use self::error::ProducerError;
 use self::event::EventHandler;

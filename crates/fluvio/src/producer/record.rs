@@ -6,6 +6,7 @@ use async_channel::Receiver;
 use async_lock::RwLock;
 
 use crate::error::Result;
+use crate::producer::accumulator::ProducePartitionResponseFuture;
 
 use super::error::ProducerError;
 
@@ -33,7 +34,7 @@ impl RecordMetadata {
 /// Possible states of a batch in the accumulator
 pub(crate) enum BatchMetadataState {
     /// The batch is buffered and ready to be sent to the SPU
-    Buffered(Receiver<(Offset, ErrorCode)>),
+    Buffered(Receiver<ProducePartitionResponseFuture>),
     /// The batch was sent to the SPU. Base offset is known
     Sent(Offset),
     /// There was an error sending the batch to the SPU
@@ -45,7 +46,7 @@ pub(crate) struct BatchMetadata {
 }
 
 impl BatchMetadata {
-    pub(crate) fn new(receiver: Receiver<(Offset, ErrorCode)>) -> Self {
+    pub(crate) fn new(receiver: Receiver<ProducePartitionResponseFuture>) -> Self {
         Self {
             state: RwLock::new(BatchMetadataState::Buffered(receiver)),
         }
@@ -57,18 +58,19 @@ impl BatchMetadata {
         let mut state = self.state.write().await;
         match &*state {
             BatchMetadataState::Buffered(receiver) => {
-                let offset_result = receiver
+                let msg = receiver
                     .recv()
                     .await
                     .map_err(|err| ProducerError::GetRecordMetadata(Some(err)));
 
-                match offset_result {
-                    Ok(offset) => {
-                        if offset.1 == ErrorCode::None {
-                            *state = BatchMetadataState::Sent(offset.0);
-                            Ok(offset.0)
+                match msg {
+                    Ok(offset_future) => {
+                        let (offset, error) = offset_future.await;
+                        if error == ErrorCode::None {
+                            *state = BatchMetadataState::Sent(offset);
+                            Ok(offset)
                         } else {
-                            let error = ProducerError::SpuErrorCode(offset.1);
+                            let error = ProducerError::SpuErrorCode(error);
                             *state = BatchMetadataState::Failed(error.clone());
                             Err(error.into())
                         }

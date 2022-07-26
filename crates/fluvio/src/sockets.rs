@@ -2,15 +2,17 @@ use std::default::Default;
 use std::fmt;
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
+use std::time::Duration;
 
 use tracing::{debug, instrument, info};
 
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
-use fluvio_socket::SocketError;
+use fluvio_socket::{AsyncResponse, SocketError};
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
+use fluvio_future::retry::retry;
 
 use crate::FluvioError;
 
@@ -245,6 +247,43 @@ impl VersionedSerialSocket {
 
         // send request & save response
         self.socket.send_and_receive(req_msg).await
+    }
+
+    /// send and do not wait for reply
+    #[instrument(level = "trace", skip(self, request))]
+    pub async fn send_async<R>(&self, request: R) -> Result<AsyncResponse<R>, SocketError>
+    where
+        R: Request + Send + Sync,
+    {
+        let req_msg = self.new_request(
+            request,
+            self.versions
+                .lookup_version(R::API_KEY, R::DEFAULT_API_VERSION),
+        );
+
+        // send request & get a Future that resolves to response
+        self.socket.send_async(req_msg).await
+    }
+
+    /// send, wait for reply and retry if failed
+    #[instrument(level = "trace", skip(self, request))]
+    pub async fn send_receive_with_retry<R, I>(
+        &self,
+        request: R,
+        retries: I,
+    ) -> Result<R::Response, SocketError>
+    where
+        R: Request + Send + Sync + Clone,
+        I: IntoIterator<Item = Duration> + Debug + Send,
+    {
+        let req_msg = self.new_request(
+            request,
+            self.versions
+                .lookup_version(R::API_KEY, R::DEFAULT_API_VERSION),
+        );
+
+        // send request & retry it if result is Err
+        retry(retries, || self.socket.send_and_receive(req_msg.clone())).await
     }
 
     /// create new request based on version
