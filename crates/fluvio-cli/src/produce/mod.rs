@@ -6,13 +6,13 @@ use std::path::PathBuf;
 
 use futures::future::join_all;
 use clap::Parser;
-use tracing::error;
+use tracing::{error, warn};
 use std::time::Duration;
 use humantime::parse_duration;
 
 use fluvio::{
     Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-    ProduceOutput,
+    ProduceOutput, DeliverySemantic,
 };
 use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
@@ -104,6 +104,12 @@ pub struct ProduceOpt {
     /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
     #[clap(long)]
     pub stats_summary: bool,
+
+    /// Delivery guarantees that producer must respect. Supported values:
+    /// at_most_once (AtMostOnce) - send records without waiting from response,
+    /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
+    #[clap(long, default_value = "at-least-once")]
+    pub delivery_semantic: DeliverySemantic,
 }
 
 fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
@@ -161,7 +167,15 @@ impl ProduceOpt {
             _ => config_builder,
         };
 
-        let config = config_builder.build().map_err(FluvioError::from)?;
+        // Delivery Semantic
+        if self.delivery_semantic == DeliverySemantic::AtMostOnce && self.isolation.is_some() {
+            warn!("Isolation is ignored for AtMostOnce delivery semantic");
+        }
+
+        let config = config_builder
+            .delivery_semantic(self.delivery_semantic)
+            .build()
+            .map_err(FluvioError::from)?;
 
         let producer = Arc::new(
             fluvio
@@ -208,12 +222,13 @@ impl ProduceOpt {
 
             let produce_output = producer.send(RecordKey::NULL, buffer).await?;
 
-            produce_output.wait().await?;
+            if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                produce_output.wait().await?;
+            }
 
             #[cfg(feature = "stats")]
             if self.is_stats_collect() && self.is_print_live_stats() {
-                self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "")
-                    .await;
+                self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "");
             }
         } else {
             // Read input line-by-line and send as individual records
@@ -224,12 +239,13 @@ impl ProduceOpt {
             self.produce_lines(producer.clone()).await?;
         };
 
+        producer.flush().await?;
+
         #[cfg(feature = "stats")]
         if self.is_stats_collect() {
             producer_summary(&producer, maybe_stats_bar.as_ref(), self.stats_summary).await;
         }
 
-        producer.flush().await?;
         if self.interactive_mode() {
             print_cli_ok!();
         }
@@ -273,8 +289,7 @@ impl ProduceOpt {
                     #[cfg(feature = "stats")]
                     if self.is_stats_collect() {
                         if self.is_print_live_stats() {
-                            self.update_stats_bar(maybe_stats_bar, &producer, &line)
-                                .await;
+                            self.update_stats_bar(maybe_stats_bar, &producer, &line);
                         }
 
                         stats_dataframe_check = write_csv_dataframe(
@@ -286,15 +301,17 @@ impl ProduceOpt {
                     }
                 }
 
-                // ensure all records were properly sent
-                join_all(
-                    produce_outputs
-                        .into_iter()
-                        .map(|produce_output| produce_output.wait()),
-                )
-                .await
-                .into_iter()
-                .collect::<Result<Vec<_>, _>>()?;
+                if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                    // ensure all records were properly sent
+                    join_all(
+                        produce_outputs
+                            .into_iter()
+                            .map(|produce_output| produce_output.wait()),
+                    )
+                    .await
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
+                }
             }
             None => {
                 let mut lines = BufReader::new(std::io::stdin()).lines();
@@ -306,15 +323,16 @@ impl ProduceOpt {
                     let produce_output = self.produce_line(&producer, &line).await?;
 
                     if let Some(produce_output) = produce_output {
-                        // ensure it was properly sent
-                        produce_output.wait().await?;
+                        if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                            // ensure it was properly sent
+                            produce_output.wait().await?;
+                        }
                     }
 
                     #[cfg(feature = "stats")]
                     if self.is_stats_collect() {
                         if self.is_print_live_stats() {
-                            self.update_stats_bar(maybe_stats_bar, &producer, &line)
-                                .await;
+                            self.update_stats_bar(maybe_stats_bar, &producer, &line);
                         }
 
                         stats_dataframe_check = write_csv_dataframe(
@@ -401,7 +419,7 @@ impl ProduceOpt {
     }
 
     #[cfg(feature = "stats")]
-    async fn update_stats_bar(
+    fn update_stats_bar(
         &self,
         maybe_stats_bar: Option<&ProgressBar>,
         producer: &Arc<TopicProducer>,

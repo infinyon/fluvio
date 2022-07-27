@@ -73,6 +73,11 @@ smoke-test-tls-policy: smoke-test
 # test rbac with ROOT user
 smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
 
+
+# delivery semantics
+smoke-test-at-most-once: TEST_ARG_EXTRA=--producer-delivery-semantic at-most-once $(EXTRA_ARG)
+smoke-test-at-most-once: smoke-test
+
 # election test only runs on local
 election-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)	
 election-test: test-setup
