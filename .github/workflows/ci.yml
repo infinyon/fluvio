@@ -449,6 +449,7 @@ jobs:
           [
             smoke-test,
             smoke-test-tls,
+            smoke-test-at-most-once,
             election,
             multiple-partition,
             reconnection,
@@ -504,6 +505,11 @@ jobs:
         timeout-minutes: 5
         run: |
           make smoke-test-local
+      - name: Run smoke-test-at-most-once
+        if: matrix.test == 'smoke-test-at-most-once'
+        timeout-minutes: 5
+        run: |
+          make smoke-test-at-most-once
       - name: Run smoke-test-tls
         if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 5

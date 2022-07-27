@@ -52,6 +52,14 @@ setup_file() {
     export TOPIC_NAME_10
     debug_msg "Topic name: $TOPIC_NAME_10"
 
+    TOPIC_NAME_11=$(random_string)
+    export TOPIC_NAME_11
+    debug_msg "Topic name: $TOPIC_NAME_11"
+
+    TOPIC_NAME_12=$(random_string)
+    export TOPIC_NAME_12
+    debug_msg "Topic name: $TOPIC_NAME_12"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -82,6 +90,12 @@ setup_file() {
 
     READ_UNCOMMITTED_MESSAGE="$MESSAGE-READ_UNCOMMITTED_MESSAGE"
     export READ_UNCOMMITTED_MESSAGE
+
+    AT_MOST_ONCE_MESSAGE="$MESSAGE-AT_MOST_ONCE_MESSAGE"
+    export AT_MOST_ONCE_MESSAGE
+
+    AT_LEAST_ONCE_MESSAGE="$MESSAGE-AT_LEAST_ONCE_MESSAGE"
+    export AT_LEAST_ONCE_MESSAGE
 }
 
 teardown_file() {
@@ -111,6 +125,10 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_10"
     assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_11"
+    assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_12"
+    assert_success
 }
 
 # Produce message 
@@ -134,6 +152,10 @@ teardown_file() {
     run bash -c 'echo -e "$READ_COMMITTED_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_9" --isolation read_committed'
     assert_success
     run bash -c 'echo -e "$READ_UNCOMMITTED_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_10" --isolation ReadUncommitted'
+    assert_success
+    run bash -c 'echo -e "$AT_MOST_ONCE_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_11" --delivery-semantic AtMostOnce'
+    assert_success
+    run bash -c 'echo -e "$AT_LEAST_ONCE_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_12" --delivery-semantic AtLeastOnce'
     assert_success
 }
 
@@ -214,5 +236,19 @@ teardown_file() {
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_10" -B -d --isolation ReadUncommitted
 
     assert_output --partial "$READ_UNCOMMITTED_MESSAGE"
+    assert_success
+}
+
+@test "Consume AtMostOnce message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_11" -B -d
+
+    assert_output --partial "$AT_MOST_ONCE_MESSAGE"
+    assert_success
+}
+
+@test "Consume AtLeastOnce message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_12" -B -d
+
+    assert_output --partial "$AT_LEAST_ONCE_MESSAGE"
     assert_success
 }

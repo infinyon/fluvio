@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::time::Duration;
 use humantime::parse_duration;
 use uuid::Uuid;
-use fluvio::Compression;
+use fluvio::{Compression, DeliverySemantic};
 
 pub trait EnvDetail: Debug + Clone {
     fn set_base_topic_name(&mut self, topic: String);
@@ -214,6 +214,10 @@ pub struct EnvironmentSetup {
     /// producer compression algorithm. (none, gzip, snappy or lz4)
     #[clap(long)]
     pub producer_compression: Option<Compression>,
+
+    /// producer delivery semantic. (at-most-once, at-least-once)
+    #[clap(long, default_value = "at-least-once")]
+    pub producer_delivery_semantic: DeliverySemantic,
 
     /// # Consumers to use (if test uses them)
     #[clap(long, default_value = "1")]
