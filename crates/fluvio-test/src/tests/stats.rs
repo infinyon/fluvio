@@ -6,7 +6,6 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
-use fluvio_test_util::setup::init_jaeger;
 use fluvio::{TopicProducerConfigBuilder, RecordKey};
 
 use fluvio::stats::{ClientStatsDataCollect, ClientStatsMetric, ClientStatsMetricRaw};
@@ -83,7 +82,7 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
         async {
             #[cfg(feature = "telemetry")]
             let _trace_guard = if test_case.environment.telemetry() {
-                init_jaeger!()
+                fluvio_test_util::setup::init_jaeger!()
             } else {
                 None
             };

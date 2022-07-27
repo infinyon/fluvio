@@ -160,13 +160,11 @@ use std::any::Any;
 use structopt::StructOpt;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-
 #[derive(Debug, Clone)]
 pub struct ExampleTestCase {
     pub environment: EnvironmentSetup,
     pub option: ExampleTestOption,
 }
-
 impl From<TestCase> for ExampleTestCase {
     fn from(test_case: TestCase) -> Self {
         let example_option = test_case
@@ -182,6 +180,7 @@ impl From<TestCase> for ExampleTestCase {
     }
 }
 
+
 // For CLI options
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 #[structopt(name = "Fluvio Example Test")]
@@ -191,14 +190,13 @@ impl TestOption for ExampleTestOption {
     fn as_any(&self) -> &dyn Any {
         self
     }
-}
 
 #[fluvio_test()]
 pub fn example(mut test_driver: TestDriver, test_case: TestCase) {
     let example_test_case : ExampleTestCase = option.into();
 
-    println!("Ready to run tests: {:?}", example_test_case);
-}
+    println!("Ready to run tests: {:?}", example_test_case);}
+
 ```
 
 > `TestCase` has an internal field `option` that is `Box<dyn TestOption>`. You'll want to implement `From<TestCase>` on your own struct so you can downcast and use this struct more flexibly.
@@ -243,3 +241,19 @@ But if we run it like:
 `cargo run --bin fluvio-test -- example --spu 2`
 
 The test would start and a test topic named `test_topic` would be created because the minimum requirements were met.
+
+## Running tests w/ tracing support
+
+You need to build `fluvio-test` with the `telemetry` feature
+
+```shell
+$ cargo build --bin fluvio-test --features telemetry
+```
+
+There is an example `docker-compose.yml` file in `/tests/tracing/docker-compose.yml`.
+
+You only need to run `docker-compose up`.
+
+The UI url is: http://localhost:16686
+
+Tracing results will be visible after the test ends.

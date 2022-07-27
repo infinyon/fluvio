@@ -21,7 +21,6 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
-use fluvio_test_util::setup::init_jaeger;
 
 use fluvio_cli::TableFormatConfig;
 use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
@@ -102,7 +101,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 async {
                     #[cfg(feature = "telemetry")]
                     let _trace_guard = if test_case.environment.telemetry() {
-                        init_jaeger!()
+                        fluvio_test_util::setup::init_jaeger!()
                     } else {
                         None
                     };
@@ -237,7 +236,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 async {
                     #[cfg(feature = "telemetry")]
                     let _trace_guard = if test_case.environment.telemetry() {
-                        init_jaeger!()
+                        fluvio_test_util::setup::init_jaeger!()
                     } else {
                         None
                     };
@@ -302,7 +301,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         async {
             #[cfg(feature = "telemetry")]
             let _trace_guard = if test_case.environment.telemetry() {
-                init_jaeger!()
+                fluvio_test_util::setup::init_jaeger!()
             } else {
                 None
             };
@@ -350,10 +349,11 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             async {
                 #[cfg(feature = "telemetry")]
                 let _trace_guard = if test_case.environment.telemetry() {
-                    init_jaeger!()
+                    fluvio_test_util::setup::init_jaeger!()
                 } else {
                     None
                 };
+
                 let span = info_span!("smoke(consumer)");
 
                 async move {

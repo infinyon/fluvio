@@ -61,7 +61,6 @@ fluvio-command = {version = "0.2.0"}
 fluvio-controlplane-metadata = {features = ["k8"], path = "../fluvio-controlplane-metadata"}
 fluvio-future = {version = "0.4.0", features = ["io", "task", "timer", "subscriber", "fixture"]}
 fluvio-types = {path = "../fluvio-types"}
-reqwest = "0.11"
 tracing-futures = {version = "0.2.5", default-features = false, features = ["std-future", "std"]}
 
 # Fluvio test framework Attribute macro

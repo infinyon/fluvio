@@ -75,7 +75,6 @@ fn main() {
     } else {
         exit(-1)
     }
-    //});
 }
 
 fn run_test(

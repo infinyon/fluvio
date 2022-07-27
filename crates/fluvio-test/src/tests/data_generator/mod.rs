@@ -9,7 +9,6 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::{async_process, fork_and_wait};
-use fluvio_test_util::setup::init_jaeger;
 use tracing::{Instrument, debug_span};
 
 use fluvio::{Offset, RecordKey};
@@ -92,7 +91,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
         fluvio_future::task::run_block_on(async {
             #[cfg(feature = "telemetry")]
             let _trace_guard = if test_case.environment.telemetry() {
-                init_jaeger!()
+                fluvio_test_util::setup::init_jaeger!()
             } else {
                 None
             };
@@ -128,7 +127,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
             async {
                 #[cfg(feature = "telemetry")]
                 let _trace_guard = if test_case.environment.telemetry() {
-                    init_jaeger!()
+                    fluvio_test_util::setup::init_jaeger!()
                 } else {
                     None
                 };
@@ -158,7 +157,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
         fluvio_future::task::run_block_on(async {
             #[cfg(feature = "telemetry")]
             let _trace_guard = if test_case.environment.telemetry() {
-                init_jaeger!()
+                fluvio_test_util::setup::init_jaeger!()
             } else {
                 None
             };

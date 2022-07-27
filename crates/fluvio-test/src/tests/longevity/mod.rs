@@ -10,7 +10,6 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
-use fluvio_test_util::setup::init_jaeger;
 
 #[derive(Debug, Clone)]
 pub struct LongevityTestCase {
@@ -76,7 +75,7 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
             async {
                 #[cfg(feature = "telemetry")]
                 let _trace_guard = if test_case.environment.telemetry() {
-                    init_jaeger!()
+                    fluvio_test_util::setup::init_jaeger!()
                 } else {
                     None
                 };
@@ -110,7 +109,7 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
             async {
                 #[cfg(feature = "telemetry")]
                 let _trace_guard = if test_case.environment.telemetry() {
-                    init_jaeger!()
+                    fluvio_test_util::setup::init_jaeger!()
                 } else {
                     None
                 };
