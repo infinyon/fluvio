@@ -52,46 +52,50 @@ impl TestOption for GeneratorTestOption {
 
 #[fluvio_test(name = "generator", topic = "generated", timeout = false)]
 pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
-    let option: GeneratorTestCase = test_case.into();
+    let test_case: GeneratorTestCase = test_case.into();
 
     println!("Starting data generation");
 
-    let expected_runtime = if option.environment.timeout != Duration::MAX {
-        format!("{:?}", option.environment.timeout)
+    let expected_runtime = if test_case.environment.timeout != Duration::MAX {
+        format!("{:?}", test_case.environment.timeout)
     } else {
         "forever".to_string()
     };
 
     println!("Expected runtime: {:?}", expected_runtime);
 
-    println!("# Producers: {}", option.environment.producer);
+    println!("# Producers: {}", test_case.environment.producer);
 
     // Batch info
-    println!("linger (ms): {:?}", option.environment.producer_linger);
+    println!("linger (ms): {:?}", test_case.environment.producer_linger);
     println!(
         "batch size (Bytes): {:?}",
-        option.environment.producer_batch_size
+        test_case.environment.producer_batch_size
     );
     println!(
         "compression algorithm: {:?}",
-        option.environment.producer_compression
+        test_case.environment.producer_compression
     );
 
-    let sync_topic = if let Some(run_id) = &option.environment.topic_salt {
+    let sync_topic = if let Some(run_id) = &test_case.environment.topic_salt {
         format!("sync-{}", run_id)
     } else {
         "sync".to_string()
     };
 
-    if !option.option.verbose {
+    if !test_case.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
 
     // Create topics
     let _setup_status = fork_and_wait! {
         fluvio_future::task::run_block_on(async {
-            let _trace_guard = init_jaeger!();
-
+            #[cfg(feature = "telemetry")]
+            let _trace_guard = if test_case.environment.telemetry() {
+                init_jaeger!()
+            } else {
+                None
+            };
             let span = debug_span!("data_generator_setup");
 
             async {
@@ -102,7 +106,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
                 // Create sync topic before starting test
                 {
-                let mut env_opts = option.environment.clone();
+                let mut env_opts = test_case.environment.clone();
                 env_opts.topic_name = Some(sync_topic.clone());
                 test_driver_setup.create_topic(&env_opts)
                     .instrument(debug_span!("topic_create"))
@@ -118,20 +122,25 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
     // Pass run id to producers, so they can select the correct topics
     let mut producer_wait = Vec::new();
-    for i in 0..option.environment.producer {
+    for i in 0..test_case.environment.producer {
         println!("Starting Producer #{}", i);
         let producer = async_process!(
             async {
-                let _trace_guard = init_jaeger!();
+                #[cfg(feature = "telemetry")]
+                let _trace_guard = if test_case.environment.telemetry() {
+                    init_jaeger!()
+                } else {
+                    None
+                };
 
                 let span = debug_span!("data_generator_producer");
 
                 async {
                     producer::producer(
                         test_driver.clone(),
-                        option.clone(),
+                        test_case.clone(),
                         i,
-                        option.environment.topic_salt.clone(),
+                        test_case.environment.topic_salt.clone(),
                     )
                     .instrument(debug_span!("producer", i = i))
                     .await
@@ -147,8 +156,12 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
     let _setup_status = fork_and_wait! {
         fluvio_future::task::run_block_on(async {
-            let _trace_guard = init_jaeger!();
-
+            #[cfg(feature = "telemetry")]
+            let _trace_guard = if test_case.environment.telemetry() {
+                init_jaeger!()
+            } else {
+                None
+            };
             let span = debug_span!("data_generator_work_sync");
 
             async {
@@ -178,7 +191,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                     .await;
 
                 // Wait for everyone to get ready
-                let mut num_producers = option.environment.producer;
+                let mut num_producers = test_case.environment.producer;
                 let mut is_ready = false;
                 while let Some(Ok(record)) = sync_stream.next().instrument(debug_span!("sync_next")).await {
                     let _key = record
@@ -192,7 +205,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                             println!("main: now waiting on {num_producers} to get ready");
                         }
 
-                        let p_ready = option.environment.producer - num_producers;
+                        let p_ready = test_case.environment.producer - num_producers;
 
                         if num_producers == 0 {
                             println!("main: all ready, send start");

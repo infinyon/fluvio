@@ -9,6 +9,16 @@ publish = false
 repository = "https://github.com/infinyon/fluvio"
 version = "0.0.0"
 
+[features]
+default = []
+telemetry = [
+  "opentelemetry",
+  "opentelemetry-jaeger",
+  "tracing-opentelemetry",
+  "tracing-subscriber",
+  "fluvio-test-util/telemetry",
+]
+
 [dependencies]
 async-channel = "1.6"
 async-std = {version = "1.8.0", default-features = false, features = ["attributes"]}
@@ -36,13 +46,11 @@ sysinfo = { version = "0.24.7" }
 uuid = { version = "1.1", features = ["serde", "v4"] }
 signal-hook = "0.3.13"
 tracing = "0.1"
-#opentelemetry = { version = "0.17", features = ["rt-async-std", "jaeger_remote_sampler"] } 
-#opentelemetry = "0.17" 
-opentelemetry = {version = "0.17.0", features = ["async-std", "trace"]}
-opentelemetry-jaeger = {version = "0.16.0", features = ["rt-async-std", "isahc", "isahc_collector_client", "collector_client"]}
-opentelemetry-otlp = {version = "0.10", features = ["grpc-sys"]}
-tracing-opentelemetry = "0.17"
-tracing-subscriber = {version = "0.3", features = ["std", "env-filter"]}
+
+opentelemetry = {version = "0.17.0", features = ["async-std", "trace"], optional = true}
+opentelemetry-jaeger = {version = "0.16.0", features = ["rt-async-std", "isahc", "isahc_collector_client", "collector_client"], optional = true}
+tracing-opentelemetry = {version = "0.17", optional = true}
+tracing-subscriber = {version = "0.3", features = ["std", "env-filter"], optional = true}
 
 # Fluvio dependencies
 dataplane = {path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol"}

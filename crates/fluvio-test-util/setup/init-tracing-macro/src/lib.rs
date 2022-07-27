@@ -16,7 +16,7 @@ pub fn impl_init_jaeger_macro(_item: TokenStream) -> TokenStream {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(opentelemetry);
 
-    tracing::subscriber::set_default(subscriber)}"#
+    Some(tracing::subscriber::set_default(subscriber))}"#
         .parse()
         .expect("")
 }

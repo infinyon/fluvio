@@ -13,7 +13,7 @@ use std::io::Read;
 use std::collections::BTreeMap;
 
 use clap::Parser;
-use tracing::{debug, debug_span, trace_span};
+use tracing::{debug, debug_span, trace_span, span};
 use tracing_futures::Instrument;
 use serde::{Deserialize};
 
@@ -93,14 +93,19 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let root_span = span!(tracing::Level::TRACE, "smoke");
     let _or_current = root_span.enter();
 
-    let smoke_test_case: SmokeTestCase = test_case.into();
+    let test_case: SmokeTestCase = test_case.into();
 
     // If connector tests requested
-    let maybe_connector = if !smoke_test_case.option.skip_test_connector {
-        if let Some(ref connector_config) = smoke_test_case.option.connector_config {
+    let maybe_connector = if !test_case.option.skip_test_connector {
+        if let Some(ref connector_config) = test_case.option.connector_config {
             let connector_process = async_process!(
                 async {
-                    let _trace_guard = init_jaeger!();
+                    #[cfg(feature = "telemetry")]
+                    let _trace_guard = if test_case.environment.telemetry() {
+                        init_jaeger!()
+                    } else {
+                        None
+                    };
                     let span = info_span!("smoke(connector)");
 
                     async {
@@ -146,46 +151,27 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
                         // Build a new SmokeTestCase so we can use the consumer verify
                         // Ending after a static number of records received
-                        let new_smoke_test_case = SmokeTestCase {
+                        let new_test_case = SmokeTestCase {
                             environment: EnvironmentSetup {
                                 topic_name: Some(config.topic.clone()),
-                                tls: smoke_test_case.environment.tls,
-                                tls_user: smoke_test_case.environment.tls_user(),
-                                spu: smoke_test_case.environment.spu,
-                                replication: smoke_test_case.environment.replication,
-                                partition: smoke_test_case.environment.partition,
+                                tls: test_case.environment.tls,
+                                tls_user: test_case.environment.tls_user(),
+                                spu: test_case.environment.spu,
+                                replication: test_case.environment.replication,
+                                partition: test_case.environment.partition,
                                 ..Default::default()
                             },
                             option: SmokeTestOption {
                                 skip_consumer_validate: true,
                                 producer_iteration: 10,
-                                connector_config: smoke_test_case.option.connector_config.clone(),
+                                connector_config: test_case.option.connector_config.clone(),
                                 ..Default::default()
                             },
                         };
 
-                        // Build a new SmokeTestCase so we can use the consumer verify
-                        // Ending after a static number of records received
-                        let new_smoke_test_case = SmokeTestCase {
-                            environment: EnvironmentSetup {
-                                topic_name: Some(config.topic.clone()),
-                                tls: smoke_test_case.environment.tls,
-                                tls_user: smoke_test_case.environment.tls_user(),
-                                spu: smoke_test_case.environment.spu,
-                                replication: smoke_test_case.environment.replication,
-                                partition: smoke_test_case.environment.partition,
-                                ..Default::default()
-                            },
-                            option: SmokeTestOption {
-                                skip_consumer_validate: true,
-                                producer_iteration: 10,
-                                connector_config: smoke_test_case.option.connector_config.clone(),
-                                ..Default::default()
-                            },
-                        };
                         // Verify that connector is creating data
                         let start_offset =
-                            offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
+                            offsets::find_offsets(&test_driver, &new_test_case.clone())
                                 .instrument(debug_span!("start_offset").or_current())
                                 .await;
                         let start = start_offset.get(&config.topic.clone()).expect("offsets");
@@ -207,7 +193,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                             .await;
 
                         let check_offset =
-                            offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
+                            offsets::find_offsets(&test_driver, &new_test_case.clone())
                                 .instrument(debug_span!("check_offset").or_current())
                                 .await;
                         let check = check_offset.get(&config.topic.clone()).expect("offsets");
@@ -222,7 +208,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                         validate_consume_message_api(
                             test_driver,
                             start_offset,
-                            &new_smoke_test_case.clone(),
+                            &new_test_case.clone(),
                         )
                         .instrument(debug_span!("validate_connector_active"))
                         .await;
@@ -246,11 +232,15 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     // TableFormat test
     let maybe_table_format =
-        if let Some(ref table_format_config) = smoke_test_case.option.table_format_config {
+        if let Some(ref table_format_config) = test_case.option.table_format_config {
             let table_format_process = async_process!(
                 async {
-                    let _trace_guard = init_jaeger!();
-
+                    #[cfg(feature = "telemetry")]
+                    let _trace_guard = if test_case.environment.telemetry() {
+                        init_jaeger!()
+                    } else {
+                        None
+                    };
                     let span = info_span!("smoke(table_format)");
 
                     async move {
@@ -310,8 +300,12 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     // We're going to handle the `--consumer-wait` flag in this process
     let producer_wait = async_process!(
         async {
-            let _trace_guard = init_jaeger!();
-
+            #[cfg(feature = "telemetry")]
+            let _trace_guard = if test_case.environment.telemetry() {
+                init_jaeger!()
+            } else {
+                None
+            };
             let span = info_span!("smoke(producer)");
 
             async move {
@@ -324,12 +318,12 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     .expect("Connecting to cluster failed");
                 println!("About to start producer test");
 
-                let start_offset = produce::produce_message(test_driver, &smoke_test_case)
+                let start_offset = produce::produce_message(test_driver, &test_case)
                     .instrument(debug_span!("produce_message").or_current())
                     .await;
 
                 // If we've passed in `--consumer-wait` then we should start the consumer after the producer
-                if smoke_test_case.option.consumer_wait {
+                if test_case.option.consumer_wait {
                     test_driver_consumer_wait
                         .connect()
                         .instrument(debug_span!("consumer_for_wait").or_current())
@@ -338,7 +332,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     validate_consume_message_api(
                         test_driver_consumer_wait,
                         start_offset,
-                        &smoke_test_case,
+                        &test_case,
                     )
                     .instrument(debug_span!("validate_producer_active").or_current())
                     .await;
@@ -351,11 +345,15 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     );
 
     // By default, we should run the consumer and producer at the same time
-    if !smoke_test_case.option.consumer_wait {
+    if !test_case.option.consumer_wait {
         let consumer_wait = async_process!(
             async {
-                let _trace_guard = init_jaeger!();
-
+                #[cfg(feature = "telemetry")]
+                let _trace_guard = if test_case.environment.telemetry() {
+                    init_jaeger!()
+                } else {
+                    None
+                };
                 let span = info_span!("smoke(consumer)");
 
                 async move {
@@ -364,7 +362,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                         .instrument(debug_span!("client_for_consumer").or_current())
                         .await
                         .expect("Connecting to cluster failed");
-                    consume::validate_consume_message(test_driver, &smoke_test_case)
+                    consume::validate_consume_message(test_driver, &test_case)
                         .instrument(debug_span!("consumer_validate").or_current())
                         .await;
                 }

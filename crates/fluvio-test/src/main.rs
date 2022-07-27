@@ -24,6 +24,7 @@ use fluvio_test::tests as _;
 use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
 use tracing::debug;
 
+#[cfg(feature = "telemetry")]
 use opentelemetry::global;
 
 fn main() {
@@ -66,6 +67,7 @@ fn main() {
     cluster_cleanup(option.environment);
     println!("{}", test_result);
 
+    #[cfg(feature = "telemetry")]
     global::shutdown_tracer_provider();
 
     if test_result.success {

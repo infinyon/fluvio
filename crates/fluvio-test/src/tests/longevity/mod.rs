@@ -57,25 +57,29 @@ impl TestOption for LongevityTestOption {
 #[fluvio_test(topic = "longevity")]
 pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
     //println!("DEBUG: {:#?}", test_case);
-    let option: LongevityTestCase = test_case.into();
+    let test_case: LongevityTestCase = test_case.into();
 
     println!("Starting Longevity Test");
-    println!("Expected runtime: {:?}", option.environment.timeout());
-    println!("# Topics: {}", option.environment.topic);
-    println!("# Consumers: {}", option.environment.consumer);
-    println!("# Producers: {}", option.environment.producer);
+    println!("Expected runtime: {:?}", test_case.environment.timeout());
+    println!("# Topics: {}", test_case.environment.topic);
+    println!("# Consumers: {}", test_case.environment.consumer);
+    println!("# Producers: {}", test_case.environment.producer);
 
-    if !option.option.verbose {
+    if !test_case.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
 
     let mut consumer_wait = Vec::new();
-    for consumer_id in 0..option.environment.consumer {
+    for consumer_id in 0..test_case.environment.consumer {
         println!("Starting Consumer #{}", consumer_id);
         let consumer = async_process!(
             async {
-                let _trace_guard = init_jaeger!();
-
+                #[cfg(feature = "telemetry")]
+                let _trace_guard = if test_case.environment.telemetry() {
+                    init_jaeger!()
+                } else {
+                    None
+                };
                 let span = debug_span!("longevity_consumer_{consumer_id}");
 
                 async {
@@ -86,7 +90,7 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
                         .await
                         .expect("Connecting to cluster failed");
                     println!("consumer connected: {consumer_id}");
-                    consumer::consumer_stream(test_driver.clone(), option.clone(), consumer_id)
+                    consumer::consumer_stream(test_driver.clone(), test_case.clone(), consumer_id)
                         .instrument(debug_span!("stream_consumer", consumer_id = consumer_id))
                         .await
                 }
@@ -100,12 +104,16 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
     }
 
     let mut producer_wait = Vec::new();
-    for producer_id in 0..option.environment.producer {
+    for producer_id in 0..test_case.environment.producer {
         println!("Starting Producer #{}", producer_id);
         let producer = async_process!(
             async {
-                let _trace_guard = init_jaeger!();
-
+                #[cfg(feature = "telemetry")]
+                let _trace_guard = if test_case.environment.telemetry() {
+                    init_jaeger!()
+                } else {
+                    None
+                };
                 let span = debug_span!("longevity_producer_{producer_id}");
 
                 async {
@@ -114,7 +122,7 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
                         .instrument(debug_span!("connect_producer", producer_id = producer_id))
                         .await
                         .expect("Connecting to cluster failed");
-                    producer::producer(test_driver, option, producer_id)
+                    producer::producer(test_driver, test_case, producer_id)
                         .instrument(debug_span!("start_producer", producer_id = producer_id))
                         .await
                 }

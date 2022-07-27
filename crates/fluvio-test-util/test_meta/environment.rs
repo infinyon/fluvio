@@ -27,6 +27,8 @@ pub trait EnvDetail: Debug + Clone {
     fn timeout(&self) -> Duration;
     fn set_timeout(&mut self, timeout: Duration);
     fn cluster_type(&self) -> EnvironmentType;
+    #[cfg(feature = "telemetry")]
+    fn telemetry(&self) -> bool;
 }
 
 impl EnvDetail for EnvironmentSetup {
@@ -130,6 +132,11 @@ impl EnvDetail for EnvironmentSetup {
         } else {
             EnvironmentType::K8
         }
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn telemetry(&self) -> bool {
+        !self.no_telemetry
     }
 }
 
@@ -276,4 +283,9 @@ pub struct EnvironmentSetup {
     /// K8: use sc address
     #[clap(long)]
     pub proxy_addr: Option<String>,
+
+    /// Opt-out of sending traces to jaeger
+    #[cfg(feature = "telemetry")]
+    #[clap(long, short = 'T')]
+    pub no_telemetry: bool,
 }

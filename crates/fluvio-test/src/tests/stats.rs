@@ -81,8 +81,12 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     let producer_wait = async_process!(
         async {
-            let _trace_guard = init_jaeger!();
-
+            #[cfg(feature = "telemetry")]
+            let _trace_guard = if test_case.environment.telemetry() {
+                init_jaeger!()
+            } else {
+                None
+            };
             let span = info_span!("stats(producer)");
 
             async {
