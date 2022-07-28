@@ -5,8 +5,8 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use syn::{AttributeArgs, Ident, ItemFn, parse_macro_input};
 use quote::quote;
 use inflections::Inflect;
-use rand::{thread_rng, Rng};
-use rand::distributions::Alphanumeric;
+//use rand::{thread_rng, Rng};
+//use rand::distributions::Alphanumeric;
 
 /// This macro will allow a test writer to override
 /// minimum Fluvio cluster requirements for a test
@@ -50,13 +50,13 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     // Read the user test
     let fn_user_test = parse_macro_input!(input as ItemFn);
 
-    // Add some random to the generated function names so
-    // we can support using the macro multiple times in the same file
-    let rand_string: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(7)
-        .map(char::from)
-        .collect();
+    //// Add some random to the generated function names so
+    //// we can support using the macro multiple times in the same file
+    //let rand_string: String = thread_rng()
+    //    .sample_iter(&Alphanumeric)
+    //    .take(7)
+    //    .map(char::from)
+    //    .collect();
 
     //println!("{}", rand_string);
 
@@ -67,10 +67,11 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         fn_user_test.sig.ident.to_string()
     };
 
-    let test_driver_name = format!("{}_{}", test_name, &rand_string);
-    let user_test_name = format!("ext_test_fn_{}", &rand_string);
-    let requirements_name = format!("requirements_{}", &rand_string);
-    let validate_name = format!("validate_subcommand_{}", &rand_string);
+    let test_driver_name = format!("{}_wrapper", test_name);
+    //let user_test_name = format!("ext_test_fn_{}", &rand_string);
+    let user_test_name = format!("{test_name}");
+    let requirements_name = format!("{test_name}_requirements");
+    let validate_name = format!("{test_name}_validate_subcommand");
 
     let test_driver_iden = Ident::new(&test_driver_name, Span::call_site());
     let user_test_fn_iden = Ident::new(&user_test_name, Span::call_site());
@@ -103,6 +104,34 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         quote! { #test_body }
     };
 
+    let maybe_logging_init = if fn_test_reqs.r#async {
+        quote! {
+            // If the test is marked async, this is ok. Otherwise this needs to be initialized as late as possible
+            // Install a new OpenTelemetry trace pipeline
+            //let trace_guard = fluvio_test_util::test_runner::test_driver::TestDriver::init_logging();
+            let _trace_guard =  {
+                opentelemetry::global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
+                let tracer = opentelemetry_jaeger::new_pipeline()
+                    .with_service_name("fluvio_test")
+                    .install_simple()
+                    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                    .expect("fdfklsj");
+
+                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
+
+                use tracing_subscriber::layer::SubscriberExt;
+                let subscriber = tracing_subscriber::registry()
+                    .with(tracing_subscriber::EnvFilter::from_default_env())
+                    .with(opentelemetry);
+
+                tracing::subscriber::set_default(subscriber)
+            };
+
+        }
+    } else {
+        quote! {}
+    };
+
     let output_fn = quote! {
 
         // Collect test fn pointers w/ inventory
@@ -128,6 +157,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         #[tracing::instrument(skip(test_driver))]
         pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
             use fluvio_test_util::test_meta::environment::EnvDetail;
+
             #maybe_async_test
         }
 
@@ -140,6 +170,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
             use fluvio_test_util::{async_process,fork_and_wait};
+
+            #maybe_logging_init;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
 

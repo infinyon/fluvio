@@ -6,6 +6,7 @@ pub use common::*;
 mod common {
     use async_trait::async_trait;
     use tracing::instrument;
+    use tracing_futures::Instrument;
     use serde::{Serialize, Deserialize};
 
     use fluvio_cluster::{StartStatus, runtime::spu::SpuClusterManager};

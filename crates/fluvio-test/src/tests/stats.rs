@@ -12,7 +12,7 @@ use fluvio::stats::{ClientStatsDataCollect, ClientStatsMetric, ClientStatsMetric
 use crate::tests::TestRecordBuilder;
 
 use comfy_table::{Table, Row, Cell, CellAlignment};
-use tracing::{Instrument, debug_span, trace_span};
+use tracing::{Instrument, debug_span, trace_span, info_span};
 
 #[derive(Debug, Clone)]
 pub struct StatsTestCase {
@@ -80,224 +80,254 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     let producer_wait = async_process!(
         async {
-            test_driver
-                .connect()
-                .instrument(trace_span!("client_connect"))
-                .await
-                .expect("connecting to cluster failed");
+            let _trace_guard = {
+                opentelemetry::global::set_text_map_propagator(
+                    opentelemetry_jaeger::Propagator::new(),
+                );
+                let tracer = opentelemetry_jaeger::new_pipeline()
+                    .with_service_name("fluvio_test")
+                    .install_simple()
+                    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                    .expect("fdfklsj");
 
-            // Generate test data
-            let record = TestRecordBuilder::new()
-                .with_random_data(test_case.option.record_size)
-                .build();
-            let record_json = serde_json::to_string(&record)
-                .expect("Convert record to json string failed")
-                .as_bytes()
-                .to_vec();
+                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
 
-            println!("producer batch size: {}", test_case.option.batch_size);
+                use tracing_subscriber::layer::SubscriberExt;
+                let subscriber = tracing_subscriber::registry()
+                    .with(tracing_subscriber::EnvFilter::from_default_env())
+                    .with(opentelemetry);
 
-            // For calculating final payload size
-            let magic_header_size = 58.0;
-            let record_size = record_json.len() as f64;
+                tracing::subscriber::set_default(subscriber)
+            };
 
-            let max_records_in_batch = (test_case.option.batch_size as f64 / record_size) as u64;
-            let max_batch_size = record_size * max_records_in_batch as f64;
+            let span = info_span!("stats(producer)");
 
-            println!("max_batch_size: {max_batch_size}");
-            println!("max_records_in_batch: {max_records_in_batch}");
-
-            let mut total_payload_size = 0.0;
-            let mut total_records_sent = 0.0;
-            let mut total_latency = Duration::new(0, 0);
-
-            // Create producer
-            // Configure a connector w/ stats
-            let producer_config = TopicProducerConfigBuilder::default()
-                .batch_size(test_case.option.batch_size)
-                .stats_collect(ClientStatsDataCollect::All)
-                .build()
-                .unwrap();
-            let producer = test_driver
-                .create_producer_with_config(
-                    &test_case.environment.topic_name.unwrap(),
-                    producer_config,
-                )
-                .instrument(debug_span!("producer_create_w_config"))
-                .await;
-
-            let global_timer = SystemTime::now();
-            for r in 1..(test_case.option.rounds + 1) {
-                println!("\nRound #{r}\n");
-
-                let mut round_table = Table::new();
-                round_table.load_preset(comfy_table::presets::UTF8_HORIZONTAL_ONLY);
-
-                // Table header
-                let mut header = Row::new();
-                header.add_cell(Cell::new("Metric name").set_alignment(CellAlignment::Center));
-                header.add_cell(Cell::new("Expected value").set_alignment(CellAlignment::Center));
-                header.add_cell(Cell::new("Reported value").set_alignment(CellAlignment::Center));
-                header.add_cell(Cell::new("Ratio").set_alignment(CellAlignment::Center));
-                round_table.add_row(header);
-
-                // Add one more record to payload each round
-                let payload: Vec<(RecordKey, Vec<u8>)> = (0..r)
-                    .into_iter()
-                    .map(|_| (RecordKey::NULL, record_json.clone()))
-                    .collect();
-
-                // Calculate the round data
-                // Bytes
-                let round_payload_size = record_size * r as f64 + magic_header_size;
-                total_payload_size += round_payload_size;
-
-                // Records
-                let round_records_sent = r as f64;
-                total_records_sent += round_records_sent;
-
-                // Batches
-                //let round_batches_sent = r as f64;
-                //total_batches_sent += round_batches_sent;
-
-                // Latency
-                // start timer
-                let round_timer = SystemTime::now();
-                producer
-                    .send_all(payload)
-                    .instrument(debug_span!("send_all"))
+            async {
+                test_driver
+                    .connect()
+                    .instrument(trace_span!("client_connect"))
                     .await
+                    .expect("connecting to cluster failed");
+
+                // Generate test data
+                let record = TestRecordBuilder::new()
+                    .with_random_data(test_case.option.record_size)
+                    .build();
+                let record_json = serde_json::to_string(&record)
+                    .expect("Convert record to json string failed")
+                    .as_bytes()
+                    .to_vec();
+
+                println!("producer batch size: {}", test_case.option.batch_size);
+
+                // For calculating final payload size
+                let magic_header_size = 58.0;
+                let record_size = record_json.len() as f64;
+
+                let max_records_in_batch =
+                    (test_case.option.batch_size as f64 / record_size) as u64;
+                let max_batch_size = record_size * max_records_in_batch as f64;
+
+                println!("max_batch_size: {max_batch_size}");
+                println!("max_records_in_batch: {max_records_in_batch}");
+
+                let mut total_payload_size = 0.0;
+                let mut total_records_sent = 0.0;
+                let mut total_latency = Duration::new(0, 0);
+
+                // Create producer
+                // Configure a connector w/ stats
+                let producer_config = TopicProducerConfigBuilder::default()
+                    .batch_size(test_case.option.batch_size)
+                    .stats_collect(ClientStatsDataCollect::All)
+                    .build()
                     .unwrap();
-                producer
-                    .flush()
-                    .instrument(debug_span!("flush"))
-                    .await
-                    .unwrap();
-                let round_elapsed = round_timer.elapsed().unwrap();
-                // stop timer
+                let producer = test_driver
+                    .create_producer_with_config(
+                        &test_case.environment.topic_name.unwrap(),
+                        producer_config,
+                    )
+                    .instrument(debug_span!("producer_create_w_config"))
+                    .await;
 
-                total_latency += round_elapsed;
+                let global_timer = SystemTime::now();
+                for r in 1..(test_case.option.rounds + 1) {
+                    println!("\nRound #{r}\n");
 
-                // Validate our calculations are within tolerances to the reported values
-                if let Some(frame) = producer.stats() {
-                    // Print out round report before failing test
-                    let mut tolerance_check = false;
-                    if let ClientStatsMetricRaw::RunTime(reported) =
-                        frame.get(ClientStatsMetric::RunTime)
-                    {
-                        let expected = global_timer.elapsed().unwrap().as_nanos() as f64;
-                        let ratio = expected / reported as f64;
+                    let mut round_table = Table::new();
+                    round_table.load_preset(comfy_table::presets::UTF8_HORIZONTAL_ONLY);
 
-                        round_table.add_row(create_result_row(
-                            ClientStatsMetric::RunTime,
-                            expected,
-                            reported as u64,
-                        ));
+                    // Table header
+                    let mut header = Row::new();
+                    header.add_cell(Cell::new("Metric name").set_alignment(CellAlignment::Center));
+                    header
+                        .add_cell(Cell::new("Expected value").set_alignment(CellAlignment::Center));
+                    header
+                        .add_cell(Cell::new("Reported value").set_alignment(CellAlignment::Center));
+                    header.add_cell(Cell::new("Ratio").set_alignment(CellAlignment::Center));
+                    round_table.add_row(header);
 
-                        tolerance_check = tolerance_check || !is_pass(ratio);
-                    }
+                    // Add one more record to payload each round
+                    let payload: Vec<(RecordKey, Vec<u8>)> = (0..r)
+                        .into_iter()
+                        .map(|_| (RecordKey::NULL, record_json.clone()))
+                        .collect();
 
-                    if let ClientStatsMetricRaw::LastRecords(reported) =
-                        frame.get(ClientStatsMetric::LastRecords)
-                    {
-                        let expected;
+                    // Calculate the round data
+                    // Bytes
+                    let round_payload_size = record_size * r as f64 + magic_header_size;
+                    total_payload_size += round_payload_size;
 
-                        if r.rem_euclid(max_records_in_batch as u32) != 0 {
-                            // Calculate records in last batch
-                            expected = r.rem_euclid(max_records_in_batch as u32) as f64;
-                        } else if r.rem_euclid(max_records_in_batch as u32) == 0 {
-                            expected = max_records_in_batch as f64;
-                        } else {
-                            expected = round_records_sent as f64;
-                        };
+                    // Records
+                    let round_records_sent = r as f64;
+                    total_records_sent += round_records_sent;
 
-                        let ratio = expected / reported as f64;
+                    // Batches
+                    //let round_batches_sent = r as f64;
+                    //total_batches_sent += round_batches_sent;
 
-                        round_table.add_row(create_result_row(
-                            ClientStatsMetric::LastRecords,
-                            expected,
-                            reported,
-                        ));
+                    // Latency
+                    // start timer
+                    let round_timer = SystemTime::now();
+                    producer
+                        .send_all(payload)
+                        .instrument(debug_span!("send_all"))
+                        .await
+                        .unwrap();
+                    producer
+                        .flush()
+                        .instrument(debug_span!("flush"))
+                        .await
+                        .unwrap();
+                    let round_elapsed = round_timer.elapsed().unwrap();
+                    // stop timer
 
-                        tolerance_check = tolerance_check || !is_pass(ratio);
-                    }
+                    total_latency += round_elapsed;
 
-                    if let ClientStatsMetricRaw::Records(reported) =
-                        frame.get(ClientStatsMetric::Records)
-                    {
-                        let expected = total_records_sent;
-                        let ratio = expected / reported as f64;
+                    // Validate our calculations are within tolerances to the reported values
+                    if let Some(frame) = producer.stats() {
+                        // Print out round report before failing test
+                        let mut tolerance_check = false;
+                        if let ClientStatsMetricRaw::RunTime(reported) =
+                            frame.get(ClientStatsMetric::RunTime)
+                        {
+                            let expected = global_timer.elapsed().unwrap().as_nanos() as f64;
+                            let ratio = expected / reported as f64;
 
-                        round_table.add_row(create_result_row(
-                            ClientStatsMetric::Records,
-                            expected,
-                            reported,
-                        ));
+                            round_table.add_row(create_result_row(
+                                ClientStatsMetric::RunTime,
+                                expected,
+                                reported as u64,
+                            ));
 
-                        tolerance_check = tolerance_check || !is_pass(ratio);
-                    }
-
-                    if let ClientStatsMetricRaw::LastBytes(reported) =
-                        frame.get(ClientStatsMetric::LastBytes)
-                    {
-                        let expected;
-                        if r.rem_euclid(max_records_in_batch as u32) != 0 {
-                            // Calculate the records in last batch
-                            let record_remain = r.rem_euclid(max_records_in_batch as u32) as f64;
-
-                            expected = (record_size * record_remain) + magic_header_size;
-                        } else if r.rem_euclid(max_records_in_batch as u32) == 0 {
-                            expected = max_batch_size;
-                        } else {
-                            expected = round_payload_size;
+                            tolerance_check = tolerance_check || !is_pass(ratio);
                         }
 
-                        let ratio = expected as f64 / reported as f64;
+                        if let ClientStatsMetricRaw::LastRecords(reported) =
+                            frame.get(ClientStatsMetric::LastRecords)
+                        {
+                            let expected;
 
-                        round_table.add_row(create_result_row(
-                            ClientStatsMetric::LastBytes,
-                            expected,
-                            reported,
-                        ));
+                            if r.rem_euclid(max_records_in_batch as u32) != 0 {
+                                // Calculate records in last batch
+                                expected = r.rem_euclid(max_records_in_batch as u32) as f64;
+                            } else if r.rem_euclid(max_records_in_batch as u32) == 0 {
+                                expected = max_records_in_batch as f64;
+                            } else {
+                                expected = round_records_sent as f64;
+                            };
 
-                        tolerance_check = tolerance_check || !is_pass(ratio);
+                            let ratio = expected / reported as f64;
+
+                            round_table.add_row(create_result_row(
+                                ClientStatsMetric::LastRecords,
+                                expected,
+                                reported,
+                            ));
+
+                            tolerance_check = tolerance_check || !is_pass(ratio);
+                        }
+
+                        if let ClientStatsMetricRaw::Records(reported) =
+                            frame.get(ClientStatsMetric::Records)
+                        {
+                            let expected = total_records_sent;
+                            let ratio = expected / reported as f64;
+
+                            round_table.add_row(create_result_row(
+                                ClientStatsMetric::Records,
+                                expected,
+                                reported,
+                            ));
+
+                            tolerance_check = tolerance_check || !is_pass(ratio);
+                        }
+
+                        if let ClientStatsMetricRaw::LastBytes(reported) =
+                            frame.get(ClientStatsMetric::LastBytes)
+                        {
+                            let expected;
+                            if r.rem_euclid(max_records_in_batch as u32) != 0 {
+                                // Calculate the records in last batch
+                                let record_remain =
+                                    r.rem_euclid(max_records_in_batch as u32) as f64;
+
+                                expected = (record_size * record_remain) + magic_header_size;
+                            } else if r.rem_euclid(max_records_in_batch as u32) == 0 {
+                                expected = max_batch_size;
+                            } else {
+                                expected = round_payload_size;
+                            }
+
+                            let ratio = expected as f64 / reported as f64;
+
+                            round_table.add_row(create_result_row(
+                                ClientStatsMetric::LastBytes,
+                                expected,
+                                reported,
+                            ));
+
+                            tolerance_check = tolerance_check || !is_pass(ratio);
+                        }
+
+                        if let ClientStatsMetricRaw::Bytes(reported) =
+                            frame.get(ClientStatsMetric::Bytes)
+                        {
+                            let expected = total_payload_size;
+                            let ratio = expected as f64 / reported as f64;
+
+                            round_table.add_row(create_result_row(
+                                ClientStatsMetric::Bytes,
+                                expected,
+                                reported,
+                            ));
+
+                            tolerance_check = tolerance_check || !is_pass(ratio);
+                        }
+
+                        if let ClientStatsMetricRaw::Throughput(reported) =
+                            frame.get(ClientStatsMetric::Throughput)
+                        {
+                            let time_check = global_timer.elapsed().unwrap().as_secs_f64();
+                            let expected = total_payload_size as f64 / time_check;
+                            let ratio = expected as f64 / reported as f64;
+
+                            round_table.add_row(create_result_row(
+                                ClientStatsMetric::Throughput,
+                                expected,
+                                reported,
+                            ));
+
+                            tolerance_check = tolerance_check || !is_pass(ratio);
+                        }
+
+                        println!("{round_table}");
+                        assert!(!tolerance_check);
                     }
-
-                    if let ClientStatsMetricRaw::Bytes(reported) =
-                        frame.get(ClientStatsMetric::Bytes)
-                    {
-                        let expected = total_payload_size;
-                        let ratio = expected as f64 / reported as f64;
-
-                        round_table.add_row(create_result_row(
-                            ClientStatsMetric::Bytes,
-                            expected,
-                            reported,
-                        ));
-
-                        tolerance_check = tolerance_check || !is_pass(ratio);
-                    }
-
-                    if let ClientStatsMetricRaw::Throughput(reported) =
-                        frame.get(ClientStatsMetric::Throughput)
-                    {
-                        let time_check = global_timer.elapsed().unwrap().as_secs_f64();
-                        let expected = total_payload_size as f64 / time_check;
-                        let ratio = expected as f64 / reported as f64;
-
-                        round_table.add_row(create_result_row(
-                            ClientStatsMetric::Throughput,
-                            expected,
-                            reported,
-                        ));
-
-                        tolerance_check = tolerance_check || !is_pass(ratio);
-                    }
-
-                    println!("{round_table}");
-                    assert!(!tolerance_check);
                 }
             }
+            .instrument(span)
+            .await
         },
         "producer"
     );

@@ -8,7 +8,8 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use super::SmokeTestCase;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
-use tracing::{instrument, Instrument, debug_span, trace_span};
+use tracing::{instrument, debug_span, trace_span};
+use tracing_futures::Instrument;
 
 pub type Offsets = HashMap<String, i64>;
 

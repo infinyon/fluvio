@@ -4,7 +4,7 @@ pub mod consumer;
 use core::panic;
 use std::any::Any;
 use clap::Parser;
-use tracing::{Instrument, debug_span};
+use tracing::{Instrument, debug_span, info_span, trace_span};
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -73,16 +73,42 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
         println!("Starting Consumer #{}", consumer_id);
         let consumer = async_process!(
             async {
-                println!("try connecting consumer: {consumer_id}");
-                test_driver
-                    .connect()
-                    .instrument(debug_span!("connect_consumer", consumer_id = consumer_id))
-                    .await
-                    .expect("Connecting to cluster failed");
-                println!("consumer connected: {consumer_id}");
-                consumer::consumer_stream(test_driver.clone(), option.clone(), consumer_id)
-                    .instrument(debug_span!("stream_consumer", consumer_id = consumer_id))
-                    .await
+                let _trace_guard = {
+                    opentelemetry::global::set_text_map_propagator(
+                        opentelemetry_jaeger::Propagator::new(),
+                    );
+                    let tracer = opentelemetry_jaeger::new_pipeline()
+                        .with_service_name("fluvio_test")
+                        .install_simple()
+                        //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                        .expect("fdfklsj");
+
+                    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
+
+                    use tracing_subscriber::layer::SubscriberExt;
+                    let subscriber = tracing_subscriber::registry()
+                        .with(tracing_subscriber::EnvFilter::from_default_env())
+                        .with(opentelemetry);
+
+                    tracing::subscriber::set_default(subscriber)
+                };
+
+                let span = debug_span!("longevity_consumer_{consumer_id}");
+
+                async {
+                    println!("try connecting consumer: {consumer_id}");
+                    test_driver
+                        .connect()
+                        .instrument(debug_span!("connect_consumer", consumer_id = consumer_id))
+                        .await
+                        .expect("Connecting to cluster failed");
+                    println!("consumer connected: {consumer_id}");
+                    consumer::consumer_stream(test_driver.clone(), option.clone(), consumer_id)
+                        .instrument(debug_span!("stream_consumer", consumer_id = consumer_id))
+                        .await
+                }
+                .instrument(span)
+                .await
             },
             format!("consumer-{}", consumer_id)
         );
@@ -95,14 +121,40 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
         println!("Starting Producer #{}", producer_id);
         let producer = async_process!(
             async {
-                test_driver
-                    .connect()
-                    .instrument(debug_span!("connect_producer", producer_id = producer_id))
-                    .await
-                    .expect("Connecting to cluster failed");
-                producer::producer(test_driver, option, producer_id)
-                    .instrument(debug_span!("start_producer", producer_id = producer_id))
-                    .await
+                let _trace_guard = {
+                    opentelemetry::global::set_text_map_propagator(
+                        opentelemetry_jaeger::Propagator::new(),
+                    );
+                    let tracer = opentelemetry_jaeger::new_pipeline()
+                        .with_service_name("fluvio_test")
+                        .install_simple()
+                        //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                        .expect("fdfklsj");
+
+                    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
+
+                    use tracing_subscriber::layer::SubscriberExt;
+                    let subscriber = tracing_subscriber::registry()
+                        .with(tracing_subscriber::EnvFilter::from_default_env())
+                        .with(opentelemetry);
+
+                    tracing::subscriber::set_default(subscriber)
+                };
+
+                let span = debug_span!("longevity_producer_{producer_id}");
+
+                async {
+                    test_driver
+                        .connect()
+                        .instrument(debug_span!("connect_producer", producer_id = producer_id))
+                        .await
+                        .expect("Connecting to cluster failed");
+                    producer::producer(test_driver, option, producer_id)
+                        .instrument(debug_span!("start_producer", producer_id = producer_id))
+                        .await
+                }
+                .instrument(span)
+                .await
             },
             format!("producer-{}", producer_id)
         );

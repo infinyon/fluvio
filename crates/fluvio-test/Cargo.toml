@@ -1,52 +1,62 @@
 [package]
-name = "fluvio-test"
-version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2021"
 autotests = false
 description = "Fluvio Test Utility"
-repository = "https://github.com/infinyon/fluvio"
+edition = "2021"
 license = "Apache-2.0"
+name = "fluvio-test"
 publish = false
+repository = "https://github.com/infinyon/fluvio"
+version = "0.0.0"
 
 [dependencies]
-tracing = "0.1"
-bytes = "1.0"
-futures-lite = "1.11.0"
-futures = "0.3"
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
+async-channel = "1.6"
+async-std = {version = "1.8.0", default-features = false, features = ["attributes"]}
 async-trait = "0.1.21"
-rand = "0.8"
+bytes = "1.0"
+clap = {version = "3.1.8", features = ["std", "derive"], default-features = false}
+comfy-table = "5.0.1"
+crossbeam-channel = "0.5"
+futures = "0.3"
+futures-lite = "1.11.0"
+indicatif = "0.16.2"
+inventory = "0.1"
+linkme = "0.3"
 md-5 = "0.10"
-serde = { version = "1.0", features = ["derive"] }
+rand = "0.8"
+serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 serde_yaml = "0.8"
-inventory = "0.1"
 tokio = { version = "1.4", features = ["macros"] }
-comfy-table = "5.0.1"
 hdrhistogram = "7.3.0"
 crc = "3.0"
 fork = "0.1"
 nix = "0.24"
-crossbeam-channel = "0.5"
 sysinfo = { version = "0.24.7" }
-signal-hook = "0.3.13"
-indicatif = "0.16.2"
-async-std = { version = "1.8.0", default-features = false,features = ["attributes"] }
 uuid = { version = "1.1", features = ["serde", "v4"] }
-async-channel = "1.6"
+signal-hook = "0.3.13"
+tracing = "0.1"
+#opentelemetry = { version = "0.17", features = ["rt-async-std", "jaeger_remote_sampler"] } 
+#opentelemetry = "0.17" 
+opentelemetry = {version = "0.17.0", features = ["async-std", "trace"]}
+opentelemetry-jaeger = {version = "0.16.0", features = ["rt-async-std", "isahc", "isahc_collector_client", "collector_client"]}
+opentelemetry-otlp = {version = "0.10", features = ["grpc-sys"]}
+tracing-opentelemetry = "0.17"
+tracing-subscriber = {version = "0.3", features = ["std", "env-filter"]}
 
 # Fluvio dependencies
-fluvio = { path = "../fluvio", features = ["stats"] }
-fluvio-types = { path = "../fluvio-types" }
-fluvio-future = { version = "0.4.0", features = ["io", "task", "timer", "subscriber", "fixture"] }
-fluvio-command = { version = "0.2.0" }
-fluvio-cluster = { path = "../fluvio-cluster" }
-fluvio-cli = { path = "../fluvio-cli" }
-fluvio-controlplane-metadata = { features = ["k8"], path = "../fluvio-controlplane-metadata" }
-dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = {path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol"}
+fluvio = {path = "../fluvio", features = ["stats"]}
+fluvio-cli = {path = "../fluvio-cli"}
+fluvio-cluster = {path = "../fluvio-cluster"}
+fluvio-command = {version = "0.2.0"}
+fluvio-controlplane-metadata = {features = ["k8"], path = "../fluvio-controlplane-metadata"}
+fluvio-future = {version = "0.4.0", features = ["io", "task", "timer", "subscriber", "fixture"]}
+fluvio-types = {path = "../fluvio-types"}
+reqwest = "0.11"
+tracing-futures = {version = "0.2.5", default-features = false, features = ["std-future", "std"]}
 
 # Fluvio test framework Attribute macro
-fluvio-test-derive = { path = "../fluvio-test-derive" }
-fluvio-test-util = { path = "../fluvio-test-util" }
 fluvio-protocol = "0.7.4"
+fluvio-test-derive = {path = "../fluvio-test-derive"}
+fluvio-test-util = {path = "../fluvio-test-util"}

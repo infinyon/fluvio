@@ -2,7 +2,8 @@ use std::any::Any;
 use std::time::Duration;
 use futures_lite::StreamExt;
 
-use tracing::{debug, Instrument, debug_span};
+use tracing::{debug, debug_span};
+use tracing_futures::Instrument;
 
 use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
 use fluvio::dataplane::batch::Batch;

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use tracing::{info, debug, instrument, Instrument, debug_span, trace_span};
+use tracing::{info, debug, instrument, debug_span, trace_span};
+use tracing_futures::Instrument;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_meta::environment::EnvDetail;

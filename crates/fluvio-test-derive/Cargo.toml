@@ -1,34 +1,32 @@
 [package]
-name = "fluvio-test-derive"
-version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2021"
 description = "Fluvio Test Derive Macro"
-repository = "https://github.com/infinyon/fluvio"
+edition = "2021"
 license = "Apache-2.0"
+name = "fluvio-test-derive"
 publish = false
-
+repository = "https://github.com/infinyon/fluvio"
+version = "0.0.0"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0", features = ["full"]}
-quote = "1.0"
-proc-macro2 = "1.0"
-serde_json = "1.0"
+fluvio-test-util = {path = "../fluvio-test-util"}
 inflections = "1.1"
-fluvio-test-util = { path = "../fluvio-test-util" }
-rand = "0.8.4"
-
+proc-macro2 = "1.0"
+quote = "1.0"
+serde_json = "1.0"
+syn = {version = "1.0", features = ["full"]}
+#rand = "0.8.4"
 
 [dev-dependencies]
-trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
-fluvio = { path = "../fluvio" }
-tokio = { version = "1.4", features = ["macros"] }
-fluvio-future = { version = "0.4.0", features = ["task", "timer", "subscriber", "fixture"] }
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
-nix = "0.24"
-inventory = "0.1"
-tracing = "0.1"
+clap = {version = "3.1.8", features = ["std", "derive"], default-features = false}
 crossbeam-channel = "0.5"
+fluvio = {path = "../fluvio"}
+fluvio-future = {version = "0.4.0", features = ["task", "timer", "subscriber", "fixture"]}
+inventory = "0.1"
+nix = "0.24"
+tokio = {version = "1.4", features = ["macros"]}
+tracing = "0.1"
+trybuild = {git = "https://github.com/infinyon/trybuild", branch = "check_option"}

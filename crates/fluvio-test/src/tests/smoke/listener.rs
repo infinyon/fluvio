@@ -1,5 +1,6 @@
 use std::time::Duration;
-use tracing::{info, instrument, Instrument, debug_span, trace_span};
+use tracing::{info, instrument, debug_span, trace_span};
+use tracing_futures::Instrument;
 
 use futures::stream::StreamExt;
 use futures::select;

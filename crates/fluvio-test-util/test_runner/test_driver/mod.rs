@@ -1,5 +1,6 @@
 use fluvio::consumer::PartitionSelectionStrategy;
-use tracing::{debug, instrument, debug_span, trace_span, Instrument};
+use tracing::{debug, instrument, debug_span, trace_span};
+use tracing_futures::Instrument;
 
 use fluvio::{Fluvio, FluvioError};
 
@@ -44,6 +45,26 @@ impl TestDriver {
             cluster: cluster_opt,
         }
     }
+
+    //#[instrument(level = "trace")]
+    //pub fn init_logging() -> tracing::dispatcher::DefaultGuard {
+    //    // Install a new OpenTelemetry trace pipeline
+    //    opentelemetry::global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
+    //    let tracer = opentelemetry_jaeger::new_pipeline()
+    //        .with_service_name("fluvio_test")
+    //        .install_simple()
+    //        //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+    //        .expect("fdfklsj");
+
+    //    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
+
+    //    use tracing_subscriber::layer::SubscriberExt;
+    //    let subscriber = tracing_subscriber::registry()
+    //        .with(tracing_subscriber::EnvFilter::from_default_env())
+    //        .with(opentelemetry);
+
+    //    tracing::subscriber::set_default(subscriber)
+    //}
 
     #[instrument(skip(self), level = "trace")]
     pub async fn connect(&mut self) -> Result<(), FluvioError> {

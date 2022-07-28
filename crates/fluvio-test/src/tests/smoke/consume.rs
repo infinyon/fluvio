@@ -3,7 +3,8 @@
 use std::{io, time::Duration};
 use std::io::Write;
 
-use tracing::{info, instrument, Instrument, debug_span, trace_span};
+use tracing::{info, instrument, debug_span, trace_span};
+use tracing_futures::Instrument;
 use futures_lite::stream::StreamExt;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver};

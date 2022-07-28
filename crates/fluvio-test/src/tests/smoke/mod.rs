@@ -13,7 +13,8 @@ use std::io::Read;
 use std::collections::BTreeMap;
 
 use clap::Parser;
-use tracing::{debug, Instrument, debug_span, trace_span};
+use tracing::{debug, debug_span, trace_span, event};
+use tracing_futures::Instrument;
 use serde::{Deserialize};
 
 use fluvio_test_derive::fluvio_test;
@@ -28,6 +29,34 @@ use fluvio::metadata::{
     connector::{ManagedConnectorSpec, ManagedConnectorParameterValue, SecretString},
 };
 use fluvio_future::timer::sleep;
+
+// Testing
+use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
+//use tracing::{debug, instrument, Instrument, debug_span};
+
+use opentelemetry::sdk::export::trace::stdout;
+use opentelemetry::sdk::trace::{Sampler, TracerProvider as SdkTracerProvider};
+
+use opentelemetry::global;
+use opentelemetry::trace::Tracer;
+use opentelemetry::sdk::export::trace::stdout::Exporter as StdoutExporter;
+use opentelemetry::runtime;
+
+use tracing::{error, span, info_span};
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::Registry;
+use tracing_subscriber::EnvFilter;
+use opentelemetry::trace::TraceContextExt;
+
+use opentelemetry::{
+    KeyValue,
+    trace::{TraceError},
+};
+use opentelemetry::sdk::{
+    trace::{self, IdGenerator},
+    Resource,
+};
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -79,116 +108,174 @@ impl TestOption for SmokeTestOption {
 
 #[fluvio_test(topic = "test")]
 pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
+    // Install a new OpenTelemetry trace pipeline
+    //let tracer = global::tracer("fluvio_test");
+
+    // Trace executed code
+    // tracing::subscriber::with_default(subscriber, || {
+    //tracer.in_span("running_test", |_| {
+    // Spans will be sent to the configured OpenTelemetry exporter
+    let root_span = span!(tracing::Level::TRACE, "smoke");
+    let _or_current = root_span.enter();
+
     let smoke_test_case: SmokeTestCase = test_case.into();
+
+    //tracer.in_span("subspan inside the test", |cx| {});
 
     // If connector tests requested
     let maybe_connector = if !smoke_test_case.option.skip_test_connector {
         if let Some(ref connector_config) = smoke_test_case.option.connector_config {
             let connector_process = async_process!(
                 async {
-                    test_driver
-                        .connect()
-                        .instrument(debug_span!("client_for_connector_test"))
-                        .await
-                        .expect("Connecting to cluster failed");
+                    let _trace_guard = {
+                        opentelemetry::global::set_text_map_propagator(
+                            opentelemetry_jaeger::Propagator::new(),
+                        );
+                        let tracer = opentelemetry_jaeger::new_pipeline()
+                            .with_service_name("fluvio_test")
+                            .install_simple()
+                            //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                            .expect("fdfklsj");
 
-                    // Add a connector CRD
-                    let admin = test_driver
-                        .client()
-                        .admin()
-                        .instrument(trace_span!("fluvio_admin"))
-                        .await;
-                    // Create a managed connector
-                    let config = ConnectorConfig::from_file(&connector_config).unwrap();
-                    let spec: ManagedConnectorSpec = config.clone().into();
-                    let name = spec.name.clone();
+                        let opentelemetry =
+                            tracing_opentelemetry::layer().with_tracer(tracer.clone());
 
-                    debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
+                        use tracing_subscriber::layer::SubscriberExt;
+                        let subscriber = tracing_subscriber::registry()
+                            .with(tracing_subscriber::EnvFilter::from_default_env())
+                            .with(opentelemetry);
 
-                    // If the managed connector wants its topic created, don't fail if it already exists
-                    if config.create_topic {
-                        println!("Attempt to create connector's topic");
-                        let topic_spec: TopicSpec =
-                            ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false)).into();
-                        debug!("topic spec: {:?}", topic_spec);
+                        tracing::subscriber::set_default(subscriber)
+                    };
+
+                    let span = info_span!("smoke(connector)");
+
+                    async {
+                        test_driver
+                            .connect()
+                            .instrument(debug_span!("client_for_connector_test").or_current())
+                            .await
+                            .expect("Connecting to cluster failed");
+
+                        // Add a connector CRD
+                        let admin = test_driver
+                            .client()
+                            .admin()
+                            .instrument(trace_span!("fluvio_admin").or_current())
+                            .await;
+                        // Create a managed connector
+                        let config = ConnectorConfig::from_file(&connector_config).unwrap();
+                        let spec: ManagedConnectorSpec = config.clone().into();
+                        let name = spec.name.clone();
+
+                        debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
+
+                        // If the managed connector wants its topic created, don't fail if it already exists
+                        if config.create_topic {
+                            println!("Attempt to create connector's topic");
+                            let topic_spec: TopicSpec =
+                                ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false)).into();
+                            debug!("topic spec: {:?}", topic_spec);
+                            admin
+                                .create(config.topic.clone(), false, topic_spec)
+                                .instrument(debug_span!("topic_create_for_connector").or_current())
+                                .await
+                                .unwrap_or(());
+                        }
+
+                        // If the connector already exists, don't fail
+                        println!("Attempt to create connector");
                         admin
-                            .create(config.topic.clone(), false, topic_spec)
-                            .instrument(debug_span!("topic_create_for_connector"))
+                            .create(name.to_string(), false, spec)
+                            .instrument(debug_span!("connector_create").or_current())
                             .await
                             .unwrap_or(());
-                    }
 
-                    // If the connector already exists, don't fail
-                    println!("Attempt to create connector");
-                    admin
-                        .create(name.to_string(), false, spec)
-                        .instrument(debug_span!("connector_create"))
-                        .await
-                        .unwrap_or(());
+                        // Build a new SmokeTestCase so we can use the consumer verify
+                        // Ending after a static number of records received
+                        let new_smoke_test_case = SmokeTestCase {
+                            environment: EnvironmentSetup {
+                                topic_name: Some(config.topic.clone()),
+                                tls: smoke_test_case.environment.tls,
+                                tls_user: smoke_test_case.environment.tls_user(),
+                                spu: smoke_test_case.environment.spu,
+                                replication: smoke_test_case.environment.replication,
+                                partition: smoke_test_case.environment.partition,
+                                ..Default::default()
+                            },
+                            option: SmokeTestOption {
+                                skip_consumer_validate: true,
+                                producer_iteration: 10,
+                                connector_config: smoke_test_case.option.connector_config.clone(),
+                                ..Default::default()
+                            },
+                        };
 
-                    // Build a new SmokeTestCase so we can use the consumer verify
-                    // Ending after a static number of records received
-                    let new_smoke_test_case = SmokeTestCase {
-                        environment: EnvironmentSetup {
-                            topic_name: Some(config.topic.clone()),
-                            tls: smoke_test_case.environment.tls,
-                            tls_user: smoke_test_case.environment.tls_user(),
-                            spu: smoke_test_case.environment.spu,
-                            replication: smoke_test_case.environment.replication,
-                            partition: smoke_test_case.environment.partition,
-                            ..Default::default()
-                        },
-                        option: SmokeTestOption {
-                            skip_consumer_validate: true,
-                            producer_iteration: 10,
-                            connector_config: smoke_test_case.option.connector_config.clone(),
-                            ..Default::default()
-                        },
-                    };
+                        // Build a new SmokeTestCase so we can use the consumer verify
+                        // Ending after a static number of records received
+                        let new_smoke_test_case = SmokeTestCase {
+                            environment: EnvironmentSetup {
+                                topic_name: Some(config.topic.clone()),
+                                tls: smoke_test_case.environment.tls,
+                                tls_user: smoke_test_case.environment.tls_user(),
+                                spu: smoke_test_case.environment.spu,
+                                replication: smoke_test_case.environment.replication,
+                                partition: smoke_test_case.environment.partition,
+                                ..Default::default()
+                            },
+                            option: SmokeTestOption {
+                                skip_consumer_validate: true,
+                                producer_iteration: 10,
+                                connector_config: smoke_test_case.option.connector_config.clone(),
+                                ..Default::default()
+                            },
+                        };
+                        // Verify that connector is creating data
+                        let start_offset =
+                            offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
+                                .instrument(debug_span!("start_offset").or_current())
+                                .await;
+                        let start = start_offset.get(&config.topic.clone()).expect("offsets");
 
-                    // Verify that connector is creating data
-                    let start_offset =
-                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
-                            .instrument(debug_span!("start_offset"))
+                        println!("Verify connector is creating data: (start: {})", start);
+
+                        const CI_TIME: u64 = 90;
+                        const DEV_TIME: u64 = 10;
+
+                        let wait_sec = if std::env::var("CI").is_ok() {
+                            CI_TIME
+                        } else {
+                            DEV_TIME
+                        };
+
+                        println!("Waiting {} seconds to let connector write", &wait_sec);
+                        sleep(Duration::from_secs(wait_sec))
+                            .instrument(trace_span!("sleep").or_current())
                             .await;
-                    let start = start_offset.get(&config.topic.clone()).expect("offsets");
 
-                    println!("Verify connector is creating data: (start: {})", start);
+                        let check_offset =
+                            offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
+                                .instrument(debug_span!("check_offset").or_current())
+                                .await;
+                        let check = check_offset.get(&config.topic.clone()).expect("offsets");
 
-                    const CI_TIME: u64 = 90;
-                    const DEV_TIME: u64 = 10;
+                        if check > start {
+                            println!("Connector is receiving data: (check: {})", check)
+                        } else {
+                            panic!("Connector not receiving data")
+                        };
 
-                    let wait_sec = if std::env::var("CI").is_ok() {
-                        CI_TIME
-                    } else {
-                        DEV_TIME
-                    };
-
-                    println!("Waiting {} seconds to let connector write", &wait_sec);
-                    sleep(Duration::from_secs(wait_sec))
-                        .instrument(trace_span!("sleep"))
+                        println!("Run consume test against connector topic");
+                        validate_consume_message_api(
+                            test_driver,
+                            start_offset,
+                            &new_smoke_test_case.clone(),
+                        )
+                        .instrument(debug_span!("validate_connector_active"))
                         .await;
-
-                    let check_offset =
-                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
-                            .instrument(debug_span!("check_offset"))
-                            .await;
-                    let check = check_offset.get(&config.topic.clone()).expect("offsets");
-
-                    if check > start {
-                        println!("Connector is receiving data: (check: {})", check)
-                    } else {
-                        panic!("Connector not receiving data")
-                    };
-
-                    println!("Run consume test against connector topic");
-                    validate_consume_message_api(
-                        test_driver,
-                        start_offset,
-                        &new_smoke_test_case.clone(),
-                    )
-                    .instrument(debug_span!("validate_connector_active"))
-                    .await;
+                    }
+                    .instrument(span)
+                    .await
                 },
                 "connector"
             );
@@ -205,10 +292,34 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     };
 
     // TableFormat test
-    let maybe_table_format =
-        if let Some(ref table_format_config) = smoke_test_case.option.table_format_config {
-            let table_format_process = async_process!(
-                async {
+    let maybe_table_format = if let Some(ref table_format_config) =
+        smoke_test_case.option.table_format_config
+    {
+        let table_format_process = async_process!(
+            async {
+                let _trace_guard = {
+                    opentelemetry::global::set_text_map_propagator(
+                        opentelemetry_jaeger::Propagator::new(),
+                    );
+                    let tracer = opentelemetry_jaeger::new_pipeline()
+                        .with_service_name("fluvio_test")
+                        .install_simple()
+                        //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                        .expect("fdfklsj");
+
+                    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
+
+                    use tracing_subscriber::layer::SubscriberExt;
+                    let subscriber = tracing_subscriber::registry()
+                        .with(tracing_subscriber::EnvFilter::from_default_env())
+                        .with(opentelemetry);
+
+                    tracing::subscriber::set_default(subscriber)
+                };
+
+                let span = info_span!("smoke(table_format)");
+
+                async move {
                     let time = SystemTime::now();
                     let config = TableFormatConfig::from_file(table_format_config)
                         .expect("TableFormat config load failed");
@@ -217,31 +328,31 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
                     test_driver
                         .connect()
-                        .instrument(debug_span!("client_for_table_format"))
+                        .instrument(debug_span!("client_for_table_format").or_current())
                         .await
                         .expect("Connecting to cluster failed");
 
                     let admin = test_driver
                         .client()
                         .admin()
-                        .instrument(trace_span!("fluvio_admin"))
+                        .instrument(trace_span!("fluvio_admin").or_current())
                         .await;
 
                     admin
                         .create(name.clone(), false, table_format_spec)
-                        .instrument(debug_span!("table_format_create"))
+                        .instrument(debug_span!("table_format_create").or_current())
                         .await
                         .expect("TableFormat create failed");
                     println!("tableformat \"{}\" created", &name);
 
                     // Wait a moment then delete
                     sleep(Duration::from_secs(5))
-                        .instrument(trace_span!("sleep"))
+                        .instrument(trace_span!("sleep").or_current())
                         .await;
 
                     admin
                         .delete::<TableFormatSpec, _>(name.clone())
-                        .instrument(debug_span!("table_format_delete"))
+                        .instrument(debug_span!("table_format_delete").or_current())
                         .await
                         .expect("TableFormat delete failed");
                     println!(
@@ -249,47 +360,80 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                         &name,
                         time.elapsed().unwrap().as_secs()
                     );
-                },
-                "tableformat"
-            );
+                }
+                .instrument(span)
+                .await
+            },
+            "tableformat"
+        );
 
-            Some(table_format_process)
-            // Create a managed connector
-        } else {
-            None
-        };
+        Some(table_format_process)
+        // Create a managed connector
+    } else {
+        None
+    };
 
     // We're going to handle the `--consumer-wait` flag in this process
     let producer_wait = async_process!(
         async {
-            let mut test_driver_consumer_wait = test_driver.clone();
+            //let parent_span = root_span.clone().id();
+            let _trace_guard = {
+                opentelemetry::global::set_text_map_propagator(
+                    opentelemetry_jaeger::Propagator::new(),
+                );
+                let tracer = opentelemetry_jaeger::new_pipeline()
+                    .with_service_name("fluvio_test")
+                    .install_simple()
+                    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                    .expect("fdfklsj");
 
-            test_driver
-                .connect()
-                .instrument(debug_span!("client_for_producer"))
-                .await
-                .expect("Connecting to cluster failed");
-            println!("About to start producer test");
+                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
 
-            let start_offset = produce::produce_message(test_driver, &smoke_test_case)
-                .instrument(debug_span!("produce_message"))
-                .await;
+                use tracing_subscriber::layer::SubscriberExt;
+                let subscriber = tracing_subscriber::registry()
+                    .with(tracing_subscriber::EnvFilter::from_default_env())
+                    .with(opentelemetry);
 
-            // If we've passed in `--consumer-wait` then we should start the consumer after the producer
-            if smoke_test_case.option.consumer_wait {
-                test_driver_consumer_wait
+                tracing::subscriber::set_default(subscriber)
+            };
+
+            let span = info_span!("smoke(producer)");
+
+            async move {
+                //tracer.in_scope(|| {
+                //init_logging();
+                let mut test_driver_consumer_wait = test_driver.clone();
+
+                test_driver
                     .connect()
-                    .instrument(debug_span!("consumer_for_wait"))
+                    .instrument(debug_span!("client_for_producer").or_current())
                     .await
                     .expect("Connecting to cluster failed");
-                validate_consume_message_api(
-                    test_driver_consumer_wait,
-                    start_offset,
-                    &smoke_test_case,
-                )
-                .instrument(debug_span!("validate_producer_active"))
-                .await;
+                println!("About to start producer test");
+
+                let start_offset = produce::produce_message(test_driver, &smoke_test_case)
+                    .instrument(debug_span!("produce_message").or_current())
+                    .await;
+
+                // If we've passed in `--consumer-wait` then we should start the consumer after the producer
+                if smoke_test_case.option.consumer_wait {
+                    test_driver_consumer_wait
+                        .connect()
+                        .instrument(debug_span!("consumer_for_wait").or_current())
+                        .await
+                        .expect("Connecting to cluster failed");
+                    validate_consume_message_api(
+                        test_driver_consumer_wait,
+                        start_offset,
+                        &smoke_test_case,
+                    )
+                    .instrument(debug_span!("validate_producer_active").or_current())
+                    .await;
+                }
             }
+            .instrument(span)
+            .await
+            //});
         },
         "producer"
     );
@@ -298,14 +442,40 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     if !smoke_test_case.option.consumer_wait {
         let consumer_wait = async_process!(
             async {
-                test_driver
-                    .connect()
-                    .instrument(debug_span!("client_for_consumer"))
-                    .await
-                    .expect("Connecting to cluster failed");
-                consume::validate_consume_message(test_driver, &smoke_test_case)
-                    .instrument(debug_span!("consumer_validate"))
-                    .await;
+                let _trace_guard = {
+                    opentelemetry::global::set_text_map_propagator(
+                        opentelemetry_jaeger::Propagator::new(),
+                    );
+                    let tracer = opentelemetry_jaeger::new_pipeline()
+                        .with_service_name("fluvio_test")
+                        .install_simple()
+                        //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
+                        .expect("fdfklsj");
+
+                    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
+
+                    use tracing_subscriber::layer::SubscriberExt;
+                    let subscriber = tracing_subscriber::registry()
+                        .with(tracing_subscriber::EnvFilter::from_default_env())
+                        .with(opentelemetry);
+
+                    tracing::subscriber::set_default(subscriber)
+                };
+
+                let span = info_span!("smoke(consumer)");
+
+                async move {
+                    test_driver
+                        .connect()
+                        .instrument(debug_span!("client_for_consumer").or_current())
+                        .await
+                        .expect("Connecting to cluster failed");
+                    consume::validate_consume_message(test_driver, &smoke_test_case)
+                        .instrument(debug_span!("consumer_validate").or_current())
+                        .await;
+                }
+                .instrument(span)
+                .await
             },
             "consumer validation"
         );
@@ -321,6 +491,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     if let Some(table_format_wait) = maybe_table_format {
         let _ = table_format_wait.join();
     };
+    //});
 }
 
 // Copied from CLI Connector create
