@@ -1,7 +1,6 @@
 use std::time::{Duration, Instant};
 use std::fmt::Debug;
 use tracing::instrument;
-use tracing_futures::Instrument;
 
 #[derive(Debug, Clone)]
 pub struct TestTimer {

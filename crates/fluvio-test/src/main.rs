@@ -18,48 +18,16 @@ use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::{async_process};
 
-// This is important for `inventory` crate
+// This is needed for tests to link
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
 use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
 use tracing::debug;
 
-//const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
 use opentelemetry::global;
-use opentelemetry::sdk::export::trace::stdout;
-use tracing::{error, span};
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::Registry;
-use tracing_subscriber::prelude::*;
 
 fn main() {
     let option = BaseCli::parse();
-    //let tracer = opentelemetry_jaeger::new_pipeline()
-    //    .with_service_name("fluvio_test")
-    //    .build_simple()
-    //    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-    //    .expect("fdfklsj");
-    //global::set_tracer_provider(tracer);
-    // Install a new OpenTelemetry trace pipeline
-    //let tracer = opentelemetry_jaeger::new_pipeline()
-    //    .with_service_name("fluvio_test")
-    //    .install_simple()
-    //    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-    //    .expect("fdfklsj");
-    //let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    //let subscriber = tracing_subscriber::registry().with(opentelemetry);
-    //.try_init()
-    //.expect("fdlkfjs");
-
-    //tracing::subscriber::set_global_default(subscriber).expect("Unable to set global subscriber");
-    //global::set_text_map_propagator(opentelemetry::sdk::propagation::TraceContextPropagator::new());
-
-    //// Trace executed code
-    ////tracing::subscriber::with_default(subscriber, || {
-    //// Spans will be sent to the configured OpenTelemetry exporter
-    //let root = span!(tracing::Level::TRACE, "app_start", work_units = 2);
-    //let _enter = root.enter();
-
     debug!("{:?}", option);
 
     let test_name = option.environment.test_name.clone();
@@ -68,7 +36,7 @@ fn main() {
     let test_meta = FluvioTestMeta::from_name(test_name.clone())
         .expect("StructOpt should have caught this error");
 
-    let mut subcommand = vec![test_name.clone()];
+    let mut subcommand = vec![test_name];
 
     if let Some(TestCli::Args(args)) = option.test_cmd_args {
         // Add the args to the subcommand

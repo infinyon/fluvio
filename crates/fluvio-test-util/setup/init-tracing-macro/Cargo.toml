@@ -1,0 +1,16 @@
+[package]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio Test function macro to init tracing pipeline"
+edition = "2021"
+license = "Apache-2.0"
+name = "fluvio-test-init-tracing-macro"
+publish = false
+repository = "https://github.com/infinyon/fluvio"
+version = "0.0.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+syn = {version = "1.0", features = ["full"]}

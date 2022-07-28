@@ -1,4 +1,6 @@
 pub mod environment;
+pub mod tracing;
+pub use self::tracing::init_jaeger;
 
 pub use cluster::*;
 

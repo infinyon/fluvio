@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use tracing::instrument;
-use tracing_futures::Instrument;
 
 use fluvio_cluster::{ClusterConfig, ClusterInstaller, ClusterUninstallConfig, StartStatus};
 

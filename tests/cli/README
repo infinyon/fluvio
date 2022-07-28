@@ -1,0 +1,25 @@
+# Fluvio CLI Testing
+
+## Overview
+
+The CLI testing is written using the [bats-core](https://bats-core.readthedocs.io/en/stable/index.html) framework. Follow their [instructions ](https://bats-core.readthedocs.io/en/stable/installation.html) for installation.
+
+The basic way to run tests is with the following command:
+
+`bats <path to your-test.bats>`
+
+
+
+### Test helper descriptions
+
+There are bats libraries and example config files in the `test_helper` directory. The following are a description of a few of the commonly used libraries.
+
+#### tools_check.bash
+This is where to place tests for ensuring that any required tools are installed
+
+#### fluvio_dev.bash
+This is where any common functions are organized for using in your tests. 
+
+#### Bats official libraries
+
+We us

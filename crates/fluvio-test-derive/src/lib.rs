@@ -69,7 +69,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let test_driver_name = format!("{}_wrapper", test_name);
     //let user_test_name = format!("ext_test_fn_{}", &rand_string);
-    let user_test_name = format!("{test_name}");
+    let user_test_name = test_name.to_string();
     let requirements_name = format!("{test_name}_requirements");
     let validate_name = format!("{test_name}_validate_subcommand");
 
@@ -104,29 +104,12 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         quote! { #test_body }
     };
 
+    // If the test is marked async, this is ok.
+    // Otherwise this needs to be initialized in the same async context as test code
     let maybe_logging_init = if fn_test_reqs.r#async {
         quote! {
-            // If the test is marked async, this is ok. Otherwise this needs to be initialized as late as possible
-            // Install a new OpenTelemetry trace pipeline
-            //let trace_guard = fluvio_test_util::test_runner::test_driver::TestDriver::init_logging();
-            let _trace_guard =  {
-                opentelemetry::global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
-                let tracer = opentelemetry_jaeger::new_pipeline()
-                    .with_service_name("fluvio_test")
-                    .install_simple()
-                    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-                    .expect("fdfklsj");
-
-                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
-
-                use tracing_subscriber::layer::SubscriberExt;
-                let subscriber = tracing_subscriber::registry()
-                    .with(tracing_subscriber::EnvFilter::from_default_env())
-                    .with(opentelemetry);
-
-                tracing::subscriber::set_default(subscriber)
-            };
-
+            // Install a new Jaeger trace pipeline
+            let _trace_guard =  fluvio_test_util::setup::init_jaeger!();
         }
     } else {
         quote! {}

@@ -1,7 +1,6 @@
 use super::SmokeTestCase;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use tracing::instrument;
-use tracing_futures::Instrument;
 
 const VALUE: u8 = 65;
 

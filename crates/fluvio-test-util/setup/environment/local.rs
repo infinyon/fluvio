@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use tracing::instrument;
-use tracing_futures::Instrument;
 
 use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};

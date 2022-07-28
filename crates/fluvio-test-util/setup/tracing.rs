@@ -1,0 +1,1 @@
+pub use fluvio_test_init_tracing_macro::impl_init_jaeger_macro as init_jaeger;

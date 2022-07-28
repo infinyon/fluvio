@@ -6,6 +6,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
+use fluvio_test_util::setup::init_jaeger;
 use fluvio::{TopicProducerConfigBuilder, RecordKey};
 
 use fluvio::stats::{ClientStatsDataCollect, ClientStatsMetric, ClientStatsMetricRaw};
@@ -80,25 +81,7 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     let producer_wait = async_process!(
         async {
-            let _trace_guard = {
-                opentelemetry::global::set_text_map_propagator(
-                    opentelemetry_jaeger::Propagator::new(),
-                );
-                let tracer = opentelemetry_jaeger::new_pipeline()
-                    .with_service_name("fluvio_test")
-                    .install_simple()
-                    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-                    .expect("fdfklsj");
-
-                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
-
-                use tracing_subscriber::layer::SubscriberExt;
-                let subscriber = tracing_subscriber::registry()
-                    .with(tracing_subscriber::EnvFilter::from_default_env())
-                    .with(opentelemetry);
-
-                tracing::subscriber::set_default(subscriber)
-            };
+            let _trace_guard = init_jaeger!();
 
             let span = info_span!("stats(producer)");
 

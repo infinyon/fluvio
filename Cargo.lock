@@ -2658,6 +2658,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-test-init-tracing-macro"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "syn",
+]
+
+[[package]]
 name = "fluvio-test-util"
 version = "0.0.0"
 dependencies = [
@@ -2671,6 +2679,7 @@ dependencies = [
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-future 0.4.1",
+ "fluvio-test-init-tracing-macro",
  "futures-lite",
  "hdrhistogram",
  "humantime",

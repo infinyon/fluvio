@@ -13,7 +13,7 @@ use std::io::Read;
 use std::collections::BTreeMap;
 
 use clap::Parser;
-use tracing::{debug, debug_span, trace_span, event};
+use tracing::{debug, debug_span, trace_span};
 use tracing_futures::Instrument;
 use serde::{Deserialize};
 
@@ -21,6 +21,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
+use fluvio_test_util::setup::init_jaeger;
 
 use fluvio_cli::TableFormatConfig;
 use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
@@ -30,33 +31,7 @@ use fluvio::metadata::{
 };
 use fluvio_future::timer::sleep;
 
-// Testing
-use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
-//use tracing::{debug, instrument, Instrument, debug_span};
-
-use opentelemetry::sdk::export::trace::stdout;
-use opentelemetry::sdk::trace::{Sampler, TracerProvider as SdkTracerProvider};
-
-use opentelemetry::global;
-use opentelemetry::trace::Tracer;
-use opentelemetry::sdk::export::trace::stdout::Exporter as StdoutExporter;
-use opentelemetry::runtime;
-
-use tracing::{error, span, info_span};
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::Registry;
-use tracing_subscriber::EnvFilter;
-use opentelemetry::trace::TraceContextExt;
-
-use opentelemetry::{
-    KeyValue,
-    trace::{TraceError},
-};
-use opentelemetry::sdk::{
-    trace::{self, IdGenerator},
-    Resource,
-};
+use tracing::info_span;
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -120,34 +95,12 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     let smoke_test_case: SmokeTestCase = test_case.into();
 
-    //tracer.in_span("subspan inside the test", |cx| {});
-
     // If connector tests requested
     let maybe_connector = if !smoke_test_case.option.skip_test_connector {
         if let Some(ref connector_config) = smoke_test_case.option.connector_config {
             let connector_process = async_process!(
                 async {
-                    let _trace_guard = {
-                        opentelemetry::global::set_text_map_propagator(
-                            opentelemetry_jaeger::Propagator::new(),
-                        );
-                        let tracer = opentelemetry_jaeger::new_pipeline()
-                            .with_service_name("fluvio_test")
-                            .install_simple()
-                            //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-                            .expect("fdfklsj");
-
-                        let opentelemetry =
-                            tracing_opentelemetry::layer().with_tracer(tracer.clone());
-
-                        use tracing_subscriber::layer::SubscriberExt;
-                        let subscriber = tracing_subscriber::registry()
-                            .with(tracing_subscriber::EnvFilter::from_default_env())
-                            .with(opentelemetry);
-
-                        tracing::subscriber::set_default(subscriber)
-                    };
-
+                    let _trace_guard = init_jaeger!();
                     let span = info_span!("smoke(connector)");
 
                     async {
@@ -292,116 +245,76 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     };
 
     // TableFormat test
-    let maybe_table_format = if let Some(ref table_format_config) =
-        smoke_test_case.option.table_format_config
-    {
-        let table_format_process = async_process!(
-            async {
-                let _trace_guard = {
-                    opentelemetry::global::set_text_map_propagator(
-                        opentelemetry_jaeger::Propagator::new(),
-                    );
-                    let tracer = opentelemetry_jaeger::new_pipeline()
-                        .with_service_name("fluvio_test")
-                        .install_simple()
-                        //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-                        .expect("fdfklsj");
+    let maybe_table_format =
+        if let Some(ref table_format_config) = smoke_test_case.option.table_format_config {
+            let table_format_process = async_process!(
+                async {
+                    let _trace_guard = init_jaeger!();
 
-                    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
+                    let span = info_span!("smoke(table_format)");
 
-                    use tracing_subscriber::layer::SubscriberExt;
-                    let subscriber = tracing_subscriber::registry()
-                        .with(tracing_subscriber::EnvFilter::from_default_env())
-                        .with(opentelemetry);
+                    async move {
+                        let time = SystemTime::now();
+                        let config = TableFormatConfig::from_file(table_format_config)
+                            .expect("TableFormat config load failed");
+                        let table_format_spec: TableFormatSpec = config.into();
+                        let name = table_format_spec.name.clone();
 
-                    tracing::subscriber::set_default(subscriber)
-                };
+                        test_driver
+                            .connect()
+                            .instrument(debug_span!("client_for_table_format").or_current())
+                            .await
+                            .expect("Connecting to cluster failed");
 
-                let span = info_span!("smoke(table_format)");
+                        let admin = test_driver
+                            .client()
+                            .admin()
+                            .instrument(trace_span!("fluvio_admin").or_current())
+                            .await;
 
-                async move {
-                    let time = SystemTime::now();
-                    let config = TableFormatConfig::from_file(table_format_config)
-                        .expect("TableFormat config load failed");
-                    let table_format_spec: TableFormatSpec = config.into();
-                    let name = table_format_spec.name.clone();
+                        admin
+                            .create(name.clone(), false, table_format_spec)
+                            .instrument(debug_span!("table_format_create").or_current())
+                            .await
+                            .expect("TableFormat create failed");
+                        println!("tableformat \"{}\" created", &name);
 
-                    test_driver
-                        .connect()
-                        .instrument(debug_span!("client_for_table_format").or_current())
-                        .await
-                        .expect("Connecting to cluster failed");
+                        // Wait a moment then delete
+                        sleep(Duration::from_secs(5))
+                            .instrument(trace_span!("sleep").or_current())
+                            .await;
 
-                    let admin = test_driver
-                        .client()
-                        .admin()
-                        .instrument(trace_span!("fluvio_admin").or_current())
-                        .await;
+                        admin
+                            .delete::<TableFormatSpec, _>(name.clone())
+                            .instrument(debug_span!("table_format_delete").or_current())
+                            .await
+                            .expect("TableFormat delete failed");
+                        println!(
+                            "tableformat \"{}\" deleted, took: {} seconds",
+                            &name,
+                            time.elapsed().unwrap().as_secs()
+                        );
+                    }
+                    .instrument(span)
+                    .await
+                },
+                "tableformat"
+            );
 
-                    admin
-                        .create(name.clone(), false, table_format_spec)
-                        .instrument(debug_span!("table_format_create").or_current())
-                        .await
-                        .expect("TableFormat create failed");
-                    println!("tableformat \"{}\" created", &name);
-
-                    // Wait a moment then delete
-                    sleep(Duration::from_secs(5))
-                        .instrument(trace_span!("sleep").or_current())
-                        .await;
-
-                    admin
-                        .delete::<TableFormatSpec, _>(name.clone())
-                        .instrument(debug_span!("table_format_delete").or_current())
-                        .await
-                        .expect("TableFormat delete failed");
-                    println!(
-                        "tableformat \"{}\" deleted, took: {} seconds",
-                        &name,
-                        time.elapsed().unwrap().as_secs()
-                    );
-                }
-                .instrument(span)
-                .await
-            },
-            "tableformat"
-        );
-
-        Some(table_format_process)
-        // Create a managed connector
-    } else {
-        None
-    };
+            Some(table_format_process)
+            // Create a managed connector
+        } else {
+            None
+        };
 
     // We're going to handle the `--consumer-wait` flag in this process
     let producer_wait = async_process!(
         async {
-            //let parent_span = root_span.clone().id();
-            let _trace_guard = {
-                opentelemetry::global::set_text_map_propagator(
-                    opentelemetry_jaeger::Propagator::new(),
-                );
-                let tracer = opentelemetry_jaeger::new_pipeline()
-                    .with_service_name("fluvio_test")
-                    .install_simple()
-                    //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-                    .expect("fdfklsj");
-
-                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
-
-                use tracing_subscriber::layer::SubscriberExt;
-                let subscriber = tracing_subscriber::registry()
-                    .with(tracing_subscriber::EnvFilter::from_default_env())
-                    .with(opentelemetry);
-
-                tracing::subscriber::set_default(subscriber)
-            };
+            let _trace_guard = init_jaeger!();
 
             let span = info_span!("smoke(producer)");
 
             async move {
-                //tracer.in_scope(|| {
-                //init_logging();
                 let mut test_driver_consumer_wait = test_driver.clone();
 
                 test_driver
@@ -433,7 +346,6 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             }
             .instrument(span)
             .await
-            //});
         },
         "producer"
     );
@@ -442,25 +354,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     if !smoke_test_case.option.consumer_wait {
         let consumer_wait = async_process!(
             async {
-                let _trace_guard = {
-                    opentelemetry::global::set_text_map_propagator(
-                        opentelemetry_jaeger::Propagator::new(),
-                    );
-                    let tracer = opentelemetry_jaeger::new_pipeline()
-                        .with_service_name("fluvio_test")
-                        .install_simple()
-                        //.install_batch(opentelemetry::runtime::AsyncStd) // deadlock
-                        .expect("fdfklsj");
-
-                    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer.clone());
-
-                    use tracing_subscriber::layer::SubscriberExt;
-                    let subscriber = tracing_subscriber::registry()
-                        .with(tracing_subscriber::EnvFilter::from_default_env())
-                        .with(opentelemetry);
-
-                    tracing::subscriber::set_default(subscriber)
-                };
+                let _trace_guard = init_jaeger!();
 
                 let span = info_span!("smoke(consumer)");
 
