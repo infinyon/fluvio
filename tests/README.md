@@ -138,12 +138,9 @@ $ fluvio-test smoke -- --producer-iteration=400 --consumer-wait
 
 ## Anatomy of a new test
 
-There are 4 parts to adding new tests.
-1. Implementing `TestOptions` for test specific CLI arguments
-    - Naming convention (in pascal case): `<testname>TestOption`
-2. Implmenenting `From<TestCase>` for your test case struct to downcast to.
-    - Naming convention (in pascal case): `<testname>TestCase`
-3. Creating a new test in the `tests` module + annotating with `#[fluvio_test]`
+There are 2 parts to adding new tests.
+1. Creating a new test in the `tests` module + annotating with `#[fluvio_test]`
+2. Add `#[derive(MyTestCase)]` to test struct (for CLI options) 
 
 ### Passing vars from the CLI to your test
 
@@ -156,49 +153,26 @@ Write new tests in the `tests` module of the `fluvio-test` crate.
 
 Here's a complete stub to modify:
 ```rust
-use std::any::Any;
-use structopt::StructOpt;
-use fluvio_integration_derive::fluvio_test;
-use fluvio_test_util::test_meta::{TestOption, TestCase};
+use std::env;
 
-#[derive(Debug, Clone)]
-pub struct ExampleTestCase {
-    pub environment: EnvironmentSetup,
-    pub option: ExampleTestOption,
-}
+use clap::Parser;
+use fluvio_test_derive::fluvio_test;
+use fluvio_test_case_derive::MyTestCase;
 
-impl From<TestCase> for ExampleTestCase {
-    fn from(test_case: TestCase) -> Self {
-        let example_option = test_case
-            .option
-            .as_any()
-            .downcast_ref::<ExampleTestOption>()
-            .expect("ExampleTestOption")
-            .to_owned();
-        ExampleTestCase {
-            environment: test_case.environment,
-            option: example_option,
-        }
-    }
-}
-
-// For CLI options
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Example Test")]
-pub struct ExampleTestOption {}
-
-impl TestOption for ExampleTestOption {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
+#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
+#[clap(name = "Fluvio Test Example Test")]
+pub struct ExampleOption {
+    #[clap(long)]
+    pub verbose: bool,
 }
 
 #[fluvio_test()]
-pub fn example(mut test_driver: TestDriver, test_case: TestCase) {
-    let example_test_case : ExampleTestCase = option.into();
+pub fn example(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
+    let example_test_case: MyTestCase = test_case.into();
 
-    println!("Ready to run tests: {:?}", example_test_case);
+    [...]
 }
+
 ```
 
 > `TestCase` has an internal field `option` that is `Box<dyn TestOption>`. You'll want to implement `From<TestCase>` on your own struct so you can downcast and use this struct more flexibly.
