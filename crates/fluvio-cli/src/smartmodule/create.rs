@@ -36,7 +36,7 @@ impl CreateSmartModuleOpt {
             ..Default::default()
         };
         
-        debug!("creating smart-module: {}", self.name);
+        debug!(name = self.name, "creating smart-module");
         let admin = fluvio.admin().await;
         admin.create(self.name.to_string(), false, spec).await?;
         println!("smart-module \"{}\" has been created.", self.name);
