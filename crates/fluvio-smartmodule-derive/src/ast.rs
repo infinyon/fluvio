@@ -42,6 +42,7 @@ impl SmartModuleConfig {
 
 #[derive(Debug)]
 pub enum SmartModuleKind {
+    Init,
     Aggregate,
     Filter,
     Map,
@@ -65,6 +66,7 @@ impl SmartModuleKind {
                                 "array_map" => Some(Self::ArrayMap),
                                 "filter_map" => Some(Self::FilterMap),
                                 "join" => Some(Self::Join),
+                                "init" => Some(Self::Init),
                                 _ => None,
                             }
                         })
