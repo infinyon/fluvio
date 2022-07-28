@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use tracing::debug;
 use clap::Parser;
 use crate::Result;
 use fluvio::Fluvio;
@@ -34,8 +35,12 @@ impl CreateSmartModuleOpt {
             wasm: SmartModuleWasm::from_binary_payload(buffer),
             ..Default::default()
         };
+        
+        debug!("creating smart-module: {}", self.name);
         let admin = fluvio.admin().await;
         admin.create(self.name.to_string(), false, spec).await?;
+        println!("smart-module \"{}\" has been created.", self.name);
+
         Ok(())
     }
 }
