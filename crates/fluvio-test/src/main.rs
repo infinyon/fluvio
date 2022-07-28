@@ -18,14 +18,14 @@ use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::{async_process};
 
-// This is important for `inventory` crate
+//// Tests don't link without this import
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
+
 use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
-use tracing::debug;
+use tracing::{debug, instrument, Instrument, debug_span};
 
-//const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
-
+#[instrument]
 fn main() {
     let option = BaseCli::parse();
 
@@ -33,11 +33,11 @@ fn main() {
 
     let test_name = option.environment.test_name.clone();
 
-    // Get test from inventory
-    let test_meta =
-        FluvioTestMeta::from_name(&test_name).expect("StructOpt should have caught this error");
+    // Select from our list of tests
+    let test_meta = FluvioTestMeta::from_name(test_name.clone())
+        .expect("Tests not linked. Did you remove the import?");
 
-    let mut subcommand = vec![test_name.clone()];
+    let mut subcommand = vec![test_name];
 
     if let Some(TestCli::Args(args)) = option.test_cmd_args {
         // Add the args to the subcommand
@@ -74,6 +74,7 @@ fn main() {
     }
 }
 
+#[instrument]
 fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
@@ -104,9 +105,13 @@ fn run_test(
         Ok(fork::Fork::Child) => {
             println!("starting test in child process");
             // put panic handler, this shows proper stack trace in the console unlike hook
-            let status = std::panic::catch_unwind(AssertUnwindSafe(|| {
-                (test_meta.test_fn)(test_driver, test_case)
-            }));
+
+            let status = debug_span!("test_process").in_scope(|| {
+                std::panic::catch_unwind(AssertUnwindSafe(|| {
+                    (test_meta.test_fn)(test_driver, test_case)
+                }))
+            });
+
             match status {
                 Ok(_) => {
                     println!("test passed, signalling success to parent");
@@ -180,6 +185,7 @@ fn run_test(
 }
 
 /// kill all children of the root processes
+#[instrument]
 fn kill_child_processes(root_process: &Process) {
     let root_pid = root_process.pid();
     let mut sys2 = System::new();
@@ -210,13 +216,17 @@ fn kill_child_processes(root_process: &Process) {
     }
 }
 
+#[instrument]
 fn cluster_cleanup(option: EnvironmentSetup) {
     if option.cluster_delete() {
         let mut setup = TestCluster::new(option);
 
         let cluster_cleanup_wait = async_process!(
             async {
-                setup.remove_cluster().await;
+                setup
+                    .remove_cluster()
+                    .instrument(debug_span!("cluster_cleanup"))
+                    .await;
             },
             "cluster_cleanup"
         );
@@ -227,13 +237,17 @@ fn cluster_cleanup(option: EnvironmentSetup) {
 }
 
 // FIXME: Need to confirm SPU options count match cluster. Offer self-correcting behavior
+#[instrument]
 fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
     let cluster_setup_wait = async_process!(
         async {
             if option.remove_cluster_before() {
                 println!("Deleting existing cluster before starting test");
                 let mut setup = TestCluster::new(option.clone());
-                setup.remove_cluster().await;
+                setup
+                    .remove_cluster()
+                    .instrument(debug_span!("remove_cluster_for_setup"))
+                    .await;
             }
 
             if option.cluster_start() || option.remove_cluster_before() {
@@ -242,11 +256,13 @@ fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
 
                 test_cluster
                     .start()
+                    .instrument(debug_span!("cluster_start"))
                     .await
                     .expect("Unable to connect to fresh test cluster");
             } else {
                 println!("Testing connection to Fluvio cluster in profile");
                 Fluvio::connect()
+                    .instrument(debug_span!("client_connect"))
                     .await
                     .expect("Unable to connect to Fluvio test cluster via profile");
             }
@@ -261,6 +277,7 @@ fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
     Ok(())
 }
 
+#[instrument]
 fn create_spinning_indicator() -> Option<ProgressBar> {
     if std::env::var("CI").is_ok() {
         None

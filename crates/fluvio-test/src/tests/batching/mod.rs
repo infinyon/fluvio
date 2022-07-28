@@ -2,7 +2,7 @@ use std::any::Any;
 use std::time::Duration;
 use futures_lite::StreamExt;
 
-use tracing::debug;
+use tracing::{debug, Instrument, debug_span};
 
 use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
 use fluvio::dataplane::batch::Batch;
@@ -61,6 +61,7 @@ pub async fn batching(
         let admin: FluvioAdmin = test_driver.client().admin().await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])
+            .instrument(debug_span!("list_partitions"))
             .await
             .expect("partitions");
         let test_topic = &partitions[0];
@@ -69,13 +70,18 @@ pub async fn batching(
 
     println!("Found leader {}", leader);
 
-    let consumer = test_driver.get_consumer(&topic_name, 0).await;
+    let consumer = test_driver
+        .get_consumer(&topic_name, 0)
+        .instrument(debug_span!("get_consumer"))
+        .await;
+
     let mut stream = consumer
         .stream(Offset::end())
+        .instrument(debug_span!("create_stream"))
         .await
         .expect("Failed to create consumer stream");
 
-    for _ in 0..150 {
+    for i in 0..150 {
         // Ensure record is sent after the linger time even if we dont call flush()
         let config = TopicProducerConfigBuilder::default()
             .linger(Duration::from_millis(0))
@@ -84,12 +90,18 @@ pub async fn batching(
 
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
+            .instrument(debug_span!("producer_create_no_linger", i = i))
             .await;
         debug!("Created producer with linger time");
 
-        producer.send("key", "value").await.expect("Failed produce");
+        producer
+            .send("key", "value")
+            .instrument(debug_span!("producer_send_no_linger", i = i))
+            .await
+            .expect("Failed produce");
         let record = stream
             .next()
+            .instrument(debug_span!("consumer_recv_no_linger", i = i))
             .await
             .expect("Failed consume")
             .expect("Record");
@@ -103,16 +115,23 @@ pub async fn batching(
             .expect("failed to build config");
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
+            .instrument(debug_span!("producer_send_linger", i = i))
             .await;
         debug!("Created producer with large linger time");
 
         producer
             .send("key", "value2")
+            .instrument(debug_span!("producer_send_linger", i = i))
             .await
             .expect("Failed produce");
-        producer.flush().await.expect("Failed flush");
+        producer
+            .flush()
+            .instrument(debug_span!("producer_flush_linger", i = i))
+            .await
+            .expect("Failed flush");
         let record = stream
             .next()
+            .instrument(debug_span!("consumer_recv_linger", i = i))
             .await
             .expect("Failed consume")
             .expect("Record");
@@ -131,17 +150,20 @@ pub async fn batching(
 
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
+            .instrument(debug_span!("producer_create_linger_batch", i = i))
             .await;
         debug!("Created producer with small batch size");
 
         // The size of this record is equal to batch_size so it will be sent without calling flush and before the linger time
         producer
             .send("key", "value3")
+            .instrument(debug_span!("producer_send_linger_batch", i = i))
             .await
             .expect("Failed produce");
 
         let record = stream
             .next()
+            .instrument(debug_span!("consumer_recv_linger_batch", i = i))
             .await
             .expect("Failed consume")
             .expect("Record");

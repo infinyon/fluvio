@@ -9,6 +9,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_future::task::run_block_on;
+use tracing::{Instrument, debug_span};
 
 #[derive(Debug, Clone)]
 pub struct MultiplePartitionTestCase {
@@ -48,8 +49,13 @@ pub fn multiple_partition(mut test_driver: TestDriver, mut test_case: TestCase) 
     let option: MultiplePartitionTestCase = test_case.into();
 
     run_block_on(async {
-        spawn(producer::producer(test_driver.clone(), option.clone()));
+        spawn(
+            producer::producer(test_driver.clone(), option.clone())
+                .instrument(debug_span!("producer")),
+        );
 
-        consumer::consumer_stream(&test_driver, option).await;
+        consumer::consumer_stream(&test_driver, option)
+            .instrument(debug_span!("consumer"))
+            .await;
     });
 }

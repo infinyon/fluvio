@@ -5,6 +5,7 @@ pub use cluster::*;
 mod cluster {
 
     use std::time::Duration;
+    use tracing::instrument;
 
     use fluvio_future::timer::sleep;
     use fluvio::{Fluvio, FluvioConfig, FluvioError};
@@ -14,13 +15,14 @@ mod cluster {
 
     use super::environment::{TestEnvironmentDriver, create_driver};
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct TestCluster {
         option: EnvironmentSetup,
         env_driver: TestEnvironmentDriver,
     }
 
     impl TestCluster {
+        #[instrument(level = "trace")]
         pub fn new(option: EnvironmentSetup) -> Self {
             // Can we condense the interface to the environment?
             let env_driver = create_driver(option.clone());
@@ -28,11 +30,13 @@ mod cluster {
             Self { option, env_driver }
         }
 
+        #[instrument(level = "trace")]
         pub fn env_driver(&self) -> &TestEnvironmentDriver {
             &self.env_driver
         }
 
         /// cleanup before initialize
+        #[instrument(level = "debug")]
         pub async fn remove_cluster(&mut self) {
             // make sure delete all
             println!("deleting cluster");
@@ -40,6 +44,7 @@ mod cluster {
             self.env_driver.remove_cluster().await;
         }
 
+        #[instrument]
         pub async fn start(&mut self) -> Result<Fluvio, FluvioError> {
             if self.option.remove_cluster_before() {
                 self.remove_cluster().await;

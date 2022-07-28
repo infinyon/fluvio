@@ -1,5 +1,6 @@
 use super::SmokeTestCase;
 use fluvio_test_util::test_meta::environment::EnvDetail;
+use tracing::instrument;
 
 const VALUE: u8 = 65;
 
@@ -11,6 +12,7 @@ fn generate_pre_fix(topic: &str, offset: i64) -> String {
 
 /// generate test data based on iteration and option
 ///
+#[instrument]
 #[allow(clippy::all)]
 pub fn generate_message(offset: i64, test_case: &SmokeTestCase) -> Vec<u8> {
     let producer_record_size = test_case.option.producer_record_size as usize;
@@ -31,6 +33,7 @@ pub fn generate_message(offset: i64, test_case: &SmokeTestCase) -> Vec<u8> {
 }
 
 /// validate the message for given offset
+#[instrument(skip(data))]
 #[allow(clippy::needless_range_loop)]
 pub fn validate_message(iter: u32, offset: i64, test_case: &SmokeTestCase, data: &[u8]) {
     let prefix_string = generate_pre_fix(test_case.environment.base_topic_name().as_str(), offset);

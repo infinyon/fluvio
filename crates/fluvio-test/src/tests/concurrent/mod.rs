@@ -10,6 +10,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_future::task::run_block_on;
+use tracing::{Instrument, debug_span};
 
 #[derive(Debug, Clone)]
 pub struct ConcurrentTestCase {
@@ -49,11 +50,12 @@ pub fn concurrent(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     run_block_on(async {
         let (sender, receiver) = std::sync::mpsc::channel();
-        spawn(consumer::consumer_stream(
-            test_driver.clone(),
-            option.clone(),
-            receiver,
-        ));
-        producer::producer(&test_driver, option, sender).await;
+        spawn(
+            consumer::consumer_stream(test_driver.clone(), option.clone(), receiver)
+                .instrument(debug_span!("consumer")),
+        );
+        producer::producer(&test_driver, option, sender)
+            .instrument(debug_span!("producer"))
+            .await;
     });
 }

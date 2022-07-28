@@ -7,6 +7,7 @@ use clap::Parser;
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
+use tracing::{Instrument, debug_span, trace_span};
 
 #[derive(Debug, Clone)]
 pub struct ProducerBatchTestCase {
@@ -54,14 +55,20 @@ pub async fn produce_batch(
 
     let producer: TopicProducer = test_driver
         .create_producer_with_config(&topic_name, config)
+        .instrument(debug_span!("producer_create_w_config"))
         .await;
 
     println!("Created producer");
 
     let leader = {
-        let admin: FluvioAdmin = test_driver.client().admin().await;
+        let admin: FluvioAdmin = test_driver
+            .client()
+            .admin()
+            .instrument(trace_span!("fluvio_admin"))
+            .await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])
+            .instrument(trace_span!("partition_list"))
             .await
             .expect("partitions");
         let test_topic = &partitions[0];
@@ -81,14 +88,21 @@ pub async fn produce_batch(
     let value = "a".repeat(5000);
     let result: Result<_, FluvioError> = (|| async move {
         let mut results = Vec::new();
-        for _ in 0..1000 {
-            let result = producer.send(RecordKey::NULL, value.clone()).await?;
+        for i in 0..1000 {
+            let result = producer
+                .send(RecordKey::NULL, value.clone())
+                .instrument(debug_span!("producer_send", record = i))
+                .await?;
             results.push(result);
         }
         println!("Send 1000");
         let mut i = 0;
         for result in results.into_iter() {
-            let record = result.wait().await.expect("result is not ok");
+            let record = result
+                .wait()
+                .instrument(debug_span!("result_wait", record = i))
+                .await
+                .expect("result is not ok");
 
             // Check that offset is correct for each record sent.
             assert_eq!(record.offset(), i);
@@ -98,7 +112,9 @@ pub async fn produce_batch(
 
         assert_eq!(i, 1000);
 
-        fluvio_future::timer::sleep(std::time::Duration::from_secs(3)).await;
+        fluvio_future::timer::sleep(std::time::Duration::from_secs(3))
+            .instrument(trace_span!("sleep"))
+            .await;
 
         cluster_manager.terminate_spu(leader).expect("terminate");
         println!("Terminate SPU");
@@ -107,16 +123,21 @@ pub async fn produce_batch(
 
         let _result = producer
             .send(RecordKey::NULL, i.to_string())
+            .instrument(debug_span!("producer_one_record_send"))
             .await
             .expect("Failed send");
 
         println!("flushing");
 
         // This should fail because the SPU is terminated.
-        producer.flush().await?;
+        producer
+            .flush()
+            .instrument(debug_span!("producer_one_record_flush_fail"))
+            .await?;
 
         Ok(())
     })()
+    .instrument(debug_span!("producer_should_fail"))
     .await;
 
     // Ensure that one of the calls returned a failure

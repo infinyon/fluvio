@@ -105,14 +105,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let output_fn = quote! {
 
-        pub fn #validate_sub_fn_iden(subcmd: Vec<String>) -> Box<dyn fluvio_test_util::test_meta::TestOption> {
-            Box::new(#test_opt_ident::parse_from(subcmd))
-        }
-
-        pub fn #requirements_fn_iden() -> fluvio_test_util::test_meta::derive_attr::TestRequirements {
-            serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
-        }
-
+        // Collect test fn pointers w/ inventory
         inventory::submit!{
             fluvio_test_util::test_runner::test_meta::FluvioTestMeta {
                 name: #test_name.to_string(),
@@ -122,11 +115,23 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
+        #[tracing::instrument(level = "trace")]
+        pub fn #validate_sub_fn_iden(subcmd: Vec<String>) -> Box<dyn fluvio_test_util::test_meta::TestOption> {
+            Box::new(#test_opt_ident::parse_from(subcmd))
+        }
+
+        #[tracing::instrument(level = "trace")]
+        pub fn #requirements_fn_iden() -> fluvio_test_util::test_meta::derive_attr::TestRequirements {
+            serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
+        }
+
+        #[tracing::instrument(skip(test_driver))]
         pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
             use fluvio_test_util::test_meta::environment::EnvDetail;
             #maybe_async_test
         }
 
+        #[tracing::instrument(skip(test_driver), err, ret)]
         pub fn #test_driver_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
             use fluvio_test_util::test_meta::test_result::TestResult;
             use fluvio_test_util::test_meta::environment::EnvDetail;

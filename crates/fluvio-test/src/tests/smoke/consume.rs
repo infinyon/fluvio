@@ -3,7 +3,7 @@
 use std::{io, time::Duration};
 use std::io::Write;
 
-use tracing::{info};
+use tracing::{info, instrument, Instrument, debug_span, trace_span};
 use futures_lite::stream::StreamExt;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
@@ -17,19 +17,25 @@ use super::message::*;
 use super::offsets::{self, Offsets};
 
 /// verify consumers
+#[instrument(skip(test_driver))]
 pub async fn validate_consume_message(test_driver: TestDriver, test_case: &SmokeTestCase) {
     let use_cli = test_case.option.use_cli;
 
     // Get offsets before starting
-    let offsets = offsets::find_offsets(&test_driver, test_case).await;
+    let offsets = offsets::find_offsets(&test_driver, test_case)
+        .instrument(trace_span!("offsets"))
+        .await;
 
     if use_cli {
         validate_consume_message_cli(test_case, offsets);
     } else {
-        validate_consume_message_api(test_driver, offsets, test_case).await;
+        validate_consume_message_api(test_driver, offsets, test_case)
+            .instrument(debug_span!("consumer_test"))
+            .await;
     }
 }
 
+#[instrument]
 fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
     let replication = test_case.environment.replication;
 
@@ -57,6 +63,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
     }
 }
 
+#[instrument(skip(test_driver))]
 pub async fn validate_consume_message_api(
     test_driver: TestDriver,
     offsets: Offsets,
@@ -81,13 +88,17 @@ pub async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let consumer = test_driver.get_consumer(&topic_name, 0).await;
+        let consumer = test_driver
+            .get_consumer(&topic_name, 0)
+            .instrument(debug_span!("consumer_create", partition = i))
+            .await;
 
         let mut stream = consumer
             .stream(
                 Offset::absolute(*base_offset)
                     .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
             )
+            .instrument(debug_span!("stream_create", partition = i))
             .await
             .expect("stream");
 
@@ -99,7 +110,7 @@ pub async fn validate_consume_message_api(
             let _canow = SystemTime::now();
             select! {
 
-                stream_next = stream.next() => {
+                stream_next = stream.next().instrument(debug_span!("stream_next", partition = i)) => {
 
                     if let Some(Ok(record)) = stream_next {
 
@@ -175,11 +186,18 @@ pub async fn validate_consume_message_api(
                 wait_delay_sec
             );
             // wait 5 seconds to get status and ensure replication is done
-            sleep(Duration::from_secs(wait_delay_sec)).await;
+            sleep(Duration::from_secs(wait_delay_sec))
+                .instrument(trace_span!("sleep_before_replica_verify"))
+                .await;
 
-            let admin = test_driver.client().admin().await;
+            let admin = test_driver
+                .client()
+                .admin()
+                .instrument(trace_span!("fluvio_admin"))
+                .await;
             let partitions = admin
                 .list::<PartitionSpec, _>(vec![])
+                .instrument(trace_span!("list_partition"))
                 .await
                 .expect("partitions");
 
@@ -206,7 +224,9 @@ pub async fn validate_consume_message_api(
     println!("performing 2nd fetch check. waiting 5 seconds");
 
     // do complete fetch, since producer has completed, we should retrieve everything
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(5))
+        .instrument(trace_span!("sleep"))
+        .await;
 
     for i in 0..partition {
         println!(
@@ -214,13 +234,17 @@ pub async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let consumer = test_driver.get_consumer(&topic_name, 0).await;
+        let consumer = test_driver
+            .get_consumer(&topic_name, 0)
+            .instrument(debug_span!("consumer_create", partition = i))
+            .await;
 
         let mut stream = consumer
             .stream(
                 Offset::absolute(*base_offset)
                     .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
             )
+            .instrument(debug_span!("stream_create", partition = i))
             .await
             .expect("stream");
 
@@ -229,7 +253,7 @@ pub async fn validate_consume_message_api(
         loop {
             select! {
 
-                stream_next = stream.next() => {
+                stream_next = stream.next().instrument(debug_span!("stream_next", partition = i)) => {
 
                     let record = stream_next.expect("some").expect("records");
                     let offset = record.offset();

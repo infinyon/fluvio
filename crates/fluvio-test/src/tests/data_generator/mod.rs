@@ -9,6 +9,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::{async_process, fork_and_wait};
+use tracing::{Instrument, debug_span};
 
 use fluvio::{Offset, RecordKey};
 use futures::StreamExt;
@@ -91,13 +92,14 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
             let mut test_driver_setup = test_driver.clone();
 
             // Connect test driver to cluster before starting test
-            test_driver_setup.connect().await.expect("Unable to connect to cluster");
+            test_driver_setup.connect().instrument(debug_span!("connect_for_setup")).await.expect("Unable to connect to cluster");
 
             // Create sync topic before starting test
             {
             let mut env_opts = option.environment.clone();
             env_opts.topic_name = Some(sync_topic.clone());
             test_driver_setup.create_topic(&env_opts)
+                .instrument(debug_span!("topic_create"))
                 .await
                 .expect("Unable to create default topic");
             }
@@ -119,6 +121,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                     i,
                     option.environment.topic_salt.clone(),
                 )
+                .instrument(debug_span!("producer", i = i))
                 .await
             },
             format!("producer-{}", i)
@@ -132,28 +135,32 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
             let mut test_driver_setup = test_driver.clone();
 
             // Connect test driver to cluster before starting test
-            test_driver_setup.connect().await.expect("Unable to connect to cluster");
+            test_driver_setup.connect().instrument(debug_span!("connect_for_sync")).await.expect("Unable to connect to cluster");
 
 
             println!("setup");
 
             let sync_consumer = test_driver
                 .get_consumer(&sync_topic, 0)
+                .instrument(debug_span!("consumer_create_for_sync"))
                 .await;
 
             let mut sync_stream = sync_consumer
+
                 .stream(Offset::from_end(0))
+                .instrument(debug_span!("stream_create_for_sync"))
                 .await
                 .expect("Unable to open stream");
 
             let sync_producer = test_driver
                 .create_producer(&sync_topic)
+                .instrument(debug_span!("producer_create_for_sync"))
                 .await;
 
             // Wait for everyone to get ready
             let mut num_producers = option.environment.producer;
             let mut is_ready = false;
-            while let Some(Ok(record)) = sync_stream.next().await {
+            while let Some(Ok(record)) = sync_stream.next().instrument(debug_span!("sync_next")).await {
                 let _key = record
                     .key()
                     .map(|key| String::from_utf8_lossy(key).to_string());
@@ -165,10 +172,12 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                         println!("main: now waiting on {num_producers} to get ready");
                     }
 
+                    let p_ready = option.environment.producer - num_producers;
+
                     if num_producers == 0 {
                         println!("main: all ready, send start");
-                        sync_producer.send(RecordKey::NULL, "start").await.unwrap();
-                        sync_producer.flush().await.unwrap();
+                        sync_producer.send(RecordKey::NULL, "start").instrument(debug_span!("producer_ready_event_msg", producers_ready = p_ready )).await.unwrap();
+                        sync_producer.flush().instrument(debug_span!("event_flush")).await.unwrap();
                         is_ready = true;
                     }
                 } else {

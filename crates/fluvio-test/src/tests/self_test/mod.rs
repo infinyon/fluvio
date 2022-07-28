@@ -1,12 +1,12 @@
 use std::any::Any;
 use std::env;
+use fluvio_test_util::async_process;
+use tracing::{Instrument, debug_span};
 
 use clap::Parser;
-
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::async_process;
 
 #[derive(Debug, Clone)]
 pub struct SelfCheckTestCase {
@@ -62,7 +62,8 @@ pub fn self_check(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             if self_test_case.option.force_panic {
                 panic!("Intentionally panicking inside another process");
             }
-        },
+        }
+        .instrument(debug_span!("another_process")),
         "sleep"
     );
 

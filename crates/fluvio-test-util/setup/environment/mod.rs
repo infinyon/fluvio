@@ -5,6 +5,7 @@ pub use common::*;
 
 mod common {
     use async_trait::async_trait;
+    use tracing::instrument;
     use serde::{Serialize, Deserialize};
 
     use fluvio_cluster::{StartStatus, runtime::spu::SpuClusterManager};
@@ -26,7 +27,7 @@ mod common {
         fn create_cluster_manager(&self) -> Box<dyn SpuClusterManager>;
     }
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub enum TestEnvironmentDriver {
         K8(Box<K8EnvironmentDriver>),
         Local(Box<LocalEnvDriver>),
@@ -34,6 +35,7 @@ mod common {
 
     impl TestEnvironmentDriver {
         /// remove cluster
+        #[instrument(skip_all, level = "trace")]
         pub async fn remove_cluster(&self) {
             match self {
                 Self::K8(k8) => k8.remove_cluster().await,
@@ -42,6 +44,7 @@ mod common {
         }
 
         /// install cluster
+        #[instrument(skip_all, level = "trace")]
         pub async fn start_cluster(&self) -> StartStatus {
             match self {
                 Self::K8(k8) => k8.start_cluster().await,
@@ -49,6 +52,7 @@ mod common {
             }
         }
 
+        #[instrument(skip_all, level = "trace")]
         pub fn create_cluster_manager(&self) -> Box<dyn SpuClusterManager> {
             match self {
                 Self::K8(k8) => k8.create_cluster_manager(),
@@ -60,6 +64,7 @@ mod common {
     use crate::{setup::environment::k8::K8EnvironmentDriver, test_meta::environment::EnvironmentSetup};
     use crate::setup::environment::local::LocalEnvDriver;
 
+    #[instrument(skip_all, level = "trace")]
     pub fn create_driver(option: EnvironmentSetup) -> TestEnvironmentDriver {
         if option.local {
             //println!("using local environment driver");

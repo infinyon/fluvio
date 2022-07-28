@@ -1,7 +1,7 @@
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use std::time::SystemTime;
-use tracing::debug;
+use tracing::{debug, instrument, Instrument, debug_span};
 use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, RecordKey};
 use futures::StreamExt;
 use std::time::Duration;
@@ -9,6 +9,7 @@ use std::time::Duration;
 use super::GeneratorTestCase;
 use crate::tests::TestRecordBuilder;
 
+#[instrument(skip(test_driver))]
 pub async fn producer(
     mut test_driver: TestDriver,
     option: GeneratorTestCase,
@@ -24,6 +25,7 @@ pub async fn producer(
 
     test_driver
         .connect()
+        .instrument(debug_span!("client_connect"))
         .await
         .expect("Connecting to cluster failed");
 
@@ -86,28 +88,52 @@ pub async fn producer(
             producers.push(
                 test_driver
                     .create_producer_with_config(&test_topic_name, config)
+                    .instrument(debug_span!("producer_create_w_config", topic_id = topic_id))
                     .await,
             )
         } else {
-            producers.push(test_driver.create_producer(&test_topic_name).await)
+            producers.push(
+                test_driver
+                    .create_producer(&test_topic_name)
+                    .instrument(debug_span!("producer_create", topic_id = topic_id))
+                    .await,
+            )
         };
     }
 
     // Create the syncing producer/consumer
 
-    let sync_producer = test_driver.create_producer(&sync_topic).await;
-    let sync_consumer = test_driver.get_consumer(&sync_topic, 0).await;
+    let sync_producer = test_driver
+        .create_producer(&sync_topic)
+        .instrument(debug_span!("sync_producer_create"))
+        .await;
+    let sync_consumer = test_driver
+        .get_consumer(&sync_topic, 0)
+        .instrument(debug_span!("sync_consumer_create"))
+        .await;
 
     let mut sync_stream = sync_consumer
         .stream(Offset::from_end(0))
+        .instrument(debug_span!("sync_stream_create"))
         .await
         .expect("Unable to open stream");
 
     // Let syncing process know this producer is ready
-    sync_producer.send(RecordKey::NULL, "ready").await.unwrap();
+    sync_producer
+        .send(RecordKey::NULL, "ready")
+        .instrument(debug_span!(
+            "sync_producer_send_ready",
+            producers_pending = producer_id
+        ))
+        .await
+        .unwrap();
 
     println!("{}: waiting for start", producer_id);
-    while let Some(Ok(record)) = sync_stream.next().await {
+    while let Some(Ok(record)) = sync_stream
+        .next()
+        .instrument(debug_span!("sync_stream_ready_msg"))
+        .await
+    {
         //let _key = record
         //    .key()
         //    .map(|key| String::from_utf8_lossy(key).to_string());
@@ -127,7 +153,9 @@ pub async fn producer(
     if option.environment.timeout != Duration::MAX {
         while test_start.elapsed().unwrap() <= option.environment.timeout {
             for producer in producers.iter() {
-                send_record(&option, producer_id, records_sent, &test_driver, producer).await;
+                send_record(&option, producer_id, records_sent, &test_driver, producer)
+                    .instrument(debug_span!("start_produce_w_timeout"))
+                    .await;
                 records_sent += 1;
             }
         }
@@ -135,7 +163,9 @@ pub async fn producer(
     } else {
         loop {
             for producer in producers.iter() {
-                send_record(&option, producer_id, records_sent, &test_driver, producer).await;
+                send_record(&option, producer_id, records_sent, &test_driver, producer)
+                    .instrument(debug_span!("start_produce_forever"))
+                    .await;
                 records_sent += 1;
             }
         }
@@ -144,6 +174,7 @@ pub async fn producer(
     println!("Producer stopped. Time's up!\nRecords sent: {records_sent}",)
 }
 
+#[instrument(skip(test_driver, producer, option))]
 async fn send_record(
     option: &GeneratorTestCase,
     producer_id: u32,
@@ -154,10 +185,12 @@ async fn send_record(
     let record = generate_record(option.clone(), producer_id, records_sent);
     test_driver
         .send_count(producer, RecordKey::NULL, record)
+        .instrument(debug_span!("producer_send", id = producer_id))
         .await
         .expect("Producer Send failed");
 }
 
+#[instrument(level = "trace")]
 fn generate_record(option: GeneratorTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
     let record = TestRecordBuilder::new()
         .with_tag(format!("{}", record_id))

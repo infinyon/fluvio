@@ -13,11 +13,11 @@ use std::io::Read;
 use std::collections::BTreeMap;
 
 use clap::Parser;
-use tracing::debug;
+use tracing::{debug, Instrument, debug_span, trace_span};
 use serde::{Deserialize};
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
+use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 
@@ -77,18 +77,6 @@ impl TestOption for SmokeTestOption {
     }
 }
 
-//inventory::submit! {
-//    FluvioTest {
-//        name: "smoke".to_string(),
-//        test_fn: smoke,
-//        validate_fn: validate_subcommand,
-//    }
-//}
-
-//pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
-//    Box::new(SmokeTestOption::from_iter(subcmd))
-//}
-
 #[fluvio_test(topic = "test")]
 pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let smoke_test_case: SmokeTestCase = test_case.into();
@@ -100,11 +88,16 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 async {
                     test_driver
                         .connect()
+                        .instrument(debug_span!("client_for_connector_test"))
                         .await
                         .expect("Connecting to cluster failed");
 
                     // Add a connector CRD
-                    let admin = test_driver.client().admin().await;
+                    let admin = test_driver
+                        .client()
+                        .admin()
+                        .instrument(trace_span!("fluvio_admin"))
+                        .await;
                     // Create a managed connector
                     let config = ConnectorConfig::from_file(&connector_config).unwrap();
                     let spec: ManagedConnectorSpec = config.clone().into();
@@ -120,6 +113,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                         debug!("topic spec: {:?}", topic_spec);
                         admin
                             .create(config.topic.clone(), false, topic_spec)
+                            .instrument(debug_span!("topic_create_for_connector"))
                             .await
                             .unwrap_or(());
                     }
@@ -128,6 +122,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     println!("Attempt to create connector");
                     admin
                         .create(name.to_string(), false, spec)
+                        .instrument(debug_span!("connector_create"))
                         .await
                         .unwrap_or(());
 
@@ -153,7 +148,9 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
                     // Verify that connector is creating data
                     let start_offset =
-                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone()).await;
+                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
+                            .instrument(debug_span!("start_offset"))
+                            .await;
                     let start = start_offset.get(&config.topic.clone()).expect("offsets");
 
                     println!("Verify connector is creating data: (start: {})", start);
@@ -168,10 +165,14 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     };
 
                     println!("Waiting {} seconds to let connector write", &wait_sec);
-                    sleep(Duration::from_secs(wait_sec)).await;
+                    sleep(Duration::from_secs(wait_sec))
+                        .instrument(trace_span!("sleep"))
+                        .await;
 
                     let check_offset =
-                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone()).await;
+                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone())
+                            .instrument(debug_span!("check_offset"))
+                            .await;
                     let check = check_offset.get(&config.topic.clone()).expect("offsets");
 
                     if check > start {
@@ -186,6 +187,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                         start_offset,
                         &new_smoke_test_case.clone(),
                     )
+                    .instrument(debug_span!("validate_connector_active"))
                     .await;
                 },
                 "connector"
@@ -215,22 +217,31 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
                     test_driver
                         .connect()
+                        .instrument(debug_span!("client_for_table_format"))
                         .await
                         .expect("Connecting to cluster failed");
 
-                    let admin = test_driver.client().admin().await;
+                    let admin = test_driver
+                        .client()
+                        .admin()
+                        .instrument(trace_span!("fluvio_admin"))
+                        .await;
 
                     admin
                         .create(name.clone(), false, table_format_spec)
+                        .instrument(debug_span!("table_format_create"))
                         .await
                         .expect("TableFormat create failed");
                     println!("tableformat \"{}\" created", &name);
 
                     // Wait a moment then delete
-                    sleep(Duration::from_secs(5)).await;
+                    sleep(Duration::from_secs(5))
+                        .instrument(trace_span!("sleep"))
+                        .await;
 
                     admin
                         .delete::<TableFormatSpec, _>(name.clone())
+                        .instrument(debug_span!("table_format_delete"))
                         .await
                         .expect("TableFormat delete failed");
                     println!(
@@ -255,16 +266,20 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
             test_driver
                 .connect()
+                .instrument(debug_span!("client_for_producer"))
                 .await
                 .expect("Connecting to cluster failed");
             println!("About to start producer test");
 
-            let start_offset = produce::produce_message(test_driver, &smoke_test_case).await;
+            let start_offset = produce::produce_message(test_driver, &smoke_test_case)
+                .instrument(debug_span!("produce_message"))
+                .await;
 
             // If we've passed in `--consumer-wait` then we should start the consumer after the producer
             if smoke_test_case.option.consumer_wait {
                 test_driver_consumer_wait
                     .connect()
+                    .instrument(debug_span!("consumer_for_wait"))
                     .await
                     .expect("Connecting to cluster failed");
                 validate_consume_message_api(
@@ -272,6 +287,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     start_offset,
                     &smoke_test_case,
                 )
+                .instrument(debug_span!("validate_producer_active"))
                 .await;
             }
         },
@@ -284,9 +300,12 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             async {
                 test_driver
                     .connect()
+                    .instrument(debug_span!("client_for_consumer"))
                     .await
                     .expect("Connecting to cluster failed");
-                consume::validate_consume_message(test_driver, &smoke_test_case).await;
+                consume::validate_consume_message(test_driver, &smoke_test_case)
+                    .instrument(debug_span!("consumer_validate"))
+                    .await;
             },
             "consumer validation"
         );

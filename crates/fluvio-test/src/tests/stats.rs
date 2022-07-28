@@ -12,6 +12,8 @@ use fluvio::stats::{ClientStatsDataCollect, ClientStatsMetric, ClientStatsMetric
 use crate::tests::TestRecordBuilder;
 
 use comfy_table::{Table, Row, Cell, CellAlignment};
+use tracing::{Instrument, debug_span, trace_span};
+
 #[derive(Debug, Clone)]
 pub struct StatsTestCase {
     pub environment: EnvironmentSetup,
@@ -80,6 +82,7 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
         async {
             test_driver
                 .connect()
+                .instrument(trace_span!("client_connect"))
                 .await
                 .expect("connecting to cluster failed");
 
@@ -120,6 +123,7 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
                     &test_case.environment.topic_name.unwrap(),
                     producer_config,
                 )
+                .instrument(debug_span!("producer_create_w_config"))
                 .await;
 
             let global_timer = SystemTime::now();
@@ -159,8 +163,16 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
                 // Latency
                 // start timer
                 let round_timer = SystemTime::now();
-                producer.send_all(payload).await.unwrap();
-                producer.flush().await.unwrap();
+                producer
+                    .send_all(payload)
+                    .instrument(debug_span!("send_all"))
+                    .await
+                    .unwrap();
+                producer
+                    .flush()
+                    .instrument(debug_span!("flush"))
+                    .await
+                    .unwrap();
                 let round_elapsed = round_timer.elapsed().unwrap();
                 // stop timer
 

@@ -2,11 +2,12 @@ use fluvio::{RecordKey, TopicProducerConfig, TopicProducerConfigBuilder};
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use std::time::{Duration, Instant, SystemTime};
-use tracing::debug;
+use tracing::{debug, instrument, Instrument, debug_span};
 
 use super::LongevityTestCase;
 use crate::tests::TestRecordBuilder;
 
+#[instrument(skip(test_driver))]
 pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, producer_id: u32) {
     debug!("About to get a producer");
 
@@ -29,6 +30,7 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
 
         let producer = test_driver
             .create_producer_with_config(&topic_name, config)
+            .instrument(debug_span!("producer_create", topic = &topic_name))
             .await;
 
         producers.push(producer);
@@ -71,6 +73,7 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
         for p in &producers {
             test_driver
                 .send_count(p, RecordKey::NULL, record_json.clone())
+                .instrument(debug_span!("producer_send", producer_id = producer_id))
                 .await
                 .expect("Producer Send failed");
         }

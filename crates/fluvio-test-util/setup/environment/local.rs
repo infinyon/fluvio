@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use tracing::instrument;
 
 use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
@@ -7,18 +8,20 @@ use fluvio_cluster::{LocalConfig, LocalInstaller, StartStatus, ClusterUninstallC
 use super::EnvironmentDriver;
 
 /// Local Env driver where we should SPU locally
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LocalEnvDriver {
     config: LocalConfig,
 }
 
 impl LocalEnvDriver {
+    #[instrument(level = "trace")]
     pub fn new(option: EnvironmentSetup) -> Self {
         Self {
             config: Self::load_config(&option),
         }
     }
 
+    #[instrument(level = "trace")]
     fn load_config(option: &EnvironmentSetup) -> LocalConfig {
         let version = semver::Version::parse(&*crate::VERSION).unwrap();
         let mut builder = LocalConfig::builder(version);
@@ -53,6 +56,7 @@ impl LocalEnvDriver {
 #[async_trait]
 impl EnvironmentDriver for LocalEnvDriver {
     /// remove cluster
+    #[instrument(skip(self))]
     async fn remove_cluster(&self) {
         let uninstaller = ClusterUninstallConfig::builder()
             .build()
@@ -62,6 +66,7 @@ impl EnvironmentDriver for LocalEnvDriver {
         uninstaller.uninstall().await.expect("uninstall");
     }
 
+    #[instrument(skip(self))]
     async fn start_cluster(&self) -> StartStatus {
         let installer = LocalInstaller::from_config(self.config.clone());
         installer
@@ -70,6 +75,7 @@ impl EnvironmentDriver for LocalEnvDriver {
             .expect("Failed to install local cluster")
     }
 
+    #[instrument(skip(self), level = "trace")]
     fn create_cluster_manager(&self) -> Box<dyn fluvio_cluster::runtime::spu::SpuClusterManager> {
         Box::new(self.config.as_spu_cluster_manager())
     }

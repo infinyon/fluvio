@@ -7,7 +7,9 @@ use fluvio::Offset;
 
 use super::ConcurrentTestCase;
 use super::util::*;
+use tracing::{instrument, Instrument, debug_span};
 
+#[instrument(skip(test_driver))]
 pub async fn consumer_stream(
     test_driver: TestDriver,
     option: ConcurrentTestCase,
@@ -15,11 +17,20 @@ pub async fn consumer_stream(
 ) {
     let consumer = test_driver
         .get_consumer(&option.environment.base_topic_name(), 0)
+        .instrument(debug_span!("consumer_create"))
         .await;
-    let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
+    let mut stream = consumer
+        .stream(Offset::beginning())
+        .instrument(debug_span!("stream_create"))
+        .await
+        .unwrap();
 
     let mut index: i32 = 0;
-    while let Some(Ok(record)) = stream.next().await {
+    while let Some(Ok(record)) = stream
+        .next()
+        .instrument(debug_span!("stream_next", i = index))
+        .await
+    {
         let existing_record_digest = digests.recv().unwrap();
         let current_record_digest = hash_record(record.as_ref());
         println!(

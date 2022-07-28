@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use tracing::instrument;
 
 use fluvio_cluster::{ClusterConfig, ClusterInstaller, ClusterUninstallConfig, StartStatus};
 
@@ -6,12 +7,13 @@ use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
 use super::EnvironmentDriver;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct K8EnvironmentDriver {
     option: EnvironmentSetup,
 }
 
 impl K8EnvironmentDriver {
+    #[instrument(level = "trace")]
     pub fn new(option: EnvironmentSetup) -> Self {
         Self { option }
     }
@@ -20,6 +22,7 @@ impl K8EnvironmentDriver {
 #[async_trait]
 impl EnvironmentDriver for K8EnvironmentDriver {
     /// remove cluster
+    #[instrument(skip(self))]
     async fn remove_cluster(&self) {
         let uninstaller = ClusterUninstallConfig::builder()
             .build()
@@ -29,6 +32,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
         uninstaller.uninstall().await.expect("uninstall");
     }
 
+    #[instrument(skip(self))]
     async fn start_cluster(&self) -> StartStatus {
         let version = semver::Version::parse(&*crate::VERSION).unwrap();
         let mut builder = ClusterConfig::builder(version);
@@ -70,6 +74,7 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             .expect("Failed to install k8 cluster")
     }
 
+    #[instrument(skip(self), level = "trace")]
     fn create_cluster_manager(&self) -> Box<dyn fluvio_cluster::runtime::spu::SpuClusterManager> {
         panic!("not yet implemented")
     }

@@ -4,6 +4,7 @@ pub mod consumer;
 use core::panic;
 use std::any::Any;
 use clap::Parser;
+use tracing::{Instrument, debug_span};
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -75,10 +76,13 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
                 println!("try connecting consumer: {consumer_id}");
                 test_driver
                     .connect()
+                    .instrument(debug_span!("connect_consumer", consumer_id = consumer_id))
                     .await
                     .expect("Connecting to cluster failed");
                 println!("consumer connected: {consumer_id}");
-                consumer::consumer_stream(test_driver.clone(), option.clone(), consumer_id).await
+                consumer::consumer_stream(test_driver.clone(), option.clone(), consumer_id)
+                    .instrument(debug_span!("stream_consumer", consumer_id = consumer_id))
+                    .await
             },
             format!("consumer-{}", consumer_id)
         );
@@ -87,17 +91,20 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
     }
 
     let mut producer_wait = Vec::new();
-    for i in 0..option.environment.producer {
-        println!("Starting Producer #{}", i);
+    for producer_id in 0..option.environment.producer {
+        println!("Starting Producer #{}", producer_id);
         let producer = async_process!(
             async {
                 test_driver
                     .connect()
+                    .instrument(debug_span!("connect_producer", producer_id = producer_id))
                     .await
                     .expect("Connecting to cluster failed");
-                producer::producer(test_driver, option, i).await
+                producer::producer(test_driver, option, producer_id)
+                    .instrument(debug_span!("start_producer", producer_id = producer_id))
+                    .await
             },
-            format!("producer-{}", i)
+            format!("producer-{}", producer_id)
         );
 
         producer_wait.push(producer);

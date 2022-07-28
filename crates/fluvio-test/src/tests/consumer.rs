@@ -5,6 +5,7 @@ use clap::Parser;
 use futures_lite::stream::StreamExt;
 use std::pin::Pin;
 use std::time::{Duration, SystemTime};
+use tracing::{instrument, Instrument, debug_span};
 
 use fluvio::{ConsumerConfig, MultiplePartitionConsumer, PartitionConsumer};
 use fluvio::Offset;
@@ -98,6 +99,7 @@ impl TestOption for ConsumerTestOption {
     }
 }
 
+#[instrument(skip(stream))]
 async fn consume_work<S: ?Sized>(
     mut stream: Pin<Box<S>>,
     consumer_id: u32,
@@ -126,7 +128,7 @@ async fn consume_work<S: ?Sized>(
                 //    break 'consumer_loop
                 //}
 
-                stream_next = stream.next() => {
+                stream_next = stream.next().instrument(debug_span!("stream_next", consumer_id = consumer_id)) => {
 
                     if let Some(Ok(record_raw)) = stream_next {
                         records_recvd += 1;
@@ -201,6 +203,7 @@ fn build_consumer_config(test_case: ConsumerTestCase) -> ConsumerConfig {
     config.build().expect("Couldn't build consumer config")
 }
 
+#[instrument(skip(consumer))]
 async fn get_single_stream(
     consumer: PartitionConsumer,
     offset: Offset,
@@ -211,11 +214,13 @@ async fn get_single_stream(
     Box::pin(
         consumer
             .stream_with_config(offset, config)
+            .instrument(debug_span!("single_stream_create"))
             .await
             .expect("Unable to open stream"),
     )
 }
 
+#[instrument(skip(consumer))]
 async fn get_multi_stream(
     consumer: MultiplePartitionConsumer,
     offset: Offset,
@@ -226,6 +231,7 @@ async fn get_multi_stream(
     Box::pin(
         consumer
             .stream_with_config(offset, config)
+            .instrument(debug_span!("multi_stream_create"))
             .await
             .expect("Unable to open stream"),
     )
@@ -272,6 +278,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             async {
                 test_driver
                     .connect()
+                    .instrument(debug_span!("client_connect", consumer = n))
                     .await
                     .expect("Connecting to cluster failed");
 
@@ -280,19 +287,29 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 if is_multi {
                     let consumer = test_driver
                         .get_all_partitions_consumer(&test_case.environment.base_topic_name())
+                        .instrument(debug_span!("multi_consumer_create", consumer = n))
                         .await;
                     let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
-                        get_multi_stream(consumer, offset, test_case.clone()).await;
+                        get_multi_stream(consumer, offset, test_case.clone())
+                            .instrument(debug_span!("multi_stream_create", consumer = n))
+                            .await;
 
-                    consume_work(Box::pin(stream), n.into(), test_case).await
+                    consume_work(Box::pin(stream), n.into(), test_case)
+                        .instrument(debug_span!("multi_consume_work", consumer = n))
+                        .await
                 } else {
                     let consumer = test_driver
                         .get_consumer(&test_case.environment.base_topic_name(), partition)
+                        .instrument(debug_span!("single_consumer_create", consumer = n))
                         .await;
                     let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
-                        get_single_stream(consumer, offset, test_case.clone()).await;
+                        get_single_stream(consumer, offset, test_case.clone())
+                            .instrument(debug_span!("single_stream_create", consumer = n))
+                            .await;
 
-                    consume_work(stream, n.into(), test_case).await
+                    consume_work(stream, n.into(), test_case)
+                        .instrument(debug_span!("single_consume_work", consumer = n))
+                        .await
                 }
             },
             format!("consumer-{}", n)

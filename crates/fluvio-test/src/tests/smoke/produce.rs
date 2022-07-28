@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use tracing::{info, debug};
+use tracing::{info, debug, instrument, Instrument, debug_span, trace_span};
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_meta::environment::EnvDetail;
@@ -15,20 +15,28 @@ use super::offsets;
 
 type Offsets = HashMap<String, i64>;
 
+#[instrument(skip(test_driver))]
 pub async fn produce_message(test_driver: TestDriver, test_case: &SmokeTestCase) -> Offsets {
-    let offsets = offsets::find_offsets(&test_driver, test_case).await;
+    let offsets = offsets::find_offsets(&test_driver, test_case)
+        .instrument(debug_span!("find_offsets"))
+        .await;
 
     let use_cli = test_case.option.use_cli;
 
     if use_cli {
-        cli::produce_message_with_cli(test_case, offsets.clone()).await;
+        cli::produce_message_with_cli(test_case, offsets.clone())
+            .instrument(debug_span!("produce_cli"))
+            .await;
     } else {
-        produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
+        produce_message_with_api(test_driver, offsets.clone(), test_case.clone())
+            .instrument(debug_span!("produce_api"))
+            .await;
     }
 
     offsets
 }
 
+#[instrument(skip(test_driver))]
 pub async fn produce_message_with_api(
     test_driver: TestDriver,
     offsets: Offsets,
@@ -51,6 +59,7 @@ pub async fn produce_message_with_api(
             .expect("failed to build config");
         let producer = test_driver
             .create_producer_with_config(&topic_name, config)
+            .instrument(debug_span!("producer_create", partition = r))
             .await;
 
         debug!(base_offset, "created producer");
@@ -64,6 +73,7 @@ pub async fn produce_message_with_api(
 
             test_driver
                 .send_count(&producer, RecordKey::NULL, message.clone())
+                .instrument(debug_span!("producer_send", partition = r))
                 .await
                 .unwrap_or_else(|_| {
                     panic!("send record failed for replication: {} iteration: {}", r, i)
@@ -97,6 +107,7 @@ mod cli {
     use std::time::Duration;
     use crate::get_binary;
 
+    #[instrument]
     pub async fn produce_message_with_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         println!("starting produce");
 
@@ -104,10 +115,13 @@ mod cli {
 
         for i in 0..producer_iteration {
             produce_message_replication(i, &offsets, test_case);
-            sleep(Duration::from_millis(10)).await
+            sleep(Duration::from_millis(10))
+                .instrument(trace_span!("sleep"))
+                .await
         }
     }
 
+    #[instrument]
     fn produce_message_replication(iteration: u32, offsets: &Offsets, test_case: &SmokeTestCase) {
         let replication = test_case.environment.replication;
 
@@ -116,6 +130,7 @@ mod cli {
         }
     }
 
+    #[instrument]
     fn produce_message_inner(_iteration: u32, offsets: &Offsets, test_case: &SmokeTestCase) {
         use std::io;
         let topic_name = test_case.environment.base_topic_name();

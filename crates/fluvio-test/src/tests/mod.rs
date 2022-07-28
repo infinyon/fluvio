@@ -15,7 +15,9 @@ pub mod stats;
 use serde::{Serialize, Deserialize};
 use std::time::SystemTime;
 use crc::{Crc, CRC_32_CKSUM};
+use tracing::instrument;
 
+#[derive(Debug)]
 pub struct TestRecordBuilder {
     /// The producer will set this timestamp
     pub timestamp: SystemTime,
@@ -32,6 +34,7 @@ pub struct TestRecord {
 }
 
 impl TestRecord {
+    #[instrument]
     pub fn validate_crc(&self) -> bool {
         let crc = Crc::<u32>::new(&CRC_32_CKSUM);
         let mut digest = crc.digest();
@@ -77,6 +80,7 @@ impl TestRecordBuilder {
         self
     }
 
+    #[instrument]
     pub fn build(&self) -> TestRecord {
         TestRecord {
             timestamp: self.timestamp,
@@ -86,6 +90,7 @@ impl TestRecordBuilder {
         }
     }
 
+    #[instrument]
     fn random_data(data_size: usize) -> String {
         use rand::Rng;
 
@@ -105,6 +110,7 @@ impl TestRecordBuilder {
         data
     }
 
+    #[instrument]
     fn compute_data_crc(&self) -> u32 {
         let crc = Crc::<u32>::new(&CRC_32_CKSUM);
         let mut digest = crc.digest();

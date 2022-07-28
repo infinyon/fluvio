@@ -11,6 +11,7 @@ use clap::Parser;
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
+use tracing::{Instrument, debug_span, trace_span};
 
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
@@ -52,21 +53,36 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     // first a create simple message
     let topic_name = test_case.environment.base_topic_name();
-    let producer = test_driver.create_producer(&topic_name).await;
+    let producer = test_driver
+        .create_producer(&topic_name)
+        .instrument(debug_span!("producer_create", producer_num = 1))
+        .await;
 
     producer
         .send(RecordKey::NULL, "msg1")
+        .instrument(debug_span!("producer_send", producer_num = 1))
         .await
         .expect("sending");
-    producer.flush().await.expect("flushing");
+    producer
+        .flush()
+        .instrument(debug_span!("producer_flush"))
+        .await
+        .expect("flushing");
 
     // this is hack now, because we don't have ack
-    sleep(Duration::from_secs(ACK_WAIT)).await;
+    sleep(Duration::from_secs(ACK_WAIT))
+        .instrument(trace_span!("sleep", sleep_num = 1))
+        .await;
 
-    let admin = test_driver.client().admin().await;
+    let admin = test_driver
+        .client()
+        .admin()
+        .instrument(trace_span!("fluvio_admin"))
+        .await;
 
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
+        .instrument(trace_span!("list_partitions", list_num = 1))
         .await
         .expect("partitions");
 
@@ -95,12 +111,15 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     cluster_manager.terminate_spu(leader).expect("terminate");
 
-    sleep(Duration::from_secs(ACK_WAIT)).await;
+    sleep(Duration::from_secs(ACK_WAIT))
+        .instrument(trace_span!("sleep", sleep_num = 2))
+        .await;
 
     println!("checking for new leader");
 
     let partition_status2 = admin
         .list::<PartitionSpec, _>(vec![])
+        .instrument(trace_span!("list_partitions", list_num = 2))
         .await
         .expect("partitions");
 
@@ -108,20 +127,31 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     assert_eq!(status2.spec.leader, follower_id); // switch leader to follower
 
     // create new producer
-    let producer2 = test_driver.create_producer(&topic_name).await;
+    let producer2 = test_driver
+        .create_producer(&topic_name)
+        .instrument(debug_span!("producer_create", producer_num = 2))
+        .await;
 
     producer2
         .send(RecordKey::NULL, "msg2")
+        .instrument(debug_span!("producer_send", producer_num = 2))
         .await
         .expect("sending");
-    producer2.flush().await.expect("flushing");
+    producer2
+        .flush()
+        .instrument(debug_span!("producer_flush", producer_num = 2))
+        .await
+        .expect("flushing");
 
     // wait until this gets written
-    sleep(Duration::from_secs(ACK_WAIT)).await;
+    sleep(Duration::from_secs(ACK_WAIT))
+        .instrument(trace_span!("sleep", sleep_num = 3))
+        .await;
 
     {
         let partition_status = admin
             .list::<PartitionSpec, _>(vec![])
+            .instrument(trace_span!("list_partitions", list_num = 3))
             .await
             .expect("partitions");
         let leader_status = &partition_status[0].status.leader;
@@ -135,12 +165,15 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     leader_spu.start().expect("start");
 
     // wait until prev leader has caught up
-    sleep(Duration::from_secs(ACK_WAIT)).await;
+    sleep(Duration::from_secs(ACK_WAIT))
+        .instrument(trace_span!("sleep", sleep_num = 4))
+        .await;
 
     println!("checking that prev leader has fully caught up");
     {
         let partition_status = admin
             .list::<PartitionSpec, _>(vec![])
+            .instrument(trace_span!("list_partitions", list_num = 4))
             .await
             .expect("partitions");
         let leader_status = &partition_status[0].status.leader;
@@ -153,30 +186,47 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
         .terminate_spu(follower_id)
         .expect("terminate");
 
-    sleep(Duration::from_secs(ACK_WAIT)).await;
+    sleep(Duration::from_secs(ACK_WAIT))
+        .instrument(trace_span!("sleep", sleep_num = 5))
+        .await;
 
     println!("checking leader again");
 
     {
         let partition_status = admin
             .list::<PartitionSpec, _>(vec![])
+            .instrument(trace_span!("list_partitions", list_num = 5))
             .await
             .expect("partitions");
         let leader_status = &partition_status[0];
         assert_eq!(leader_status.spec.leader, leader);
     }
 
-    let consumer = test_driver.get_consumer(&topic_name, 0).await;
+    let consumer = test_driver
+        .get_consumer(&topic_name, 0)
+        .instrument(debug_span!("consumer_create"))
+        .await;
     let mut stream = consumer
         .stream(Offset::absolute(0).expect("offset"))
+        .instrument(debug_span!("stream_create"))
         .await
         .expect("stream");
 
     println!("checking msg1");
-    let records = stream.next().await.expect("get next").expect("next");
+    let records = stream
+        .next()
+        .instrument(debug_span!("stream_next", msg = 1))
+        .await
+        .expect("get next")
+        .expect("next");
     assert_eq!(records.value(), "msg1".as_bytes());
 
     println!("checking msg2");
-    let records = stream.next().await.expect("get next").expect("next");
+    let records = stream
+        .next()
+        .instrument(debug_span!("stream_next", msg = 2))
+        .await
+        .expect("get next")
+        .expect("next");
     assert_eq!(records.value(), "msg2".as_bytes());
 }

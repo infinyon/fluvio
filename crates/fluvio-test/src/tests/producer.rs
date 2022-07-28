@@ -10,7 +10,7 @@ use fluvio_test_util::async_process;
 //use tracing::debug;
 use hdrhistogram::Histogram;
 use std::time::{Duration, SystemTime};
-//use std::num::ParseIntError;
+use tracing::{instrument, Instrument, debug_span, trace_span};
 
 #[derive(Debug, Clone)]
 pub struct ProducerTestCase {
@@ -74,6 +74,7 @@ impl TestOption for ProducerTestOption {
 }
 
 // The total num_records should be divided up and assigned per producer
+#[instrument(skip(producer), fields(producer_id))]
 async fn producer_work(
     producer: TopicProducer,
     producer_id: u32,
@@ -124,6 +125,7 @@ async fn producer_work(
         let now = SystemTime::now();
         producer
             .send(RecordKey::NULL, record_json)
+            .instrument(debug_span!("producer_send"))
             .await
             .unwrap_or_else(|_| panic!("Producer {} send failed", producer_id));
 
@@ -218,6 +220,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
                 test_driver
                     .connect()
+                    .instrument(trace_span!("client_connect", producer = n))
                     .await
                     .expect("Connecting to cluster failed");
 
@@ -225,12 +228,14 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     // TODO: Support for multiple topics
                     test_driver
                         .create_producer(&test_case.environment.base_topic_name())
+                        .instrument(debug_span!("producer_create", producer = n))
                         .await,
                     n,
                     workload_size,
                     start_record_tag,
                     test_case,
                 )
+                .instrument(debug_span!("producer_process", producer = n))
                 .await
             },
             format!("producer-{}", n)

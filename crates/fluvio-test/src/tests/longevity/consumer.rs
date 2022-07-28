@@ -14,24 +14,34 @@ use fluvio_future::timer::sleep;
 use fluvio_future::io::Stream;
 use fluvio::dataplane::record::ConsumerRecord;
 use fluvio::dataplane::ErrorCode;
-use tracing::info;
+use tracing::{info, instrument, Instrument, debug_span};
 
 use super::LongevityTestCase;
 use crate::tests::TestRecord;
 
 // This is for joining multiple topic support per process
+#[instrument(skip(stream))]
 async fn consume_from_stream(
     channel: async_channel::Sender<ConsumerRecord>,
     mut stream: impl Stream<Item = Result<ConsumerRecord, ErrorCode>> + Unpin,
 ) -> Result<(), ()> {
-    while let Ok(Some(record_raw)) = stream.try_next().await {
-        channel.send(record_raw).await.expect("channel");
+    while let Ok(Some(record_raw)) = stream
+        .try_next()
+        .instrument(debug_span!("consumer_next_record"))
+        .await
+    {
+        channel
+            .send(record_raw)
+            .instrument(debug_span!("report_record"))
+            .await
+            .expect("channel");
     }
 
     Ok(())
 }
 
 // supports multiple topics
+#[instrument(skip(test_driver), fields(consumer_id))]
 pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase, consumer_id: u32) {
     // Vec of consumer streams
     let mut streams = Vec::new();
@@ -54,6 +64,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
         // TODO: Support starting stream from consumer offset
         let stream = consumer
             .stream(Offset::from_end(0))
+            .instrument(debug_span!("stream_create"))
             .await
             .expect("Unable to open stream");
 
@@ -65,7 +76,8 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
     // Note, we're going to give the consumer some buffer
     // to give it a better chance to read all records
     let consumer_buffer_time = Duration::from_millis(25);
-    let mut test_timer = sleep(option.environment.timeout + consumer_buffer_time);
+    let mut test_timer = sleep(option.environment.timeout + consumer_buffer_time)
+        .instrument(debug_span!("consumer_test_timer"));
     let mut records_recvd: i32 = 0;
 
     let start_consume = SystemTime::now();
@@ -85,52 +97,55 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
         _ = try_join_all(streams.clone()) => {}
 
         // This is for stdout
-        record_raw = r.recv() => {
-            // Consumer handling code for single stream
-            if let Ok(raw) = record_raw {
-                records_recvd += 1;
+        record_raw = r.recv().instrument(debug_span!("report_channel_recv")) => {
+            debug_span!("print_consumer_status", consumer_id = consumer_id).in_scope(|| {
+                // Consumer handling code for single stream
+                if let Ok(raw) = record_raw {
+                    records_recvd += 1;
 
-                let result = std::panic::catch_unwind(|| {
-                    let record_str = std::str::from_utf8(raw.as_ref()).unwrap();
-                    let record_size = record_str.len();
-                    let test_record: TestRecord =
-                        serde_json::from_str(std::str::from_utf8(raw.as_ref()).unwrap())
-                            .expect("Deserialize record failed");
+                    let result = std::panic::catch_unwind(|| {
+                        let record_str = std::str::from_utf8(raw.as_ref()).unwrap();
+                        let record_size = record_str.len();
+                        let test_record: TestRecord =
+                            serde_json::from_str(std::str::from_utf8(raw.as_ref()).unwrap())
+                                .expect("Deserialize record failed");
 
-                    //let _consume_latency = now.elapsed().clone().unwrap().as_nanos();
+                        //let _consume_latency = now.elapsed().clone().unwrap().as_nanos();
 
-                    if option.option.verbose {
+                        if option.option.verbose {
+                            println!(
+                                "[consumer-{}] record: {:>7} offset: {:>7} (size {:>5}): CRC: {:>10}",
+                                consumer_id,
+                                records_recvd,
+                                raw.offset(),
+                                record_size,
+                                test_record.crc,
+                            );
+                        }
+
+                        assert!(test_record.validate_crc());
+                    });
+
+
+                    if let Err(err) = result {
+                        let elapsed_time = start_consume.elapsed().unwrap().as_secs();
+                        let poll_elapsed_time = last_receive.elapsed().unwrap().as_secs();
                         println!(
-                            "[consumer-{}] record: {:>7} offset: {:>7} (size {:>5}): CRC: {:>10}",
-                            consumer_id,
-                            records_recvd,
-                            raw.offset(),
-                            record_size,
-                            test_record.crc,
-                        );
+                                "[consumer-{consumer_id}] record: {records_recvd} offset: {}, elapsed: {elapsed_time}  seconds, poll elapsed: {poll_elapsed_time} seconds",
+                                raw.offset(),
+                            );
+
+                        panic!("Consumer {consumer_id} failed to consume record: {:?}", err);
                     }
 
-                    assert!(test_record.validate_crc());
-                });
-
-
-                if let Err(err) = result {
+                } else {
                     let elapsed_time = start_consume.elapsed().unwrap().as_secs();
                     let poll_elapsed_time = last_receive.elapsed().unwrap().as_secs();
-                    println!(
-                            "[consumer-{consumer_id}] record: {records_recvd} offset: {}, elapsed: {elapsed_time}  seconds, poll elapsed: {poll_elapsed_time} seconds",
-                            raw.offset(),
-                        );
-
-                    panic!("Consumer {consumer_id} failed to consume record: {:?}", err);
+                    info!(consumer_id,records_recvd,"stream ended");
+                    panic!("{}",format!("Stream ended unexpectedly, consumer: {consumer_id}, records received: {records_recvd}, seconds: {elapsed_time}, poll elapsed: {poll_elapsed_time} seconds"));
                 }
 
-            } else {
-                let elapsed_time = start_consume.elapsed().unwrap().as_secs();
-                let poll_elapsed_time = last_receive.elapsed().unwrap().as_secs();
-                info!(consumer_id,records_recvd,"stream ended");
-                panic!("{}",format!("Stream ended unexpectedly, consumer: {consumer_id}, records received: {records_recvd}, seconds: {elapsed_time}, poll elapsed: {poll_elapsed_time} seconds"));
-            }
+            });
             }
         }
     }

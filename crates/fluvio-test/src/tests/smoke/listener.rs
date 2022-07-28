@@ -1,4 +1,5 @@
 use std::time::Duration;
+use tracing::{info, instrument, Instrument, debug_span, trace_span};
 
 use futures::stream::StreamExt;
 use futures::select;
@@ -16,7 +17,7 @@ use fluvio::profile::TlsClientConfig;
 use crate::TestOption;
 use crate::tls::Cert;
 
-#[allow(unused)]
+#[instrument(skip(test_driver))]
 /// test when consuming using streaming mode
 pub async fn validate_consumer_listener(client_idx: u16, option: &TestOption) {
     println!(
@@ -38,10 +39,11 @@ pub async fn validate_consumer_listener(client_idx: u16, option: &TestOption) {
     };
 
     let config = ScConfig::new(Some("localhost:9003".into()), tls_option).expect("connect");
-    let mut sc = config.connect().await.expect("should connect");
+    let mut sc = config.connect().instrument(debug_span!("sc_connect")).await.expect("should connect");
 
     let mut leader = sc
         .find_replica_for_topic_partition("test1", 0)
+.instrument(debug_span!("find_replica"))
         .await
         .expect("leader not founded");
 
@@ -53,13 +55,13 @@ pub async fn validate_consumer_listener(client_idx: u16, option: &TestOption) {
 
     println!("got log stream, testing {}", client_idx);
 
-    let first_response = log_stream.next().await.expect("response");
+    let first_response = log_stream.next().instrument(debug_span!("log_stream_next_1")).await.expect("response");
     let records = first_response.records;
     // no records since we don't have any produce
     assert_eq!(records.batches.len(), 0, "there should not be any records");
 
     select! {
-        second_response = log_stream.next() => {
+        second_response = log_stream.next().instrument(debug_span!("log_stream_next_2")) => {
             match second_response {
                 None => {
                     assert!(false,"premature termination");
@@ -70,7 +72,7 @@ pub async fn validate_consumer_listener(client_idx: u16, option: &TestOption) {
                 },
             }
         },
-        _ = (sleep(Duration::from_secs(3))).fuse() => {
+        _ = (sleep(Duration::from_secs(3))).fuse().instrument(trace_span!("sleep")) => {
             assert!(false,"consumer: {} didn't receive any",client_idx)
         }
 
