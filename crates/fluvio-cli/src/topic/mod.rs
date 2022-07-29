@@ -28,7 +28,7 @@ pub enum TopicCmd {
     )]
     Create(CreateTopicOpt),
 
-    /// Delete a Topic with the given name
+    /// Delete one or more Topics with the given name(s)
     #[clap(
         name = "delete",
         help_template = COMMAND_TEMPLATE,

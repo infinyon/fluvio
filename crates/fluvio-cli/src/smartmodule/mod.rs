@@ -16,6 +16,7 @@ use self::delete::DeleteSmartModuleOpt;
 pub enum SmartModuleCmd {
     Create(CreateSmartModuleOpt),
     List(ListSmartModuleOpt),
+    /// Delete one or more Smart Modules with the given name(s)
     Delete(DeleteSmartModuleOpt),
 }
 

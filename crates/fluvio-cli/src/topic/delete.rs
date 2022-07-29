@@ -9,13 +9,14 @@ use clap::Parser;
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::Result;
+use crate::error::CliError;
 
 #[derive(Debug, Parser)]
 pub struct DeleteTopicOpt {
-    /// ignore delete errors if any
+    /// Continue deleting in case of an error
     #[clap(short, long, action, required = false)]
-    ignore_error: bool,
-    /// The name(s) of the Topic(s) to be deleted
+    continue_on_error: bool,
+    /// One or more name(s) of the topic(s) to be deleted
     #[clap(value_name = "name", required = true)]
     names: Vec<String>,
 }
@@ -23,18 +24,27 @@ pub struct DeleteTopicOpt {
 impl DeleteTopicOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
-        for topic in self.names.iter() {
-            debug!("deleting topic: {}", topic);
-            if let Err(error) = admin.delete::<TopicSpec, _>(topic).await {
-                if self.ignore_error {
-                    println!("topic \"{}\" delete failed with: {}", topic, error);
+        let mut err_happened = false;
+        for name in self.names.iter() {
+            debug!("deleting topic: {}", name);
+            if let Err(error) = admin.delete::<TopicSpec, _>(name).await {
+                let error = CliError::from(error);
+                err_happened = true;
+                if self.continue_on_error {
+                    println!("topic \"{}\" delete failed with: {}", name, error);
                 } else {
-                    return Err(error.into());
+                    return Err(error);
                 }
             } else {
-                println!("topic \"{}\" deleted", topic);
+                println!("topic \"{}\" deleted", name);
             }
         }
-        Ok(())
+        if err_happened {
+            Err(CliError::Other(
+                "Failed deleting topic(s). Check previous errors.".to_string(),
+            ))
+        } else {
+            Ok(())
+        }
     }
 }

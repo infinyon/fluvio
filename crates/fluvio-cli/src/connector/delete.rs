@@ -15,10 +15,10 @@ use tracing::debug;
 
 #[derive(Debug, Parser)]
 pub struct DeleteManagedConnectorOpt {
-    /// ignore delete errors if any
+    /// Continue deleting in case of an error
     #[clap(short, long, action, required = false)]
-    ignore_error: bool,
-    /// The name(s) of the connector(s) to be deleted
+    continue_on_error: bool,
+    /// One or more name(s) of the connector(s) to be deleted
     #[clap(value_name = "name", required = true)]
     names: Vec<String>,
 }
@@ -26,19 +26,27 @@ pub struct DeleteManagedConnectorOpt {
 impl DeleteManagedConnectorOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
+        let mut err_happened = false;
         for name in self.names.iter() {
             debug!("deleting connector: {}", name);
             if let Err(error) = admin.delete::<ManagedConnectorSpec, _>(name).await {
-                if self.ignore_error {
+                let error = CliError::from(error);
+                err_happened = true;
+                if self.continue_on_error {
                     println!("connector \"{}\" delete failed with: {}", name, error);
                 } else {
-                    return Err(error.into());
+                    return Err(error);
                 }
             } else {
                 println!("connector \"{}\" deleted", name);
             }
         }
-
-        Ok(())
+        if err_happened {
+            Err(CliError::Other(
+                "Failed deleting connector(s). Check previous errors.".to_string(),
+            ))
+        } else {
+            Ok(())
+        }
     }
 }
