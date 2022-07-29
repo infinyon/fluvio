@@ -642,13 +642,15 @@ impl ClusterInstaller {
             .await
             .map_err(K8InstallError::from)?;
 
+        let pb = self.pb_factory.create();
+
         let sc_service = self.discover_sc_service(&self.config.namespace).await?;
         let (external_host, external_port) =
             self.discover_sc_external_host_and_port(&sc_service).await?;
         let external_host_and_port = format!("{}:{}", external_host, external_port);
 
         let (install_host_and_port, pf_process) = if self.config.use_k8_port_forwarding {
-            info!("Using K8 port forwarding for install");
+            pb.println("Using K8 port forwarding for install".to_string());
             let (install_host, install_port, pf_process) =
                 self.start_sc_port_forwarding(&sc_service).await?;
             (
@@ -661,7 +663,6 @@ impl ClusterInstaller {
 
         let cluster_config = FluvioConfig::new(install_host_and_port.clone())
             .with_tls(self.config.client_tls_policy.clone());
-        let pb = self.pb_factory.create();
         pb.set_message("🔎 Discovering Fluvio SC");
         let fluvio =
             match try_connect_to_sc(&cluster_config, &self.config.platform_version, &pb).await {
@@ -671,6 +672,10 @@ impl ClusterInstaller {
         pb.println(format!("✅ Connected to SC: {}", install_host_and_port));
         pb.finish_and_clear();
         drop(pb);
+
+        if self.config.save_profile {
+            self.update_profile(&external_host_and_port)?;
+        }
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
@@ -684,10 +689,6 @@ impl ClusterInstaller {
 
         self.pb_factory
             .println(InstallProgressMessage::Success.msg());
-
-        if self.config.save_profile {
-            self.update_profile(&external_host_and_port)?;
-        }
 
         Ok(StartStatus {
             address: external_host,
@@ -889,6 +890,7 @@ impl ClusterInstaller {
         let target_port = ClusterInstaller::target_port_for_service(service)?;
 
         // Wait for pod to start
+        // TODO: use K8 client to wait for pod with retry logic
         sleep(Duration::from_secs(3)).await;
 
         let mut pf_child = std::process::Command::new("kubectl")
