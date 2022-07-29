@@ -33,7 +33,11 @@ impl DeleteManagedConnectorOpt {
                 let error = CliError::from(error);
                 err_happened = true;
                 if self.continue_on_error {
-                    println!("connector \"{}\" delete failed with: {}", name, error);
+                    let user_error = match error.get_user_error() {
+                        Ok(usr_err) => usr_err,
+                        Err(err) => format!("{}", err),
+                    };
+                    println!("connector \"{}\" delete failed with: {}", name, user_error);
                 } else {
                     return Err(error);
                 }
@@ -42,7 +46,7 @@ impl DeleteManagedConnectorOpt {
             }
         }
         if err_happened {
-            Err(CliError::Other(
+            Err(CliError::CollectedError(
                 "Failed deleting connector(s). Check previous errors.".to_string(),
             ))
         } else {

@@ -71,6 +71,8 @@ pub enum CliError {
     InvalidArg(String),
     #[error("Unknown error: {0}")]
     Other(String),
+    #[error("{0}")]
+    CollectedError(String),
     #[error("Unexpected Infallible error")]
     Infallible(#[from] Infallible),
     #[error("Dataplane error: {0}")]
@@ -117,57 +119,47 @@ impl CliError {
         }
     }
 
-    /// Looks at the error value and attempts to gracefully handle reporting it
+    /// Looks at the error value and attempts to create a user facing error message
     ///
     /// Sometimes, specific errors require specific user-facing error messages.
     /// Here is where we define those messages, as well as the exit code that the
     /// program should return when exiting after those errors.
-    pub fn print(self) -> Result<()> {
+    pub fn get_user_error(self) -> Result<String> {
         match &self {
             Self::ClientError(FluvioError::AdminApi(api)) => match api {
                 ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
-                    println!("Topic already exists");
-                    Ok(())
+                    Ok("Topic already exists".to_string())
                 }
                 ApiError::Code(ErrorCode::ManagedConnectorAlreadyExists, _) => {
-                    println!("Connector already exists");
-                    Ok(())
+                    Ok("Connector already exists".to_string())
                 }
-                ApiError::Code(ErrorCode::TopicNotFound, _) => {
-                    println!("Topic not found");
-                    Ok(())
-                }
+                ApiError::Code(ErrorCode::TopicNotFound, _) => Ok("Topic not found".to_string()),
+                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("Smart Module not found".to_string()),
                 ApiError::Code(ErrorCode::ManagedConnectorNotFound, _) => {
-                    println!("Connector not found");
-                    Ok(())
+                    Ok("Connector not found".to_string())
                 }
                 ApiError::Code(ErrorCode::TopicInvalidName, _) => {
-                    println!("Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).");
-                    Ok(())
+                    Ok("Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).".to_string())
                 }
                 ApiError::Code(ErrorCode::TableFormatAlreadyExists, _) => {
-                    println!("TableFormat already exists");
-                    Ok(())
+                    Ok("TableFormat already exists".to_string())
                 }
                 ApiError::Code(ErrorCode::TableFormatNotFound, _) => {
-                    println!("TableFormat not found");
-                    Ok(())
+                    Ok("TableFormat not found".to_string())
                 }
                 _ => Err(self),
             },
             Self::ClientError(FluvioError::Socket(SocketError::Io(io)))
                 if io.kind() == ErrorKind::TimedOut =>
             {
-                println!("Network connection timed out while waiting for response");
-                Ok(())
+                Ok("Network connection timed out while waiting for response".to_string())
             }
             #[cfg(feature = "k8s")]
             Self::ClusterCliError(ClusterCliError::TargetError(TargetError::ClientError(
                 FluvioError::Socket(SocketError::Io(io)),
             ))) => match io.kind() {
                 ErrorKind::ConnectionRefused => {
-                    println!("Failed to connect to cluster, make sure you have started or connected to your cluster");
-                    Ok(())
+                    Ok("Failed to connect to cluster, make sure you have started or connected to your cluster".to_string())
                 }
                 _ => Err(self),
             },

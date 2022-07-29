@@ -13,7 +13,8 @@ fn main() -> Result<()> {
 
     // If the CLI comes back with an error, attempt to handle it
     if let Err(e) = run_block_on(root.process()) {
-        e.print()?;
+        let user_error = e.get_user_error()?;
+        println!("{}", user_error);
         std::process::exit(1);
     }
 
