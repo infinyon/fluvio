@@ -35,7 +35,7 @@ impl CreateSmartModuleOpt {
             wasm: SmartModuleWasm::from_binary_payload(buffer),
             ..Default::default()
         };
-        
+
         debug!(name = self.name, "creating smart-module");
         let admin = fluvio.admin().await;
         admin.create(self.name.to_string(), false, spec).await?;
