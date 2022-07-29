@@ -1866,6 +1866,7 @@ dependencies = [
  "fluvio-future 0.4.1",
  "fluvio-package-index",
  "fluvio-sc-schema",
+ "fluvio-smartengine",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",

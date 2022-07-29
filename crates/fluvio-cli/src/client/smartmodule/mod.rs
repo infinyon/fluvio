@@ -1,6 +1,7 @@
 mod create;
 mod list;
 mod delete;
+mod test;
 
 pub use cmd::SmartModuleCmd;
 
@@ -21,6 +22,7 @@ mod cmd {
     use super::create::CreateSmartModuleOpt;
     use super::list::ListSmartModuleOpt;
     use super::delete::DeleteSmartModuleOpt;
+    use super::test::TestSmartModuleOpt;
 
     #[derive(Debug, Parser)]
     pub enum SmartModuleCmd {
@@ -28,6 +30,7 @@ mod cmd {
         List(ListSmartModuleOpt),
         /// Delete one or more Smart Modules with the given name(s)
         Delete(DeleteSmartModuleOpt),
+        Test(TestSmartModuleOpt)
     }
 
     #[async_trait]
@@ -45,6 +48,9 @@ mod cmd {
                     opt.process(out, fluvio).await?;
                 }
                 Self::Delete(opt) => {
+                    opt.process(fluvio).await?;
+                }
+                Self::Test(opt) => {
                     opt.process(fluvio).await?;
                 }
             }
