@@ -26,7 +26,7 @@ impl DeleteTopicOpt {
         let admin = fluvio.admin().await;
         let mut err_happened = false;
         for name in self.names.iter() {
-            debug!("deleting topic: {}", name);
+            debug!(name, "deleting topic");
             if let Err(error) = admin.delete::<TopicSpec, _>(name).await {
                 let error = CliError::from(error);
                 err_happened = true;

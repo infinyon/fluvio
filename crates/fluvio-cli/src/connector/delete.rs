@@ -28,7 +28,7 @@ impl DeleteManagedConnectorOpt {
         let admin = fluvio.admin().await;
         let mut err_happened = false;
         for name in self.names.iter() {
-            debug!("deleting connector: {}", name);
+            debug!(name, "deleting connector" );
             if let Err(error) = admin.delete::<ManagedConnectorSpec, _>(name).await {
                 let error = CliError::from(error);
                 err_happened = true;

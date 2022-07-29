@@ -21,7 +21,7 @@ impl DeleteSmartModuleOpt {
         let admin = fluvio.admin().await;
         let mut err_happened = false;
         for name in self.names.iter() {
-            debug!("deleting smart module: {}", name);
+            debug!(name, "deleting smart module");
             if let Err(error) = admin.delete::<SmartModuleSpec, _>(name).await {
                 let error = CliError::from(error);
                 err_happened = true;
