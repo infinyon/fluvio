@@ -64,5 +64,5 @@ setup_file() {
     debug_msg "status: $status"
     debug_msg "output: ${lines[3]}"
     assert_failure
-    assert_output --partial "SmartModuleNotFound"
+    assert_output --partial "Smart Module not found"
 }
