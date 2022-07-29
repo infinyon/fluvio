@@ -50,7 +50,7 @@ pub enum ManagedConnectorCmd {
     )]
     Update(UpdateManagedConnectorOpt),
 
-    /// Delete a Managed Connector
+    /// Delete one or more Managed Connectors with the given name(s)
     #[clap(
         name = "delete",
         help_template = COMMAND_TEMPLATE,
