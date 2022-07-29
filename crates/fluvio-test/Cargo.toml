@@ -25,7 +25,7 @@ inventory = "0.1"
 tokio = { version = "1.4", features = ["macros"] }
 comfy-table = "5.0.1"
 hdrhistogram = "7.3.0"
-crc = "2.0"
+crc = "3.0"
 fork = "0.1"
 nix = "0.24"
 crossbeam-channel = "0.5"
@@ -33,7 +33,7 @@ sysinfo = { version = "0.23.0" }
 signal-hook = "0.3.13"
 indicatif = "0.16.2"
 async-std = { version = "1.8.0", default-features = false,features = ["attributes"] }
-uuid = { version = "0.8", features = ["serde", "v4"] }
+uuid = { version = "1.1", features = ["serde", "v4"] }
 async-channel = "1.6"
 
 # Fluvio dependencies
