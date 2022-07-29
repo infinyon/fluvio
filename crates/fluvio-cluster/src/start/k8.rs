@@ -3,6 +3,7 @@ use std::io::ErrorKind;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::borrow::Cow;
+use std::process::Child;
 use std::process::Command;
 use std::time::Duration;
 use std::env;
@@ -14,7 +15,9 @@ use fluvio_controlplane_metadata::spg::SpuConfig;
 use fluvio_sc_schema::objects::CommonCreateRequest;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
-use tracing::{warn, debug, instrument};
+use k8_metadata_client::NameSpace;
+use k8_types::K8Obj;
+use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
 use semver::Version;
@@ -276,6 +279,10 @@ pub struct ClusterConfig {
     /// This is is useful inside k8 cluster
     #[builder(default = "false")]
     use_cluster_ip: bool,
+
+    #[builder(default = "false")]
+    use_k8_port_forwarding: bool,
+
     /// Use NodePort instead of load balancer for SC and SPU
     #[builder(setter(into), default = "DEFAULT_SERVICE_TYPE.to_string()")]
     service_type: String,
@@ -630,41 +637,62 @@ impl ClusterInstaller {
 
         self.install_app().await?;
 
-        let namespace = &self.config.namespace;
-
-        let pb = self.pb_factory.create();
-        pb.set_message("🔎 Discovering Fluvio SC");
         // before we do let's try make sure SPU are installed.
         check_crd(self.kube_client.clone())
             .await
             .map_err(K8InstallError::from)?;
 
-        let (host_name, port) = self.discover_sc_address(namespace).await?;
+        let sc_service = self.discover_sc_service(&self.config.namespace).await?;
+        let (external_host, external_port) =
+            self.discover_sc_external_host_and_port(&sc_service).await?;
+        let external_host_and_port = format!("{}:{}", external_host, external_port);
 
-        let address = format!("{}:{}", host_name, port);
+        let (install_host_and_port, pf_process) = if self.config.use_k8_port_forwarding {
+            info!("Using K8 port forwarding for install");
+            let (install_host, install_port, pf_process) =
+                self.start_sc_port_forwarding(&sc_service).await?;
+            (
+                format!("{}:{}", install_host, install_port),
+                Some(pf_process),
+            )
+        } else {
+            (external_host_and_port.clone(), None)
+        };
 
-        let cluster_config =
-            FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
-
+        let cluster_config = FluvioConfig::new(install_host_and_port.clone())
+            .with_tls(self.config.client_tls_policy.clone());
+        let pb = self.pb_factory.create();
+        pb.set_message("🔎 Discovering Fluvio SC");
         let fluvio =
             match try_connect_to_sc(&cluster_config, &self.config.platform_version, &pb).await {
                 Some(fluvio) => fluvio,
                 None => return Err(K8InstallError::SCServiceTimeout),
             };
-        pb.println(format!("✅ Connected to SC: {}", address));
+        pb.println(format!("✅ Connected to SC: {}", install_host_and_port));
         pb.finish_and_clear();
         drop(pb);
 
-        if self.config.save_profile {
-            self.update_profile(&address)?;
-        }
-
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
+
+        if let Some(mut pf_process) = pf_process {
+            match pf_process.kill() {
+                Ok(_) => info!("Port forwarding process exited normally"),
+                Err(_) => warn!("Port forwarding process terminated prematurely"),
+            };
+        }
+
         self.pb_factory
             .println(InstallProgressMessage::Success.msg());
 
-        Ok(StartStatus { address, port })
+        if self.config.save_profile {
+            self.update_profile(&external_host_and_port)?;
+        }
+
+        Ok(StartStatus {
+            address: external_host,
+            port: external_port,
+        })
     }
 
     /// Install Fluvio Core chart on the configured cluster
@@ -850,9 +878,44 @@ impl ClusterInstaller {
         Ok(())
     }
 
-    /// Looks up the external address of a Fluvio SC instance in the given namespac
+    /// Uses kubectl port-forward to communicate with SC
+    #[instrument(skip(self, service))]
+    async fn start_sc_port_forwarding(
+        &self,
+        service: &K8Obj<ServiceSpec>,
+    ) -> Result<(String, u16, Child), K8InstallError> {
+        let pf_host_name = "localhost";
+
+        let target_port = ClusterInstaller::target_port_for_service(service)?;
+
+        // Wait for pod to start
+        sleep(Duration::from_secs(3)).await;
+
+        let mut pf_child = std::process::Command::new("kubectl")
+            .arg("-n")
+            .arg(&service.metadata.namespace)
+            .arg("port-forward")
+            .arg(format!("service/{}", FLUVIO_SC_SERVICE))
+            .arg(target_port.to_string())
+            .spawn()
+            .unwrap();
+
+        // Wait for port forwarding
+        sleep(Duration::from_secs(3)).await;
+
+        match pf_child.try_wait()? {
+            Some(status) => return Err(K8InstallError::PortForwardingFailed(status)),
+            None => {
+                info!("Port forwarding process started");
+            }
+        }
+
+        Ok((pf_host_name.to_owned(), target_port, pf_child))
+    }
+
+    /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self, ns))]
-    async fn discover_sc_address(&self, ns: &str) -> Result<(String, u16), K8InstallError> {
+    async fn discover_sc_service(&self, ns: &str) -> Result<K8Obj<ServiceSpec>, K8InstallError> {
         use tokio::select;
         use futures_util::stream::StreamExt;
 
@@ -884,91 +947,7 @@ impl ClusterInstaller {
 
                                 if service.metadata.name == FLUVIO_SC_SERVICE {
                                     debug!(service = ?service,"found sc service");
-
-                                    let target_port =  service.spec
-                                        .ports
-                                        .iter()
-                                        .filter_map(|port| {
-                                            match port.target_port {
-                                                Some(TargetPort::Number(value)) => Some(value),
-                                                Some(TargetPort::Name(_)) => None,
-                                                None => None
-                                            }
-                                        })
-                                        .next()
-                                        .ok_or_else(|| K8InstallError::Other("target port should be there".into()))?;
-
-                                    let node_port =  service.spec
-                                        .ports
-                                        .iter()
-                                        .filter_map(|port| port.node_port)
-                                        .next();
-
-
-                                    if self.config.use_cluster_ip  {
-                                        return Ok((service.spec.cluster_ip,target_port))
-                                    };
-
-                                    let k8_load_balancer_type = service.spec.r#type.ok_or_else(|| K8InstallError::Other("Load Balancer Type".into()))?;
-
-                                    match k8_load_balancer_type {
-                                        LoadBalancerType::ClusterIP => {
-                                            return Ok((service.spec.cluster_ip,target_port))
-                                        },
-                                        LoadBalancerType::NodePort => {
-                                            let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
-
-                                            let host_addr = if let Some(addr) = &self.config.proxy_addr {
-                                                debug!(?addr,"using proxy");
-                                                addr.to_owned()
-                                            } else {
-
-                                                debug!("k8 node query");
-                                                let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
-                                                debug!("Output from k8 node query: {:#?}", &nodes);
-
-                                                let mut node_addr : Vec<NodeAddress> = Vec::new();
-                                                for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
-                                                    node_addr.extend(n)
-                                                }
-
-                                                // Return the first node with type "InternalIP"
-                                                let access_addr = match node_addr.iter().find(|a| a.r#type == "ExternalIP")
-                                                {
-                                                    Some(anode) => &anode.address,
-                                                    None => {
-                                                        debug!("  no externalIPs found, searching internalIPs");
-                                                        &node_addr.iter()
-                                                            .find(|a| a.r#type == "InternalIP")
-                                                            .ok_or_else(|| K8InstallError::Other("No nodes with ExternalIP or InternalIP set".into()))?
-                                                            .address
-                                                    }
-                                                };
-                                                access_addr.clone()
-                                            };
-
-                                            return Ok((host_addr,node_port))
-                                        },
-                                        LoadBalancerType::LoadBalancer => {
-                                            let ingress_addr = service
-                                                .status
-                                                .load_balancer
-                                                .ingress
-                                                .iter()
-                                                .find(|_| true)
-                                                .and_then(|ingress| ingress.host_or_ip().to_owned());
-
-                                            if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
-                                                    debug!(%sock_addr,"found lb address");
-                                                    return Ok((sock_addr,target_port))
-                                            }
-                                        },
-                                        LoadBalancerType::ExternalName => {
-                                            unimplemented!("ExternalName Load Balancer support not implemented");
-                                        },
-
-                                    }
-
+                                    return Ok(service)
                                 }
                             }
                         }
@@ -979,6 +958,110 @@ impl ClusterInstaller {
                 }
             }
         }
+    }
+
+    /// Looks up the external address of a Fluvio SC instance in the given namespace
+    #[instrument(skip(self, service))]
+    async fn discover_sc_external_host_and_port(
+        &self,
+        service: &K8Obj<ServiceSpec>,
+    ) -> Result<(String, u16), K8InstallError> {
+        let target_port = ClusterInstaller::target_port_for_service(service)?;
+
+        let node_port = service
+            .spec
+            .ports
+            .iter()
+            .filter_map(|port| port.node_port)
+            .next();
+
+        if self.config.use_cluster_ip {
+            return Ok((service.spec.cluster_ip.clone(), target_port));
+        };
+
+        let k8_load_balancer_type = service
+            .spec
+            .r#type
+            .as_ref()
+            .ok_or_else(|| K8InstallError::Other("Load Balancer Type".into()))?;
+
+        match k8_load_balancer_type {
+            LoadBalancerType::ClusterIP => Ok((service.spec.cluster_ip.clone(), target_port)),
+            LoadBalancerType::NodePort => {
+                let node_port = node_port
+                    .ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
+
+                let host_addr = if let Some(addr) = &self.config.proxy_addr {
+                    debug!(?addr, "using proxy");
+                    addr.to_owned()
+                } else {
+                    debug!("k8 node query");
+                    let nodes = self
+                        .kube_client
+                        .retrieve_items::<NodeSpec, _>(NameSpace::All)
+                        .await?;
+                    debug!("Output from k8 node query: {:#?}", &nodes);
+
+                    let mut node_addr: Vec<NodeAddress> = Vec::new();
+                    for n in nodes.items.into_iter().map(|x| x.status.addresses) {
+                        node_addr.extend(n)
+                    }
+
+                    // Return the first node with type "InternalIP"
+                    let access_addr = match node_addr.iter().find(|a| a.r#type == "ExternalIP") {
+                        Some(anode) => &anode.address,
+                        None => {
+                            debug!("  no externalIPs found, searching internalIPs");
+                            &node_addr
+                                .iter()
+                                .find(|a| a.r#type == "InternalIP")
+                                .ok_or_else(|| {
+                                    K8InstallError::Other(
+                                        "No nodes with ExternalIP or InternalIP set".into(),
+                                    )
+                                })?
+                                .address
+                        }
+                    };
+                    access_addr.clone()
+                };
+
+                Ok((host_addr, node_port))
+            }
+            LoadBalancerType::LoadBalancer => {
+                let ingress_host = service
+                    .status
+                    .load_balancer
+                    .ingress
+                    .iter()
+                    .filter_map(|ingress| ingress.host_or_ip())
+                    .next();
+
+                if let Some(ingress_host) = ingress_host {
+                    debug!(%ingress_host,"found lb address");
+                    Ok((ingress_host.to_owned(), target_port))
+                } else {
+                    Err(K8InstallError::SCIngressNotValid)
+                }
+            }
+            LoadBalancerType::ExternalName => {
+                unimplemented!("ExternalName Load Balancer support not implemented");
+            }
+        }
+    }
+
+    fn target_port_for_service(service: &K8Obj<ServiceSpec>) -> Result<u16, K8InstallError> {
+        service
+            .spec
+            .ports
+            .iter()
+            .filter_map(|port| match port.target_port {
+                Some(TargetPort::Number(value)) => Some(value),
+                Some(TargetPort::Name(_)) => None,
+                None => None,
+            })
+            .next()
+            .ok_or_else(|| K8InstallError::Other("target port should be there".into()))
     }
 
     /// Wait until all SPUs are ready and have ingress

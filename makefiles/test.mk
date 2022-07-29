@@ -154,6 +154,9 @@ smoke-test-k8-tls-root-unclean: smoke-test-k8-tls-policy test-permission-k8
 # run auth policy with setup
 smoke-test-k8-tls-root: smoke-test-k8-tls-policy-setup smoke-test-k8-tls-policy  test-permission-k8
 
+install-test-k8-port-forwarding: build_k8_image
+install-test-k8-port-forwarding:
+	$(FLUVIO_BIN) cluster start --develop --use-k8-port-forwarding
 
 ifeq (${CI},true)
 # In CI, we expect all artifacts to already be built and loaded for the script
