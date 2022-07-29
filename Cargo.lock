@@ -1317,9 +1317,9 @@ dependencies = [
 
 [[package]]
 name = "ctor"
-version = "0.1.22"
+version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f877be4f7c9f246b183111634f75baa039715e3f46ce860677d3b19a69fb229c"
+checksum = "cdffe87e1d521a10f9696f833fe502293ea446d7f256c06128293a4119bdf4cb"
 dependencies = [
  "quote",
  "syn",
@@ -1774,7 +1774,7 @@ dependencies = [
  "serde_json",
  "siphasher",
  "strum 0.24.1",
- "sysinfo 0.24.7",
+ "sysinfo",
  "thiserror",
  "tokio",
  "toml",
@@ -1886,7 +1886,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.2",
  "static_assertions",
- "sysinfo 0.24.7",
+ "sysinfo",
  "tempdir",
  "thiserror",
  "tracing",
@@ -1953,7 +1953,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sysinfo 0.24.7",
+ "sysinfo",
  "tar",
  "tempdir",
  "tempfile",
@@ -2240,7 +2240,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sysinfo 0.24.7",
+ "sysinfo",
  "tokio",
  "tracing",
 ]
@@ -2379,7 +2379,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "sysinfo 0.24.7",
+ "sysinfo",
  "thiserror",
  "tokio",
  "toml",
@@ -2501,7 +2501,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "signal-hook",
- "sysinfo 0.23.13",
+ "sysinfo",
  "tokio",
  "tracing",
  "uuid 1.1.2",
@@ -5196,21 +5196,6 @@ dependencies = [
  "quote",
  "syn",
  "unicode-xid",
-]
-
-[[package]]
-name = "sysinfo"
-version = "0.23.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3977ec2e0520829be45c8a2df70db2bf364714d8a748316a10c3c35d4d2b01c9"
-dependencies = [
- "cfg-if",
- "core-foundation-sys",
- "libc",
- "ntapi",
- "once_cell",
- "rayon",
- "winapi",
 ]
 
 [[package]]
