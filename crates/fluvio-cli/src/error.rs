@@ -124,42 +124,42 @@ impl CliError {
     /// Sometimes, specific errors require specific user-facing error messages.
     /// Here is where we define those messages, as well as the exit code that the
     /// program should return when exiting after those errors.
-    pub fn get_user_error(self) -> Result<String> {
+    pub fn get_user_error(self) -> Result<&'static str> {
         match &self {
             Self::ClientError(FluvioError::AdminApi(api)) => match api {
                 ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
-                    Ok("Topic already exists".to_string())
+                    Ok("Topic already exists")
                 }
                 ApiError::Code(ErrorCode::ManagedConnectorAlreadyExists, _) => {
-                    Ok("Connector already exists".to_string())
+                    Ok("Connector already exists")
                 }
-                ApiError::Code(ErrorCode::TopicNotFound, _) => Ok("Topic not found".to_string()),
-                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("Smart Module not found".to_string()),
+                ApiError::Code(ErrorCode::TopicNotFound, _) => Ok("Topic not found"),
+                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("Smart Module not found"),
                 ApiError::Code(ErrorCode::ManagedConnectorNotFound, _) => {
-                    Ok("Connector not found".to_string())
+                    Ok("Connector not found")
                 }
                 ApiError::Code(ErrorCode::TopicInvalidName, _) => {
-                    Ok("Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).".to_string())
+                    Ok("Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).")
                 }
                 ApiError::Code(ErrorCode::TableFormatAlreadyExists, _) => {
-                    Ok("TableFormat already exists".to_string())
+                    Ok("TableFormat already exists")
                 }
                 ApiError::Code(ErrorCode::TableFormatNotFound, _) => {
-                    Ok("TableFormat not found".to_string())
+                    Ok("TableFormat not found")
                 }
                 _ => Err(self),
             },
             Self::ClientError(FluvioError::Socket(SocketError::Io(io)))
                 if io.kind() == ErrorKind::TimedOut =>
             {
-                Ok("Network connection timed out while waiting for response".to_string())
+                Ok("Network connection timed out while waiting for response")
             }
             #[cfg(feature = "k8s")]
             Self::ClusterCliError(ClusterCliError::TargetError(TargetError::ClientError(
                 FluvioError::Socket(SocketError::Io(io)),
             ))) => match io.kind() {
                 ErrorKind::ConnectionRefused => {
-                    Ok("Failed to connect to cluster, make sure you have started or connected to your cluster".to_string())
+                    Ok("Failed to connect to cluster, make sure you have started or connected to your cluster")
                 }
                 _ => Err(self),
             },

@@ -32,7 +32,7 @@ impl DeleteTopicOpt {
                 err_happened = true;
                 if self.continue_on_error {
                     let user_error = match error.get_user_error() {
-                        Ok(usr_err) => usr_err,
+                        Ok(usr_err) => usr_err.to_string(),
                         Err(err) => format!("{}", err),
                     };
                     println!("topic \"{}\" delete failed with: {}", name, user_error);
