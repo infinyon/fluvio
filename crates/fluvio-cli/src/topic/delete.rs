@@ -6,24 +6,35 @@
 
 use tracing::debug;
 use clap::Parser;
-
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::Result;
 
 #[derive(Debug, Parser)]
 pub struct DeleteTopicOpt {
-    /// The name of the Topic to delete
-    #[clap(value_name = "name")]
-    topic: String,
+    /// ignore delete errors if any
+    #[clap(short, long, action, required = false)]
+    ignore_error: bool,
+    /// The name(s) of the Topic(s) to be deleted
+    #[clap(value_name = "name", required = true)]
+    names: Vec<String>,
 }
 
 impl DeleteTopicOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        debug!("deleting topic: {}", &self.topic);
         let admin = fluvio.admin().await;
-        admin.delete::<TopicSpec, _>(&self.topic).await?;
-        println!("topic \"{}\" deleted", &self.topic);
+        for topic in self.names.iter() {
+            debug!("deleting topic: {}", topic);
+            if let Err(error) = admin.delete::<TopicSpec, _>(topic).await {
+                if self.ignore_error {
+                    println!("topic \"{}\" delete failed with: {}", topic, error);
+                } else {
+                    return Err(error.into());
+                }
+            } else {
+                println!("topic \"{}\" deleted", topic);
+            }
+        }
         Ok(())
     }
 }
