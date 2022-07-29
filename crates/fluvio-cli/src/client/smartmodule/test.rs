@@ -31,17 +31,39 @@ pub struct TestSmartModuleOpt {
 
     #[clap(long)]
     wasm_file: PathBuf,
+
+    /// (Optional) Extra input parameters passed to the smartmodule module.
+    /// They should be passed using key=value format
+    /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
+    #[clap(
+        short = 'e',
+        long= "params",
+        parse(try_from_str = parse_key_val),
+        number_of_values = 1
+    )]
+    params: Vec<(String, String)>,
 }
+
+fn parse_key_val(s: &str) -> Result<(String, String)> {
+    let pos = s.find('=').ok_or_else(|| {
+        CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{}`", s))
+    })?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+}
+
 
 impl TestSmartModuleOpt {
     pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
+
+        let param: BTreeMap<String,String> = self.params.into_iter().collect();
+
         // load wasm file
         let raw = std::fs::read(self.wasm_file)?;
 
         let payload = LegacySmartModulePayload {
             wasm: SmartModuleWasmCompressed::Raw(raw),
             kind: SmartModuleKind::ArrayMap,
-            params: BTreeMap::new().into(),
+            params: param.into()
         };
 
         let engine = SmartEngine::default();
