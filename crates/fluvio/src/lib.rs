@@ -10,7 +10,11 @@
 //!
 //! # Prerequisites
 //!
-//! [Install Fluvio](#installation)
+//! Add `fluvio` crate to the project's `Cargo.toml` file
+//!
+//! ```ignore
+//! fluvio = "0.12"
+//! ```
 //!
 //! # Fluvio Echo
 //!
