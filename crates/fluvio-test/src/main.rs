@@ -184,7 +184,7 @@ fn kill_child_processes(root_process: &Process) {
     let root_pid = root_process.pid();
     let mut sys2 = System::new();
     sys2.refresh_processes();
-    let g_id = root_process.gid;
+    let g_id = root_process.group_id();
 
     let processes = sys2.processes();
 
@@ -203,7 +203,7 @@ fn kill_child_processes(root_process: &Process) {
     }
 
     for (pid, process) in processes {
-        if pid != &root_pid && process.gid == g_id && is_root(process, root_pid, processes) {
+        if pid != &root_pid && process.group_id() == g_id && is_root(process, root_pid, processes) {
             println!("killing child test pid {} name {}", pid, process.name());
             process.kill();
         }
