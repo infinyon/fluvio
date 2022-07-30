@@ -64,3 +64,7 @@ debug-assertions = true
 overflow-checks = true
 incremental = false
 codegen-units = 256
+
+[profile.release-lto]
+inherits = "release"
+lto = true
