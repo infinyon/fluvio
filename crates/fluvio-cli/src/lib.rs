@@ -15,13 +15,12 @@ mod connector;
 mod render;
 
 pub(crate) use error::{Result, CliError};
-use fluvio::dataplane::Isolation;
-
 use fluvio_extension_common as common;
-
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
+
+// list of public export
 pub use root::{Root, HelpOpt};
-pub use root::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
+pub use client::TableFormatConfig;
 
 mod root {
 
@@ -29,21 +28,16 @@ mod root {
     use std::path::PathBuf;
     use std::process::Command;
 
-    use fluvio_channel::LATEST_CHANNEL_NAME;
     use clap::{Parser, AppSettings, Command as ClapCommand, IntoApp};
     use clap_complete::{generate, Shell};
-
     use tracing::debug;
-
-    
-    pub use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
     use fluvio_cli_common::install::fluvio_extensions_dir;
-    
-    use crate::connector::ManagedConnectorCmd;
+    use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, LATEST_CHANNEL_NAME};
 
+    use crate::connector::ManagedConnectorCmd;
     use crate::profile::ProfileOpt;
     use crate::install::update::UpdateOpt;
     use crate::install::plugins::InstallOpt;
@@ -53,7 +47,6 @@ mod root {
     use crate::common::target::ClusterTarget;
     use crate::common::COMMAND_TEMPLATE;
     use crate::common::PrintTerminal;
-    use crate::common::Terminal;
 
     use super::Result;
 
@@ -147,8 +140,6 @@ mod root {
         #[clap(subcommand, name = "connector")]
         ManagedConnector(ManagedConnectorCmd),
 
-        
-
         #[clap(external_subcommand)]
         External(Vec<String>),
     }
@@ -208,7 +199,7 @@ mod root {
                     let fluvio = root.target.connect().await?;
                     group.process(out, &fluvio).await?;
                 }
-                
+
                 Self::External(args) => {
                     process_external_subcommand(args)?;
                 }
@@ -218,7 +209,6 @@ mod root {
         }
     }
 
-    
     #[derive(Debug, Parser)]
     pub struct HelpOpt {}
     impl HelpOpt {
@@ -361,10 +351,14 @@ mod root {
     }
 }
 
-pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
-    match s {
-        "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
-        "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
-        _ => Err(format!("unrecognized isolation: {}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)", s)),
+mod util {
+    use fluvio::dataplane::Isolation;
+
+    pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
+        match s {
+            "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
+            "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
+            _ => Err(format!("unrecognized isolation: {}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)", s)),
+        }
     }
 }

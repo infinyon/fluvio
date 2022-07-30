@@ -1,9 +1,11 @@
+use tracing::debug;
 use clap::Parser;
-use crate::Result;
-use crate::error::CliError;
+
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
-use tracing::debug;
+
+use crate::Result;
+use crate::error::CliError;
 
 /// Delete an existing SmartModule with the given name
 #[derive(Debug, Parser)]

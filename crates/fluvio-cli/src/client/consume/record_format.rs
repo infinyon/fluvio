@@ -13,8 +13,6 @@ use crate::{CliError, Result};
 
 use super::TableModel;
 
-
-
 // -----------------------------------
 //  JSON
 // -----------------------------------

@@ -15,8 +15,6 @@ use crate::CliError;
 
 use super::TableFormatConfig;
 
-
-
 // -----------------------------------
 // CLI Options
 // -----------------------------------

@@ -3,7 +3,7 @@
 //!
 //! CLI command for Consume operation
 //!
-//! 
+//!
 //! mod record_format;
 mod table_format;
 mod record_format;
@@ -12,7 +12,6 @@ use table_format::TableModel;
 pub use cmd::ConsumeOpt;
 
 mod cmd {
-
 
     use std::time::UNIX_EPOCH;
     use std::{io::Error as IoError, path::PathBuf};
@@ -30,7 +29,6 @@ mod cmd {
     use fluvio::metadata::tableformat::{TableFormatSpec};
     use fluvio_spu_schema::server::stream_fetch::SmartModuleContextData;
     use fluvio_future::io::StreamExt;
-    
 
     use super::table_format::{TableEventResponse, TableModel};
 
@@ -52,8 +50,8 @@ mod cmd {
     use crate::render::ProgressRenderer;
     use crate::{CliError, Result};
     use crate::common::FluvioExtensionMetadata;
-    use crate::parse_isolation;
-    
+    use crate::util::parse_isolation;
+
     use super::record_format::{
         format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
         format_json, format_basic_table_record, format_fancy_table_record,
@@ -379,7 +377,9 @@ mod cmd {
                         extra_params,
                     )?),
                     (None, Some(_)) => {
-                        println!("In order to use --accumulator, you must also specify --aggregate");
+                        println!(
+                            "In order to use --accumulator, you must also specify --aggregate"
+                        );
                         return Ok(());
                     }
                     (None, None) => None,
@@ -448,27 +448,28 @@ mod cmd {
 
             // TableModel and Terminal for full_table rendering
             let mut maybe_table_model = None;
-            let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
-                if io::stdout().is_tty() {
-                    enable_raw_mode()?;
-                    let mut stdout = io::stdout();
-                    execute!(stdout, EnterAlternateScreen)?;
+            let mut maybe_terminal_stdout =
+                if let Some(ConsumeOutputType::full_table) = &self.output {
+                    if io::stdout().is_tty() {
+                        enable_raw_mode()?;
+                        let mut stdout = io::stdout();
+                        execute!(stdout, EnterAlternateScreen)?;
 
-                    let mut model = TableModel::new();
+                        let mut model = TableModel::new();
 
-                    // Customize display options w/ tableformat spec
-                    model.with_tableformat(tableformat);
+                        // Customize display options w/ tableformat spec
+                        model.with_tableformat(tableformat);
 
-                    maybe_table_model = Some(model);
+                        maybe_table_model = Some(model);
 
-                    let stdout = io::stdout();
-                    Some(self.create_terminal(stdout)?)
+                        let stdout = io::stdout();
+                        Some(self.create_terminal(stdout)?)
+                    } else {
+                        None
+                    }
                 } else {
                     None
-                }
-            } else {
-                None
-            };
+                };
 
             // This is used by table output, to manage printing the table titles only one time
             let mut header_print = true;
@@ -621,7 +622,9 @@ mod cmd {
                 (Some(ConsumeOutputType::text), None) => {
                     Some(format_text_record(record.value(), self.suppress_unknown))
                 }
-                (Some(ConsumeOutputType::binary), None) => Some(format_binary_record(record.value())),
+                (Some(ConsumeOutputType::binary), None) => {
+                    Some(format_binary_record(record.value()))
+                }
                 (Some(ConsumeOutputType::dynamic) | None, None) => {
                     Some(format_dynamic_record(record.value()))
                 }

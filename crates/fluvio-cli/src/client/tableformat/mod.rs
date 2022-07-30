@@ -1,10 +1,8 @@
-
 mod create;
 mod delete;
 mod list;
 
-use cmd::TableFormatConfig;
-pub use cmd::TableFormatCmd;
+pub use cmd::{TableFormatConfig, TableFormatCmd};
 
 mod cmd {
 
@@ -21,13 +19,11 @@ mod cmd {
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::COMMAND_TEMPLATE;
 
-
     use crate::CliError;
 
     use super::create::CreateTableFormatOpt;
     use super::delete::DeleteTableFormatOpt;
     use super::list::ListTableFormatsOpt;
-
 
     #[derive(Debug, Parser)]
     pub enum TableFormatCmd {
@@ -54,7 +50,11 @@ mod cmd {
     }
 
     impl TableFormatCmd {
-        pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
+        pub async fn process<O: Terminal>(
+            self,
+            out: Arc<O>,
+            fluvio: &Fluvio,
+        ) -> Result<(), CliError> {
             match self {
                 Self::Create(create) => {
                     create.process(fluvio).await?;
@@ -101,8 +101,9 @@ mod cmd {
 
     #[test]
     fn config_test() {
-        let _: TableFormatSpec = TableFormatConfig::from_file("test-data/test-tableformat-config.yaml")
-            .expect("Failed to load test config")
-            .into();
+        let _: TableFormatSpec =
+            TableFormatConfig::from_file("test-data/test-tableformat-config.yaml")
+                .expect("Failed to load test config")
+                .into();
     }
 }

@@ -1,10 +1,13 @@
 use std::sync::Arc;
+
 use clap::Parser;
-use crate::Result;
+
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
+
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
+use crate::Result;
 
 /// List all existing SmartModules
 #[derive(Debug, Parser)]

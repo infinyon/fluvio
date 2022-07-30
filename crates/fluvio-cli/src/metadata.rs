@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::process::Command;
 use clap::Parser;
 
-
 use fluvio_command::CommandExt;
 use fluvio_extension_common::FluvioExtensionMetadata;
 

@@ -8,6 +8,7 @@ mod derivedstream;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
+pub use tableformat::TableFormatConfig;
 
 mod metadata {
 
@@ -33,19 +34,15 @@ mod cmd {
 
     use std::sync::Arc;
 
-
     use clap::{Parser};
-
 
     use fluvio::Fluvio;
 
-    
     pub use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
-
     use crate::common::target::ClusterTarget;
-
     use crate::common::Terminal;
+    use crate::Result;
 
     use super::derivedstream::DerivedStreamCmd;
     use super::smartmodule::SmartModuleCmd;
@@ -141,5 +138,4 @@ mod cmd {
             Ok(())
         }
     }
-
 }
