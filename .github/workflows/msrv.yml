@@ -1,0 +1,27 @@
+# based on https://github.com/o2sh/onefetch/blob/main/.github/workflows/msrv-badge.yml
+name: Generate MSRV Badge
+on:
+  push:
+    branches: [master]
+
+jobs:
+  make-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get Minimum Supported Rust Version
+        uses: spenserblack/actions-msrv@v0.2
+        id: get-msrv
+        timeout-minutes: 60
+      - name: Create Badge
+        run: curl https://img.shields.io/badge/rustc-${{ steps.get-msrv.outputs.msrv }}%2B-orange?logo=rust -o .github/assets/msrv-badge.svg
+      - name: Commit Badge
+        continue-on-error: true
+        run: |
+          git status
+          git pull --ff-only
+          git add .github/assets/msrv-badge.svg
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update msrv badge"
+          git push
