@@ -51,11 +51,9 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
-
 impl TestSmartModuleOpt {
     pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
-
-        let param: BTreeMap<String,String> = self.params.into_iter().collect();
+        let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
         // load wasm file
         let raw = std::fs::read(self.wasm_file)?;
@@ -63,7 +61,7 @@ impl TestSmartModuleOpt {
         let payload = LegacySmartModulePayload {
             wasm: SmartModuleWasmCompressed::Raw(raw),
             kind: SmartModuleKind::ArrayMap,
-            params: param.into()
+            params: param.into(),
         };
 
         let engine = SmartEngine::default();
@@ -84,6 +82,9 @@ impl TestSmartModuleOpt {
 
         let record_value: RecordData = json_raw.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
+        smartmodule
+            .invoke_constructor()
+            .map_err(|e| FluvioError::Other(format!("SmartEngine constructor - {:?}", e)))?;
         let output = smartmodule
             .process(SmartModuleInput::try_from(entries)?)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
