@@ -4,28 +4,23 @@
 
 mod http;
 mod error;
+pub mod client;
 pub mod install;
 mod profile;
 mod version;
 mod metadata;
-mod topic;
-mod consume;
-mod produce;
-mod partition;
+
 mod connector;
-pub mod tableformat;
-mod smartmodule;
-mod derivedstream;
+
 mod render;
 
 pub(crate) use error::{Result, CliError};
-use fluvio::dataplane::Isolation;
-
 use fluvio_extension_common as common;
-
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
+
+// list of public export
 pub use root::{Root, HelpOpt};
-pub use root::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
+pub use client::TableFormatConfig;
 
 mod root {
 
@@ -33,36 +28,25 @@ mod root {
     use std::path::PathBuf;
     use std::process::Command;
 
-    use fluvio_channel::LATEST_CHANNEL_NAME;
     use clap::{Parser, AppSettings, Command as ClapCommand, IntoApp};
     use clap_complete::{generate, Shell};
-
     use tracing::debug;
-
-    use fluvio::Fluvio;
-    pub use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
+    use fluvio_cli_common::install::fluvio_extensions_dir;
+    use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, LATEST_CHANNEL_NAME};
 
-    use crate::derivedstream::DerivedStreamCmd;
     use crate::connector::ManagedConnectorCmd;
-    use crate::tableformat::TableFormatCmd;
-    use crate::topic::TopicCmd;
-    use crate::consume::ConsumeOpt;
-    use crate::produce::ProduceOpt;
-    use crate::partition::PartitionCmd;
     use crate::profile::ProfileOpt;
     use crate::install::update::UpdateOpt;
     use crate::install::plugins::InstallOpt;
+    use crate::client::FluvioCmd;
     use crate::metadata::{MetadataOpt, subcommand_metadata};
     use crate::version::VersionOpt;
-    use fluvio_cli_common::install::fluvio_extensions_dir;
-    use crate::smartmodule::SmartModuleCmd;
     use crate::common::target::ClusterTarget;
     use crate::common::COMMAND_TEMPLATE;
     use crate::common::PrintTerminal;
-    use crate::common::Terminal;
 
     use super::Result;
 
@@ -156,20 +140,6 @@ mod root {
         #[clap(subcommand, name = "connector")]
         ManagedConnector(ManagedConnectorCmd),
 
-        /// Create a TableFormat display specification
-        ///
-        /// Used with the consumer output type `full_table` to
-        /// describe how to render JSON data in a tabular form
-        #[clap(subcommand, name = "table-format", visible_alias = "tf")]
-        TableFormat(TableFormatCmd),
-
-        /// Create and manage DerivedStreams
-        ///
-        /// Use topics, SmartModules or other DerivedStreams
-        /// to build a customized stream to consume
-        #[clap(subcommand, name = "derived-stream", visible_alias = "ds")]
-        DerivedStream(DerivedStreamCmd),
-
         #[clap(external_subcommand)]
         External(Vec<String>),
     }
@@ -229,83 +199,9 @@ mod root {
                     let fluvio = root.target.connect().await?;
                     group.process(out, &fluvio).await?;
                 }
-                Self::TableFormat(tableformat) => {
-                    let fluvio = root.target.connect().await?;
-                    tableformat.process(out, &fluvio).await?;
-                }
-                Self::DerivedStream(derivedstream) => {
-                    let fluvio = root.target.connect().await?;
-                    derivedstream.process(out, &fluvio).await?;
-                }
+
                 Self::External(args) => {
                     process_external_subcommand(args)?;
-                }
-            }
-
-            Ok(())
-        }
-    }
-
-    // For some reason this doc string is the one that gets used for the top-level help menu.
-    // Please don't change it unless you want to update the top-level help menu "about".
-    /// Fluvio command-line interface
-    #[derive(Parser, Debug)]
-    pub enum FluvioCmd {
-        /// Read messages from a topic/partition
-        #[clap(name = "consume")]
-        Consume(Box<ConsumeOpt>),
-
-        /// Write messages to a topic/partition
-        #[clap(name = "produce")]
-        Produce(ProduceOpt),
-
-        /// Manage and view Topics
-        ///
-        /// A Topic is essentially the name of a stream which carries messages that
-        /// are related to each other. Similar to the role of tables in a relational
-        /// database, the names and contents of Topics will typically reflect the
-        /// structure of the application domain they are used for.
-        #[clap(subcommand, name = "topic")]
-        Topic(TopicCmd),
-
-        /// Manage and view Partitions
-        ///
-        /// Partitions are a way to divide the total traffic of a single Topic into
-        /// separate streams which may be processed independently. Data sent to different
-        /// partitions may be processed by separate SPUs on different computers. By
-        /// dividing the load of a Topic evenly among partitions, you can increase the
-        /// total throughput of the Topic.
-        #[clap(subcommand, name = "partition")]
-        Partition(PartitionCmd),
-
-        /// Create and manage SmartModules
-        ///
-        /// SmartModules are compiled WASM modules used to create SmartModules.
-        #[clap(subcommand, name = "smart-module", visible_alias = "sm")]
-        SmartModule(SmartModuleCmd),
-    }
-
-    impl FluvioCmd {
-        /// Connect to Fluvio and pass the Fluvio client to the subcommand handlers.
-        pub async fn process<O: Terminal>(self, out: Arc<O>, target: ClusterTarget) -> Result<()> {
-            let fluvio_config = target.load()?;
-            let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
-
-            match self {
-                Self::Consume(consume) => {
-                    consume.process(&fluvio).await?;
-                }
-                Self::Produce(produce) => {
-                    produce.process(&fluvio).await?;
-                }
-                Self::Topic(topic) => {
-                    topic.process(out, &fluvio).await?;
-                }
-                Self::Partition(partition) => {
-                    partition.process(out, &fluvio).await?;
-                }
-                Self::SmartModule(smartmodule) => {
-                    smartmodule.process(out, &fluvio).await?;
                 }
             }
 
@@ -455,10 +351,14 @@ mod root {
     }
 }
 
-pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
-    match s {
-        "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
-        "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
-        _ => Err(format!("unrecognized isolation: {}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)", s)),
+mod util {
+    use fluvio::dataplane::Isolation;
+
+    pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
+        match s {
+            "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
+            "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
+            _ => Err(format!("unrecognized isolation: {}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)", s)),
+        }
     }
 }

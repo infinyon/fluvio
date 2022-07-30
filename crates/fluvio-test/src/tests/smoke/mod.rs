@@ -21,7 +21,7 @@ use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 
-use fluvio_cli::tableformat::TableFormatConfig;
+use fluvio_cli::TableFormatConfig;
 use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 use fluvio::metadata::{
     topic::{TopicSpec, TopicReplicaParam, ReplicaSpec},

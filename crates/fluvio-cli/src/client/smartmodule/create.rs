@@ -1,11 +1,14 @@
 use std::path::PathBuf;
+use std::io::Read;
+
 use tracing::debug;
 use clap::Parser;
-use crate::Result;
+
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use flate2::{Compression, bufread::GzEncoder};
-use std::io::Read;
+
+use crate::Result;
 
 /// Create a new SmartModule with a given name
 #[derive(Debug, Parser)]
