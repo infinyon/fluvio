@@ -89,4 +89,8 @@ impl SmartModuleInstance for SmartModuleMap {
     fn mut_ctx(&mut self) -> &mut SmartModuleContext {
         &mut self.base
     }
+
+    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
+        &mut self.base
+    }
 }

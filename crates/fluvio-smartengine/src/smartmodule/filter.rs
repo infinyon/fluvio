@@ -91,4 +91,8 @@ impl SmartModuleInstance for SmartModuleFilter {
     fn mut_ctx(&mut self) -> &mut SmartModuleContext {
         &mut self.base
     }
+
+    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
+        &mut self.base
+    }
 }
