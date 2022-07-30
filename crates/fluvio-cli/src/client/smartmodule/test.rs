@@ -23,7 +23,7 @@ use crate::{Result, error::CliError};
 pub struct TestSmartModuleOpt {
     // json value
     #[clap(long)]
-    json: Option<String>,
+    input: Option<String>,
 
     // arbitrary file
     #[clap(long)]
@@ -35,6 +35,7 @@ pub struct TestSmartModuleOpt {
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
     /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
+    /*
     #[clap(
         short = 'e',
         long= "params",
@@ -42,18 +43,27 @@ pub struct TestSmartModuleOpt {
         number_of_values = 1
     )]
     params: Vec<(String, String)>,
+    */
+
+    #[clap(long)]
+    regex: String,
 }
 
+/*
 fn parse_key_val(s: &str) -> Result<(String, String)> {
     let pos = s.find('=').ok_or_else(|| {
         CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{}`", s))
     })?;
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
+*/
 
 impl TestSmartModuleOpt {
     pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
-        let param: BTreeMap<String, String> = self.params.into_iter().collect();
+        println!("starting");
+        //  let param: BTreeMap<String, String> = self.params.into_iter().collect();
+        let mut param: BTreeMap<String, String> = BTreeMap::new();
+        param.insert("regex".to_string(), self.regex);
 
         // load wasm file
         let raw = std::fs::read(self.wasm_file)?;
@@ -69,8 +79,10 @@ impl TestSmartModuleOpt {
             .create_module_from_payload(payload, None)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
+        println!("SmartModule created");
+
         // get raw json in one of other ways
-        let json_raw = if let Some(json) = self.json {
+        let raw_input = if let Some(json) = self.input {
             json.as_bytes().to_vec()
         } else {
             if let Some(json_file) = &self.file {
@@ -80,7 +92,7 @@ impl TestSmartModuleOpt {
             }
         };
 
-        let record_value: RecordData = json_raw.into();
+        let record_value: RecordData = raw_input.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
         smartmodule
             .invoke_constructor()
@@ -101,3 +113,5 @@ impl TestSmartModuleOpt {
         Ok(())
     }
 }
+
+//  target/release/fluvio sm test --input ww --regex "[A-Z]" --wasm-file target/wasm32-unknown-unknown/release-lto/fluvio_wasm_component.wasm
