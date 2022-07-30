@@ -2,13 +2,12 @@ use std::path::PathBuf;
 use std::process::Command;
 use clap::Parser;
 
-use crate::Result;
-use crate::topic::TopicCmd;
-use crate::partition::PartitionCmd;
-use crate::consume::ConsumeOpt;
-use crate::produce::ProduceOpt;
+
 use fluvio_command::CommandExt;
 use fluvio_extension_common::FluvioExtensionMetadata;
+
+use crate::Result;
+use crate::client::client_metadata;
 
 #[derive(Debug, Parser)]
 pub struct MetadataOpt {}
@@ -23,12 +22,7 @@ impl MetadataOpt {
     }
 
     fn metadata() -> Vec<FluvioExtensionMetadata> {
-        let mut metadata = vec![
-            TopicCmd::metadata(),
-            PartitionCmd::metadata(),
-            ProduceOpt::metadata(),
-            ConsumeOpt::metadata(),
-        ];
+        let mut metadata = client_metadata();
 
         if let Ok(subcommand_meta) = subcommand_metadata() {
             let extension_meta = subcommand_meta.into_iter().map(|it| it.meta);

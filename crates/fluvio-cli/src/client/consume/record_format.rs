@@ -3,13 +3,17 @@
 //!
 //! Connects to server and fetches logs
 //!
+use std::collections::BTreeMap;
 
 use comfy_table::Table;
+
 use fluvio::{metadata::tableformat::TableFormatColumnConfig};
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
-use super::TableModel;
-use std::collections::BTreeMap;
 use crate::{CliError, Result};
+
+use super::TableModel;
+
+
 
 // -----------------------------------
 //  JSON

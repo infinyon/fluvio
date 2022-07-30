@@ -2,9 +2,10 @@
 //  Full Table
 // -----------------------------------
 
-use crate::Result;
-use tui::widgets::TableState;
 use std::io::Stdout;
+use std::collections::BTreeMap;
+
+use tui::widgets::TableState;
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Layout},
@@ -13,9 +14,10 @@ use tui::{
     Frame, Terminal,
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
+
 use fluvio::metadata::tableformat::{TableFormatColumnConfig, TableFormatSpec, DataFormat};
 
-use std::collections::BTreeMap;
+use crate::Result;
 
 #[derive(Debug, Default, Clone)]
 pub struct TableModel {
