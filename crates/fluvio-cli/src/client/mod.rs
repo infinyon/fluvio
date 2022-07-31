@@ -9,7 +9,7 @@ mod derivedstream;
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
 pub use tableformat::TableFormatConfig;
-
+use cmd::ClientCmd;
 mod metadata {
 
     use fluvio_extension_common::FluvioExtensionMetadata;
@@ -33,12 +33,12 @@ mod metadata {
 mod cmd {
 
     use std::sync::Arc;
+    use std::fmt::Debug;
 
     use clap::{Parser};
+    use async_trait::async_trait;
 
     use fluvio::Fluvio;
-
-    pub use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
@@ -51,6 +51,28 @@ mod cmd {
     use super::topic::TopicCmd;
     use super::partition::PartitionCmd;
     use super::tableformat::TableFormatCmd;
+
+    #[async_trait]
+    pub trait ClientCmd: Sized {
+        /// handle the command based on target
+        async fn process<O: Terminal + Send + Sync + Debug>(
+            self,
+            out: Arc<O>,
+            target: ClusterTarget,
+        ) -> Result<()> {
+            let fluvio_config = target.load()?;
+            let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
+            self.process_client(out, &fluvio).await?;
+            Ok(())
+        }
+
+        /// process client
+        async fn process_client<O: Terminal + Debug + Send + Sync>(
+            self,
+            out: Arc<O>,
+            fluvio: &Fluvio,
+        ) -> Result<()>;
+    }
 
     // For some reason this doc string is the one that gets used for the top-level help menu.
     // Please don't change it unless you want to update the top-level help menu "about".
@@ -107,31 +129,32 @@ mod cmd {
 
     impl FluvioCmd {
         /// Connect to Fluvio and pass the Fluvio client to the subcommand handlers.
-        pub async fn process<O: Terminal>(self, out: Arc<O>, target: ClusterTarget) -> Result<()> {
-            let fluvio_config = target.load()?;
-            let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
-
+        pub async fn process<O: Terminal + Debug + Send + Sync>(
+            self,
+            out: Arc<O>,
+            target: ClusterTarget,
+        ) -> Result<()> {
             match self {
                 Self::Consume(consume) => {
-                    consume.process(&fluvio).await?;
+                    consume.process(out, target).await?;
                 }
                 Self::Produce(produce) => {
-                    produce.process(&fluvio).await?;
+                    produce.process(out, target).await?;
                 }
                 Self::Topic(topic) => {
-                    topic.process(out, &fluvio).await?;
+                    topic.process(out, target).await?;
                 }
                 Self::Partition(partition) => {
-                    partition.process(out, &fluvio).await?;
+                    partition.process(out, target).await?;
                 }
                 Self::SmartModule(smartmodule) => {
-                    smartmodule.process(out, &fluvio).await?;
+                    smartmodule.process(out, target).await?;
                 }
                 Self::TableFormat(tableformat) => {
-                    tableformat.process(out, &fluvio).await?;
+                    tableformat.process(out, target).await?;
                 }
                 Self::DerivedStream(derivedstream) => {
-                    derivedstream.process(out, &fluvio).await?;
+                    derivedstream.process(out, target).await?;
                 }
             }
 

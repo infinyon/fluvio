@@ -5,11 +5,15 @@ pub use cmd::PartitionCmd;
 mod cmd {
 
     use std::sync::Arc;
+    use std::fmt::Debug;
+
+    use async_trait::async_trait;
     use clap::Parser;
 
     use fluvio::Fluvio;
 
     use crate::Result;
+    use crate::client::cmd::ClientCmd;
     use crate::common::output::Terminal;
     use crate::common::FluvioExtensionMetadata;
 
@@ -26,8 +30,13 @@ mod cmd {
         List(ListPartitionOpt),
     }
 
-    impl PartitionCmd {
-        pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+    #[async_trait]
+    impl ClientCmd for PartitionCmd {
+        async fn process_client<O: Terminal + Debug + Send + Sync>(
+            self,
+            out: Arc<O>,
+            fluvio: &Fluvio,
+        ) -> Result<()> {
             match self {
                 Self::List(list) => {
                     list.process(out, fluvio).await?;
@@ -36,7 +45,9 @@ mod cmd {
 
             Ok(())
         }
+    }
 
+    impl PartitionCmd {
         pub fn metadata() -> FluvioExtensionMetadata {
             FluvioExtensionMetadata {
                 title: "partition".into(),

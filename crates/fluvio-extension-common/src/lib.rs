@@ -53,6 +53,7 @@ pub struct FluvioExtensionMetadata {
     pub version: semver::Version,
 }
 
+#[derive(Debug)]
 pub struct PrintTerminal {}
 
 impl PrintTerminal {
