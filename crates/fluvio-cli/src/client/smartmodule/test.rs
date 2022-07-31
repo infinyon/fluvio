@@ -1,7 +1,12 @@
 use std::{collections::BTreeMap, path::PathBuf};
+use std::fmt::Debug;
+use std::sync::Arc;
 
+use async_trait::async_trait;
 use clap::Parser;
 
+use fluvio_extension_common::Terminal;
+use fluvio_extension_common::target::ClusterTarget;
 use fluvio_smartengine::SmartEngine;
 use fluvio_spu_schema::server::stream_fetch::{LegacySmartModulePayload, SmartModuleWasmCompressed};
 
@@ -16,7 +21,7 @@ use fluvio::{
     RecordKey,
 };
 
-use crate::{Result, error::CliError};
+use crate::{Result, error::CliError, client::cmd::ClientCmd};
 
 /// Create a new SmartModule with a given name
 #[derive(Debug, Parser)]
@@ -58,8 +63,13 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
 }
 */
 
-impl TestSmartModuleOpt {
-    pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
+#[async_trait]
+impl ClientCmd for TestSmartModuleOpt {
+    async fn process<O: Terminal + Send + Sync + Debug>(
+        self,
+        _out: Arc<O>,
+        _target: ClusterTarget,
+    ) -> Result<()> {
         println!("starting");
         //  let param: BTreeMap<String, String> = self.params.into_iter().collect();
         let mut param: BTreeMap<String, String> = BTreeMap::new();
@@ -110,6 +120,14 @@ impl TestSmartModuleOpt {
             println!("{}", output_value);
         }
 
+        Ok(())
+    }
+
+    async fn process_client<O: Terminal + Debug + Send + Sync>(
+        self,
+        _out: Arc<O>,
+        _fluvio: &Fluvio,
+    ) -> Result<()> {
         Ok(())
     }
 }

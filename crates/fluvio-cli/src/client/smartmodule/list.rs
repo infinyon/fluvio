@@ -1,10 +1,13 @@
 use std::sync::Arc;
+use std::fmt::Debug;
 
+use async_trait::async_trait;
 use clap::Parser;
 
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
 
+use crate::client::cmd::ClientCmd;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 use crate::Result;
@@ -16,8 +19,13 @@ pub struct ListSmartModuleOpt {
     output: OutputFormat,
 }
 
-impl ListSmartModuleOpt {
-    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+#[async_trait]
+impl ClientCmd for ListSmartModuleOpt {
+    async fn process_client<O: Terminal + Debug + Send + Sync>(
+        self,
+        out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<()> {
         let admin = fluvio.admin().await;
         let lists = admin.list::<SmartModuleSpec, _>(vec![]).await?;
         output::smartmodules_response_to_output(out, lists, self.output.format)

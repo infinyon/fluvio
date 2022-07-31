@@ -1,6 +1,10 @@
 use std::path::PathBuf;
 use std::io::Read;
+use std::fmt::Debug;
+use std::sync::Arc;
 
+use async_trait::async_trait;
+use fluvio_extension_common::Terminal;
 use tracing::debug;
 use clap::Parser;
 
@@ -9,6 +13,7 @@ use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use flate2::{Compression, bufread::GzEncoder};
 
 use crate::Result;
+use crate::client::cmd::ClientCmd;
 
 /// Create a new SmartModule with a given name
 #[derive(Debug, Parser)]
@@ -23,14 +28,19 @@ pub struct CreateSmartModuleOpt {
     _source_file: Option<PathBuf>,
 }
 
-impl CreateSmartModuleOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+#[async_trait]
+impl ClientCmd for CreateSmartModuleOpt {
+    async fn process_client<O: Terminal + Debug + Send + Sync>(
+        self,
+        _out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<()> {
         let raw = std::fs::read(self.wasm_file)?;
         let mut encoder = GzEncoder::new(raw.as_slice(), Compression::default());
         let mut buffer = Vec::with_capacity(raw.len());
         encoder.read_to_end(&mut buffer)?;
         /*
-         * TODO: Fix the CRD to work with this
+            * TODO: Fix the CRD to work with this
         let buffer = vec!['a' as u8; self.size];
         */
 
