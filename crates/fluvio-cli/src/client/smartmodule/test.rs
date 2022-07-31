@@ -20,6 +20,7 @@ use fluvio::{
     },
     RecordKey,
 };
+use tracing::debug;
 
 use crate::{Result, error::CliError, client::cmd::ClientCmd};
 
@@ -70,7 +71,7 @@ impl ClientCmd for TestSmartModuleOpt {
         _out: Arc<O>,
         _target: ClusterTarget,
     ) -> Result<()> {
-        println!("starting");
+        debug!("starting smart module test");
         //  let param: BTreeMap<String, String> = self.params.into_iter().collect();
         let mut param: BTreeMap<String, String> = BTreeMap::new();
         param.insert("regex".to_string(), self.regex);
@@ -80,10 +81,11 @@ impl ClientCmd for TestSmartModuleOpt {
 
         let payload = LegacySmartModulePayload {
             wasm: SmartModuleWasmCompressed::Raw(raw),
-            kind: SmartModuleKind::ArrayMap,
+            kind: SmartModuleKind::Filter,
             params: param.into(),
         };
 
+        debug!("loading module");
         let engine = SmartEngine::default();
         let mut smartmodule = engine
             .create_module_from_payload(payload, None)
