@@ -8,21 +8,25 @@ mod cmd {
     use std::sync::Arc;
     use std::fs::File;
     use std::io::{BufReader, BufRead};
-
+    use std::fmt::Debug;
     use std::path::PathBuf;
+    use std::time::Duration;
 
+    use async_trait::async_trait;
     use futures::future::join_all;
     use clap::Parser;
     use tracing::{error, warn};
-    use std::time::Duration;
     use humantime::parse_duration;
 
     use fluvio::{
         Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
         ProduceOutput, DeliverySemantic,
     };
+    use fluvio_extension_common::Terminal;
     use fluvio::dataplane::Isolation;
     use fluvio_types::print_cli_ok;
+
+    use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
     use crate::Result;
     use crate::util::parse_isolation;
@@ -126,8 +130,13 @@ mod cmd {
         Ok(())
     }
 
-    impl ProduceOpt {
-        pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+    #[async_trait]
+    impl ClientCmd for ProduceOpt {
+        async fn process_client<O: Terminal + Debug + Send + Sync>(
+            self,
+            _out: Arc<O>,
+            fluvio: &Fluvio,
+        ) -> Result<()> {
             let config_builder = if self.interactive_mode() {
                 TopicProducerConfigBuilder::default().linger(std::time::Duration::from_millis(10))
             } else {
@@ -257,7 +266,9 @@ mod cmd {
 
             Ok(())
         }
+    }
 
+    impl ProduceOpt {
         async fn produce_lines(
             &self,
             producer: Arc<TopicProducer>,

@@ -8,10 +8,15 @@ pub use cmd::TopicCmd;
 mod cmd {
 
     use std::sync::Arc;
+    use std::fmt::Debug;
+
+    use async_trait::async_trait;
     use clap::Parser;
+
     use fluvio::Fluvio;
 
     use crate::Result;
+    use crate::client::cmd::ClientCmd;
     use crate::common::COMMAND_TEMPLATE;
     use crate::common::output::Terminal;
     use crate::common::FluvioExtensionMetadata;
@@ -53,8 +58,13 @@ mod cmd {
         List(ListTopicsOpt),
     }
 
-    impl TopicCmd {
-        pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+    #[async_trait]
+    impl ClientCmd for TopicCmd {
+        async fn process_client<O: Terminal + Debug + Send + Sync>(
+            self,
+            out: Arc<O>,
+            fluvio: &Fluvio,
+        ) -> Result<()> {
             match self {
                 Self::Create(create) => {
                     create.process(fluvio).await?;
@@ -72,7 +82,9 @@ mod cmd {
 
             Ok(())
         }
+    }
 
+    impl TopicCmd {
         pub fn metadata() -> FluvioExtensionMetadata {
             FluvioExtensionMetadata {
                 title: "topic".into(),

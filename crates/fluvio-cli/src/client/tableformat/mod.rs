@@ -10,7 +10,9 @@ mod cmd {
     use std::path::PathBuf;
     use std::fs::File;
     use std::io::Read;
+    use std::fmt::Debug;
 
+    use async_trait::async_trait;
     use serde::Deserialize;
     use clap::Parser;
 
@@ -20,6 +22,8 @@ mod cmd {
     use fluvio_extension_common::COMMAND_TEMPLATE;
 
     use crate::CliError;
+    use crate::client::cmd::ClientCmd;
+    use crate::Result;
 
     use super::create::CreateTableFormatOpt;
     use super::delete::DeleteTableFormatOpt;
@@ -49,12 +53,13 @@ mod cmd {
         List(ListTableFormatsOpt),
     }
 
-    impl TableFormatCmd {
-        pub async fn process<O: Terminal>(
+    #[async_trait]
+    impl ClientCmd for TableFormatCmd {
+        async fn process_client<O: Terminal + Debug + Send + Sync>(
             self,
             out: Arc<O>,
             fluvio: &Fluvio,
-        ) -> Result<(), CliError> {
+        ) -> Result<()> {
             match self {
                 Self::Create(create) => {
                     create.process(fluvio).await?;

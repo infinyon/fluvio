@@ -7,12 +7,15 @@ pub use cmd::DerivedStreamCmd;
 mod cmd {
 
     use std::sync::Arc;
+    use std::fmt::Debug;
 
+    use async_trait::async_trait;
     use clap::Parser;
 
     use fluvio::Fluvio;
 
     use crate::Result;
+    use crate::client::cmd::ClientCmd;
     use crate::common::output::Terminal;
 
     use super::create::*;
@@ -26,8 +29,13 @@ mod cmd {
         Delete(DeleteDerivedStreamOpt),
     }
 
-    impl DerivedStreamCmd {
-        pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
+    #[async_trait]
+    impl ClientCmd for DerivedStreamCmd {
+        async fn process_client<O: Terminal + Debug + Send + Sync>(
+            self,
+            out: Arc<O>,
+            fluvio: &Fluvio,
+        ) -> Result<()> {
             match self {
                 Self::Create(opt) => {
                     opt.process(fluvio).await?;

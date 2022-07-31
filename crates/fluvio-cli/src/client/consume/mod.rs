@@ -17,6 +17,8 @@ mod cmd {
     use std::{io::Error as IoError, path::PathBuf};
     use std::io::{self, ErrorKind, Read, Stdout};
     use std::collections::{BTreeMap};
+    use std::fmt::Debug;
+    use std::sync::Arc;
 
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -24,6 +26,15 @@ mod cmd {
     use tracing::{debug, trace, instrument};
     use clap::{Parser, ArgEnum};
     use futures::{select, FutureExt};
+    use async_trait::async_trait;
+    use tui::Terminal as TuiTerminal;
+    use tui::backend::CrosstermBackend;
+    use crossterm::tty::IsTty;
+    use crossterm::{
+        event::EventStream,
+        execute,
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    };
 
     use fluvio::dataplane::batch::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::{TableFormatSpec};
@@ -38,24 +49,17 @@ mod cmd {
         SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, DerivedStreamInvocation,
     };
 
-    use tui::Terminal;
-    use tui::backend::CrosstermBackend;
-    use crossterm::tty::IsTty;
-    use crossterm::{
-        event::EventStream,
-        execute,
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    };
-
     use crate::render::ProgressRenderer;
     use crate::{CliError, Result};
     use crate::common::FluvioExtensionMetadata;
     use crate::util::parse_isolation;
+    use crate::common::Terminal;
 
     use super::record_format::{
         format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
         format_json, format_basic_table_record, format_fancy_table_record,
     };
+    use super::super::ClientCmd;
 
     use fluvio::dataplane::Isolation;
 
@@ -220,13 +224,18 @@ mod cmd {
         Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
     }
 
-    impl ConsumeOpt {
+    #[async_trait]
+    impl ClientCmd for ConsumeOpt {
         #[instrument(
             skip(self, fluvio),
             name = "Consume",
             fields(topic = %self.topic, partition = self.partition),
         )]
-        pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        async fn process_client<O: Terminal + Debug + Send + Sync>(
+            self,
+            _out: Arc<O>,
+            fluvio: &Fluvio,
+        ) -> Result<()> {
             let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
                 let admin = fluvio.admin().await;
                 let tableformats = admin.list::<TableFormatSpec, _>(vec![]).await?;
@@ -271,7 +280,9 @@ mod cmd {
 
             Ok(())
         }
+    }
 
+    impl ConsumeOpt {
         pub fn metadata() -> FluvioExtensionMetadata {
             FluvioExtensionMetadata {
                 title: "consume".into(),
@@ -593,9 +604,9 @@ mod cmd {
             Ok(())
         }
 
-        fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
+        fn create_terminal(&self, stdout: Stdout) -> Result<TuiTerminal<CrosstermBackend<Stdout>>> {
             let backend = CrosstermBackend::new(stdout);
-            let terminal = Terminal::new(backend)?;
+            let terminal = TuiTerminal::new(backend)?;
 
             Ok(terminal)
         }
@@ -606,7 +617,7 @@ mod cmd {
             templates: Option<&Handlebars>,
             record: &Record,
             header_print: &mut bool,
-            terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
+            terminal: &mut Option<TuiTerminal<CrosstermBackend<Stdout>>>,
             table_model: &mut Option<TableModel>,
             pb: &ProgressRenderer,
         ) {
