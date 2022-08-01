@@ -1,4 +1,6 @@
 use std::convert::TryFrom;
+use std::fmt::Debug;
+
 use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
@@ -14,6 +16,7 @@ const FILTER_FN_NAME: &str = "filter";
 type OldFilterFn = TypedFunc<(i32, i32), i32>;
 type FilterFn = TypedFunc<(i32, i32, u32), i32>;
 
+#[derive(Debug)]
 pub struct SmartModuleFilter {
     base: SmartModuleContext,
     filter_fn: FilterFnKind,
@@ -22,6 +25,15 @@ pub struct SmartModuleFilter {
 enum FilterFnKind {
     Old(OldFilterFn),
     New(FilterFn),
+}
+
+impl Debug for FilterFnKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Old(_) => write!(f, "OldFilterFn"),
+            Self::New(_) => write!(f, "FilterFn"),
+        }
+    }
 }
 
 impl FilterFnKind {
@@ -73,6 +85,10 @@ impl SmartModuleInstance for SmartModuleFilter {
     }
 
     fn params(&self) -> SmartModuleExtraParams {
-        self.base.params.clone()
+        self.base.get_params().clone()
+    }
+
+    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
+        &mut self.base
     }
 }

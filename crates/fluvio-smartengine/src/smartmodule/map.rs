@@ -1,13 +1,16 @@
 use std::convert::TryFrom;
+use std::fmt::Debug;
+
 use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
+use dataplane::smartmodule::{
+    SmartModuleInput, SmartModuleOutput, SmartModuleExtraParams, SmartModuleInternalError,
+};
+
 use crate::{
     WasmSlice,
-    smartmodule::{
-        SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
-    },
+    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
     error::Error,
 };
 
@@ -15,6 +18,7 @@ const MAP_FN_NAME: &str = "map";
 type OldMapFn = TypedFunc<(i32, i32), i32>;
 type MapFn = TypedFunc<(i32, i32, u32), i32>;
 
+#[derive(Debug)]
 pub struct SmartModuleMap {
     base: SmartModuleContext,
     map_fn: MapFnKind,
@@ -22,6 +26,15 @@ pub struct SmartModuleMap {
 enum MapFnKind {
     Old(OldMapFn),
     New(MapFn),
+}
+
+impl Debug for MapFnKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Old(..) => write!(f, "OldMapFn"),
+            Self::New(..) => write!(f, "MapFn"),
+        }
+    }
 }
 
 impl MapFnKind {
@@ -70,6 +83,10 @@ impl SmartModuleInstance for SmartModuleMap {
     }
 
     fn params(&self) -> SmartModuleExtraParams {
-        self.base.params.clone()
+        self.base.get_params().clone()
+    }
+
+    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
+        &mut self.base
     }
 }
