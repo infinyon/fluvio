@@ -18,7 +18,7 @@ pub fn init(config: SmartModuleConfig) {
 //    REGEX.set(Regex::new("[0-9]{3}-[0-9]{3}-[0-9]{4}").unwrap()).unwrap();
 //}
 
-/* 
+/*
 #[smartmodule(init)]
 pub fn init(params: SmartModuleExtraParams) {
     if let Some(regex) = params.get("regex") {
@@ -29,7 +29,6 @@ pub fn init(params: SmartModuleExtraParams) {
     }
 }
 */
-
 
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]

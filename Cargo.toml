@@ -38,7 +38,7 @@ members = [
     "crates/fluvio-test-derive",
     "crates/fluvio-test-util",
     "crates/fluvio-types",
-    "examples/component",
+    "examples/sm-regex",
 ]
 resolver = "2"
 

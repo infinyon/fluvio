@@ -2280,6 +2280,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-sm-regex"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule",
+ "once_cell",
+ "regex",
+]
+
+[[package]]
 name = "fluvio-smartengine"
 version = "0.3.2"
 dependencies = [
@@ -2313,7 +2322,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2582,15 +2591,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "fluvio-wasm-component"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule",
- "once_cell",
- "regex",
 ]
 
 [[package]]
