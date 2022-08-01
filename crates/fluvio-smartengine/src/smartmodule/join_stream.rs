@@ -1,22 +1,23 @@
 use std::convert::TryFrom;
+use std::fmt::Debug;
 
 use anyhow::Result;
 use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
+use dataplane::smartmodule::{
+    SmartModuleInput, SmartModuleExtraParams, SmartModuleOutput, SmartModuleInternalError,
+};
 use crate::{
     WasmSlice,
-    smartmodule::{
-        SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
-        error::Error,
-    },
+    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
 };
 
 const JOIN_FN_NAME: &str = "join";
 type OldJoinFn = TypedFunc<(i32, i32), i32>;
 type JoinFn = TypedFunc<(i32, i32, u32), i32>;
 
+#[derive(Debug)]
 pub struct SmartModuleJoinStream {
     base: SmartModuleContext,
     join_fn: JoinFnKind,
@@ -25,6 +26,15 @@ pub struct SmartModuleJoinStream {
 pub enum JoinFnKind {
     Old(OldJoinFn),
     New(JoinFn),
+}
+
+impl Debug for JoinFnKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Old(_join_fn) => write!(f, "OldJoinFn"),
+            Self::New(_join_fn) => write!(f, "JoinFn"),
+        }
+    }
 }
 
 impl JoinFnKind {
@@ -75,6 +85,10 @@ impl SmartModuleInstance for SmartModuleJoinStream {
     }
 
     fn params(&self) -> SmartModuleExtraParams {
-        self.base.params.clone()
+        self.base.get_params().clone()
+    }
+
+    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
+        &mut self.base
     }
 }

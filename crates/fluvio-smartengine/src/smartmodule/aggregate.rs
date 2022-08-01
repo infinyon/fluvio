@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::fmt::Debug;
 
 use tracing::{debug, instrument};
 use anyhow::Result;
@@ -18,6 +19,7 @@ const AGGREGATE_FN_NAME: &str = "aggregate";
 type OldAggregateFn = TypedFunc<(i32, i32), i32>;
 type AggregateFn = TypedFunc<(i32, i32, u32), i32>;
 
+#[derive(Debug)]
 pub struct SmartModuleAggregate {
     base: SmartModuleContext,
     aggregate_fn: AggregateFnKind,
@@ -26,6 +28,15 @@ pub struct SmartModuleAggregate {
 pub enum AggregateFnKind {
     Old(OldAggregateFn),
     New(AggregateFn),
+}
+
+impl Debug for AggregateFnKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Old(_aggregate_fn) => write!(f, "OldAggregateFn"),
+            Self::New(_aggregate_fn) => write!(f, "AggregateFn"),
+        }
+    }
 }
 
 impl AggregateFnKind {
@@ -89,6 +100,10 @@ impl SmartModuleInstance for SmartModuleAggregate {
         Ok(output.base)
     }
     fn params(&self) -> SmartModuleExtraParams {
-        self.base.params.clone()
+        self.base.get_params().clone()
+    }
+
+    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
+        &mut self.base
     }
 }

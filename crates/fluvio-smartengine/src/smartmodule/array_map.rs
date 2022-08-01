@@ -1,10 +1,13 @@
 use std::convert::TryFrom;
+use std::fmt::Debug;
+
 use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleExtraParams,
 };
+
 use crate::{
     WasmSlice,
     smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
@@ -15,6 +18,7 @@ const ARRAY_MAP_FN_NAME: &str = "array_map";
 type OldArrayMapFn = TypedFunc<(i32, i32), i32>;
 type ArrayMapFn = TypedFunc<(i32, i32, u32), i32>;
 
+#[derive(Debug)]
 pub struct SmartModuleArrayMap {
     base: SmartModuleContext,
     array_map_fn: ArrayMapFnKind,
@@ -24,6 +28,16 @@ enum ArrayMapFnKind {
     Old(OldArrayMapFn),
     New(ArrayMapFn),
 }
+
+impl Debug for ArrayMapFnKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Old(..) => write!(f, "OldArrayMapFn"),
+            Self::New(..) => write!(f, "ArrayMapFn"),
+        }
+    }
+}
+
 impl ArrayMapFnKind {
     fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
         match self {
@@ -76,6 +90,10 @@ impl SmartModuleInstance for SmartModuleArrayMap {
     }
 
     fn params(&self) -> SmartModuleExtraParams {
-        self.base.params.clone()
+        self.base.get_params().clone()
+    }
+
+    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
+        &mut self.base
     }
 }
