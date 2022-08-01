@@ -91,11 +91,16 @@ impl ClientCmd for TestSmartModuleOpt {
             .create_module_from_payload(payload, None)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-        println!("SmartModule created");
+        debug!("SmartModule created");
+
+        smartmodule
+            .invoke_constructor()
+            .map_err(|e| FluvioError::Other(format!("SmartEngine constructor - {:?}", e)))?;
 
         // get raw json in one of other ways
-        let raw_input = if let Some(json) = self.input {
-            json.as_bytes().to_vec()
+        let raw_input = if let Some(input) = self.input {
+            debug!(input, "input string");
+            input.as_bytes().to_vec()
         } else {
             if let Some(json_file) = &self.file {
                 std::fs::read(json_file)?
@@ -104,11 +109,11 @@ impl ClientCmd for TestSmartModuleOpt {
             }
         };
 
+        debug!(len = raw_input.len(), "input data");
+
         let record_value: RecordData = raw_input.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
-        smartmodule
-            .invoke_constructor()
-            .map_err(|e| FluvioError::Other(format!("SmartEngine constructor - {:?}", e)))?;
+
         let output = smartmodule
             .process(SmartModuleInput::try_from(entries)?)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
