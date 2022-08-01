@@ -18,6 +18,19 @@ pub fn init(config: SmartModuleConfig) {
 //    REGEX.set(Regex::new("[0-9]{3}-[0-9]{3}-[0-9]{4}").unwrap()).unwrap();
 //}
 
+/* 
+#[smartmodule(init)]
+pub fn init(params: SmartModuleExtraParams) {
+    if let Some(regex) = params.get("regex") {
+        REGEX.set(Regex::new(regex).unwrap()).unwrap();
+        0
+    } else {
+        -1
+    }
+}
+*/
+
+
 #[no_mangle]
 #[allow(clippy::missing_safety_doc)]
 pub unsafe fn init(ptr: *mut u8, len: usize, version: i16) -> i32 {
