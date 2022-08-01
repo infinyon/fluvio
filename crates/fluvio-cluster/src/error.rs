@@ -1,4 +1,5 @@
 use std::io::Error as IoError;
+use std::process::ExitStatus;
 
 use anyhow::Error as AnyError;
 
@@ -68,6 +69,9 @@ pub enum K8InstallError {
     /// Timed out when waiting for SC port check.
     #[error("Timed out when waiting for SC port check")]
     SCPortCheckTimeout,
+    /// Unable to find a valid ingress address for SC service
+    #[error("Unable to find a valid ingress address for SC service")]
+    SCIngressNotValid,
     /// Timed out when waiting for DNS resolution.
     #[error("Timed out when waiting for DNS resolution")]
     SCDNSTimeout,
@@ -88,6 +92,12 @@ pub enum K8InstallError {
     Other(String),
     #[error(transparent)]
     ClusterCheckError(#[from] ClusterCheckError),
+    /// Kubectl not found
+    #[error("kubectl not found")]
+    KubectlNotFoundError(IoError),
+    /// Kubectl not found
+    #[error("Port forwarding process exited with code: {0}")]
+    PortForwardingFailed(ExitStatus),
 }
 
 /// Errors that may occur while trying to install Fluvio locally

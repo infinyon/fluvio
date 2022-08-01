@@ -97,6 +97,10 @@ pub struct K8Install {
     /// chart values
     #[clap(long, parse(from_os_str))]
     pub chart_values: Vec<PathBuf>,
+
+    /// Uses port forwarding for connecting to SC during install
+    #[clap(long)]
+    use_k8_port_forwarding: bool,
 }
 
 #[derive(Debug, Parser)]
