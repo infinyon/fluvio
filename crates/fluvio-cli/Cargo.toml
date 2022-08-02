@@ -35,6 +35,7 @@ k8s = [
     "fluvio-cluster",
 ]
 stats = [ "fluvio/stats" ]
+smartengine = ["fluvio-smartengine"]
 
 [dependencies]
 tracing = "0.1.19"
@@ -94,7 +95,7 @@ fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "nati
 fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 fluvio-spu-schema = { path = "../fluvio-spu-schema", optional = true }
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-fluvio-smartengine = { path = "../fluvio-smartengine", features = ["unstable"] }
+fluvio-smartengine = { path = "../fluvio-smartengine", features = ["unstable"], optional = true}
 
 
 [dev-dependencies]

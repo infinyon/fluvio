@@ -2,7 +2,7 @@ mod create;
 mod list;
 mod delete;
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(feature = "smartengine", not(target_os = "windows")))]
 mod test;
 
 pub use cmd::SmartModuleCmd;
@@ -25,7 +25,6 @@ mod cmd {
     use super::create::CreateSmartModuleOpt;
     use super::list::ListSmartModuleOpt;
     use super::delete::DeleteSmartModuleOpt;
-    use super::test::TestSmartModuleOpt;
 
     #[derive(Debug, Parser)]
     pub enum SmartModuleCmd {
@@ -34,8 +33,8 @@ mod cmd {
         /// Delete one or more Smart Modules with the given name(s)
         Delete(DeleteSmartModuleOpt),
 
-        #[cfg(not(target_os = "windows"))]
-        Test(TestSmartModuleOpt),
+        #[cfg(all(feature = "smartengine", not(target_os = "windows")))]
+        Test(super::test::TestSmartModuleOpt),
     }
 
     #[async_trait]
@@ -55,7 +54,7 @@ mod cmd {
                 Self::Delete(opt) => {
                     opt.process(out, target).await?;
                 }
-                #[cfg(not(target_os = "windows"))]
+                #[cfg(all(feature = "smartengine", not(target_os = "windows")))]
                 Self::Test(opt) => {
                     opt.process(out, target).await?;
                 }
