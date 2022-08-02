@@ -63,13 +63,13 @@ jobs:
           override: true
       - name: Run generate make target
         run: make generate-changelog
-      - name: Run changelog extract test
       - name: Upload generated CHANGELOG
         uses: actions/upload-artifact@v2
         with:
           name: CHANGELOG-generated
           path: CHANGELOG-generated.md
           retention-days: 1
+      - name: Run changelog extract test
         run: make extract-first-changelog-section | tee /tmp/release_notes
       - name: Build release notes from CHANGELOG.md
         run: |
