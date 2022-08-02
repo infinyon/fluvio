@@ -1,0 +1,36 @@
+name: Update Changelog 
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  commit_changelog:
+    name: Commit changelog 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v1
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+      - uses: EndBug/add-and-commit@v9
+        with:
+          add: CHANGELOG.md
+          new_branch: master 
+          default_author: github_actions
+          message: "Update CHANGELOG from Github Actions [actions skip]"
+          push: false
+      - name: Pushing to the protected branch 'main'
+        uses: CasperWA/push-protected@v2
+        with:
+          token: ${{ secrets.CHANGELOG_UPDATE_PAT }}
+          branch: main 

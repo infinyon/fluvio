@@ -1030,43 +1030,6 @@ jobs:
         run: |
           make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=${{ env.FLUVIO_BIN }} cli-platform-cross-version-test
 
-  commit_changelog:
-    name: Commit changelog 
-    #if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs:
-      - check
-      #- check_wasm
-      #- check_windows
-      #- check_integration
-      #- build_image
-      #- local_cluster_test
-      #- k8_cluster_test
-      #- k8_upgrade_test
-      #- k8_cli_smoke
-      #- build_binaries
-      - generate_changelog
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Git branch name
-        id: git-branch-name
-        uses: EthanSK/git-branch-name-action@v1
-      - name: Echo the branch name
-        run: echo "Branch name ${GIT_BRANCH_NAME}"
-      - name: Download generated CHANGELOG
-        uses: actions/download-artifact@v2
-        with:
-          name: CHANGELOG-generated
-          path: /tmp
-      - name: Copy over changelog
-        run: cp /tmp/CHANGELOG-generated.md CHANGELOG.md
-      - uses: EndBug/add-and-commit@v9
-        with:
-          add: CHANGELOG.md
-          new_branch: ${{ env.GIT_BRANCH_NAME }}
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
   docker_push:
