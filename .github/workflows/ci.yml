@@ -1051,6 +1051,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Git branch name
+        id: git-branch-name
+        uses: EthanSK/git-branch-name-action@v1
+      - name: Echo the branch name
+        run: echo "Branch name ${GIT_BRANCH_NAME}"
       - name: Download generated CHANGELOG
         uses: actions/download-artifact@v2
         with:
@@ -1061,6 +1066,7 @@ jobs:
       - uses: EndBug/add-and-commit@v9
         with:
           add: CHANGELOG.md
+          new_branch: ${{ env.GIT_BRANCH_NAME }}
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
   docker_push:
