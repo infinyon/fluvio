@@ -24,7 +24,9 @@ use tracing::debug;
 
 use crate::{Result, error::CliError, client::cmd::ClientCmd};
 
-/// Create a new SmartModule with a given name
+/// Test SmartModule
+/// This is a unstable feature and is not yet ready for public use.
+/// This requires init function to be implemented.
 #[derive(Debug, Parser)]
 pub struct TestSmartModuleOpt {
     // json value
@@ -41,7 +43,7 @@ pub struct TestSmartModuleOpt {
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
     /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
-    /*
+
     #[clap(
         short = 'e',
         long= "params",
@@ -49,20 +51,16 @@ pub struct TestSmartModuleOpt {
         number_of_values = 1
     )]
     params: Vec<(String, String)>,
-    */
-
-    #[clap(long)]
-    regex: String,
+    //#[clap(long)]
+    //regex: String,
 }
 
-/*
 fn parse_key_val(s: &str) -> Result<(String, String)> {
     let pos = s.find('=').ok_or_else(|| {
         CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{}`", s))
     })?;
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
-*/
 
 #[async_trait]
 impl ClientCmd for TestSmartModuleOpt {
@@ -72,9 +70,7 @@ impl ClientCmd for TestSmartModuleOpt {
         _target: ClusterTarget,
     ) -> Result<()> {
         debug!("starting smart module test");
-        //  let param: BTreeMap<String, String> = self.params.into_iter().collect();
-        let mut param: BTreeMap<String, String> = BTreeMap::new();
-        param.insert("regex".to_string(), self.regex);
+        let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
         // load wasm file
         let raw = std::fs::read(self.wasm_file)?;
