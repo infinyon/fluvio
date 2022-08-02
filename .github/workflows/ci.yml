@@ -50,6 +50,52 @@ jobs:
       ##  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
       #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
 
+  generate_changelog:
+    name: Generate changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Run generate make target
+        run: make generate-changelog
+      - name: Run changelog extract test
+      - name: Upload generated CHANGELOG
+        uses: actions/upload-artifact@v2
+        with:
+          name: CHANGELOG-generated
+          path: CHANGELOG-generated.md
+          retention-days: 1
+        run: make extract-first-changelog-section | tee /tmp/release_notes
+      - name: Build release notes from CHANGELOG.md
+        run: |
+          touch /tmp/release_notes
+          echo "# Release Notes" >> /tmp/release_notes
+          VERSION=$(cat VERSION)
+
+          make extract-first-changelog-section | tee /tmp/release_notes
+
+          # Replace VERSION placeholder w/ VERSION file contents
+          cat /tmp/release_notes | sed -i "s/VERSION/$VERSION/" /tmp/release_notes
+
+          # Replace UNRELEASED w/ date YYYY-MM-dd
+          export TZ=":America/Los_Angeles"
+          DATE=$(date +%F)
+          cat /tmp/release_notes | sed -i "s/UNRELEASED/$DATE/" /tmp/release_notes
+
+          # Print the release notes to stdout
+          cat /tmp/release_notes
+      - name: Upload example release notes 
+        uses: actions/upload-artifact@v2
+        with:
+          name: example-release-notes
+          path: /tmp/release_notes
+          retention-days: 1
+
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
   build_primary_binaries:
     name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
