@@ -2303,7 +2303,6 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "nix",
- "rayon",
  "thiserror",
  "tracing",
  "wasmtime",
