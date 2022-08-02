@@ -58,11 +58,11 @@ generate-changelog: install-git-cliff
 	git cliff -o CHANGELOG-generated.md
 
 # Extract changelog section
-install-markdown-extractor:
+install-markdown-extract:
 	cargo install markdown-extract
 
-extract-first-changelog-section: install-markdown-extractor generate-changelog
-	markdown-extract "Platform Version VERSION - UNRELEASED" CHANGELOG-generated.md
+extract-first-changelog-section: install-markdown-extract generate-changelog
+	markdown-extract 'Platform Version VERSION - UNRELEASED' CHANGELOG-generated.md
 
 
 

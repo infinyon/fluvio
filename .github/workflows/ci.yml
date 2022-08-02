@@ -54,7 +54,10 @@ jobs:
     name: Generate changelog
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -64,23 +67,30 @@ jobs:
       - uses: Swatinem/rust-cache@v1
         with:
           key: changelog 
-      - name: Run generate make target
-        run: make generate-changelog
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v1
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG-generated.md
+      - name: Print the changelog
+        run: cat "${{ steps.git-cliff.outputs.changelog }}"
       - name: Upload generated CHANGELOG
         uses: actions/upload-artifact@v2
         with:
-          name: CHANGELOG-generated
+          name: CHANGELOG-generated.md
           path: CHANGELOG-generated.md
           retention-days: 1
-      - name: Run changelog extract test
-        run: make extract-first-changelog-section | tee /tmp/release_notes
       - name: Build release notes from CHANGELOG.md
         run: |
           touch /tmp/release_notes
           echo "# Release Notes" >> /tmp/release_notes
           VERSION=$(cat VERSION)
 
-          make extract-first-changelog-section | tee /tmp/release_notes
+          make install-markdown-extract
+          markdown-extract 'Platform Version VERSION - UNRELEASED' CHANGELOG-generated.md >> /tmp/release_notes
 
           # Replace VERSION placeholder w/ VERSION file contents
           cat /tmp/release_notes | sed -i "s/VERSION/$VERSION/" /tmp/release_notes
