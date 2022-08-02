@@ -1031,19 +1031,20 @@ jobs:
           make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=${{ env.FLUVIO_BIN }} cli-platform-cross-version-test
 
   commit_changelog:
-    name: Publish Docker Image
+    name: Commit changelog 
     #if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - check
-      - check_wasm
-      - check_windows
-      - check_integration
-      - build_image
-      - local_cluster_test
-      - k8_cluster_test
-      - k8_upgrade_test
-      - k8_cli_smoke
-      - build_binaries
+      #- check_wasm
+      #- check_windows
+      #- check_integration
+      #- build_image
+      #- local_cluster_test
+      #- k8_cluster_test
+      #- k8_upgrade_test
+      #- k8_cli_smoke
+      #- build_binaries
+      - generate_changelog
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
