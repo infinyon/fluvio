@@ -61,6 +61,9 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: changelog 
       - name: Run generate make target
         run: make generate-changelog
       - name: Upload generated CHANGELOG
