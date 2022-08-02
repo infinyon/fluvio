@@ -11,6 +11,7 @@ RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
 DEBUG_SMARTMODULE_FLAG=$(if $(DEBUG_SMARTMODULE),--features wasi,)
+SMARTENGINE_FLAG=$(if $(SMARTENGINE),--features smartengine,)
 
 BUILD_FLAGS = $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 

@@ -7,6 +7,7 @@ mod array_map;
 mod filter_map;
 mod aggregate;
 mod join;
+mod init;
 
 pub mod opt;
 
@@ -26,5 +27,6 @@ pub fn generate_smartmodule(config: &SmartModuleConfig, func: &SmartModuleFn) ->
             self::array_map::generate_array_map_smartmodule(func, config.has_params)
         }
         SmartModuleKind::Join => self::join::generate_join_smartmodule(func, config.has_params),
+        SmartModuleKind::Init => self::init::generate_init_smartmodule(func),
     }
 }

@@ -1,10 +1,17 @@
+use std::sync::Arc;
+use std::fmt::Debug;
+
+use async_trait::async_trait;
+
 use tracing::debug;
 use clap::Parser;
 
 use fluvio::Fluvio;
+use fluvio_extension_common::Terminal;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 
 use crate::Result;
+use crate::client::cmd::ClientCmd;
 use crate::error::CliError;
 
 /// Delete an existing SmartModule with the given name
@@ -18,8 +25,13 @@ pub struct DeleteSmartModuleOpt {
     names: Vec<String>,
 }
 
-impl DeleteSmartModuleOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+#[async_trait]
+impl ClientCmd for DeleteSmartModuleOpt {
+    async fn process_client<O: Terminal + Debug + Send + Sync>(
+        self,
+        _out: Arc<O>,
+        fluvio: &Fluvio,
+    ) -> Result<()> {
         let admin = fluvio.admin().await;
         let mut err_happened = false;
         for name in self.names.iter() {

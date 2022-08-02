@@ -101,6 +101,7 @@ mod encoding {
     // THEREFORE, THE DISCRIMINANTS FOR ALL VARIANTS ON THIS TYPE MUST BE NEGATIVE
     #[repr(i32)]
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
+    #[non_exhaustive]
     #[fluvio(encode_discriminant)]
     pub enum SmartModuleInternalError {
         #[error("encountered unknown error during SmartModule processing")]
@@ -115,6 +116,8 @@ mod encoding {
         ParsingExtraParams = -44,
         #[error("undefined right record in Join SmartModule")]
         UndefinedRightRecord = -55,
+        #[error("Init params are not found")]
+        InitParamsNotFound = -60,
     }
 
     impl Default for SmartModuleInternalError {

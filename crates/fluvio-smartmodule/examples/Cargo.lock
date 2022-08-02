@@ -262,6 +262,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-wasm-component"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule",
+ "once_cell",
+ "regex",
+]
+
+[[package]]
 name = "fluvio-wasm-filter"
 version = "0.0.0"
 dependencies = [
