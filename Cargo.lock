@@ -2021,7 +2021,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.11.5"
+version = "0.11.6"
 dependencies = [
  "bytes",
  "cfg-if",
