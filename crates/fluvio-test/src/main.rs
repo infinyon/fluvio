@@ -34,10 +34,10 @@ fn main() {
     let test_name = option.environment.test_name.clone();
 
     // Get test from inventory
-    let test_meta =
-        FluvioTestMeta::from_name(test_name.clone()).expect("StructOpt should have caught this error");
+    let test_meta = FluvioTestMeta::from_name(test_name.clone())
+        .expect("StructOpt should have caught this error");
 
-    let mut subcommand = vec![test_name.clone()];
+    let mut subcommand = vec![test_name];
 
     if let Some(TestCli::Args(args)) = option.test_cmd_args {
         // Add the args to the subcommand
@@ -269,9 +269,10 @@ fn create_spinning_indicator() -> Option<ProgressBar> {
         pb.set_style(
             ProgressStyle::default_bar()
                 .template("{msg} {spinner}")
+                .expect("Unable to set template content")
                 .tick_chars("/-\\|"),
         );
-        pb.enable_steady_tick(100);
+        pb.enable_steady_tick(Duration::from_millis(100));
         Some(pb)
     }
 }
