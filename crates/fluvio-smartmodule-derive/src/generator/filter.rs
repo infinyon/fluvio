@@ -92,7 +92,7 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
 
                 // ENCODING
                 let mut out = vec![];
-                if let Err(_) = Encoder::encode(&mut output, &mut out, version) {
+                if let Err(_) = Encoder::encode(&output, &mut out, version) {
                     return SmartModuleInternalError::EncodingOutput as i32;
                 }
 

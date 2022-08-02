@@ -97,12 +97,10 @@ impl ClientCmd for TestSmartModuleOpt {
         let raw_input = if let Some(input) = self.input {
             debug!(input, "input string");
             input.as_bytes().to_vec()
+        } else if let Some(json_file) = &self.file {
+            std::fs::read(json_file)?
         } else {
-            if let Some(json_file) = &self.file {
-                std::fs::read(json_file)?
-            } else {
-                return Err(CliError::Other("No json provided".to_string()));
-            }
+            return Err(CliError::Other("No json provided".to_string()));
         };
 
         debug!(len = raw_input.len(), "input data");
