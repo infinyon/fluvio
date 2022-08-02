@@ -66,7 +66,7 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
         with:
-          key: changelog 
+          key: changelog
       - name: Generate a changelog
         uses: orhun/git-cliff-action@v1
         id: git-cliff
@@ -80,7 +80,7 @@ jobs:
       - name: Upload generated CHANGELOG
         uses: actions/upload-artifact@v2
         with:
-          name: CHANGELOG-generated.md
+          name: CHANGELOG-generated
           path: CHANGELOG-generated.md
           retention-days: 1
       - name: Build release notes from CHANGELOG.md
@@ -102,7 +102,7 @@ jobs:
 
           # Print the release notes to stdout
           cat /tmp/release_notes
-      - name: Upload example release notes 
+      - name: Upload example release notes
         uses: actions/upload-artifact@v2
         with:
           name: example-release-notes
@@ -176,7 +176,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
-  #    fail-fast: false
+      #    fail-fast: false
       matrix:
         rust-target:
           - aarch64-apple-darwin
@@ -272,7 +272,7 @@ jobs:
       - name: Install Helm for Mac
         run: brew install helm
         if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
-        
+
       - name: Build fluvio
         timeout-minutes: 30
         if: matrix.binary == 'fluvio'
@@ -321,7 +321,17 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, doc-test, test, crate-version, crate-audit, crate-publish-check]
+        check:
+          [
+            fmt,
+            clippy,
+            doc,
+            doc-test,
+            test,
+            crate-version,
+            crate-audit,
+            crate-publish-check,
+          ]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -357,7 +367,7 @@ jobs:
       - name: Crate version check
         if: matrix.check == 'crate-version'
         run: cargo run --manifest-path release-tools/check-crate-version/Cargo.toml -- --crates-dir crates --publish-list-path release-tools/check-crate-version/publish-list.toml
-      - name: Audit crate licenses + advisories 
+      - name: Audit crate licenses + advisories
         if: matrix.check == 'crate-audit'
         continue-on-error: true
         uses: EmbarkStudios/cargo-deny-action@v1
@@ -393,7 +403,6 @@ jobs:
           key: ${{ matrix.rust-target }}-check-integration
       - name: Integration test
         run: make run-integration-test
-
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
@@ -628,7 +637,6 @@ jobs:
           name: local-${{ matrix.run }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
           retention-days: 1
-      
 
   build_image:
     name: Build Fluvio Docker image
@@ -682,7 +690,13 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean, stats-test]
+        test:
+          [
+            smoke-test-k8,
+            smoke-test-k8-tls,
+            smoke-test-k8-tls-root-unclean,
+            stats-test,
+          ]
         k8: [k3d, minikube]
         spu: [3]
     steps:
@@ -824,7 +838,7 @@ jobs:
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
 
       - name: Run upgrade test with CI artifacts
-        timeout-minutes: 10 
+        timeout-minutes: 10
         env:
           TEST_DATA_BYTES: 10000
         run: |
@@ -1016,6 +1030,36 @@ jobs:
         run: |
           make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=${{ env.FLUVIO_BIN }} cli-platform-cross-version-test
 
+  commit_changelog:
+    name: Publish Docker Image
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs:
+      - check
+      - check_wasm
+      - check_windows
+      - check_integration
+      - build_image
+      - local_cluster_test
+      - k8_cluster_test
+      - k8_upgrade_test
+      - k8_cli_smoke
+      - build_binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Download generated CHANGELOG
+        uses: actions/download-artifact@v2
+        with:
+          name: CHANGELOG-generated
+          path: /tmp
+      - name: Copy over changelog
+        run: cp /tmp/CHANGELOG-generated.md CHANGELOG.md
+      - uses: EndBug/add-and-commit@v9
+        with:
+          add: CHANGELOG.md
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
   docker_push:
@@ -1033,6 +1077,7 @@ jobs:
       - k8_cli_smoke
       - build_binaries
       - k8_cli_cross_compat
+      - commit_changelog
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
