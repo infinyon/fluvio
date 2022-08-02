@@ -1,6 +1,8 @@
 mod create;
 mod list;
 mod delete;
+
+#[cfg(not(target_os = "windows"))]
 mod test;
 
 pub use cmd::SmartModuleCmd;
@@ -31,6 +33,8 @@ mod cmd {
         List(ListSmartModuleOpt),
         /// Delete one or more Smart Modules with the given name(s)
         Delete(DeleteSmartModuleOpt),
+
+        #[cfg(not(target_os = "windows"))]
         Test(TestSmartModuleOpt),
     }
 
@@ -51,6 +55,7 @@ mod cmd {
                 Self::Delete(opt) => {
                     opt.process(out, target).await?;
                 }
+                #[cfg(not(target_os = "windows"))]
                 Self::Test(opt) => {
                     opt.process(out, target).await?;
                 }
