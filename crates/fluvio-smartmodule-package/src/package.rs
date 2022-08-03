@@ -1,5 +1,6 @@
+use std::collections::HashMap;
 use std::fs::read_to_string;
-use std::path::{PathBuf, Path};
+use std::path::{Path};
 use std::io::Result;
 
 use serde::{Deserialize, Serialize};
@@ -7,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SmartModuleMetadata {
     pub package: Package,
-    pub init: Vec<InitParam>,
+    pub init: HashMap<String, InitParam>,
 }
 
 impl SmartModuleMetadata {
@@ -33,6 +34,7 @@ pub struct Package {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub enum InitType {
     String,
 }
@@ -40,7 +42,6 @@ pub enum InitType {
 /// SmartModule initialization parameters
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InitParam {
-    pub name: String,
     // input_type, it should be enum
     pub input: InitType,
 }
