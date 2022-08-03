@@ -51,7 +51,7 @@ mod test {
 
     #[test]
     fn test_pkg_parser() {
-        let meadata = super::SmartModuleMetadata::from_file("tests/regex.toml")
+        let _metadata = super::SmartModuleMetadata::from_file("tests/regex.toml")
             .expect("failed to parse metadata");
     }
 }
