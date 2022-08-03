@@ -2300,6 +2300,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-package"
+version = "0.0.0"
+
+[[package]]
 name = "fluvio-socket"
 version = "0.12.1"
 dependencies = [
