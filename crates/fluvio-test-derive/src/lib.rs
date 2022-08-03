@@ -115,7 +115,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
         inventory::submit!{
             fluvio_test_util::test_runner::test_meta::FluvioTestMeta {
-                name: #test_name.to_string(),
+                name: #test_name,
                 test_fn: #test_driver_iden,
                 validate_fn: #validate_sub_fn_iden,
                 requirements: #requirements_fn_iden,
