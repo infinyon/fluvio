@@ -50,6 +50,7 @@ Run the [`release.yml` Github Actions workflow](https://github.com/infinyon/fluv
 This workflow will:
 
 1. Create [Github Release](https://github.com/infinyon/fluvio/releases) for the current version (w/ Release notes derived from `CHANGELOG.md`)
+  - Note: `CHANGELOG.md` is regenerated after each PR merge
 2. Create a git tag on the commit in Fluvio repo that was just released
 3. Push Fluvio docker image release tags to Docker Hub
     - https://hub.docker.com/r/infinyon/fluvio
@@ -71,16 +72,13 @@ This is a mostly **manual** workflow
 After performing the release, the release manager should do the following in order
 to prepare for the next release and announce the current release to the community:
 
+
 1. The automated workflow created an issue called [Release Checklist]: VERSION. Add that issue to the corresponding [milestone](https://github.com/infinyon/fluvio/milestone)
 2. Update files in Fluvio repo, open PR (with the `?template=release_template.md` PR template) and merge
     - Update `VERSION` file for next release
       - [ ] Minor version bump the version in the `VERSION` file.
-    - Update `CHANGELOG.md` file for next release
-      - [ ] Add Platform version section (matching value as `VERSION` file) with a release date of `UNRELEASED` to 
-      `CHANGELOG.md` at top of file (but under the `# Release Notes` header)
-        - ```## Platform Version X.Y.Z - UNRELEASED```
-      - [ ] For version just released, replace `UNRELEASED` date with current date (format as `YYYY-MM-dd`) in `CHANGELOG.md`.
     - Create PR with the `?template=release_template.md` PR template and link the [previously created release tracking issue](#create-a-tracking-issue-for-release) to close.
+    - Note: Previously CHANGELOG.md was updated manually. This is no longer the case. CHANGELOG.md is generated and updated on each push to `master`.
 3. Close the release milestone after the PR CI completes. This is located on the [milestones](https://github.com/infinyon/fluvio/milestones) page.
 
 4. Announce the release on Discord (`#announcements` channel) and Twitter ([`@fluvio_io`](https://twitter.com/fluvio_io) user).

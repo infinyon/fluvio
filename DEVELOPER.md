@@ -7,6 +7,7 @@ Table of contents:
 4. [Starting Fluvio cluster for development](#starting-fluvio-cluster-for-development)
 5. [Running tests](#running-tests)
 6. [Troubleshooting](#troubleshooting)
+7. [Notes for contributors](#notes-for-contributors)
 
 ---
 
@@ -520,3 +521,16 @@ In certain cases, partition may not be deleted correctly.  In this case, you can
 ```
 kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
 ```
+
+## Notes for contributors
+
+### CHANGELOG.md
+This file is generated, committed, and pushed on each push to `master` branch.
+  - The changelog is generated after Bors' merge to master because that's when Bors squashes PRs.
+
+The generation is performed by `git-cliff`, and is configured by the `cliff.toml` config file.
+  - The commits that appear in CHANGELOG.md originate from Fluvio PR titles.
+  - Commits are grouped together by 2 processes:
+    - Parse based on [Conventional Commit](https://www.conventionalcommits.org)
+      - This is the preference, and may soon become a requirement for all PRs.
+    - Fallback to using regex parsing on commit messages
