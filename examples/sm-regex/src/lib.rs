@@ -18,12 +18,12 @@ fn init(params: SmartModuleExtraParams) -> i32 {
     }
 }
 
-/* 
+/*
 #[smartmodule(init)]
 fn init(regex: &str) -> i32 {
     REGEX.set(Regex::new(regex).unwrap()).unwrap();
     0
-    
+
 }
 */
 

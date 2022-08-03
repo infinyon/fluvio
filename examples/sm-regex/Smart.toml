@@ -1,0 +1,15 @@
+[package]
+name = "regex"
+group = "infinyon"
+version = "0.1.0"
+package_version = "0.1"
+description = "Regex SmartModule"
+license = "Apache-2.0"
+repository = "https://github.com/infinyon/fluvio"
+
+
+[init]
+regex = "string"
+
+[map]
+regex_match = { input = "string", output = "string" }
