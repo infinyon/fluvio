@@ -48,6 +48,7 @@ commit_parsers = [
     { message = ".*[Rr]evert", group = "Noise", skip = true},
     { message = ".*[Cl]ippy", group = "Noise", skip = true},
     { message = "^Merge pull request", group = "Noise", skip = true},
+    { message = "[Ss]kip [Cc]hangelog|[Cc]hangelog [Ss]kip", group = "Noise", skip = true},
     #{ message = " ?[Rrelease] ", group = "Noise", skip = true},
     { message = "[Rr]elease (work)?flow", group = "CI"}, # ToDo: Skip this soon
     { message = "[Pp]ublish (work)?flow", group = "CI"}, # ToDo: Skip this soon
