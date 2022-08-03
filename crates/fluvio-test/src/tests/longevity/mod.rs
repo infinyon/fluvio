@@ -2,36 +2,13 @@ pub mod producer;
 pub mod consumer;
 
 use core::panic;
-use std::any::Any;
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_case_derive::MyTestCase;
 use fluvio_test_util::async_process;
 
-#[derive(Debug, Clone)]
-pub struct LongevityTestCase {
-    pub environment: EnvironmentSetup,
-    pub option: LongevityTestOption,
-}
-
-impl From<TestCase> for LongevityTestCase {
-    fn from(test_case: TestCase) -> Self {
-        let longevity_option = test_case
-            .option
-            .as_any()
-            .downcast_ref::<LongevityTestOption>()
-            .expect("LongevityTestOption")
-            .to_owned();
-        LongevityTestCase {
-            environment: test_case.environment,
-            option: longevity_option,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio Longevity Test")]
 pub struct LongevityTestOption {
     // This should be mutually exclusive with runtime_seconds
@@ -45,17 +22,11 @@ pub struct LongevityTestOption {
     verbose: bool,
 }
 
-impl TestOption for LongevityTestOption {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 // TODO: Need to add producer + consumer support for multiple topics
 #[fluvio_test(topic = "longevity")]
 pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
     //println!("DEBUG: {:#?}", test_case);
-    let option: LongevityTestCase = test_case.into();
+    let option: MyTestCase = test_case.into();
 
     println!("Starting Longevity Test");
     println!("Expected runtime: {:?}", option.environment.timeout());

@@ -5,12 +5,12 @@ use fluvio_test_util::test_meta::environment::EnvDetail;
 use futures_lite::StreamExt;
 use fluvio::Offset;
 
-use super::ConcurrentTestCase;
+use super::MyTestCase;
 use super::util::*;
 
 pub async fn consumer_stream(
     test_driver: TestDriver,
-    option: ConcurrentTestCase,
+    option: MyTestCase,
     digests: Receiver<String>,
 ) {
     let consumer = test_driver

@@ -4,10 +4,10 @@ use fluvio_test_util::test_meta::environment::EnvDetail;
 use std::time::{Duration, Instant, SystemTime};
 use tracing::debug;
 
-use super::LongevityTestCase;
+use super::MyTestCase;
 use crate::tests::TestRecordBuilder;
 
-pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, producer_id: u32) {
+pub async fn producer(test_driver: TestDriver, option: MyTestCase, producer_id: u32) {
     debug!("About to get a producer");
 
     let linger = Duration::from_millis(option.environment.producer_linger.unwrap_or(100));

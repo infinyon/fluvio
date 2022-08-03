@@ -2467,6 +2467,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluvio-test-case-derive",
  "fluvio-test-derive 0.0.0",
  "fluvio-test-util",
  "fluvio-types",
@@ -2487,6 +2488,23 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "fluvio-test-case-derive"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "crossbeam-channel",
+ "fluvio",
+ "fluvio-future 0.4.1",
+ "nix",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "tokio",
+ "tracing",
+ "trybuild",
 ]
 
 [[package]]

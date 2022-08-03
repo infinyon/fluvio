@@ -4,14 +4,10 @@ use fluvio::RecordKey;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 
-use super::ConcurrentTestCase;
+use super::MyTestCase;
 use super::util::*;
 
-pub async fn producer(
-    test_driver: &TestDriver,
-    option: ConcurrentTestCase,
-    digests: Sender<String>,
-) {
+pub async fn producer(test_driver: &TestDriver, option: MyTestCase, digests: Sender<String>) {
     let producer = test_driver
         .create_producer(&option.environment.base_topic_name())
         .await;

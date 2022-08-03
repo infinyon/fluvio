@@ -4,9 +4,9 @@ use fluvio_test_util::test_runner::test_driver::TestDriver;
 use futures_lite::StreamExt;
 use fluvio::Offset;
 
-use super::MultiplePartitionTestCase;
+use super::MyTestCase;
 
-pub async fn consumer_stream(test_driver: &TestDriver, option: MultiplePartitionTestCase) {
+pub async fn consumer_stream(test_driver: &TestDriver, option: MyTestCase) {
     let consumer = test_driver
         .get_all_partitions_consumer(&option.environment.base_topic_name())
         .await;

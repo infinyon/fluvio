@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::time::Duration;
 use futures_lite::StreamExt;
 
@@ -14,39 +13,11 @@ use fluvio_controlplane_metadata::partition::PartitionSpec;
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_case_derive::MyTestCase;
 
-#[derive(Debug, Clone)]
-pub struct BatchingTestCase {
-    pub environment: EnvironmentSetup,
-    pub option: BatchingTestOption,
-}
-
-impl From<TestCase> for BatchingTestCase {
-    fn from(test_case: TestCase) -> Self {
-        let producer_option = test_case
-            .option
-            .as_any()
-            .downcast_ref::<BatchingTestOption>()
-            .expect("BatchingTestOption")
-            .to_owned();
-        Self {
-            environment: test_case.environment,
-            option: producer_option,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio Batching Test")]
 pub struct BatchingTestOption {}
-
-impl TestOption for BatchingTestOption {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
 
 #[fluvio_test(topic = "batching", async)]
 pub async fn batching(

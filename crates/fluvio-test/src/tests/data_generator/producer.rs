@@ -6,12 +6,12 @@ use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, RecordKey};
 use futures::StreamExt;
 use std::time::Duration;
 
-use super::GeneratorTestCase;
+use super::MyTestCase;
 use crate::tests::TestRecordBuilder;
 
 pub async fn producer(
     mut test_driver: TestDriver,
-    option: GeneratorTestCase,
+    option: MyTestCase,
     producer_id: u32,
     run_id: Option<String>,
 ) {
@@ -145,7 +145,7 @@ pub async fn producer(
 }
 
 async fn send_record(
-    option: &GeneratorTestCase,
+    option: &MyTestCase,
     producer_id: u32,
     records_sent: u32,
     test_driver: &TestDriver,
@@ -158,7 +158,7 @@ async fn send_record(
         .expect("Producer Send failed");
 }
 
-fn generate_record(option: GeneratorTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
+fn generate_record(option: MyTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
     let record = TestRecordBuilder::new()
         .with_tag(format!("{}", record_id))
         .with_random_data(option.environment.producer_record_size)

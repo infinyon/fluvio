@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::time::Duration;
 
 use futures_lite::stream::StreamExt;
@@ -9,42 +8,14 @@ use fluvio_future::timer::sleep;
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_case_derive::MyTestCase;
 
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
 
-#[derive(Debug, Clone)]
-pub struct ReconnectionTestCase {
-    pub environment: EnvironmentSetup,
-    pub option: ReconnectionTestOption,
-}
-
-impl From<TestCase> for ReconnectionTestCase {
-    fn from(test_case: TestCase) -> Self {
-        let reconnection_option = test_case
-            .option
-            .as_any()
-            .downcast_ref::<ReconnectionTestOption>()
-            .expect("ReconnectionTestOption")
-            .to_owned();
-        Self {
-            environment: test_case.environment,
-            option: reconnection_option,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio reconnection Test")]
 pub struct ReconnectionTestOption {}
-
-impl TestOption for ReconnectionTestOption {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
 
 #[fluvio_test(topic = "reconnection", async)]
 pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) {
