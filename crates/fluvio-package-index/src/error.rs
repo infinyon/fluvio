@@ -49,6 +49,8 @@ pub enum Error {
     MissingVersion,
     #[error("Failed to parse registry segment of PackageId")]
     FailedToParseRegistry(url::ParseError),
+    #[error("Failed to parse response: {0}")]
+    InvalidData(#[from] serde_json::Error),
     #[error("An unknown error occurred: {0}")]
     Other(String),
 }
@@ -56,11 +58,11 @@ pub enum Error {
 #[derive(thiserror::Error, Debug)]
 #[error("Http error: {}", inner)]
 pub struct HttpError {
-    pub inner: http_types::Error,
+    pub inner: http::Error,
 }
 
-impl From<http_types::Error> for Error {
-    fn from(inner: http_types::Error) -> Self {
+impl From<http::Error> for Error {
+    fn from(inner: http::Error) -> Self {
         Self::HttpError(HttpError { inner })
     }
 }

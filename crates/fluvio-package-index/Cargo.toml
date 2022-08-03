@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-package-index"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Package Index"
 repository = "https://github.com/infinyon/fluvio"
@@ -20,4 +20,4 @@ serde_json = "1.0.59"
 semver = { version = "1.0.0", features = ["serde"] }
 url = { version = "2.1.1", features = ["serde"] }
 lazy_static = "1.4.0"
-http-types = "2.6.0"
+http = { version = "0.2", default-features = false}

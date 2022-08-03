@@ -19,7 +19,7 @@ mod package;
 mod package_id;
 
 pub use tags::TagName;
-pub use http::HttpAgent;
+pub use crate::http::HttpAgent;
 pub use error::{Error, Result};
 pub use target::{Target, package_target};
 pub use version::PackageVersion;

@@ -74,11 +74,12 @@ pub async fn fetch_latest_version<T>(
 ) -> Result<Version> {
     let request = agent.request_package(id)?;
     debug!(
-        url = %request.url(),
+        uri = %request.uri(),
         "Requesting package manifest:",
     );
     let response = crate::http::execute(request).await?;
-    let package = agent.package_from_response(response).await?;
+    let body = crate::http::read_to_end(response).await?;
+    let package = agent.package_from_response(&body).await?;
     let latest_release = package.latest_release_for_target(target, prerelease)?;
     debug!(release = ?latest_release, "Latest release for package:");
     if !latest_release.target_exists(target) {
@@ -103,7 +104,8 @@ pub async fn fetch_package_file(
         PackageVersion::Tag(tag) => {
             let tag_request = agent.request_tag(id, tag)?;
             let tag_response = crate::http::execute(tag_request).await?;
-            agent.tag_version_from_response(tag, tag_response).await?
+            let body = crate::http::read_to_end(tag_response).await?;
+            agent.tag_version_from_response(tag, &body).await?
         }
         _ => {
             return Err(
@@ -114,7 +116,7 @@ pub async fn fetch_package_file(
 
     // Download the package file from the package registry
     let download_request = agent.request_release_download(id, &version, target)?;
-    debug!(url = %download_request.url(), "Requesting package download:");
+    debug!(uri = %download_request.uri(), "Requesting package download:");
     let response = crate::http::execute(download_request).await?;
     if !response.status().is_success() {
         return Err(CliError::PackageNotFound {
@@ -123,12 +125,14 @@ pub async fn fetch_package_file(
             target: target.clone(),
         });
     }
-    let package_file = agent.release_from_response(response).await?;
+
+    let package_file = crate::http::read_to_end(response).await?;
 
     // Download the package checksum from the package registry
     let checksum_request = agent.request_release_checksum(id, &version, target)?;
     let response = crate::http::execute(checksum_request).await?;
-    let package_checksum = agent.checksum_from_response(response).await?;
+    let body = crate::http::read_to_end(response).await?;
+    let package_checksum = String::from_utf8_lossy(&body);
 
     if !verify_checksum(&package_file, &package_checksum) {
         return Err(fluvio_index::Error::ChecksumError.into());

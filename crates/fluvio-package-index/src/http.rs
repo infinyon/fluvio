@@ -1,5 +1,5 @@
 use url::Url;
-use http_types::{Request, Response};
+use http::Request;
 use crate::package_id::WithVersion;
 use crate::{Result, FluvioIndex, Package, PackageId, Target, TagName};
 
@@ -26,29 +26,29 @@ impl HttpAgent {
         self.base_url.as_str()
     }
 
-    pub fn request_index(&self) -> Result<Request> {
+    pub fn request_index(&self) -> Result<Request<()>> {
         let url = self.base_url.join("index.json")?;
-        Ok(Request::get(url))
+        Ok(Request::get(url.as_str()).body(())?)
     }
 
-    pub async fn index_from_response(&self, mut response: Response) -> Result<FluvioIndex> {
-        let index: FluvioIndex = response.body_json().await?;
+    pub async fn index_from_response(&self, response: &[u8]) -> Result<FluvioIndex> {
+        let index: FluvioIndex = serde_json::from_slice(response)?;
         Ok(index)
     }
 
-    pub fn request_package<T>(&self, id: &PackageId<T>) -> Result<Request> {
+    pub fn request_package<T>(&self, id: &PackageId<T>) -> Result<Request<()>> {
         let url =
             self.base_url
                 .join(&format!("packages/{}/{}/meta.json", id.group(), id.name()))?;
-        Ok(Request::get(url))
+        Ok(Request::get(url.as_str()).body(())?)
     }
 
-    pub async fn package_from_response(&self, mut response: Response) -> Result<Package> {
-        let package: Package = response.body_json().await?;
+    pub async fn package_from_response(&self, response: &[u8]) -> Result<Package> {
+        let package: Package = serde_json::from_slice(response)?;
         Ok(package)
     }
 
-    pub fn request_tag(&self, id: &PackageId<WithVersion>, tag: &TagName) -> Result<Request> {
+    pub fn request_tag(&self, id: &PackageId<WithVersion>, tag: &TagName) -> Result<Request<()>> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/tags/{tag}",
             group = id.group(),
@@ -56,7 +56,7 @@ impl HttpAgent {
             tag = tag,
         ))?;
 
-        Ok(Request::get(url))
+        Ok(Request::get(url.as_str()).body(())?)
     }
 
     pub fn request_release_download<T>(
@@ -64,7 +64,7 @@ impl HttpAgent {
         id: &PackageId<T>,
         version: &semver::Version,
         target: &Target,
-    ) -> Result<Request> {
+    ) -> Result<Request<()>> {
         let file_name = if target.to_string().contains("windows") {
             format!("{}.exe", id.name())
         } else {
@@ -80,7 +80,7 @@ impl HttpAgent {
             target = target.as_str(),
         ))?;
 
-        Ok(Request::get(url))
+        Ok(Request::get(url.as_str()).body(())?)
     }
 
     pub fn request_release_checksum<T>(
@@ -88,7 +88,7 @@ impl HttpAgent {
         id: &PackageId<T>,
         version: &semver::Version,
         target: &Target,
-    ) -> Result<Request> {
+    ) -> Result<Request<()>> {
         let file_name = if target.to_string().contains("windows") {
             format!("{}.exe", id.name())
         } else {
@@ -103,29 +103,19 @@ impl HttpAgent {
             target = target.as_str(),
         ))?;
 
-        Ok(Request::get(url))
+        Ok(Request::get(url.as_str()).body(())?)
     }
 
     pub async fn tag_version_from_response(
         &self,
         tag: &TagName,
-        mut response: Response,
+        response: &[u8],
     ) -> Result<semver::Version> {
-        let string = response.body_string().await?;
+        let string = String::from_utf8_lossy(response);
         if string.contains("<title>404 Not Found") {
             return Err(crate::Error::TagDoesNotExist(tag.to_string()));
         }
         let version = semver::Version::parse(&string)?;
         Ok(version)
-    }
-
-    pub async fn release_from_response(&self, mut response: Response) -> Result<Vec<u8>> {
-        let bytes = response.body_bytes().await?;
-        Ok(bytes)
-    }
-
-    pub async fn checksum_from_response(&self, mut response: Response) -> Result<String> {
-        let string = response.body_string().await?;
-        Ok(string)
     }
 }

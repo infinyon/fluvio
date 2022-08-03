@@ -1,50 +1,95 @@
-use std::io::{ErrorKind, Error as IoError};
-use async_h1::client;
-use http_types::{Error, Request, Response, StatusCode};
+use std::fmt::Debug;
+use http::uri::Scheme;
+use isahc::{AsyncBody, Request, Response};
 use tracing::{debug, error, instrument};
+use crate::error::HttpError;
 
 #[instrument(
     skip(request),
-    fields(url = %request.url())
+    fields(uri = %request.uri())
 )]
-pub async fn execute(request: Request) -> Result<Response, Error> {
+pub async fn execute<B: Into<AsyncBody> + Debug>(
+    request: Request<B>,
+) -> Result<Response<AsyncBody>, HttpError> {
     debug!(?request, "Executing http request:");
 
-    if request.url().scheme() != "https" {
+    if request.uri().scheme() != Some(&Scheme::HTTPS) {
         error!("CLI http executor only accepts https!");
-        return Err(IoError::new(ErrorKind::InvalidInput, "Must use https").into());
+        return Err(HttpError::InvalidInput("Must use https".to_string()));
     }
 
     let host = request
-        .url()
-        .host_str()
-        .ok_or_else(|| Error::from_str(StatusCode::BadRequest, "missing hostname"))?
+        .uri()
+        .host()
+        .ok_or_else(|| HttpError::InvalidInput("missing hostname".to_string()))?
         .to_string();
     debug!(%host, "Valid hostname:");
 
-    let addr: (&str, u16) = (&host, request.url().port_or_known_default().unwrap_or(443));
-    let tcp_stream = fluvio_future::net::TcpStream::connect(addr).await?;
-    debug!("Established TCP stream");
-    let tls_connector = create_tls().await;
-    debug!("Created TLS connector");
-    let tls_stream = tls_connector.connect(host, tcp_stream).await?;
-    debug!("Opened TLS stream from TCP stream");
-    let response = client::connect(tls_stream, request).await?;
+    let response = isahc::send_async(request).await?;
 
     debug!(?response, "Http response:");
     Ok(response)
 }
-async fn create_tls() -> fluvio_future::native_tls::TlsConnector {
-    fluvio_future::native_tls::TlsConnector::default()
+
+pub async fn read_to_end(response: Response<AsyncBody>) -> std::io::Result<Vec<u8>> {
+    use futures::io::AsyncReadExt;
+    let mut async_body = response.into_body();
+    let mut body = Vec::with_capacity(async_body.len().unwrap_or_default() as usize);
+    async_body.read_to_end(&mut body).await?;
+    Ok(body)
 }
 
 #[cfg(test)]
-#[fluvio_future::test]
-async fn test_web_request() {
-    use fluvio_index::HttpAgent;
-    use http_types::StatusCode;
-    let agent = HttpAgent::default();
-    let index = agent.request_index().expect("Failed to get request index");
-    let response = execute(index).await.expect("Failed to execute request");
-    assert_eq!(response.status(), StatusCode::Ok);
+mod tests {
+    use super::*;
+
+    #[fluvio_future::test]
+    async fn test_web_request() {
+        use fluvio_index::HttpAgent;
+        use http::StatusCode;
+        let agent = HttpAgent::default();
+        let index = agent.request_index().expect("Failed to get request index");
+        let response = execute(index).await.expect("Failed to execute request");
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[fluvio_future::test]
+    async fn test_https_required() {
+        //given
+        let request = Request::get("http://fluvio.io")
+            .body(())
+            .expect("valid url");
+
+        //when
+        let result = execute(request).await;
+
+        //then
+        assert!(matches!(result, Err(HttpError::InvalidInput(_))));
+    }
+
+    #[fluvio_future::test]
+    async fn test_read_empty_body() {
+        //given
+        let body = AsyncBody::empty();
+        let response = Response::new(body);
+
+        //when
+        let result = read_to_end(response).await.expect("read body");
+
+        //then
+        assert!(result.is_empty());
+    }
+
+    #[fluvio_future::test]
+    async fn test_read_body() {
+        //given
+        let body = AsyncBody::from("content");
+        let response = Response::new(body);
+
+        //when
+        let result = read_to_end(response).await.expect("read body");
+
+        //then
+        assert_eq!(&result, b"content");
+    }
 }
