@@ -31,7 +31,6 @@ futures = "0.3"
 futures-lite = "1.11.0"
 indicatif = "0.16.2"
 inventory = "0.1"
-linkme = "0.3"
 md-5 = "0.10"
 rand = "0.8"
 serde = {version = "1.0", features = ["derive"]}

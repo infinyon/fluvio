@@ -2511,7 +2511,6 @@ dependencies = [
  "hdrhistogram",
  "indicatif",
  "inventory",
- "linkme",
  "md-5",
  "nix",
  "opentelemetry",
@@ -2585,7 +2584,6 @@ dependencies = [
  "hdrhistogram",
  "humantime",
  "inventory",
- "linkme",
  "once_cell",
  "opentelemetry",
  "opentelemetry-jaeger",
@@ -3655,26 +3653,6 @@ name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
-
-[[package]]
-name = "linkme"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "357d57a8d449a8f5ed8b9b05ac9862ca83fc220cdfeb172cac80b25e8813207c"
-dependencies = [
- "linkme-impl",
-]
-
-[[package]]
-name = "linkme-impl"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dad170e8ac878d2ef18072f96c8b62cf286a67cf39773b8800fa31a6b129c112"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "linux-raw-sys"
