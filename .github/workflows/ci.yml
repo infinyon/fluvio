@@ -83,7 +83,7 @@ jobs:
           override: true
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
 
@@ -138,19 +138,19 @@ jobs:
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio.exe
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-run
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-run
@@ -167,11 +167,11 @@ jobs:
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio-channel.exe
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-channel
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
@@ -206,10 +206,13 @@ jobs:
           override: true
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
-
+      - name: Install Helm for Mac
+        run: brew install helm
+        if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
+        
       - name: Build fluvio
         if: matrix.binary == 'fluvio'
         run: make build-cli
@@ -268,7 +271,7 @@ jobs:
           override: true
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.rust-target }}-${{ matrix.check }}
       - name: Fmt
@@ -317,7 +320,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.rust-target }}-check-integration
       - name: Integration test
@@ -417,7 +420,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.crate }}
 
@@ -794,7 +797,7 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Build smartmodules for E2E test
         run: |
           make build_smartmodules

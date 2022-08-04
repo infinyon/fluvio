@@ -89,7 +89,7 @@ Zig and LLD(version 12 or higher) are required to build the image.
 For mac:
 
 ```
-./actions/zig-install.sh macos-11
+./actions/zig-install.sh macos-12
 export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm@14/bin/lld
 ```
 
