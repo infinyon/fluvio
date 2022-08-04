@@ -49,6 +49,7 @@ jobs:
       - name: Install Docker for Mac
         if: ${{ matrix.os == 'macos-12' }}
         uses: docker-practice/actions-setup-docker@master
+        timeout-minutes: 5
       - name: Set up Kind for Mac
         if: ${{ matrix.os == 'macos-12' }}
         run: |
