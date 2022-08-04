@@ -30,9 +30,13 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
     };
 
     quote! {
+
+        #[allow(dead_code)]
         #user_code
 
+        #[cfg(target_arch = "wasm32")]
         mod __system {
+
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn filter(ptr: *mut u8, len: usize, version: i16) -> i32 {

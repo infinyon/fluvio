@@ -31,8 +31,11 @@ pub fn generate_filter_map_smartmodule(func: &SmartModuleFn, has_params: bool) -
     };
 
     quote! {
+
+        #[allow(dead_code)]
         #user_code
 
+        #[cfg(target_arch = "wasm32")]
         mod __system {
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
