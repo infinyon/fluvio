@@ -138,19 +138,19 @@ jobs:
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio.exe
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-run
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-run
@@ -167,11 +167,11 @@ jobs:
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio-channel.exe
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-channel
-          - os: macos-11
+          - os: macos-12
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
