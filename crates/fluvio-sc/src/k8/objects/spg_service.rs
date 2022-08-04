@@ -85,7 +85,7 @@ mod extended {
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
-            multi_namespace_context: bool
+            multi_namespace_context: bool,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
             if k8_obj.metadata.name.starts_with("fluvio-spg") {
                 debug!(name = %k8_obj.metadata.name,

@@ -368,7 +368,7 @@ mod convert {
     pub async fn k8_events_to_metadata_actions<S>(
         k8_tokens: K8List<S::K8Spec>,
         local_store: &LocalStore<S, K8MetaItem>,
-        multi_namespace_context: bool
+        multi_namespace_context: bool,
     ) -> Result<(), StoreError>
     where
         S: K8ExtendedSpec + PartialEq,
@@ -406,7 +406,7 @@ mod convert {
     pub async fn k8_watch_events_to_metadata_actions<S, E>(
         stream: TokenStreamResult<S::K8Spec, E>,
         local_store: &LocalStore<S, K8MetaItem>,
-        multi_namespace_context: bool
+        multi_namespace_context: bool,
     ) -> Option<SyncStatus>
     where
         S: K8ExtendedSpec + PartialEq,
@@ -492,7 +492,7 @@ mod convert {
     ///
     pub fn k8_obj_to_kv_obj<S>(
         k8_obj: K8Obj<S::K8Spec>,
-        multi_namespace_context: bool
+        multi_namespace_context: bool,
     ) -> Result<MetadataStoreObject<S, K8MetaItem>, K8ConvertError<S::K8Spec>>
     where
         S: K8ExtendedSpec,

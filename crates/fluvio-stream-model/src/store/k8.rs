@@ -163,13 +163,13 @@ pub trait K8ExtendedSpec: Spec {
 
     fn convert_from_k8(
         k8_obj: K8Obj<Self::K8Spec>,
-        multi_namespace_context: bool
+        multi_namespace_context: bool,
     ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>;
 }
 
 pub fn default_convert_from_k8<S>(
     k8_obj: K8Obj<S::K8Spec>,
-    multi_namespace_context: bool
+    multi_namespace_context: bool,
 ) -> Result<MetadataStoreObject<S, K8MetaItem>, K8ConvertError<S::K8Spec>>
 where
     S: K8ExtendedSpec,

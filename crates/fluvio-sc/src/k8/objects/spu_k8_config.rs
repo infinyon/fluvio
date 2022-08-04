@@ -202,7 +202,7 @@ mod extended {
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
-            _multi_namespace_context: bool
+            _multi_namespace_context: bool,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
             if k8_obj.metadata.name == "spu-k8" {
                 debug!(k8_name = %k8_obj.metadata.name,
