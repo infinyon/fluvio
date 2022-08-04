@@ -26,7 +26,8 @@ env:
 jobs:
   # Perform E2E sanity checks
   verify_latest_releases:
-    name: Verify latest run ${{ matrix.run }} (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
+    name: Verify latest run ${{ matrix.run }} (${{ matrix.cluster_type }}) on (${{ matrix.os }}),
+    if: false 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
