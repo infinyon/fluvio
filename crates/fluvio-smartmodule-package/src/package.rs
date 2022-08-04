@@ -26,6 +26,8 @@ impl SmartModuleMetadata {
 pub struct Package {
     pub name: String,
     pub group: String,
+    pub version: String,
+    pub package_version: String,
     pub description: String,
     #[serde(default)]
     pub authors: Vec<String>,
@@ -33,7 +35,7 @@ pub struct Package {
     pub repository: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum InitType {
     String,
@@ -51,7 +53,21 @@ mod test {
 
     #[test]
     fn test_pkg_parser() {
-        let _metadata = super::SmartModuleMetadata::from_file("tests/regex.toml")
+        let metadata = super::SmartModuleMetadata::from_file("tests/regex.toml")
             .expect("failed to parse metadata");
+        assert_eq!(metadata.package.name, "regex");
+        assert_eq!(metadata.package.version, "0.1.0");
+        assert_eq!(metadata.package.description, "Regex SmartModule");
+        assert_eq!(metadata.package.authors.len(), 1);
+        assert_eq!(metadata.package.authors[0], "Infinyon");
+        assert_eq!(metadata.package.package_version, "0.1");
+        assert_eq!(metadata.package.license, "Apache-2.0");
+        assert_eq!(
+            metadata.package.repository,
+            "https://github.com/infinyon/fluvio"
+        );
+        let init_param = metadata.init;
+        assert_eq!(init_param.len(), 1);
+        assert_eq!(init_param["regex"].input, super::InitType::String);
     }
 }
