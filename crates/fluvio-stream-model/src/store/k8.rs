@@ -163,11 +163,13 @@ pub trait K8ExtendedSpec: Spec {
 
     fn convert_from_k8(
         k8_obj: K8Obj<Self::K8Spec>,
+        multi_namespace_context: bool
     ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>;
 }
 
 pub fn default_convert_from_k8<S>(
     k8_obj: K8Obj<S::K8Spec>,
+    multi_namespace_context: bool
 ) -> Result<MetadataStoreObject<S, K8MetaItem>, K8ConvertError<S::K8Spec>>
 where
     S: K8ExtendedSpec,
@@ -176,7 +178,12 @@ where
     <<S as K8ExtendedSpec>::K8Spec as K8Spec>::Status: Into<S::Status>,
     S::K8Spec: Into<S>,
 {
-    let k8_name = k8_obj.metadata.name.clone();
+    let k8_name = if multi_namespace_context {
+        format!("{}.{}", k8_obj.metadata.namespace, k8_obj.metadata.name)
+    } else {
+        k8_obj.metadata.name.clone()
+    };
+
     let result: Result<S::IndexKey, _> = k8_name.try_into();
     match result {
         Ok(key) => {

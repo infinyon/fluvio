@@ -81,6 +81,7 @@ mod extended {
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
+            multi_namespace_context: bool
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
             if k8_obj
                 .metadata
@@ -89,7 +90,7 @@ mod extended {
                 .any(|v| v.kind == K8ManagedConnectorSpec::metadata().names.kind)
             {
                 trace!("converting k8 managed connector: {:#?}", k8_obj);
-                default_convert_from_k8(k8_obj)
+                default_convert_from_k8(k8_obj, multi_namespace_context)
             } else {
                 Err(K8ConvertError::Skip(k8_obj))
             }
