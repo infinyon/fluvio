@@ -95,15 +95,14 @@ jobs:
           override: true
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - name: Install Helm
-        run: brew install helm
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
-
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
-        run: make helm_pkg build-cli
+        run: |
+          brew install helm
+          make build-cli
         timeout-minutes: 60
 
       - name: Build fluvio-run
