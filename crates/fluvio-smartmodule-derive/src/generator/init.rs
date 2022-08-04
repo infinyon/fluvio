@@ -7,8 +7,11 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
     let user_code = func.func;
 
     quote! {
+
+        #[allow(dead_code)]
         #user_code
 
+        #[cfg(target_arch = "wasm32")]
         mod _system {
 
             #[no_mangle]
