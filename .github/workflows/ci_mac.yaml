@@ -101,15 +101,18 @@ jobs:
 
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
-        run: make build-cli
+        run: make helm_pkg build-cli
+        timeout-minutes: 60
 
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
         run: make build-cluster
+        timeout-minutes: 60
 
       - name: Build fluvio-test
         if: ${{ matrix.binary == 'fluvio-test' }}
         run: make build-test
+        timeout-minutes: 60
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
