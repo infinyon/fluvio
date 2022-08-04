@@ -23,6 +23,8 @@ pub enum Error {
     UrlParseError(#[from] url::ParseError),
     #[error("Invalid target {0}")]
     InvalidTarget(String),
+
+    #[cfg(feature = "http_agent")]
     #[error(transparent)]
     HttpError(#[from] HttpError),
     #[error("DANGER: Downloaded package checksum did not match")]
@@ -55,12 +57,14 @@ pub enum Error {
     Other(String),
 }
 
+#[cfg(feature = "http_agent")]
 #[derive(thiserror::Error, Debug)]
 #[error("Http error: {}", inner)]
 pub struct HttpError {
     pub inner: http::Error,
 }
 
+#[cfg(feature = "http_agent")]
 impl From<http::Error> for Error {
     fn from(inner: http::Error) -> Self {
         Self::HttpError(HttpError { inner })

@@ -1882,7 +1882,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "async-trait",
  "clap",
@@ -1967,7 +1967,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-package-index"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "http",
  "lazy_static",

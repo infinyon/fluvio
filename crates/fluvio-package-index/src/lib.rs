@@ -11,6 +11,7 @@
 use serde::{Serialize, Deserialize};
 
 mod tags;
+#[cfg(feature = "http_agent")]
 mod http;
 mod error;
 mod target;
@@ -18,8 +19,10 @@ mod version;
 mod package;
 mod package_id;
 
-pub use tags::TagName;
+#[cfg(feature = "http_agent")]
 pub use crate::http::HttpAgent;
+
+pub use tags::TagName;
 pub use error::{Error, Result};
 pub use target::{Target, package_target};
 pub use version::PackageVersion;
