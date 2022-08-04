@@ -69,11 +69,11 @@ pub async fn try_connect_to_sc(
             config.endpoint, attempt
         );
         let elapsed = time.elapsed().unwrap();
-        // pb.set_message(format!(
-        //     "🖥️  Trying to connect to SC: {} {} seconds elapsed",
-        //     config.endpoint,
-        //     elapsed.as_secs()
-        // ));
+        pb.set_message(format!(
+            "🖥️  Trying to connect to SC: {} {} seconds elapsed",
+            config.endpoint,
+            elapsed.as_secs()
+        ));
         if let Some(fluvio) = try_connect_sc(config, platform_version).await {
             debug!("Connection to sc succeed!");
             return Some(fluvio);
