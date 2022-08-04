@@ -2,16 +2,23 @@
 //! # SmartModule Spec
 //!
 
+use std::collections::{BTreeMap};
+
 use dataplane::core::{Encoder, Decoder};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub package: Option<SmartModulePackage>,
+    pub init: BTreeMap<String, SmartModuleInitParams>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
     pub wasm: SmartModuleWasm,
+    #[deprecated(
+        since = "0.17.3",
+        note = "Use `package` instead. This field will be removed in 0.18.0"
+    )]
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
@@ -19,7 +26,15 @@ pub struct SmartModuleSpec {
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModulePackage {
-    pub version: String
+    pub name: String,
+    pub group: String,
+    pub version: String,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartModuleInitParams {
+    params: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Encoder, Decoder)]

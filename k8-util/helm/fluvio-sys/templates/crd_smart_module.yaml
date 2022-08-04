@@ -25,8 +25,30 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["input_kind", "output_kind", "wasm"]
+              required: ["package","init","input_kind", "output_kind", "wasm"]
               properties:
+                package:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The name of the package.
+                    group:
+                      type: string
+                      description: The group of the package.
+                    version:
+                      type: string
+                      description: The version of the package.
+                init:
+                  type: array
+                  x-kubernetes-list-type: map
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: string
                 input_kind:
                   type: string
                   enum:
