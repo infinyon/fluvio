@@ -7,6 +7,7 @@ use dataplane::core::{Encoder, Decoder};
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
+    pub package: Option<SmartModulePackage>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
@@ -14,7 +15,14 @@ pub struct SmartModuleSpec {
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
-#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartModulePackage {
+    pub version: String
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSourceCode {
     language: SmartModuleSourceCodeLanguage,
