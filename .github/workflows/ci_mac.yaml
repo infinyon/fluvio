@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches: [master]
+#  pull_request:
+#    branches: [master]
 #  push:
 #    branches: [master]
   workflow_dispatch:
@@ -124,7 +124,6 @@ jobs:
 
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
-    if: false
     runs-on: ${{ matrix.os }}
     needs:
       - build_primary_binaries
@@ -294,7 +293,6 @@ jobs:
 
   k8_cluster_test:
     name: Kubernetes cluster test run (${{ matrix.run }}) k8 (${{ matrix.k8 }})
-    if: false
     needs: build_image
     runs-on: ${{ matrix.os }}
     env:
