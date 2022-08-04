@@ -169,6 +169,7 @@ jobs:
         run: fluvio version
       - name: Set up Docker for Mac
         uses: docker-practice/actions-setup-docker@master
+        timeout-minutes: 5
       - name: Install and start Kind
         run: |
           brew install kind
@@ -238,6 +239,7 @@ jobs:
         run: fluvio version
       - name: Set up Docker for Mac
         uses: docker-practice/actions-setup-docker@master
+        timeout-minutes: 5
       - name: Install and start Kind
         run: |
           brew install kind
@@ -335,6 +337,7 @@ jobs:
           echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
       - name: Set up Docker for Mac
         uses: docker-practice/actions-setup-docker@master
+        timeout-minutes: 5
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image for K3d
         if: ${{ false }}
