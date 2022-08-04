@@ -16,12 +16,9 @@ pub struct SmartModuleSpec {
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
     pub wasm: SmartModuleWasm,
-    #[deprecated(
-        since = "0.17.3",
-        note = "Use `package` instead. This field will be removed in 0.18.0"
-    )]
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
+
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
