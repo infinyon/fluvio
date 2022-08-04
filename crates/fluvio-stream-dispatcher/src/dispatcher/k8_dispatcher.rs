@@ -331,10 +331,7 @@ where
     }
 
     fn multi_namespace_context(&self) -> bool {
-        match self.namespace {
-            NameSpace::All => true,
-            _ => false,
-        }
+        matches!(self.namespace, NameSpace::All)
     }
 }
 
