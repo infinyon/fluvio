@@ -26,13 +26,9 @@ pub enum CliError {
 }
 
 #[derive(thiserror::Error, Debug)]
-#[error("Http Error: {}", inner)]
-pub struct HttpError {
-    pub(crate) inner: http_types::Error,
-}
-
-impl From<http_types::Error> for CliError {
-    fn from(inner: http_types::Error) -> Self {
-        Self::HttpError(HttpError { inner })
-    }
+pub enum HttpError {
+    #[error("Http transport error: {0}")]
+    TransportError(#[from] isahc::Error),
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
 }

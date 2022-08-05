@@ -53,8 +53,8 @@ pub enum CliError {
     IndexError(#[from] fluvio_index::Error),
     #[error("Error finding executable")]
     WhichError(#[from] which::Error),
-    #[error(transparent)]
-    HttpError(#[from] HttpError),
+    #[error("Http Error: {0}")]
+    HttpError(#[from] fluvio_cli_common::error::HttpError),
     #[error("Package {package} is not published at version {version} for target {target}")]
     PackageNotFound {
         package: PackageId,
@@ -90,18 +90,6 @@ pub enum CliError {
 
     #[error("Connector not found: {0}")]
     ConnectorNotFound(String),
-}
-
-#[derive(thiserror::Error, Debug)]
-#[error("Http Error: {}", inner)]
-pub struct HttpError {
-    pub(crate) inner: http_types::Error,
-}
-
-impl From<http_types::Error> for CliError {
-    fn from(inner: http_types::Error) -> Self {
-        Self::HttpError(HttpError { inner })
-    }
 }
 
 impl CliError {

@@ -232,8 +232,9 @@ impl UpdateOpt {
 pub async fn check_update_required(agent: &HttpAgent) -> Result<bool> {
     debug!("Checking for a required CLI update");
     let request = agent.request_index()?;
-    let response = crate::http::execute(request).await?;
-    let index = agent.index_from_response(response).await?;
+    let response = fluvio_cli_common::http::execute(request).await?;
+    let body = fluvio_cli_common::http::read_to_end(response).await?;
+    let index = agent.index_from_response(&body).await?;
     Ok(index.metadata.update_required())
 }
 
@@ -252,8 +253,9 @@ pub async fn check_update_available(
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
     let request = agent.request_package(&id)?;
-    let response = crate::http::execute(request).await?;
-    let package = agent.package_from_response(response).await?;
+    let response = fluvio_cli_common::http::execute(request).await?;
+    let body = fluvio_cli_common::http::read_to_end(response).await?;
+    let package = agent.package_from_response(&body).await?;
 
     let release = package.latest_release_for_target(&target, prerelease)?;
     let latest_version = release.version.clone();

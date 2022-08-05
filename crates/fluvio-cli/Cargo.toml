@@ -44,8 +44,6 @@ semver = "1.0.0"
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
 clap_complete = "3.1.1"
 dirs = "4.0.0"
-async-h1 = "2.1.2"
-http-types = "2.4.0"
 thiserror = "1.0.20"
 eyre = "0.6.1"
 color-eyre = { version = "0.6.0", default-features = false }

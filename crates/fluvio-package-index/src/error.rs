@@ -23,6 +23,8 @@ pub enum Error {
     UrlParseError(#[from] url::ParseError),
     #[error("Invalid target {0}")]
     InvalidTarget(String),
+
+    #[cfg(feature = "http_agent")]
     #[error(transparent)]
     HttpError(#[from] HttpError),
     #[error("DANGER: Downloaded package checksum did not match")]
@@ -49,18 +51,22 @@ pub enum Error {
     MissingVersion,
     #[error("Failed to parse registry segment of PackageId")]
     FailedToParseRegistry(url::ParseError),
+    #[error("Failed to parse response: {0}")]
+    InvalidData(#[from] serde_json::Error),
     #[error("An unknown error occurred: {0}")]
     Other(String),
 }
 
+#[cfg(feature = "http_agent")]
 #[derive(thiserror::Error, Debug)]
 #[error("Http error: {}", inner)]
 pub struct HttpError {
-    pub inner: http_types::Error,
+    pub inner: http::Error,
 }
 
-impl From<http_types::Error> for Error {
-    fn from(inner: http_types::Error) -> Self {
+#[cfg(feature = "http_agent")]
+impl From<http::Error> for Error {
+    fn from(inner: http::Error) -> Self {
         Self::HttpError(HttpError { inner })
     }
 }

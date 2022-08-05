@@ -2,7 +2,6 @@
 //!
 //! CLI configurations at the top of the tree
 
-mod http;
 mod error;
 pub mod client;
 pub mod install;
