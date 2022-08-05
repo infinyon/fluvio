@@ -167,6 +167,8 @@ pub trait K8ExtendedSpec: Spec {
     ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>;
 }
 
+/// converts typical K8 objects into metadata store objects
+/// when in multi namespace context, keys are prefixed with namespace
 pub fn default_convert_from_k8<S>(
     k8_obj: K8Obj<S::K8Spec>,
     multi_namespace_context: bool,
