@@ -148,6 +148,7 @@ where
                                 if k8_watch_events_to_metadata_actions(
                                     Ok(auth_token_msgs),
                                     self.ctx.store(),
+                                    self.multi_namespace_context()
                                 ).await.is_none() {
                                     debug!( "no changes to applying changes to watch events");
                                 }
@@ -207,7 +208,7 @@ where
             "Retrieving items",
         );
         // wait to receive all items before sending to channel
-        k8_events_to_metadata_actions(k8_objects, self.ctx.store())
+        k8_events_to_metadata_actions(k8_objects, self.ctx.store(), self.multi_namespace_context())
             .await
             .map_err(|err| {
                 IoError::new(
@@ -272,7 +273,7 @@ where
                             "update status success"
                         );
 
-                        match convert::k8_obj_to_kv_obj(item) {
+                        match convert::k8_obj_to_kv_obj(item, self.multi_namespace_context()) {
                             Ok(updated_item) => {
                                 let changes = vec![LSUpdate::Mod(updated_item)];
 
@@ -328,6 +329,10 @@ where
             }
         }
     }
+
+    fn multi_namespace_context(&self) -> bool {
+        matches!(self.namespace, NameSpace::All)
+    }
 }
 
 mod convert {
@@ -360,6 +365,7 @@ mod convert {
     pub async fn k8_events_to_metadata_actions<S>(
         k8_tokens: K8List<S::K8Spec>,
         local_store: &LocalStore<S, K8MetaItem>,
+        multi_namespace_context: bool,
     ) -> Result<(), StoreError>
     where
         S: K8ExtendedSpec + PartialEq,
@@ -370,7 +376,7 @@ mod convert {
         let mut meta_items = vec![];
         for k8_obj in k8_tokens.items {
             trace!("converting kv: {:#?}", k8_obj);
-            let new_kv_value = match k8_obj_to_kv_obj(k8_obj) {
+            let new_kv_value = match k8_obj_to_kv_obj(k8_obj, multi_namespace_context) {
                 Ok(k8_value) => k8_value,
                 Err(err) => match err {
                     K8ConvertError::Skip(obj) => {
@@ -397,6 +403,7 @@ mod convert {
     pub async fn k8_watch_events_to_metadata_actions<S, E>(
         stream: TokenStreamResult<S::K8Spec, E>,
         local_store: &LocalStore<S, K8MetaItem>,
+        multi_namespace_context: bool,
     ) -> Option<SyncStatus>
     where
         S: K8ExtendedSpec + PartialEq,
@@ -416,7 +423,7 @@ mod convert {
                 Ok(watch_obj) => match watch_obj {
                     K8Watch::ADDED(k8_obj) => {
                         trace!("{} ADDED: {:#?}", S::LABEL, k8_obj);
-                        match k8_obj_to_kv_obj(k8_obj) {
+                        match k8_obj_to_kv_obj(k8_obj, multi_namespace_context) {
                             Ok(new_kv_value) => {
                                 debug!("K8: Watch Add: {}:{}", S::LABEL, new_kv_value.key());
                                 changes.push(LSUpdate::Mod(new_kv_value));
@@ -433,7 +440,7 @@ mod convert {
                     }
                     K8Watch::MODIFIED(k8_obj) => {
                         trace!("{} MODIFIED: {:#?}", S::LABEL, k8_obj);
-                        match k8_obj_to_kv_obj(k8_obj) {
+                        match k8_obj_to_kv_obj(k8_obj, multi_namespace_context) {
                             Ok(updated_kv_value) => {
                                 debug!("K8: Watch Update {}:{}", S::LABEL, updated_kv_value.key());
                                 changes.push(LSUpdate::Mod(updated_kv_value));
@@ -453,7 +460,7 @@ mod convert {
                         let meta: Result<
                             MetadataStoreObject<S, K8MetaItem>,
                             K8ConvertError<S::K8Spec>,
-                        > = k8_obj_to_kv_obj(k8_obj);
+                        > = k8_obj_to_kv_obj(k8_obj, multi_namespace_context);
                         match meta {
                             Ok(kv_value) => {
                                 debug!("K8: Watch Delete {}:{}", S::LABEL, kv_value.key());
@@ -482,12 +489,13 @@ mod convert {
     ///
     pub fn k8_obj_to_kv_obj<S>(
         k8_obj: K8Obj<S::K8Spec>,
+        multi_namespace_context: bool,
     ) -> Result<MetadataStoreObject<S, K8MetaItem>, K8ConvertError<S::K8Spec>>
     where
         S: K8ExtendedSpec,
         <S as Spec>::Owner: K8ExtendedSpec,
     {
-        S::convert_from_k8(k8_obj).map(|val| {
+        S::convert_from_k8(k8_obj, multi_namespace_context).map(|val| {
             trace!("converted val: {:#?}", val);
             val
         })

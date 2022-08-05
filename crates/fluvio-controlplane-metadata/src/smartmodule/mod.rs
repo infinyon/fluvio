@@ -99,9 +99,10 @@ mod metadata {
 
             fn convert_from_k8(
                 k8_obj: K8Obj<Self::K8Spec>,
+                multi_namespace_context: bool,
             ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>
             {
-                default_convert_from_k8(k8_obj)
+                default_convert_from_k8(k8_obj, multi_namespace_context)
             }
         }
     }

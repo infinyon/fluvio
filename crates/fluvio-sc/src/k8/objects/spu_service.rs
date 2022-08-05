@@ -110,6 +110,7 @@ mod extended {
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
+            multi_namespace_context: bool,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
             if let Some(name) = SpuServiceSpec::spu_name(&k8_obj.metadata) {
                 debug!(spu = %name,
@@ -117,7 +118,7 @@ mod extended {
                     "detected spu service");
                 trace!("converting k8 spu service: {:#?}", k8_obj);
 
-                default_convert_from_k8(k8_obj)
+                default_convert_from_k8(k8_obj, multi_namespace_context)
             } else {
                 trace!(
                     name = %k8_obj.metadata.name,
