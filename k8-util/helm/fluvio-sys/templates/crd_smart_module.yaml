@@ -39,7 +39,7 @@ spec:
                     version:
                       type: string
                       description: The version of the package.
-                init:
+                init_params:
                   type: array
                   x-kubernetes-list-type: map
                   x-kubernetes-list-map-keys: 
@@ -52,6 +52,8 @@ spec:
                         type: string
                       input:
                         type: string
+                        enum:
+                        - string
                 input_kind:
                   type: string
                   enum:

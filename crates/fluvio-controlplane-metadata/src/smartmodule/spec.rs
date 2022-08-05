@@ -10,8 +10,8 @@ use dataplane::core::{Encoder, Decoder};
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub package: Option<SmartModulePackage>,
-    #[cfg_attr(feature = "use_serde", serde(default))]
-    pub init_params: BTreeMap<String, SmartModuleInitParams>,
+    #[cfg_attr(feature = "use_serde", serde(default), serde(with = "map_init_params"))]
+    pub init_params: BTreeMap<String, InitType>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
@@ -32,79 +32,53 @@ pub struct SmartModulePackage {
     pub version: String,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
+#[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartModuleInitParams {
-    #[serde(with = "map_to_vec")]
-    params: BTreeMap<String, String>,
+#[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
+pub enum InitType {
+    #[default]
+    String,
 }
 
+/// map list of params with
 #[cfg(feature = "use_serde")]
-mod map_to_vec {
-    use std::{marker::PhantomData, collections::BTreeMap};
-    use std::fmt;
+mod map_init_params {
+    use std::{collections::BTreeMap};
 
-    use serde::de::{SeqAccess};
-    use serde::{Serializer, Serialize, Deserializer, Deserialize, de::Visitor};
+    use serde::{Serializer, Serialize, Deserializer, Deserialize};
+    use super::InitType;
 
-    pub fn serialize<K, V, S>(data: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
+    // convert btreemap into param of vec
+    pub fn serialize<S>(data: &BTreeMap<String, InitType>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
-        K: Serialize,
-        V: Serialize,
     {
-        serializer.collect_seq(data.iter().map(|(k, v)| (k, v)))
+        let param_seq: Vec<Param> = data
+            .iter()
+            .map(|(k, v)| Param {
+                name: k.clone(),
+                input: v.clone(),
+            })
+            .collect();
+        param_seq.serialize(serializer)
     }
 
-    /// Deserialize to a `Vec<K, V>` as if it were a `Vec<(<K, V>)`.
-    ///
-    /// This directly deserializes into the returned vec with no intermediate allocation.
-    ///
-    /// In formats where dictionaries are ordered, this maintains the input data's order.
-    pub fn deserialize<'de, K, V, D>(deserializer: D) -> Result<BTreeMap<K, V>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<BTreeMap<String, InitType>, D::Error>
     where
         D: Deserializer<'de>,
-        K: Deserialize<'de>,
-        V: Deserialize<'de>,
     {
-        deserializer.deserialize_seq(MapVecVisitor::new())
+        let param_list: Vec<Param> = Vec::deserialize(deserializer)?;
+        let mut params = BTreeMap::new();
+        for param in param_list {
+            params.insert(param.name, param.input);
+        }
+        Ok(params)
     }
 
-    struct MapVecVisitor<K, V> {
-        marker: PhantomData<BTreeMap<K, V>>,
-    }
-
-    impl<K, V> MapVecVisitor<K, V> {
-        fn new() -> Self {
-            MapVecVisitor {
-                marker: PhantomData,
-            }
-        }
-    }
-
-    impl<'de, K, V> Visitor<'de> for MapVecVisitor<K, V>
-    where
-        K: Deserialize<'de>,
-        V: Deserialize<'de>,
-    {
-        type Value = BTreeMap<K, V>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a map")
-        }
-
-        #[inline]
-        fn visit_unit<E>(self) -> Result<BTreeMap<K, V>, E> {
-            Ok(BTreeMap::new())
-        }
-
-        fn visit_seq<A>(self, _seq: A) -> Result<BTreeMap<K, V>, A::Error>
-        where
-            A: SeqAccess<'de>,
-        {
-            let map = BTreeMap::new();
-            Ok(map)
-        }
+    #[derive(Serialize, Deserialize, Clone)]
+    struct Param {
+        name: String,
+        input: InitType,
     }
 }
 
@@ -224,7 +198,14 @@ impl std::fmt::Display for SmartModuleSpec {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
+    use serde::{Serialize, Deserialize};
+
     use crate::smartmodule::SmartModuleInputKind;
+
+    use super::map_init_params;
+    use super::InitType;
 
     #[test]
     fn test_sm_spec_simple() {
@@ -243,25 +224,42 @@ wasm:
         assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
     }
 
+    #[derive(Serialize, Deserialize)]
+    struct TestParam {
+        #[serde(default, with = "map_init_params")]
+        params: BTreeMap<String, InitType>,
+    }
+
     #[test]
-    fn test_sm_spec_init_params() {
-        use super::SmartModuleSpec;
-
+    fn test_param_deserialization() {
         let yaml_spec: &str = r#"
-input_kind: Stream
-output_kind: Stream
-wasm:
-    format: BINARY
-    payload: H4sIAAAAAAA
-init_params:
+params:
     - name: param1
-      value: value1
-    - name: param2
-      value: value2
+      input: string
+    - name: regex
+      input: string
 "#;
-        let sm_spec: SmartModuleSpec =
-            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+        let root: TestParam = serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+        let params = root.params;
+        assert_eq!(params.len(), 2);
+        assert_eq!(params.get("param1"), Some(&InitType::String));
+        assert_eq!(params.get("regex"), Some(&InitType::String));
+    }
 
-        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
+    #[test]
+    fn test_param_serialization() {
+        let yaml_spec: &str = r#"
+params:
+    - name: regex
+      input: string
+"#;
+        let mut params = BTreeMap::new();
+        params.insert("regex".to_string(), InitType::String);
+        let root = TestParam { params };
+        let output = serde_yaml::to_string(&root).expect("Failed to deserialize");
+        assert_eq!(
+            output.replace('\n', "").replace(' ', ""),
+            yaml_spec.replace('\n', "").replace(' ', "")
+        );
     }
 }

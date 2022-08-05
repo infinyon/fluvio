@@ -12,6 +12,7 @@ pub struct SmartModuleMetadata {
 }
 
 impl SmartModuleMetadata {
+    #[cfg(feature = "parser")]
     /// parse the metadata file and return the metadata
     pub fn from_file<T: AsRef<Path>>(path: T) -> Result<Self> {
         let path_ref = path.as_ref();
