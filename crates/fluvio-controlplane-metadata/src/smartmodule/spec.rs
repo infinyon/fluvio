@@ -10,6 +10,7 @@ use dataplane::core::{Encoder, Decoder};
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub package: Option<SmartModulePackage>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
     pub init: BTreeMap<String, SmartModuleInitParams>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
@@ -148,5 +149,27 @@ impl Default for SmartModuleOutputKind {
 impl std::fmt::Display for SmartModuleSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "SmartModuleSpec")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::smartmodule::SmartModuleInputKind;
+
+    #[test]
+    fn test_sm_spec_simple() {
+        use super::SmartModuleSpec;
+
+        let yaml_spec: &str = r#"
+input_kind: Stream
+output_kind: Stream
+wasm:
+    format: BINARY
+    payload: H4sIAAAAAAA
+"#;
+        let sm_spec: SmartModuleSpec =
+            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+
+        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
     }
 }
