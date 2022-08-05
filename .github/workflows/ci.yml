@@ -966,6 +966,7 @@ jobs:
       - k8_upgrade_test
       - k8_cli_smoke
       - build_binaries
+      - k8_cli_cross_compat
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
