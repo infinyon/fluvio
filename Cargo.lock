@@ -1852,7 +1852,6 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "serde",
- "serde_yaml 0.9.9",
  "thiserror",
  "tracing",
 ]
