@@ -11,7 +11,7 @@ use dataplane::core::{Encoder, Decoder};
 pub struct SmartModuleSpec {
     pub package: Option<SmartModulePackage>,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub init: BTreeMap<String, SmartModuleInitParams>,
+    pub init_params: BTreeMap<String, SmartModuleInitParams>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
@@ -166,6 +166,29 @@ output_kind: Stream
 wasm:
     format: BINARY
     payload: H4sIAAAAAAA
+"#;
+        let sm_spec: SmartModuleSpec =
+            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+
+        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
+    }
+
+
+    #[test]
+    fn test_sm_spec_init_params() {
+        use super::SmartModuleSpec;
+
+        let yaml_spec: &str = r#"
+input_kind: Stream
+output_kind: Stream
+wasm:
+    format: BINARY
+    payload: H4sIAAAAAAA
+init_params:
+    - name: param1
+      value: value1
+    - name: param2
+      value: value2
 "#;
         let sm_spec: SmartModuleSpec =
             serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
