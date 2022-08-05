@@ -10,8 +10,8 @@ use dataplane::core::{Encoder, Decoder};
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub package: Option<SmartModulePackage>,
-    #[cfg_attr(feature = "use_serde", serde(default), serde(with = "map_init_params"))]
-    pub init_params: BTreeMap<String, SmartModuleInitParam>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub init_params: BTreeMap<String, SmartModuleInitParams>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
@@ -29,8 +29,9 @@ pub struct SmartModulePackage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartModuleInitParam {
-    pub input: SmartModuleInitType,
+pub struct SmartModuleInitParams {
+    #[serde(with = "map_to_vec")]
+    params: BTreeMap<String, String>,
 }
 
 impl SmartModuleInitParam {
@@ -62,15 +63,10 @@ mod map_init_params {
     ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
+        K: Serialize,
+        V: Serialize,
     {
-        let param_seq: Vec<Param> = data
-            .iter()
-            .map(|(k, v)| Param {
-                name: k.clone(),
-                input: v.input.clone(),
-            })
-            .collect();
-        param_seq.serialize(serializer)
+        serializer.collect_seq(data.iter().map(|(k, v)| (k, v)))
     }
 
     pub fn deserialize<'de, D>(
@@ -210,7 +206,14 @@ impl std::fmt::Display for SmartModuleSpec {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
+    use serde::{Serialize, Deserialize};
+
     use crate::smartmodule::SmartModuleInputKind;
+
+    use super::map_init_params;
+    use super::InitType;
 
     #[test]
     fn test_sm_spec_simple() {
@@ -229,25 +232,42 @@ wasm:
         assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
     }
 
+    #[derive(Serialize, Deserialize)]
+    struct TestParam {
+        #[serde(default, with = "map_init_params")]
+        params: BTreeMap<String, InitType>,
+    }
+
     #[test]
-    fn test_sm_spec_init_params() {
-        use super::SmartModuleSpec;
-
+    fn test_param_deserialization() {
         let yaml_spec: &str = r#"
-input_kind: Stream
-output_kind: Stream
-wasm:
-    format: BINARY
-    payload: H4sIAAAAAAA
-init_params:
+params:
     - name: param1
-      value: value1
-    - name: param2
-      value: value2
+      input: string
+    - name: regex
+      input: string
 "#;
-        let sm_spec: SmartModuleSpec =
-            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+        let root: TestParam = serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+        let params = root.params;
+        assert_eq!(params.len(), 2);
+        assert_eq!(params.get("param1"), Some(&InitType::String));
+        assert_eq!(params.get("regex"), Some(&InitType::String));
+    }
 
-        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
+    #[test]
+    fn test_param_serialization() {
+        let yaml_spec: &str = r#"
+params:
+    - name: regex
+      input: string
+"#;
+        let mut params = BTreeMap::new();
+        params.insert("regex".to_string(), InitType::String);
+        let root = TestParam { params };
+        let output = serde_yaml::to_string(&root).expect("Failed to deserialize");
+        assert_eq!(
+            output.replace('\n', "").replace(' ', ""),
+            yaml_spec.replace('\n', "").replace(' ', "")
+        );
     }
 }
