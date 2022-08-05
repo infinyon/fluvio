@@ -208,3 +208,49 @@ impl std::fmt::Display for SmartModuleSpec {
         write!(f, "SmartModuleSpec")
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use crate::smartmodule::SmartModuleInputKind;
+
+    #[test]
+    fn test_sm_spec_simple() {
+        use super::SmartModuleSpec;
+
+        let yaml_spec: &str = r#"
+input_kind: Stream
+output_kind: Stream
+wasm:
+    format: BINARY
+    payload: H4sIAAAAAAA
+"#;
+        let sm_spec: SmartModuleSpec =
+            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+
+        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
+    }
+
+
+    #[test]
+    fn test_sm_spec_init_params() {
+        use super::SmartModuleSpec;
+
+        let yaml_spec: &str = r#"
+input_kind: Stream
+output_kind: Stream
+wasm:
+    format: BINARY
+    payload: H4sIAAAAAAA
+init_params:
+    - name: param1
+      value: value1
+    - name: param2
+      value: value2
+"#;
+        let sm_spec: SmartModuleSpec =
+            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+
+        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
+    }
+}
