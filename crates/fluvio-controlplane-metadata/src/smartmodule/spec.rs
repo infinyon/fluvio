@@ -19,7 +19,6 @@ pub struct SmartModuleSpec {
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
-
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModulePackage {
@@ -209,7 +208,6 @@ impl std::fmt::Display for SmartModuleSpec {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::smartmodule::SmartModuleInputKind;
@@ -230,7 +228,6 @@ wasm:
 
         assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
     }
-
 
     #[test]
     fn test_sm_spec_init_params() {
