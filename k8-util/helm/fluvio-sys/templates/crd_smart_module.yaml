@@ -42,12 +42,15 @@ spec:
                 init:
                   type: array
                   x-kubernetes-list-type: map
+                  x-kubernetes-list-map-keys: 
+                    - name
                   items:
                     type: object
+                    required: ["name", "input"]
                     properties:
                       name:
                         type: string
-                      value:
+                      input:
                         type: string
                 input_kind:
                   type: string
