@@ -35,7 +35,77 @@ pub struct SmartModulePackage {
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleInitParams {
+    #[serde(with = "map_to_vec")]
     params: BTreeMap<String, String>,
+}
+
+#[cfg(feature = "use_serde")]
+mod map_to_vec {
+    use std::{marker::PhantomData, collections::BTreeMap};
+    use std::fmt;
+
+    use serde::de::{SeqAccess};
+    use serde::{Serializer, Serialize, Deserializer, Deserialize, de::Visitor};
+
+    pub fn serialize<K, V, S>(data: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        K: Serialize,
+        V: Serialize,
+    {
+        serializer.collect_seq(data.iter().map(|(k, v)| (k, v)))
+    }
+
+    /// Deserialize to a `Vec<K, V>` as if it were a `Vec<(<K, V>)`.
+    ///
+    /// This directly deserializes into the returned vec with no intermediate allocation.
+    ///
+    /// In formats where dictionaries are ordered, this maintains the input data's order.
+    pub fn deserialize<'de, K, V, D>(deserializer: D) -> Result<BTreeMap<K, V>, D::Error>
+    where
+        D: Deserializer<'de>,
+        K: Deserialize<'de>,
+        V: Deserialize<'de>,
+    {
+        deserializer.deserialize_seq(MapVecVisitor::new())
+    }
+
+    struct MapVecVisitor<K, V> {
+        marker: PhantomData<BTreeMap<K, V>>,
+    }
+
+    impl<K, V> MapVecVisitor<K, V> {
+        fn new() -> Self {
+            MapVecVisitor {
+                marker: PhantomData,
+            }
+        }
+    }
+
+    impl<'de, K, V> Visitor<'de> for MapVecVisitor<K, V>
+    where
+        K: Deserialize<'de>,
+        V: Deserialize<'de>,
+    {
+        type Value = BTreeMap<K, V>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a map")
+        }
+
+        #[inline]
+        fn visit_unit<E>(self) -> Result<BTreeMap<K, V>, E> {
+            Ok(BTreeMap::new())
+        }
+
+        fn visit_seq<A>(self, _seq: A) -> Result<BTreeMap<K, V>, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let map = BTreeMap::new();
+            Ok(map)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Encoder, Decoder)]
@@ -172,7 +242,6 @@ wasm:
 
         assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
     }
-
 
     #[test]
     fn test_sm_spec_init_params() {

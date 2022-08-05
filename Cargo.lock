@@ -1842,12 +1842,8 @@ version = "0.18.1"
 dependencies = [
  "async-trait",
  "base64",
-<<<<<<< HEAD
  "bytes 1.2.1",
-=======
- "bytes",
  "fluvio-controlplane-metadata",
->>>>>>> ecf99dcd (add parsing test for SmartModuleSpec)
  "fluvio-dataplane-protocol",
  "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
