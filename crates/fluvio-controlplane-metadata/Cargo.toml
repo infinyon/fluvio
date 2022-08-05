@@ -32,5 +32,5 @@ base64 = "0.13.0"
 bytes = { version = "1" }
 
 [dev-dependencies]
-serde_yaml = "0.9.4"
 fluvio-future = { version = "0.4.0", features = ["fixture"] }
+fluvio-controlplane-metadata = { path = ".", features = ["use_serde"] }

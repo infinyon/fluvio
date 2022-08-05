@@ -1836,6 +1836,7 @@ dependencies = [
  "async-trait",
  "base64",
  "bytes 1.2.1",
+ "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.4.2",
  "fluvio-protocol 0.7.10",
@@ -1843,7 +1844,6 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "serde",
- "serde_yaml 0.9.9",
  "thiserror",
  "tracing",
 ]
