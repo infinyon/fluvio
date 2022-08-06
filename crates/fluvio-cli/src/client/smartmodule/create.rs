@@ -13,7 +13,6 @@ use clap::Parser;
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use flate2::{Compression, bufread::GzEncoder};
-use fluvio_smartmodule_package::package::{SmartModuleMetadata, InitType};
 
 use crate::Result;
 use crate::client::cmd::ClientCmd;
@@ -80,8 +79,6 @@ impl ClientCmd for CreateSmartModuleOpt {
 
         let spec: SmartModuleSpec = SmartModuleSpec {
             wasm: SmartModuleWasm::from_binary_payload(buffer),
-            package: package_opt.0,
-            init_params: package_opt.1,
             ..Default::default()
         };
 
