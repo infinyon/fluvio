@@ -30,7 +30,7 @@ pub struct CreateSmartModuleOpt {
     #[clap(long)]
     _source_file: Option<PathBuf>,
     #[clap(long)]
-    /// The path to the SmartModule package
+    /// The path to the SmartModule package (experimental)
     package: Option<PathBuf>,
 }
 
