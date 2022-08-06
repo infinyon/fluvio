@@ -6,14 +6,14 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use fluvio_extension_common::Terminal;
-use fluvio_sc_schema::smartmodule::{SmartModulePackage, SmartModuleInitType};
+use fluvio_sc_schema::smartmodule::{SmartModulePackage, SmartModuleInitType, SmartModuleInitParam};
 use tracing::debug;
 use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use flate2::{Compression, bufread::GzEncoder};
-use fluvio_smartmodule_package::package::{SmartModuleMetadata};
+use fluvio_smartmodule_package::package::{SmartModuleMetadata, InitType};
 
 use crate::Result;
 use crate::client::cmd::ClientCmd;
@@ -61,7 +61,16 @@ impl ClientCmd for CreateSmartModuleOpt {
                 }),
                 m.init
                     .into_iter()
-                    .map(|(k, v)| (k.clone(), SmartModuleInitType::String))
+                    .map(|(k, v)| {
+                        (
+                            k.clone(),
+                            match v.input {
+                                InitType::String => {
+                                    SmartModuleInitParam::new(SmartModuleInitType::String)
+                                }
+                            },
+                        )
+                    })
                     .collect(),
             )
         } else {

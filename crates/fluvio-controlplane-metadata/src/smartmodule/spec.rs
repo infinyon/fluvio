@@ -11,7 +11,7 @@ use dataplane::core::{Encoder, Decoder};
 pub struct SmartModuleSpec {
     pub package: Option<SmartModulePackage>,
     #[cfg_attr(feature = "use_serde", serde(default), serde(with = "map_init_params"))]
-    pub init_params: BTreeMap<String, SmartModuleInitType>,
+    pub init_params: BTreeMap<String, SmartModuleInitParam>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
@@ -34,6 +34,18 @@ pub struct SmartModulePackage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartModuleInitParam {
+    pub input: SmartModuleInitType,
+}
+
+impl SmartModuleInitParam {
+    pub fn new(input: SmartModuleInitType) -> Self {
+        Self { input }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Encoder, Default, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
 pub enum SmartModuleInitType {
     #[default]
@@ -46,11 +58,11 @@ mod map_init_params {
     use std::{collections::BTreeMap};
 
     use serde::{Serializer, Serialize, Deserializer, Deserialize};
-    use super::SmartModuleInitType;
+    use super::{SmartModuleInitParam, SmartModuleInitType};
 
     // convert btreemap into param of vec
     pub fn serialize<S>(
-        data: &BTreeMap<String, SmartModuleInitType>,
+        data: &BTreeMap<String, SmartModuleInitParam>,
         serializer: S,
     ) -> Result<S::Ok, S::Error>
     where
@@ -60,7 +72,7 @@ mod map_init_params {
             .iter()
             .map(|(k, v)| Param {
                 name: k.clone(),
-                input: v.clone(),
+                input: v.input.clone(),
             })
             .collect();
         param_seq.serialize(serializer)
@@ -68,14 +80,14 @@ mod map_init_params {
 
     pub fn deserialize<'de, D>(
         deserializer: D,
-    ) -> Result<BTreeMap<String, SmartModuleInitType>, D::Error>
+    ) -> Result<BTreeMap<String, SmartModuleInitParam>, D::Error>
     where
         D: Deserializer<'de>,
     {
         let param_list: Vec<Param> = Vec::deserialize(deserializer)?;
         let mut params = BTreeMap::new();
         for param in param_list {
-            params.insert(param.name, param.input);
+            params.insert(param.name, SmartModuleInitParam { input: param.input });
         }
         Ok(params)
     }
@@ -209,6 +221,7 @@ mod tests {
 
     use crate::smartmodule::SmartModuleInputKind;
 
+    use super::SmartModuleInitParam;
     use super::map_init_params;
     use super::SmartModuleInitType;
 
@@ -232,7 +245,7 @@ wasm:
     #[derive(Serialize, Deserialize)]
     struct TestParam {
         #[serde(default, with = "map_init_params")]
-        params: BTreeMap<String, SmartModuleInitType>,
+        params: BTreeMap<String, SmartModuleInitParam>,
     }
 
     #[test]
@@ -247,8 +260,14 @@ params:
         let root: TestParam = serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
         let params = root.params;
         assert_eq!(params.len(), 2);
-        assert_eq!(params.get("param1"), Some(&SmartModuleInitType::String));
-        assert_eq!(params.get("regex"), Some(&SmartModuleInitType::String));
+        assert_eq!(
+            params.get("param1"),
+            Some(&SmartModuleInitParam::new(SmartModuleInitType::String))
+        );
+        assert_eq!(
+            params.get("regex"),
+            Some(&SmartModuleInitParam::new(SmartModuleInitType::String))
+        );
     }
 
     #[test]
@@ -259,7 +278,10 @@ params:
       input: string
 "#;
         let mut params = BTreeMap::new();
-        params.insert("regex".to_string(), SmartModuleInitType::String);
+        params.insert(
+            "regex".to_string(),
+            SmartModuleInitParam::new(SmartModuleInitType::String),
+        );
         let root = TestParam { params };
         let output = serde_yaml::to_string(&root).expect("Failed to deserialize");
         assert_eq!(
