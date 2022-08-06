@@ -29,6 +29,7 @@ pub struct CreateSmartModuleOpt {
     /// The path to the source code for the SmartModule WASM
     #[clap(long)]
     _source_file: Option<PathBuf>,
+    #[clap(long)]
     /// The path to the SmartModule package
     package: Option<PathBuf>,
 }
