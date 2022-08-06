@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::io::Read;
 use std::fmt::Debug;
@@ -5,12 +6,14 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use fluvio_extension_common::Terminal;
+use fluvio_sc_schema::smartmodule::{SmartModulePackage, SmartModuleInitType};
 use tracing::debug;
 use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use flate2::{Compression, bufread::GzEncoder};
+use fluvio_smartmodule_package::package::{SmartModuleMetadata};
 
 use crate::Result;
 use crate::client::cmd::ClientCmd;
@@ -26,6 +29,8 @@ pub struct CreateSmartModuleOpt {
     /// The path to the source code for the SmartModule WASM
     #[clap(long)]
     _source_file: Option<PathBuf>,
+    /// The path to the SmartModule package
+    package: Option<PathBuf>,
 }
 
 #[async_trait]
@@ -44,8 +49,29 @@ impl ClientCmd for CreateSmartModuleOpt {
         let buffer = vec!['a' as u8; self.size];
         */
 
+        // load package if provided
+        let package_opt = if let Some(package_path) = self.package {
+            let m = SmartModuleMetadata::from_file(package_path)?;
+            println!("Using SmartModule package: {}", m.package.name);
+            (
+                Some(SmartModulePackage {
+                    name: m.package.name.clone(),
+                    version: m.package.version.clone(),
+                    group: m.package.group.clone(),
+                }),
+                m.init
+                    .into_iter()
+                    .map(|(k, v)| (k.clone(), SmartModuleInitType::String))
+                    .collect(),
+            )
+        } else {
+            (None, BTreeMap::new())
+        };
+
         let spec: SmartModuleSpec = SmartModuleSpec {
             wasm: SmartModuleWasm::from_binary_payload(buffer),
+            package: package_opt.0,
+            init_params: package_opt.1,
             ..Default::default()
         };
 

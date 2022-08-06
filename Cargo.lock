@@ -1703,6 +1703,7 @@ dependencies = [
  "fluvio-package-index",
  "fluvio-sc-schema",
  "fluvio-smartengine",
+ "fluvio-smartmodule-package",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",

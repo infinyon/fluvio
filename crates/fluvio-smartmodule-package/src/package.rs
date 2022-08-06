@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs::read_to_string;
 use std::path::{Path};
 use std::io::Result;
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SmartModuleMetadata {
     pub package: Package,
-    pub init: HashMap<String, InitParam>,
+    pub init: BTreeMap<String, InitParam>,
 }
 
 impl SmartModuleMetadata {

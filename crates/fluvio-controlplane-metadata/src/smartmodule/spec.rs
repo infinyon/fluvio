@@ -11,7 +11,7 @@ use dataplane::core::{Encoder, Decoder};
 pub struct SmartModuleSpec {
     pub package: Option<SmartModulePackage>,
     #[cfg_attr(feature = "use_serde", serde(default), serde(with = "map_init_params"))]
-    pub init_params: BTreeMap<String, InitType>,
+    pub init_params: BTreeMap<String, SmartModuleInitType>,
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
@@ -35,7 +35,7 @@ pub struct SmartModulePackage {
 #[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
-pub enum InitType {
+pub enum SmartModuleInitType {
     #[default]
     String,
 }
@@ -46,10 +46,13 @@ mod map_init_params {
     use std::{collections::BTreeMap};
 
     use serde::{Serializer, Serialize, Deserializer, Deserialize};
-    use super::InitType;
+    use super::SmartModuleInitType;
 
     // convert btreemap into param of vec
-    pub fn serialize<S>(data: &BTreeMap<String, InitType>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(
+        data: &BTreeMap<String, SmartModuleInitType>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -63,7 +66,9 @@ mod map_init_params {
         param_seq.serialize(serializer)
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<BTreeMap<String, InitType>, D::Error>
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<BTreeMap<String, SmartModuleInitType>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -78,7 +83,7 @@ mod map_init_params {
     #[derive(Serialize, Deserialize, Clone)]
     struct Param {
         name: String,
-        input: InitType,
+        input: SmartModuleInitType,
     }
 }
 
@@ -205,7 +210,7 @@ mod tests {
     use crate::smartmodule::SmartModuleInputKind;
 
     use super::map_init_params;
-    use super::InitType;
+    use super::SmartModuleInitType;
 
     #[test]
     fn test_sm_spec_simple() {
@@ -227,7 +232,7 @@ wasm:
     #[derive(Serialize, Deserialize)]
     struct TestParam {
         #[serde(default, with = "map_init_params")]
-        params: BTreeMap<String, InitType>,
+        params: BTreeMap<String, SmartModuleInitType>,
     }
 
     #[test]
@@ -242,8 +247,8 @@ params:
         let root: TestParam = serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
         let params = root.params;
         assert_eq!(params.len(), 2);
-        assert_eq!(params.get("param1"), Some(&InitType::String));
-        assert_eq!(params.get("regex"), Some(&InitType::String));
+        assert_eq!(params.get("param1"), Some(&SmartModuleInitType::String));
+        assert_eq!(params.get("regex"), Some(&SmartModuleInitType::String));
     }
 
     #[test]
@@ -254,7 +259,7 @@ params:
       input: string
 "#;
         let mut params = BTreeMap::new();
-        params.insert("regex".to_string(), InitType::String);
+        params.insert("regex".to_string(), SmartModuleInitType::String);
         let root = TestParam { params };
         let output = serde_yaml::to_string(&root).expect("Failed to deserialize");
         assert_eq!(
