@@ -25,7 +25,7 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["package","init","input_kind", "output_kind", "wasm"]
+              required: ["input_kind", "output_kind", "wasm"]
               properties:
                 package:
                   type: object
