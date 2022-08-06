@@ -63,7 +63,7 @@ impl ClientCmd for CreateSmartModuleOpt {
                     .into_iter()
                     .map(|(k, v)| {
                         (
-                            k.clone(),
+                            k,
                             match v.input {
                                 InitType::String => {
                                     SmartModuleInitParam::new(SmartModuleInitType::String)
