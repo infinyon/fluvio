@@ -13,6 +13,7 @@ use clap::Parser;
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use flate2::{Compression, bufread::GzEncoder};
+use fluvio_smartmodule_package::package::{SmartModuleMetadata, InitType};
 
 use crate::Result;
 use crate::client::cmd::ClientCmd;
@@ -61,16 +62,7 @@ impl ClientCmd for CreateSmartModuleOpt {
                 }),
                 m.init
                     .into_iter()
-                    .map(|(k, v)| {
-                        (
-                            k,
-                            match v.input {
-                                InitType::String => {
-                                    SmartModuleInitParam::new(SmartModuleInitType::String)
-                                }
-                            },
-                        )
-                    })
+                    .map(|(k, v)| (k.clone(), SmartModuleInitType::String))
                     .collect(),
             )
         } else {
