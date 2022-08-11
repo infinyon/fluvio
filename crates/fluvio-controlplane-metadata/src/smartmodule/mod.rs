@@ -15,14 +15,11 @@ mod k8;
 #[cfg(feature = "k8")]
 pub use k8::*;
 
+/// SmartModule object that can be used to transport from SC to SPU
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 pub struct SmartModule {
     pub name: SmartModuleName,
-    pub input_kind: SmartModuleInputKind,
-    pub output_kind: SmartModuleOutputKind,
-    pub source_code: Option<SmartModuleSourceCode>,
-    pub wasm: SmartModuleWasm,
-    pub parameters: Option<Vec<SmartModuleParameter>>,
+    pub spec: SmartModuleSpec,
 }
 
 impl fmt::Display for SmartModule {
@@ -37,21 +34,8 @@ where
 {
     fn from(mso: MetadataStoreObject<SmartModuleSpec, C>) -> Self {
         let name = mso.key_owned();
-        let SmartModuleSpec {
-            input_kind,
-            output_kind,
-            source_code,
-            wasm,
-            parameters,
-        } = mso.spec;
-        Self {
-            name,
-            input_kind,
-            output_kind,
-            source_code,
-            wasm,
-            parameters,
-        }
+        let spec = mso.spec;
+        Self { name, spec }
     }
 }
 
