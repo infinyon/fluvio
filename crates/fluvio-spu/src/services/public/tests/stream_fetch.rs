@@ -8,7 +8,7 @@ use flate2::{Compression, bufread::GzEncoder};
 
 use fluvio_controlplane_metadata::{
     partition::Replica,
-    smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat},
+    smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec},
 };
 use fluvio_storage::{FileReplica, ReplicaStorage};
 use flv_util::fixture::ensure_clean_dir;
@@ -78,11 +78,13 @@ fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str
     let wasm = zip(read_wasm_module(module_name));
     ctx.smartmodule_localstore().insert(SmartModule {
         name: module_name.to_owned(),
-        wasm: SmartModuleWasm {
-            format: SmartModuleWasmFormat::Binary,
-            payload: wasm,
+        spec: SmartModuleSpec {
+            wasm: SmartModuleWasm {
+                format: SmartModuleWasmFormat::Binary,
+                payload: wasm,
+            },
+            ..Default::default()
         },
-        ..Default::default()
     });
 }
 
@@ -1764,11 +1766,13 @@ async fn test_stream_fetch_invalid_wasm_module_predefined() {
     let wasm = zip(Vec::from("Hello, world, I'm not a valid WASM module!"));
     ctx.smartmodule_localstore().insert(SmartModule {
         name: "invalid_wasm".to_owned(),
-        wasm: SmartModuleWasm {
-            format: SmartModuleWasmFormat::Binary,
-            payload: wasm,
+        spec: SmartModuleSpec {
+            wasm: SmartModuleWasm {
+                format: SmartModuleWasmFormat::Binary,
+                payload: wasm,
+            },
+            ..Default::default()
         },
-        ..Default::default()
     });
 
     let smartmodule = SmartModuleInvocation {
@@ -2355,11 +2359,13 @@ async fn test_stream_fetch_invalid_smartmodule_predefined() {
     let wasm = zip(include_bytes!("test_data/filter_missing_attribute.wasm").to_vec());
     ctx.smartmodule_localstore().insert(SmartModule {
         name: "invalid_wasm".to_owned(),
-        wasm: SmartModuleWasm {
-            format: SmartModuleWasmFormat::Binary,
-            payload: wasm,
+        spec: SmartModuleSpec {
+            wasm: SmartModuleWasm {
+                format: SmartModuleWasmFormat::Binary,
+                payload: wasm,
+            },
+            ..Default::default()
         },
-        ..Default::default()
     });
 
     let smartmodule = SmartModuleInvocation {
