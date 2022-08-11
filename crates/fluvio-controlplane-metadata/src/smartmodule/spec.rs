@@ -4,7 +4,7 @@
 
 use dataplane::core::{Encoder, Decoder};
 
-#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub input_kind: SmartModuleInputKind,
@@ -14,14 +14,14 @@ pub struct SmartModuleSpec {
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSourceCode {
     language: SmartModuleSourceCodeLanguage,
     payload: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleSourceCodeLanguage {
     Rust,
@@ -33,7 +33,7 @@ impl Default for SmartModuleSourceCodeLanguage {
     }
 }
 
-#[derive(Clone, Default, PartialEq, Encoder, Decoder)]
+#[derive(Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {
     pub format: SmartModuleWasmFormat,
@@ -74,7 +74,7 @@ impl SmartModuleWasm {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleWasmFormat {
     #[cfg_attr(feature = "use_serde", serde(rename = "BINARY"))]
@@ -89,13 +89,13 @@ impl Default for SmartModuleWasmFormat {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleParameter {
     name: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleInputKind {
     Stream,
@@ -108,7 +108,7 @@ impl Default for SmartModuleInputKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleOutputKind {
     Stream,

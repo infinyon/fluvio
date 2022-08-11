@@ -8,7 +8,7 @@ use super::Terminal;
 use super::OutputType;
 use super::OutputError;
 
-#[derive(ArgEnum, Debug, Clone, PartialEq)]
+#[derive(ArgEnum, Debug, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum SerializeType {
     yaml,

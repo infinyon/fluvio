@@ -100,7 +100,7 @@ mod encoding {
     //
     // THEREFORE, THE DISCRIMINANTS FOR ALL VARIANTS ON THIS TYPE MUST BE NEGATIVE
     #[repr(i32)]
-    #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
+    #[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
     #[non_exhaustive]
     #[fluvio(encode_discriminant)]
     pub enum SmartModuleInternalError {
@@ -127,7 +127,7 @@ mod encoding {
     }
 
     /// A type used to capture and serialize errors from within a SmartModule
-    #[derive(thiserror::Error, Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+    #[derive(thiserror::Error, Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
     pub struct SmartModuleRuntimeError {
         /// Error hint: meant for users, not for code
         pub hint: String,
@@ -190,7 +190,7 @@ mod encoding {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+    #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
     pub enum SmartModuleKind {
         Filter,
         Map,

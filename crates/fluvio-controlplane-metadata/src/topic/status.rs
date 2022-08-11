@@ -15,7 +15,7 @@ use fluvio_types::{ReplicaMap, SpuId};
 // Data Structures
 // -----------------------------------
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -33,7 +33,7 @@ impl fmt::Display for TopicStatus {
     }
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TopicResolution {
     Init,                  // Initializing this is starting state.

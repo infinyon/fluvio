@@ -16,7 +16,7 @@ mod k8;
 pub use k8::*;
 
 /// SmartModule object that can be used to transport from SC to SPU
-#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 pub struct SmartModule {
     pub name: SmartModuleName,
     pub spec: SmartModuleSpec,

@@ -13,7 +13,7 @@ use fluvio_test_case_derive::MyTestCase;
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
 
-#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio ELECTION Test")]
 pub struct ElectionTestOption {}
 

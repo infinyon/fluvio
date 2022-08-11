@@ -18,6 +18,8 @@ fn default_record_producer(_record_index: usize, producer: &BatchProducer) -> Re
     record
 }
 
+pub type RecordGenerator = dyn Fn(usize, &BatchProducer) -> Record;
+
 #[derive(Builder)]
 pub struct BatchProducer {
     #[builder(setter(into), default = "0")]
@@ -29,7 +31,7 @@ pub struct BatchProducer {
     pub per_record_bytes: usize,
     /// generate record
     #[builder(setter, default = "Arc::new(default_record_producer)")]
-    pub record_generator: Arc<dyn Fn(usize, &BatchProducer) -> Record>,
+    pub record_generator: Arc<RecordGenerator>,
 }
 
 impl BatchProducer {

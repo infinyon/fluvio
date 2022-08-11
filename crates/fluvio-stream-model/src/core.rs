@@ -62,7 +62,7 @@ mod context {
         }
     }
 
-    #[derive(Default, Debug, Clone, PartialEq)]
+    #[derive(Default, Debug, Clone, Eq, PartialEq)]
     pub struct MetadataContext<C> {
         item: C,
         owner: Option<C>,

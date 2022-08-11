@@ -19,7 +19,7 @@ use dataplane::core::{Encoder, Decoder};
 use dataplane::bytes::{Buf, BufMut};
 use dataplane::core::Version;
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq, Default)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq, Default)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -125,7 +125,7 @@ impl SpuSpec {
 
 /// Custom Spu Spec
 /// This is not real spec since when this is stored on metadata store, it will be stored as SPU
-#[derive(Decoder, Encoder, Debug, Clone, Default, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Default, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -170,7 +170,7 @@ impl From<SpuSpec> for CustomSpuSpec {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -232,7 +232,7 @@ impl IngressPort {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IngressAddr {
     pub hostname: Option<String>,
@@ -259,7 +259,7 @@ impl IngressAddr {
     }
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -329,7 +329,7 @@ impl Endpoint {
     }
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum EncryptionEnum {
     PLAINTEXT,
@@ -342,7 +342,7 @@ impl Default for EncryptionEnum {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpuType {
     Managed,

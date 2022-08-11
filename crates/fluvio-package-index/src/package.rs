@@ -158,7 +158,7 @@ impl<'de> Deserialize<'de> for PackageKind {
 }
 
 /// A `Release` is a specific version of a published item in Fluvio's registry.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Release {
     /// The version of the package that this release holds
     pub version: Version,

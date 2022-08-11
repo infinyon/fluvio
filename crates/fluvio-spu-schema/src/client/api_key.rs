@@ -2,7 +2,7 @@ use dataplane::core::{Encoder, Decoder};
 
 /// Api Key for Spu Client API (from server to client)
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum SpuClientApiKey {
     ReplicaOffsetUpdate = 1001,

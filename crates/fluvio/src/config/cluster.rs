@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize};
 use crate::config::TlsPolicy;
 
 /// Public configuration for Fluvio.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct FluvioConfig {
     /// The address to connect to the Fluvio cluster

@@ -37,7 +37,7 @@ pub enum ChannelConfigError {
     #[error("Failed to deserialize Fluvio config")]
     TomlError(#[from] toml::de::Error),
 }
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FluvioChannelConfig {
     pub path: PathBuf,
     pub config: ChannelConfig,
@@ -168,7 +168,7 @@ impl FluvioChannelConfig {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ChannelConfig {
     pub current_channel: String,
     pub channel: HashMap<String, FluvioChannelInfo>,
@@ -184,7 +184,7 @@ impl ChannelConfig {
     }
 }
 
-#[derive(Debug, Parser, ArgEnum, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Parser, ArgEnum, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[clap(rename_all = "kebab-case")]
 pub enum ImageTagStrategy {
     Version,
@@ -208,7 +208,7 @@ impl Display for ImageTagStrategy {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FluvioChannelInfo {
     pub binary_location: PathBuf,
     pub extensions: PathBuf,

@@ -834,7 +834,7 @@ mod cmd {
 
     // Uses clap::ArgEnum to choose possible variables
 
-    #[derive(ArgEnum, Debug, Clone, PartialEq)]
+    #[derive(ArgEnum, Debug, Clone, Eq, PartialEq)]
     #[allow(non_camel_case_types)]
     pub enum ConsumeOutputType {
         dynamic,

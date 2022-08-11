@@ -10,7 +10,7 @@ use dataplane::core::{Encoder, Decoder};
 // Data Structures
 // -----------------------------------
 
-#[derive(Default, Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Default, Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),

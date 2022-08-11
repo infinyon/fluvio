@@ -17,7 +17,7 @@ use super::ReplicaRemovedRequest;
 /// API call from Spu to SC
 
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum InternalScKey {
     RegisterSpu = 2000,

@@ -112,7 +112,7 @@ mod policy {
         }
     }
 
-    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
     pub struct BasicRbacPolicy(pub HashMap<Role, HashMap<ObjectType, Vec<Action>>>);
 
     impl From<HashMap<Role, HashMap<ObjectType, Vec<Action>>>> for BasicRbacPolicy {

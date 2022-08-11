@@ -14,7 +14,7 @@ pub(crate) mod test_fixture {
     use crate::epoch::DualEpochMap;
 
     // define test spec and status
-    #[derive(Debug, Default, Clone, PartialEq)]
+    #[derive(Debug, Default, Clone, Eq, PartialEq)]
     pub struct TestSpec {
         pub replica: u16,
     }
@@ -26,7 +26,7 @@ pub(crate) mod test_fixture {
         type Status = TestStatus;
     }
 
-    #[derive(Debug, Default, Clone, PartialEq)]
+    #[derive(Debug, Default, Clone, Eq, PartialEq)]
     pub struct TestStatus {
         pub up: bool,
     }
@@ -37,7 +37,7 @@ pub(crate) mod test_fixture {
 
     pub type TestEpochMap = DualEpochMap<String, DefaultTest>;
 
-    #[derive(Debug, Default, PartialEq, Clone)]
+    #[derive(Debug, Default, Eq, PartialEq, Clone)]
     pub struct TestMeta {
         pub rev: u32,
         pub comment: String,

@@ -135,7 +135,7 @@ impl EnvDetail for EnvironmentSetup {
 
 // TODO: reserve space for compression
 /// cli options
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
 pub struct EnvironmentSetup {
     /// Name of the test
     #[clap(possible_values = FluvioTestMeta::all_test_names())]

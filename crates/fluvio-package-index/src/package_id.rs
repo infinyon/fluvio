@@ -192,7 +192,7 @@ pub type MaybeVersion = Option<PackageVersion>;
 /// <group>/<name>:<version>
 /// <name>:<version>
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PackageId<V = MaybeVersion> {
     registry: Option<Registry>,
     group: Option<GroupName>,

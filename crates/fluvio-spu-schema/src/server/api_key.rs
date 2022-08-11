@@ -8,7 +8,7 @@ static_assertions::const_assert_eq!(
 
 /// Api Key for Spu Server API
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum SpuServerApiKey {
     ApiVersion = 18, // API_VERSIONS_KEY

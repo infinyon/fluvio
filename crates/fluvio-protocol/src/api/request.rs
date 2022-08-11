@@ -191,7 +191,7 @@ mod test {
     use crate::api::ApiMessage;
 
     #[repr(u16)]
-    #[derive(PartialEq, Debug, Clone, Copy, Encoder, Decoder)]
+    #[derive(Eq, PartialEq, Debug, Clone, Copy, Encoder, Decoder)]
     #[fluvio(encode_discriminant)]
     pub enum TestApiKey {
         ApiVersion = 0,
@@ -227,7 +227,7 @@ mod test {
     }
 
     #[repr(u16)]
-    #[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
+    #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
     #[fluvio(encode_discriminant)]
     pub enum TestApiEnum {
         ApiVersion = 18,

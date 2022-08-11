@@ -174,7 +174,7 @@ impl ConfigFile {
 pub const LOCAL_PROFILE: &str = "local";
 const CONFIG_VERSION: &str = "2.0";
 
-#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     version: String,
     current_profile: Option<String>,
@@ -408,12 +408,12 @@ impl Config {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Topic {
     replica: HashMap<String, String>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Profile {
     pub cluster: String,
     pub topic: Option<String>,
@@ -433,7 +433,7 @@ impl Profile {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Replica {
     pub max_bytes: Option<i32>,
     pub isolation: Option<String>,

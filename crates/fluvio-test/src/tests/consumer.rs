@@ -39,7 +39,7 @@ impl From<TestCase> for ConsumerTestCase {
     }
 }
 
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
 #[clap(name = "Fluvio Consumer Test")]
 pub struct ConsumerTestOption {
     /// Num of consumers to create

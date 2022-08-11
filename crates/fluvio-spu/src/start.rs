@@ -27,7 +27,7 @@ pub fn main_loop(opt: SpuOpt) {
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    info!(version = &*crate::VERSION, "Platform");
+    info!(version = crate::VERSION, "Platform");
     info!(commit = env!("GIT_HASH"), "Git");
     info!(name = ?sys.name(),"System");
     info!(kernel = ?sys.kernel_version(),"System");

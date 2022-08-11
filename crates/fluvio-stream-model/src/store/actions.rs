@@ -69,7 +69,7 @@ where
 }
 
 /// change in spec
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum SpecChange<S>
 where
     S: Spec,

@@ -10,7 +10,7 @@ use dataplane::core::{Encoder, Decoder};
 
 use super::Message;
 
-#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Messages<S>
 where
     S: Encoder + Decoder + Debug,

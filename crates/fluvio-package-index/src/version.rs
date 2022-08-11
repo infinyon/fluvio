@@ -10,7 +10,7 @@ use std::fmt;
 /// A `PackageVersion` may be either a direct semver, or it may be
 /// the name of a tag which can later be resolved to a semver by
 /// looking up the tag in the package registry.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum PackageVersion {
     Semver(Version),

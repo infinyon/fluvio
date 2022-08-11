@@ -3,7 +3,7 @@
 use dataplane::core::{Encoder, Decoder};
 use fluvio_types::defaults::{SPU_LOG_BASE_DIR, SPU_LOG_SIZE};
 
-#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -21,7 +21,7 @@ pub struct SpuGroupSpec {
     pub spu_config: SpuConfig,
 }
 
-#[derive(Encoder, Decoder, Default, Debug, Clone, PartialEq)]
+#[derive(Encoder, Decoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -44,7 +44,7 @@ impl SpuConfig {
     }
 }
 
-#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -54,7 +54,7 @@ pub struct ReplicationConfig {
     pub in_sync_replica_min: Option<u16>,
 }
 
-#[derive(Encoder, Decoder, Debug, Default, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Debug, Default, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -85,7 +85,7 @@ pub struct RealStorageConfig {
     pub size: String,
 }
 
-#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),

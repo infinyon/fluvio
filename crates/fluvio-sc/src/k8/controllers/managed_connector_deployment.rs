@@ -427,7 +427,7 @@ mod third_party_connector_tests {
     }
 }
 
-#[derive(Default, Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Default, Debug, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ThirdPartyConnectorSpec {
     pub image: String,
 }

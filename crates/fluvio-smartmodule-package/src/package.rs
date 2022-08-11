@@ -35,7 +35,7 @@ pub struct Package {
     pub repository: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum InitType {
     String,

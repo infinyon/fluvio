@@ -4,7 +4,7 @@ use crate::Error;
 /// Represents names that may be used for Tags
 ///
 /// This includes any ascii string that does not contain a `/`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TagName(String);
 
 impl AsRef<str> for TagName {

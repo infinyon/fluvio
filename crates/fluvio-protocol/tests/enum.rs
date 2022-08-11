@@ -252,7 +252,7 @@ fn test_multi_unnamed_custom_tag_decode() {
     }
 }
 
-#[derive(Encoder, PartialEq, Decoder, Debug)]
+#[derive(Encoder, Eq, PartialEq, Decoder, Debug)]
 #[repr(u8)]
 pub enum EnumNoExprTest {
     A,
@@ -296,7 +296,7 @@ fn test_enum_decode() {
     assert_eq!(val, EnumNoExprTest::A);
 }
 
-#[derive(Encoder, Decoder, PartialEq, Debug)]
+#[derive(Encoder, Decoder, Eq, PartialEq, Debug)]
 #[repr(u8)]
 pub enum EnumExprTest {
     #[fluvio(tag = 5)]
@@ -334,7 +334,7 @@ fn test_enum_expr_decode() {
 }
 
 #[repr(u16)]
-#[derive(Encoder, Decoder, PartialEq, Debug)]
+#[derive(Encoder, Decoder, Eq, PartialEq, Debug)]
 #[fluvio(encode_discriminant)]
 pub enum WideEnum {
     #[fluvio(tag = 5)]
@@ -366,7 +366,7 @@ fn test_try_decode() {
     assert_eq!(e, WideEnum::E);
 }
 
-#[derive(Encoder, Decoder, PartialEq, Debug)]
+#[derive(Encoder, Decoder, Eq, PartialEq, Debug)]
 pub enum GlColor {
     #[fluvio(tag = 1)]
     GlTextureRedType = 0x8C10,
@@ -425,7 +425,7 @@ fn test_encode_discriminant() {
     assert_eq!(dest[1], 1);
 }
 
-#[derive(Encoder, Decoder, PartialEq, Debug, Clone, Copy)]
+#[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 #[repr(u16)]
 pub enum TestWideEnum {
@@ -446,7 +446,7 @@ fn test_simple_conversion() {
 }
 
 #[repr(i16)]
-#[derive(PartialEq, Debug, Encoder, Decoder)]
+#[derive(Eq, PartialEq, Debug, Encoder, Decoder)]
 #[fluvio(encode_discriminant)]
 pub enum TestErrorCode {
     // The server experienced an unexpected error when processing the request
