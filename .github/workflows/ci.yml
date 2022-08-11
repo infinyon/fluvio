@@ -256,7 +256,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, crate-version, crate-audit, crate-publish-check]
+        check: [fmt, clippy, doc, doc-test, test, crate-version, crate-audit, crate-publish-check]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -280,8 +280,11 @@ jobs:
       - name: Clippy
         if: matrix.check == 'clippy'
         run: make check-clippy
-      - name: Doc Test
+      - name: Doc
         if: matrix.check == 'doc'
+        run: make check-docs
+      - name: Doc Test
+        if: matrix.check == 'doc-test'
         run: make run-all-doc-test
       - name: Unit Test
         if: matrix.check == 'test'
