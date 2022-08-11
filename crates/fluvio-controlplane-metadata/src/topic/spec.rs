@@ -221,7 +221,7 @@ impl From<ReplicaSpec> for TopicSpec {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ReplicaSpec {
     #[cfg_attr(feature = "use_serde", serde(rename = "assigned"))]
@@ -458,7 +458,7 @@ impl Encoder for ReplicaSpec {
 }
 
 /// Topic param
-#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -513,7 +513,7 @@ impl std::fmt::Display for TopicReplicaParam {
 }
 
 /// Hack: field instead of new type to get around encode and decode limitations
-#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMaps {
     maps: Vec<PartitionMap>,
@@ -721,14 +721,14 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMap {
     pub id: PartitionId,
     pub replicas: Vec<SpuId>,
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CleanupPolicy {
     #[cfg_attr(feature = "use_serde", serde(rename = "segment"))]
@@ -749,7 +749,7 @@ impl CleanupPolicy {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -765,7 +765,7 @@ impl SegmentBasedPolicy {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -776,7 +776,7 @@ pub struct TopicStorageConfig {
     pub max_partition_size: Option<u64>, // max partition size
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CompressionAlgorithm {
     None,

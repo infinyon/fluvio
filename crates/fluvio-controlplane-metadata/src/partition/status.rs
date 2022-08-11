@@ -20,7 +20,7 @@ use super::ElectionScoring;
 // Data Structures
 // -----------------------------------
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -224,7 +224,7 @@ fn find_status(status: &mut [ReplicaStatus], spu: SpuId) -> Option<&'_ mut Repli
     status.iter_mut().find(|status| status.spu == spu)
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum PartitionResolution {
     Offline,             // No leader available for serving partition
@@ -239,7 +239,7 @@ impl Default for PartitionResolution {
     }
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),

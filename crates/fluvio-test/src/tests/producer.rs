@@ -33,7 +33,7 @@ impl From<TestCase> for ProducerTestCase {
     }
 }
 
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
 #[clap(name = "Fluvio Producer Test")]
 pub struct ProducerTestOption {
     /// Num of producers to create

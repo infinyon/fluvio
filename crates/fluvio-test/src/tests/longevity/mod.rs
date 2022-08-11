@@ -8,7 +8,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_case_derive::MyTestCase;
 use fluvio_test_util::async_process;
 
-#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio Longevity Test")]
 pub struct LongevityTestOption {
     // This should be mutually exclusive with runtime_seconds

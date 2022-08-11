@@ -19,7 +19,7 @@ pub trait ScConfigBuilder {
 }
 
 /// streaming controller configuration file
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ScConfig {
     pub public_endpoint: String,
     pub private_endpoint: String,

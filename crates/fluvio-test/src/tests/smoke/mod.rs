@@ -50,7 +50,7 @@ impl From<TestCase> for SmokeTestCase {
     }
 }
 
-#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
 #[clap(name = "Fluvio Smoke Test")]
 pub struct SmokeTestOption {
     #[clap(long)]

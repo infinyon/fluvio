@@ -98,7 +98,7 @@ impl DerivedStreamInputRef {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -244,7 +244,7 @@ impl DerivedStreamStep {
 }
 
 /// Generic DerivedStream Module
-#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
 pub struct DerivedStreamModule {

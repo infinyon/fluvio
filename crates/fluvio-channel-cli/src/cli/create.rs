@@ -13,7 +13,7 @@ use dirs::home_dir;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 use crate::install_channel_fluvio_bin;
 
-#[derive(Debug, Clone, Parser, PartialEq)]
+#[derive(Debug, Clone, Parser, Eq, PartialEq)]
 pub struct CreateOpt {
     /// Path to alternate channel config
     #[clap(long)]

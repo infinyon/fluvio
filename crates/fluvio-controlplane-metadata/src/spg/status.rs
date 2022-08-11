@@ -4,7 +4,7 @@ use std::fmt;
 
 use dataplane::core::{Encoder, Decoder};
 
-#[derive(Encoder, Decoder, Default, Debug, Clone, PartialEq)]
+#[derive(Encoder, Decoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -45,7 +45,7 @@ impl SpuGroupStatus {
 }
 
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Encoder, Decoder, Debug, Clone, PartialEq)]
+#[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq)]
 pub enum SpuGroupStatusResolution {
     Init,
     Invalid,

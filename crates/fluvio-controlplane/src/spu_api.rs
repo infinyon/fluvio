@@ -15,7 +15,7 @@ use super::UpdateSmartModuleRequest;
 use super::UpdateDerivedStreamRequest;
 
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum InternalSpuApi {
     UpdateSpu = 1001,

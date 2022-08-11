@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use clap::{Parser, IntoApp};
 use tracing::debug;
 
-#[derive(Debug, Clone, Parser, PartialEq)]
+#[derive(Debug, Clone, Parser, Eq, PartialEq)]
 pub struct ListOpt {
     /// Path to alternate channel config
     #[clap(long)]

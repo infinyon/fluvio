@@ -6,7 +6,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::async_process;
 use fluvio_test_case_derive::MyTestCase;
 
-#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio Test Self Check")]
 pub struct SelfCheckTestOption {
     /// Intentionally panic to test panic handling

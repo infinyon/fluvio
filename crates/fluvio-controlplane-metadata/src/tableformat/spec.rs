@@ -3,7 +3,7 @@
 use dataplane::core::{Encoder, Decoder};
 //use std::collections::BTreeMap;
 
-#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -37,7 +37,7 @@ impl TableFormatSpec {
     }
 }
 
-#[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -54,7 +54,7 @@ impl Default for DataFormat {
         Self::JSON
     }
 }
-#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -77,7 +77,7 @@ pub struct TableFormatColumnConfig {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "UPPERCASE")
 )]
-#[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
 pub enum TableFormatAlignment {
     Left,
     Right,
@@ -134,7 +134,7 @@ impl TableFormatColumnConfig {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "UPPERCASE")
 )]
-#[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
 pub enum Color {
     Blue,
     Yellow,

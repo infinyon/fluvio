@@ -11,7 +11,7 @@ pub use error::CompressionError;
 use serde::{Serialize, Deserialize};
 
 /// The compression algorithm used to compress and decompress records in fluvio batches
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[repr(i8)]
 pub enum Compression {

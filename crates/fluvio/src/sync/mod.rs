@@ -33,7 +33,7 @@ mod context {
     });
 
     /// context that always updates
-    #[derive(Debug, Default, Clone, PartialEq)]
+    #[derive(Debug, Default, Clone, Eq, PartialEq)]
     pub struct AlwaysNewContext {}
 
     impl MetadataItem for AlwaysNewContext {
@@ -126,7 +126,7 @@ mod context {
                         SPEC = S::LABEL,
                         Timeout = *MAX_WAIT_TIME,
                         "store look up timeout expired");
-                    return Err(IoError::new(
+                    Err(IoError::new(
                         ErrorKind::TimedOut,
                         format!("timed out searching metadata {} failed due to timeout: {} ms",S::LABEL,*MAX_WAIT_TIME),
                     ))

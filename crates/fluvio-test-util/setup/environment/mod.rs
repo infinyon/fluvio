@@ -9,7 +9,7 @@ mod common {
 
     use fluvio_cluster::{StartStatus, runtime::spu::SpuClusterManager};
 
-    #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+    #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
     pub enum EnvironmentType {
         K8,
         Local,

@@ -26,7 +26,7 @@ pub trait Spec {
     fn key_owned(&self) -> Self::Key;
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum SpecChange<S> {
     Add(S),
     Mod(S, S), // new, old

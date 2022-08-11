@@ -14,7 +14,7 @@ pub async fn handle_api_versions_request(
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
     let mut response = ApiVersionsResponse::default();
 
-    let platform_version = semver::Version::parse(&*crate::VERSION)
+    let platform_version = semver::Version::parse(crate::VERSION)
         .expect("Platform Version (from VERSION file) must be semver");
     response.platform_version = PlatformVersion::from(platform_version);
 

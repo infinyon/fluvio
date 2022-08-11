@@ -4,7 +4,7 @@ use strum::IntoEnumIterator;
 use super::ClientStatsMetric;
 
 /// Used for configuring the type of data to collect
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ClientStatsDataCollect {
     /// Collect all available stats
     All,

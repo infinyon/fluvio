@@ -105,7 +105,7 @@ impl ManagedConnectorCmd {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct ConnectorConfig {
     name: String,
     #[serde(rename = "type")]
@@ -127,13 +127,13 @@ pub struct ConnectorConfig {
     consumer: Option<ConsumerParameters>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     partition: Option<i32>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
     #[serde(default, skip_serializing_if = "Option::is_none")]

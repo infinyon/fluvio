@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
 
 /// Describes whether or not to use TLS and how
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "tls_policy")]
 pub enum TlsPolicy {
     /// Do not use TLS
@@ -50,7 +50,7 @@ impl From<TlsPaths> for TlsPolicy {
 }
 
 /// Describes the TLS configuration either inline or via file paths
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "tls_source", content = "certs")]
 pub enum TlsConfig {
     /// TLS client config with inline keys and certs
@@ -111,7 +111,7 @@ impl From<TlsPaths> for TlsConfig {
 /// IuH6soJvn4Mpk5MpTwBw1raCOoKSz2H4oE0B1dBAmQ==
 /// -----END CERTIFICATE-----
 /// ```
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TlsCerts {
     /// Domain name
     pub domain: String,
@@ -159,7 +159,7 @@ impl TryFrom<TlsPaths> for TlsCerts {
 }
 
 /// TLS config with paths to keys and certs
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TlsPaths {
     /// Domain name
     pub domain: String,

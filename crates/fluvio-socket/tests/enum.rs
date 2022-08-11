@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use fluvio_protocol::derive::{Decoder, Encoder};
 
 #[repr(u16)]
-#[derive(Encoder, Decoder, PartialEq, Debug, Clone, Copy)]
+#[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum TestKafkaApiEnum {
     Echo = 1000,

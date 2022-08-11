@@ -12,7 +12,7 @@ use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec, CompressionAlgo
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
 /// one of replica is leader which is duplicated in the leader field
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -76,7 +76,7 @@ impl From<Vec<i32>> for PartitionSpec {
 }
 
 /// Setting applied to a replica
-#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct PartitionConfig {
     pub retention_time_seconds: Option<u32>,
 }

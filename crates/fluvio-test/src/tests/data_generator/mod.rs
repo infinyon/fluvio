@@ -11,7 +11,7 @@ use fluvio_test_util::{async_process, fork_and_wait};
 use fluvio::{Offset, RecordKey};
 use futures::StreamExt;
 
-#[derive(Debug, Clone, Parser, Default, PartialEq, MyTestCase)]
+#[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
 #[clap(name = "Fluvio Longevity Test")]
 pub struct GeneratorTestOption {
     /// Opt-in to detailed output printed to stdout

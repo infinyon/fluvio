@@ -35,7 +35,7 @@ mod inner {
     use fluvio_controlplane_metadata::partition::Replica;
     use fluvio_future::file_slice::AsyncFileSlice;
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, Eq, PartialEq)]
     pub struct OffsetInfo {
         pub hw: Offset,
         pub leo: Offset,

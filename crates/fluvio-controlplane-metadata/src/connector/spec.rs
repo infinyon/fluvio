@@ -10,7 +10,7 @@ use std::fmt;
 use bytes::Buf;
 use bytes::BufMut;
 
-#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -30,7 +30,7 @@ pub struct ManagedConnectorSpec {
 
     pub secrets: BTreeMap<String, SecretString>,
 }
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -101,7 +101,7 @@ impl Encoder for ConnectorVersionInner {
     }
 }
 
-#[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize),
@@ -261,7 +261,7 @@ version: latest
     }
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -324,7 +324,7 @@ impl Encoder for ManagedConnectorParameterValue {
     }
 }
 
-#[derive(Encoder, Decoder, Default, PartialEq, Clone)]
+#[derive(Encoder, Decoder, Default, Eq, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),

@@ -63,7 +63,7 @@ pub struct SpuTemplate {
     pub env: Vec<Env>,
 }
 
-#[derive(Deserialize, Serialize, Default, Debug, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Default, Debug, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SpuEndpointTemplate {
     pub port: u16,
@@ -93,7 +93,7 @@ impl SpuEndpointTemplate {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
+#[derive(Deserialize, Serialize, Debug, Default, Eq, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ControllerEndPoint {
     pub port: u16,

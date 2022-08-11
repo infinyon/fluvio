@@ -20,7 +20,7 @@ use dataplane::{Size, Size64};
 use crate::{ReplicaStorageConfig};
 
 // Replica specific config
-#[derive(Builder, Clone, Debug, PartialEq, Deserialize)]
+#[derive(Builder, Clone, Debug, Eq, PartialEq, Deserialize)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ReplicaConfig {
     #[builder(default = "default_base_dir()")]

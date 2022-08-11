@@ -29,7 +29,7 @@ pub fn main_k8_loop(opt: ScOpt) {
     println!("CLI Option: {:#?}", opt);
     let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
 
-    println!("Starting SC, platform: {}", &*crate::VERSION);
+    println!("Starting SC, platform: {}", crate::VERSION);
 
     inspect_system();
 
@@ -75,7 +75,7 @@ fn inspect_system() {
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    info!(version = &*crate::VERSION, "Platform");
+    info!(version = crate::VERSION, "Platform");
     info!(commit = env!("GIT_HASH"), "Git");
     info!(name = ?sys.name(),"System");
     info!(kernel = ?sys.kernel_version(),"System");

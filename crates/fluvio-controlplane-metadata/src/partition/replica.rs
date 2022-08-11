@@ -12,7 +12,7 @@ use crate::topic::{CleanupPolicy, TopicStorageConfig, CompressionAlgorithm};
 use super::store::*;
 
 /// Metadata about Replica send from SC
-#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Replica {
     pub id: ReplicaKey,
     pub leader: SpuId,
@@ -83,7 +83,7 @@ impl fmt::Display for Replica {
 }
 
 /// given replica, where is leader
-#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct ReplicaLeader {
     pub id: ReplicaKey,
     pub leader: SpuId,

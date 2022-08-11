@@ -33,21 +33,21 @@ impl Request for ApiVersionsRequest {
 
 pub type ApiVersions = Vec<ApiVersionKey>;
 
-#[derive(Decoder, Encoder, Default, Debug, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Eq, PartialEq)]
 pub struct ApiVersionsResponse {
     pub error_code: ErrorCode,
     pub api_keys: ApiVersions,
     pub platform_version: PlatformVersion,
 }
 
-#[derive(Decoder, Encoder, Default, Clone, Debug, PartialEq)]
+#[derive(Decoder, Encoder, Default, Clone, Debug, Eq, PartialEq)]
 pub struct ApiVersionKey {
     pub api_key: i16,
     pub min_version: i16,
     pub max_version: i16,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct PlatformVersion(String);
 
 impl PlatformVersion {

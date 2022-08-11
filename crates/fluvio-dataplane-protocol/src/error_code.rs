@@ -14,7 +14,7 @@ use crate::smartmodule::SmartModuleRuntimeError;
 // -----------------------------------
 
 #[repr(i16)]
-#[derive(thiserror::Error, Encoder, Decoder, PartialEq, Debug, Clone)]
+#[derive(thiserror::Error, Encoder, Decoder, Eq, PartialEq, Debug, Clone)]
 #[non_exhaustive]
 pub enum ErrorCode {
     #[fluvio(tag = -1)]
@@ -201,7 +201,7 @@ impl ErrorCode {
 }
 
 /// Deprecated. A type representing the possible errors that may occur during DerivedStream execution.
-#[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 pub enum LegacySmartModuleError {
     #[error("Runtime error")]
     Runtime(#[from] SmartModuleRuntimeError),
@@ -217,7 +217,7 @@ impl Default for LegacySmartModuleError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[non_exhaustive]
 pub enum RequestKind {
     Produce,

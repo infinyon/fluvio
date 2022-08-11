@@ -15,7 +15,7 @@ use crate::store::actions::*;
 use crate::core::*;
 use crate::store::*;
 
-#[derive(Decoder, Encoder, Debug, PartialEq, Clone)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone)]
 pub enum MsgType {
     UPDATE,
     DELETE,
@@ -27,7 +27,7 @@ impl ::std::default::Default for MsgType {
     }
 }
 
-#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Message<C>
 where
     C: Encoder + Decoder + Debug,

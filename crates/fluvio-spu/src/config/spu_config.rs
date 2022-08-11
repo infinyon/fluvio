@@ -33,7 +33,7 @@ use fluvio_types::defaults::{
     STORAGE_FLUSH_IDLE_MSEC, STORAGE_FLUSH_WRITE_COUNT, STORAGE_MAX_BATCH_SIZE,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ReplicationConfig {
     pub min_in_sync_replicas: u16,
 }
@@ -46,7 +46,7 @@ impl Default for ReplicationConfig {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Log {
     pub base_dir: PathBuf,
     pub size: String,
@@ -76,7 +76,7 @@ impl Default for Log {
 }
 
 /// streaming processing unit configuration file
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct SpuConfig {
     pub id: SpuId,
 

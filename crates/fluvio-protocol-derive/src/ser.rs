@@ -240,7 +240,7 @@ fn parse_enum_variants_encoding(
                 // The "a, b, c, d" in Enum::Variant(a, b, c, d) => { ... }
                 let fields = props
                     .iter()
-                    .zip('a'..'z')
+                    .zip('a'..='z')
                     .map(|(_, b)| format_ident!("{}", b))
                     .collect::<Vec<_>>();
 
@@ -292,7 +292,7 @@ fn parse_enum_variants_size(
                 // The "a, b, c, d" in Enum::Variant(a, b, c, d) => { ... }
                 let fields = props
                     .iter()
-                    .zip('a'..'z')
+                    .zip('a'..='z')
                     .map(|(_, b)| format_ident!("{}", b))
                     .collect::<Vec<_>>();
 

@@ -154,7 +154,7 @@ impl From<ScK8Config> for ConfigMapSpec {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq, Default, Clone)]
+#[derive(Deserialize, Debug, Eq, PartialEq, Default, Clone)]
 pub struct FluvioConfigStatus();
 
 impl Status for FluvioConfigStatus {}
