@@ -1996,10 +1996,12 @@ version = "0.7.10"
 dependencies = [
  "bytes 1.2.1",
  "fluvio-future 0.4.1",
+ "fluvio-protocol 0.7.10",
  "fluvio-protocol-derive 0.4.3",
  "futures 0.3.21",
  "tokio-util",
  "tracing",
+ "trybuild 1.0.64",
 ]
 
 [[package]]
@@ -2023,7 +2025,6 @@ dependencies = [
  "quote",
  "syn",
  "tracing",
- "trybuild",
 ]
 
 [[package]]
@@ -2152,7 +2153,7 @@ dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
  "fluvio-smartmodule-derive",
- "trybuild",
+ "trybuild 1.0.42",
 ]
 
 [[package]]
@@ -2377,7 +2378,7 @@ dependencies = [
  "syn",
  "tokio",
  "tracing",
- "trybuild",
+ "trybuild 1.0.42",
 ]
 
 [[package]]
@@ -2399,7 +2400,7 @@ dependencies = [
  "syn",
  "tokio",
  "tracing",
- "trybuild",
+ "trybuild 1.0.42",
 ]
 
 [[package]]
@@ -5253,6 +5254,21 @@ dependencies = [
  "glob",
  "lazy_static",
  "serde",
+ "serde_json",
+ "termcolor",
+ "toml",
+]
+
+[[package]]
+name = "trybuild"
+version = "1.0.64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7f408301c7480f9e6294eb779cfc907f54bd901a9660ef24d7f233ed5376485"
+dependencies = [
+ "glob",
+ "once_cell",
+ "serde",
+ "serde_derive",
  "serde_json",
  "termcolor",
  "toml",

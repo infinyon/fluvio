@@ -26,7 +26,8 @@ tokio-util = { version = "0.7.0", features = [
 ], optional = true }
 
 [dev-dependencies]
-fluvio-protocol-derive = { path = "../fluvio-protocol-derive" }
+trybuild = "1.0.64"
+fluvio-protocol = { path = ".", features = ["derive","api"]}
 fluvio-future = { version = "0.4.0", features = [
     "fixture",
     "subscriber",
