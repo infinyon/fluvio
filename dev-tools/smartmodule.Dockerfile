@@ -13,7 +13,7 @@
 
 ARG ARCH=
 FROM ${ARCH}ubuntu:22.04
-RUN apt-get update
+RUN apt-get update -y
 
 RUN apt-get install -y \
 	curl \

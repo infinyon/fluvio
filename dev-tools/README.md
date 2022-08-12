@@ -13,6 +13,14 @@ The dockerfile will install rust and other development dependencies, including c
 
     $ docker run -it sm-dev
 
+To share a host folder with the container start the container with:
+
+    $ docker run -it -v <host_abs_path>:<container_path> sm-dev
+
+For example:
+
+    $ docker run -it -v `pwd`/shareme:/home/smdevel/shared sm-dev
+
 
 # To start local cluster with custom SPU 5001,5002,5003
 
