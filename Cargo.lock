@@ -2020,6 +2020,7 @@ dependencies = [
 name = "fluvio-protocol-derive"
 version = "0.4.3"
 dependencies = [
+ "fluvio-protocol 0.7.10",
  "proc-macro2",
  "quote",
  "syn",

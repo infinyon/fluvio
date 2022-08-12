@@ -21,5 +21,8 @@ tracing = "0.1"
 version = "1.0.0"
 features = ["full"]
 
+[dev-dependencies]
+fluvio-protocol = { path = "../fluvio-protocol", features = ["derive", "api"] }
+
 [package.metadata.cargo-udeps.ignore]
 development = ["fluvio-protocol"] # Used only in doc-tests, which `cargo-udeps` cannot check
