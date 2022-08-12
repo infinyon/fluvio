@@ -32,6 +32,3 @@ enum PassNamedEnum {
     Alpha { name: String, number: i32 },
     Beta { data: Vec<u8> },
 }
-
-#[derive(Encoder)]
-struct PassTupleStruct (u16, String);

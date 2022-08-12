@@ -1,0 +1,6 @@
+
+input_kind: Stream
+output_kind: Stream
+wasm:
+  format: BINARY
+  payload: H4sIAAAAAAAA/+z9DZxd11kfCu+1P87Z53POjEaakUex9zlxkhmw0YftkSubxFuNJAvFGHjT
