@@ -23,7 +23,6 @@ pub struct SmartModuleSpec {
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
-
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModulePackage {
