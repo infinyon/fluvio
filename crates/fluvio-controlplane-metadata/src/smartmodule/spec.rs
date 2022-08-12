@@ -29,6 +29,18 @@ pub struct SmartModulePackage {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartModuleInitParam {
+    pub input: SmartModuleInitType,
+}
+
+impl SmartModuleInitParam {
+    pub fn new(input: SmartModuleInitType) -> Self {
+        Self { input }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
 pub enum SmartModuleInitType {
     #[default]
