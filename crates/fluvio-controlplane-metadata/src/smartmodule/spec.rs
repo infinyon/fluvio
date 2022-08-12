@@ -44,7 +44,7 @@ impl SmartModuleInitParam {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Encoder, Default, Decoder)]
+#[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
 pub enum SmartModuleInitType {
