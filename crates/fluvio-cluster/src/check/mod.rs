@@ -718,11 +718,9 @@ impl ClusterCheck for LocalClusterCheck {
 /// Manages all cluster check operations
 ///
 /// A `ClusterChecker` can be configured with different sets of checks to run.
-/// It can wait for all checks to run sequentially using [`run_wait`], or spawn a
-/// task and receive progress updates about checks using [`run_with_progress`].
+/// Checks are run with the [`run`] method.
 ///
-/// [`run_wait`]: ClusterChecker::run_wait
-/// [`run_with_progress`]: ClusterChecker::run_with_progress
+/// [`run`]: ClusterChecker::run
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ClusterChecker {
@@ -733,7 +731,7 @@ impl ClusterChecker {
     /// Creates an empty checker with no checks to be run.
     ///
     /// Be sure to use methods like [`with_check`] to add checks before
-    /// calling one of the `run` methods or they will do nothing.
+    /// calling the `run` method, or it will do nothing.
     ///
     /// # Example
     ///
@@ -755,12 +753,9 @@ impl ClusterChecker {
 
     /// Adds all preflight checks to this checker.
     ///
-    /// Note that no checks are run until one of the `run` methods are invoked.
+    /// Note that no checks are run until the [`run`] method is invoked.
     ///
-    /// - [`run_wait`](ClusterChecker::run_wait)
-    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
-    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
-    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
+    /// [`run`]: ClusterChecker::run
     pub fn with_preflight_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(ActiveKubernetesCluster),
@@ -776,12 +771,9 @@ impl ClusterChecker {
 
     /// Adds all checks required for starting a cluster on minikube.
     ///
-    /// Note that no checks are run until one of the `run` methods are invoked.
+    /// Note that no checks are run until the [`run`] method is invoked.
     ///
-    /// - [`run_wait`](ClusterChecker::run_wait)
-    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
-    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
-    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
+    /// [`run`]: ClusterChecker::run
     pub fn with_k8_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(ActiveKubernetesCluster),
@@ -794,12 +786,9 @@ impl ClusterChecker {
 
     /// Adds all checks required for starting a local cluster.
     ///
-    /// Note that no checks are run until one of the `run` methods are invoked.
+    /// Note that no checks are run until the [`run`] method is invoked.
     ///
-    /// - [`run_wait`](ClusterChecker::run_wait)
-    /// - [`run_wait_and_fix`](ClusterChecker::run_wait_and_fix)
-    /// - [`run_with_progress`](ClusterChecker::run_with_progress)
-    /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
+    /// [`run`]: ClusterChecker::run
     pub fn with_local_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(HelmVersion),
@@ -811,8 +800,7 @@ impl ClusterChecker {
         self
     }
 
-    /// Performs check and fix is required
-    ///
+    /// Performs checks and fixes as required.
     pub async fn run(
         self,
         pb_factory: &ProgressBarFactory,

@@ -4,6 +4,8 @@ install-fmt:
 check-fmt:
 	cargo +$(RUSTV) fmt -- --check
 
+check-docs:
+	cargo doc --no-deps
 
 check_version:
 	make check_version -C k8-util/helm
