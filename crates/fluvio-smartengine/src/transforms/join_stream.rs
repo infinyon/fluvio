@@ -10,7 +10,7 @@ use dataplane::smartmodule::{
 };
 use crate::{
     WasmSlice,
-    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
+    {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
 };
 
 const JOIN_FN_NAME: &str = "join";

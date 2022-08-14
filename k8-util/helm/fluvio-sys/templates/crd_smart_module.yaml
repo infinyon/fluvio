@@ -27,6 +27,33 @@ spec:
               type: object
               required: ["input_kind", "output_kind", "wasm"]
               properties:
+                package:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The name of the package.
+                    group:
+                      type: string
+                      description: The group of the package.
+                    version:
+                      type: string
+                      description: The version of the package.
+                init_params:
+                  type: array
+                  x-kubernetes-list-type: map
+                  x-kubernetes-list-map-keys: 
+                    - name
+                  items:
+                    type: object
+                    required: ["name", "input"]
+                    properties:
+                      name:
+                        type: string
+                      input:
+                        type: string
+                        enum:
+                        - string
                 input_kind:
                   type: string
                   enum:

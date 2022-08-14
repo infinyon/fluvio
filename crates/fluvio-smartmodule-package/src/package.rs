@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs::read_to_string;
 use std::path::{Path};
 use std::io::Result;
@@ -8,10 +8,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SmartModuleMetadata {
     pub package: Package,
-    pub init: HashMap<String, InitParam>,
+    pub init: BTreeMap<String, InitParam>,
 }
 
 impl SmartModuleMetadata {
+    #[cfg(feature = "parser")]
     /// parse the metadata file and return the metadata
     pub fn from_file<T: AsRef<Path>>(path: T) -> Result<Self> {
         let path_ref = path.as_ref();

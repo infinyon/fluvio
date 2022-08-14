@@ -9,7 +9,7 @@ use dataplane::smartmodule::{
 };
 use crate::{
     WasmSlice,
-    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
+    {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
 };
 
 const FILTER_FN_NAME: &str = "filter";

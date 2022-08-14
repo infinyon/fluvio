@@ -6,8 +6,7 @@ use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
-    WasmSlice,
-    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
+    WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
     error::Error,
 };
 use dataplane::smartmodule::{

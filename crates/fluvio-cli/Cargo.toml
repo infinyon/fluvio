@@ -86,6 +86,7 @@ fluvio-package-index = { path = "../fluvio-package-index" }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-channel = { path = "../fluvio-channel" }
 fluvio-cli-common = { path = "../fluvio-cli-common" }
+fluvio-smartmodule-package = { path = "../fluvio-smartmodule-package" }
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }

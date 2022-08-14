@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -12,32 +12,26 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-smartmodule = ["fluvio-controlplane-metadata", "flate2"]
 wasi = ["wasmtime-wasi"]
 unstable = []
 
 [dependencies]
 wasmtime = "0.39.0"
 wasmtime-wasi = {version="0.39.0", optional = true}
-nix = "0.24"
+nix = "0.25"
 tracing = "0.1.27"
 anyhow = "1.0.38"
-futures-util = { version = "0.3.5", features = ["sink"] }
 
-fluvio-future = { version = "0.4.0", features = [
-    "subscriber",
-    "openssl_tls",
-    "zero_copy",
-] }
+
+fluvio-future = { version = "0.4.0" }
 dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
     "file",
 ] }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", version = "0.18.0", optional = true }
-flate2 = { version = "1.0", optional = true }
+
 fluvio-spu-schema = { version = "0.10.0", path = "../fluvio-spu-schema" }
 thiserror = "1.0.31"
 
 [dev-dependencies]
 fluvio-types = { path = "../fluvio-types" }
-cargo = "0.63"
+cargo = "0.64"
 cfg-if = "1.0.0"

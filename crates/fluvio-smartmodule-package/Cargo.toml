@@ -14,6 +14,10 @@ description = "Fluvio SmartModule Package"
 [lib]
 crate-type = ['lib']
 
+[features]
+default = ["parser"]
+parser = ["toml"]
+
 [dependencies]
 serde = "1.0.0"
-toml = "0.5.9"
+toml = { version = "0.5.9", optional = true }

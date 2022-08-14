@@ -9,68 +9,74 @@ use dataplane::smartmodule::{
 };
 
 use crate::{
-    WasmSlice,
-    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
+    WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
     error::Error,
 };
 
-const MAP_FN_NAME: &str = "map";
-type OldMapFn = TypedFunc<(i32, i32), i32>;
-type MapFn = TypedFunc<(i32, i32, u32), i32>;
+const FILTER_MAP_FN_NAME: &str = "filter_map";
+type OldFilterMapFn = TypedFunc<(i32, i32), i32>;
+type FilterMapFn = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
-pub struct SmartModuleMap {
+pub struct SmartModuleFilterMap {
     base: SmartModuleContext,
-    map_fn: MapFnKind,
-}
-enum MapFnKind {
-    Old(OldMapFn),
-    New(MapFn),
+    filter_map_fn: FilterMapFnKind,
 }
 
-impl Debug for MapFnKind {
+enum FilterMapFnKind {
+    Old(OldFilterMapFn),
+    New(FilterMapFn),
+}
+
+impl Debug for FilterMapFnKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Old(..) => write!(f, "OldMapFn"),
-            Self::New(..) => write!(f, "MapFn"),
+            Self::Old(_) => write!(f, "OldFilterMapFn"),
+            Self::New(_) => write!(f, "FilterMapFn"),
         }
     }
 }
 
-impl MapFnKind {
+impl FilterMapFnKind {
     fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
         match self {
-            Self::Old(map_fn) => map_fn.call(store, (slice.0, slice.1)),
-            Self::New(map_fn) => map_fn.call(store, slice),
+            Self::Old(filter_fn) => filter_fn.call(store, (slice.0, slice.1)),
+            Self::New(filter_fn) => filter_fn.call(store, slice),
         }
     }
 }
 
-impl SmartModuleMap {
+impl SmartModuleFilterMap {
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self, Error> {
         let mut base = SmartModuleContext::new(module, params, version)?;
-        let map_fn = if let Ok(map_fn) = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)
+        let filter_map_fn = if let Ok(fmap_fn) = base
+            .instance
+            .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
         {
-            MapFnKind::New(map_fn)
+            FilterMapFnKind::New(fmap_fn)
         } else {
-            let map_fn: OldMapFn = base
+            let fmap_fn: OldFilterMapFn = base
                 .instance
-                .get_typed_func(&mut base.store, MAP_FN_NAME)
-                .map_err(|err| Error::NotNamedExport(MAP_FN_NAME, err))?;
-            MapFnKind::Old(map_fn)
+                .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
+                .map_err(|err| Error::NotNamedExport(FILTER_MAP_FN_NAME, err))?;
+            FilterMapFnKind::Old(fmap_fn)
         };
-        Ok(Self { base, map_fn })
+
+        Ok(Self {
+            base,
+            filter_map_fn,
+        })
     }
 }
 
-impl SmartModuleInstance for SmartModuleMap {
+impl SmartModuleInstance for SmartModuleFilterMap {
     fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         let slice = self.base.write_input(&input)?;
-        let map_output = self.map_fn.call(&mut self.base.store, slice)?;
+        let map_output = self.filter_map_fn.call(&mut self.base.store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
