@@ -2121,7 +2121,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.3.3"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "cargo",
@@ -2154,6 +2154,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "fluvio-smartmodule-metadata"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "toml",
 ]
 
 [[package]]
