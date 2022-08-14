@@ -581,9 +581,9 @@ dependencies = [
 
 [[package]]
 name = "cargo"
-version = "0.63.1"
+version = "0.64.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d092a7c3e3aaa66469b2233b58c0bf330419dad9c423165f2b9cf1c57dc9f2e"
+checksum = "7019448b7d0ffe19d4ab26a340d2efe6da8cf86c8cc01a352b90853e31cd8f7c"
 dependencies = [
  "anyhow",
  "atty",
@@ -1208,7 +1208,7 @@ version = "3.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b37feaa84e6861e00a1f5e5aa8da3ee56d605c9992d33e082786754828e20865"
 dependencies = [
- "nix",
+ "nix 0.24.2",
  "winapi",
 ]
 
@@ -1943,7 +1943,7 @@ dependencies = [
  "log",
  "memmap",
  "native-tls",
- "nix",
+ "nix 0.24.2",
  "openssl",
  "openssl-sys",
  "pin-project",
@@ -2129,19 +2129,16 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.4.0"
+version = "0.3.3"
 dependencies = [
  "anyhow",
  "cargo",
  "cfg-if",
- "flate2",
- "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.4.1",
  "fluvio-spu-schema",
  "fluvio-types",
- "futures-util",
- "nix",
+ "nix 0.25.0",
  "thiserror",
  "tracing",
  "wasmtime",
@@ -2165,14 +2162,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "fluvio-smartmodule-metadata"
-version = "0.0.1"
-dependencies = [
- "serde",
- "toml",
 ]
 
 [[package]]
@@ -2288,7 +2277,7 @@ dependencies = [
  "futures-lite",
  "libc",
  "memmap",
- "nix",
+ "nix 0.24.2",
  "pin-utils",
  "serde",
  "thiserror",
@@ -2362,7 +2351,7 @@ dependencies = [
  "indicatif 0.17.0",
  "inventory",
  "md-5",
- "nix",
+ "nix 0.24.2",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -2382,7 +2371,7 @@ dependencies = [
  "crossbeam-channel",
  "fluvio",
  "fluvio-future 0.4.1",
- "nix",
+ "nix 0.24.2",
  "proc-macro2",
  "quote",
  "syn",
@@ -2402,7 +2391,7 @@ dependencies = [
  "fluvio-test-util",
  "inflections",
  "inventory",
- "nix",
+ "nix 0.24.2",
  "proc-macro2",
  "quote",
  "rand 0.8.5",
@@ -3639,6 +3628,20 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e322c04a9e3440c327fca7b6c8a63e6890a32fa2ad689db972425f07e0d22abb"
+dependencies = [
+ "autocfg",
+ "bitflags",
+ "cfg-if",
+ "libc",
+ "memoffset",
+ "pin-utils",
 ]
 
 [[package]]
