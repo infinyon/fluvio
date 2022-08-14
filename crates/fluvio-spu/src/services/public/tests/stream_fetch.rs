@@ -10,7 +10,7 @@ use fluvio_controlplane_metadata::{
     partition::Replica,
     smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec},
 };
-use fluvio_storage::{FileReplica, ReplicaStorage};
+use fluvio_storage::{FileReplica};
 use flv_util::fixture::ensure_clean_dir;
 use futures_util::{Future, StreamExt};
 
@@ -33,7 +33,7 @@ use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
 use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
 use crate::{
-    core::{GlobalContext, spu_local_store, replica_localstore},
+    core::{GlobalContext, spu_local_store, replica_localstore, smartmodule_localstore},
     services::public::tests::create_filter_records,
 };
 use crate::config::SpuConfig;
@@ -77,9 +77,9 @@ fn read_wasm_module(module_name: &str) -> Vec<u8> {
     read_filter_from_path(wasm_path)
 }
 
-fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str) {
+fn load_wasm_module(module_name: &str) {
     let wasm = zip(read_wasm_module(module_name));
-    ctx.smartmodule_localstore().insert(SmartModule {
+    smartmodule_localstore().insert(SmartModule {
         name: module_name.to_owned(),
         spec: SmartModuleSpec {
             wasm: SmartModuleWasm {
@@ -367,7 +367,7 @@ async fn predefined_test<Fut, TestFn>(
     spu_config.log.base_dir = test_path.clone();
 
     let ctx = GlobalContext::new_shared_context(spu_config);
-    load_wasm_module(&ctx, module_name);
+    load_wasm_module(module_name);
     let smartmodule = SmartModuleInvocation {
         wasm: SmartModuleInvocationWasm::Predefined(module_name.to_owned()),
         kind: stream_kind,
@@ -1767,7 +1767,7 @@ async fn test_stream_fetch_invalid_wasm_module_predefined() {
     let ctx = GlobalContext::new_shared_context(spu_config);
 
     let wasm = zip(Vec::from("Hello, world, I'm not a valid WASM module!"));
-    ctx.smartmodule_localstore().insert(SmartModule {
+    smartmodule_localstore().insert(SmartModule {
         name: "invalid_wasm".to_owned(),
         spec: SmartModuleSpec {
             wasm: SmartModuleWasm {
@@ -2360,7 +2360,7 @@ async fn test_stream_fetch_invalid_smartmodule_predefined() {
     let ctx = GlobalContext::new_shared_context(spu_config);
 
     let wasm = zip(include_bytes!("test_data/filter_missing_attribute.wasm").to_vec());
-    ctx.smartmodule_localstore().insert(SmartModule {
+    smartmodule_localstore().insert(SmartModule {
         name: "invalid_wasm".to_owned(),
         spec: SmartModuleSpec {
             wasm: SmartModuleWasm {

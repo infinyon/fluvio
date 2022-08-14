@@ -13,7 +13,7 @@ use fluvio_spu_schema::server::stream_fetch::{
 };
 use futures_util::{StreamExt, stream::BoxStream};
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::{DefaultSharedGlobalContext, smartmodule_localstore};
 
 pub struct SmartModuleContext {
     pub smartmodule_instance: Box<dyn SmartModuleInstance>,
@@ -144,7 +144,7 @@ impl SmartModuleContext {
         // then get smartmodule context
         let payload = match invocation.wasm {
             SmartModuleInvocationWasm::Predefined(name) => {
-                if let Some(smartmodule) = ctx.smartmodule_localstore().spec(&name) {
+                if let Some(smartmodule) = smartmodule_localstore().spec(&name) {
                     let wasm = SmartModuleWasmCompressed::Gzip(smartmodule.spec.wasm.payload);
                     LegacySmartModulePayload {
                         wasm,

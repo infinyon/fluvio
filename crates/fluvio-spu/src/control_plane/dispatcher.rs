@@ -17,7 +17,7 @@ use fluvio_controlplane::UpdateReplicaRequest;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
-use crate::core::{SharedGlobalContext, spu_local_store};
+use crate::core::{SharedGlobalContext, spu_local_store, smartmodule_localstore};
 use crate::InternalServerError;
 
 use super::message_sink::{SharedStatusUpdate};
@@ -361,7 +361,7 @@ impl ScDispatcher<FileReplica> {
                 "received smartmodule sync all"
             );
             trace!("received spu all items: {:#?}", request.all);
-            self.ctx.smartmodule_localstore().sync_all(request.all)
+            smartmodule_localstore().sync_all(request.all)
         } else {
             debug!(
                 epoch = request.epoch,
@@ -369,9 +369,7 @@ impl ScDispatcher<FileReplica> {
                 "received smartmoudle changes"
             );
             trace!("received spu change items: {:#?}", request.changes);
-            self.ctx
-                .smartmodule_localstore()
-                .apply_changes(request.changes)
+            smartmodule_localstore().apply_changes(request.changes)
         };
 
         debug!(actions = actions.count(), "finished SmartModule update");

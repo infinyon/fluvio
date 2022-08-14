@@ -37,6 +37,7 @@ pub use file_replica::ReplicaChange;
 
 static SPU_STORE: OnceCell<SharedSpuLocalStore> = OnceCell::new();
 static REPLICA_STORE: OnceCell<SharedReplicaLocalStore> = OnceCell::new();
+static SMARTMODULE_STORE: OnceCell<SharedSmartModuleLocalStore> = OnceCell::new();
 
 pub(crate) fn spu_local_store() -> &'static SpuLocalStore {
     SPU_STORE.get().unwrap()
@@ -48,6 +49,10 @@ pub(crate) fn spu_local_store_owned() -> SharedSpuLocalStore {
 
 pub(crate) fn replica_localstore() -> &'static ReplicaStore {
     REPLICA_STORE.get().unwrap()
+}
+
+pub(crate) fn smartmodule_localstore() -> &'static SmartModuleLocalStore {
+    SMARTMODULE_STORE.get().unwrap()
 }
 
 /// initialize global variables
@@ -76,7 +81,6 @@ pub(crate) fn initialize(_spu_config: SpuConfig) {
 #[derive(Debug)]
 pub struct GlobalContext<S> {
     config: SharedSpuConfig,
-    smartmodule_localstore: SharedSmartModuleLocalStore,
     derivedstream_localstore: SharedStreamStreamLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
@@ -103,7 +107,6 @@ where
         let replicas = ReplicaStore::new_shared();
 
         GlobalContext {
-            smartmodule_localstore: SmartModuleLocalStore::new_shared(),
             derivedstream_localstore: DerivedStreamStore::new_shared(),
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
@@ -118,10 +121,6 @@ where
     /// retrieves local spu id
     pub fn local_spu_id(&self) -> SpuId {
         self.config.id
-    }
-
-    pub fn smartmodule_localstore(&self) -> &SmartModuleLocalStore {
-        &self.smartmodule_localstore
     }
 
     pub fn derivedstream_store(&self) -> &DerivedStreamStore {
