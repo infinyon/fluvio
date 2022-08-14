@@ -67,6 +67,8 @@ pub fn create_services(
     Option<InternalApiServer>,
     Option<SpuPublicServer>,
 ) {
+
+    crate::core::initialize(local_spu.clone());
     let ctx = FileReplicaContext::new_shared_context(local_spu);
 
     let public_ep_addr = ctx.config().public_socket_addr().to_owned();

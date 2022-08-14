@@ -2234,7 +2234,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "sysinfo 0.24.7",
+ "sysinfo 0.25.2",
  "thiserror",
  "tokio",
  "toml",

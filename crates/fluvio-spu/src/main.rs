@@ -1,6 +1,10 @@
-use clap::Parser;
+
+
 
 fn main() {
+    use clap::Parser;
+
+
     fluvio_future::subscriber::init_tracer(None);
 
     let opt = fluvio_spu::SpuOpt::parse();
