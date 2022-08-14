@@ -6,11 +6,11 @@ use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleExtraParams, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleExtraParams, SmartModuleOutput, SmartModuleInternalError,
 };
 use crate::{
     WasmSlice,
-    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
+    {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
 };
 
 const JOIN_FN_NAME: &str = "join";
@@ -18,7 +18,7 @@ type OldJoinFn = TypedFunc<(i32, i32), i32>;
 type JoinFn = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
-pub struct SmartModuleJoin {
+pub struct SmartModuleJoinStream {
     base: SmartModuleContext,
     join_fn: JoinFnKind,
 }
@@ -46,7 +46,7 @@ impl JoinFnKind {
     }
 }
 
-impl SmartModuleJoin {
+impl SmartModuleJoinStream {
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
@@ -67,8 +67,8 @@ impl SmartModuleJoin {
     }
 }
 
-impl SmartModuleInstance for SmartModuleJoin {
-    #[instrument(skip(self, input), name = "Join")]
+impl SmartModuleInstance for SmartModuleJoinStream {
+    #[instrument(skip(self, input), name = "JoinStream")]
     fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         let slice = self.base.write_input(&input)?;
         debug!(len = slice.1, "WASM SLICE");
