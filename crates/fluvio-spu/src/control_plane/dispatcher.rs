@@ -17,7 +17,7 @@ use fluvio_controlplane::UpdateReplicaRequest;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
-use crate::core::{SharedGlobalContext, spu_local_store, smartmodule_localstore};
+use crate::core::{SharedGlobalContext, spu_local_store, smartmodule_localstore, derivedstream_store};
 use crate::InternalServerError;
 
 use super::message_sink::{SharedStatusUpdate};
@@ -396,7 +396,7 @@ impl ScDispatcher<FileReplica> {
                 "received derivedstream all"
             );
             trace!("received derivedstream all items: {:#?}", request.all);
-            self.ctx.derivedstream_store().sync_all(request.all)
+            derivedstream_store().sync_all(request.all)
         } else {
             debug!(
                 epoch = request.epoch,
@@ -407,9 +407,7 @@ impl ScDispatcher<FileReplica> {
                 "received derivedstream change items: {:#?}",
                 request.changes
             );
-            self.ctx
-                .derivedstream_store()
-                .apply_changes(request.changes)
+            derivedstream_store().apply_changes(request.changes)
         };
 
         debug!(actions = actions.count(), "finished DerivedStream update");

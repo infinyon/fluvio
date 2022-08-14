@@ -38,6 +38,7 @@ pub use file_replica::ReplicaChange;
 static SPU_STORE: OnceCell<SharedSpuLocalStore> = OnceCell::new();
 static REPLICA_STORE: OnceCell<SharedReplicaLocalStore> = OnceCell::new();
 static SMARTMODULE_STORE: OnceCell<SharedSmartModuleLocalStore> = OnceCell::new();
+static DERIVEDSTREAM_STORE: OnceCell<SharedStreamStreamLocalStore> = OnceCell::new();
 
 pub(crate) fn spu_local_store() -> &'static SpuLocalStore {
     SPU_STORE.get().unwrap()
@@ -55,10 +56,21 @@ pub(crate) fn smartmodule_localstore() -> &'static SmartModuleLocalStore {
     SMARTMODULE_STORE.get().unwrap()
 }
 
+pub fn derivedstream_store() -> &'static DerivedStreamStore {
+    DERIVEDSTREAM_STORE.get().unwrap()
+}
+
 /// initialize global variables
 pub(crate) fn initialize(_spu_config: SpuConfig) {
     SPU_STORE.set(SpuLocalStore::new_shared()).unwrap();
     REPLICA_STORE.set(ReplicaStore::new_shared()).unwrap();
+    SMARTMODULE_STORE
+        .set(SmartModuleLocalStore::new_shared())
+        .unwrap();
+    DERIVEDSTREAM_STORE
+        .set(DerivedStreamStore::new_shared())
+        .unwrap();
+
     /*
     let replicas = ReplicaStore::new_shared();
 
@@ -81,7 +93,6 @@ pub(crate) fn initialize(_spu_config: SpuConfig) {
 #[derive(Debug)]
 pub struct GlobalContext<S> {
     config: SharedSpuConfig,
-    derivedstream_localstore: SharedStreamStreamLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     spu_followers: SharedSpuUpdates,
@@ -107,7 +118,6 @@ where
         let replicas = ReplicaStore::new_shared();
 
         GlobalContext {
-            derivedstream_localstore: DerivedStreamStore::new_shared(),
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
@@ -121,10 +131,6 @@ where
     /// retrieves local spu id
     pub fn local_spu_id(&self) -> SpuId {
         self.config.id
-    }
-
-    pub fn derivedstream_store(&self) -> &DerivedStreamStore {
-        &self.derivedstream_localstore
     }
 
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {

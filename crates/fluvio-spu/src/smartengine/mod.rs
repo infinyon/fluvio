@@ -13,7 +13,7 @@ use fluvio_spu_schema::server::stream_fetch::{
 };
 use futures_util::{StreamExt, stream::BoxStream};
 
-use crate::core::{DefaultSharedGlobalContext, smartmodule_localstore};
+use crate::core::{DefaultSharedGlobalContext, smartmodule_localstore, derivedstream_store};
 
 pub struct SmartModuleContext {
     pub smartmodule_instance: Box<dyn SmartModuleInstance>,
@@ -32,7 +32,7 @@ impl SmartModuleContext {
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Option<Self>, ErrorCode> {
         let derived_sm_modules = if let Some(ss_inv) = derivedstream {
-            Some(extract_derivedstream_context(ss_inv, ctx).await?)
+            Some(extract_derivedstream_context(ss_inv).await?)
         } else {
             None
         };
@@ -94,7 +94,7 @@ impl SmartModuleContext {
                 derivedstream: ref derivedstream_name,
             }) => {
                 // first ensure derivedstream exists
-                if let Some(derivedstream) = ctx.derivedstream_store().spec(derivedstream_name) {
+                if let Some(derivedstream) = derivedstream_store().spec(derivedstream_name) {
                     // find input which has topic
                     match derivedstream.spec.input {
                         DerivedStreamInputRef::Topic(topic) => {
@@ -213,14 +213,13 @@ impl SmartModuleContext {
 
 async fn extract_derivedstream_context(
     invocation: DerivedStreamInvocation,
-    ctx: &DefaultSharedGlobalContext,
 ) -> Result<SmartModuleInvocation, ErrorCode> {
     let name = invocation.stream;
     debug!(%name,"extracting derivedstream");
     let params = invocation.params;
-    let ss_list = ctx.derivedstream_store().all_keys();
+    let ss_list = derivedstream_store().all_keys();
     debug!("derivedstreams: {:#?}", ss_list);
-    if let Some(derivedstream) = ctx.derivedstream_store().spec(&name) {
+    if let Some(derivedstream) = derivedstream_store().spec(&name) {
         let spec = derivedstream.spec;
         if derivedstream.valid {
             let mut steps = spec.steps.steps;
@@ -262,7 +261,7 @@ async fn extract_derivedstream_context(
                         DerivedStreamInputRef::DerivedStream(ref smart_stream) => {
                             let join_target_name = smart_stream.name.to_owned();
                             // ensure derivedstream exists
-                            if let Some(ctx) = ctx.derivedstream_store().spec(&join_target_name) {
+                            if let Some(ctx) = derivedstream_store().spec(&join_target_name) {
                                 let target_input = ctx.spec.input;
                                 // check target input, we can only do 1 level recursive definition now.
                                 match target_input {
