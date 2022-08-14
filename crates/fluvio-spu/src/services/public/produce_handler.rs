@@ -20,7 +20,7 @@ use tokio::select;
 use std::time::Duration;
 use fluvio_future::timer::sleep;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::{DefaultSharedGlobalContext, replica_localstore};
 
 struct TopicWriteResult {
     topic: String,
@@ -110,7 +110,7 @@ async fn handle_produce_partition<R: BatchRecords>(
         }
     };
 
-    let replica_metadata = match ctx.replica_localstore().spec(&replica_id) {
+    let replica_metadata = match replica_localstore().spec(&replica_id) {
         Some(replica_metadata) => replica_metadata,
         None => {
             error!(%replica_id, "Replica not found");

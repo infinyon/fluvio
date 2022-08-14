@@ -15,7 +15,7 @@ use tracing::debug;
 
 use crate::{
     config::SpuConfig,
-    core::GlobalContext,
+    core::{GlobalContext, replica_localstore},
     services::public::{create_public_server, tests::create_filter_records},
     replication::leader::LeaderReplicaState,
 };
@@ -41,7 +41,7 @@ async fn test_produce_basic() {
     let topic = "test_produce";
     let test = Replica::new((topic, 0), 5001, vec![5001]);
     let test_id = test.id.clone();
-    ctx.replica_localstore().sync_all(vec![test.clone()]);
+    replica_localstore().sync_all(vec![test.clone()]);
 
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
@@ -152,7 +152,7 @@ async fn test_produce_invalid_compression() {
     let mut test = Replica::new((topic, 0), 5001, vec![5001]);
     test.compression_type = CompressionAlgorithm::Gzip;
     let test_id = test.id.clone();
-    ctx.replica_localstore().sync_all(vec![test.clone()]);
+    replica_localstore().sync_all(vec![test.clone()]);
 
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await

@@ -33,7 +33,7 @@ use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
 use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
 use crate::{
-    core::{GlobalContext, spu_local_store},
+    core::{GlobalContext, spu_local_store, replica_localstore},
     services::public::tests::create_filter_records,
 };
 use crate::config::SpuConfig;
@@ -2482,7 +2482,7 @@ async fn test_stream_fetch_join(
         .insert(test_id_left, replica_left.clone())
         .await;
 
-    ctx.replica_localstore().insert(test_left.clone());
+    replica_localstore().insert(test_left.clone());
     let topic_right = JOIN_RIGHT_TOPIC;
     let test_right = Replica::new((topic_right.to_owned(), 0), 5001, vec![5001]);
     let test_id_right = test_right.id.clone();
@@ -2490,7 +2490,7 @@ async fn test_stream_fetch_join(
         LeaderReplicaState::create(test_right.clone(), ctx.config(), ctx.status_update_owned())
             .await
             .expect("replica");
-    ctx.replica_localstore().insert(test_right);
+    replica_localstore().insert(test_right);
     ctx.leaders_state()
         .insert(test_id_right, replica_right.clone())
         .await;

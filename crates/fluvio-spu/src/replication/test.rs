@@ -15,7 +15,7 @@ use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
 use dataplane::fixture::{create_recordset};
 
-use crate::core::{DefaultSharedGlobalContext, GlobalContext, spu_local_store};
+use crate::core::{DefaultSharedGlobalContext, GlobalContext, spu_local_store, replica_localstore};
 use crate::config::SpuConfig;
 use crate::services::create_internal_server;
 
@@ -151,7 +151,7 @@ impl TestConfig {
         let replica = self.replica();
 
         let gctx = self.leader_ctx().await;
-        gctx.replica_localstore().sync_all(vec![replica.clone()]);
+        replica_localstore().sync_all(vec![replica.clone()]);
 
         let leader_replica = gctx
             .leaders_state()
@@ -179,7 +179,7 @@ impl TestConfig {
     ) {
         let replica = self.replica();
         let gctx = self.follower_ctx(follower_index).await;
-        gctx.replica_localstore().sync_all(vec![replica.clone()]);
+        replica_localstore().sync_all(vec![replica.clone()]);
 
         gctx.followers_state_owned()
             .add_replica(&gctx, replica.clone())
