@@ -8,7 +8,7 @@ mod replication;
 mod control_plane;
 mod storage;
 mod smartengine;
-        
+
 pub use start::main_loop;
 use self::error::InternalServerError;
 pub use config::SpuOpt;

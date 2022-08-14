@@ -17,7 +17,7 @@ use fluvio_controlplane::UpdateReplicaRequest;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
-use crate::core::SharedGlobalContext;
+use crate::core::{SharedGlobalContext, spu_local_store};
 use crate::InternalServerError;
 
 use super::message_sink::{SharedStatusUpdate};
@@ -324,7 +324,7 @@ impl ScDispatcher<FileReplica> {
                 "received spu sync all"
             );
             trace!("received spu all items: {:#?}", request.all);
-            self.ctx.spu_localstore().sync_all(request.all)
+            spu_local_store().sync_all(request.all)
         } else {
             debug!(
                 epoch = request.epoch,
@@ -332,7 +332,7 @@ impl ScDispatcher<FileReplica> {
                 "received spu changes"
             );
             trace!("received spu change items: {:#?}", request.changes);
-            self.ctx.spu_localstore().apply_changes(request.changes)
+            spu_local_store().apply_changes(request.changes)
         };
 
         self.ctx.sync_follower_update().await;

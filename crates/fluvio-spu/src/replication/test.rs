@@ -15,7 +15,7 @@ use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
 use dataplane::fixture::{create_recordset};
 
-use crate::core::{DefaultSharedGlobalContext, GlobalContext};
+use crate::core::{DefaultSharedGlobalContext, GlobalContext, spu_local_store};
 use crate::config::SpuConfig;
 use crate::services::create_internal_server;
 
@@ -138,7 +138,7 @@ impl TestConfig {
         let leader_config = self.leader_config();
 
         let gctx = GlobalContext::new_shared_context(leader_config);
-        gctx.spu_localstore().sync_all(self.spu_specs());
+        spu_local_store().sync_all(self.spu_specs());
         gctx.sync_follower_update().await;
 
         gctx
@@ -166,7 +166,7 @@ impl TestConfig {
     pub async fn follower_ctx(&self, follower_index: u16) -> DefaultSharedGlobalContext {
         let follower_config = self.follower_config(follower_index);
         let gctx = GlobalContext::new_shared_context(follower_config);
-        gctx.spu_localstore().sync_all(self.spu_specs());
+        spu_local_store().sync_all(self.spu_specs());
         gctx
     }
 

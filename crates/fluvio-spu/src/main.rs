@@ -1,9 +1,5 @@
-
-
-
 fn main() {
     use clap::Parser;
-
 
     fluvio_future::subscriber::init_tracer(None);
 

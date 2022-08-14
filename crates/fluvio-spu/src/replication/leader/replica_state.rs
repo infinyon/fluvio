@@ -690,6 +690,7 @@ mod test_leader {
     use dataplane::batch::BatchRecords;
     use dataplane::fixture::{create_recordset};
 
+    use crate::core::spu_local_store;
     use crate::{
         config::{SpuConfig},
     };
@@ -901,7 +902,7 @@ mod test_leader {
         ];
         let gctx: Arc<GlobalContext<MockStorage>> =
             GlobalContext::new_shared_context(leader_config);
-        gctx.spu_localstore().sync_all(specs);
+        spu_local_store().sync_all(specs);
         gctx.sync_follower_update().await;
 
         let notifier = gctx.follower_notifier();

@@ -7,7 +7,7 @@ pub mod replica;
 pub mod smartmodule;
 pub mod derivedstream;
 
-pub(crate) use self::global_context::{GlobalContext, ReplicaChange,initialize};
+pub(crate) use self::global_context::*;
 pub(crate) use self::store::Spec;
 pub(crate) use self::store::LocalStore;
 pub(crate) use self::store::SpecChange;

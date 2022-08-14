@@ -67,7 +67,6 @@ pub fn create_services(
     Option<InternalApiServer>,
     Option<SpuPublicServer>,
 ) {
-
     crate::core::initialize(local_spu.clone());
     let ctx = FileReplicaContext::new_shared_context(local_spu);
 

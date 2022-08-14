@@ -32,7 +32,10 @@ use fluvio_spu_schema::server::{
 use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
 use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
-use crate::{core::GlobalContext, services::public::tests::create_filter_records};
+use crate::{
+    core::{GlobalContext, spu_local_store},
+    services::public::tests::create_filter_records,
+};
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
 use crate::services::public::create_public_server;
@@ -2461,7 +2464,7 @@ async fn test_stream_fetch_join(
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let spu_localstore = ctx.spu_localstore();
+    let spu_localstore = spu_local_store();
     let spu_spec = SpuSpec::new_public_addr(5001, port, "127.0.0.1".into());
     spu_localstore.insert(spu_spec);
 

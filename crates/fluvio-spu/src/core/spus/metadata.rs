@@ -54,7 +54,7 @@ impl SpuLocalStore {
 pub mod test {
     use std::collections::BTreeMap;
 
-    use crate::core::SpuLocalStore;
+    use crate::core::{SpuLocalStore};
 
     #[test]
     fn test_indexed_by_id() {
