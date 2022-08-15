@@ -9,8 +9,7 @@ use dataplane::smartmodule::{
 };
 
 use crate::{
-    WasmSlice,
-    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
+    WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
     error::Error,
 };
 
