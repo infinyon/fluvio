@@ -144,7 +144,6 @@ impl SmartModuleContext {
         // then get smartmodule context
         let payload = match invocation.wasm {
             SmartModuleInvocationWasm::Predefined(name) => {
-            
                 if let Some(smartmodule) = ctx.smartmodule_localstore().spec(&name) {
                     let wasm = SmartModuleWasmCompressed::Gzip(smartmodule.spec.wasm.payload);
                     LegacySmartModulePayload {
