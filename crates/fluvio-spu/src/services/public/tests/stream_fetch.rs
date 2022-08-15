@@ -10,7 +10,6 @@ use fluvio_controlplane_metadata::{
     partition::Replica,
     smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec},
 };
-use fluvio_storage::{FileReplica};
 use flv_util::fixture::ensure_clean_dir;
 use futures_util::{Future, StreamExt};
 
@@ -38,7 +37,7 @@ use crate::{
         initialize,
     },
     services::public::tests::create_filter_records,
-    replication::{ReplicaContext, default_replica_ctx, follower_notifier},
+    replication::{default_replica_ctx, follower_notifier},
 };
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
@@ -2425,7 +2424,10 @@ async fn test_stream_fetch_invalid_smartmodule(
     let replica = LeaderReplicaState::create(test, config(), status_update_owned())
         .await
         .expect("replica");
-    default_replica_ctx().leaders_state().insert(test_id, replica.clone()).await;
+    default_replica_ctx()
+        .leaders_state()
+        .insert(test_id, replica.clone())
+        .await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -2496,7 +2498,8 @@ async fn test_stream_fetch_join(
         LeaderReplicaState::create(test_left.clone(), config(), status_update_owned())
             .await
             .expect("replica");
-    default_replica_ctx().leaders_state()
+    default_replica_ctx()
+        .leaders_state()
         .insert(test_id_left, replica_left.clone())
         .await;
 
@@ -2509,7 +2512,8 @@ async fn test_stream_fetch_join(
             .await
             .expect("replica");
     replica_localstore().insert(test_right);
-    default_replica_ctx().leaders_state()
+    default_replica_ctx()
+        .leaders_state()
         .insert(test_id_right, replica_right.clone())
         .await;
 

@@ -15,13 +15,14 @@ use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
 use dataplane::fixture::{create_recordset};
 
-use crate::core::{spu_local_store, replica_localstore, status_update_owned, status_update};
+use crate::core::{spu_local_store, replica_localstore, status_update_owned, status_update, initialize};
 use crate::config::SpuConfig;
 use crate::replication::follower_notifier;
 use crate::services::create_internal_server;
 
-use super::{DefaultSharedReplicaContext, ReplicaContext, sync_follower_update};
-use super::{follower::FollowerReplicaState, leader::LeaderReplicaState};
+use super::leader::LeaderReplicaState;
+use super::{sync_follower_update, default_replica_ctx};
+use super::{follower::FollowerReplicaState};
 
 const TOPIC: &str = "test";
 const HOST: &str = "127.0.0.1";
@@ -136,65 +137,45 @@ impl TestConfig {
     }
 
     /// create new context with SPU populated
-    pub async fn leader_ctx(&self) -> DefaultSharedReplicaContext {
-        let leader_config = self.leader_config();
-
-        let gctx = ReplicaContext::new_shared_context();
+    pub async fn leader_ctx(&self) {
+        initialize(self.leader_config());
         spu_local_store().sync_all(self.spu_specs());
         sync_follower_update().await;
-
-        gctx
     }
 
     /// starts new leader
-    pub async fn leader_replica(
-        &self,
-    ) -> (DefaultSharedReplicaContext, LeaderReplicaState<FileReplica>) {
+    pub async fn leader_replica(&self) -> LeaderReplicaState<FileReplica> {
         let replica = self.replica();
-
-        let gctx = self.leader_ctx().await;
         replica_localstore().sync_all(vec![replica.clone()]);
 
-        let leader_replica = gctx
+        default_replica_ctx()
             .leaders_state()
             .add_leader_replica(replica.clone(), status_update_owned())
             .await
-            .expect("leader");
-
-        (gctx, leader_replica)
+            .expect("leader")
     }
 
     /// create new follower context witj SPU
-    pub async fn follower_ctx(&self, follower_index: u16) -> DefaultSharedReplicaContext {
-        let follower_config = self.follower_config(follower_index);
-        let gctx = ReplicaContext::new_shared_context();
+    pub async fn follower_ctx(&self, follower_index: u16) {
+        initialize(self.follower_config(follower_index));
         spu_local_store().sync_all(self.spu_specs());
-        gctx
     }
 
-    pub async fn follower_replica(
-        &self,
-        follower_index: u16,
-    ) -> (
-        DefaultSharedReplicaContext,
-        FollowerReplicaState<FileReplica>,
-    ) {
+    pub async fn follower_replica(&self, follower_index: u16) -> FollowerReplicaState<FileReplica> {
         let replica = self.replica();
-        let gctx = self.follower_ctx(follower_index).await;
+        self.follower_ctx(follower_index).await;
         replica_localstore().sync_all(vec![replica.clone()]);
+        let gctx = default_replica_ctx();
 
         gctx.followers_state_owned()
-            .add_replica(&gctx, replica.clone())
+            .add_replica(gctx, replica.clone())
             .await
             .expect("create");
 
-        let follower_replica = gctx
-            .followers_state()
+        gctx.followers_state()
             .get(&replica.id)
             .await
-            .expect("value");
-
-        (gctx, follower_replica)
+            .expect("value")
     }
 }
 
@@ -217,7 +198,7 @@ async fn test_just_leader() {
         .base_port(13000_u16)
         .generate("just_leader");
 
-    let (_leader_gctx, leader_replica) = builder.leader_replica().await;
+    let leader_replica = builder.leader_replica().await;
 
     assert_eq!(leader_replica.leo(), 0);
     assert_eq!(leader_replica.hw(), 0);
@@ -257,7 +238,7 @@ async fn test_replication2_existing() {
         .base_port(13010_u16)
         .generate("replication2_existing");
 
-    let (leader_gctx, leader_replica) = builder.leader_replica().await;
+    let leader_replica = builder.leader_replica().await;
 
     // write records
     leader_replica
@@ -275,7 +256,7 @@ async fn test_replication2_existing() {
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
     debug!("starting follower replica controller");
-    let (_, follower_replica) = builder.follower_replica(0).await;
+    let follower_replica = builder.follower_replica(0).await;
 
     // at this point, follower replica should be empty since we didn't have time to sync up with leader
     assert_eq!(follower_replica.leo(), 0);
@@ -321,7 +302,7 @@ async fn test_replication2_new_records() {
         .base_port(13020_u16)
         .generate("replication2_new");
 
-    let (leader_gctx, leader_replica) = builder.leader_replica().await;
+    let leader_replica = builder.leader_replica().await;
     assert_eq!(leader_replica.leo(), 0);
     assert_eq!(leader_replica.hw(), 0);
 
@@ -333,7 +314,7 @@ async fn test_replication2_new_records() {
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-    let (_, follower_replica) = builder.follower_replica(0).await;
+    let follower_replica = builder.follower_replica(0).await;
 
     // at this point, follower replica should be empty since we didn't have time to sync up with leader
     assert_eq!(follower_replica.leo(), 0);
@@ -391,7 +372,7 @@ async fn test_replication3_existing() {
         .base_port(13030_u16)
         .generate("replication3_existing");
 
-    let (leader_gctx, leader_replica) = builder.leader_replica().await;
+    let leader_replica = builder.leader_replica().await;
 
     // write records
     leader_replica
@@ -407,13 +388,13 @@ async fn test_replication3_existing() {
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-    let (_, follower_replica1) = builder.follower_replica(0).await;
+    let follower_replica1 = builder.follower_replica(0).await;
 
     // at this point, follower replica should be empty since we didn't have time to sync up with leader
     assert_eq!(follower_replica1.leo(), 0);
     assert_eq!(follower_replica1.hw(), 0);
 
-    let (_, follower_replica2) = builder.follower_replica(1).await;
+    let follower_replica2 = builder.follower_replica(1).await;
 
     // at this point, follower replica should be empty since we didn't have time to sync up with leader
     assert_eq!(follower_replica2.leo(), 0);
@@ -430,7 +411,7 @@ async fn test_replication3_existing() {
     assert_eq!(follower_replica1.hw(), 2);
     assert_eq!(leader_replica.hw(), 2);
 
-    let (_, follower_replica2) = builder.follower_replica(1).await;
+    let follower_replica2 = builder.follower_replica(1).await;
     assert_eq!(follower_replica2.leo(), 2);
     assert_eq!(follower_replica2.hw(), 2);
 
@@ -449,7 +430,7 @@ async fn test_replication3_new_records() {
         .base_port(13040_u16)
         .generate("replication3_new");
 
-    let (leader_gctx, leader_replica) = builder.leader_replica().await;
+    let leader_replica = builder.leader_replica().await;
     assert_eq!(leader_replica.leo(), 0);
     assert_eq!(leader_replica.hw(), 0);
 
@@ -462,13 +443,13 @@ async fn test_replication3_new_records() {
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-    let (_, follower_replica1) = builder.follower_replica(0).await;
+    let follower_replica1 = builder.follower_replica(0).await;
 
     // at this point, follower replica should be empty since we didn't have time to sync up with leader
     assert_eq!(follower_replica1.leo(), 0);
     assert_eq!(follower_replica1.hw(), 0);
 
-    let (_, follower_replica2) = builder.follower_replica(1).await;
+    let follower_replica2 = builder.follower_replica(1).await;
 
     // at this point, follower replica should be empty since we didn't have time to sync up with leader
     assert_eq!(follower_replica2.leo(), 0);
@@ -519,7 +500,7 @@ async fn test_replication2_promote() {
         .base_port(13050_u16)
         .generate("replication2_promote");
 
-    let (leader_gctx, leader_replica) = builder.leader_replica().await;
+    let leader_replica = builder.leader_replica().await;
     assert_eq!(leader_replica.leo(), 0);
 
     let follower_info = leader_replica.followers_info().await;
@@ -530,7 +511,7 @@ async fn test_replication2_promote() {
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-    let (follower_ctx, _follower_replica) = builder.follower_replica(0).await;
+    builder.follower_replica(0).await;
     let old_replica = builder.replica();
 
     // switch leader and follower
@@ -540,6 +521,8 @@ async fn test_replication2_promote() {
 
     sleep(Duration::from_millis(MAX_WAIT_FOLLOWER)).await;
     sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
+
+    let follower_ctx = default_replica_ctx();
 
     // check follower replica exists before
     assert!(follower_ctx
@@ -579,13 +562,13 @@ async fn test_replication_dispatch_in_sequence() {
         .base_port(13060_u16)
         .generate("replication_dispatch_in_sequence");
 
-    let leader_gctx = builder.leader_ctx().await;
+    builder.leader_ctx().await;
 
     let spu_server = create_internal_server(builder.leader_addr()).run();
 
     let replica = builder.replica();
 
-    let actions = leader_gctx
+    let actions = default_replica_ctx()
         .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
         .await;
     assert!(actions.is_empty());
@@ -593,12 +576,12 @@ async fn test_replication_dispatch_in_sequence() {
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-    let leader = leader_gctx
+    let leader = default_replica_ctx()
         .leaders_state()
         .get(&replica.id)
         .await
         .expect("replica");
-    assert!(leader_gctx
+    assert!(default_replica_ctx()
         .followers_state()
         .get(&replica.id)
         .await
@@ -615,7 +598,8 @@ async fn test_replication_dispatch_in_sequence() {
     assert_eq!(leader.leo(), 2);
     assert_eq!(leader.hw(), 0);
 
-    let follower_gctx = builder.follower_ctx(0).await;
+    builder.follower_ctx(0).await;
+    let follower_gctx = default_replica_ctx();
     let actions = follower_gctx
         .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
         .await;
@@ -654,12 +638,13 @@ async fn test_replication_dispatch_out_of_sequence() {
 
     let replica = builder.replica();
 
-    let leader_gctx = builder.leader_ctx().await;
+    builder.leader_ctx().await;
 
     let spu_server = create_internal_server(builder.leader_addr()).run();
 
     // start the follower way before leader
-    let follower_gctx = builder.follower_ctx(0).await;
+    builder.follower_ctx(0).await;
+    let follower_gctx = default_replica_ctx();
     let actions = follower_gctx
         .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
         .await;
@@ -676,7 +661,7 @@ async fn test_replication_dispatch_out_of_sequence() {
     // delay leader's start
     sleep(Duration::from_millis(300)).await;
 
-    let actions = leader_gctx
+    let actions = default_replica_ctx()
         .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
         .await;
     assert!(actions.is_empty());
@@ -684,12 +669,12 @@ async fn test_replication_dispatch_out_of_sequence() {
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
 
-    let leader = leader_gctx
+    let leader = default_replica_ctx()
         .leaders_state()
         .get(&replica.id)
         .await
         .expect("replica");
-    assert!(leader_gctx
+    assert!(default_replica_ctx()
         .followers_state()
         .get(&replica.id)
         .await

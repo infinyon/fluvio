@@ -176,7 +176,11 @@ impl FollowerHandler {
         for update in request.replicas.into_iter() {
             debug!(?update, "request");
             let replica_key = update.replica;
-            if let Some(leader) = default_replica_ctx().leaders_state().get(&replica_key).await {
+            if let Some(leader) = default_replica_ctx()
+                .leaders_state()
+                .get(&replica_key)
+                .await
+            {
                 let status = leader
                     .update_states_from_followers(
                         self.follower_id,

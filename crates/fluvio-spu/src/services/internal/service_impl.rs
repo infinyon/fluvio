@@ -8,7 +8,6 @@ use tracing::{debug, warn};
 use fluvio_service::{wait_for_request, FluvioService};
 use fluvio_socket::{FluvioSocket, SocketError};
 
-
 use crate::replication::follower_notifier;
 use crate::replication::leader::FollowerHandler;
 use super::{SpuPeerRequest, InternalServiceImpl};
@@ -29,10 +28,10 @@ impl FluvioService for InternalService {
     type Context = InternalServiceImpl;
     type Request = SpuPeerRequest;
 
-    #[instrument(skip(self, ctx))]
+    #[instrument(skip(self))]
     async fn respond(
         self: Arc<Self>,
-        ctx: InternalServiceImpl,
+        _ctx: InternalServiceImpl,
         socket: FluvioSocket,
         _connection: ConnectInfo,
     ) -> Result<(), SocketError> {

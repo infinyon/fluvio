@@ -19,8 +19,11 @@ use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
 
 use crate::InternalServerError;
-use crate::core::{status_update_owned, local_spu_id, config};
-use crate::replication::SharedReplicaContext;
+use crate::core::{
+    status_update_owned, local_spu_id, config, smartmodule_localstore, spu_local_store,
+    derivedstream_store,
+};
+use crate::replication::{SharedReplicaContext, ReplicaChange, sync_follower_update};
 
 use super::message_sink::{SharedStatusUpdate};
 

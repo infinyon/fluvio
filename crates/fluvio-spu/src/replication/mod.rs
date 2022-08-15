@@ -11,7 +11,10 @@ mod global {
 
     use crate::core::{spu_local_store, local_spu_id};
 
-    use super::{leader::{SharedSpuUpdates, FollowerNotifier}, DefaultSharedReplicaContext, FileReplicaContext};
+    use super::{
+        leader::{SharedSpuUpdates, FollowerNotifier},
+        DefaultSharedReplicaContext, FileReplicaContext,
+    };
 
     static FOLLOWER_NOTIFIER: OnceCell<SharedSpuUpdates> = OnceCell::new();
     static DEFAULT_REPLICA_CTX: OnceCell<DefaultSharedReplicaContext> = OnceCell::new();
@@ -31,9 +34,11 @@ mod global {
     }
 
     /// initialize global variables
-    pub(crate) fn initialize() {
+    pub(crate) fn initialize_replica() {
         FOLLOWER_NOTIFIER.set(FollowerNotifier::shared()).unwrap();
-        DEFAULT_REPLICA_CTX.set(FileReplicaContext::new_shared_context()).unwrap();
+        DEFAULT_REPLICA_CTX
+            .set(FileReplicaContext::new_shared_context())
+            .unwrap();
     }
 }
 
@@ -56,6 +61,8 @@ mod context {
     pub(crate) type SharedReplicaContext<S> = Arc<ReplicaContext<S>>;
     pub(crate) type DefaultSharedReplicaContext = SharedReplicaContext<FileReplica>;
     pub(crate) type FileReplicaContext = ReplicaContext<FileReplica>;
+
+    pub(crate) use file_replica::*;
 
     #[derive(Debug)]
     pub struct ReplicaContext<S> {

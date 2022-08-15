@@ -690,8 +690,8 @@ mod test_leader {
     use dataplane::batch::BatchRecords;
     use dataplane::fixture::{create_recordset};
 
-    use crate::core::{spu_local_store, config};
-    use crate::replication::{ReplicaContext, sync_follower_update, follower_notifier};
+    use crate::core::{spu_local_store, config, initialize};
+    use crate::replication::{sync_follower_update, follower_notifier};
     use crate::{
         config::{SpuConfig},
     };
@@ -895,12 +895,12 @@ mod test_leader {
             id: 5000,
             ..Default::default()
         };
+        initialize(leader_config);
         let specs = vec![
             SpuSpec::new_private_addr(5000, 9000, "localhost".to_owned()),
             SpuSpec::new_private_addr(5001, 9001, "localhost".to_owned()),
             SpuSpec::new_private_addr(5002, 9002, "localhost".to_owned()),
         ];
-        let _gctx: Arc<ReplicaContext<MockStorage>> = ReplicaContext::new_shared_context();
         spu_local_store().sync_all(specs);
         sync_follower_update().await;
 

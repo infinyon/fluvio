@@ -107,23 +107,5 @@ pub(crate) fn initialize(spu_config: SpuConfig) {
         .set(LeaderConnections::shared(spus, replicas))
         .unwrap();
 
-    crate::replication::initialize();
-
-    /*
-    let replicas = ReplicaStore::new_shared();
-
-    GlobalContext {
-        spu_localstore: spus.clone(),
-        replica_localstore: replicas.clone(),
-        smartmodule_localstore: SmartModuleLocalStore::new_shared(),
-        derivedstream_localstore: DerivedStreamStore::new_shared(),
-        config: Arc::new(spu_config),
-        leaders_state: ReplicaLeadersState::new_shared(),
-        followers_state: FollowersState::new_shared(),
-        spu_followers: FollowerNotifier::shared(),
-        status_update: StatusMessageSink::shared(),
-        sm_engine: SmartEngine::default(),
-        leaders: LeaderConnections::shared(spus, replicas),
-    }
-    */
+    crate::replication::initialize_replica();
 }

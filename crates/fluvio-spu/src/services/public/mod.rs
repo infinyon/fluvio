@@ -20,7 +20,6 @@ use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_types::event::StickyEvent;
 
-
 use crate::core::local_spu_id;
 use self::api_versions::handle_api_version_request;
 use self::produce_handler::handle_produce_request;
@@ -30,8 +29,8 @@ use self::offset_update::handle_offset_update;
 use self::stream_fetch::{StreamFetchHandler, publishers::StreamPublishers};
 use self::conn_context::ConnectionContext;
 
-#[derive(Clone,Debug)]
-pub(crate) struct PublicServiceImpl;
+#[derive(Clone, Debug)]
+pub struct PublicServiceImpl;
 
 pub(crate) type SpuPublicServer =
     FluvioApiServer<SpuServerRequest, SpuServerApiKey, PublicServiceImpl, PublicService>;
@@ -43,7 +42,7 @@ pub fn create_public_server(addr: String) -> SpuPublicServer {
         "Starting SPU public service:",
     );
 
-    FluvioApiServer::new(addr, PublicServiceImpl{}, PublicService::new())
+    FluvioApiServer::new(addr, PublicServiceImpl {}, PublicService::new())
 }
 
 #[derive(Debug)]
@@ -62,10 +61,10 @@ impl FluvioService for PublicService {
     type Request = SpuServerRequest;
     type Context = PublicServiceImpl;
 
-    #[instrument(skip(self, context))]
+    #[instrument(skip(self))]
     async fn respond(
         self: Arc<Self>,
-        context: PublicServiceImpl,
+        _context: PublicServiceImpl,
         socket: FluvioSocket,
         _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
@@ -96,13 +95,12 @@ impl FluvioService for PublicService {
                         ),
                         SpuServerRequest::ProduceRequest(request) => call_service!(
                             request,
-                            handle_produce_request(request, context.clone()),
+                            handle_produce_request(request),
                             shared_sink,
                             "ProduceRequest"
                         ),
                         SpuServerRequest::FileFetchRequest(request) => {
-                            handle_fetch_request(request, shared_sink.clone())
-                                .await?
+                            handle_fetch_request(request, shared_sink.clone()).await?
                         }
                         SpuServerRequest::FetchOffsetsRequest(request) => call_service!(
                             request,
@@ -113,7 +111,6 @@ impl FluvioService for PublicService {
                         SpuServerRequest::FileStreamFetchRequest(request) => {
                             StreamFetchHandler::start(
                                 request,
-                                context.clone(),
                                 &mut conn_ctx,
                                 shared_sink.clone(),
                                 shutdown.clone(),

@@ -6,7 +6,6 @@ use crate::services::public::{SpuPublicServer, create_public_server};
 use crate::core::{config};
 use crate::control_plane::ScDispatcher;
 
-
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop(opt: SpuOpt) {
@@ -35,8 +34,7 @@ pub fn main_loop(opt: SpuOpt) {
     info!(uptime = sys.uptime(), "Uptime in secs");
 
     run_block_on(async move {
-        let (internal_server, public_server) =
-            create_services(spu_config.clone(), true, true);
+        let (internal_server, public_server) = create_services(spu_config.clone(), true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
@@ -59,12 +57,9 @@ pub fn create_services(
     local_spu: SpuConfig,
     internal: bool,
     public: bool,
-) -> (
-    Option<InternalApiServer>,
-    Option<SpuPublicServer>,
-) {
-    crate::core::initialize(local_spu.clone());
-   
+) -> (Option<InternalApiServer>, Option<SpuPublicServer>) {
+    crate::core::initialize(local_spu);
+
     let public_ep_addr = config().public_socket_addr().to_owned();
     let private_ep_addr = config().private_socket_addr().to_owned();
 

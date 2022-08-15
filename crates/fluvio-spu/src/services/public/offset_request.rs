@@ -12,7 +12,6 @@ use dataplane::ErrorCode;
 
 use crate::replication::default_replica_ctx;
 
-
 #[instrument(skip(req_msg))]
 pub async fn handle_offset_request(
     req_msg: RequestMessage<FetchOffsetsRequest>,

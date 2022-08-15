@@ -1,5 +1,7 @@
 use tracing::{debug, error};
 
+use futures_util::{stream::BoxStream, StreamExt};
+
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
 use dataplane::ErrorCode;
 use fluvio::{
@@ -11,11 +13,10 @@ use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
     SmartModuleContextData,
 };
-use futures_util::{ stream::BoxStream};
 
-use crate::{core::{
-    smartmodule_localstore, derivedstream_store, smartengine_owned, leaders,
-}, replication::default_replica_ctx};
+use crate::{
+    core::{smartmodule_localstore, derivedstream_store, smartengine_owned, leaders},
+};
 
 pub struct SmartModuleContext {
     pub smartmodule_instance: Box<dyn SmartModuleInstance>,
@@ -72,7 +73,7 @@ impl SmartModuleContext {
             // for join, create consumer stream
             SmartModuleKind::Join(ref topic)
             | SmartModuleKind::Generic(SmartModuleContextData::Join(ref topic)) => {
-                let consumer = default_replica_ctx().leaders().partition_consumer(topic.to_owned(), 0).await;
+                let consumer = leaders().partition_consumer(topic.to_owned(), 0).await;
 
                 Some(
                     consumer
@@ -98,10 +99,8 @@ impl SmartModuleContext {
                     // find input which has topic
                     match derivedstream.spec.input {
                         DerivedStreamInputRef::Topic(topic) => {
-                            let consumer = 
-                                leaders()
-                                .partition_consumer(topic.name.to_owned(), 0)
-                                .await;
+                            let consumer =
+                                leaders().partition_consumer(topic.name.to_owned(), 0).await;
                             // need to build stream arg
                             let mut builder = ConsumerConfig::builder();
 

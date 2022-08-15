@@ -14,12 +14,11 @@ use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};
 use flv_util::fixture::ensure_clean_dir;
 
-
 use crate::{
     config::SpuConfig,
     core::{replica_localstore, status_update_owned, config, initialize},
     services::public::{create_public_server, tests::create_filter_records},
-    replication::{leader::LeaderReplicaState, ReplicaContext, default_replica_ctx},
+    replication::{leader::LeaderReplicaState, default_replica_ctx},
 };
 
 #[fluvio_future::test(ignore)]
@@ -143,7 +142,7 @@ async fn test_produce_invalid_compression() {
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     initialize(spu_config);
- 
+
     let server_end_event = create_public_server(addr.to_owned()).run();
 
     // wait for stream controller async to start
@@ -213,7 +212,7 @@ async fn test_produce_request_timed_out() {
 
     let public_addr = config.leader_public_addr();
 
-    let (leader_ctx, _) = config.leader_replica().await;
+    let _ = config.leader_replica().await;
 
     let server_end_event = create_public_server(public_addr.clone()).run();
 
@@ -274,7 +273,7 @@ async fn test_produce_not_waiting_replication() {
         .base_port(14020_u16)
         .generate("produce_request_timed_out");
 
-    let (leader_ctx, _) = config.leader_replica().await;
+    let _ = config.leader_replica().await;
     let public_addr = config.leader_public_addr();
 
     let server_end_event = create_public_server(public_addr.clone()).run();
@@ -333,13 +332,11 @@ async fn test_produce_waiting_replication() {
         .base_port(14030_u16)
         .generate("produce_waiting_replication");
 
-    let (leader_ctx, leader_replica) = config.leader_replica().await;
+    let leader_replica = config.leader_replica().await;
     let public_addr = config.leader_public_addr();
 
-    let public_server_end_event =
-        create_public_server(public_addr.clone()).run();
-    let private_server_end_event =
-        create_internal_server(config.leader_addr()).run();
+    let public_server_end_event = create_public_server(public_addr.clone()).run();
+    let private_server_end_event = create_internal_server(config.leader_addr()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;

@@ -20,7 +20,7 @@ use tokio::select;
 use std::time::Duration;
 use fluvio_future::timer::sleep;
 
-use crate::core::{ replica_localstore};
+use crate::core::{replica_localstore};
 use crate::replication::{default_replica_ctx, follower_notifier};
 
 struct TopicWriteResult {
@@ -69,9 +69,7 @@ pub async fn handle_produce_request(
     skip(topic_request),
     fields(topic = %topic_request.name),
 )]
-async fn handle_produce_topic(
-    topic_request: DefaultTopicRequest,
-) -> TopicWriteResult {
+async fn handle_produce_topic(topic_request: DefaultTopicRequest) -> TopicWriteResult {
     trace!("Handling produce request for topic:");
 
     let mut topic_result = TopicWriteResult {
@@ -169,11 +167,7 @@ fn validate_records<R: BatchRecords>(
 /// error code. The timeout is not shared between partitions.
 ///
 /// For isolation = ReadUncommitted - it's no op.
-async fn wait_for_acks(
-    isolation: Isolation,
-    timeout: Duration,
-    results: &mut [TopicWriteResult],
-) {
+async fn wait_for_acks(isolation: Isolation, timeout: Duration, results: &mut [TopicWriteResult]) {
     trace!(?isolation, "waiting for acks");
     match &isolation {
         Isolation::ReadCommitted => {
@@ -182,7 +176,11 @@ async fn wait_for_acks(
                     trace!(?partition.replica_id, %partition.error_code, "partition result with error, skip waiting");
                     continue;
                 }
-                let leader_state = match default_replica_ctx().leaders_state().get(&partition.replica_id).await {
+                let leader_state = match default_replica_ctx()
+                    .leaders_state()
+                    .get(&partition.replica_id)
+                    .await
+                {
                     Some(leader_state) => leader_state,
                     None => {
                         debug!(%partition.replica_id, "Replica not found");
