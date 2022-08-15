@@ -5,12 +5,12 @@ use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleExtraParams,
+    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 
 use crate::{
     WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
-    error::Error,
+    error::Error, metadata::SmartModuleExtraParams,
 };
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
