@@ -202,10 +202,10 @@ mod cmd {
                 if self.is_stats_collect() {
                     let stats_bar = if self.is_print_live_stats() {
                         let s = indicatif::ProgressBar::with_draw_target(
-                            100,
+                            Some(100),
                             indicatif::ProgressDrawTarget::stderr(),
                         );
-                        s.set_style(indicatif::ProgressStyle::default_bar().template("{msg}"));
+                        s.set_style(indicatif::ProgressStyle::default_bar().template("{msg}")?);
                         Some(s)
                     } else {
                         None

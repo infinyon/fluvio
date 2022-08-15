@@ -9,6 +9,7 @@ pub mod render;
 
 use colored::Colorize;
 use fluvio_future::timer::sleep;
+use indicatif::style::TemplateError;
 use tracing::{error, debug};
 use async_trait::async_trait;
 use url::ParseError;
@@ -93,6 +94,9 @@ pub enum ClusterCheckError {
 
     #[error("Preflight check failed")]
     PreCheckFlightFailure,
+
+    #[error("Progress Error")]
+    ProgressError(#[from] TemplateError),
 }
 
 /// An error occurred during the checking process
@@ -820,7 +824,7 @@ impl ClusterChecker {
 
         let mut failed = false;
         for check in sorted_checks {
-            let pb = pb_factory.create();
+            let pb = pb_factory.create()?;
             let mut passed = false;
             let required_components = check.required_components();
             let component = check.component();

@@ -46,7 +46,7 @@ include_dir = "0.7.2"
 tempdir = "0.3.7"
 anyhow = "1.0.44"
 async-channel = "1.6.1"
-indicatif = "0.16.2"
+indicatif = "0.17.0"
 rand = "0.8.4"
 chrono = { version = "0.4" }
 color-eyre = { version = "0.6.0", default-features = false, optional = true }
@@ -55,7 +55,7 @@ duct = { version = "0.13", default-features = false, optional = true }
 comfy-table = { version = "5.0.1", default-features = false, optional = true }
 flate2 = { version = "1", default-features = false, optional = true }
 tar = { version = "0.4", default-features = false, optional = true }
-sysinfo = { version = "0.24.0", default-features = false, optional = true }
+sysinfo = { version = "0.25.0", default-features = false, optional = true }
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio", default-features = false }

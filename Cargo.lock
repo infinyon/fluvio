@@ -1146,9 +1146,9 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab9f7409c70a38a56216480fba371ee460207dd8926ccf5b4160591759559170"
+checksum = "e64e6c0fbe2c17357405f7c758c1ef960fce08bdfb2c03d88d2a18d7e09c4b67"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
@@ -1611,7 +1611,7 @@ dependencies = [
  "serde_json",
  "siphasher",
  "strum 0.24.1",
- "sysinfo 0.25.2",
+ "sysinfo",
  "thiserror",
  "tokio",
  "toml",
@@ -1688,7 +1688,7 @@ dependencies = [
  "colored",
  "comfy-table 5.0.1",
  "content_inspector",
- "crossterm 0.24.0",
+ "crossterm 0.25.0",
  "ctrlc",
  "dirs",
  "eyre",
@@ -1713,7 +1713,7 @@ dependencies = [
  "home",
  "humantime",
  "humantime-serde",
- "indicatif 0.16.2",
+ "indicatif",
  "k8-client",
  "k8-config",
  "k8-types",
@@ -1724,7 +1724,7 @@ dependencies = [
  "serde_yaml 0.9.9",
  "sha2 0.10.2",
  "static_assertions",
- "sysinfo 0.24.7",
+ "sysinfo",
  "tempdir",
  "thiserror",
  "tracing",
@@ -1781,7 +1781,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "include_dir",
- "indicatif 0.16.2",
+ "indicatif",
  "k8-client",
  "k8-config",
  "k8-metadata-client",
@@ -1792,7 +1792,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml 0.9.9",
- "sysinfo 0.24.7",
+ "sysinfo",
  "tar",
  "tempdir",
  "tempfile",
@@ -2081,7 +2081,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml 0.9.9",
- "sysinfo 0.25.2",
+ "sysinfo",
  "tokio",
  "tracing",
 ]
@@ -2234,7 +2234,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "sysinfo 0.25.2",
+ "sysinfo",
  "thiserror",
  "tokio",
  "toml",
@@ -2348,7 +2348,7 @@ dependencies = [
  "futures 0.3.23",
  "futures-lite",
  "hdrhistogram",
- "indicatif 0.17.0",
+ "indicatif",
  "inventory",
  "md-5",
  "nix 0.25.0",
@@ -2357,7 +2357,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.9",
  "signal-hook",
- "sysinfo 0.25.2",
+ "sysinfo",
  "tokio",
  "tracing",
  "uuid",
@@ -3097,18 +3097,6 @@ dependencies = [
  "autocfg",
  "hashbrown 0.12.3",
  "serde",
-]
-
-[[package]]
-name = "indicatif"
-version = "0.16.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d207dc617c7a380ab07ff572a6e52fa202a2a8f355860ac9c38e23f8196be1b"
-dependencies = [
- "console",
- "lazy_static",
- "number_prefix",
- "regex",
 ]
 
 [[package]]
@@ -4882,21 +4870,6 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.24.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54cb4ebf3d49308b99e6e9dc95e989e2fdbdc210e4f67c39db0bb89ba927001c"
-dependencies = [
- "cfg-if",
- "core-foundation-sys",
- "libc",
- "ntapi",
- "once_cell",
- "rayon",
- "winapi",
-]
-
-[[package]]
-name = "sysinfo"
 version = "0.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1594a36887d0f70096702bffadfb67dfbfe76ad4bf84605e86157dc9fce9961a"
@@ -5289,13 +5262,13 @@ dependencies = [
 
 [[package]]
 name = "tui"
-version = "0.18.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96fe69244ec2af261bced1d9046a6fee6c8c2a6b0228e59e5ba39bc8ba4ed729"
+checksum = "ccdd26cbd674007e649a272da4475fb666d3aa0ad0531da7136db6fab0e5bad1"
 dependencies = [
  "bitflags",
  "cassowary",
- "crossterm 0.23.2",
+ "crossterm 0.25.0",
  "unicode-segmentation",
  "unicode-width",
 ]

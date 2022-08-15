@@ -1,8 +1,10 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, time::Duration};
 
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle, style::TemplateError};
 
-use crate::render::{ProgressRenderedText, ProgressRenderer};
+use crate::{
+    render::{ProgressRenderedText, ProgressRenderer},
+};
 
 #[derive(Debug)]
 pub(crate) enum InstallProgressMessage {
@@ -46,15 +48,15 @@ impl ProgressRenderedText for InstallProgressMessage {
     }
 }
 
-fn create_spinning_indicator() -> ProgressBar {
+fn create_spinning_indicator() -> Result<ProgressBar, TemplateError> {
     let pb = ProgressBar::new(1);
     pb.set_style(
         ProgressStyle::default_bar()
-            .template("{msg} {spinner}")
+            .template("{msg} {spinner}")?
             .tick_chars("/-\\|"),
     );
-    pb.enable_steady_tick(100);
-    pb
+    pb.enable_steady_tick(Duration::from_millis(100));
+    Ok(pb)
 }
 
 #[derive(Debug)]
@@ -72,11 +74,11 @@ impl ProgressBarFactory {
     }
 
     /// create new progress bar
-    pub fn create(&self) -> ProgressRenderer {
+    pub fn create(&self) -> Result<ProgressRenderer, TemplateError> {
         if self.hide || std::env::var("CI").is_ok() {
-            Default::default()
+            Ok(Default::default())
         } else {
-            create_spinning_indicator().into()
+            Ok(create_spinning_indicator()?.into())
         }
     }
 

@@ -642,7 +642,7 @@ impl ClusterInstaller {
             .await
             .map_err(K8InstallError::from)?;
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
 
         let sc_service = self.discover_sc_service(&self.config.namespace).await?;
         let (external_host, external_port) =
@@ -704,7 +704,7 @@ impl ClusterInstaller {
             &self.config
         );
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
 
         if self.config.upgrade {
             pb.set_message(format!(
@@ -1198,7 +1198,7 @@ impl ClusterInstaller {
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
     fn update_profile(&self, external_addr: &str) -> Result<(), K8InstallError> {
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         pb.set_message(format!("Creating K8 profile for: {}", external_addr));
 
         let profile_name = self.compute_profile_name()?;
@@ -1236,7 +1236,7 @@ impl ClusterInstaller {
     /// Provisions a SPU group for the given cluster according to internal config
     #[instrument(skip(self, fluvio))]
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<(), K8InstallError> {
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         let spg_name = self.config.group_name.clone();
         pb.set_message(format!("📝 Checking for existing SPU Group: {}", spg_name));
         let admin = fluvio.admin().await;
