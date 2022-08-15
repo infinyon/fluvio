@@ -20,7 +20,7 @@ use tokio::select;
 use std::time::Duration;
 use fluvio_future::timer::sleep;
 
-use crate::core::{DefaultSharedGlobalContext, replica_localstore};
+use crate::core::{DefaultSharedGlobalContext, replica_localstore, follower_notifier};
 
 struct TopicWriteResult {
     topic: String,
@@ -125,7 +125,7 @@ async fn handle_produce_partition<R: BatchRecords>(
     }
 
     let write_result = leader_state
-        .write_record_set(&mut records, ctx.follower_notifier())
+        .write_record_set(&mut records, follower_notifier())
         .await;
 
     match write_result {

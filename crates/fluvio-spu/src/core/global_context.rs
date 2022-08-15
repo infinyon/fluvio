@@ -39,6 +39,7 @@ static SPU_STORE: OnceCell<SharedSpuLocalStore> = OnceCell::new();
 static REPLICA_STORE: OnceCell<SharedReplicaLocalStore> = OnceCell::new();
 static SMARTMODULE_STORE: OnceCell<SharedSmartModuleLocalStore> = OnceCell::new();
 static DERIVEDSTREAM_STORE: OnceCell<SharedStreamStreamLocalStore> = OnceCell::new();
+static FOLLOWER_NOTIFIER: OnceCell<SharedSpuUpdates> = OnceCell::new();
 
 pub(crate) fn spu_local_store() -> &'static SpuLocalStore {
     SPU_STORE.get().unwrap()
@@ -56,8 +57,12 @@ pub(crate) fn smartmodule_localstore() -> &'static SmartModuleLocalStore {
     SMARTMODULE_STORE.get().unwrap()
 }
 
-pub fn derivedstream_store() -> &'static DerivedStreamStore {
+pub(crate) fn derivedstream_store() -> &'static DerivedStreamStore {
     DERIVEDSTREAM_STORE.get().unwrap()
+}
+
+pub(crate) fn follower_notifier() -> &'static FollowerNotifier {
+    FOLLOWER_NOTIFIER.get().unwrap()
 }
 
 /// initialize global variables
@@ -70,6 +75,8 @@ pub(crate) fn initialize(_spu_config: SpuConfig) {
     DERIVEDSTREAM_STORE
         .set(DerivedStreamStore::new_shared())
         .unwrap();
+
+    FOLLOWER_NOTIFIER.set(FollowerNotifier::shared()).unwrap();
 
     /*
     let replicas = ReplicaStore::new_shared();
@@ -95,7 +102,6 @@ pub struct GlobalContext<S> {
     config: SharedSpuConfig,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
-    spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
@@ -121,7 +127,6 @@ where
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
-            spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
             leaders: LeaderConnections::shared(spus, replicas),
@@ -153,10 +158,6 @@ where
         self.config.clone()
     }
 
-    pub fn follower_notifier(&self) -> &FollowerNotifier {
-        &self.spu_followers
-    }
-
     #[allow(unused)]
     pub fn status_update(&self) -> &StatusMessageSink {
         &self.status_update
@@ -169,7 +170,7 @@ where
     /// notify all follower handlers with SPU changes
     #[instrument(skip(self))]
     pub async fn sync_follower_update(&self) {
-        self.spu_followers
+        follower_notifier()
             .sync_from_spus(spu_local_store(), self.local_spu_id())
             .await;
     }

@@ -690,7 +690,7 @@ mod test_leader {
     use dataplane::batch::BatchRecords;
     use dataplane::fixture::{create_recordset};
 
-    use crate::core::spu_local_store;
+    use crate::core::{spu_local_store, follower_notifier};
     use crate::{
         config::{SpuConfig},
     };
@@ -905,7 +905,7 @@ mod test_leader {
         spu_local_store().sync_all(specs);
         gctx.sync_follower_update().await;
 
-        let notifier = gctx.follower_notifier();
+        let notifier = follower_notifier();
         assert!(notifier.get(&5001).await.is_some());
         assert!(notifier.get(&5002).await.is_some());
         assert!(notifier.get(&5000).await.is_none());

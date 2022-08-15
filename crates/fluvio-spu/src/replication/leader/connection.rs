@@ -10,7 +10,7 @@ use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
 use crate::{
-    core::DefaultSharedGlobalContext,
+    core::{DefaultSharedGlobalContext, follower_notifier},
     replication::follower::sync::{FileSyncRequest},
 };
 
@@ -184,7 +184,7 @@ impl FollowerHandler {
                             hw: update.hw,
                             leo: update.leo,
                         },
-                        self.ctx.follower_notifier(),
+                        follower_notifier(),
                     )
                     .await;
                 debug!(status, replica = %leader.id(), "leader updated");

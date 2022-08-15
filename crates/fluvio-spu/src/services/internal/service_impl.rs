@@ -8,7 +8,7 @@ use tracing::{debug, warn};
 use fluvio_service::{wait_for_request, FluvioService};
 use fluvio_socket::{FluvioSocket, SocketError};
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::{DefaultSharedGlobalContext, follower_notifier};
 use crate::replication::leader::FollowerHandler;
 use super::SpuPeerRequest;
 use super::SPUPeerApiEnum;
@@ -51,7 +51,7 @@ impl FluvioService for InternalService {
                     "received fetch stream"
                 );
                 // check if follower_id is valid
-                if let Some(spu_update) = ctx.follower_notifier().get(&follower_id).await {
+                if let Some(spu_update) = follower_notifier().get(&follower_id).await {
                     let response = FetchStreamResponse::new(follower_id);
                     let res_msg = req_msg.new_response(response);
                     sink
