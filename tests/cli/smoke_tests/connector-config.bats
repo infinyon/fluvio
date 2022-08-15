@@ -30,8 +30,8 @@ teardown_file() {
     run timeout 15s "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
     assert_success
     run timeout 15s "$FLUVIO_BIN" connector config "$CONNECTOR_NAME"
-    assert_output
-"name: my-test-connector
+    assert_output "
+name: my-test-connector
 type: test-connector
 topic: my-test-connector-topic
 version: latest"
