@@ -17,8 +17,14 @@
 <img src="https://github.com/infinyon/fluvio/workflows/CD_Dev/badge.svg" alt="CD Status" />
 </a>
 
+<!-- crates.io version -->
 <a href="https://crates.io/crates/fluvio">
 <img src="https://img.shields.io/crates/v/fluvio?style=flat" alt="Crates.io version" />
+</a>
+
+<!-- minimum supported rust version -->
+<a href="https://github.com/rust-lang/rustup">
+<img src=".github/assets/msrv-badge.svg" alt="Minimum Supported Rust Version" />
 </a>
 
 <!-- docs.rs docs -->
