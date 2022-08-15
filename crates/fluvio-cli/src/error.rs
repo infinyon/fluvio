@@ -5,8 +5,9 @@ use std::{
 
 use semver::Version;
 use handlebars::TemplateError;
-use fluvio::FluvioError;
+use indicatif::style::TemplateError as ProgressTemplateError;
 
+use fluvio::FluvioError;
 #[cfg(feature = "k8s")]
 use fluvio_cluster::cli::ClusterCliError;
 use fluvio_sc_schema::ApiError;
@@ -90,6 +91,9 @@ pub enum CliError {
 
     #[error("Connector not found: {0}")]
     ConnectorNotFound(String),
+
+    #[error("Progress Error")]
+    ProgressError(#[from] ProgressTemplateError),
 }
 
 impl CliError {

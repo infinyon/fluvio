@@ -80,7 +80,7 @@ impl ClusterUninstaller {
             self.uninstall_local().await?;
         }
 
-        self.cleanup().await;
+        self.cleanup().await?;
 
         if self.config.uninstall_sys {
             self.uninstall_sys().await?;
@@ -93,7 +93,7 @@ impl ClusterUninstaller {
     async fn uninstall_k8(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         pb.set_message("Uninstalling fluvio kubernetes components");
         let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
@@ -112,7 +112,7 @@ impl ClusterUninstaller {
     async fn uninstall_sys(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         pb.set_message("Uninstalling Fluvio sys chart");
         self.helm_client
             .uninstall(
@@ -130,7 +130,7 @@ impl ClusterUninstaller {
     }
 
     async fn uninstall_local(&self) -> Result<(), ClusterError> {
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
 
         pb.set_message("Uninstalling fluvio local components");
         Command::new("pkill")
@@ -174,8 +174,8 @@ impl ClusterUninstaller {
     /// Clean up objects and secrets created during the installation process
     ///
     /// Ignore any errors, cleanup should be idempotent
-    async fn cleanup(&self) {
-        let pb = self.pb_factory.create();
+    async fn cleanup(&self) -> Result<(), ClusterError> {
+        let pb = self.pb_factory.create()?;
         pb.set_message("Cleaning up objects and secrets created during the installation process");
         let ns = &self.config.namespace;
 
@@ -199,6 +199,7 @@ impl ClusterUninstaller {
 
         pb.println("Objects and secrets have been cleaned up");
         pb.finish_and_clear();
+        Ok(())
     }
 
     /// Remove objects of specified type, namespace

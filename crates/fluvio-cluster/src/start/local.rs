@@ -383,7 +383,7 @@ impl LocalInstaller {
         };
         use k8_client::load_and_share;
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
 
         debug!("using log dir: {}", self.config.log_dir.display());
         pb.set_message("Creating log directory");
@@ -417,7 +417,7 @@ impl LocalInstaller {
         pb.finish_and_clear();
         drop(pb);
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         let fluvio = self.launch_sc(&address, port, &pb).await?;
         pb.println(InstallProgressMessage::ScLaunched.msg());
         pb.finish_and_clear();
@@ -425,7 +425,7 @@ impl LocalInstaller {
         // set profile as long as sc is up
         self.set_profile()?;
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         self.launch_spu_group(client.clone(), &pb).await?;
         self.confirm_spu(self.config.spu_replicas, &fluvio, &pb)
             .await?;
@@ -481,7 +481,7 @@ impl LocalInstaller {
     /// set local profile
     #[instrument(skip(self))]
     fn set_profile(&self) -> Result<(), LocalInstallError> {
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         pb.set_message(format!("Creating Local Profile to: {}", LOCAL_SC_ADDRESS));
 
         let mut config_file = ConfigFile::load_default_or_new()?;
@@ -559,7 +559,7 @@ impl LocalInstaller {
     ) -> Result<(), LocalInstallError> {
         let admin = client.admin().await;
 
-        let pb = self.pb_factory.create();
+        let pb = self.pb_factory.create()?;
         let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
         let time = SystemTime::now();
         pb.set_message(format!(

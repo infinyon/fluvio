@@ -2,6 +2,7 @@ use std::io::Error as IoError;
 use std::process::ExitStatus;
 
 use anyhow::Error as AnyError;
+use indicatif::style::TemplateError;
 
 use fluvio::FluvioError;
 use k8_config::{ConfigError as K8ConfigError};
@@ -28,6 +29,8 @@ pub enum ClusterError {
     /// An error occurred while trying to uninstall Fluvio
     #[error("Failed to uninstall Fluvio")]
     Uninstall(#[from] UninstallError),
+    #[error("Progress Error")]
+    ProgressError(#[from] TemplateError),
 }
 
 /// Errors that may occur while trying to install Fluvio on Kubernetes
@@ -98,6 +101,8 @@ pub enum K8InstallError {
     /// Kubectl not found
     #[error("Port forwarding process exited with code: {0}")]
     PortForwardingFailed(ExitStatus),
+    #[error("Progress Error")]
+    ProgressError(#[from] TemplateError),
 }
 
 /// Errors that may occur while trying to install Fluvio locally
@@ -163,6 +168,8 @@ pub enum LocalInstallError {
     Other(String),
     #[error(transparent)]
     ClusterCheckError(#[from] ClusterCheckError),
+    #[error("Progress Error")]
+    ProgressError(#[from] TemplateError),
 }
 
 /// Errors that may occur while trying to unintsall Fluvio

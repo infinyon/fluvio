@@ -13,7 +13,7 @@ pub use cmd::ConsumeOpt;
 
 mod cmd {
 
-    use std::time::UNIX_EPOCH;
+    use std::time::{UNIX_EPOCH, Duration};
     use std::{io::Error as IoError, path::PathBuf};
     use std::io::{self, ErrorKind, Read, Stdout};
     use std::collections::{BTreeMap};
@@ -499,8 +499,8 @@ mod cmd {
                 if let Some(ConsumeOutputType::full_table) = &self.output {
                     // Do nothing.
                 } else if !self.disable_progressbar {
-                    pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
-                    pb.enable_steady_tick(100);
+                    pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}")?);
+                    pb.enable_steady_tick(Duration::from_millis(100));
                 }
 
                 let pb: ProgressRenderer = pb.into();

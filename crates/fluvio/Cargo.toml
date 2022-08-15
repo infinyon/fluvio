@@ -41,8 +41,8 @@ siphasher = "0.3.5"
 cfg-if = "1.0.0"
 derive_builder = "0.11.0"
 async-trait = "0.1.51"
-sysinfo = { version = "0.24", optional = true }
-quantities = { version = "0.9.0", features = ["datavolume", "datathroughput", "duration"], optional = true }
+sysinfo = { version = "0.25", optional = true }
+quantities = { version = "0.10.0", features = ["datavolume", "datathroughput", "duration"], optional = true }
 hdrhistogram = { version = "7.5.0", optional = true }
 strum = { version = "0.24", features = ["derive"], optional = true }
 num-traits = { version = "0.2", optional = true }
