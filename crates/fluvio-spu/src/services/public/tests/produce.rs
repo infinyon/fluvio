@@ -1,5 +1,7 @@
 use std::{env::temp_dir, time::Duration};
 
+use tracing::debug;
+
 use dataplane::{
     produce::{
         DefaultProduceRequest, DefaultPartitionRequest, TopicProduceData, PartitionProduceData,
@@ -11,13 +13,13 @@ use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorit
 use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};
 use flv_util::fixture::ensure_clean_dir;
-use tracing::debug;
+
 
 use crate::{
     config::SpuConfig,
-    core::{GlobalContext, replica_localstore, status_update_owned, config},
+    core::{replica_localstore, status_update_owned, config, initialize},
     services::public::{create_public_server, tests::create_filter_records},
-    replication::leader::LeaderReplicaState,
+    replication::{leader::LeaderReplicaState, ReplicaContext, default_replica_ctx},
 };
 
 #[fluvio_future::test(ignore)]
@@ -29,9 +31,10 @@ async fn test_produce_basic() {
     let addr = format!("127.0.0.1:{}", port);
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
+    initialize(spu_config);
+    let ctx = default_replica_ctx();
 
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    let server_end_event = create_public_server(addr.to_owned()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -139,9 +142,9 @@ async fn test_produce_invalid_compression() {
     let addr = format!("127.0.0.1:{}", port);
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
-
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+    initialize(spu_config);
+ 
+    let server_end_event = create_public_server(addr.to_owned()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -157,6 +160,7 @@ async fn test_produce_invalid_compression() {
     let replica = LeaderReplicaState::create(test, config(), status_update_owned())
         .await
         .expect("replica");
+    let ctx = default_replica_ctx();
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Make three produce requests with <records_per_request> records and check that returned offset is correct
@@ -211,7 +215,7 @@ async fn test_produce_request_timed_out() {
 
     let (leader_ctx, _) = config.leader_replica().await;
 
-    let server_end_event = create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+    let server_end_event = create_public_server(public_addr.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -273,7 +277,7 @@ async fn test_produce_not_waiting_replication() {
     let (leader_ctx, _) = config.leader_replica().await;
     let public_addr = config.leader_public_addr();
 
-    let server_end_event = create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+    let server_end_event = create_public_server(public_addr.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
@@ -333,9 +337,9 @@ async fn test_produce_waiting_replication() {
     let public_addr = config.leader_public_addr();
 
     let public_server_end_event =
-        create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+        create_public_server(public_addr.clone()).run();
     let private_server_end_event =
-        create_internal_server(config.leader_addr(), leader_ctx.clone()).run();
+        create_internal_server(config.leader_addr()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;

@@ -20,7 +20,7 @@ use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_types::event::StickyEvent;
 
-use crate::core::DefaultSharedGlobalContext;
+
 use crate::core::local_spu_id;
 use self::api_versions::handle_api_version_request;
 use self::produce_handler::handle_produce_request;
@@ -30,17 +30,20 @@ use self::offset_update::handle_offset_update;
 use self::stream_fetch::{StreamFetchHandler, publishers::StreamPublishers};
 use self::conn_context::ConnectionContext;
 
-pub(crate) type SpuPublicServer =
-    FluvioApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
+#[derive(Clone,Debug)]
+pub(crate) struct PublicServiceImpl;
 
-pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> SpuPublicServer {
+pub(crate) type SpuPublicServer =
+    FluvioApiServer<SpuServerRequest, SpuServerApiKey, PublicServiceImpl, PublicService>;
+
+pub fn create_public_server(addr: String) -> SpuPublicServer {
     info!(
         spu_id = local_spu_id(),
         %addr,
         "Starting SPU public service:",
     );
 
-    FluvioApiServer::new(addr, ctx, PublicService::new())
+    FluvioApiServer::new(addr, PublicServiceImpl{}, PublicService::new())
 }
 
 #[derive(Debug)]
@@ -57,12 +60,12 @@ impl PublicService {
 #[async_trait]
 impl FluvioService for PublicService {
     type Request = SpuServerRequest;
-    type Context = DefaultSharedGlobalContext;
+    type Context = PublicServiceImpl;
 
     #[instrument(skip(self, context))]
     async fn respond(
         self: Arc<Self>,
-        context: DefaultSharedGlobalContext,
+        context: PublicServiceImpl,
         socket: FluvioSocket,
         _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
@@ -98,12 +101,12 @@ impl FluvioService for PublicService {
                             "ProduceRequest"
                         ),
                         SpuServerRequest::FileFetchRequest(request) => {
-                            handle_fetch_request(request, context.clone(), shared_sink.clone())
+                            handle_fetch_request(request, shared_sink.clone())
                                 .await?
                         }
                         SpuServerRequest::FetchOffsetsRequest(request) => call_service!(
                             request,
-                            handle_offset_request(request, context.clone()),
+                            handle_offset_request(request),
                             shared_sink,
                             "FetchOffsetsRequest"
                         ),

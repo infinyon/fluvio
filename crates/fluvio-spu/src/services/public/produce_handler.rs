@@ -20,7 +20,8 @@ use tokio::select;
 use std::time::Duration;
 use fluvio_future::timer::sleep;
 
-use crate::core::{DefaultSharedGlobalContext, replica_localstore, follower_notifier};
+use crate::core::{ replica_localstore};
+use crate::replication::{default_replica_ctx, follower_notifier};
 
 struct TopicWriteResult {
     topic: String,
@@ -36,7 +37,7 @@ struct PartitionWriteResult {
 }
 
 #[instrument(
-    skip(request,ctx),
+    skip(request),
     fields(
         id = request.header.correlation_id(),
         client = %request.header.client_id()
@@ -44,21 +45,19 @@ struct PartitionWriteResult {
 )]
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
-    ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<ProduceResponse>, Error> {
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
-        let topic_result = handle_produce_topic(&ctx, topic_request).await;
+        let topic_result = handle_produce_topic(topic_request).await;
         topic_results.push(topic_result);
     }
     wait_for_acks(
         produce_request.isolation,
         produce_request.timeout,
         &mut topic_results,
-        &ctx,
     )
     .await;
     let response = into_response(topic_results);
@@ -67,11 +66,10 @@ pub async fn handle_produce_request(
 }
 
 #[instrument(
-    skip(ctx, topic_request),
+    skip(topic_request),
     fields(topic = %topic_request.name),
 )]
 async fn handle_produce_topic(
-    ctx: &DefaultSharedGlobalContext,
     topic_request: DefaultTopicRequest,
 ) -> TopicWriteResult {
     trace!("Handling produce request for topic:");
@@ -85,24 +83,23 @@ async fn handle_produce_topic(
             topic_result.topic.clone(),
             partition_request.partition_index,
         );
-        let partition_response = handle_produce_partition(ctx, replica_id, partition_request).await;
+        let partition_response = handle_produce_partition(replica_id, partition_request).await;
         topic_result.partitions.push(partition_response);
     }
     topic_result
 }
 
 #[instrument(
-    skip(ctx, replica_id, partition_request),
+    skip(replica_id, partition_request),
     fields(%replica_id),
 )]
 async fn handle_produce_partition<R: BatchRecords>(
-    ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
     partition_request: PartitionProduceData<RecordSet<R>>,
 ) -> PartitionWriteResult {
     trace!("Handling produce request for partition:");
 
-    let leader_state = match ctx.leaders_state().get(&replica_id).await {
+    let leader_state = match default_replica_ctx().leaders_state().get(&replica_id).await {
         Some(leader_state) => leader_state,
         None => {
             debug!(%replica_id, "Replica not found");
@@ -176,7 +173,6 @@ async fn wait_for_acks(
     isolation: Isolation,
     timeout: Duration,
     results: &mut [TopicWriteResult],
-    ctx: &DefaultSharedGlobalContext,
 ) {
     trace!(?isolation, "waiting for acks");
     match &isolation {
@@ -186,7 +182,7 @@ async fn wait_for_acks(
                     trace!(?partition.replica_id, %partition.error_code, "partition result with error, skip waiting");
                     continue;
                 }
-                let leader_state = match ctx.leaders_state().get(&partition.replica_id).await {
+                let leader_state = match default_replica_ctx().leaders_state().get(&partition.replica_id).await {
                     Some(leader_state) => leader_state,
                     None => {
                         debug!(%partition.replica_id, "Replica not found");

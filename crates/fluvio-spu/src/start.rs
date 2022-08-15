@@ -1,14 +1,11 @@
-use fluvio_storage::FileReplica;
-
 use crate::config::{SpuConfig, SpuOpt};
+use crate::replication::default_replica_ctx;
 use crate::services::create_internal_server;
 use crate::services::internal::InternalApiServer;
 use crate::services::public::{SpuPublicServer, create_public_server};
-use crate::core::{DefaultSharedGlobalContext, config};
-use crate::core::GlobalContext;
+use crate::core::{config};
 use crate::control_plane::ScDispatcher;
 
-type FileReplicaContext = GlobalContext<FileReplica>;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -38,7 +35,7 @@ pub fn main_loop(opt: SpuOpt) {
     info!(uptime = sys.uptime(), "Uptime in secs");
 
     run_block_on(async move {
-        let (_ctx, internal_server, public_server) =
+        let (internal_server, public_server) =
             create_services(spu_config.clone(), true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
@@ -63,32 +60,30 @@ pub fn create_services(
     internal: bool,
     public: bool,
 ) -> (
-    DefaultSharedGlobalContext,
     Option<InternalApiServer>,
     Option<SpuPublicServer>,
 ) {
     crate::core::initialize(local_spu.clone());
-    let ctx = FileReplicaContext::new_shared_context(local_spu);
-
+   
     let public_ep_addr = config().public_socket_addr().to_owned();
     let private_ep_addr = config().private_socket_addr().to_owned();
 
     let public_server = if public {
-        Some(create_public_server(public_ep_addr, ctx.clone()))
+        Some(create_public_server(public_ep_addr))
     } else {
         None
     };
 
     let internal_server = if internal {
-        Some(create_internal_server(private_ep_addr, ctx.clone()))
+        Some(create_internal_server(private_ep_addr))
     } else {
         None
     };
 
-    let sc_dispatcher = ScDispatcher::new(ctx.clone());
+    let sc_dispatcher = ScDispatcher::new(default_replica_ctx().clone());
     sc_dispatcher.run();
 
-    (ctx, internal_server, public_server)
+    (internal_server, public_server)
 }
 
 mod proxy {

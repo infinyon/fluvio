@@ -10,8 +10,11 @@ use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
 use crate::{
-    core::{DefaultSharedGlobalContext, follower_notifier, config, local_spu_id},
-    replication::follower::sync::{FileSyncRequest},
+    core::{config, local_spu_id},
+    replication::{
+        follower::sync::{FileSyncRequest},
+        follower_notifier, default_replica_ctx,
+    },
 };
 
 use super::LeaderPeerApiEnum;
@@ -24,7 +27,6 @@ use super::super::follower::RejectOffsetRequest;
 /// This follows similar arch as Consumer Stream Fetch Handler
 /// It is reactive to offset state
 pub struct FollowerHandler {
-    ctx: DefaultSharedGlobalContext,
     follower_id: SpuId,
     max_bytes: u32,
     spu_update: SharedSpuPendingUpdate,
@@ -39,14 +41,12 @@ impl fmt::Debug for FollowerHandler {
 impl FollowerHandler {
     /// manage connection from follower
     pub async fn start(
-        ctx: DefaultSharedGlobalContext,
         follower_id: SpuId,
         spu_update: SharedSpuPendingUpdate,
         sink: FluvioSink,
         stream: FluvioStream,
     ) {
         let connection = Self {
-            ctx: ctx.clone(),
             max_bytes: config().peer_max_bytes,
             follower_id,
             spu_update,
@@ -136,7 +136,7 @@ impl FollowerHandler {
         debug!(?replicas);
 
         let mut sync_request = FileSyncRequest::default();
-        let leaders = self.ctx.leaders_state();
+        let leaders = default_replica_ctx().leaders_state();
 
         for replica in replicas {
             if let Some(leader) = leaders.get(&replica).await {
@@ -176,7 +176,7 @@ impl FollowerHandler {
         for update in request.replicas.into_iter() {
             debug!(?update, "request");
             let replica_key = update.replica;
-            if let Some(leader) = self.ctx.leaders_state().get(&replica_key).await {
+            if let Some(leader) = default_replica_ctx().leaders_state().get(&replica_key).await {
                 let status = leader
                     .update_states_from_followers(
                         self.follower_id,

@@ -1,6 +1,6 @@
-use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
 use tracing::{debug, error};
 
+use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
 use dataplane::ErrorCode;
 use fluvio::{
     ConsumerConfig,
@@ -11,11 +11,11 @@ use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
     SmartModuleContextData,
 };
-use futures_util::{StreamExt, stream::BoxStream};
+use futures_util::{ stream::BoxStream};
 
-use crate::core::{
-    DefaultSharedGlobalContext, smartmodule_localstore, derivedstream_store, smartengine_owned,
-};
+use crate::{core::{
+    smartmodule_localstore, derivedstream_store, smartengine_owned, leaders,
+}, replication::default_replica_ctx};
 
 pub struct SmartModuleContext {
     pub smartmodule_instance: Box<dyn SmartModuleInstance>,
@@ -31,7 +31,6 @@ impl SmartModuleContext {
         smartmodule: Option<SmartModuleInvocation>,
         derivedstream: Option<DerivedStreamInvocation>,
         version: i16,
-        ctx: &DefaultSharedGlobalContext,
     ) -> Result<Option<Self>, ErrorCode> {
         let derived_sm_modules = if let Some(ss_inv) = derivedstream {
             Some(extract_derivedstream_context(ss_inv).await?)
@@ -48,7 +47,7 @@ impl SmartModuleContext {
 
         match module {
             Some(smartmodule_invocation) => Ok(Some(
-                Self::extract_smartmodule_context(smartmodule_invocation, version, ctx).await?,
+                Self::extract_smartmodule_context(smartmodule_invocation, version).await?,
             )),
             None => {
                 if let Some(payload) = wasm_payload {
@@ -67,14 +66,13 @@ impl SmartModuleContext {
     async fn extract_smartmodule_context(
         invocation: SmartModuleInvocation,
         version: i16,
-        ctx: &DefaultSharedGlobalContext,
     ) -> Result<Self, ErrorCode> {
         // check for right consumer stream exists, this only happens for join type
         let right_consumer_stream = match invocation.kind {
             // for join, create consumer stream
             SmartModuleKind::Join(ref topic)
             | SmartModuleKind::Generic(SmartModuleContextData::Join(ref topic)) => {
-                let consumer = ctx.leaders().partition_consumer(topic.to_owned(), 0).await;
+                let consumer = default_replica_ctx().leaders().partition_consumer(topic.to_owned(), 0).await;
 
                 Some(
                     consumer
@@ -100,8 +98,8 @@ impl SmartModuleContext {
                     // find input which has topic
                     match derivedstream.spec.input {
                         DerivedStreamInputRef::Topic(topic) => {
-                            let consumer = ctx
-                                .leaders()
+                            let consumer = 
+                                leaders()
                                 .partition_consumer(topic.name.to_owned(), 0)
                                 .await;
                             // need to build stream arg

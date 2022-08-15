@@ -17,11 +17,10 @@ use fluvio_controlplane::UpdateReplicaRequest;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
-use crate::core::{
-    SharedGlobalContext, spu_local_store, smartmodule_localstore, derivedstream_store,
-    status_update_owned, local_spu_id, config, sync_follower_update,
-};
+
 use crate::InternalServerError;
+use crate::core::{status_update_owned, local_spu_id, config};
+use crate::replication::SharedReplicaContext;
 
 use super::message_sink::{SharedStatusUpdate};
 
@@ -38,13 +37,13 @@ struct DispatcherCounter {
 /// Controller for handling connection to SC
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
-    ctx: SharedGlobalContext<S>,
+    ctx: SharedReplicaContext<S>,
     status_update: SharedStatusUpdate,
     counter: DispatcherCounter,
 }
 
 impl ScDispatcher<FileReplica> {
-    pub fn new(ctx: SharedGlobalContext<FileReplica>) -> Self {
+    pub fn new(ctx: SharedReplicaContext<FileReplica>) -> Self {
         Self {
             status_update: status_update_owned(),
             ctx,
@@ -285,8 +284,6 @@ impl ScDispatcher<FileReplica> {
         req_msg: RequestMessage<UpdateReplicaRequest>,
         sc_sink: &mut FluvioSink,
     ) {
-        use crate::core::ReplicaChange;
-
         let (_, request) = req_msg.get_header_request();
 
         debug!( message = ?request,"replica request");

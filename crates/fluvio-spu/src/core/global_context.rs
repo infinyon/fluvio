@@ -4,23 +4,15 @@
 //! Global Context maintains states need to be shared across in the SPU
 
 use std::sync::Arc;
-use std::fmt::Debug;
 
 use once_cell::sync::OnceCell;
-use tracing::{debug, error, instrument};
 
-use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
-use fluvio_storage::{ReplicaStorage};
+
+use fluvio_smartengine::SmartEngine;
 
 use crate::config::SpuConfig;
-use crate::replication::follower::FollowersState;
-use crate::replication::follower::SharedFollowersState;
-use crate::replication::leader::{
-    SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
-};
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
-use fluvio_smartengine::SmartEngine;
 
 use super::leader_client::LeaderConnections;
 use super::smartmodule::SmartModuleLocalStore;
@@ -33,16 +25,14 @@ use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
 use super::SharedSpuConfig;
 
-pub use file_replica::ReplicaChange;
-
 static SPU_STORE: OnceCell<SharedSpuLocalStore> = OnceCell::new();
 static REPLICA_STORE: OnceCell<SharedReplicaLocalStore> = OnceCell::new();
 static SMARTMODULE_STORE: OnceCell<SharedSmartModuleLocalStore> = OnceCell::new();
 static DERIVEDSTREAM_STORE: OnceCell<SharedStreamStreamLocalStore> = OnceCell::new();
-static FOLLOWER_NOTIFIER: OnceCell<SharedSpuUpdates> = OnceCell::new();
 static STATUS_UPDATE: OnceCell<SharedStatusUpdate> = OnceCell::new();
 static CONFIG: OnceCell<SharedSpuConfig> = OnceCell::new();
 static SMART_ENGINE: OnceCell<SmartEngine> = OnceCell::new();
+static LEADERS: OnceCell<Arc<LeaderConnections>> = OnceCell::new();
 
 pub(crate) fn spu_local_store() -> &'static SpuLocalStore {
     SPU_STORE.get().unwrap()
@@ -62,10 +52,6 @@ pub(crate) fn smartmodule_localstore() -> &'static SmartModuleLocalStore {
 
 pub(crate) fn derivedstream_store() -> &'static DerivedStreamStore {
     DERIVEDSTREAM_STORE.get().unwrap()
-}
-
-pub(crate) fn follower_notifier() -> &'static FollowerNotifier {
-    FOLLOWER_NOTIFIER.get().unwrap()
 }
 
 pub(crate) fn status_update_owned() -> SharedStatusUpdate {
@@ -90,20 +76,23 @@ pub(crate) fn config_owned() -> SharedSpuConfig {
     CONFIG.get().unwrap().clone()
 }
 
-pub(crate) async fn sync_follower_update() {
-    follower_notifier()
-        .sync_from_spus(spu_local_store(), local_spu_id())
-        .await;
-}
+/// notify all follower handlers with SPU changes
 
 pub(crate) fn smartengine_owned() -> SmartEngine {
     SMART_ENGINE.get().unwrap().clone()
 }
 
+pub(crate) fn leaders() -> Arc<LeaderConnections> {
+    LEADERS.get().unwrap().clone()
+}
+
 /// initialize global variables
 pub(crate) fn initialize(spu_config: SpuConfig) {
-    SPU_STORE.set(SpuLocalStore::new_shared()).unwrap();
-    REPLICA_STORE.set(ReplicaStore::new_shared()).unwrap();
+    let spus = SpuLocalStore::new_shared();
+    let replicas = ReplicaStore::new_shared();
+
+    SPU_STORE.set(spus.clone()).unwrap();
+    REPLICA_STORE.set(replicas.clone()).unwrap();
     SMARTMODULE_STORE
         .set(SmartModuleLocalStore::new_shared())
         .unwrap();
@@ -111,10 +100,14 @@ pub(crate) fn initialize(spu_config: SpuConfig) {
         .set(DerivedStreamStore::new_shared())
         .unwrap();
 
-    FOLLOWER_NOTIFIER.set(FollowerNotifier::shared()).unwrap();
     STATUS_UPDATE.set(StatusMessageSink::shared()).unwrap();
     CONFIG.set(Arc::new(spu_config)).unwrap();
     SMART_ENGINE.set(SmartEngine::default()).unwrap();
+    LEADERS
+        .set(LeaderConnections::shared(spus, replicas))
+        .unwrap();
+
+    crate::replication::initialize();
 
     /*
     let replicas = ReplicaStore::new_shared();
@@ -133,327 +126,4 @@ pub(crate) fn initialize(spu_config: SpuConfig) {
         leaders: LeaderConnections::shared(spus, replicas),
     }
     */
-}
-
-#[derive(Debug)]
-pub struct GlobalContext<S> {
-    leaders_state: SharedReplicaLeadersState<S>,
-    followers_state: SharedFollowersState<S>,
-    leaders: Arc<LeaderConnections>,
-}
-
-// -----------------------------------
-// Global Contesxt - Implementation
-// -----------------------------------
-
-impl<S> GlobalContext<S>
-where
-    S: ReplicaStorage,
-{
-    pub fn new_shared_context(spu_config: SpuConfig) -> Arc<Self> {
-        Arc::new(GlobalContext::new(spu_config))
-    }
-
-    pub fn new(_spu_config: SpuConfig) -> Self {
-        let spus = SpuLocalStore::new_shared();
-        let replicas = ReplicaStore::new_shared();
-
-        GlobalContext {
-            leaders_state: ReplicaLeadersState::new_shared(),
-            followers_state: FollowersState::new_shared(),
-            leaders: LeaderConnections::shared(spus, replicas),
-        }
-    }
-
-    pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
-        &self.leaders_state
-    }
-
-    pub fn followers_state(&self) -> &FollowersState<S> {
-        &self.followers_state
-    }
-
-    pub fn followers_state_owned(&self) -> SharedFollowersState<S> {
-        self.followers_state.clone()
-    }
-
-    /*
-    #[allow(unused)]
-    pub fn status_update(&self) -> &StatusMessageSink {
-        &self.status_update
-    }
-    */
-
-    /// notify all follower handlers with SPU changes
-
-    #[allow(unused)]
-    pub fn leaders(&self) -> Arc<LeaderConnections> {
-        self.leaders.clone()
-    }
-}
-
-mod file_replica {
-
-    use fluvio_controlplane::{ReplicaRemovedRequest, UpdateReplicaRequest};
-    use fluvio_storage::{FileReplica, StorageError};
-    use flv_util::actions::Actions;
-    use tracing::{trace, warn};
-
-    use crate::core::SpecChange;
-
-    use super::*;
-
-    #[derive(Debug)]
-    pub enum ReplicaChange {
-        Remove(ReplicaRemovedRequest),
-        StorageError(StorageError),
-    }
-
-    impl GlobalContext<FileReplica> {
-        /// Promote follower replica as leader,
-        /// This is done in 3 steps
-        /// // 1: Remove follower replica from followers state
-        /// // 2: Terminate followers controller if need to be (if there are no more follower replicas for that controller)
-        /// // 3: add to leaders state
-        #[instrument(
-            skip(self,new_replica,old_replica),
-            fields(
-                replica = %new_replica.id,
-                old_leader = old_replica.leader
-            )
-        )]
-        pub async fn promote(&self, new_replica: &Replica, old_replica: &Replica) {
-            if let Some(follower_replica) = self
-                .followers_state()
-                .remove_replica(old_replica.leader, &old_replica.id)
-                .await
-            {
-                debug!(
-                    replica = %old_replica.id,
-                    "old follower replica exists, promoting to leader"
-                );
-
-                self.leaders_state()
-                    .promote_follower(
-                        config().into(),
-                        follower_replica,
-                        new_replica.clone(),
-                        status_update_owned(),
-                    )
-                    .await;
-            } else {
-                error!("follower replica {} didn't exists!", old_replica.id);
-            }
-        }
-
-        pub async fn apply_replica_update(
-            &self,
-            request: UpdateReplicaRequest,
-        ) -> Vec<ReplicaChange> {
-            let changes = replica_localstore().apply(request.all, request.changes);
-
-            self.apply_replica_actions(changes).await
-        }
-
-        /// apply changes to
-        #[instrument(
-            skip(self),
-            fields(actions=actions.count()))]
-        async fn apply_replica_actions(
-            &self,
-            actions: Actions<SpecChange<Replica>>,
-        ) -> Vec<ReplicaChange> {
-            trace!( actions = ?actions,"replica actions");
-
-            if actions.count() == 0 {
-                debug!("no replica actions to process. ignoring");
-                return vec![];
-            }
-
-            let local_id = local_spu_id();
-
-            let mut outputs = vec![];
-            for replica_action in actions.into_iter() {
-                debug!(action = ?replica_action,"applying");
-
-                match replica_action {
-                    SpecChange::Add(new_replica) => {
-                        if new_replica.is_being_deleted {
-                            outputs.push(ReplicaChange::Remove(
-                                self.remove_leader_replica(new_replica).await,
-                            ));
-                        } else if new_replica.leader == local_id {
-                            // we are leader
-                            if let Err(err) = self
-                                .leaders_state()
-                                .add_leader_replica(new_replica, status_update_owned())
-                                .await
-                            {
-                                outputs.push(ReplicaChange::StorageError(err));
-                            }
-                        } else {
-                            // add follower if we are in follower list
-                            if new_replica.replicas.contains(&local_id) {
-                                if let Err(err) = self
-                                    .followers_state_owned()
-                                    .add_replica(self, new_replica)
-                                    .await
-                                {
-                                    outputs.push(ReplicaChange::StorageError(err));
-                                }
-                            } else {
-                                debug!(replica = %new_replica.id, "not application to this spu, ignoring");
-                            }
-                        }
-                    }
-                    SpecChange::Delete(deleted_replica) => {
-                        if deleted_replica.leader == local_id {
-                            outputs.push(ReplicaChange::Remove(
-                                self.remove_leader_replica(deleted_replica).await,
-                            ));
-                        } else {
-                            self.remove_follower_replica(deleted_replica).await;
-                        }
-                    }
-                    SpecChange::Mod(new_replica, old_replica) => {
-                        if new_replica.is_being_deleted {
-                            if new_replica.leader == local_id {
-                                outputs.push(ReplicaChange::Remove(
-                                    self.remove_leader_replica(new_replica).await,
-                                ));
-                            } else {
-                                self.remove_follower_replica(new_replica).await
-                            }
-                        } else {
-                            // check for leader change
-                            if new_replica.leader != old_replica.leader {
-                                if new_replica.leader == local_id {
-                                    self.promote(&new_replica, &old_replica).await
-                                } else {
-                                    // we are follower
-                                    // if we were leader before, we demote out self
-                                    if old_replica.leader == local_id {
-                                        self.demote_replica(new_replica).await
-                                    } else {
-                                        // we stay as follower but we switch to new leader
-                                        debug!(
-                                            "still follower but switching leader: {}",
-                                            new_replica
-                                        );
-                                        self.switch_leader_for_follower(new_replica, old_replica)
-                                            .await
-                                    }
-                                }
-                            } else if new_replica.leader == local_id {
-                                if self.leaders_state().get(&new_replica.id).await.is_some() {
-                                } else {
-                                    error!("leader controller was not found: {}", new_replica.id);
-                                }
-                            } else {
-                                self.followers_state().update_replica(new_replica).await;
-                            }
-                        }
-                    }
-                }
-            }
-
-            outputs
-        }
-
-        /// reemove leader replica
-        #[instrument(
-            skip(self,replica),
-            fields(
-                replica = %replica.id,
-            )
-        )]
-        async fn remove_leader_replica(&self, replica: Replica) -> ReplicaRemovedRequest {
-            // try to send message to leader controller if still exists
-            if let Some(previous_state) = self.leaders_state().remove(&replica.id).await {
-                if let Err(err) = previous_state.remove().await {
-                    error!("error: {} removing replica: {}", err, replica);
-                } else {
-                    debug!(
-                        replica = %replica.id,
-                        "leader remove was removed"
-                    );
-                }
-            } else {
-                // if we don't find existing replica, just warning
-                warn!("no existing replica found {}", replica);
-            }
-
-            ReplicaRemovedRequest::new(replica.id, true)
-        }
-
-        /// reemove leader replica
-        #[instrument(
-            skip(self,replica),
-            fields(
-                replica = %replica.id,
-            )
-        )]
-        async fn remove_follower_replica(&self, replica: Replica) {
-            debug!("removing follower replica: {}", replica);
-            if let Some(replica_state) = self
-                .followers_state()
-                .remove_replica(replica.leader, &replica.id)
-                .await
-            {
-                if let Err(err) = replica_state.remove().await {
-                    error!("error {}, removing replica: {}", err, replica);
-                }
-            } else {
-                error!("there was no follower replica: {} to remove", replica);
-            }
-        }
-
-        /// Demote leader replica as follower.
-        /// This only happens on manual election
-        #[instrument(
-            skip(self,replica),
-            fields(
-                replica = %replica.id,
-            )
-        )]
-        pub async fn demote_replica(&self, replica: Replica) {
-            if let Some(leader_replica_state) = self.leaders_state().remove(&replica.id).await {
-                drop(leader_replica_state);
-                if let Err(err) = self
-                    .followers_state_owned()
-                    .add_replica(self, replica)
-                    .await
-                {
-                    error!("demotion failed: {}", err);
-                }
-            } else {
-                error!("leader controller was not found: {}", replica.id)
-            }
-        }
-
-        /// Demote leader replica as follower.
-        /// This only happens on manual election
-        #[instrument(
-            skip(self,new,old),
-            fields(
-                new = %new.id,
-                old = %old.id,
-            )
-        )]
-        async fn switch_leader_for_follower(&self, new: Replica, old: Replica) {
-            // we stay as follower but we switch to new leader
-            debug!("still follower but switching leader: {}", new);
-            if self
-                .followers_state()
-                .remove_replica(old.leader, &old.id)
-                .await
-                .is_none()
-            {
-                error!("there was no follower replica: {} to switch", new);
-            }
-            if let Err(err) = self.followers_state_owned().add_replica(self, new).await {
-                error!("leader switch failed: {}", err);
-            }
-        }
-    }
 }

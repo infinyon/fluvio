@@ -15,13 +15,12 @@ use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
 use dataplane::fixture::{create_recordset};
 
-use crate::core::{
-    DefaultSharedGlobalContext, GlobalContext, spu_local_store, replica_localstore,
-    follower_notifier, status_update_owned, status_update, sync_follower_update,
-};
+use crate::core::{spu_local_store, replica_localstore, status_update_owned, status_update};
 use crate::config::SpuConfig;
+use crate::replication::follower_notifier;
 use crate::services::create_internal_server;
 
+use super::{DefaultSharedReplicaContext, ReplicaContext, sync_follower_update};
 use super::{follower::FollowerReplicaState, leader::LeaderReplicaState};
 
 const TOPIC: &str = "test";
@@ -137,10 +136,10 @@ impl TestConfig {
     }
 
     /// create new context with SPU populated
-    pub async fn leader_ctx(&self) -> DefaultSharedGlobalContext {
+    pub async fn leader_ctx(&self) -> DefaultSharedReplicaContext {
         let leader_config = self.leader_config();
 
-        let gctx = GlobalContext::new_shared_context(leader_config);
+        let gctx = ReplicaContext::new_shared_context();
         spu_local_store().sync_all(self.spu_specs());
         sync_follower_update().await;
 
@@ -150,7 +149,7 @@ impl TestConfig {
     /// starts new leader
     pub async fn leader_replica(
         &self,
-    ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
+    ) -> (DefaultSharedReplicaContext, LeaderReplicaState<FileReplica>) {
         let replica = self.replica();
 
         let gctx = self.leader_ctx().await;
@@ -166,9 +165,9 @@ impl TestConfig {
     }
 
     /// create new follower context witj SPU
-    pub async fn follower_ctx(&self, follower_index: u16) -> DefaultSharedGlobalContext {
+    pub async fn follower_ctx(&self, follower_index: u16) -> DefaultSharedReplicaContext {
         let follower_config = self.follower_config(follower_index);
-        let gctx = GlobalContext::new_shared_context(follower_config);
+        let gctx = ReplicaContext::new_shared_context();
         spu_local_store().sync_all(self.spu_specs());
         gctx
     }
@@ -177,7 +176,7 @@ impl TestConfig {
         &self,
         follower_index: u16,
     ) -> (
-        DefaultSharedGlobalContext,
+        DefaultSharedReplicaContext,
         FollowerReplicaState<FileReplica>,
     ) {
         let replica = self.replica();
@@ -270,7 +269,7 @@ async fn test_replication2_existing() {
     assert_eq!(leader_replica.hw(), 0);
     assert!(!status_update().remove_all().await.is_empty());
 
-    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+    let spu_server = create_internal_server(builder.leader_addr()).run();
 
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
@@ -329,7 +328,7 @@ async fn test_replication2_new_records() {
     let follower_info = leader_replica.followers_info().await;
     assert_eq!(follower_info.get(&5002).unwrap().leo, -1);
 
-    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+    let spu_server = create_internal_server(builder.leader_addr()).run();
 
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
@@ -403,7 +402,7 @@ async fn test_replication3_existing() {
     assert_eq!(leader_replica.leo(), 2);
     assert_eq!(leader_replica.hw(), 0);
 
-    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+    let spu_server = create_internal_server(builder.leader_addr()).run();
 
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
@@ -458,7 +457,7 @@ async fn test_replication3_new_records() {
     assert_eq!(follower_info.get(&FOLLOWER1).unwrap().leo, -1);
     assert_eq!(follower_info.get(&FOLLOWER2).unwrap().leo, -1);
 
-    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+    let spu_server = create_internal_server(builder.leader_addr()).run();
 
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
@@ -526,7 +525,7 @@ async fn test_replication2_promote() {
     let follower_info = leader_replica.followers_info().await;
     assert_eq!(follower_info.get(&5002).unwrap().leo, -1);
 
-    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+    let spu_server = create_internal_server(builder.leader_addr()).run();
 
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
@@ -582,7 +581,7 @@ async fn test_replication_dispatch_in_sequence() {
 
     let leader_gctx = builder.leader_ctx().await;
 
-    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+    let spu_server = create_internal_server(builder.leader_addr()).run();
 
     let replica = builder.replica();
 
@@ -657,7 +656,7 @@ async fn test_replication_dispatch_out_of_sequence() {
 
     let leader_gctx = builder.leader_ctx().await;
 
-    let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+    let spu_server = create_internal_server(builder.leader_addr()).run();
 
     // start the follower way before leader
     let follower_gctx = builder.follower_ctx(0).await;

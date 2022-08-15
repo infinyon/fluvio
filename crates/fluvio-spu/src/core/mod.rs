@@ -15,11 +15,6 @@ pub(crate) use self::store::SpecChange;
 pub(crate) use self::spus::SpuLocalStore;
 pub(crate) use self::replica::SharedReplicaLocalStore;
 
-use std::sync::Arc;
-use ::fluvio_storage::FileReplica;
 use crate::config::SpuConfig;
 
-pub(crate) type SharedGlobalContext<S> = Arc<GlobalContext<S>>;
-pub(crate) type DefaultSharedGlobalContext = SharedGlobalContext<FileReplica>;
-pub(crate) type SharedSpuConfig = Arc<SpuConfig>;
-pub(crate) type FileGlobalContext = GlobalContext<FileReplica>;
+pub(crate) type SharedSpuConfig = std::sync::Arc<SpuConfig>;

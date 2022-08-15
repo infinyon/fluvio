@@ -9,19 +9,19 @@ use dataplane::fetch::{
 };
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-use crate::core::DefaultSharedGlobalContext;
 use dataplane::record::FileRecordSet;
+
+use crate::replication::default_replica_ctx;
 
 /// perform log fetch request using zero copy write
 #[instrument(
-    skip(request, ctx, sink),
+    skip(request, sink),
     fields(
         max_bytes = request.request.max_bytes,
     ),
 )]
 pub async fn handle_fetch_request(
     request: RequestMessage<FileFetchRequest>,
-    ctx: DefaultSharedGlobalContext,
     sink: ExclusiveFlvSink,
 ) -> Result<(), SocketError> {
     let (header, fetch_request) = request.get_header_request();
@@ -29,7 +29,7 @@ pub async fn handle_fetch_request(
     let mut fetch_response = FileFetchResponse::default();
 
     for topic_request in &fetch_request.topics {
-        let topic_response = handle_fetch_topic(&ctx, &fetch_request, topic_request).await?;
+        let topic_response = handle_fetch_topic(&fetch_request, topic_request).await?;
         fetch_response.topics.push(topic_response);
     }
 
@@ -48,11 +48,10 @@ pub async fn handle_fetch_request(
 }
 
 #[instrument(
-    skip(ctx, fetch_request, topic_request),
+    skip(fetch_request, topic_request),
     fields(topic = %topic_request.name),
 )]
 async fn handle_fetch_topic(
-    ctx: &DefaultSharedGlobalContext,
     fetch_request: &FileFetchRequest,
     topic_request: &FetchableTopic,
 ) -> Result<FetchableTopicResponse<FileRecordSet>, SocketError> {
@@ -66,7 +65,7 @@ async fn handle_fetch_topic(
     for partition_request in &topic_request.fetch_partitions {
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
         let partition_response =
-            handle_fetch_partition(ctx, replica_id, fetch_request, partition_request).await?;
+            handle_fetch_partition(replica_id, fetch_request, partition_request).await?;
         topic_response.partitions.push(partition_response);
     }
 
@@ -74,11 +73,10 @@ async fn handle_fetch_topic(
 }
 
 #[instrument(
-skip(ctx, replica_id, partition_request),
+skip(replica_id, partition_request),
     fields(%replica_id)
 )]
 async fn handle_fetch_partition(
-    ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
     fetch_request: &FileFetchRequest,
     partition_request: &FetchPartition,
@@ -91,7 +89,7 @@ async fn handle_fetch_partition(
         ..Default::default()
     };
 
-    let leader_state = match ctx.leaders_state().get(&replica_id).await {
+    let leader_state = match default_replica_ctx().leaders_state().get(&replica_id).await {
         Some(leader_state) => leader_state,
         None => {
             debug!("Not leader for partition:");

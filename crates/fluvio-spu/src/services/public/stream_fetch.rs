@@ -27,8 +27,7 @@ use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartmodule::SmartModuleRuntimeError;
 
-use crate::core::DefaultSharedGlobalContext;
-use crate::replication::leader::SharedFileLeaderState;
+use crate::replication::{leader::SharedFileLeaderState, default_replica_ctx};
 use crate::services::public::conn_context::ConnectionContext;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::SmartModuleContext;
@@ -51,7 +50,6 @@ impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
     pub(crate) async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
-        ctx: DefaultSharedGlobalContext,
         conn_ctx: &mut ConnectionContext,
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
@@ -59,7 +57,7 @@ impl StreamFetchHandler {
         let (header, msg) = request.get_header_request();
         let replica = ReplicaKey::new(msg.topic.clone(), msg.partition);
 
-        if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
+        if let Some(leader_state) = default_replica_ctx().leaders_state().get(&replica).await {
             let (stream_id, offset_publisher) = conn_ctx
                 .stream_publishers_mut()
                 .create_new_publisher()
@@ -68,7 +66,6 @@ impl StreamFetchHandler {
 
             spawn(async move {
                 if let Err(err) = StreamFetchHandler::fetch(
-                    ctx,
                     sink,
                     end_event.clone(),
                     leader_state,
@@ -112,14 +109,13 @@ impl StreamFetchHandler {
 
     #[allow(clippy::too_many_arguments)]
     #[instrument(
-        skip(ctx,replica,end_event,leader_state,header,msg,consumer_offset_listener),
+        skip(replica,end_event,leader_state,header,msg,consumer_offset_listener),
         fields(
             replica = %replica,
             sink = sink.id()
         ))
     ]
     pub async fn fetch(
-        ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
         leader_state: SharedFileLeaderState,
@@ -137,7 +133,6 @@ impl StreamFetchHandler {
             msg.smartmodule,
             msg.derivedstream,
             version,
-            &ctx,
         )
         .await
         {
