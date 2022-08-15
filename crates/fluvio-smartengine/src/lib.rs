@@ -6,3 +6,4 @@ mod engine;
 pub use engine::*;
 
 mod memory;
+mod metadata;

@@ -5,12 +5,12 @@ use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleExtraParams, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 
 use crate::{
     WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
-    error::Error,
+    error::Error, metadata::SmartModuleExtraParams,
 };
 
 const FILTER_MAP_FN_NAME: &str = "filter_map";
