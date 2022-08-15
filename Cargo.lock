@@ -1721,7 +1721,7 @@ dependencies = [
  "semver 1.0.13",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.9",
  "sha2 0.10.2",
  "static_assertions",
  "sysinfo 0.24.7",
@@ -1791,7 +1791,7 @@ dependencies = [
  "semver 1.0.13",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.9",
  "sysinfo 0.24.7",
  "tar",
  "tempdir",
@@ -1895,7 +1895,7 @@ dependencies = [
  "semver 1.0.13",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.9",
  "thiserror",
  "tracing",
 ]
@@ -2277,7 +2277,7 @@ dependencies = [
  "futures-lite",
  "libc",
  "memmap",
- "nix 0.24.2",
+ "nix 0.25.0",
  "pin-utils",
  "serde",
  "thiserror",
@@ -2351,7 +2351,7 @@ dependencies = [
  "indicatif 0.17.0",
  "inventory",
  "md-5",
- "nix 0.24.2",
+ "nix 0.25.0",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -2371,7 +2371,7 @@ dependencies = [
  "crossbeam-channel",
  "fluvio",
  "fluvio-future 0.4.1",
- "nix 0.24.2",
+ "nix 0.25.0",
  "proc-macro2",
  "quote",
  "syn",
@@ -2391,7 +2391,7 @@ dependencies = [
  "fluvio-test-util",
  "inflections",
  "inventory",
- "nix 0.24.2",
+ "nix 0.25.0",
  "proc-macro2",
  "quote",
  "rand 0.8.5",
@@ -4189,9 +4189,9 @@ dependencies = [
 
 [[package]]
 name = "quantities"
-version = "0.9.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df2f192ce6bc1323c6c1c8f2383209ae891a4d4b9e6cea0a8ce80fca2e2f43f3"
+checksum = "da9d016ac1e3cfe2ba7fe96c1c27ecb539e05dc4941d6572aedf44d95bbb4782"
 dependencies = [
  "qty-macros",
 ]
