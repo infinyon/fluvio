@@ -40,6 +40,7 @@ static REPLICA_STORE: OnceCell<SharedReplicaLocalStore> = OnceCell::new();
 static SMARTMODULE_STORE: OnceCell<SharedSmartModuleLocalStore> = OnceCell::new();
 static DERIVEDSTREAM_STORE: OnceCell<SharedStreamStreamLocalStore> = OnceCell::new();
 static FOLLOWER_NOTIFIER: OnceCell<SharedSpuUpdates> = OnceCell::new();
+static STATUS_UPDATE: OnceCell<SharedStatusUpdate> = OnceCell::new();
 
 pub(crate) fn spu_local_store() -> &'static SpuLocalStore {
     SPU_STORE.get().unwrap()
@@ -65,6 +66,15 @@ pub(crate) fn follower_notifier() -> &'static FollowerNotifier {
     FOLLOWER_NOTIFIER.get().unwrap()
 }
 
+pub(crate) fn status_update_owned() -> SharedStatusUpdate {
+    STATUS_UPDATE.get().unwrap().clone()
+}
+
+#[cfg(test)]
+pub(crate) fn status_update() -> &'static StatusMessageSink {
+    STATUS_UPDATE.get().unwrap()
+}
+
 /// initialize global variables
 pub(crate) fn initialize(_spu_config: SpuConfig) {
     SPU_STORE.set(SpuLocalStore::new_shared()).unwrap();
@@ -77,6 +87,7 @@ pub(crate) fn initialize(_spu_config: SpuConfig) {
         .unwrap();
 
     FOLLOWER_NOTIFIER.set(FollowerNotifier::shared()).unwrap();
+    STATUS_UPDATE.set(StatusMessageSink::shared()).unwrap();
 
     /*
     let replicas = ReplicaStore::new_shared();
@@ -102,7 +113,6 @@ pub struct GlobalContext<S> {
     config: SharedSpuConfig,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
-    status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
 }
@@ -127,7 +137,6 @@ where
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
-            status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
             leaders: LeaderConnections::shared(spus, replicas),
         }
@@ -158,14 +167,12 @@ where
         self.config.clone()
     }
 
+    /*
     #[allow(unused)]
     pub fn status_update(&self) -> &StatusMessageSink {
         &self.status_update
     }
-
-    pub fn status_update_owned(&self) -> SharedStatusUpdate {
-        self.status_update.clone()
-    }
+    */
 
     /// notify all follower handlers with SPU changes
     #[instrument(skip(self))]
@@ -231,7 +238,7 @@ mod file_replica {
                         self.config().into(),
                         follower_replica,
                         new_replica.clone(),
-                        self.status_update_owned(),
+                        status_update_owned(),
                     )
                     .await;
             } else {
@@ -279,7 +286,7 @@ mod file_replica {
                             // we are leader
                             if let Err(err) = self
                                 .leaders_state()
-                                .add_leader_replica(self, new_replica, self.status_update.clone())
+                                .add_leader_replica(self, new_replica, status_update_owned())
                                 .await
                             {
                                 outputs.push(ReplicaChange::StorageError(err));

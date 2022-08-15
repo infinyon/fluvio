@@ -17,7 +17,7 @@ use dataplane::fixture::{create_recordset};
 
 use crate::core::{
     DefaultSharedGlobalContext, GlobalContext, spu_local_store, replica_localstore,
-    follower_notifier,
+    follower_notifier, status_update_owned, status_update,
 };
 use crate::config::SpuConfig;
 use crate::services::create_internal_server;
@@ -158,7 +158,7 @@ impl TestConfig {
 
         let leader_replica = gctx
             .leaders_state()
-            .add_leader_replica(&gctx, replica.clone(), gctx.status_update_owned())
+            .add_leader_replica(&gctx, replica.clone(), status_update_owned())
             .await
             .expect("leader");
 
@@ -223,7 +223,7 @@ async fn test_just_leader() {
     assert_eq!(leader_replica.leo(), 0);
     assert_eq!(leader_replica.hw(), 0);
 
-    let status = leader_gctx.status_update().remove_all().await;
+    let status = status_update().remove_all().await;
     assert!(!status.is_empty());
     let lrs = &status[0];
     assert_eq!(lrs.id, (TOPIC, 0).into());
@@ -240,7 +240,7 @@ async fn test_just_leader() {
     assert_eq!(leader_replica.leo(), 2);
     assert_eq!(leader_replica.hw(), 2);
 
-    let status = leader_gctx.status_update().remove_all().await;
+    let status = status_update().remove_all().await;
     assert!(!status.is_empty());
     let lrs = &status[0];
     assert_eq!(lrs.id, (TOPIC, 0).into());
@@ -268,7 +268,7 @@ async fn test_replication2_existing() {
 
     assert_eq!(leader_replica.leo(), 2);
     assert_eq!(leader_replica.hw(), 0);
-    assert!(!leader_gctx.status_update().remove_all().await.is_empty());
+    assert!(!status_update().remove_all().await.is_empty());
 
     let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
 
@@ -294,7 +294,7 @@ async fn test_replication2_existing() {
     assert_eq!(follower_replica.hw(), 2);
     assert_eq!(leader_replica.hw(), 2);
 
-    let status = leader_gctx.status_update().remove_all().await;
+    let status = status_update().remove_all().await;
     debug!(?status);
     assert!(!status.is_empty());
     let lrs = &status[0];
@@ -366,7 +366,7 @@ async fn test_replication2_new_records() {
     assert_eq!(follower_replica.hw(), 2);
     assert_eq!(leader_replica.hw(), 2);
 
-    let status = leader_gctx.status_update().remove_all().await;
+    let status = status_update().remove_all().await;
     debug!(?status);
     assert!(!status.is_empty());
     let lrs = &status[0];
