@@ -15,7 +15,6 @@ use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleKind, LegacySmartModulePayload, SmartModuleContextData,
 };
 
-
 use crate::filter::SmartModuleFilter;
 use crate::map::SmartModuleMap;
 use crate::filter_map::SmartModuleFilterMap;
@@ -41,8 +40,7 @@ type State = ();
 pub struct SmartEngine(pub(crate) Engine);
 
 impl SmartEngine {
-
-    /* 
+    /*
     #[cfg(feature = "smartmodule")]
     #[tracing::instrument(skip(self))]
     pub fn create_module_from_smartmodule_spec(
@@ -449,8 +447,7 @@ impl dyn SmartModuleInstance + '_ {
 
                 // difference between smartmodule batch and and current batch
                 // since base are different we need update delta offset for each records
-                let relative_base_offset =
-                    smartmodule_batch.base_offset - file_batch.base_offset();
+                let relative_base_offset = smartmodule_batch.base_offset - file_batch.base_offset();
 
                 for record in &mut records {
                     record.add_base_offset(relative_base_offset);
