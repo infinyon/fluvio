@@ -2130,7 +2130,6 @@ dependencies = [
  "fluvio-future 0.4.2",
  "fluvio-spu-schema",
  "fluvio-types",
- "futures-util",
  "nix 0.25.0",
  "thiserror",
  "tracing",
