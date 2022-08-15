@@ -106,18 +106,14 @@ impl SmartEngine {
                 topic: _,
                 derivedstream: _,
             } => Box::new(smartmodule.create_join_stream(smart_payload.params, version)?),
-            SmartModuleKind::Aggregate { accumulator } => {
-                Box::new(smartmodule.create_aggregate(
-                    smart_payload.params,
-                    accumulator.clone(),
-                    version,
-                )?)
-            }
-            SmartModuleKind::Generic(context) => smartmodule.create_generic_smartmodule(
+            SmartModuleKind::Aggregate { accumulator } => Box::new(smartmodule.create_aggregate(
                 smart_payload.params,
-                context,
+                accumulator.clone(),
                 version,
-            )?,
+            )?),
+            SmartModuleKind::Generic(context) => {
+                smartmodule.create_generic_smartmodule(smart_payload.params, context, version)?
+            }
         };
         Ok(smartmodule_instance)
     }
