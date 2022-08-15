@@ -16,6 +16,10 @@ pub struct SmartModuleSpec {
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
     pub wasm: SmartModuleWasm,
+    #[deprecated(
+        since = "0.17.3",
+        note = "Use `package` instead. This field will be removed in 0.18.0"
+    )]
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
@@ -62,8 +66,6 @@ mod map_init_params {
     ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
-        K: Serialize,
-        V: Serialize,
     {
         let param_seq: Vec<Param> = data
             .iter()
