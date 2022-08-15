@@ -13,7 +13,9 @@ use fluvio_spu_schema::server::stream_fetch::{
 };
 use futures_util::{StreamExt, stream::BoxStream};
 
-use crate::core::{DefaultSharedGlobalContext, smartmodule_localstore, derivedstream_store};
+use crate::core::{
+    DefaultSharedGlobalContext, smartmodule_localstore, derivedstream_store, smartengine_owned,
+};
 
 pub struct SmartModuleContext {
     pub smartmodule_instance: Box<dyn SmartModuleInstance>,
@@ -51,7 +53,7 @@ impl SmartModuleContext {
             None => {
                 if let Some(payload) = wasm_payload {
                     Ok(Some(Self {
-                        smartmodule_instance: Self::payload_to_smartmodule(payload, version, ctx)?,
+                        smartmodule_instance: Self::payload_to_smartmodule(payload, version)?,
                         right_consumer_stream: None,
                     }))
                 } else {
@@ -166,7 +168,7 @@ impl SmartModuleContext {
         };
 
         Ok(Self {
-            smartmodule_instance: Self::payload_to_smartmodule(payload, version, ctx)?,
+            smartmodule_instance: Self::payload_to_smartmodule(payload, version)?,
             right_consumer_stream,
         })
     }
@@ -174,7 +176,6 @@ impl SmartModuleContext {
     fn payload_to_smartmodule(
         payload: LegacySmartModulePayload,
         version: i16,
-        ctx: &DefaultSharedGlobalContext,
     ) -> Result<Box<dyn SmartModuleInstance>, ErrorCode> {
         let raw = payload
             .wasm
@@ -186,7 +187,7 @@ impl SmartModuleContext {
 
         debug!(len = raw.len(), "SmartModule with bytes");
 
-        let sm_engine = ctx.smartengine_owned();
+        let sm_engine = smartengine_owned();
         let kind = payload.kind.clone();
 
         sm_engine
