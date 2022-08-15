@@ -14,7 +14,7 @@ use dataplane::Offset;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 use crate::replication::leader::ReplicaOffsetRequest;
-use crate::core::{FileGlobalContext};
+use crate::core::{FileGlobalContext, config};
 use crate::storage::SharableReplicaStorage;
 
 use super::controller::FollowerGroups;
@@ -92,7 +92,7 @@ impl FollowersState<FileReplica> {
                     "creating new follower state"
                 );
 
-                let mut replica_config: ReplicaConfig = ctx.config().into();
+                let mut replica_config: ReplicaConfig = config().into();
                 replica_config.update_from_replica(&replica);
 
                 let replica_state =

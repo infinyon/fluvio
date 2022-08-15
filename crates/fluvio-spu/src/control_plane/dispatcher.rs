@@ -19,7 +19,7 @@ use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
 use crate::core::{
     SharedGlobalContext, spu_local_store, smartmodule_localstore, derivedstream_store,
-    status_update_owned,
+    status_update_owned, local_spu_id, config, sync_follower_update,
 };
 use crate::InternalServerError;
 
@@ -66,10 +66,7 @@ impl ScDispatcher<FileReplica> {
             debug!("entering SC dispatch loop: {}", counter);
 
             let mut socket = self.create_socket_to_sc().await;
-            info!(
-                "established connection to sc for spu: {}",
-                self.ctx.local_spu_id()
-            );
+            info!("established connection to sc for spu: {}", local_spu_id());
 
             // register and exit on error
             let status = match self.send_spu_registration(&mut socket).await {
@@ -219,7 +216,7 @@ impl ScDispatcher<FileReplica> {
         &self,
         socket: &mut FluvioSocket,
     ) -> Result<bool, InternalServerError> {
-        let local_spu_id = self.ctx.local_spu_id();
+        let local_spu_id = local_spu_id();
 
         debug!("sending spu '{}' registration request", local_spu_id);
 
@@ -252,10 +249,11 @@ impl ScDispatcher<FileReplica> {
     /// connect to sc if can't connect try until we succeed
     /// or if we received termination message
     async fn create_socket_to_sc(&mut self) -> FluvioSocket {
-        let spu_id = self.ctx.local_spu_id();
-        let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
+        let spu_id = local_spu_id();
+        let config = config();
+        let sc_endpoint = config.sc_endpoint().to_string();
 
-        let wait_interval = self.ctx.config().sc_retry_ms;
+        let wait_interval = config.sc_retry_ms;
         loop {
             info!(
                 %sc_endpoint,
@@ -338,7 +336,7 @@ impl ScDispatcher<FileReplica> {
             spu_local_store().apply_changes(request.changes)
         };
 
-        self.ctx.sync_follower_update().await;
+        sync_follower_update().await;
 
         trace!("finish spu update");
 

@@ -4,7 +4,7 @@ use crate::config::{SpuConfig, SpuOpt};
 use crate::services::create_internal_server;
 use crate::services::internal::InternalApiServer;
 use crate::services::public::{SpuPublicServer, create_public_server};
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::{DefaultSharedGlobalContext, config};
 use crate::core::GlobalContext;
 use crate::control_plane::ScDispatcher;
 
@@ -70,8 +70,8 @@ pub fn create_services(
     crate::core::initialize(local_spu.clone());
     let ctx = FileReplicaContext::new_shared_context(local_spu);
 
-    let public_ep_addr = ctx.config().public_socket_addr().to_owned();
-    let private_ep_addr = ctx.config().private_socket_addr().to_owned();
+    let public_ep_addr = config().public_socket_addr().to_owned();
+    let private_ep_addr = config().private_socket_addr().to_owned();
 
     let public_server = if public {
         Some(create_public_server(public_ep_addr, ctx.clone()))

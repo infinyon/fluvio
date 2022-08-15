@@ -41,6 +41,7 @@ static SMARTMODULE_STORE: OnceCell<SharedSmartModuleLocalStore> = OnceCell::new(
 static DERIVEDSTREAM_STORE: OnceCell<SharedStreamStreamLocalStore> = OnceCell::new();
 static FOLLOWER_NOTIFIER: OnceCell<SharedSpuUpdates> = OnceCell::new();
 static STATUS_UPDATE: OnceCell<SharedStatusUpdate> = OnceCell::new();
+static CONFIG: OnceCell<SharedSpuConfig> = OnceCell::new();
 
 pub(crate) fn spu_local_store() -> &'static SpuLocalStore {
     SPU_STORE.get().unwrap()
@@ -75,8 +76,27 @@ pub(crate) fn status_update() -> &'static StatusMessageSink {
     STATUS_UPDATE.get().unwrap()
 }
 
+/// retrieves local spu id
+pub(crate) fn local_spu_id() -> SpuId {
+    CONFIG.get().unwrap().id
+}
+
+pub(crate) fn config() -> &'static SpuConfig {
+    CONFIG.get().unwrap()
+}
+
+pub(crate) fn config_owned() -> SharedSpuConfig {
+    CONFIG.get().unwrap().clone()
+}
+
+pub(crate) async fn sync_follower_update() {
+    follower_notifier()
+        .sync_from_spus(spu_local_store(), local_spu_id())
+        .await;
+}
+
 /// initialize global variables
-pub(crate) fn initialize(_spu_config: SpuConfig) {
+pub(crate) fn initialize(spu_config: SpuConfig) {
     SPU_STORE.set(SpuLocalStore::new_shared()).unwrap();
     REPLICA_STORE.set(ReplicaStore::new_shared()).unwrap();
     SMARTMODULE_STORE
@@ -88,6 +108,7 @@ pub(crate) fn initialize(_spu_config: SpuConfig) {
 
     FOLLOWER_NOTIFIER.set(FollowerNotifier::shared()).unwrap();
     STATUS_UPDATE.set(StatusMessageSink::shared()).unwrap();
+    CONFIG.set(Arc::new(spu_config)).unwrap();
 
     /*
     let replicas = ReplicaStore::new_shared();
@@ -110,7 +131,6 @@ pub(crate) fn initialize(_spu_config: SpuConfig) {
 
 #[derive(Debug)]
 pub struct GlobalContext<S> {
-    config: SharedSpuConfig,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     sm_engine: SmartEngine,
@@ -129,22 +149,16 @@ where
         Arc::new(GlobalContext::new(spu_config))
     }
 
-    pub fn new(spu_config: SpuConfig) -> Self {
+    pub fn new(_spu_config: SpuConfig) -> Self {
         let spus = SpuLocalStore::new_shared();
         let replicas = ReplicaStore::new_shared();
 
         GlobalContext {
-            config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
             sm_engine: SmartEngine::default(),
             leaders: LeaderConnections::shared(spus, replicas),
         }
-    }
-
-    /// retrieves local spu id
-    pub fn local_spu_id(&self) -> SpuId {
-        self.config.id
     }
 
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
@@ -159,14 +173,6 @@ where
         self.followers_state.clone()
     }
 
-    pub fn config(&self) -> &SpuConfig {
-        &self.config
-    }
-
-    pub fn config_owned(&self) -> SharedSpuConfig {
-        self.config.clone()
-    }
-
     /*
     #[allow(unused)]
     pub fn status_update(&self) -> &StatusMessageSink {
@@ -176,11 +182,6 @@ where
 
     /// notify all follower handlers with SPU changes
     #[instrument(skip(self))]
-    pub async fn sync_follower_update(&self) {
-        follower_notifier()
-            .sync_from_spus(spu_local_store(), self.local_spu_id())
-            .await;
-    }
 
     pub fn smartengine_owned(&self) -> SmartEngine {
         self.sm_engine.clone()
@@ -235,7 +236,7 @@ mod file_replica {
 
                 self.leaders_state()
                     .promote_follower(
-                        self.config().into(),
+                        config().into(),
                         follower_replica,
                         new_replica.clone(),
                         status_update_owned(),
@@ -270,7 +271,7 @@ mod file_replica {
                 return vec![];
             }
 
-            let local_id = self.local_spu_id();
+            let local_id = local_spu_id();
 
             let mut outputs = vec![];
             for replica_action in actions.into_iter() {
@@ -286,7 +287,7 @@ mod file_replica {
                             // we are leader
                             if let Err(err) = self
                                 .leaders_state()
-                                .add_leader_replica(self, new_replica, status_update_owned())
+                                .add_leader_replica(new_replica, status_update_owned())
                                 .await
                             {
                                 outputs.push(ReplicaChange::StorageError(err));

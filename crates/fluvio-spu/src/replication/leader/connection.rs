@@ -10,7 +10,7 @@ use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
 use crate::{
-    core::{DefaultSharedGlobalContext, follower_notifier},
+    core::{DefaultSharedGlobalContext, follower_notifier, config, local_spu_id},
     replication::follower::sync::{FileSyncRequest},
 };
 
@@ -47,7 +47,7 @@ impl FollowerHandler {
     ) {
         let connection = Self {
             ctx: ctx.clone(),
-            max_bytes: ctx.config().peer_max_bytes,
+            max_bytes: config().peer_max_bytes,
             follower_id,
             spu_update,
         };
@@ -158,7 +158,7 @@ impl FollowerHandler {
             debug!("no topics found, skipping");
         } else {
             let request = RequestMessage::new_request(sync_request)
-                .set_client_id(format!("leader: {}", self.ctx.local_spu_id()));
+                .set_client_id(format!("leader: {}", local_spu_id()));
             sink.encode_file_slices(&request, request.header.api_version())
                 .await?;
         }
@@ -199,7 +199,7 @@ impl FollowerHandler {
         if !rejects.is_empty() {
             debug!(reject_count = rejects.len());
             let request = RequestMessage::new_request(RejectOffsetRequest { replicas: rejects })
-                .set_client_id(format!("leader: {}", self.ctx.local_spu_id()));
+                .set_client_id(format!("leader: {}", local_spu_id()));
 
             sink.send_request(&request).await?;
         }

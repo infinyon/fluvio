@@ -690,7 +690,7 @@ mod test_leader {
     use dataplane::batch::BatchRecords;
     use dataplane::fixture::{create_recordset};
 
-    use crate::core::{spu_local_store, follower_notifier};
+    use crate::core::{spu_local_store, follower_notifier, sync_follower_update, config};
     use crate::{
         config::{SpuConfig},
     };
@@ -900,10 +900,10 @@ mod test_leader {
             SpuSpec::new_private_addr(5001, 9001, "localhost".to_owned()),
             SpuSpec::new_private_addr(5002, 9002, "localhost".to_owned()),
         ];
-        let gctx: Arc<GlobalContext<MockStorage>> =
+        let _gctx: Arc<GlobalContext<MockStorage>> =
             GlobalContext::new_shared_context(leader_config);
         spu_local_store().sync_all(specs);
-        gctx.sync_follower_update().await;
+        sync_follower_update().await;
 
         let notifier = follower_notifier();
         assert!(notifier.get(&5001).await.is_some());
@@ -914,7 +914,7 @@ mod test_leader {
         // inserting new replica state, this should set follower offset to -1,-1 as initial state
         let leader: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica.clone(), 5000, vec![5000, 5001, 5002]),
-            gctx.config(),
+            config(),
             StatusMessageSink::shared(),
         )
         .await

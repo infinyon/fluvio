@@ -11,7 +11,7 @@ use fluvio_storage::{FileReplica, StorageError};
 
 use crate::{
     control_plane::SharedStatusUpdate,
-    core::{GlobalContext},
+    core::{config},
 };
 use crate::config::ReplicationConfig;
 use crate::replication::follower::FollowerReplicaState;
@@ -69,19 +69,17 @@ impl<S> ReplicaLeadersState<S> {
 
 impl ReplicaLeadersState<FileReplica> {
     #[instrument(
-        skip(self, ctx,replica,status_update),
+        skip(self, replica,status_update),
         fields(replica = %replica.id)
     )]
     pub async fn add_leader_replica(
         &self,
-        ctx: &GlobalContext<FileReplica>,
         replica: Replica,
         status_update: SharedStatusUpdate,
     ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
         let replica_id = replica.id.clone();
 
-        let leader_replica =
-            LeaderReplicaState::create(replica, ctx.config(), status_update).await?;
+        let leader_replica = LeaderReplicaState::create(replica, config(), status_update).await?;
         self.insert_leader(replica_id, leader_replica.clone()).await;
         Ok(leader_replica)
     }

@@ -15,7 +15,7 @@ use tracing::debug;
 
 use crate::{
     config::SpuConfig,
-    core::{GlobalContext, replica_localstore, status_update_owned},
+    core::{GlobalContext, replica_localstore, status_update_owned, config},
     services::public::{create_public_server, tests::create_filter_records},
     replication::leader::LeaderReplicaState,
 };
@@ -43,7 +43,7 @@ async fn test_produce_basic() {
     let test_id = test.id.clone();
     replica_localstore().sync_all(vec![test.clone()]);
 
-    let replica = LeaderReplicaState::create(test, ctx.config(), status_update_owned())
+    let replica = LeaderReplicaState::create(test, config(), status_update_owned())
         .await
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
@@ -154,7 +154,7 @@ async fn test_produce_invalid_compression() {
     let test_id = test.id.clone();
     replica_localstore().sync_all(vec![test.clone()]);
 
-    let replica = LeaderReplicaState::create(test, ctx.config(), status_update_owned())
+    let replica = LeaderReplicaState::create(test, config(), status_update_owned())
         .await
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;

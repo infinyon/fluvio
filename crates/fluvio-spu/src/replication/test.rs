@@ -17,7 +17,7 @@ use dataplane::fixture::{create_recordset};
 
 use crate::core::{
     DefaultSharedGlobalContext, GlobalContext, spu_local_store, replica_localstore,
-    follower_notifier, status_update_owned, status_update,
+    follower_notifier, status_update_owned, status_update, sync_follower_update,
 };
 use crate::config::SpuConfig;
 use crate::services::create_internal_server;
@@ -142,7 +142,7 @@ impl TestConfig {
 
         let gctx = GlobalContext::new_shared_context(leader_config);
         spu_local_store().sync_all(self.spu_specs());
-        gctx.sync_follower_update().await;
+        sync_follower_update().await;
 
         gctx
     }
@@ -158,7 +158,7 @@ impl TestConfig {
 
         let leader_replica = gctx
             .leaders_state()
-            .add_leader_replica(&gctx, replica.clone(), status_update_owned())
+            .add_leader_replica(replica.clone(), status_update_owned())
             .await
             .expect("leader");
 
@@ -218,7 +218,7 @@ async fn test_just_leader() {
         .base_port(13000_u16)
         .generate("just_leader");
 
-    let (leader_gctx, leader_replica) = builder.leader_replica().await;
+    let (_leader_gctx, leader_replica) = builder.leader_replica().await;
 
     assert_eq!(leader_replica.leo(), 0);
     assert_eq!(leader_replica.hw(), 0);

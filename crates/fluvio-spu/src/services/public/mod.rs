@@ -21,6 +21,7 @@ use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_types::event::StickyEvent;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::core::local_spu_id;
 use self::api_versions::handle_api_version_request;
 use self::produce_handler::handle_produce_request;
 use self::fetch_handler::handle_fetch_request;
@@ -34,7 +35,7 @@ pub(crate) type SpuPublicServer =
 
 pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> SpuPublicServer {
     info!(
-        spu_id = ctx.local_spu_id(),
+        spu_id = local_spu_id(),
         %addr,
         "Starting SPU public service:",
     );

@@ -6,7 +6,7 @@ use adaptive_backoff::prelude::*;
 
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
-use crate::core::{FileGlobalContext, spu_local_store_owned};
+use crate::core::{FileGlobalContext, spu_local_store_owned, config_owned};
 
 use super::{FollowersState};
 use super::state::{SharedFollowersState, FollowerReplicaState};
@@ -44,7 +44,7 @@ impl FollowerGroups {
                     spu_local_store_owned(),
                     ctx.followers_state_owned(),
                     notification,
-                    ctx.config_owned(),
+                    config_owned(),
                 );
             }
         }
