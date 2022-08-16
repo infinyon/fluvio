@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use dataplane::smartmodule::{SmartModuleInvocationWasm, SmartModuleWasmCompressed, LegacySmartModulePayload, SmartModuleInvocation};
+use dataplane::smartmodule::{
+    SmartModuleInvocationWasm, SmartModuleWasmCompressed, LegacySmartModulePayload,
+    SmartModuleInvocation,
+};
 use futures_util::stream::{Stream, select_all};
 use tracing::{debug, error, trace, instrument, info};
 use once_cell::sync::Lazy;
@@ -11,10 +14,10 @@ use futures_util::FutureExt;
 use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
 use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, DefaultStreamFetchResponse, WASM_MODULE_API, SMART_MODULE_API, WASM_MODULE_V2_API, GZIP_WASM_API,
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, WASM_MODULE_API, SMART_MODULE_API,
+    WASM_MODULE_V2_API, GZIP_WASM_API,
 };
-pub use fluvio_spu_schema::server::stream_fetch::{
-};
+pub use fluvio_spu_schema::server::stream_fetch::{};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
@@ -576,7 +579,7 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     use fluvio_spu_schema::fetch::FetchablePartitionResponse;
 
     use crate::dataplane::batch::MemoryRecords;
-    
+
     let var_value = env::var("FLV_CLIENT_MAX_FETCH_BYTES").unwrap_or_default();
     let max_bytes: i32 = var_value.parse().unwrap_or_else(|_| {
         FetchResponse::<MemoryRecords>::default().write_size(0) as i32
@@ -603,7 +606,8 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
-    pub(crate) derivedstream: Option<fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation>,
+    pub(crate) derivedstream:
+        Option<fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation>,
 }
 
 impl ConsumerConfig {
