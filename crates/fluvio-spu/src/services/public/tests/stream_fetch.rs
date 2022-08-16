@@ -18,19 +18,20 @@ use fluvio_future::timer::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket};
 use dataplane::{
     Isolation,
-    fetch::DefaultFetchRequest,
     fixture::BatchProducer,
     record::{RecordData, Record},
+    smartmodule::{
+        SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation,
+        SmartModuleWasmCompressed, SmartModuleInvocationWasm, SmartModuleContextData,
+    },
 };
 use dataplane::fixture::{create_batch, TEST_RECORD};
-use fluvio_spu_schema::server::{
-    stream_fetch::{
-        SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartModuleContextData,
+use fluvio_spu_schema::{
+    server::{
+        update_offset::{UpdateOffsetsRequest, OffsetUpdate},
     },
-    update_offset::{UpdateOffsetsRequest, OffsetUpdate},
+    fetch::DefaultFetchRequest,
 };
-use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
-use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
 use crate::{core::GlobalContext, services::public::tests::create_filter_records};
 use crate::config::SpuConfig;
@@ -844,7 +845,7 @@ async fn test_stream_filter_error_fetch(
             assert_eq!(error.offset, 10);
             assert!(error.record_key.is_none());
             assert_eq!(error.record_value.as_ref(), "ten".as_bytes());
-            assert_eq!(error.kind, dataplane::smartmodule::SmartModuleKind::Filter);
+            assert_eq!(error.kind, SmartModuleKind::Filter);
             let rendered = format!("{}", error);
             assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartModule Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
         }

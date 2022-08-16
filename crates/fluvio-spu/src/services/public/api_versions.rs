@@ -2,8 +2,8 @@ use std::io::Error;
 use tracing::{trace, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
-use dataplane::produce::DefaultProduceRequest;
-use dataplane::fetch::DefaultFetchRequest;
+use fluvio_spu_schema::produce::DefaultProduceRequest;
+use fluvio_spu_schema::fetch::DefaultFetchRequest;
 use dataplane::versions::ApiVersionKey;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;

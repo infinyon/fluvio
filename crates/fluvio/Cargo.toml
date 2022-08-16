@@ -17,7 +17,7 @@ path = "src/lib.rs"
 default = []
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
-stats = ["sysinfo", "quantities", "hdrhistogram", "strum", "num-traits" ]
+stats = ["sysinfo", "quantities", "hdrhistogram", "strum", "num-traits"]
 unstable = []
 
 [dependencies]
@@ -42,7 +42,11 @@ cfg-if = "1.0.0"
 derive_builder = "0.11.0"
 async-trait = "0.1.51"
 sysinfo = { version = "0.25", optional = true }
-quantities = { version = "0.10.0", features = ["datavolume", "datathroughput", "duration"], optional = true }
+quantities = { version = "0.10.0", features = [
+    "datavolume",
+    "datathroughput",
+    "duration",
+], optional = true }
 hdrhistogram = { version = "7.5.0", optional = true }
 strum = { version = "0.24", features = ["derive"], optional = true }
 num-traits = { version = "0.2", optional = true }
@@ -63,6 +67,7 @@ fluvio-socket = { path = "../fluvio-socket", version = "0.12.1" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
 dataplane = { version = "0.12.0", path = "../fluvio-dataplane-protocol", features = [
     "memory_batch",
+    "smartmodule",
 ], package = "fluvio-dataplane-protocol" }
 fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
 

@@ -216,8 +216,10 @@ impl InnerTopicProducer {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
-        use fluvio_spu_schema::server::stream_fetch::{SmartModuleWasmCompressed, SmartModuleContextData, SmartModuleKind, LegacySmartModulePayload};
+
         use std::collections::BTreeMap;
+
+        use dataplane::smartmodule::{SmartModuleWasmCompressed, SmartModuleContextData, SmartModuleKind, LegacySmartModulePayload};
         use fluvio_smartengine::SmartEngine;
 
         impl TopicProducer {

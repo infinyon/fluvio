@@ -13,14 +13,15 @@ use fluvio_socket::{ExclusiveFlvSink, SocketError};
 use dataplane::{
     ErrorCode,
     api::{RequestMessage, RequestHeader},
-    fetch::FetchablePartitionResponse,
     record::RecordSet,
 };
 use dataplane::{Offset, Isolation, ReplicaKey};
-use dataplane::fetch::FilePartitionResponse;
 use fluvio_compression::CompressionError;
-use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
+use fluvio_spu_schema::{
+    server::stream_fetch::{
+        DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
+    },
+    fetch::{FilePartitionResponse, FetchablePartitionResponse},
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 use fluvio_smartengine::file_batch::FileBatchIterator;

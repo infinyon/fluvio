@@ -302,7 +302,7 @@ impl Future for ProducePartitionResponseFuture {
 mod test {
     use super::*;
     use dataplane::{record::Record, batch::RawRecords};
-    use dataplane::produce::{PartitionProduceResponse, TopicProduceResponse};
+    use fluvio_spu_schema::produce::{PartitionProduceResponse, TopicProduceResponse};
     use fluvio_protocol::Encoder;
 
     #[test]
