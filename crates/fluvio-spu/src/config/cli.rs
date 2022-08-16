@@ -227,7 +227,7 @@ fn find_spu_id_from_env() -> Result<SpuId, IoError> {
         } else {
             Err(IoError::new(
                 ErrorKind::NotFound,
-                format!("SPU index id not found form SPU_INDEX or {FLV_SPU_ID}")
+                format!("SPU index id not found from SPU_INDEX or {FLV_SPU_ID}")
             ))
         }
     }
