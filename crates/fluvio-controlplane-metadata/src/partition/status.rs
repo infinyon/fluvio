@@ -229,7 +229,7 @@ fn find_status(status: &mut [ReplicaStatus], spu: SpuId) -> Option<&'_ mut Repli
 pub enum PartitionResolution {
     Offline,             // No leader available for serving partition
     Online,              // Partition is running normally, status contains replica info
-    LeaderOffline,       // Election has failed, no suitable leader has been founded
+    LeaderOffline,       // Election has failed, no suitable leader has been found
     ElectionLeaderFound, // New leader has been selected
 }
 

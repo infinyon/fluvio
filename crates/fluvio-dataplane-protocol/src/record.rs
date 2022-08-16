@@ -276,7 +276,7 @@ impl<R: BatchRecords> Decoder for RecordSet<R> {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
                 format!(
-                    "expected message len: {} but founded {}",
+                    "expected message len: {} but found {}",
                     len,
                     src.remaining()
                 ),
