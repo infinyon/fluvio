@@ -45,6 +45,5 @@ chrono = {version =  "0.4", features = ["wasmbind", "clock"], optional = true}
 
 [dev-dependencies]
 fluvio-dataplane-protocol = { path = ".", features = ["file"]}
-fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
-fluvio-future = { version = "0.4.0", features = ["fixture", "fs"] }
-flv-util = { version = "0.5.2", features = ["fixture"] }
+
+

@@ -14,7 +14,7 @@ use fluvio_compression::Compression;
 use tracing::trace;
 
 use dataplane::{Offset, ErrorCode};
-use dataplane::produce::ProduceResponse;
+use fluvio_spu_schema::produce::ProduceResponse;
 use dataplane::record::Record;
 use fluvio_socket::SocketError;
 use fluvio_types::{PartitionId, Timestamp};

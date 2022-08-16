@@ -102,8 +102,7 @@ mod file {
 
     use dataplane::core::Version;
     use dataplane::record::FileRecordSet;
-    use fluvio_protocol::store::{StoreValue,FileWrite};
-    
+    use fluvio_protocol::store::{StoreValue, FileWrite};
 
     pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
 
