@@ -1,14 +1,12 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::Isolation;
-use crate::api::Request;
+use dataplane::Isolation;
+use dataplane::api::Request;
+use dataplane::core::{Decoder, Encoder};
+use dataplane::derive::FluvioDefault;
 
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::derive::FluvioDefault;
-
-use crate::record::RecordSet;
+use dataplane::record::RecordSet;
 
 use super::FetchResponse;
 
@@ -108,6 +106,6 @@ pub use file::*;
 #[cfg(feature = "file")]
 mod file {
     use super::*;
-    use crate::record::FileRecordSet;
+    use dataplane::record::FileRecordSet;
     pub type FileFetchRequest = FetchRequest<FileRecordSet>;
 }

@@ -6,9 +6,11 @@ mod error_code;
 
 pub mod batch;
 pub mod record;
-pub mod fetch;
-pub mod produce;
+
+#[cfg(feature = "version")]
 pub mod versions;
+
+#[cfg(feature = "smartmodule")]
 pub mod smartmodule;
 
 #[cfg(feature = "fixture")]

@@ -2,6 +2,9 @@
 
 pub mod server;
 pub mod client;
+pub mod fetch;
+pub mod produce;
+
 pub mod errors {
     pub use dataplane::ErrorCode;
 }

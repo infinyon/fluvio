@@ -13,11 +13,10 @@ use dataplane::api::api_decode;
 use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 
-use dataplane::produce::DefaultProduceRequest;
-
-use dataplane::fetch::FileFetchRequest;
-
+use crate::produce::DefaultProduceRequest;
+use crate::fetch::FileFetchRequest;
 use crate::ApiVersionsRequest;
+
 use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
 use super::stream_fetch::FileStreamFetchRequest;
