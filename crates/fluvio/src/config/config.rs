@@ -32,23 +32,20 @@ use crate::{FluvioConfig, FluvioError};
 use super::TlsPolicy;
 
 fn config_file_error(msg: &str, source: IoError) -> ConfigError {
-    ConfigError::ConfigFileError{
+    ConfigError::ConfigFileError {
         msg: msg.to_owned(),
-        source
+        source,
     }
 }
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error("config file {msg}")]
-    ConfigFileError {
-        msg: String,
-        source: IoError,
-    },
+    ConfigFileError { msg: String, source: IoError },
     #[error("Failed to deserialize Fluvio config {msg}")]
     TomlError {
         msg: String,
-        source: toml::de::Error
+        source: toml::de::Error,
     },
     #[error("Config has no active profile")]
     NoActiveProfile,
@@ -89,23 +86,20 @@ impl ConfigFile {
 
     /// try to load from default locations
     pub fn load(optional_path: Option<String>) -> Result<Self, FluvioError> {
-        Self::from_file(
-            match optional_path {
-                Some(p) => PathBuf::from(p),
-                None =>
-                  Self::default_file_path().
-                    map_err(|e| config_file_error("default path", e))?,
-            }
-        )
+        Self::from_file(match optional_path {
+            Some(p) => PathBuf::from(p),
+            None => Self::default_file_path().map_err(|e| config_file_error("default path", e))?,
+        })
     }
 
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        let file_str: String = read_to_string(path_ref).map_err(|e| config_file_error(&format!("{:?}", path_ref.as_os_str()), e))?;
-        let config = toml::from_str(&file_str).map_err(|e| ConfigError::TomlError{
+        let file_str: String = read_to_string(path_ref)
+            .map_err(|e| config_file_error(&format!("{:?}", path_ref.as_os_str()), e))?;
+        let config = toml::from_str(&file_str).map_err(|e| ConfigError::TomlError {
             msg: path_ref.display().to_string(),
-            source: e
+            source: e,
         })?;
         Ok(Self::new(path_ref.to_owned(), config))
     }
@@ -143,7 +137,8 @@ impl ConfigFile {
 
     // save to file
     pub fn save(&self) -> Result<(), FluvioError> {
-        create_dir_all(self.path.parent().unwrap()).map_err(|e| config_file_error(&format!("parent {:?}", self.path), e))?;
+        create_dir_all(self.path.parent().unwrap())
+            .map_err(|e| config_file_error(&format!("parent {:?}", self.path), e))?;
         self.config
             .save_to(&self.path)
             .map_err(|e| config_file_error(&format!("{:?}", &self.path), e))?;

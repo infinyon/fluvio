@@ -3,10 +3,7 @@ use std::io::Error as IoError;
 #[derive(thiserror::Error, Debug)]
 pub enum SocketError {
     #[error("socket {msg}")]
-    Io {
-        source: IoError,
-        msg: String,
-    },
+    Io { source: IoError, msg: String },
     #[error("Socket closed")]
     SocketClosed,
 }
