@@ -1,6 +1,9 @@
 pub use encoding::*;
 pub use error::*;
-pub use payload::*;
+pub use payload::{
+    SmartModuleKind, SmartModuleContextData, LegacySmartModulePayload, SmartModuleInvocationWasm,
+    SmartModuleInvocation, SmartModuleWasmCompressed,
+};
 
 mod error {
     use fluvio_protocol::{Encoder, Decoder};

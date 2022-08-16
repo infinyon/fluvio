@@ -3,7 +3,7 @@ use tracing::{debug, trace, instrument};
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_socket::SocketError;
 use dataplane::{ErrorCode, api::RequestMessage};
-use dataplane::fetch::{
+use fluvio_spu_schema::fetch::{
     FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse,
     FetchablePartitionResponse, FetchPartition, FetchableTopic, FetchableTopicResponse,
 };

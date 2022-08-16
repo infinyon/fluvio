@@ -1,16 +1,17 @@
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
+use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
 use tracing::{debug, error};
 
-use dataplane::ErrorCode;
-use fluvio::{
-    ConsumerConfig,
-    consumer::{SmartModuleInvocation, DerivedStreamInvocation, SmartModuleKind},
+use dataplane::{
+    ErrorCode,
+    smartmodule::{
+        LegacySmartModulePayload, SmartModuleContextData, SmartModuleInvocationWasm,
+        SmartModuleWasmCompressed, SmartModuleInvocation, SmartModuleKind,
+    },
 };
+use fluvio::{ConsumerConfig};
 use fluvio_smartengine::SmartModuleInstance;
-use fluvio_spu_schema::server::stream_fetch::{
-    SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
-    SmartModuleContextData,
-};
+
 use futures_util::{StreamExt, stream::BoxStream};
 
 use crate::core::DefaultSharedGlobalContext;

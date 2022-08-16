@@ -57,7 +57,7 @@ fluvio-socket = { path = "../fluvio-socket", features = [
     "file",
 ] }
 dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
-    "file",
+    "file","smartmodule"
 ] }
 fluvio-service = { path = "../fluvio-service" }
 flv-tls-proxy = { version = "0.6.0" }

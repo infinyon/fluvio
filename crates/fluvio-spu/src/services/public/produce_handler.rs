@@ -8,7 +8,7 @@ use tracing::{debug, trace, error};
 use tracing::instrument;
 
 use dataplane::{ErrorCode, Isolation, Offset, RequestKind};
-use dataplane::produce::{
+use fluvio_spu_schema::produce::{
     ProduceResponse, TopicProduceResponse, PartitionProduceResponse, PartitionProduceData,
     DefaultProduceRequest, DefaultTopicRequest,
 };

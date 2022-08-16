@@ -5,15 +5,15 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use clap::Parser;
 
+use fluvio::dataplane::smartmodule::{
+    LegacySmartModulePayload, SmartModuleWasmCompressed, SmartModuleKind,
+};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_smartengine::SmartEngine;
-use fluvio_spu_schema::server::stream_fetch::{LegacySmartModulePayload, SmartModuleWasmCompressed};
 
 use fluvio::{
-    Fluvio,
-    consumer::{SmartModuleKind},
-    FluvioError,
+    Fluvio, FluvioError,
     dataplane::{
         smartmodule::SmartModuleInput,
         record::{RecordData, Record},

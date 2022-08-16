@@ -1,15 +1,12 @@
 use std::{env::temp_dir, time::Duration};
 
-use dataplane::{
-    produce::{
-        DefaultProduceRequest, DefaultPartitionRequest, TopicProduceData, PartitionProduceData,
-    },
-    api::RequestMessage,
-    ErrorCode, RequestKind, Isolation,
-};
+use dataplane::{api::RequestMessage, ErrorCode, RequestKind, Isolation};
 use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
 use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};
+use fluvio_spu_schema::produce::{
+    DefaultProduceRequest, DefaultPartitionRequest, TopicProduceData, PartitionProduceData,
+};
 use flv_util::fixture::ensure_clean_dir;
 use tracing::debug;
 

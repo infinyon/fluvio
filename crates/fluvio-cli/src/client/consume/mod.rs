@@ -22,6 +22,10 @@ mod cmd {
 
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
+    use fluvio::dataplane::smartmodule::{
+        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
+    };
+    use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
     use handlebars::{self, Handlebars};
     use tracing::{debug, trace, instrument};
     use clap::{Parser, ArgEnum};
@@ -38,16 +42,12 @@ mod cmd {
 
     use fluvio::dataplane::batch::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::{TableFormatSpec};
-    use fluvio_spu_schema::server::stream_fetch::SmartModuleContextData;
     use fluvio_future::io::StreamExt;
 
     use super::table_format::{TableEventResponse, TableModel};
 
     use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
     use fluvio::consumer::{PartitionSelectionStrategy, Record};
-    use fluvio::consumer::{
-        SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, DerivedStreamInvocation,
-    };
 
     use crate::render::ProgressRenderer;
     use crate::{CliError, Result};
