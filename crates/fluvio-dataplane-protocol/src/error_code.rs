@@ -7,7 +7,6 @@
 use std::fmt::{Display, Formatter};
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 use fluvio_protocol::{Encoder, Decoder};
-use crate::smartmodule::SmartModuleRuntimeError;
 
 // -----------------------------------
 // Error Definition & Implementation
@@ -109,10 +108,11 @@ pub enum ErrorCode {
     FetchSessionNotFoud,
 
     // Legacy SmartModule errors
+    #[cfg(feature = "smartmodule")]
     #[deprecated(since = "0.9.13")]
     #[fluvio(tag = 4000)]
     #[error("a legacy SmartModule error occurred")]
-    LegacySmartModuleError(#[from] LegacySmartModuleError),
+    LegacySmartModuleError(#[from] crate::smartmodule::LegacySmartModuleError),
 
     // Managed Connector Errors
     #[fluvio(tag = 5000)]
@@ -141,8 +141,9 @@ pub enum ErrorCode {
     #[error("SmartModule is not a valid '{kind}' SmartModule due to {error}. Are you missing a #[smartmodule({kind})] attribute?")]
     SmartModuleInvalidExports { error: String, kind: String },
     #[fluvio(tag = 6004)]
+    #[cfg(feature = "smartmodule")]
     #[error("SmartModule runtime error {0}")]
-    SmartModuleRuntimeError(SmartModuleRuntimeError),
+    SmartModuleRuntimeError(crate::smartmodule::SmartModuleRuntimeError),
 
     // TableFormat Errors
     #[fluvio(tag = 7000)]
@@ -197,23 +198,6 @@ impl ErrorCode {
 
     pub fn is_error(&self) -> bool {
         !self.is_ok()
-    }
-}
-
-/// Deprecated. A type representing the possible errors that may occur during DerivedStream execution.
-#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-pub enum LegacySmartModuleError {
-    #[error("Runtime error")]
-    Runtime(#[from] SmartModuleRuntimeError),
-    #[error("WASM Module error: {0}")]
-    InvalidWasmModule(String),
-    #[error("WASM module is not a valid '{0}' DerivedStream. Are you missing a #[smartmodule({0})] attribute?")]
-    InvalidDerivedStreamModule(String),
-}
-
-impl Default for LegacySmartModuleError {
-    fn default() -> Self {
-        Self::Runtime(Default::default())
     }
 }
 

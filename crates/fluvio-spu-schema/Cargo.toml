@@ -15,7 +15,7 @@ path = "src/lib.rs"
 file = ["dataplane/file"]
 
 [dependencies]
-flate2 = "1.0.20"
+
 log = "0.4.8"
 tracing = "0.1.19"
 bytes = "1.0.0"
@@ -24,4 +24,4 @@ static_assertions = "1.1.0"
 
 # Fluvio dependencies
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
-dataplane = { version = "0.11", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.12.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["smartmodule"]}

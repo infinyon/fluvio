@@ -7,10 +7,12 @@ use anyhow::{Error, Result};
 use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc, Store};
 
 use dataplane::record::Record;
+use dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleKind};
 use dataplane::batch::{Batch, MemoryRecords};
 use dataplane::core::{Encoder, Decoder};
-use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError};
-
+use dataplane::smartmodule::{
+    SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError, LegacySmartModulePayload,
+};
 
 use crate::filter::SmartModuleFilter;
 use crate::map::SmartModuleMap;
@@ -19,7 +21,6 @@ use crate::array_map::SmartModuleArrayMap;
 use crate::aggregate::SmartModuleAggregate;
 use crate::join::SmartModuleJoin;
 use crate::file_batch::FileBatchIterator;
-use crate::metadata::{LegacySmartModulePayload, SmartModuleKind, SmartModuleContextData, SmartModuleExtraParams};
 
 use super::join_stream::SmartModuleJoinStream;
 use super::error;

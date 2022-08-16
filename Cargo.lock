@@ -1851,7 +1851,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.11.7"
+version = "0.12.0"
 dependencies = [
  "bytes 1.2.1",
  "cfg-if",
@@ -1860,6 +1860,7 @@ dependencies = [
  "crc32c",
  "derive_builder",
  "eyre",
+ "flate2",
  "fluvio-compression",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.4.2",
@@ -2159,11 +2160,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-metadata"
-version = "0.0.1"
-dependencies = [
- "serde",
- "toml",
-]
+version = "0.1.0"
 
 [[package]]
 name = "fluvio-smartmodule-package"
@@ -2247,7 +2244,6 @@ name = "fluvio-spu-schema"
 version = "0.10.1"
 dependencies = [
  "bytes 1.2.1",
- "flate2",
  "fluvio-dataplane-protocol",
  "fluvio-protocol 0.7.10",
  "log",

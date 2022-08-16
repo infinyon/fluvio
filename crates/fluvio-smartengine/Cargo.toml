@@ -24,9 +24,7 @@ anyhow = "1.0.38"
 flate2 = "1.0.20"
 
 fluvio-future = { version = "0.4.0" }
-dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
-    "file",
-] }
+dataplane = { version = "0.12.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["smartmodule"]}
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
 thiserror = "1.0.31"
 

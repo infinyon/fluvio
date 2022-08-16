@@ -1,8 +1,8 @@
-use crate::core::Encoder;
-use crate::core::Decoder;
-use crate::derive::FluvioDefault;
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
+use dataplane::derive::FluvioDefault;
 
-use crate::ErrorCode;
+use dataplane::ErrorCode;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ProduceResponse {

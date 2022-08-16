@@ -7,11 +7,12 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
     WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
-    error::Error, metadata::SmartModuleExtraParams,
+    error::Error,
+    metadata::SmartModuleExtraParams,
 };
 use dataplane::smartmodule::{
     SmartModuleAggregateInput, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
-     SmartModuleAggregateOutput,
+    SmartModuleAggregateOutput,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";

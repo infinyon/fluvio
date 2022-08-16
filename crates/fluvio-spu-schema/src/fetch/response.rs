@@ -1,14 +1,12 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::batch::BatchRecords;
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::derive::FluvioDefault;
-
-use crate::record::RecordSet;
-use crate::ErrorCode;
-use crate::Offset;
+use dataplane::batch::BatchRecords;
+use dataplane::core::{Decoder, Encoder};
+use dataplane::derive::FluvioDefault;
+use dataplane::record::RecordSet;
+use dataplane::ErrorCode;
+use dataplane::Offset;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
 
@@ -143,10 +141,10 @@ mod file {
     use tracing::trace;
     use bytes::BytesMut;
 
-    use crate::record::FileRecordSet;
-    use crate::store::FileWrite;
-    use crate::store::StoreValue;
-    use crate::core::Version;
+    use dataplane::record::FileRecordSet;
+    use dataplane::store::FileWrite;
+    use dataplane::store::StoreValue;
+    use dataplane::core::Version;
 
     use super::*;
 

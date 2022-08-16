@@ -1,6 +1,4 @@
-#fluvio-protocol-fs
-
-Adds zero memory copy transfer over fluvio protocol
+This crate is used by SmartModule and other crates to encode and decode dataplane messages such as records
 
 ## License
 

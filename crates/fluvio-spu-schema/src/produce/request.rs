@@ -4,15 +4,15 @@ use std::marker::PhantomData;
 use std::time::Duration;
 use bytes::{Buf, BufMut};
 
-use crate::batch::RawRecords;
-use crate::core::Encoder;
-use crate::core::Decoder;
-use crate::derive::FluvioDefault;
-use crate::core::Version;
+use dataplane::batch::RawRecords;
+use dataplane::core::Encoder;
+use dataplane::core::Decoder;
+use dataplane::derive::FluvioDefault;
+use dataplane::core::Version;
 
-use crate::api::Request;
-use crate::record::RecordSet;
-use crate::Isolation;
+use dataplane::api::Request;
+use dataplane::record::RecordSet;
+use dataplane::Isolation;
 
 use super::ProduceResponse;
 
@@ -213,10 +213,10 @@ mod file {
     use tracing::trace;
     use bytes::BytesMut;
 
-    use crate::core::Version;
-    use crate::record::FileRecordSet;
-    use crate::store::FileWrite;
-    use crate::store::StoreValue;
+    use dataplane::core::Version;
+    use dataplane::record::FileRecordSet;
+    use dataplane::store::FileWrite;
+    use dataplane::store::StoreValue;
 
     use super::*;
 
