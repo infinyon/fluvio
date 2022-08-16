@@ -1,9 +1,6 @@
 pub use encoding::*;
 pub use error::*;
-pub use payload::{
-    SmartModuleKind, SmartModuleContextData, LegacySmartModulePayload, SmartModuleInvocationWasm,
-    SmartModuleInvocation, SmartModuleWasmCompressed,
-};
+pub use payload::*;
 
 mod error {
     use fluvio_protocol::{Encoder, Decoder};
@@ -306,10 +303,12 @@ mod payload {
 
 mod encoding {
     use std::fmt::{self, Display};
+    use std::collections::BTreeMap;
+
+    use fluvio_protocol::{Encoder, Decoder};
+
     use crate::Offset;
     use crate::record::{Record, RecordData};
-    use fluvio_protocol::{Encoder, Decoder};
-    use std::collections::BTreeMap;
 
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
     pub struct SmartModuleExtraParams {
@@ -434,7 +433,7 @@ mod encoding {
         /// The offset of the Record that had a runtime error
         pub offset: Offset,
         /// The type of SmartModule that had a runtime error
-        pub kind: SmartModuleKind,
+        pub kind: SmartModuleKindError,
         /// The Record key that caused this error
         pub record_key: Option<RecordData>,
         /// The Record value that caused this error
@@ -445,7 +444,7 @@ mod encoding {
         pub fn new(
             record: &Record,
             base_offset: Offset,
-            kind: SmartModuleKind,
+            kind: SmartModuleKindError,
             error: eyre::Error,
         ) -> Self {
             let hint = format!("{:?}", error);
@@ -491,7 +490,7 @@ mod encoding {
     }
 
     #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-    pub enum SmartModuleKind {
+    pub enum SmartModuleKindError {
         Filter,
         Map,
         #[fluvio(min_version = 15)]
@@ -506,13 +505,13 @@ mod encoding {
         Generic,
     }
 
-    impl Default for SmartModuleKind {
+    impl Default for SmartModuleKindError {
         fn default() -> Self {
             Self::Filter
         }
     }
 
-    impl fmt::Display for SmartModuleKind {
+    impl fmt::Display for SmartModuleKindError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             // Use Debug for Display to print variant name
             fmt::Debug::fmt(self, f)
