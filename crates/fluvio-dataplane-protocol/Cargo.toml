@@ -43,7 +43,3 @@ chrono = {version =  "0.4", default-features = false, features = ["clock"], opti
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 chrono = {version =  "0.4", features = ["wasmbind", "clock"], optional = true}
 
-[dev-dependencies]
-fluvio-dataplane-protocol = { path = ".", features = ["file"]}
-
-

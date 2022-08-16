@@ -13,7 +13,7 @@ use fluvio_spu_schema::{
     fetch::{
         FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
         FilePartitionResponse, FileTopicResponse,
-    }
+    },
 };
 use dataplane::api::RequestMessage;
 use dataplane::record::{Record, RecordSet};

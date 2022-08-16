@@ -10,7 +10,6 @@ use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
 
-
 use crate::error::{Result, FluvioError};
 use crate::producer::accumulator::ProducePartitionResponseFuture;
 use crate::producer::config::DeliverySemantic;
