@@ -23,6 +23,7 @@ use dataplane::{
     smartmodule::{
         SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation,
         SmartModuleWasmCompressed, SmartModuleInvocationWasm, SmartModuleContextData,
+        SmartModuleKindError,
     },
 };
 use dataplane::fixture::{create_batch, TEST_RECORD};
@@ -845,7 +846,7 @@ async fn test_stream_filter_error_fetch(
             assert_eq!(error.offset, 10);
             assert!(error.record_key.is_none());
             assert_eq!(error.record_value.as_ref(), "ten".as_bytes());
-            assert_eq!(error.kind, SmartModuleKind::Filter);
+            assert_eq!(error.kind, SmartModuleKindError::Filter);
             let rendered = format!("{}", error);
             assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartModule Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
         }
@@ -1307,7 +1308,7 @@ async fn test_stream_fetch_map_error(
     match &response.partition.error_code {
         ErrorCode::SmartModuleRuntimeError(error) => {
             assert_eq!(error.offset, 9);
-            assert_eq!(error.kind, dataplane::smartmodule::SmartModuleKind::Map);
+            assert_eq!(error.kind, SmartModuleKindError::Map);
             assert_eq!(error.record_value.as_ref(), "nine".as_bytes());
         }
         _ => panic!("should get runtime error"),
