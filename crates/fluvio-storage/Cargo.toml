@@ -46,6 +46,9 @@ dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane
     "file",
 ] }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
+fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
+    "file",
+] }
 
 [dev-dependencies]
 fluvio-future = { version = "0.4.0", features = ["fixture"] }

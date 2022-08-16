@@ -777,12 +777,13 @@ mod file {
     use bytes::BytesMut;
 
     use fluvio_future::file_slice::AsyncFileSlice;
+    use fluvio_protocol::store::FileWrite;
+    use fluvio_protocol::store::StoreValue;
+
     use crate::core::bytes::Buf;
     use crate::core::Decoder;
     use crate::core::Encoder;
     use crate::core::Version;
-    use crate::store::FileWrite;
-    use crate::store::StoreValue;
 
     #[derive(Default, Debug)]
     pub struct FileRecordSet(AsyncFileSlice);

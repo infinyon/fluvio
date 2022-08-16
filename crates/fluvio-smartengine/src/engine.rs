@@ -7,7 +7,7 @@ use anyhow::{Error, Result};
 use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc, Store};
 
 use dataplane::record::Record;
-use dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleKind};
+use dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleKind, SmartModuleContextData};
 use dataplane::batch::{Batch, MemoryRecords};
 use dataplane::core::{Encoder, Decoder};
 use dataplane::smartmodule::{

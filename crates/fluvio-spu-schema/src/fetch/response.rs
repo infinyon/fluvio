@@ -142,9 +142,9 @@ mod file {
     use bytes::BytesMut;
 
     use dataplane::record::FileRecordSet;
-    use dataplane::store::FileWrite;
-    use dataplane::store::StoreValue;
-    use dataplane::core::Version;
+    use fluvio_protocol::store::FileWrite;
+    use fluvio_protocol::store::StoreValue;
+    use fluvio_protocol::core::Version;
 
     use super::*;
 
