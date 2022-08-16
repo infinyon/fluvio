@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
-use async_lock::RwLock;
+use async_lock::{Mutex, RwLock};
+use tracing::{debug, info, instrument, error, trace};
+
 use dataplane::ReplicaKey;
 use dataplane::batch::{RawRecords, Batch};
-use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
+use fluvio_spu_schema::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
-use tracing::{debug, info, instrument, error, trace};
+
 
 use crate::error::{Result, FluvioError};
 use crate::producer::accumulator::ProducePartitionResponseFuture;

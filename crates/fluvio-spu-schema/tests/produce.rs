@@ -1,8 +1,9 @@
 use std::error::Error;
 use std::io::Cursor;
-use fluvio_dataplane_protocol::produce::{DefaultProduceRequest};
+
+use fluvio_spu_schema::produce::{DefaultProduceRequest};
 use fluvio_protocol::Decoder;
-use fluvio_dataplane_protocol::Isolation;
+use dataplane::Isolation;
 
 // Test Specification:
 //

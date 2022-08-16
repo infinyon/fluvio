@@ -9,15 +9,14 @@ use futures_lite::future::zip;
 
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
-use dataplane::{
+use fluvio_spu_schema::{
     fetch::{
         FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
         FilePartitionResponse, FileTopicResponse,
-    },
-    record::RecordSet,
+    }
 };
 use dataplane::api::RequestMessage;
-use dataplane::record::Record;
+use dataplane::record::{Record, RecordSet};
 use dataplane::Offset;
 use dataplane::fixture::BatchProducer;
 
