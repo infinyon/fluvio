@@ -215,8 +215,8 @@ mod file {
 
     use dataplane::core::Version;
     use dataplane::record::FileRecordSet;
-    use dataplane::store::FileWrite;
-    use dataplane::store::StoreValue;
+    use fluvio_protocol::store::FileWrite;
+    use fluvio_protocol::store::StoreValue;
 
     use super::*;
 
@@ -273,14 +273,16 @@ mod file {
 mod tests {
     use std::io::{Error, ErrorKind};
     use std::time::Duration;
+
     use fluvio_protocol::{Decoder, Encoder};
-    use crate::Isolation;
+    use dataplane::Isolation;
+    use fluvio_protocol::api::Request;
+    use dataplane::batch::Batch;
+    use dataplane::record::{Record, RecordData, RecordSet};
+
     use crate::produce::DefaultProduceRequest;
     use crate::produce::TopicProduceData;
     use crate::produce::PartitionProduceData;
-    use fluvio_protocol::api::Request;
-    use crate::batch::Batch;
-    use crate::record::{Record, RecordData, RecordSet};
 
     #[test]
     fn test_encode_decode_produce_request_isolation_timeout() -> Result<(), Error> {

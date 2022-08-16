@@ -101,9 +101,9 @@ mod file {
     use bytes::BytesMut;
 
     use dataplane::core::Version;
-    use dataplane::store::StoreValue;
     use dataplane::record::FileRecordSet;
-    use dataplane::store::FileWrite;
+    use fluvio_protocol::store::{StoreValue,FileWrite};
+    
 
     pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
 
@@ -128,7 +128,7 @@ mod file {
 
 #[cfg(test)]
 mod tests {
-    use dataplane::smartmodule::{SmartModuleKind, SmartModuleWasmCompressed};
+    use dataplane::smartmodule::{SmartModuleWasmCompressed, SmartModuleKind};
 
     use super::*;
 

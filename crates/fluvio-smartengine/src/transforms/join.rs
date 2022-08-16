@@ -5,11 +5,10 @@ use anyhow::Result;
 use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
+use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleExtraParams};
 use crate::{
     WasmSlice,
     {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
-    metadata::SmartModuleExtraParams,
 };
 
 const JOIN_FN_NAME: &str = "join";

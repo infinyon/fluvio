@@ -4,12 +4,11 @@ use std::fmt::Debug;
 use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
+use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleExtraParams};
 
 use crate::{
     WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
-    error::Error,
-    metadata::SmartModuleExtraParams,
+    error::Error
 };
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
