@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::collections::VecDeque;
 
 use async_lock::{Mutex, RwLock};
+use async_std::sync::Condvar;
 use dataplane::ReplicaKey;
 use dataplane::batch::{RawRecords, Batch};
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
@@ -31,7 +32,7 @@ pub(crate) struct PartitionProducer {
     config: Arc<TopicProducerConfig>,
     replica: ReplicaKey,
     spu_pool: Arc<SpuPool>,
-    batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
+    batches_lock: Arc<(Mutex<VecDeque<ProducerBatch>>, Condvar)>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
     #[cfg(feature = "stats")]
@@ -43,7 +44,7 @@ impl PartitionProducer {
         config: Arc<TopicProducerConfig>,
         replica: ReplicaKey,
         spu_pool: Arc<SpuPool>,
-        batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
+        batches_lock: Arc<(Mutex<VecDeque<ProducerBatch>>, Condvar)>,
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
@@ -64,7 +65,7 @@ impl PartitionProducer {
         config: Arc<TopicProducerConfig>,
         replica: ReplicaKey,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
+        batches: Arc<(Mutex<VecDeque<ProducerBatch>>, Condvar)>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
@@ -86,7 +87,7 @@ impl PartitionProducer {
         config: Arc<TopicProducerConfig>,
         replica: ReplicaKey,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
+        batches: Arc<(Mutex<VecDeque<ProducerBatch>>, Condvar)>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
@@ -195,7 +196,7 @@ impl PartitionProducer {
             .await?;
 
         let mut batches_ready = vec![];
-        let mut batches = self.batches_lock.lock().await;
+        let mut batches = self.batches_lock.0.lock().await;
         while !batches.is_empty() {
             let ready = force
                 || batches.front().map_or(false, |batch| {
@@ -204,6 +205,7 @@ impl PartitionProducer {
             if ready {
                 if let Some(batch) = batches.pop_front() {
                     batches_ready.push(batch);
+                    self.batches_lock.1.notify_all();
                 }
             } else {
                 break;

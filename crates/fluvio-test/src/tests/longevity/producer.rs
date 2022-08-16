@@ -1,7 +1,7 @@
 use fluvio::{RecordKey, TopicProducerConfig, TopicProducerConfigBuilder};
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 use tracing::debug;
 
 use super::MyTestCase;
@@ -24,6 +24,7 @@ pub async fn producer(test_driver: TestDriver, option: MyTestCase, producer_id: 
         let config: TopicProducerConfig = TopicProducerConfigBuilder::default()
             .linger(linger)
             .batch_size(option.environment.producer_batch_size.unwrap_or(16_384))
+            .batch_queue_size(25)
             .build()
             .unwrap();
 
@@ -39,9 +40,6 @@ pub async fn producer(test_driver: TestDriver, option: MyTestCase, producer_id: 
 
     let mut records_sent = 0;
     let test_start = SystemTime::now();
-
-    let flush_period = linger * 10; // sync with producer flush pace periodically to do back pressure
-    let mut last_flush_time = Instant::now();
 
     debug!("About to start producer loop");
     while test_start.elapsed().unwrap() <= option.environment.timeout {
@@ -73,13 +71,6 @@ pub async fn producer(test_driver: TestDriver, option: MyTestCase, producer_id: 
                 .send_count(p, RecordKey::NULL, record_json.clone())
                 .await
                 .expect("Producer Send failed");
-        }
-
-        if last_flush_time.elapsed() > flush_period {
-            for p in &producers {
-                let _ = p.flush().await;
-            }
-            last_flush_time = Instant::now();
         }
 
         records_sent += 1;
