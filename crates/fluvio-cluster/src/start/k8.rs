@@ -1,6 +1,8 @@
+use std::io::BufReader;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::collections::BTreeMap;
+use std::io::Read;
 use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Child;
@@ -662,7 +664,7 @@ impl ClusterInstaller {
         let (install_host_and_port, pf_process) = if self.config.use_k8_port_forwarding {
             pb.println("Using K8 port forwarding for install".to_string());
             let (install_host, install_port, pf_process) =
-                self.start_sc_port_forwarding(&sc_service).await?;
+                self.start_sc_port_forwarding(&sc_service, &pb).await?;
             (
                 format!("{}:{}", install_host, install_port),
                 Some(pf_process),
@@ -894,9 +896,11 @@ impl ClusterInstaller {
     async fn start_sc_port_forwarding(
         &self,
         service: &K8Obj<ServiceSpec>,
+        pb: &ProgressRenderer
     ) -> Result<(String, u16, Child), K8InstallError> {
         let pf_host_name = "localhost";
 
+        let pf_port = portpicker::pick_unused_port().expect("No local ports available");
         let target_port = ClusterInstaller::target_port_for_service(service)?;
 
         let mut pf_child = std::process::Command::new("kubectl")
@@ -904,21 +908,32 @@ impl ClusterInstaller {
             .arg(&service.metadata.namespace)
             .arg("port-forward")
             .arg(format!("service/{}", FLUVIO_SC_SERVICE))
-            .arg(target_port.to_string())
+            .arg(format!("{}:{}", pf_port, target_port))
+            .stderr(std::process::Stdio::piped())
+            .stdin(std::process::Stdio::null())
             .spawn()
-            .unwrap();
+            .expect("unable to spawn kubectl port-forward");
 
         // Wait for port forwarding
-        sleep(Duration::from_secs(3)).await;
+        sleep(Duration::from_secs(5)).await;
 
         match pf_child.try_wait()? {
-            Some(status) => return Err(K8InstallError::PortForwardingFailed(status)),
+            Some(status) => {
+                let stderr = pf_child.stderr.take().expect("unable to access port forwarding process stderr");
+                let mut reader = BufReader::new(stderr);
+                let mut buf = String::new();
+                let _ = reader.read_to_string(&mut buf)?;
+                let error_msg = format!("Error from kubectl port-forward: \n{}", buf);
+                pb.println(error_msg);
+
+                return Err(K8InstallError::PortForwardingFailed(status))
+            },
             None => {
                 info!("Port forwarding process started");
             }
         }
 
-        Ok((pf_host_name.to_owned(), target_port, pf_child))
+        Ok((pf_host_name.to_owned(), pf_port, pf_child))
     }
 
     /// Looks up the external address of a Fluvio SC instance in the given namespace
