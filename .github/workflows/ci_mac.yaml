@@ -144,18 +144,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download artifact - fluvio
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download artifact - fluvio-run
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-run-${{ matrix.rust-target }}
           path: ~/.fluvio/extensions
       - run: chmod +x ~/.fluvio/extensions/fluvio-run
       - name: Download artifact - fluvio-test
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
@@ -214,18 +214,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download artifact - fluvio
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download artifact - fluvio-run
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-run-${{ matrix.rust-target }}
           path: ~/.fluvio/extensions
       - run: chmod +x ~/.fluvio/extensions/fluvio-run
       - name: Download artifact - fluvio-test
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
@@ -272,7 +272,7 @@ jobs:
 
       # Download artifacts
       - name: Download fluvio-run
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-run-${{ matrix.rust-target }}
           path: .
@@ -314,17 +314,17 @@ jobs:
       - uses: actions/checkout@v3
       # Download artifacts
       - name: Download artifact - fluvio
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download artifact - fluvio-test
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download Docker Image as Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: infinyon-fluvio-${{ matrix.k8-target }}.tar
           path: /tmp

@@ -121,7 +121,7 @@ jobs:
 
       - name: Download build artifact - fluvio-test
         if: ${{ false }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
