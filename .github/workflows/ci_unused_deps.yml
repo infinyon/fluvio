@@ -9,14 +9,14 @@ concurrency:
 
 on:
   pull_request:
-    branches: [staging]
+    branches: [master]
   workflow_dispatch:
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   unused_deps_check:
-    name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }}) 
+    name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -43,4 +43,4 @@ jobs:
           key: ${{ matrix.rust-target }}-${{ matrix.check }}
       - name: Unused dependencies test
         if: ${{ matrix.check == 'unused-dependencies' }}
-        run: make check-udeps 
+        run: make check-udeps
