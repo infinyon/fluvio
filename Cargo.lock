@@ -1844,7 +1844,6 @@ dependencies = [
  "async-trait",
  "base64",
  "bytes 1.2.1",
- "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
@@ -2367,16 +2366,9 @@ dependencies = [
 name = "fluvio-test-case-derive"
 version = "0.0.0"
 dependencies = [
- "clap",
- "crossbeam-channel",
- "fluvio",
- "fluvio-future 0.4.1",
- "nix 0.25.0",
  "proc-macro2",
  "quote",
  "syn",
- "tokio",
- "tracing",
  "trybuild 1.0.42",
 ]
 
