@@ -2,6 +2,11 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    labels:
+      - bot
+      - github_actions
+      - dependencies
+
     schedule:
       # Check for updates to GitHub Actions every weekday
       interval: "daily"
@@ -11,6 +16,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    labels:
+      - bot
+      - github_actions
+      - dependencies
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"] # ignore patch updates
