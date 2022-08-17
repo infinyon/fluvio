@@ -48,4 +48,4 @@ fluvio-future = { version = "0.4.0", features = [
 portpicker = "0.1.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-async-net = "1.4.3"
+async-net = "1.7.0"
