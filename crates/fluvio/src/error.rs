@@ -23,11 +23,11 @@ pub enum FluvioError {
     PartitionNotFound(String, i32),
     #[error("Spu not found: {0}")]
     SPUNotFound(i32),
-    #[error("Fluvio socket error: {0}")]
+    #[error("Socket error: {0}")]
     Socket(#[from] SocketError),
-    #[error("Fluvio controlplane error: {0}")]
+    #[error("Controlplane error: {0}")]
     AdminApi(#[from] ApiError),
-    #[error("Fluvio config error: {0}")]
+    #[error("Config error: {0}")]
     ClientConfig(#[from] ConfigError),
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),

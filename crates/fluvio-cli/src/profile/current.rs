@@ -15,7 +15,7 @@ impl CurrentOpt {
                     println!("no current profile set");
                 }
             }
-            Err(_) => println!("no profile can be founded"),
+            Err(_) => println!("no profile can be found"),
         }
 
         Ok(())

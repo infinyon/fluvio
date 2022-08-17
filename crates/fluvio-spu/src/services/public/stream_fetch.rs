@@ -85,7 +85,7 @@ impl StreamFetchHandler {
                 }
             });
         } else {
-            debug!(topic = %replica.topic," no leader founded, returning");
+            debug!(topic = %replica.topic," no leader found, returning");
             let response = StreamFetchResponse {
                 topic: replica.topic,
                 stream_id: 0,

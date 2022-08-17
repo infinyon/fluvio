@@ -31,12 +31,22 @@ use crate::{FluvioConfig, FluvioError};
 
 use super::TlsPolicy;
 
+fn config_file_error(msg: &str, source: IoError) -> ConfigError {
+    ConfigError::ConfigFileError {
+        msg: msg.to_owned(),
+        source,
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum ConfigError {
-    #[error(transparent)]
-    ConfigFileError(#[from] IoError),
-    #[error("Failed to deserialize Fluvio config")]
-    TomlError(#[from] toml::de::Error),
+    #[error("config file {msg}")]
+    ConfigFileError { msg: String, source: IoError },
+    #[error("Failed to deserialize Fluvio config {msg}")]
+    TomlError {
+        msg: String,
+        source: toml::de::Error,
+    },
     #[error("Config has no active profile")]
     NoActiveProfile,
     #[error("No cluster config for profile {profile}")]
@@ -55,7 +65,7 @@ impl ConfigFile {
 
     /// create default profile
     pub fn default_config() -> Result<Self, IoError> {
-        let path = Self::default_file_path(None)?;
+        let path = Self::default_file_path()?;
         Ok(Self {
             path,
             config: Config::new(),
@@ -76,15 +86,21 @@ impl ConfigFile {
 
     /// try to load from default locations
     pub fn load(optional_path: Option<String>) -> Result<Self, FluvioError> {
-        let path = Self::default_file_path(optional_path).map_err(ConfigError::ConfigFileError)?;
-        Self::from_file(path)
+        Self::from_file(match optional_path {
+            Some(p) => PathBuf::from(p),
+            None => Self::default_file_path().map_err(|e| config_file_error("default path", e))?,
+        })
     }
 
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        let file_str: String = read_to_string(path_ref).map_err(ConfigError::ConfigFileError)?;
-        let config = toml::from_str(&file_str).map_err(ConfigError::TomlError)?;
+        let file_str: String = read_to_string(path_ref)
+            .map_err(|e| config_file_error(&format!("{:?}", path_ref.as_os_str()), e))?;
+        let config = toml::from_str(&file_str).map_err(|e| ConfigError::TomlError {
+            msg: path_ref.display().to_string(),
+            source: e,
+        })?;
         Ok(Self::new(path_ref.to_owned(), config))
     }
 
@@ -92,23 +108,21 @@ impl ConfigFile {
     /// 1) supplied path
     /// 2) environment variable in FLV_PROFILE_PATH
     /// 3) home directory ~/.fluvio/config
-    fn default_file_path(path: Option<String>) -> Result<PathBuf, IoError> {
-        path.map(|p| Ok(PathBuf::from(p))).unwrap_or_else(|| {
-            env::var("FLV_PROFILE_PATH")
-                .map(|p| Ok(PathBuf::from(p)))
-                .unwrap_or_else(|_| {
-                    if let Some(mut profile_path) = home_dir() {
-                        profile_path.push(CLI_CONFIG_PATH);
-                        profile_path.push("config");
-                        Ok(profile_path)
-                    } else {
-                        Err(IoError::new(
-                            ErrorKind::InvalidInput,
-                            "can't get profile directory",
-                        ))
-                    }
-                })
-        })
+    fn default_file_path() -> Result<PathBuf, IoError> {
+        env::var("FLV_PROFILE_PATH")
+            .map(|p| Ok(PathBuf::from(p)))
+            .unwrap_or_else(|_| {
+                if let Some(mut profile_path) = home_dir() {
+                    profile_path.push(CLI_CONFIG_PATH);
+                    profile_path.push("config");
+                    Ok(profile_path)
+                } else {
+                    Err(IoError::new(
+                        ErrorKind::InvalidInput,
+                        "can't get profile directory",
+                    ))
+                }
+            })
     }
 
     /// Return a reference to the internal Config
@@ -123,10 +137,11 @@ impl ConfigFile {
 
     // save to file
     pub fn save(&self) -> Result<(), FluvioError> {
-        create_dir_all(self.path.parent().unwrap()).map_err(ConfigError::ConfigFileError)?;
+        create_dir_all(self.path.parent().unwrap())
+            .map_err(|e| config_file_error(&format!("parent {:?}", self.path), e))?;
         self.config
             .save_to(&self.path)
-            .map_err(ConfigError::ConfigFileError)?;
+            .map_err(|e| config_file_error(&format!("{:?}", &self.path), e))?;
         Ok(())
     }
 
@@ -446,20 +461,12 @@ pub mod test {
     use std::env::temp_dir;
     use crate::config::{TlsPolicy, TlsConfig, TlsCerts};
 
-    #[test]
-    fn test_default_path_arg() {
-        assert_eq!(
-            ConfigFile::default_file_path(Some("/user1/test".to_string())).expect("file"),
-            PathBuf::from("/user1/test")
-        );
-    }
-
     //#[test]
     #[allow(unused)]
     fn test_default_path_env() {
         env::set_var("FLV_PROFILE_PATH", "/user2/config");
         assert_eq!(
-            ConfigFile::default_file_path(None).expect("file"),
+            ConfigFile::default_file_path().expect("file"),
             PathBuf::from("/user2/config")
         );
         env::remove_var("FLV_PROFILE_PATH");
@@ -470,7 +477,7 @@ pub mod test {
         let mut path = home_dir().expect("home dir must exist");
         path.push(CLI_CONFIG_PATH);
         path.push("config");
-        assert_eq!(ConfigFile::default_file_path(None).expect("file"), path);
+        assert_eq!(ConfigFile::default_file_path().expect("file"), path);
     }
 
     /// test basic reading

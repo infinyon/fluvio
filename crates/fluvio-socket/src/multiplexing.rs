@@ -504,7 +504,7 @@ impl MultiPlexingResponseDispatcher {
             // sender was dropped and unregistered before response arrives
             debug!(
                 correlation_id,
-                "no socket receiver founded, abandoning sending",
+                "no socket receiver found, abandoning sending",
             );
             Ok(())
         }

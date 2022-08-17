@@ -58,7 +58,10 @@ impl FluvioStream {
                 let msg: RequestMessage<R> = RequestMessage::decode_from(&mut src, 0)?;
                 Ok(msg)
             }
-            Err(err) => Err(err.into()),
+            Err(err) => Err(SocketError::Io {
+                source: err,
+                msg: "request stream".to_string(),
+            }),
         })
     }
 
@@ -93,7 +96,10 @@ impl FluvioStream {
                 }
                 Err(source) => {
                     error!("error receiving response: {:?}", source);
-                    Err(SocketError::Io(source))
+                    Err(SocketError::Io {
+                        source,
+                        msg: "next response".to_string(),
+                    })
                 }
             }
         } else {
@@ -114,7 +120,10 @@ impl FluvioStream {
                 let mut src = Cursor::new(&req_bytes);
                 R::decode_from(&mut src).map_err(|err| err.into())
             }
-            Err(err) => Err(err.into()),
+            Err(err) => Err(SocketError::Io {
+                source: err,
+                msg: "api stream".to_string(),
+            }),
         })
     }
 
