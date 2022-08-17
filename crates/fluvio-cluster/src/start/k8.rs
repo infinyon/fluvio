@@ -899,10 +899,6 @@ impl ClusterInstaller {
 
         let target_port = ClusterInstaller::target_port_for_service(service)?;
 
-        // Wait for pod to start
-        // TODO: use K8 client to wait for pod with retry logic
-        sleep(Duration::from_secs(3)).await;
-
         let mut pf_child = std::process::Command::new("kubectl")
             .arg("-n")
             .arg(&service.metadata.namespace)
