@@ -52,7 +52,7 @@ chrono = { version = "0.4" }
 color-eyre = { version = "0.6.0", default-features = false, optional = true }
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false, optional = true }
 duct = { version = "0.13", default-features = false, optional = true }
-comfy-table = { version = "5.0.1", default-features = false, optional = true }
+comfy-table = { version = "6.0.0", default-features = false, optional = true }
 flate2 = { version = "1", default-features = false, optional = true }
 tar = { version = "0.4", default-features = false, optional = true }
 sysinfo = { version = "0.25.0", default-features = false, optional = true }

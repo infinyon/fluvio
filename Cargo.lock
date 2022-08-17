@@ -757,7 +757,7 @@ version = "3.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13547f7012c01ab4a0e8f8967730ada8f9fdf419e8b6c792788f39cf4e46eefa"
 dependencies = [
- "heck 0.4.0",
+ "heck",
  "proc-macro-error",
  "proc-macro2",
  "quote",
@@ -809,25 +809,13 @@ dependencies = [
 
 [[package]]
 name = "comfy-table"
-version = "5.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b103d85ca6e209388771bfb7aa6b68a7aeec4afbf6f0a0264bfbf50360e5212e"
-dependencies = [
- "crossterm 0.23.2",
- "strum 0.23.0",
- "strum_macros 0.23.1",
- "unicode-width",
-]
-
-[[package]]
-name = "comfy-table"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "121d8a5b0346092c18a4b2fd6f620d7a06f0eb7ac0a45860939a0884bc579c56"
 dependencies = [
  "crossterm 0.23.2",
- "strum 0.24.1",
- "strum_macros 0.24.3",
+ "strum",
+ "strum_macros",
  "unicode-width",
 ]
 
@@ -1610,7 +1598,7 @@ dependencies = [
  "serde",
  "serde_json",
  "siphasher",
- "strum 0.24.1",
+ "strum",
  "sysinfo",
  "thiserror",
  "tokio",
@@ -1686,7 +1674,7 @@ dependencies = [
  "clap_complete",
  "color-eyre",
  "colored",
- "comfy-table 5.0.1",
+ "comfy-table",
  "content_inspector",
  "crossterm 0.25.0",
  "ctrlc",
@@ -1763,7 +1751,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "colored",
- "comfy-table 5.0.1",
+ "comfy-table",
  "derive_builder",
  "directories",
  "duct",
@@ -1887,7 +1875,7 @@ version = "0.8.3"
 dependencies = [
  "async-trait",
  "clap",
- "comfy-table 5.0.1",
+ "comfy-table",
  "fluvio",
  "fluvio-package-index",
  "futures-lite",
@@ -2328,7 +2316,7 @@ dependencies = [
  "async-trait",
  "bytes 1.2.1",
  "clap",
- "comfy-table 6.0.0",
+ "comfy-table",
  "crc",
  "crossbeam-channel",
  "fluvio",
@@ -2412,7 +2400,7 @@ dependencies = [
  "async-trait",
  "bytes 1.2.1",
  "clap",
- "comfy-table 6.0.0",
+ "comfy-table",
  "dyn-clone",
  "fluvio",
  "fluvio-cluster",
@@ -2858,15 +2846,6 @@ dependencies = [
  "flate2",
  "nom",
  "num-traits",
-]
-
-[[package]]
-name = "heck"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
-dependencies = [
- "unicode-segmentation",
 ]
 
 [[package]]
@@ -4789,30 +4768,11 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "strum"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cae14b91c7d11c9a851d3fbc80a963198998c2a64eec840477fa92d8ce9b70bb"
-
-[[package]]
-name = "strum"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 dependencies = [
- "strum_macros 0.24.3",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bb0dc7ee9c15cea6199cde9a127fa16a4c5819af85395457ad72d68edc85a38"
-dependencies = [
- "heck 0.3.3",
- "proc-macro2",
- "quote",
- "rustversion",
- "syn",
+ "strum_macros",
 ]
 
 [[package]]
@@ -4821,7 +4781,7 @@ version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
 dependencies = [
- "heck 0.4.0",
+ "heck",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -5847,7 +5807,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bac464f2b8b4202b4d99cf6693a734e9dbb811e6e5cd4ec541ecca008d9a4a34"
 dependencies = [
  "anyhow",
- "heck 0.4.0",
+ "heck",
  "proc-macro2",
  "quote",
  "shellexpand",
