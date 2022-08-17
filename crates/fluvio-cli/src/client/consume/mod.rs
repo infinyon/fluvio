@@ -20,14 +20,9 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
+    use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
-    use fluvio::dataplane::smartmodule::{
-        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
-    };
-    use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
-    use handlebars::{self, Handlebars};
-    use tracing::{debug, trace, instrument};
     use clap::{Parser, ArgEnum};
     use futures::{select, FutureExt};
     use async_trait::async_trait;
@@ -39,15 +34,18 @@ mod cmd {
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     };
+    use handlebars::{self, Handlebars};
 
-    use fluvio::dataplane::batch::NO_TIMESTAMP;
+    use fluvio_smartengine::metadata::{
+        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
+    };
+    use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
+    use fluvio_protocol::record::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::{TableFormatSpec};
     use fluvio_future::io::StreamExt;
-
-    use super::table_format::{TableEventResponse, TableModel};
-
     use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
     use fluvio::consumer::{PartitionSelectionStrategy, Record};
+    use fluvio_spu_schema::Isolation;
 
     use crate::render::ProgressRenderer;
     use crate::{CliError, Result};
@@ -60,8 +58,7 @@ mod cmd {
         format_json, format_basic_table_record, format_fancy_table_record,
     };
     use super::super::ClientCmd;
-
-    use fluvio::dataplane::Isolation;
+    use super::table_format::{TableEventResponse, TableModel};
 
     const DEFAULT_TAIL: u32 = 10;
     const USER_TEMPLATE: &str = "user_template";

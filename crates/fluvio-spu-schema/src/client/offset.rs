@@ -1,8 +1,7 @@
-use dataplane::api::Request;
-use dataplane::core::{Encoder, Decoder};
-use dataplane::ReplicaKey;
-use dataplane::Offset;
-use dataplane::ErrorCode;
+use fluvio_protocol::api::{Request, ErrorCode};
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::record::ReplicaKey;
+use fluvio_protocol::record::Offset;
 
 use super::SpuClientApiKey;
 

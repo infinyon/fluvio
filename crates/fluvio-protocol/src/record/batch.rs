@@ -9,17 +9,16 @@ use tracing::trace;
 use fluvio_compression::Compression;
 use fluvio_types::Timestamp;
 
-use crate::core::bytes::Buf;
-use crate::core::bytes::BufMut;
+use crate::bytes::Buf;
+use crate::bytes::BufMut;
+use crate::{Decoder, Encoder};
+use crate::Version;
 
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::core::Version;
-
-use crate::Offset;
-use crate::Size;
 use crate::record::ConsumerRecord;
 use crate::record::Record;
+
+use super::Offset;
+use super::Size;
 
 pub const COMPRESSION_CODEC_MASK: i16 = 0x07;
 pub const NO_TIMESTAMP: i64 = -1;
@@ -402,12 +401,10 @@ impl BatchHeader {
         self.attributes = (self.attributes & !COMPRESSION_CODEC_MASK) | compression_bits;
     }
 
-    #[cfg(feature = "memory_batch")]
     fn set_first_timestamp(&mut self, timestamp: Timestamp) {
         self.first_timestamp = timestamp;
     }
 
-    #[cfg(feature = "memory_batch")]
     fn set_max_time_stamp(&mut self, timestamp: Timestamp) {
         self.max_time_stamp = timestamp;
     }
@@ -440,10 +437,11 @@ pub const BATCH_HEADER_SIZE: usize = size_of::<i32>()     // partition leader ep
         + size_of::<i16>()      // produce_epoch
         + size_of::<i32>(); // first sequence
 
-#[cfg(feature = "memory_batch")]
 pub mod memory {
-    use super::*;
     use chrono::Utc;
+
+    use super::*;
+
     pub struct MemoryBatch {
         compression: Compression,
         write_limit: usize,
@@ -572,13 +570,11 @@ mod test {
 
     use crate::core::Decoder;
     use crate::core::Encoder;
-    use crate::record::{Record, RecordData};
-    use crate::batch::Batch;
+
+    use super::super::{Record, RecordData};
+    use super::super::Batch;
     use super::BatchHeader;
     use super::BATCH_HEADER_SIZE;
-
-    #[cfg(feature = "memory_batch")]
-    use super::memory::MemoryBatch;
 
     #[test]
     fn test_batch_convert_compression_size() {}

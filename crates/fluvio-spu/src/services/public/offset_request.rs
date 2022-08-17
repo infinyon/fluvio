@@ -2,13 +2,13 @@ use std::io::Error as IoError;
 
 use tracing::{trace, instrument};
 
-use dataplane::api::{RequestMessage, ResponseMessage};
+use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetTopicResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use dataplane::ErrorCode;
+use fluvio_protocol::api::ErrorCode;
 
 use crate::core::DefaultSharedGlobalContext;
 

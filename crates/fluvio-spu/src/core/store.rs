@@ -12,7 +12,7 @@ use tracing::error;
 use tracing::instrument;
 
 use fluvio_controlplane_metadata::message::*;
-use dataplane::core::{Decoder, Encoder};
+use fluvio_protocol::{Decoder, Encoder};
 
 use flv_util::actions::Actions;
 use flv_util::SimpleConcurrentBTreeMap;

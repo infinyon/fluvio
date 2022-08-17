@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use futures_util::stream::Stream;
 
 use fluvio_types::SpuId;
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::RequestMessage;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_service::{FluvioService, wait_for_request};
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use dataplane::Offset;
+use fluvio_protocol::record::Offset;
 use fluvio_types::SpuId;
 
 #[derive(Debug)]

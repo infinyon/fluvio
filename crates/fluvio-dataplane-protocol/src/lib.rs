@@ -20,6 +20,5 @@ pub use common::*;
 pub use error_code::*;
 
 pub use fluvio_protocol as core;
-pub use fluvio_protocol::api;
 pub use fluvio_protocol::bytes;
 pub use fluvio_protocol::derive;

@@ -11,9 +11,9 @@ use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
 
-use dataplane::record::RecordSet;
-use dataplane::{Offset, Isolation, ReplicaKey};
-use dataplane::batch::BatchRecords;
+use fluvio_protocol::record::RecordSet;
+use fluvio_protocol::{Offset, Isolation, ReplicaKey};
+use fluvio_protocol::batch::BatchRecords;
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
@@ -686,9 +686,10 @@ mod test_leader {
 
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
     use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo, ReplicaSlice};
-    use dataplane::{Offset, ErrorCode};
-    use dataplane::batch::BatchRecords;
-    use dataplane::fixture::{create_recordset};
+    use fluvio_protocol::record::{Offset};
+    use fluvio_protocol::api::ErrorCode;
+    use fluvio_protocol::record::BatchRecords;
+    use fluvio_protocol::fixture::{create_recordset};
 
     use crate::{
         config::{SpuConfig},
@@ -720,7 +721,7 @@ mod test_leader {
     #[async_trait]
     impl ReplicaStorage for MockStorage {
         async fn create_or_load(
-            _replica: &dataplane::ReplicaKey,
+            _replica: &fluvio_protocol::ReplicaKey,
             _config: Self::ReplicaConfig,
         ) -> Result<Self, fluvio_storage::StorageError> {
             Ok(MockStorage {
@@ -740,7 +741,7 @@ mod test_leader {
             &self,
             offset: Offset,
             _max_len: u32,
-            _isolation: dataplane::Isolation,
+            _isolation: fluvio_protocol::Isolation,
         ) -> Result<ReplicaSlice, ErrorCode> {
             Ok(ReplicaSlice {
                 end: OffsetInfo { leo: offset, hw: 0 },
@@ -751,7 +752,7 @@ mod test_leader {
         // do dummy implementations of write
         async fn write_recordset<R: BatchRecords>(
             &mut self,
-            records: &mut dataplane::record::RecordSet<R>,
+            records: &mut fluvio_protocol::record::RecordSet<R>,
             update_highwatermark: bool,
         ) -> Result<(), fluvio_storage::StorageError> {
             self.pos.leo = records.last_offset().unwrap();

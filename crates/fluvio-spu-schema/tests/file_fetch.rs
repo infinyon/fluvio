@@ -13,8 +13,8 @@ use fluvio_future::fs::AsyncFileExtension;
 use fluvio_future::net::TcpListener;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::{Request, ResponseMessage, RequestMessage};
-use dataplane::batch::Batch;
-use dataplane::record::Record;
+use fluvio_protocol::record::Batch;
+use fluvio_protocol::record::Record;
 use fluvio_spu_schema::fetch::{
     DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
     FileTopicResponse,

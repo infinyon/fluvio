@@ -23,7 +23,7 @@ mod cmd {
         ProduceOutput, DeliverySemantic,
     };
     use fluvio_extension_common::Terminal;
-    use fluvio::dataplane::Isolation;
+    use fluvio_spu_schema::Isolation;
     use fluvio_types::print_cli_ok;
 
     use crate::client::cmd::ClientCmd;

@@ -1,9 +1,10 @@
 use std::io::{Error as IoError, ErrorKind};
-use fluvio_protocol::{Encoder, Version, Decoder};
-use fluvio_protocol::bytes::{BufMut, Buf};
 
-use crate::ErrorCode;
+use crate::bytes::{BufMut, Buf};
+use crate::{Encoder, Version, Decoder};
 use crate::api::Request;
+
+use super::ErrorCode;
 
 pub const VERSIONS_API_KEY: u16 = 18;
 

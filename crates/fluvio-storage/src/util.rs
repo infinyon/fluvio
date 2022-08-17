@@ -2,7 +2,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::num::ParseIntError;
 
-use dataplane::Offset;
+use fluvio_protocol::record::Offset;
 
 /// given parent directory, base offset, extension, generate path
 pub fn generate_file_name<P>(parent_dir: P, base_offset: Offset, extension: &str) -> PathBuf

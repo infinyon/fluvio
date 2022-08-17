@@ -14,7 +14,8 @@ use tracing::trace;
 use pin_utils::unsafe_unpinned;
 
 use fluvio_future::fs::mmap::MemoryMappedFile;
-use dataplane::{Offset, Size, Size64};
+use fluvio_protocol::record::Offset;
+use fluvio_protocol::record::{Size, Size64};
 
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;

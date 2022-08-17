@@ -6,16 +6,16 @@ use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
 
-use dataplane::{record::FileRecordSet, batch::RawRecords};
+use fluvio_protocol::{record::FileRecordSet, batch::RawRecords};
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
-use dataplane::{
+use fluvio_protocol::{
     ErrorCode,
     api::{RequestMessage, RequestHeader},
     record::RecordSet,
 };
-use dataplane::{Offset, Isolation, ReplicaKey};
+use fluvio_protocol::{Offset, Isolation, ReplicaKey};
 use fluvio_compression::CompressionError;
 use fluvio_spu_schema::{
     server::stream_fetch::{
@@ -25,8 +25,8 @@ use fluvio_spu_schema::{
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 use fluvio_smartengine::file_batch::FileBatchIterator;
-use dataplane::batch::Batch;
-use dataplane::smartmodule::SmartModuleRuntimeError;
+use fluvio_protocol::batch::Batch;
+use fluvio_protocol::smartmodule::SmartModuleRuntimeError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;

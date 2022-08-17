@@ -12,8 +12,8 @@ use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
 use fluvio_future::io::Stream;
-use fluvio::dataplane::record::ConsumerRecord;
-use fluvio::dataplane::ErrorCode;
+use fluvio::fluvio_protocol::record::ConsumerRecord;
+use fluvio::fluvio_protocol::api::ErrorCode;
 use tracing::info;
 
 use super::MyTestCase;

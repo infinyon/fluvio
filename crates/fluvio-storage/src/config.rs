@@ -15,7 +15,7 @@ use fluvio_types::defaults::{
 };
 use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
 use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
-use dataplane::{Size, Size64};
+use fluvio_protocol::record::{Size, Size64};
 
 use crate::{ReplicaStorageConfig};
 

@@ -7,3 +7,8 @@ pub mod join;
 pub mod file_batch;
 pub mod join_stream;
 pub(crate) mod error;
+
+mod engine;
+pub use engine::*;
+
+mod memory;

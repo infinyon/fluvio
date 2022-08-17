@@ -13,7 +13,7 @@ use flv_util::fixture::ensure_clean_dir;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
-use dataplane::fixture::{create_recordset};
+use fluvio_protocol::fixture::{create_recordset};
 
 use crate::core::{DefaultSharedGlobalContext, GlobalContext};
 use crate::config::SpuConfig;

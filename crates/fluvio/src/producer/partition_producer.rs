@@ -3,8 +3,8 @@ use std::sync::Arc;
 use async_lock::{Mutex, RwLock};
 use tracing::{debug, info, instrument, error, trace};
 
-use dataplane::ReplicaKey;
-use dataplane::batch::{RawRecords, Batch};
+use fluvio_protocol::record::ReplicaKey;
+use fluvio_protocol::record::{RawRecords, Batch};
 use fluvio_spu_schema::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;

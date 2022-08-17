@@ -3,7 +3,7 @@ use std::io::Cursor;
 
 use fluvio_spu_schema::produce::{DefaultProduceRequest};
 use fluvio_protocol::Decoder;
-use dataplane::Isolation;
+use fluvio_spu_schema::Isolation;
 
 // Test Specification:
 //

@@ -3,24 +3,6 @@ use std::fmt;
 
 use crate::derive::{Encoder, Decoder};
 
-pub type Offset = i64;
-pub type Size = u32;
-pub type Size64 = u64;
-
-#[derive(Debug, Encoder, Decoder, Clone, Copy, Eq, PartialEq)]
-#[fluvio(encode_discriminant)]
-#[repr(u8)]
-pub enum Isolation {
-    ReadUncommitted = 0,
-    ReadCommitted = 1,
-}
-
-impl Default for Isolation {
-    fn default() -> Self {
-        Isolation::ReadUncommitted
-    }
-}
-
 #[derive(Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
 pub struct ReplicaKey {
     pub topic: String,

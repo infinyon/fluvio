@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use dataplane::Isolation;
-use dataplane::api::Request;
-use dataplane::core::{Decoder, Encoder};
-use dataplane::derive::FluvioDefault;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::{Decoder, Encoder};
+use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol::record::RecordSet;
 
-use dataplane::record::RecordSet;
+use crate::isolation::Isolation;
 
 use super::FetchResponse;
 
@@ -106,6 +106,6 @@ pub use file::*;
 #[cfg(feature = "file")]
 mod file {
     use super::*;
-    use dataplane::record::FileRecordSet;
+    use crate::file_record::FileRecordSet;
     pub type FileFetchRequest = FetchRequest<FileRecordSet>;
 }

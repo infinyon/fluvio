@@ -2,15 +2,14 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
+use fluvio_smartmodule::{
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleExtraParams,
-};
-use crate::{
-    WasmSlice,
-    {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, error::Error},
-};
+use crate::WasmSlice;
+
+use super::{SmartModuleContext, SmartModuleWithEngine, error::Error, SmartModuleInstance};
 
 const FILTER_FN_NAME: &str = "filter";
 type OldFilterFn = TypedFunc<(i32, i32), i32>;

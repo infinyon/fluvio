@@ -13,7 +13,7 @@ use tracing::error;
 
 use fluvio_future::fs::File;
 use fluvio_future::fs::mmap::MemoryMappedMutFile;
-use dataplane::{Offset, Size, Size64};
+use fluvio_protocol::record::{Offset, Size, Size64};
 
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
@@ -291,7 +291,7 @@ mod tests {
     use std::fs::File;
     use std::io::Read;
 
-    use dataplane::Offset;
+    use fluvio_protocol::record::Offset;
     use flv_util::fixture::ensure_clean_file;
 
     use super::MutLogIndex;

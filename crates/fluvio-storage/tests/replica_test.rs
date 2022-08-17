@@ -15,10 +15,10 @@ use fluvio_spu_schema::{
         FilePartitionResponse, FileTopicResponse,
     },
 };
-use dataplane::api::RequestMessage;
-use dataplane::record::{Record, RecordSet};
-use dataplane::Offset;
-use dataplane::fixture::BatchProducer;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::record::{Record, RecordSet};
+use fluvio_protocol::Offset;
+use fluvio_protocol::fixture::BatchProducer;
 
 use fluvio_socket::{FluvioSocket, SocketError};
 use flv_util::fixture::ensure_clean_dir;
@@ -100,7 +100,7 @@ async fn handle_response(socket: &mut FluvioSocket, replica: &FileReplica) {
         .read_partition_slice(
             fetch_offset,
             FileReplica::PREFER_MAX_LEN,
-            dataplane::Isolation::ReadUncommitted,
+            fluvio_protocol::Isolation::ReadUncommitted,
         )
         .await
         .expect("read");

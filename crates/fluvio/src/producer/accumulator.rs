@@ -11,13 +11,12 @@ use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
 
-use dataplane::batch::{Batch, memory::MemoryBatch};
+use fluvio_protocol::record::{Batch, memory::MemoryBatch};
 use fluvio_compression::Compression;
-use tracing::trace;
-
-use dataplane::{Offset, ErrorCode};
+use fluvio_protocol::record::Offset;
+use fluvio_protocol::api::ErrorCode;
 use fluvio_spu_schema::produce::ProduceResponse;
-use dataplane::record::Record;
+use fluvio_protocol::record::Record;
 use fluvio_socket::SocketError;
 use fluvio_types::{PartitionId, Timestamp};
 
@@ -301,7 +300,7 @@ impl Future for ProducePartitionResponseFuture {
 #[cfg(test)]
 mod test {
     use super::*;
-    use dataplane::{record::Record, batch::RawRecords};
+    use fluvio_protocol::record::{Record, RawRecords};
     use fluvio_spu_schema::produce::{PartitionProduceResponse, TopicProduceResponse};
     use fluvio_protocol::Encoder;
 

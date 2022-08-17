@@ -16,17 +16,16 @@ use futures_util::{Future, StreamExt};
 
 use fluvio_future::timer::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket};
-use dataplane::{
-    Isolation,
+use fluvio_spu_schema::Isolation;
+use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
-    smartmodule::{
-        SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation,
-        SmartModuleWasmCompressed, SmartModuleInvocationWasm, SmartModuleContextData,
-        SmartModuleKindError,
-    },
 };
-use dataplane::fixture::{create_batch, TEST_RECORD};
+use fluvio_smartengine::metadata::{
+    SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
+    SmartModuleInvocationWasm, SmartModuleContextData, SmartModuleKindError,
+};
+use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
 use fluvio_spu_schema::{
     server::{
         update_offset::{UpdateOffsetsRequest, OffsetUpdate},
@@ -43,7 +42,7 @@ use std::sync::Arc;
 
 use tracing::{debug};
 
-use dataplane::{
+use fluvio_protocol::{
     ErrorCode,
     api::{RequestMessage},
     record::RecordSet,

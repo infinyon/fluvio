@@ -15,9 +15,9 @@ use flv_util::socket_helpers::EndPointEncryption;
 use fluvio_types::SpuId;
 use flv_util::socket_helpers::ServerAddress;
 
-use dataplane::core::{Encoder, Decoder};
-use dataplane::bytes::{Buf, BufMut};
-use dataplane::core::Version;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::bytes::{Buf, BufMut};
+use fluvio_protocol::Version;
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq, Default)]
 #[cfg_attr(

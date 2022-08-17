@@ -2,7 +2,7 @@ use std::{env::temp_dir, sync::Arc};
 
 use derive_builder::Builder;
 
-use dataplane::{Size, batch::Batch, record::Record};
+use fluvio_protocol::record::{Size, Batch, Record};
 
 use crate::{
     config::{ReplicaConfig, StorageConfig},

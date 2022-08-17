@@ -9,19 +9,18 @@ use std::time::{Instant};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
-use dataplane::batch::BatchRecords;
-use fluvio_future::fs::File;
 use tracing::instrument;
 use tracing::{debug, trace};
-
 use futures_lite::io::AsyncWriteExt;
 use async_channel::Sender;
 
+use fluvio_protocol::record::BatchRecords;
+use fluvio_future::fs::File;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::BoundedFileSinkError;
-use dataplane::batch::Batch;
-use dataplane::{Offset, Size, Size64};
-use dataplane::core::Encoder;
+use fluvio_protocol::record::Batch;
+use fluvio_protocol::record::{Offset, Size, Size64};
+use fluvio_protocol::Encoder;
 
 use crate::config::SharedReplicaConfig;
 use crate::mut_index::MutLogIndex;
@@ -384,11 +383,11 @@ mod tests {
 
     use tracing::debug;
 
-    use dataplane::Offset;
+    use fluvio_protocol::record::Offset;
     use flv_util::fixture::{ensure_new_dir};
-    use dataplane::batch::{Batch, MemoryRecords};
-    use dataplane::core::{Decoder, Encoder};
-    use dataplane::fixture::read_bytes_from_file;
+    use fluvio_protocol::record::{Batch, MemoryRecords};
+    use fluvio_protocol::{Decoder, Encoder};
+    use fluvio_protocol::fixture::read_bytes_from_file;
 
     use crate::config::ReplicaConfig;
     use crate::records::FileRecords;

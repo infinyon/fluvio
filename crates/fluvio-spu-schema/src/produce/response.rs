@@ -1,8 +1,7 @@
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
-use dataplane::derive::FluvioDefault;
-
-use dataplane::ErrorCode;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol::api::ErrorCode;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ProduceResponse {

@@ -7,8 +7,8 @@
 //! SC supports Kafka as well as Fluvio specific APIs.
 //!
 
-pub use dataplane::versions::{ApiVersionKey, ApiVersions};
-pub use dataplane::versions::{ApiVersionsRequest, ApiVersionsResponse};
+pub use fluvio_protocol::api::versions::{ApiVersionKey, ApiVersions};
+pub use fluvio_protocol::api::versions::{ApiVersionsRequest, ApiVersionsResponse};
 use crate::apis::AdminPublicApiKey;
 
 /// Given an API key, it returns max_version. None if not found

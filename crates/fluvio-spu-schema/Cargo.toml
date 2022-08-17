@@ -12,7 +12,7 @@ name = "fluvio_spu_schema"
 path = "src/lib.rs"
 
 [features]
-file = ["dataplane/file"]
+file = ["fluvio-protocol/store","fluvio-future"]
 
 [dependencies]
 
@@ -21,10 +21,11 @@ tracing = "0.1.19"
 bytes = "1.0.0"
 serde = { version = "1.0.103", features = ['derive'] }
 static_assertions = "1.1.0"
-
+fluvio-future = { version = "0.4.0", features = ["fs"], optional = true}
 # Fluvio dependencies
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
-dataplane = { version = "0.12.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["smartmodule"]}
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = ["api","record"]}
+fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", default-features = false }
+fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.3.2", default-features = false }
 
 [dev-dependencies]
 futures-util = { version = "0.3.4" }

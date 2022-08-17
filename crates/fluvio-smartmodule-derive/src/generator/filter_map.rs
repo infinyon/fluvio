@@ -40,12 +40,12 @@ pub fn generate_filter_map_smartmodule(func: &SmartModuleFn, has_params: bool) -
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn filter_map(ptr: *mut u8, len: usize, version: i16) -> i32 {
-                use fluvio_smartmodule::dataplane::smartmodule::{
+                use fluvio_smartmodule::{
                     SmartModuleInput, SmartModuleInternalError,
                     SmartModuleRuntimeError, SmartModuleKind, SmartModuleOutput,
                 };
-                use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
-                use fluvio_smartmodule::dataplane::record::{Record, RecordData};
+                use fluvio_smartmodule::fluvio_protocol::{Encoder, Decoder};
+                use fluvio_smartmodule::fluvio_protocol::record::{Record, RecordData};
 
                 // DECODING
                 extern "C" {

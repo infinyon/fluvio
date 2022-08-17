@@ -2,16 +2,16 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
+use fluvio_smartmodule::{
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleExtraParams,
-};
+use crate::WasmSlice;
 
-use crate::{
-    WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
-    error::Error,
-};
+use super::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance};
+
+use super::error::Error;
 
 const MAP_FN_NAME: &str = "map";
 type OldMapFn = TypedFunc<(i32, i32), i32>;

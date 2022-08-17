@@ -1,13 +1,13 @@
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
-use dataplane::api::api_decode;
-use dataplane::api::ApiMessage;
-use dataplane::api::RequestHeader;
-use dataplane::api::RequestMessage;
-use dataplane::bytes::Buf;
-use dataplane::derive::Encoder;
-use dataplane::derive::Decoder;
+use fluvio_protocol::api::api_decode;
+use fluvio_protocol::api::ApiMessage;
+use fluvio_protocol::api::RequestHeader;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::bytes::Buf;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::Decoder;
 
 use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;

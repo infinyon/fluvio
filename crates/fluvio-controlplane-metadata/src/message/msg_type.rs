@@ -9,7 +9,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt;
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 use crate::store::actions::*;
 use crate::core::*;

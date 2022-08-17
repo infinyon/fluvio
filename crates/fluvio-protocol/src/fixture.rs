@@ -7,7 +7,7 @@ use tracing::info;
 use derive_builder::Builder;
 
 use crate::record::{Record, RecordSet};
-use crate::batch::Batch;
+use crate::record::Batch;
 
 const DEFAULT_TEST_BYTE: u8 = 5;
 

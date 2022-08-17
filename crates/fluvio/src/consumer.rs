@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use dataplane::smartmodule::{
+use fluvio_smartengine::metadata::{
     SmartModuleInvocationWasm, SmartModuleWasmCompressed, LegacySmartModulePayload,
     SmartModuleInvocation,
 };
@@ -18,17 +18,17 @@ use fluvio_spu_schema::server::stream_fetch::{
     WASM_MODULE_V2_API, GZIP_WASM_API,
 };
 pub use fluvio_spu_schema::server::stream_fetch::{};
-use dataplane::Isolation;
-use dataplane::ReplicaKey;
-use dataplane::ErrorCode;
-use dataplane::batch::Batch;
+use fluvio_spu_schema::Isolation;
+use fluvio_protocol::record::ReplicaKey;
+use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::record::Batch;
 
 use crate::FluvioError;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
 
-pub use dataplane::record::ConsumerRecord as Record;
+pub use fluvio_protocol::record::ConsumerRecord as Record;
 
 /// An interface for consuming events from a particular partition
 ///
@@ -225,7 +225,7 @@ where
     ) -> Result<
         (
             impl Stream<Item = Result<Batch, ErrorCode>>,
-            dataplane::Offset,
+            fluvio_protocol::record::Offset,
         ),
         FluvioError,
     > {
@@ -279,7 +279,7 @@ where
     ) -> Result<
         (
             impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
-            dataplane::Offset,
+            fluvio_protocol::record::Offset,
         ),
         FluvioError,
     > {
@@ -578,7 +578,7 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     use fluvio_spu_schema::fetch::FetchableTopicResponse;
     use fluvio_spu_schema::fetch::FetchablePartitionResponse;
 
-    use crate::dataplane::batch::MemoryRecords;
+    use fluvio_protocol::record::MemoryRecords;
 
     let var_value = env::var("FLV_CLIENT_MAX_FETCH_BYTES").unwrap_or_default();
     let max_bytes: i32 = var_value.parse().unwrap_or_else(|_| {

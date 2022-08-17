@@ -5,10 +5,7 @@
 //!
 use std::fmt;
 
-use dataplane::core::{Encoder, Decoder};
-// -----------------------------------
-// Data Structures
-// -----------------------------------
+use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Default, Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(

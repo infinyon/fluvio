@@ -1,7 +1,8 @@
-use fluvio_smartmodule::SmartOpt;
-use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+
+use fluvio_smartmodule::SmartOpt;
+use fluvio_smartmodule::SmartModuleExtraParams;
 
 #[derive(Default, SmartOpt, PartialEq, Debug)]
 pub struct TestStruct {

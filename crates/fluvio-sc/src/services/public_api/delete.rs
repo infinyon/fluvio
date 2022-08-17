@@ -4,11 +4,12 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use dataplane::ErrorCode;
-use tracing::{instrument, trace, debug};
 use std::io::Error;
 
-use dataplane::api::{RequestMessage, ResponseMessage};
+use tracing::{instrument, trace, debug};
+
+use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
 use fluvio_sc_schema::objects::{ObjectApiDeleteRequest};
 use fluvio_auth::{AuthContext};
@@ -68,7 +69,7 @@ mod delete_handler {
         io::{Error, ErrorKind},
     };
 
-    use dataplane::ErrorCode;
+    use fluvio_protocol::api::ErrorCode;
     use fluvio_stream_dispatcher::store::StoreContext;
     use tracing::{info, trace, instrument};
 
@@ -93,7 +94,7 @@ mod delete_handler {
         F: FnOnce(Error) -> ErrorCode,
         G: FnOnce() -> ErrorCode,
     {
-        use dataplane::ErrorCode;
+        use fluvio_protocol::api::ErrorCode;
 
         info!(ty = %S::LABEL,%name, "deleting");
 

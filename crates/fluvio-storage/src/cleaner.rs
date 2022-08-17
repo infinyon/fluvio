@@ -139,11 +139,11 @@ mod tests {
     use std::ops::AddAssign;
     use std::sync::Arc;
     use std::time::Duration;
-    use fluvio_future::timer::sleep;
 
+    use fluvio_future::timer::sleep;
     use flv_util::fixture::ensure_new_dir;
-    use dataplane::fixture::create_batch;
-    use dataplane::Offset;
+    use fluvio_protocol::fixture::create_batch;
+    use fluvio_protocol::record::Offset;
 
     use crate::StorageError;
     use crate::config::SharedReplicaConfig;

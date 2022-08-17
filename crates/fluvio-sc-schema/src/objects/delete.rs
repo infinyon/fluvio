@@ -5,8 +5,8 @@
 
 use std::fmt::Debug;
 
-use dataplane::core::{Encoder, Decoder};
-use dataplane::api::Request;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
 
 use crate::{DeletableAdminSpec};
 use crate::Status;

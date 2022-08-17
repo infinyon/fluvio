@@ -4,11 +4,11 @@
 //! Stores Api Keys supported by the SC.
 //!
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 // Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
 static_assertions::const_assert_eq!(
-    dataplane::versions::VERSIONS_API_KEY,
+    fluvio_protocol::api::versions::VERSIONS_API_KEY,
     AdminPublicApiKey::ApiVersion as u16,
 );
 

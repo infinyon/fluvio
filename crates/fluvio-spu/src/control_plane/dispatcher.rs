@@ -14,7 +14,7 @@ use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;
 use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
 use fluvio_controlplane::UpdateReplicaRequest;
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
 use crate::core::SharedGlobalContext;

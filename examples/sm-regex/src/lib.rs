@@ -2,8 +2,7 @@ use regex::Regex;
 use once_cell::sync::OnceCell;
 
 use fluvio_smartmodule::{
-    smartmodule, Record, Result,
-    dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInternalError},
+    smartmodule, Record, Result, SmartModuleExtraParams, SmartModuleInternalError,
 };
 
 static REGEX: OnceCell<Regex> = OnceCell::new();

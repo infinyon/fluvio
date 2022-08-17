@@ -4,15 +4,15 @@ use std::marker::PhantomData;
 use std::time::Duration;
 use bytes::{Buf, BufMut};
 
-use dataplane::batch::RawRecords;
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
-use dataplane::derive::FluvioDefault;
-use dataplane::core::Version;
+use fluvio_protocol::record::RawRecords;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol::Version;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::record::RecordSet;
 
-use dataplane::api::Request;
-use dataplane::record::RecordSet;
-use dataplane::Isolation;
+use crate::isolation::Isolation;
 
 use super::ProduceResponse;
 
@@ -213,10 +213,11 @@ mod file {
     use tracing::trace;
     use bytes::BytesMut;
 
-    use dataplane::core::Version;
-    use dataplane::record::FileRecordSet;
+    use fluvio_protocol::Version;
     use fluvio_protocol::store::FileWrite;
     use fluvio_protocol::store::StoreValue;
+
+    use crate::file_record::FileRecordSet;
 
     use super::*;
 
@@ -275,14 +276,14 @@ mod tests {
     use std::time::Duration;
 
     use fluvio_protocol::{Decoder, Encoder};
-    use dataplane::Isolation;
     use fluvio_protocol::api::Request;
-    use dataplane::batch::Batch;
-    use dataplane::record::{Record, RecordData, RecordSet};
+    use fluvio_protocol::record::Batch;
+    use fluvio_protocol::record::{Record, RecordData, RecordSet};
 
     use crate::produce::DefaultProduceRequest;
     use crate::produce::TopicProduceData;
     use crate::produce::PartitionProduceData;
+    use crate::isolation::Isolation;
 
     #[test]
     fn test_encode_decode_produce_request_isolation_timeout() -> Result<(), Error> {

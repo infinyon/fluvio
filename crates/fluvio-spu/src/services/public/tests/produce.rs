@@ -1,6 +1,6 @@
 use std::{env::temp_dir, time::Duration};
 
-use dataplane::{api::RequestMessage, ErrorCode, RequestKind, Isolation};
+use fluvio_protocol::{api::RequestMessage, ErrorCode, RequestKind, Isolation};
 use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
 use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};

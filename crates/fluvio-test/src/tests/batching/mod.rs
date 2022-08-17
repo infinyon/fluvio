@@ -4,10 +4,10 @@ use futures_lite::StreamExt;
 use tracing::debug;
 
 use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
-use fluvio::dataplane::batch::Batch;
-use fluvio::dataplane::batch::RawRecords;
+use fluvio::fluvio_protocol::batch::Batch;
+use fluvio::fluvio_protocol::batch::RawRecords;
 
-use dataplane::core::Encoder;
+use fluvio_protocol::Encoder;
 
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use clap::Parser;

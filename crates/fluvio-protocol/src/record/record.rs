@@ -5,6 +5,8 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::str::Utf8Error;
 
+use bytes::Bytes;
+use bytes::BytesMut;
 use content_inspector::{inspect, ContentType};
 use tracing::{trace, warn};
 use once_cell::sync::Lazy;
@@ -12,17 +14,17 @@ use once_cell::sync::Lazy;
 use bytes::Buf;
 use bytes::BufMut;
 
-use crate::batch::BatchRecords;
-use crate::batch::MemoryRecords;
-use crate::batch::NO_TIMESTAMP;
-use crate::batch::RawRecords;
-use crate::core::{Encoder, Decoder};
-use crate::core::DecoderVarInt;
-use crate::core::EncoderVarInt;
-use crate::core::Version;
+use crate::{Encoder, Decoder};
+use crate::DecoderVarInt;
+use crate::EncoderVarInt;
+use crate::Version;
 
-use crate::batch::Batch;
-use crate::Offset;
+use super::batch::BatchRecords;
+use super::batch::MemoryRecords;
+use super::batch::NO_TIMESTAMP;
+use super::batch::RawRecords;
+use super::batch::Batch;
+use super::Offset;
 
 use fluvio_compression::CompressionError;
 use fluvio_types::Timestamp;
@@ -370,7 +372,6 @@ impl RecordHeader {
         self.offset_delta
     }
 
-    #[cfg(feature = "memory_batch")]
     pub(crate) fn set_timestamp_delta(&mut self, delta: Timestamp) {
         self.timestamp_delta = delta;
     }
@@ -626,8 +627,8 @@ mod test {
     #[test]
     fn test_decode_batch_truncation() {
         use super::RecordSet;
-        use crate::batch::Batch;
-        use crate::record::Record;
+        use super::super::batch::Batch;
+        use super::super::Record;
 
         fn create_batch() -> Batch {
             let value = vec![0x74, 0x65, 0x73, 0x74];
@@ -758,108 +759,5 @@ mod test {
             partition: 0,
         };
         assert_eq!(record.timestamp(), 1_000_000_800);
-    }
-}
-
-#[cfg(feature = "file")]
-pub use file::*;
-use crate::bytes::{Bytes, BytesMut};
-
-#[cfg(feature = "file")]
-mod file {
-
-    use std::fmt;
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
-
-    use tracing::trace;
-    use bytes::BufMut;
-    use bytes::BytesMut;
-
-    use fluvio_future::file_slice::AsyncFileSlice;
-    use fluvio_protocol::store::FileWrite;
-    use fluvio_protocol::store::StoreValue;
-
-    use crate::core::bytes::Buf;
-    use crate::core::Decoder;
-    use crate::core::Encoder;
-    use crate::core::Version;
-
-    #[derive(Default, Debug)]
-    pub struct FileRecordSet(AsyncFileSlice);
-
-    impl fmt::Display for FileRecordSet {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "pos: {} len: {}", self.position(), self.len())
-        }
-    }
-
-    impl FileRecordSet {
-        pub fn position(&self) -> u64 {
-            self.0.position()
-        }
-
-        pub fn len(&self) -> usize {
-            self.0.len() as usize
-        }
-
-        pub fn raw_slice(&self) -> AsyncFileSlice {
-            self.0.clone()
-        }
-    }
-
-    impl From<AsyncFileSlice> for FileRecordSet {
-        fn from(slice: AsyncFileSlice) -> Self {
-            Self(slice)
-        }
-    }
-
-    impl Encoder for FileRecordSet {
-        fn write_size(&self, _version: Version) -> usize {
-            self.len() + 4 // include header
-        }
-
-        fn encode<T>(&self, src: &mut T, version: Version) -> Result<(), IoError>
-        where
-            T: BufMut,
-        {
-            // can only encode zero length
-            if self.len() == 0 {
-                let len: u32 = 0;
-                len.encode(src, version)
-            } else {
-                Err(IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("len {} is not zeo", self.len()),
-                ))
-            }
-        }
-    }
-
-    impl Decoder for FileRecordSet {
-        fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), IoError>
-        where
-            T: Buf,
-        {
-            unimplemented!("file slice cannot be decoded in the ButMut")
-        }
-    }
-
-    impl FileWrite for FileRecordSet {
-        fn file_encode(
-            &self,
-            dest: &mut BytesMut,
-            data: &mut Vec<StoreValue>,
-            version: Version,
-        ) -> Result<(), IoError> {
-            // write total len
-            let len: i32 = self.len() as i32;
-            trace!("KfFileRecordSet encoding file slice len: {}", len);
-            len.encode(dest, version)?;
-            let bytes = dest.split_to(dest.len()).freeze();
-            data.push(StoreValue::Bytes(bytes));
-            data.push(StoreValue::FileSlice(self.raw_slice()));
-            Ok(())
-        }
     }
 }

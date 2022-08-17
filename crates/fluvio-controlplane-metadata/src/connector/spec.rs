@@ -1,6 +1,5 @@
 #![allow(clippy::assign_op_pattern)]
 
-use dataplane::core::{Encoder, Decoder, Version};
 use std::convert::Infallible;
 use std::ops::Deref;
 use std::str::FromStr;
@@ -9,6 +8,8 @@ use std::fmt;
 
 use bytes::Buf;
 use bytes::BufMut;
+
+use fluvio_protocol::{Encoder, Decoder, Version};
 
 #[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(

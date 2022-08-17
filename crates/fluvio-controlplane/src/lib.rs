@@ -15,6 +15,6 @@ pub use self::requests::remove::*;
 pub use self::requests::update_smartmodule::*;
 pub use self::requests::update_derivedstream::*;
 
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::RequestMessage;
 
 pub type UpdateSpuRequestMessage = RequestMessage<UpdateSpuRequest>;

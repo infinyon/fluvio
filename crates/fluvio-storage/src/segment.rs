@@ -8,8 +8,9 @@ use tracing::{debug, trace, instrument, info, error};
 
 use fluvio_future::fs::remove_file;
 use fluvio_future::file_slice::AsyncFileSlice;
-use dataplane::batch::{Batch, BatchRecords};
-use dataplane::{Offset, Size, ErrorCode, Size64};
+use fluvio_protocol::record::{Batch, BatchRecords};
+use fluvio_protocol::record::{Offset, Size, Size64};
+use fluvio_protocol::api::ErrorCode;
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
@@ -465,12 +466,12 @@ mod tests {
     use std::path::PathBuf;
 
     use flv_util::fixture::ensure_new_dir;
-    use dataplane::batch::{Batch, MemoryRecords};
-    use dataplane::Size;
-    use dataplane::core::Decoder;
-    use dataplane::fixture::create_batch_with_producer;
-    use dataplane::fixture::create_batch;
-    use dataplane::fixture::read_bytes_from_file;
+    use fluvio_protocol::record::{Batch, MemoryRecords};
+    use fluvio_protocol::record::Size;
+    use fluvio_protocol::Decoder;
+    use fluvio_protocol::fixture::create_batch_with_producer;
+    use fluvio_protocol::fixture::create_batch;
+    use fluvio_protocol::fixture::read_bytes_from_file;
 
     use super::MutableSegment;
 

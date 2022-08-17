@@ -1581,11 +1581,11 @@ dependencies = [
  "dirs",
  "event-listener",
  "fluvio-compression",
- "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-sc-schema",
  "fluvio-smartengine",
+ "fluvio-smartmodule",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
@@ -1617,7 +1617,7 @@ dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-socket",
  "fluvio-types",
@@ -1692,8 +1692,10 @@ dependencies = [
  "fluvio-extension-common",
  "fluvio-future 0.4.2",
  "fluvio-package-index",
+ "fluvio-protocol 0.7.10",
  "fluvio-sc-schema",
  "fluvio-smartengine",
+ "fluvio-smartmodule",
  "fluvio-smartmodule-package",
  "fluvio-socket",
  "fluvio-spu-schema",
@@ -1822,7 +1824,6 @@ name = "fluvio-controlplane"
 version = "0.0.0"
 dependencies = [
  "fluvio-controlplane-metadata",
- "fluvio-dataplane-protocol",
  "fluvio-protocol 0.7.10",
  "fluvio-types",
  "log",
@@ -1838,7 +1839,7 @@ dependencies = [
  "bytes 1.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1862,7 +1863,7 @@ dependencies = [
  "eyre",
  "flate2",
  "fluvio-compression",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-types",
  "flv-util",
@@ -1873,6 +1874,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> 8066bb12 (remove fluvio-dataplane-protocol)
 name = "fluvio-extension-common"
 version = "0.8.3"
 dependencies = [
@@ -1987,10 +1990,15 @@ name = "fluvio-protocol"
 version = "0.7.10"
 dependencies = [
  "bytes 1.2.1",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-protocol-derive 0.4.3",
+ "fluvio-types",
+ "flv-util",
  "futures 0.3.23",
+ "once_cell",
+ "semver 1.0.13",
+ "thiserror",
  "tokio-util",
  "tracing",
  "trybuild 1.0.64",
@@ -2050,7 +2058,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-sc-schema",
  "fluvio-service",
@@ -2082,7 +2090,7 @@ version = "0.14.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-types",
  "log",
@@ -2125,8 +2133,9 @@ dependencies = [
  "cargo",
  "cfg-if",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
+ "fluvio-smartmodule",
  "fluvio-types",
  "nix 0.25.0",
  "thiserror",
@@ -2137,11 +2146,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.2.5"
+version = "0.3.0"
 dependencies = [
  "eyre",
- "fluvio-dataplane-protocol",
+ "fluvio-protocol 0.7.10",
  "fluvio-smartmodule-derive",
+ "thiserror",
+ "tracing",
  "trybuild 1.0.42",
 ]
 
@@ -2211,7 +2222,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-service",
  "fluvio-smartengine",
@@ -2241,8 +2252,10 @@ version = "0.10.1"
 dependencies = [
  "bytes 1.2.1",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
+ "fluvio-smartengine",
+ "fluvio-smartmodule",
  "fluvio-socket",
  "flv-util",
  "futures-util",
@@ -2265,7 +2278,7 @@ dependencies = [
  "derive_builder",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.10",
  "fluvio-socket",
  "fluvio-spu-schema",
@@ -2336,7 +2349,7 @@ dependencies = [
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.4.2",
+ "fluvio-future 0.4.1",
  "fluvio-protocol 0.7.9",
  "fluvio-test-case-derive",
  "fluvio-test-derive 0.0.0",

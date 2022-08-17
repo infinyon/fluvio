@@ -20,7 +20,7 @@ mod metadata {
     use std::io::Error as IoError;
     use std::io::ErrorKind;
 
-    use dataplane::core::{Encoder, Decoder};
+    use fluvio_protocol::{Encoder, Decoder};
 
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
     use fluvio_controlplane_metadata::core::{MetadataContext, MetadataItem};
@@ -134,9 +134,9 @@ mod object_macro {
                     }
                 }
 
-                impl  dataplane::core::Encoder for [<ObjectApi $api>] {
+                impl  fluvio_protocol::Encoder for [<ObjectApi $api>] {
 
-                    fn write_size(&self, version: dataplane::core::Version) -> usize {
+                    fn write_size(&self, version: fluvio_protocol::Version) -> usize {
                         let type_size = self.type_string().to_owned().write_size(version);
 
                         type_size
@@ -153,9 +153,9 @@ mod object_macro {
                             }
                     }
 
-                    fn encode<T>(&self, dest: &mut T, version: dataplane::core::Version) -> Result<(), std::io::Error>
+                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(), std::io::Error>
                     where
-                        T: dataplane::bytes::BufMut,
+                        T: fluvio_protocol::bytes::BufMut,
                     {
                         let ty = self.type_string().to_owned();
 
@@ -180,11 +180,11 @@ mod object_macro {
                 }
 
 
-                impl  dataplane::core::Decoder for [<ObjectApi $api>] {
+                impl  fluvio_protocol::Decoder for [<ObjectApi $api>] {
 
-                    fn decode<T>(&mut self, src: &mut T, version: dataplane::core::Version) -> Result<(),std::io::Error>
+                    fn decode<T>(&mut self, src: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error>
                     where
-                        T: dataplane::bytes::Buf
+                        T: fluvio_protocol::bytes::Buf
                     {
                         use fluvio_controlplane_metadata::core::Spec;
 
@@ -371,9 +371,9 @@ mod delete_macro {
                     }
                 }
 
-                impl  dataplane::core::Encoder for [<ObjectApi $api>] {
+                impl  fluvio_protocol::Encoder for [<ObjectApi $api>] {
 
-                    fn write_size(&self, version: dataplane::core::Version) -> usize {
+                    fn write_size(&self, version: fluvio_protocol::Version) -> usize {
                         let type_size = self.type_string().to_owned().write_size(version);
 
                         type_size
@@ -388,9 +388,9 @@ mod delete_macro {
                             }
                     }
 
-                    fn encode<T>(&self, dest: &mut T, version: dataplane::core::Version) -> Result<(), std::io::Error>
+                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(), std::io::Error>
                     where
-                        T: dataplane::bytes::BufMut,
+                        T: fluvio_protocol::bytes::BufMut,
                     {
                         let ty = self.type_string().to_owned();
 
@@ -413,11 +413,11 @@ mod delete_macro {
                 }
 
 
-                impl  dataplane::core::Decoder for [<ObjectApi $api>] {
+                impl  fluvio_protocol::Decoder for [<ObjectApi $api>] {
 
-                    fn decode<T>(&mut self, src: &mut T, version: dataplane::core::Version) -> Result<(),std::io::Error>
+                    fn decode<T>(&mut self, src: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error>
                     where
-                        T: dataplane::bytes::Buf
+                        T: fluvio_protocol::bytes::Buf
                     {
                         use fluvio_controlplane_metadata::core::Spec;
 
@@ -505,9 +505,9 @@ mod test {
     use std::convert::TryInto;
     use std::io::Cursor;
 
-    use dataplane::api::{RequestHeader, RequestMessage, ResponseMessage};
-    use dataplane::core::{Encoder, Decoder};
-    use dataplane::api::Request;
+    use fluvio_protocol::api::{RequestHeader, RequestMessage, ResponseMessage};
+    use fluvio_protocol::{Encoder, Decoder};
+    use fluvio_protocol::api::Request;
     use fluvio_controlplane_metadata::spu::SpuStatus;
 
     use crate::objects::{
@@ -542,7 +542,7 @@ mod test {
 
     #[test]
     fn test_encode_decoding() {
-        use dataplane::api::Request;
+        use fluvio_protocol::api::Request;
 
         let req = create_req();
 
@@ -652,7 +652,7 @@ mod test {
 
     #[test]
     fn test_list_response_encode_decoding() {
-        use dataplane::api::Request;
+        use fluvio_protocol::api::Request;
 
         fluvio_future::subscriber::init_logger();
 

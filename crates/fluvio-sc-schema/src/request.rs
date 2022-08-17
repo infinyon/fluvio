@@ -10,12 +10,11 @@ use std::fmt::Debug;
 
 use tracing::{debug};
 
-use dataplane::bytes::{Buf};
-use dataplane::api::{ApiMessage, RequestHeader, RequestMessage};
-
-use dataplane::api::api_decode;
-use dataplane::core::{Decoder};
-use dataplane::versions::ApiVersionsRequest;
+use fluvio_protocol::bytes::{Buf};
+use fluvio_protocol::api::{ApiMessage, RequestHeader, RequestMessage};
+use fluvio_protocol::api::api_decode;
+use fluvio_protocol::core::{Decoder};
+use fluvio_protocol::api::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
 use crate::objects::{
@@ -91,9 +90,9 @@ mod test {
 
     use std::io::Cursor;
 
-    use dataplane::api::RequestMessage;
-    use dataplane::core::{Encoder};
-    use dataplane::api::ApiMessage;
+    use fluvio_protocol::api::RequestMessage;
+    use fluvio_protocol::{Encoder};
+    use fluvio_protocol::api::ApiMessage;
 
     use crate::objects::{ListRequest, ObjectApiListRequest};
     use crate::{AdminPublicDecodedRequest};
@@ -106,7 +105,7 @@ mod test {
 
     #[test]
     fn test_list_encode_decoding() {
-        use dataplane::api::Request;
+        use fluvio_protocol::api::Request;
 
         let list_req = create_req();
 

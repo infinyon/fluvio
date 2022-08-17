@@ -121,7 +121,7 @@ impl MetadataStores {
             CacheMetadataStoreObject<S::WatchResponseType>,
         >>::Error: Display,
     {
-        use dataplane::api::RequestMessage;
+        use fluvio_protocol::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         let watch_request: WatchRequest<S> = WatchRequest::default();

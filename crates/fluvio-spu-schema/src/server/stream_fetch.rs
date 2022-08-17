@@ -6,13 +6,17 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use dataplane::batch::RawRecords;
-use dataplane::core::{Encoder, Decoder};
-use dataplane::api::Request;
+use fluvio_protocol::record::RawRecords;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
+
+use fluvio_protocol::record::RecordSet;
+
+use fluvio_smartmodule::SmartModuleExtraParams;
+use fluvio_smartengine::metadata::{LegacySmartModulePayload, SmartModuleInvocation};
+
 use crate::fetch::FetchablePartitionResponse;
-use dataplane::record::RecordSet;
-use dataplane::Isolation;
-use dataplane::smartmodule::{SmartModuleExtraParams, LegacySmartModulePayload, SmartModuleInvocation};
+use crate::isolation::Isolation;
 
 pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet<RawRecords>>;
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet<RawRecords>>;
@@ -100,9 +104,10 @@ mod file {
     use log::trace;
     use bytes::BytesMut;
 
-    use dataplane::core::Version;
-    use dataplane::record::FileRecordSet;
+    use fluvio_protocol::Version;
     use fluvio_protocol::store::{StoreValue, FileWrite};
+
+    use crate::file_record::FileRecordSet;
 
     pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
 
@@ -127,7 +132,7 @@ mod file {
 
 #[cfg(test)]
 mod tests {
-    use dataplane::smartmodule::{SmartModuleWasmCompressed, SmartModuleKind};
+    use fluvio_smartengine::metadata::{SmartModuleWasmCompressed, SmartModuleKind};
 
     use super::*;
 

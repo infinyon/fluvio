@@ -11,11 +11,12 @@ use tracing::trace;
 
 use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::store::FileWrite;
-use dataplane::core::{Encoder, Decoder, Version};
-use dataplane::record::{RecordSet, FileRecordSet};
-use dataplane::api::Request;
-use dataplane::ErrorCode;
-use dataplane::batch::RawRecords;
+use fluvio_protocol::{Encoder, Decoder, Version};
+use fluvio_protocol::record::{RecordSet};
+use fluvio_spu_schema::file_record::FileRecords;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::record::RawRecords;
 
 use super::api_key::FollowerPeerApiEnum;
 

@@ -1,8 +1,8 @@
 use std::{path::PathBuf};
 
-use dataplane::Offset;
 use clap::Parser;
 
+use fluvio_protocol::record::Offset;
 use fluvio_future::task::run_block_on;
 use fluvio_storage::{
     LogIndex, StorageError, OffsetPosition,

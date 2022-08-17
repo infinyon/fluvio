@@ -3,7 +3,7 @@
 //!
 use std::fmt;
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 // -----------------------------------
 // Data Structures

@@ -5,8 +5,10 @@
 //!
 
 use std::fmt::{Display, Formatter};
+
 use flv_util::string_helper::upper_cammel_case_to_sentence;
-use fluvio_protocol::{Encoder, Decoder};
+
+use crate::{Encoder, Decoder};
 
 // -----------------------------------
 // Error Definition & Implementation

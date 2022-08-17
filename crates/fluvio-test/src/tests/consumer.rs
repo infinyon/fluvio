@@ -1,5 +1,5 @@
 use std::any::Any;
-use dataplane::ErrorCode;
+use fluvio_protocol::api::ErrorCode;
 use fluvio::consumer::Record;
 use clap::Parser;
 use futures_lite::stream::StreamExt;

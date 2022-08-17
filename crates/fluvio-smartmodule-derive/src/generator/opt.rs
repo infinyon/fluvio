@@ -35,10 +35,10 @@ pub fn impl_smart_opt(input: DeriveInput) -> syn::Result<TokenStream> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     let gen = quote! {
-        impl #impl_generics std::convert::TryFrom<fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams
+        impl #impl_generics std::convert::TryFrom<fluvio_smartmodule::SmartModuleExtraParams
         > for #name #ty_generics #where_clause {
             type Error =  String;
-                fn  try_from(params: fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams) -> ::std::result::Result<Self, Self::Error>{
+                fn  try_from(params: fluvio_smartmodule::SmartModuleExtraParams) -> ::std::result::Result<Self, Self::Error>{
                     let mut output = #name::default();
                 #(
                     if let Some(string_value) = params.get(#keys) {

@@ -2,9 +2,9 @@
 //! # Update Offsets
 //!
 
-use dataplane::api::Request;
-use dataplane::core::{Encoder, Decoder};
-use dataplane::Offset;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::record::Offset;
 
 use crate::errors::ErrorCode;
 use super::SpuServerApiKey;

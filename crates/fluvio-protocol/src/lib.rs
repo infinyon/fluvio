@@ -16,6 +16,12 @@ pub mod api;
 #[cfg(feature = "codec")]
 pub mod codec;
 
+#[cfg(feature = "record")]
+pub mod record;
+
+#[cfg(feature = "fixture")]
+pub mod fixture;
+
 #[cfg(all(unix, feature = "store"))]
 pub mod store;
 

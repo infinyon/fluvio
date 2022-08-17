@@ -16,7 +16,6 @@ members = [
     "crates/fluvio-compression",
     "crates/fluvio-controlplane",
     "crates/fluvio-controlplane-metadata",
-    "crates/fluvio-dataplane-protocol",
     "crates/fluvio-extension-common",
     "crates/fluvio-package-index",
     "crates/fluvio-protocol",

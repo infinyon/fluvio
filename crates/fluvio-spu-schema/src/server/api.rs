@@ -6,12 +6,13 @@ use std::io::Error as IoError;
 use std::fmt;
 
 use tracing::trace;
-use dataplane::bytes::Buf;
-use dataplane::core::{Encoder, Decoder};
-use dataplane::api::ApiMessage;
-use dataplane::api::api_decode;
-use dataplane::api::RequestHeader;
-use dataplane::api::RequestMessage;
+
+use fluvio_protocol::bytes::Buf;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::ApiMessage;
+use fluvio_protocol::api::api_decode;
+use fluvio_protocol::api::RequestHeader;
+use fluvio_protocol::api::RequestMessage;
 
 use crate::produce::DefaultProduceRequest;
 use crate::fetch::FileFetchRequest;

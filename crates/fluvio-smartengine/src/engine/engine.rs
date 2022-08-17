@@ -6,26 +6,28 @@ use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc, Store};
 
-use dataplane::record::Record;
-use dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleKind, SmartModuleContextData};
-use dataplane::batch::{Batch, MemoryRecords};
-use dataplane::core::{Encoder, Decoder};
-use dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError, LegacySmartModulePayload,
+use fluvio_protocol::record::Record;
+use fluvio_protocol::record::{Batch, MemoryRecords};
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_smartmodule::{
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError,
+    SmartModuleInternalError,
 };
 
-use crate::filter::SmartModuleFilter;
-use crate::map::SmartModuleMap;
-use crate::filter_map::SmartModuleFilterMap;
-use crate::array_map::SmartModuleArrayMap;
-use crate::aggregate::SmartModuleAggregate;
-use crate::join::SmartModuleJoin;
-use crate::file_batch::FileBatchIterator;
+use crate::WasmSlice;
+use crate::engine::memory;
+use crate::metadata::{LegacySmartModulePayload, SmartModuleKind, SmartModuleContextData};
+
+use super::filter::SmartModuleFilter;
+use super::map::SmartModuleMap;
+use super::filter_map::SmartModuleFilterMap;
+use super::array_map::SmartModuleArrayMap;
+use super::aggregate::SmartModuleAggregate;
+use super::join::SmartModuleJoin;
+use super::file_batch::FileBatchIterator;
 
 use super::join_stream::SmartModuleJoinStream;
 use super::error;
-use super::WasmSlice;
-use super::memory;
 
 const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
 
@@ -495,7 +497,6 @@ impl dyn SmartModuleInstance + '_ {
     #[instrument]
     pub fn invoke_constructor(&mut self) -> Result<(), Error> {
         use wasmtime::TypedFunc;
-        use dataplane::smartmodule::SmartModuleInternalError;
 
         const INIT_FN_NAME: &str = "init";
 
@@ -558,9 +559,7 @@ impl RecordsCallBack {
 mod test {
     use std::path::{PathBuf, Path};
 
-    use crate::SmartEngine;
-
-    use super::DEFAULT_SMARTENGINE_VERSION;
+    use super::{DEFAULT_SMARTENGINE_VERSION, SmartEngine};
     const FLUVIO_WASM_FILTER: &str = "fluvio_wasm_filter";
     const FLUVIO_WASM_MAP: &str = "fluvio_wasm_map_double";
     const FLUVIO_WASM_ARRAY_MAP: &str = "fluvio_wasm_array_map_array";

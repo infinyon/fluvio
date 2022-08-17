@@ -6,10 +6,11 @@
 use std::fmt::Display;
 use std::marker::PhantomData;
 
-use dataplane::core::{Encoder, Decoder};
+use tracing::trace;
+
+use fluvio_protocol::{Encoder, Decoder};
 use fluvio_stream_model::core::Spec;
 use fluvio_stream_model::{core::MetadataItem, store::LocalStore};
-use tracing::trace;
 
 use crate::smartmodule::{SmartModuleSpec};
 use crate::topic::TopicSpec;

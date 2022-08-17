@@ -12,11 +12,11 @@ use tracing::debug;
 use async_trait::async_trait;
 use bytes::Bytes;
 
-use dataplane::batch::{
+use fluvio_protocol::record::{
     Batch, BatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE, BATCH_FILE_HEADER_SIZE,
     MemoryRecords,
 };
-use dataplane::Size;
+use fluvio_protocol::record::Size;
 
 use crate::file::FileBytesIterator;
 
@@ -266,8 +266,8 @@ mod tests {
     use std::path::PathBuf;
 
     use flv_util::fixture::ensure_new_dir;
-    use dataplane::fixture::create_batch;
-    use dataplane::fixture::create_batch_with_producer;
+    use fluvio_protocol::fixture::create_batch;
+    use fluvio_protocol::fixture::create_batch_with_producer;
 
     use crate::config::ReplicaConfig;
     use crate::segment::MutableSegment;

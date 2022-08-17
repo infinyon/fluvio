@@ -1,5 +1,5 @@
-use dataplane::batch::{Batch, BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE};
-use dataplane::Offset;
+use fluvio_protocol::record::{Batch, BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE};
+use fluvio_protocol::record::Offset;
 use std::io::{Error as IoError, ErrorKind, Cursor};
 use tracing::{warn, debug};
 use std::os::unix::io::RawFd;

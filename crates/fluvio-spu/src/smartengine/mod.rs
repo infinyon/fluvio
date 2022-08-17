@@ -2,7 +2,7 @@ use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, Derived
 use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
 use tracing::{debug, error};
 
-use dataplane::{
+use fluvio_protocol::{
     ErrorCode,
     smartmodule::{
         LegacySmartModulePayload, SmartModuleContextData, SmartModuleInvocationWasm,

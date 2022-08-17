@@ -35,7 +35,7 @@ k8s = [
     "fluvio-cluster",
 ]
 stats = [ "fluvio/stats" ]
-smartengine = ["fluvio-smartengine"]
+smartengine = ["fluvio-smartengine/engine"]
 
 [dependencies]
 tracing = "0.1.19"
@@ -87,6 +87,9 @@ fluvio-extension-common = { path = "../fluvio-extension-common", features = ["ta
 fluvio-channel = { path = "../fluvio-channel" }
 fluvio-cli-common = { path = "../fluvio-cli-common" }
 fluvio-smartmodule-package = { path = "../fluvio-smartmodule-package" }
+fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.3.2", default-features = false }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features=["record","api"] }
+fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", default-features = false }
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }

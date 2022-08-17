@@ -6,7 +6,7 @@ pub mod store;
 
 pub use self::spec::*;
 pub use self::status::*;
-pub use dataplane::ReplicaKey;
+pub use fluvio_protocol::record::ReplicaKey;
 pub use self::policy::*;
 pub use self::replica::*;
 

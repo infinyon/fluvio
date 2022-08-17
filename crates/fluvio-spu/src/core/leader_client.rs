@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use fluvio::{FluvioError, PartitionConsumer};
 use fluvio::spu::{SpuDirectory, SpuSocket};
 use fluvio::sockets::{ClientConfig, VersionedSerialSocket};
+use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_socket::MultiplexerSocket;
 use fluvio_types::SpuId;
 use tracing::{debug, instrument};
@@ -69,7 +70,7 @@ impl LeaderConnections {
 impl SpuDirectory for LeaderConnections {
     async fn create_serial_socket(
         &self,
-        replica: &dataplane::ReplicaKey,
+        replica: &ReplicaKey,
     ) -> Result<VersionedSerialSocket, fluvio::FluvioError> {
         if let Some(replica_spec) = self.replicas.spec(replica) {
             let leader_id = replica_spec.leader;
@@ -95,9 +96,9 @@ impl SpuDirectory for LeaderConnections {
         }
     }
 
-    async fn create_stream_with_version<R: dataplane::api::Request>(
+    async fn create_stream_with_version<R: fluvio_protocol::api::Request>(
         &self,
-        replica: &dataplane::ReplicaKey,
+        replica: &ReplicaKey,
         request: R,
         version: i16,
     ) -> Result<fluvio_socket::AsyncResponse<R>, fluvio::FluvioError>

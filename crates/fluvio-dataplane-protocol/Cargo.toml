@@ -9,7 +9,7 @@ license = "Apache-2.0"
 categories = ["encoding", "api-bindings"]
 
 [features]
-version = ["semver"]
+version = ["semver","fluvio-protocol/api"]
 file = ["fluvio-protocol/store","fluvio-future"]
 memory_batch = ["chrono"]
 smartmodule = ["flate2"]

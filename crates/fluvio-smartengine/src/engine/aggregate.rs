@@ -1,18 +1,17 @@
 use std::convert::TryFrom;
 use std::fmt::Debug;
 
+use fluvio_smartmodule::{
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleAggregateOutput, SmartModuleAggregateInput,
+};
 use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::{
-    WasmSlice, {SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
-    error::Error,
-};
-use dataplane::smartmodule::{
-    SmartModuleAggregateInput, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
-    SmartModuleAggregateOutput, SmartModuleExtraParams,
-};
+use crate::WasmSlice;
+
+use super::{SmartModuleContext, SmartModuleWithEngine, error::Error, SmartModuleInstance};
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
 type OldAggregateFn = TypedFunc<(i32, i32), i32>;

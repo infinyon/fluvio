@@ -15,7 +15,7 @@ pub async fn handle_delete_spu_group<AC: AuthContext>(
     name: String,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    use dataplane::ErrorCode;
+    use fluvio_protocol::api::ErrorCode;
 
     info!(%name, "deleting spu group");
 

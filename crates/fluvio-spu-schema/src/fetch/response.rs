@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use dataplane::batch::BatchRecords;
-use dataplane::core::{Decoder, Encoder};
-use dataplane::derive::FluvioDefault;
-use dataplane::record::RecordSet;
-use dataplane::ErrorCode;
-use dataplane::Offset;
+use fluvio_protocol::record::BatchRecords;
+use fluvio_protocol::{Decoder, Encoder};
+use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol::record::RecordSet;
+use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::record::Offset;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
 
@@ -141,10 +141,11 @@ mod file {
     use tracing::trace;
     use bytes::BytesMut;
 
-    use dataplane::record::FileRecordSet;
     use fluvio_protocol::store::FileWrite;
     use fluvio_protocol::store::StoreValue;
     use fluvio_protocol::core::Version;
+
+    use crate::file_record::FileRecordSet;
 
     use super::*;
 
