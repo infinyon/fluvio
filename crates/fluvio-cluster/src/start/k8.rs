@@ -896,7 +896,7 @@ impl ClusterInstaller {
     async fn start_sc_port_forwarding(
         &self,
         service: &K8Obj<ServiceSpec>,
-        pb: &ProgressRenderer
+        pb: &ProgressRenderer,
     ) -> Result<(String, u16, Child), K8InstallError> {
         let pf_host_name = "localhost";
 
@@ -919,15 +919,18 @@ impl ClusterInstaller {
 
         match pf_child.try_wait()? {
             Some(status) => {
-                let stderr = pf_child.stderr.take().expect("unable to access port forwarding process stderr");
+                let stderr = pf_child
+                    .stderr
+                    .take()
+                    .expect("unable to access port forwarding process stderr");
                 let mut reader = BufReader::new(stderr);
                 let mut buf = String::new();
                 let _ = reader.read_to_string(&mut buf)?;
                 let error_msg = format!("Error from kubectl port-forward: \n{}", buf);
                 pb.println(error_msg);
 
-                return Err(K8InstallError::PortForwardingFailed(status))
-            },
+                return Err(K8InstallError::PortForwardingFailed(status));
+            }
             None => {
                 info!("Port forwarding process started");
             }
