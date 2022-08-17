@@ -1,22 +1,24 @@
 use std::any::Any;
-use fluvio_protocol::api::ErrorCode;
-use fluvio::consumer::Record;
-use clap::Parser;
-use futures_lite::stream::StreamExt;
 use std::pin::Pin;
 use std::time::{Duration, SystemTime};
 
+use clap::Parser;
+use futures_lite::stream::StreamExt;
+use tokio::select;
+use hdrhistogram::Histogram;
+
+use fluvio_protocol::api::ErrorCode;
+use fluvio::consumer::Record;
 use fluvio::{ConsumerConfig, MultiplePartitionConsumer, PartitionConsumer};
 use fluvio::Offset;
-use crate::tests::TestRecord;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 use fluvio_future::io::Stream;
-use tokio::select;
-use hdrhistogram::Histogram;
+
+use crate::tests::TestRecord;
 
 #[derive(Debug, Clone)]
 pub struct ConsumerTestCase {

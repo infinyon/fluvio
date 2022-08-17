@@ -43,6 +43,7 @@ mod display {
 
     use comfy_table::{Row, Cell};
 
+    use fluvio_protocol::record::PartitionError;
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;

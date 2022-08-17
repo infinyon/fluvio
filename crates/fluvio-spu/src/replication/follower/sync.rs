@@ -13,7 +13,6 @@ use fluvio_protocol::store::StoreValue;
 use fluvio_protocol::store::FileWrite;
 use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::record::{RecordSet};
-use fluvio_spu_schema::file_record::FileRecords;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::ErrorCode;
 use fluvio_protocol::record::RawRecords;
