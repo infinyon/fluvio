@@ -17,6 +17,7 @@ use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use k8_metadata_client::NameSpace;
 use k8_types::K8Obj;
+use k8_types::app::deployment::DeploymentSpec;
 use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
@@ -58,6 +59,13 @@ const FLUVIO_SC_SERVICE: &str = "fluvio-sc-public";
 /// maximum time waiting for sc service to come up
 static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_SERVICE_WAIT").unwrap_or_default();
+    var_value.parse().unwrap_or(60)
+});
+
+const FLUVIO_SC_DEPLOYMENT: &str = "fluvio-sc";
+/// maximum time waiting for replica to become available
+static MAX_SC_DEPLOYMENT_AVAILABLE_WAIT: Lazy<u64> = Lazy::new(|| {
+    let var_value = env::var("FLV_CLUSTER_MAX_SC_DEPLOYMENT_AVAILABLE_WAIT").unwrap_or_default();
     var_value.parse().unwrap_or(60)
 });
 
@@ -644,10 +652,12 @@ impl ClusterInstaller {
 
         let pb = self.pb_factory.create()?;
 
-        let sc_service = self.discover_sc_service(&self.config.namespace).await?;
+        let sc_service = self.discover_sc_service().await?;
         let (external_host, external_port) =
             self.discover_sc_external_host_and_port(&sc_service).await?;
         let external_host_and_port = format!("{}:{}", external_host, external_port);
+
+        self.wait_for_sc_availability().await?;
 
         let (install_host_and_port, pf_process) = if self.config.use_k8_port_forwarding {
             pb.println("Using K8 port forwarding for install".to_string());
@@ -889,10 +899,6 @@ impl ClusterInstaller {
 
         let target_port = ClusterInstaller::target_port_for_service(service)?;
 
-        // Wait for pod to start
-        // TODO: use K8 client to wait for pod with retry logic
-        sleep(Duration::from_secs(3)).await;
-
         let mut pf_child = std::process::Command::new("kubectl")
             .arg("-n")
             .arg(&service.metadata.namespace)
@@ -916,8 +922,8 @@ impl ClusterInstaller {
     }
 
     /// Looks up the external address of a Fluvio SC instance in the given namespace
-    #[instrument(skip(self, ns))]
-    async fn discover_sc_service(&self, ns: &str) -> Result<K8Obj<ServiceSpec>, K8InstallError> {
+    #[instrument(skip(self))]
+    async fn discover_sc_service(&self) -> Result<K8Obj<ServiceSpec>, K8InstallError> {
         use tokio::select;
         use futures_util::stream::StreamExt;
 
@@ -926,7 +932,7 @@ impl ClusterInstaller {
 
         let mut service_stream = self
             .kube_client
-            .watch_stream_now::<ServiceSpec>(ns.to_string());
+            .watch_stream_now::<ServiceSpec>(self.config.namespace.clone());
 
         let mut timer = sleep(Duration::from_secs(*MAX_SC_SERVICE_WAIT));
         loop {
@@ -956,6 +962,58 @@ impl ClusterInstaller {
                     } else {
                         debug!("service stream ended");
                         return Err(K8InstallError::SCServiceTimeout)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Waits for SC pod
+    #[instrument(skip(self))]
+    async fn wait_for_sc_availability(&self) -> Result<K8Obj<DeploymentSpec>, K8InstallError> {
+        use tokio::select;
+        use futures_util::stream::StreamExt;
+
+        use fluvio_future::timer::sleep;
+        use k8_types::K8Watch;
+
+        let mut deployment_stream = self
+            .kube_client
+            .watch_stream_now::<DeploymentSpec>(self.config.namespace.clone());
+
+        let mut timer = sleep(Duration::from_secs(*MAX_SC_DEPLOYMENT_AVAILABLE_WAIT));
+        loop {
+            select! {
+                _ = &mut timer => {
+                    debug!(timer = *MAX_SC_DEPLOYMENT_AVAILABLE_WAIT, "timer expired");
+                    return Err(K8InstallError::SCDeploymentTimeout)
+                },
+                deployment_next = deployment_stream.next() => {
+                    if let Some(deployment_watches) = deployment_next {
+
+                        for deployment_watch in deployment_watches? {
+                            let deployment_value = match deployment_watch? {
+                                K8Watch::ADDED(svc) => Some(svc),
+                                K8Watch::MODIFIED(svc) => Some(svc),
+                                K8Watch::DELETED(_) => None
+                            };
+
+                            if let Some(deployment) = deployment_value {
+
+                                if deployment.metadata.name == FLUVIO_SC_DEPLOYMENT {
+                                    debug!(deployment = ?deployment,"found sc deployment");
+                                    if let Some(available_replicas) = deployment.status.available_replicas {
+                                        if available_replicas > 0 {
+                                            debug!(deployment = ?deployment,"deployment has atleast 1 replica available");
+                                            return Ok(deployment)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        debug!("deployment stream ended");
+                        return Err(K8InstallError::SCDeploymentTimeout)
                     }
                 }
             }

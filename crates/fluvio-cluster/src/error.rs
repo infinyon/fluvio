@@ -69,6 +69,9 @@ pub enum K8InstallError {
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
     SCServiceTimeout,
+    /// Timed out when waiting for SC deployment availability.
+    #[error("Timed out when waiting for SC deployment")]
+    SCDeploymentTimeout,
     /// Timed out when waiting for SC port check.
     #[error("Timed out when waiting for SC port check")]
     SCPortCheckTimeout,
