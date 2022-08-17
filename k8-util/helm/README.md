@@ -26,7 +26,7 @@ $ make build-cli
 
 Then to install sys chart:
 ```
-$ fluvio cluster start --sys
+$ fluvio cluster start --sys-only
 installing sys chart
 ```
 
