@@ -145,7 +145,7 @@ mod file {
     use fluvio_protocol::store::StoreValue;
     use fluvio_protocol::core::Version;
 
-    use crate::file_record::FileRecordSet;
+    use crate::file::FileRecordSet;
 
     use super::*;
 

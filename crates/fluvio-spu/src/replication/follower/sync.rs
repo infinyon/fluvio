@@ -16,6 +16,7 @@ use fluvio_protocol::record::{RecordSet};
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::ErrorCode;
 use fluvio_protocol::record::RawRecords;
+use fluvio_spu_schema::file::FileRecordSet;
 
 use super::api_key::FollowerPeerApiEnum;
 

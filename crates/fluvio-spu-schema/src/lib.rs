@@ -9,7 +9,7 @@ pub mod produce;
 mod isolation;
 
 #[cfg(feature = "file")]
-pub mod file_record;
+pub mod file;
 
 pub mod errors {
     pub use fluvio_protocol::api::ErrorCode;

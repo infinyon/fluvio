@@ -106,6 +106,6 @@ pub use file::*;
 #[cfg(feature = "file")]
 mod file {
     use super::*;
-    use crate::file_record::FileRecordSet;
+    use crate::file::FileRecordSet;
     pub type FileFetchRequest = FetchRequest<FileRecordSet>;
 }

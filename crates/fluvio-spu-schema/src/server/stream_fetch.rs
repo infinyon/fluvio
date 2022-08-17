@@ -107,7 +107,7 @@ mod file {
     use fluvio_protocol::Version;
     use fluvio_protocol::store::{StoreValue, FileWrite};
 
-    use crate::file_record::FileRecordSet;
+    use crate::file::FileRecordSet;
 
     pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
 

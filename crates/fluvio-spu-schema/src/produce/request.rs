@@ -217,7 +217,7 @@ mod file {
     use fluvio_protocol::store::FileWrite;
     use fluvio_protocol::store::StoreValue;
 
-    use crate::file_record::FileRecordSet;
+    use crate::file::FileRecordSet;
 
     use super::*;
 

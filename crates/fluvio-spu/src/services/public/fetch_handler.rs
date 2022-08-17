@@ -1,6 +1,6 @@
-use fluvio_spu_schema::file_record::FileRecordSet;
 use tracing::{debug, trace, instrument};
 
+use fluvio_spu_schema::file::FileRecordSet;
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_socket::SocketError;
 use fluvio_protocol::api::{ErrorCode, RequestMessage};

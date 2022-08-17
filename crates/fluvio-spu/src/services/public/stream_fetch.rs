@@ -22,7 +22,7 @@ use fluvio_spu_schema::{
     },
     fetch::{FilePartitionResponse, FetchablePartitionResponse},
     Isolation,
-    file_record::FileRecordSet,
+    file::FileRecordSet,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 use fluvio_protocol::record::Batch;
