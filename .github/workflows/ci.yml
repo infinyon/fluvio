@@ -674,7 +674,7 @@ jobs:
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
       - name: Install Minikube and import image
         if: matrix.k8 == 'minikube'
-        uses: manusa/actions-setup-minikube@v2.4.3
+        uses: manusa/actions-setup-minikube@v2.7.0
         with:
           minikube version: "v1.24.0"
           kubernetes version: "v1.22.8"
