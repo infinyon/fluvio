@@ -27,7 +27,7 @@ jobs:
     name: CD_Dev check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Get status of latest CD_Dev run
@@ -126,7 +126,7 @@ jobs:
         run: gh release download -R infinyon/fluvio "v${{ env.VERSION }}"
 
       # If this release does not already exist (i.e. the release_check failed), create it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
