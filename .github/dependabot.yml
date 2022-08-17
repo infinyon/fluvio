@@ -18,7 +18,7 @@ updates:
       interval: "daily"
     labels:
       - bot
-      - github_actions
+      - rust
       - dependencies
     ignore:
       - dependency-name: "*"
