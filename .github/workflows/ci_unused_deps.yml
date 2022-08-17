@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
+  push:
     branches: [master]
   workflow_dispatch:
 env:
