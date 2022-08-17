@@ -1,6 +1,7 @@
 mod request;
 mod response;
 mod error_code;
+pub mod smartmodule;
 pub mod versions;
 
 pub use self::response::*;

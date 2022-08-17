@@ -1979,6 +1979,11 @@ name = "fluvio-protocol"
 version = "0.7.10"
 dependencies = [
  "bytes 1.2.1",
+ "chrono",
+ "content_inspector",
+ "crc32c",
+ "derive_builder",
+ "fluvio-compression",
  "fluvio-future 0.4.1",
  "fluvio-protocol",
  "fluvio-protocol-derive",

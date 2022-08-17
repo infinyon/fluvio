@@ -1,6 +1,4 @@
-use fluvio_protocol::{Encoder, Decoder, record::Record};
-
-use crate::SmartModuleRuntimeError;
+use fluvio_protocol::{Encoder, Decoder, record::Record, api::smartmodule::SmartModuleRuntimeError};
 
 /// A type used to return processed records and/or an error from a SmartModule
 #[derive(Debug, Default, Encoder, Decoder)]

@@ -143,9 +143,8 @@ pub enum ErrorCode {
     #[error("SmartModule is not a valid '{kind}' SmartModule due to {error}. Are you missing a #[smartmodule({kind})] attribute?")]
     SmartModuleInvalidExports { error: String, kind: String },
     #[fluvio(tag = 6004)]
-    #[cfg(feature = "smartmodule")]
     #[error("SmartModule runtime error {0}")]
-    SmartModuleRuntimeError(crate::smartmodule::SmartModuleRuntimeError),
+    SmartModuleRuntimeError(super::smartmodule::SmartModuleRuntimeError),
 
     // TableFormat Errors
     #[fluvio(tag = 7000)]

@@ -11,7 +11,7 @@ categories = ["encoding", "api-bindings"]
 [features]
 default = ["derive"]
 derive = ["fluvio-protocol-derive"]
-api = ["thiserror", "flv-util","semver"]
+api = ["thiserror", "flv-util","semver","eyre"]
 codec = ["tokio-util"]
 store = ["fluvio-future"]
 record = ["crc32c","content_inspector","fluvio-compression","chrono","once_cell","fluvio-types"]
@@ -30,6 +30,7 @@ semver = { version = "1.0.0", optional = true }
 content_inspector = { version = "0.2.4", optional = true }
 once_cell = { version = "1.5.2", optional = true }
 derive_builder = { version = "0.11.0", optional = true }
+eyre = { version = "0.6", default-features = false, optional = true }
 
 fluvio-protocol-derive = { version = "0.4.0", path = "../fluvio-protocol-derive", optional = true }
 fluvio-future = { version = "0.4.0", optional = true }

@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
+use fluvio_protocol::api::smartmodule::SmartModuleRuntimeError;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc, Store};
@@ -9,9 +10,7 @@ use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc,
 use fluvio_protocol::record::Record;
 use fluvio_protocol::record::{Batch, MemoryRecords};
 use fluvio_protocol::{Encoder, Decoder};
-use fluvio_smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError,
-};
+use fluvio_smartmodule::{SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput};
 
 use crate::WasmSlice;
 use crate::engine::memory;

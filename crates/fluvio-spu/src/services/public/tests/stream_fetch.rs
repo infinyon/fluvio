@@ -5,7 +5,6 @@ use std::{
 };
 use std::sync::Arc;
 
-use fluvio_smartmodule::SmartModuleKindError;
 use tracing::{debug};
 use flate2::{Compression, bufread::GzEncoder};
 
@@ -23,6 +22,7 @@ use fluvio_spu_schema::Isolation;
 use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
+    api::smartmodule::SmartModuleKindError,
 };
 use fluvio_smartengine::metadata::{
     SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
