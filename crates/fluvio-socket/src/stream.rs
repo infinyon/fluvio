@@ -59,7 +59,7 @@ impl FluvioStream {
                 Ok(msg)
             }
             Err(err) => Err(SocketError::Io {
-                source: err.into(),
+                source: err,
                 msg: "request stream".to_string(),
             }),
         })
