@@ -10,6 +10,9 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every weekday
       interval: "daily"
+    commit-message:
+      prefix: ci
+      include: scope
     ignore:
       - dependency-name: "*"
         update-types: [
@@ -26,6 +29,9 @@ updates:
       - bot
       - rust
       - dependencies
+    commit-message:
+      prefix: build
+      include: scope
     ignore:
       - dependency-name: "*"
         update-types: [
