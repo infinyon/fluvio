@@ -1,16 +1,16 @@
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
+use fluvio_protocol::api::ErrorCode;
 use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
 use tracing::{debug, error};
 
-use fluvio_protocol::{
-    ErrorCode,
-    smartmodule::{
+use fluvio_smartengine::{
+    metadata::{
         LegacySmartModulePayload, SmartModuleContextData, SmartModuleInvocationWasm,
         SmartModuleWasmCompressed, SmartModuleInvocation, SmartModuleKind,
     },
+    engine::SmartModuleInstance,
 };
 use fluvio::{ConsumerConfig};
-use fluvio_smartengine::SmartModuleInstance;
 
 use futures_util::{StreamExt, stream::BoxStream};
 

@@ -11,13 +11,12 @@ use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
 
-use fluvio_protocol::record::RecordSet;
-use fluvio_protocol::{Offset, Isolation, ReplicaKey};
-use fluvio_protocol::batch::BatchRecords;
+use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, BatchRecords};
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{SpuId};
+use fluvio_spu_schema::Isolation;
 
 use crate::{
     config::{ReplicationConfig},
@@ -721,7 +720,7 @@ mod test_leader {
     #[async_trait]
     impl ReplicaStorage for MockStorage {
         async fn create_or_load(
-            _replica: &fluvio_protocol::ReplicaKey,
+            _replica: &ReplicaKey,
             _config: Self::ReplicaConfig,
         ) -> Result<Self, fluvio_storage::StorageError> {
             Ok(MockStorage {
@@ -741,7 +740,7 @@ mod test_leader {
             &self,
             offset: Offset,
             _max_len: u32,
-            _isolation: fluvio_protocol::Isolation,
+            _isolation: Isolation,
         ) -> Result<ReplicaSlice, ErrorCode> {
             Ok(ReplicaSlice {
                 end: OffsetInfo { leo: offset, hw: 0 },

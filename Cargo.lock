@@ -2226,6 +2226,7 @@ dependencies = [
  "fluvio-protocol 0.7.10",
  "fluvio-service",
  "fluvio-smartengine",
+ "fluvio-smartmodule",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-storage",

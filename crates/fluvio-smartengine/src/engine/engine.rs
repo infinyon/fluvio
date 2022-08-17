@@ -11,7 +11,6 @@ use fluvio_protocol::record::{Batch, MemoryRecords};
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError,
-    SmartModuleInternalError,
 };
 
 use crate::WasmSlice;
@@ -497,6 +496,7 @@ impl dyn SmartModuleInstance + '_ {
     #[instrument]
     pub fn invoke_constructor(&mut self) -> Result<(), Error> {
         use wasmtime::TypedFunc;
+        use fluvio_smartmodule::SmartModuleInternalError;
 
         const INIT_FN_NAME: &str = "init";
 

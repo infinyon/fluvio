@@ -3,6 +3,7 @@
 use std::{env::temp_dir, sync::Arc};
 use std::time::Duration;
 
+use fluvio_spu_schema::Isolation;
 use tracing::debug;
 use futures_lite::StreamExt;
 use futures_lite::future::zip;
@@ -17,7 +18,7 @@ use fluvio_spu_schema::{
 };
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::record::{Record, RecordSet};
-use fluvio_protocol::Offset;
+use fluvio_protocol::record::Offset;
 use fluvio_protocol::fixture::BatchProducer;
 
 use fluvio_socket::{FluvioSocket, SocketError};
@@ -100,7 +101,7 @@ async fn handle_response(socket: &mut FluvioSocket, replica: &FileReplica) {
         .read_partition_slice(
             fetch_offset,
             FileReplica::PREFER_MAX_LEN,
-            fluvio_protocol::Isolation::ReadUncommitted,
+            Isolation::ReadUncommitted,
         )
         .await
         .expect("read");

@@ -13,8 +13,8 @@ description = "The official Fluvio SmartEngine"
 
 [features]
 wasi = ["wasmtime-wasi"]
-unstable = []
-engine = ["wasmtime", "nix", "anyhow", "fluvio-protocol/record"]
+unstable = ["engine"]
+engine = ["wasmtime", "nix", "anyhow", "fluvio-protocol/record","fluvio-future"]
 
 [dependencies]
 tracing = "0.1.27"
@@ -27,7 +27,7 @@ wasmtime-wasi = { version = "0.39.0", optional = true }
 nix = { version = "0.25", optional = true }
 
 
-fluvio-future = { version = "0.4.0", optional = true }
+fluvio-future = { version = "0.4.0", optional = true, features = ["fs"] }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = ["record"] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", default-features = false }
 

@@ -3,7 +3,10 @@ use std::{
     path::{PathBuf, Path},
     time::Duration,
 };
+use std::sync::Arc;
 
+use fluvio_smartmodule::SmartModuleKindError;
+use tracing::{debug};
 use flate2::{Compression, bufread::GzEncoder};
 
 use fluvio_controlplane_metadata::{
@@ -23,7 +26,7 @@ use fluvio_protocol::{
 };
 use fluvio_smartengine::metadata::{
     SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
-    SmartModuleInvocationWasm, SmartModuleContextData, SmartModuleKindError,
+    SmartModuleInvocationWasm, SmartModuleContextData,
 };
 use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
 use fluvio_spu_schema::{
@@ -38,13 +41,8 @@ use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
 use crate::services::public::create_public_server;
 
-use std::sync::Arc;
-
-use tracing::{debug};
-
 use fluvio_protocol::{
-    ErrorCode,
-    api::{RequestMessage},
+    api::{ErrorCode, RequestMessage},
     record::RecordSet,
 };
 

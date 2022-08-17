@@ -1,32 +1,31 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use fluvio_smartengine::SmartModuleInstance;
+use fluvio_controlplane_metadata::partition::ReplicaKey;
+use fluvio_smartengine::engine::{SmartModuleInstance, file_batch::FileBatchIterator};
+use fluvio_smartmodule::SmartModuleRuntimeError;
 use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
 
-use fluvio_protocol::{record::FileRecordSet, batch::RawRecords};
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
 use fluvio_protocol::{
-    ErrorCode,
-    api::{RequestMessage, RequestHeader},
-    record::RecordSet,
+    api::{RequestMessage, RequestHeader, ErrorCode},
+    record::{RecordSet, Offset, RawRecords},
 };
-use fluvio_protocol::{Offset, Isolation, ReplicaKey};
 use fluvio_compression::CompressionError;
 use fluvio_spu_schema::{
     server::stream_fetch::{
         DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
     },
     fetch::{FilePartitionResponse, FetchablePartitionResponse},
+    Isolation,
+    file_record::FileRecordSet,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
-use fluvio_smartengine::file_batch::FileBatchIterator;
-use fluvio_protocol::batch::Batch;
-use fluvio_protocol::smartmodule::SmartModuleRuntimeError;
+use fluvio_protocol::record::Batch;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;

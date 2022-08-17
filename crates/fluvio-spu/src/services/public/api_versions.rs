@@ -4,7 +4,7 @@ use tracing::{trace, instrument};
 use fluvio_protocol::api::{RequestMessage, ResponseMessage, Request};
 use fluvio_spu_schema::produce::DefaultProduceRequest;
 use fluvio_spu_schema::fetch::DefaultFetchRequest;
-use fluvio_protocol::versions::ApiVersionKey;
+use fluvio_protocol::api::versions::ApiVersionKey;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;

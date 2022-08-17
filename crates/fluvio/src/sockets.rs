@@ -312,7 +312,7 @@ impl SerialFrame for VersionedSerialSocket {
 
 #[cfg(test)]
 mod test {
-    use fluvio_protocol::versions::ApiVersionKey;
+    use fluvio_protocol::api::versions::ApiVersionKey;
 
     use super::ApiVersionsResponse;
     use super::Versions;
