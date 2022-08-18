@@ -29,11 +29,25 @@ use super::event::EventHandler;
 
 const RECORD_ENQUEUE_TIMEOUT: Duration = Duration::from_secs(30);
 
-pub(crate) type BatchHandler = (
-    Arc<BatchEvents>,
-    Arc<(Mutex<VecDeque<ProducerBatch>>, Condvar)>,
-);
+pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<BatchesDeque>);
 
+pub(crate) struct BatchesDeque {
+    pub batches: Mutex<VecDeque<ProducerBatch>>,
+    pub control: Condvar,
+}
+
+impl BatchesDeque {
+    pub(crate) fn new() -> Self {
+        Self {
+            batches: Mutex::new(VecDeque::new()),
+            control: Condvar::new(),
+        }
+    }
+
+    pub(crate) fn shared() -> Arc<Self> {
+        Arc::new(Self::new())
+    }
+}
 /// This struct acts as a queue that accumulates records into batches.
 /// It is used by the producer to buffer records before sending them to the SPU.
 /// The batches are separated by PartitionId
@@ -53,13 +67,7 @@ impl RecordAccumulator {
     ) -> Self {
         let mut batches = HashMap::default();
         for i in 0..partition_n {
-            batches.insert(
-                i,
-                (
-                    BatchEvents::shared(),
-                    Arc::new((Mutex::new(VecDeque::new()), Condvar::new())),
-                ),
-            );
+            batches.insert(i, (BatchEvents::shared(), BatchesDeque::shared()));
         }
         Self {
             batches: Arc::new(batches),
@@ -80,10 +88,10 @@ impl RecordAccumulator {
             .get(&partition_id)
             .ok_or(ProducerError::PartitionNotFound(partition_id))?;
 
-        let mut batches = batches_lock.0.lock().await;
+        let mut batches = batches_lock.batches.lock().await;
         if batches.len() >= self.queue_size {
             let (guard, wait_result) = batches_lock
-                .1
+                .control
                 .wait_timeout_until(batches, RECORD_ENQUEUE_TIMEOUT, |queue| {
                     queue.len() < self.queue_size
                 })
