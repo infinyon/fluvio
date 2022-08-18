@@ -1,5 +1,5 @@
-mod record;
-pub use self::record::*;
+mod data;
+pub use self::data::*;
 
 mod batch;
 mod replica;
