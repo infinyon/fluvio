@@ -39,33 +39,6 @@ type State = ();
 pub struct SmartEngine(pub(crate) Engine);
 
 impl SmartEngine {
-    /*
-    #[cfg(feature = "smartmodule")]
-    #[tracing::instrument(skip(self))]
-    pub fn create_module_from_smartmodule_spec(
-        self,
-        spec: &SmartModuleSpec,
-    ) -> Result<Box<dyn SmartModuleInstance>>  {
-        use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmFormat};
-        use flate2::bufread::GzDecoder;
-        use std::io::Read;
-
-        let wasm_module = &spec.wasm;
-        let mut decoder = GzDecoder::new(&*wasm_module.payload);
-        let mut buffer = Vec::with_capacity(wasm_module.payload.len());
-        decoder.read_to_end(&mut buffer)?;
-
-        let module = match wasm_module.format {
-            SmartModuleWasmFormat::Binary => Module::from_binary(&self.0, &buffer)?,
-            SmartModuleWasmFormat::Text => return Err(Error::msg("Format not supported")),
-        };
-        Ok(SmartModuleWithEngine {
-            module,
-            engine: self,
-        })
-    }
-    */
-
     pub fn create_module_from_binary(self, bytes: &[u8]) -> Result<SmartModuleWithEngine> {
         let module = Module::from_binary(&self.0, bytes)?;
         Ok(SmartModuleWithEngine {

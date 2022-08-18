@@ -1,3 +1,6 @@
+#![allow(clippy::len_without_is_empty)]
+#![allow(clippy::should_implement_trait)]
+
 mod data;
 pub use self::data::*;
 

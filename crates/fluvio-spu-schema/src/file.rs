@@ -28,6 +28,7 @@ impl fmt::Display for FileRecordSet {
     }
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl FileRecordSet {
     pub fn position(&self) -> u64 {
         self.0.position()
