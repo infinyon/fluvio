@@ -1778,6 +1778,7 @@ dependencies = [
  "k8-metadata-client",
  "k8-types",
  "once_cell",
+ "portpicker",
  "rand 0.8.5",
  "semver 1.0.13",
  "serde",
