@@ -214,6 +214,7 @@ jobs:
         if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
         
       - name: Build fluvio
+        timeout-minutes: 30
         if: matrix.binary == 'fluvio'
         run: make build-cli
 
@@ -222,18 +223,22 @@ jobs:
         run: sudo apt-get install gcc-mingw-w64-x86-64
 
       - name: Build fluvio
+        timeout-minutes: 30
         if: matrix.binary == 'fluvio.exe'
         run: make build-cli-minimal
 
       - name: Build fluvio-run
+        timeout-minutes: 30
         if: matrix.binary == 'fluvio-run'
         run: make build-cluster
 
       - name: Build fluvio-channel
+        timeout-minutes: 30
         if: matrix.binary == 'fluvio-channel'
         run: make build-channel
 
       - name: Build fluvio-channel
+        timeout-minutes: 30
         if: matrix.binary == 'fluvio-channel.exe'
         run: make build-channel
 
