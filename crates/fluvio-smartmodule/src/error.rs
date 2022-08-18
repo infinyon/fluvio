@@ -1,7 +1,4 @@
-use std::fmt;
-
 use fluvio_protocol::{Encoder, Decoder};
-
 
 /// Indicates an internal error from within a SmartModule.
 //
@@ -37,34 +34,5 @@ pub enum SmartModuleInternalError {
 impl Default for SmartModuleInternalError {
     fn default() -> Self {
         Self::UnknownError
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-pub enum SmartModuleKind {
-    Filter,
-    Map,
-    #[fluvio(min_version = 15)]
-    ArrayMap,
-    #[fluvio(min_version = 13)]
-    Aggregate,
-    #[fluvio(min_version = 16)]
-    FilterMap,
-    #[fluvio(min_version = 16)]
-    Join,
-    #[fluvio(min_version = 17)]
-    Generic,
-}
-
-impl Default for SmartModuleKind {
-    fn default() -> Self {
-        Self::Filter
-    }
-}
-
-impl fmt::Display for SmartModuleKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Use Debug for Display to print variant name
-        fmt::Debug::fmt(self, f)
     }
 }

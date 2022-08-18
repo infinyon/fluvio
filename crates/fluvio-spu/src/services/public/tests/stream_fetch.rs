@@ -22,7 +22,7 @@ use fluvio_spu_schema::Isolation;
 use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
-    api::smartmodule::SmartModuleKindError,
+    api::smartmodule::SmartModuleKind as SmartModuleKindError,
 };
 use fluvio_smartengine::metadata::{
     SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
