@@ -141,15 +141,15 @@ impl CliError {
                 }
                 _ => Err(self),
             },
-            Self::ClientError(FluvioError::Socket(SocketError::Io(io)))
-                if io.kind() == ErrorKind::TimedOut =>
+            Self::ClientError(FluvioError::Socket(SocketError::Io{ source, ..}))
+                if source.kind() == ErrorKind::TimedOut =>
             {
                 Ok("Network connection timed out while waiting for response")
             }
             #[cfg(feature = "k8s")]
             Self::ClusterCliError(ClusterCliError::TargetError(TargetError::ClientError(
-                FluvioError::Socket(SocketError::Io(io)),
-            ))) => match io.kind() {
+                FluvioError::Socket(SocketError::Io{ source, .. }),
+            ))) => match source.kind() {
                 ErrorKind::ConnectionRefused => {
                     Ok("Failed to connect to cluster, make sure you have started or connected to your cluster")
                 }

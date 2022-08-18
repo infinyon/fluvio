@@ -43,7 +43,7 @@ pub async fn validate_consumer_listener(client_idx: u16, option: &TestOption) {
     let mut leader = sc
         .find_replica_for_topic_partition("test1", 0)
         .await
-        .expect("leader not founded");
+        .expect("leader not found");
 
     let fetch_option = FetchLogOption::default();
 

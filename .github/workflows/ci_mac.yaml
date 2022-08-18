@@ -72,7 +72,7 @@ jobs:
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
@@ -117,7 +117,7 @@ jobs:
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
@@ -142,20 +142,20 @@ jobs:
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download artifact - fluvio
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download artifact - fluvio-run
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-run-${{ matrix.rust-target }}
           path: ~/.fluvio/extensions
       - run: chmod +x ~/.fluvio/extensions/fluvio-run
       - name: Download artifact - fluvio-test
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
@@ -187,7 +187,7 @@ jobs:
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
@@ -212,20 +212,20 @@ jobs:
         run: [r1]
         spu: [1]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download artifact - fluvio
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download artifact - fluvio-run
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-run-${{ matrix.rust-target }}
           path: ~/.fluvio/extensions
       - run: chmod +x ~/.fluvio/extensions/fluvio-run
       - name: Download artifact - fluvio-test
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
@@ -268,11 +268,11 @@ jobs:
         rust: [stable]
     steps:
       # Needed for k8-util/docker/build.sh
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Download artifacts
       - name: Download fluvio-run
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-run-${{ matrix.rust-target }}
           path: .
@@ -286,7 +286,7 @@ jobs:
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
       - name: Upload tarball as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: infinyon-fluvio-${{ matrix.rust-target }}.tar
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
@@ -311,20 +311,20 @@ jobs:
         k8: [kind]
         spu: [1]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # Download artifacts
       - name: Download artifact - fluvio
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download artifact - fluvio-test
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download Docker Image as Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: infinyon-fluvio-${{ matrix.k8-target }}.tar
           path: /tmp
@@ -376,7 +376,7 @@ jobs:
       - name: Upload diagnostics
         timeout-minutes: 5
         if: ${{ !success() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: k8_${{ matrix.run }}-${{ matrix.test }}-log
           path: diagnostics*.gz

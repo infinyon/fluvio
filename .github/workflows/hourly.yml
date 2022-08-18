@@ -41,7 +41,7 @@ jobs:
       RELEASE_NAME: release
       RELEASE: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -69,7 +69,7 @@ jobs:
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
@@ -103,7 +103,7 @@ jobs:
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Login GH CLI
   #      if: ${{ false }}
@@ -121,7 +121,7 @@ jobs:
 
       - name: Download build artifact - fluvio-test
         if: ${{ false }}
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
@@ -214,7 +214,7 @@ jobs:
       #    tar -xvf longevity-data.tar
 
       ## TODO: Add a shorter cache time
-      #- uses: actions/upload-artifact@v2
+      #- uses: actions/upload-artifact@v3
       #  with:
       #    name: 'longevity-data' 
       #    path: longevity-data.tar
@@ -224,7 +224,7 @@ jobs:
         timeout-minutes: 5
         run: fluvio cluster diagnostics --k8
       - name: Upload diagnostics
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         timeout-minutes: 5
         if: failure()
         with:

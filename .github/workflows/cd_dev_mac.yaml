@@ -44,7 +44,7 @@ jobs:
       SLEEP: 10
       TOPIC: foobar
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up K3d for Ubuntu
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -98,7 +98,7 @@ jobs:
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         timeout-minutes: 5
         if: ${{ !success() }}
         with:

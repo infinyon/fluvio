@@ -58,7 +58,7 @@ impl FollowerGroups {
             debug!(leader, "more more replicas, shutting down");
             old_leader.shutdown();
         } else {
-            error!(leader, "was not founded");
+            error!(leader, "was not found");
         }
     }
 
@@ -68,7 +68,7 @@ impl FollowerGroups {
             debug!(leader, "resync");
             old_leader.sync();
         } else {
-            error!(leader, "was not founded");
+            error!(leader, "was not found");
         }
     }
 }

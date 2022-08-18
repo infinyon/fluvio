@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    labels:
+      - bot
+      - github_actions
+      - dependencies
+
+    schedule:
+      # Check for updates to GitHub Actions every weekday
+      interval: "daily"
+    commit-message:
+      prefix: ci
+      include: scope
+    ignore:
+      - dependency-name: "*"
+        update-types: [
+            "version-update:semver-minor",
+            "version-update:semver-patch",
+          ] # Only major version updates
+
+  # Maintain dependencies for Cargo
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - bot
+      - rust
+      - dependencies
+    commit-message:
+      prefix: build
+      include: scope
+    ignore:
+      - dependency-name: "*"
+        update-types: [
+            "version-update:semver-minor",
+            "version-update:semver-patch",
+          ] # Only major version updates

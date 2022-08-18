@@ -8,15 +8,15 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches: [staging]
+  push:
+    branches: [master]
   workflow_dispatch:
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   unused_deps_check:
-    name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }}) 
+    name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -29,7 +29,7 @@ jobs:
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -43,4 +43,4 @@ jobs:
           key: ${{ matrix.rust-target }}-${{ matrix.check }}
       - name: Unused dependencies test
         if: ${{ matrix.check == 'unused-dependencies' }}
-        run: make check-udeps 
+        run: make check-udeps
