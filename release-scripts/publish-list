@@ -6,7 +6,6 @@ PUBLISH_CRATES=(
     fluvio-compression
     fluvio-protocol-derive
     fluvio-protocol
-    fluvio-dataplane-protocol
     fluvio-socket
     fluvio-stream-model
     fluvio-controlplane-metadata
