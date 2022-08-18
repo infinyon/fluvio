@@ -468,7 +468,7 @@ impl TopicProducer {
                 let mut entries = vec![record];
 
                 use std::convert::TryFrom;
-                use fluvio_smartmodule::SmartModuleInput;
+                use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
 
                 if let Some(

@@ -12,7 +12,7 @@ use fluvio_protocol::api::Request;
 
 use fluvio_protocol::record::RecordSet;
 
-use fluvio_smartmodule::SmartModuleExtraParams;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 use fluvio_smartengine::metadata::{LegacySmartModulePayload, SmartModuleInvocation};
 
 use crate::fetch::FetchablePartitionResponse;

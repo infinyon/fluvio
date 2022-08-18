@@ -17,10 +17,10 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn init(ptr: *mut u8, len: usize, version: i16) -> i32 {
-                use fluvio_smartmodule::{
+                use fluvio_smartmodule::dataplane::smartmodule::{
                     SmartModuleInternalError, SmartModuleExtraParams,
                 };
-                use fluvio_smartmodule::fluvio_protocol::{Decoder};
+                use fluvio_smartmodule::dataplane::core::{Decoder};
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut params = SmartModuleExtraParams::default();

@@ -1,14 +1,14 @@
 use std::convert::TryFrom;
 use std::fmt::Debug;
 
-use fluvio_smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
-    SmartModuleAggregateOutput, SmartModuleAggregateInput,
-};
 use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
+use fluvio_smartmodule::dataplane::smartmodule::{
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput,
+    SmartModuleInternalError, SmartModuleAggregateOutput,
+};
 use crate::WasmSlice;
 
 use super::{SmartModuleContext, SmartModuleWithEngine, error::Error, SmartModuleInstance};

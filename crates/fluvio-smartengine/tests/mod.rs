@@ -11,7 +11,7 @@ use cargo::util::interning::InternedString;
 
 use fluvio_smartengine::engine::SmartEngine;
 use fluvio_smartengine::engine::filter::SmartModuleFilter;
-use fluvio_smartmodule::SmartModuleExtraParams;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 #[ignore]
 #[test]

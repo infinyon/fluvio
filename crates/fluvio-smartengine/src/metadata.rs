@@ -8,7 +8,7 @@ use flate2::{
 };
 
 use fluvio_protocol::{Encoder, Decoder};
-use fluvio_smartmodule::SmartModuleExtraParams;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 /// The request payload when using a Consumer SmartModule.
 ///

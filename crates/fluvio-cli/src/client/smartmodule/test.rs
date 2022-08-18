@@ -14,7 +14,7 @@ use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_smartengine::engine::SmartEngine;
 
-use fluvio_smartmodule::SmartModuleInput;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use tracing::debug;
 
 use crate::{Result, error::CliError, client::cmd::ClientCmd};

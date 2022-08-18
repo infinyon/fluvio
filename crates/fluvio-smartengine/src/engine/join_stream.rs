@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
-use fluvio_smartmodule::{
+use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 use tracing::{debug, instrument};

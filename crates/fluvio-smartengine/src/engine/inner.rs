@@ -10,7 +10,9 @@ use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc,
 use fluvio_protocol::record::Record;
 use fluvio_protocol::record::{Batch, MemoryRecords};
 use fluvio_protocol::{Encoder, Decoder};
-use fluvio_smartmodule::{SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput};
+use fluvio_smartmodule::dataplane::smartmodule::{
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
+};
 
 use crate::WasmSlice;
 use crate::engine::memory;
@@ -468,7 +470,7 @@ impl dyn SmartModuleInstance + '_ {
     #[instrument]
     pub fn invoke_constructor(&mut self) -> Result<(), Error> {
         use wasmtime::TypedFunc;
-        use fluvio_smartmodule::SmartModuleInternalError;
+        use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInternalError;
 
         const INIT_FN_NAME: &str = "init";
 

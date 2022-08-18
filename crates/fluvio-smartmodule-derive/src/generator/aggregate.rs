@@ -40,12 +40,12 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn aggregate(ptr: &mut u8, len: usize, version: i16) -> i32 {
-                use fluvio_smartmodule::{
+                use fluvio_smartmodule::dataplane::smartmodule::{
                     SmartModuleAggregateInput, SmartModuleInternalError,
                     SmartModuleRuntimeError, SmartModuleKind, SmartModuleOutput,SmartModuleAggregateOutput
                 };
-                use fluvio_smartmodule::fluvio_protocol::{Encoder, Decoder};
-                use fluvio_smartmodule::fluvio_protocol::record::{Record, RecordData};
+                use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
+                use fluvio_smartmodule::dataplane::record::{Record, RecordData};
 
                 extern "C" {
                     fn copy_records(putr: i32, len: i32);
