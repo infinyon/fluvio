@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use async_lock::Mutex;
 use async_channel::Sender;
-use async_std::sync::Condvar;
+use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
 

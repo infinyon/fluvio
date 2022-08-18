@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::VecDeque;
 
 use async_lock::{Mutex, RwLock};
-use async_std::sync::Condvar;
+use fluvio_future::sync::Condvar;
 use dataplane::ReplicaKey;
 use dataplane::batch::{RawRecords, Batch};
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
