@@ -350,7 +350,6 @@ jobs:
           - fluvio-protocol
           - fluvio-spu-schema
           - fluvio-sc-schema
-          - fluvio-dataplane-protocol
           - fluvio-types
     env:
       RUST_BACKTRACE: full
@@ -384,7 +383,6 @@ jobs:
           - fluvio-sc-schema
           - fluvio-protocol
           - fluvio-spu-schema
-          - fluvio-dataplane-protocol
           - fluvio-types
         features:
           - no-default-features
