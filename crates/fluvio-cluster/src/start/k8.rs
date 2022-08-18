@@ -926,7 +926,7 @@ impl ClusterInstaller {
                 let mut reader = BufReader::new(stderr);
                 let mut buf = String::new();
                 let _ = reader.read_to_string(&mut buf)?;
-                let error_msg = format!("Error from kubectl port-forward: \n{}", buf);
+                let error_msg = format!("kubectl port-forward error: {}", buf);
                 pb.println(error_msg);
 
                 return Err(K8InstallError::PortForwardingFailed(status));
