@@ -13,7 +13,7 @@ pub struct SmartModuleRuntimeError {
     /// The offset of the Record that had a runtime error
     pub offset: Offset,
     /// The type of SmartModule that had a runtime error
-    pub kind: SmartModuleKindError,
+    pub kind: SmartModuleKind,
     /// The Record key that caused this error
     pub record_key: Option<RecordData>,
     /// The Record value that caused this error
@@ -24,7 +24,7 @@ impl SmartModuleRuntimeError {
     pub fn new(
         record: &Record,
         base_offset: Offset,
-        kind: SmartModuleKindError,
+        kind: SmartModuleKind,
         error: eyre::Error,
     ) -> Self {
         let hint = format!("{:?}", error);
@@ -70,7 +70,7 @@ fn display_record_data(record: &RecordData) -> String {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-pub enum SmartModuleKindError {
+pub enum SmartModuleKind {
     Filter,
     Map,
     #[fluvio(min_version = 15)]
@@ -85,13 +85,13 @@ pub enum SmartModuleKindError {
     Generic,
 }
 
-impl Default for SmartModuleKindError {
+impl Default for SmartModuleKind {
     fn default() -> Self {
         Self::Filter
     }
 }
 
-impl fmt::Display for SmartModuleKindError {
+impl fmt::Display for SmartModuleKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Use Debug for Display to print variant name
         fmt::Debug::fmt(self, f)

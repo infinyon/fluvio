@@ -23,7 +23,7 @@ tracing = "0.1.27"
 thiserror = "1"
 eyre = { version = ">=0.6.8", default-features = false, features=["auto-install"] }
 fluvio-smartmodule-derive = { version = "0.2.0", path = "../fluvio-smartmodule-derive" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = ["record","api"]}
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.7.10", features = ["record","api"]}
 
 [dev-dependencies]
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }

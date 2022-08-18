@@ -2,9 +2,6 @@ use std::fmt;
 
 use fluvio_protocol::{Encoder, Decoder};
 
-pub use fluvio_protocol::api::smartmodule::{
-    SmartModuleRuntimeError, SmartModuleKindError, LegacySmartModuleError,
-};
 
 /// Indicates an internal error from within a SmartModule.
 //
