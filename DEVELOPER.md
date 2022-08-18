@@ -177,7 +177,10 @@ $ ./k8-util/cluster/reset-kind.sh
 
 ```
 # Install the cross-compilation toolchain needed to compile the docker image (only required the first time)
+# Linux and Windows:
 $ rustup target add x86_64-unknown-linux-musl
+# macOS:
+$ rustup target add aarch-unknown-linux-musl
 
 # This will build the Fluvio cli and then create a docker image
 $ make build-cli build_k8_image
