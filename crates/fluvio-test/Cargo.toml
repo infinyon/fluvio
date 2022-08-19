@@ -61,7 +61,7 @@ fluvio-controlplane-metadata = { features = [
 # Fluvio test framework Attribute macro
 fluvio-test-derive = { path = "../fluvio-test-derive" }
 fluvio-test-util = { path = "../fluvio-test-util" }
-fluvio-protocol = { version = "0.7.4", path = "../fluvio-protocol", features = [
+fluvio-protocol = { path = "../fluvio-protocol", features = [
     "api",
 ] }
 

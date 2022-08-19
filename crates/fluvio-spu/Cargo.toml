@@ -46,7 +46,7 @@ fluvio-types = { features = [
     "events",
 ], path = "../fluvio-types" }
 fluvio-storage = { path = "../fluvio-storage" }
-fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
+fluvio-compression = { path = "../fluvio-compression" }
 fluvio-controlplane = { path = "../fluvio-controlplane" }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
 fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
@@ -65,7 +65,7 @@ fluvio-future = { version = "0.4.0", features = [
     "zero_copy",
 ] }
 fluvio-smartengine = { path = "../fluvio-smartengine", features = ["engine"] }
-fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", default-features = false }
+fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
 
 [dev-dependencies]
 once_cell = "1.5.2"
