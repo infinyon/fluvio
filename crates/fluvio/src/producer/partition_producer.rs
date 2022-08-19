@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_lock::{Mutex, RwLock};
+use async_lock::{RwLock};
 use tracing::{debug, info, instrument, error, trace};
 
 use fluvio_protocol::record::ReplicaKey;

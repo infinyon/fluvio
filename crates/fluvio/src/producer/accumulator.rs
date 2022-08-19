@@ -7,10 +7,11 @@ use std::time::Duration;
 
 use async_lock::Mutex;
 use async_channel::Sender;
+use tracing::trace;
+
 use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
-
 use fluvio_protocol::record::{Batch, memory::MemoryBatch};
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
