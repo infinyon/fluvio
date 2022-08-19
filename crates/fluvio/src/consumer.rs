@@ -17,7 +17,6 @@ use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, WASM_MODULE_API, SMART_MODULE_API,
     WASM_MODULE_V2_API, GZIP_WASM_API,
 };
-pub use fluvio_spu_schema::server::stream_fetch::{};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;

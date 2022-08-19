@@ -1,8 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
-#[cfg(feature = "file")]
 pub mod server;
-
 pub mod client;
 pub mod fetch;
 pub mod produce;
