@@ -64,7 +64,10 @@ fluvio-types = { version = "0.3.7", features = [
 ], path = "../fluvio-types" }
 fluvio-sc-schema = { version = "0.15.0", path = "../fluvio-sc-schema", default-features = false }
 fluvio-socket = { path = "../fluvio-socket", version = "0.13.0" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features=["record","api"] }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
+    "record",
+    "api",
+] }
 fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
 fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.4.0", default-features = false }
 fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.4.0", default-features = false }
