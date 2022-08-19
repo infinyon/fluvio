@@ -384,8 +384,12 @@ impl TopicProducer {
             ClientStats::start_system_monitor(client_stats.clone());
         };
 
-        let record_accumulator =
-            RecordAccumulator::new(config.batch_size, partition_count, compression);
+        let record_accumulator = RecordAccumulator::new(
+            config.batch_size,
+            config.batch_queue_size,
+            partition_count,
+            compression,
+        );
         let producer_pool = ProducerPool::shared(
             config.clone(),
             topic.clone(),
@@ -432,6 +436,8 @@ impl TopicProducer {
     ///  Depending on the producer configuration, a `send` call will not send immediately
     ///  the record to the SPU. Instead, it could add the record to a batch.
     ///  `TopicProducer::flush` is used to immediately send all the queued records in the producer batches.
+    ///
+    /// If the batch queue is full, a `send` call will block until there will be enough space for new batch.
     ///
     /// # Example
     ///

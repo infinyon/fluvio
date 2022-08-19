@@ -25,4 +25,6 @@ pub enum ProducerError {
     InvalidConfiguration(String),
     #[error("the produce request retry timeout limit reached")]
     ProduceRequestRetryTimeout(#[from] TimeoutError),
+    #[error("the batch enqueue timeout limit reached")]
+    BatchQueueWaitTimeout,
 }

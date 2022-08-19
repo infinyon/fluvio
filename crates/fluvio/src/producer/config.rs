@@ -15,6 +15,7 @@ use crate::stats::ClientStatsDataCollect;
 const DEFAULT_LINGER_MS: u64 = 100;
 const DEFAULT_TIMEOUT_MS: u64 = 1500;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_384;
+const DEFAULT_BATCH_QUEUE_SIZE: usize = 100;
 
 const DEFAULT_RETRIES_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_INITIAL_DELAY: Duration = Duration::from_millis(20);
@@ -23,6 +24,10 @@ const DEFAULT_MAX_RETRIES: usize = 4;
 
 fn default_batch_size() -> usize {
     DEFAULT_BATCH_SIZE_BYTES
+}
+
+fn default_batch_queue_size() -> usize {
+    DEFAULT_BATCH_QUEUE_SIZE
 }
 
 fn default_linger_duration() -> Duration {
@@ -60,6 +65,9 @@ pub struct TopicProducerConfig {
     /// Maximum amount of bytes accumulated by the records before sending the batch.
     #[builder(default = "default_batch_size()")]
     pub(crate) batch_size: usize,
+    /// Maximum amount of batches waiting in the queue before sending to the SPU.
+    #[builder(default = "default_batch_queue_size()")]
+    pub(crate) batch_queue_size: usize,
     /// Time to wait before sending messages to the server.
     #[builder(default = "default_linger_duration()")]
     pub(crate) linger: Duration,
@@ -104,6 +112,7 @@ impl Default for TopicProducerConfig {
         Self {
             linger: default_linger_duration(),
             batch_size: default_batch_size(),
+            batch_queue_size: default_batch_queue_size(),
             partitioner: default_partitioner(),
             compression: None,
             timeout: default_timeout(),

@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.34 - UNRELEASED
+* Added througput control to fluvio producer ([#2512](https://github.com/infinyon/fluvio/issues/2512))
 
 ## Platform Version 0.9.33 - 2022-08-10
 * Added `DeliverySemantic` to `fluvio-cli`. ([#2508](https://github.com/infinyon/fluvio/pull/2508))

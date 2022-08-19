@@ -1,7 +1,6 @@
 use std::sync::Arc;
-use std::collections::VecDeque;
 
-use async_lock::{Mutex, RwLock};
+use async_lock::RwLock;
 use dataplane::ReplicaKey;
 use dataplane::batch::{RawRecords, Batch};
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
@@ -18,7 +17,7 @@ use crate::spu::SpuPool;
 use crate::TopicProducerConfig;
 
 use super::ProducerError;
-use super::accumulator::{ProducerBatch, BatchEvents};
+use super::accumulator::{BatchEvents, BatchesDeque};
 use super::event::EventHandler;
 
 #[cfg(feature = "stats")]
@@ -31,7 +30,7 @@ pub(crate) struct PartitionProducer {
     config: Arc<TopicProducerConfig>,
     replica: ReplicaKey,
     spu_pool: Arc<SpuPool>,
-    batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
+    batches_lock: Arc<BatchesDeque>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
     #[cfg(feature = "stats")]
@@ -43,7 +42,7 @@ impl PartitionProducer {
         config: Arc<TopicProducerConfig>,
         replica: ReplicaKey,
         spu_pool: Arc<SpuPool>,
-        batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
+        batches_lock: Arc<BatchesDeque>,
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
@@ -64,7 +63,7 @@ impl PartitionProducer {
         config: Arc<TopicProducerConfig>,
         replica: ReplicaKey,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
+        batches: Arc<BatchesDeque>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
@@ -86,7 +85,7 @@ impl PartitionProducer {
         config: Arc<TopicProducerConfig>,
         replica: ReplicaKey,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
+        batches: Arc<BatchesDeque>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
@@ -195,7 +194,7 @@ impl PartitionProducer {
             .await?;
 
         let mut batches_ready = vec![];
-        let mut batches = self.batches_lock.lock().await;
+        let mut batches = self.batches_lock.batches.lock().await;
         while !batches.is_empty() {
             let ready = force
                 || batches.front().map_or(false, |batch| {
@@ -204,6 +203,7 @@ impl PartitionProducer {
             if ready {
                 if let Some(batch) = batches.pop_front() {
                     batches_ready.push(batch);
+                    self.batches_lock.control.notify_all();
                 }
             } else {
                 break;

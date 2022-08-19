@@ -3,9 +3,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 use async_lock::Mutex;
 use async_channel::Sender;
+use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
 
@@ -25,30 +27,53 @@ use crate::error::Result;
 
 use super::event::EventHandler;
 
-pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<Mutex<VecDeque<ProducerBatch>>>);
+const RECORD_ENQUEUE_TIMEOUT: Duration = Duration::from_secs(30);
 
+pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<BatchesDeque>);
+
+pub(crate) struct BatchesDeque {
+    pub batches: Mutex<VecDeque<ProducerBatch>>,
+    pub control: Condvar,
+}
+
+impl BatchesDeque {
+    pub(crate) fn new() -> Self {
+        Self {
+            batches: Mutex::new(VecDeque::new()),
+            control: Condvar::new(),
+        }
+    }
+
+    pub(crate) fn shared() -> Arc<Self> {
+        Arc::new(Self::new())
+    }
+}
 /// This struct acts as a queue that accumulates records into batches.
 /// It is used by the producer to buffer records before sending them to the SPU.
 /// The batches are separated by PartitionId
 pub(crate) struct RecordAccumulator {
     batch_size: usize,
+    queue_size: usize,
     batches: Arc<HashMap<PartitionId, BatchHandler>>,
     compression: Compression,
 }
 
 impl RecordAccumulator {
-    pub(crate) fn new(batch_size: usize, partition_n: i32, compression: Compression) -> Self {
+    pub(crate) fn new(
+        batch_size: usize,
+        queue_size: usize,
+        partition_n: i32,
+        compression: Compression,
+    ) -> Self {
         let mut batches = HashMap::default();
         for i in 0..partition_n {
-            batches.insert(
-                i,
-                (BatchEvents::shared(), Arc::new(Mutex::new(VecDeque::new()))),
-            );
+            batches.insert(i, (BatchEvents::shared(), BatchesDeque::shared()));
         }
         Self {
             batches: Arc::new(batches),
             batch_size,
             compression,
+            queue_size,
         }
     }
 
@@ -63,7 +88,19 @@ impl RecordAccumulator {
             .get(&partition_id)
             .ok_or(ProducerError::PartitionNotFound(partition_id))?;
 
-        let mut batches = batches_lock.lock().await;
+        let mut batches = batches_lock.batches.lock().await;
+        if batches.len() >= self.queue_size {
+            let (guard, wait_result) = batches_lock
+                .control
+                .wait_timeout_until(batches, RECORD_ENQUEUE_TIMEOUT, |queue| {
+                    queue.len() < self.queue_size
+                })
+                .await;
+            if wait_result.timed_out() {
+                return Err(ProducerError::BatchQueueWaitTimeout);
+            }
+            batches = guard;
+        }
         if let Some(batch) = batches.back_mut() {
             if let Some(push_record) = batch.push_record(record.clone()) {
                 if batch.is_full() {
@@ -322,6 +359,7 @@ mod test {
             size * 3
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
+            10,
             1,
             Compression::None,
         );

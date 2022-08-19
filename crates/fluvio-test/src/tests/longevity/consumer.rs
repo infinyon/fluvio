@@ -36,7 +36,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: MyTestCase, consum
     // Vec of consumer streams
     let mut streams = Vec::new();
     // Create channel here
-    let (s, r) = async_channel::unbounded();
+    let (s, r) = async_channel::bounded(1000);
 
     // loop over number of topics
     for t in 0..option.environment.topic {
