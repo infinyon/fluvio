@@ -1,4 +1,4 @@
-use fluvio_protocol::api::{Request, ErrorCode};
+use fluvio_protocol::{api::Request, link::ErrorCode};
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::Offset;

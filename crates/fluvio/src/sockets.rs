@@ -8,7 +8,7 @@ use tracing::{debug, instrument, info};
 
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::Request;
-use fluvio_protocol::api::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
+use fluvio_protocol::link::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::{AsyncResponse, SocketError};
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
@@ -312,7 +312,7 @@ impl SerialFrame for VersionedSerialSocket {
 
 #[cfg(test)]
 mod test {
-    use fluvio_protocol::api::versions::ApiVersionKey;
+    use fluvio_protocol::link::versions::ApiVersionKey;
 
     use super::ApiVersionsResponse;
     use super::Versions;

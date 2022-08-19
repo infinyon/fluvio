@@ -7,7 +7,7 @@
 use tracing::{debug, info, trace, instrument};
 use std::io::{Error, ErrorKind};
 
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::customspu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuKey;

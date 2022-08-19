@@ -1,11 +1,12 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
-use fluvio_spu_schema::Isolation;
 use tokio::select;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
+use fluvio_protocol::api::RequestKind;
+use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset};
 use fluvio::{Compression};
 use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
@@ -14,7 +15,10 @@ use fluvio_spu_schema::produce::{
     ProduceResponse, TopicProduceResponse, PartitionProduceResponse, PartitionProduceData,
     DefaultProduceRequest, DefaultTopicRequest,
 };
-use fluvio_protocol::api::{RequestMessage, ErrorCode, RequestKind};
+use fluvio_protocol::{
+    api::{RequestMessage},
+    link::ErrorCode,
+};
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
 use fluvio_controlplane_metadata::partition::ReplicaKey;

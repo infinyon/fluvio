@@ -20,7 +20,7 @@ use fluvio_spu_schema::server::stream_fetch::{
 pub use fluvio_spu_schema::server::stream_fetch::{};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::ReplicaKey;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Batch;
 
 use crate::FluvioError;

@@ -1,5 +1,5 @@
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
 use tracing::{debug, error};
 

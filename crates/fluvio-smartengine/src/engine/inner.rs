@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
-use fluvio_protocol::api::smartmodule::SmartModuleRuntimeError;
+use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc, Store};

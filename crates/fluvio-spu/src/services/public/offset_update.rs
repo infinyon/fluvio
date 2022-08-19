@@ -4,7 +4,7 @@ use tracing::{debug, error, instrument};
 use fluvio_spu_schema::server::update_offset::{
     OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
 };
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::api::{ResponseMessage, RequestMessage};
 use crate::services::public::conn_context::ConnectionContext;
 

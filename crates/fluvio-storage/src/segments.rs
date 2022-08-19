@@ -8,7 +8,7 @@ use std::time::Duration;
 use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tracing::{debug, trace, error, instrument, info};
 
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Size64;
 use fluvio_protocol::record::Offset;
 use fluvio_future::file_slice::AsyncFileSlice;

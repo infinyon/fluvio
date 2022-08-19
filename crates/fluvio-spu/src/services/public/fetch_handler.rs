@@ -3,7 +3,7 @@ use tracing::{debug, trace, instrument};
 use fluvio_spu_schema::file::FileRecordSet;
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_socket::SocketError;
-use fluvio_protocol::api::{ErrorCode, RequestMessage};
+use fluvio_protocol::{link::ErrorCode, api::RequestMessage};
 use fluvio_spu_schema::fetch::{
     FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse,
     FetchablePartitionResponse, FetchPartition, FetchableTopic, FetchableTopicResponse,

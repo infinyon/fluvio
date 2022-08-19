@@ -20,7 +20,7 @@ pub use response::*;
 pub use admin::*;
 
 pub mod errors {
-    pub use fluvio_protocol::api::ErrorCode;
+    pub use fluvio_protocol::link::ErrorCode;
 }
 
 pub use fluvio_controlplane_metadata::core;

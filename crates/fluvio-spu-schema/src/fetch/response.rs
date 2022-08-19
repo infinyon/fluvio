@@ -5,7 +5,7 @@ use fluvio_protocol::record::BatchRecords;
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::record::RecordSet;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Offset;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;

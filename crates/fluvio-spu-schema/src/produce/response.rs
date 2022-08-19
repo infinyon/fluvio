@@ -1,7 +1,7 @@
 use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::derive::FluvioDefault;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ProduceResponse {

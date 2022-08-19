@@ -8,7 +8,7 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetTopicResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 
 use crate::core::DefaultSharedGlobalContext;
 

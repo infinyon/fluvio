@@ -7,7 +7,7 @@ use futures_lite::stream::StreamExt;
 use tokio::select;
 use hdrhistogram::Histogram;
 
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio::consumer::Record;
 use fluvio::{ConsumerConfig, MultiplePartitionConsumer, PartitionConsumer};
 use fluvio::Offset;

@@ -15,7 +15,7 @@ pub async fn handle_delete_managed_connector<AC: AuthContext>(
     name: String,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    use fluvio_protocol::api::ErrorCode;
+    use fluvio_protocol::link::ErrorCode;
 
     info!(connector_name = %name, "deleting managed connector");
 

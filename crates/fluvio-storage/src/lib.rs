@@ -30,7 +30,7 @@ mod inner {
     use async_trait::async_trait;
 
     use fluvio_protocol::record::BatchRecords;
-    use fluvio_protocol::api::ErrorCode;
+    use fluvio_protocol::link::ErrorCode;
     use fluvio_spu_schema::Isolation;
     use fluvio_protocol::record::{Offset, ReplicaKey, Size64};
     use fluvio_protocol::record::RecordSet;

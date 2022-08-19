@@ -13,7 +13,7 @@
 //! In subsequent releases, Register SPU will carry additional credentials for mTLS
 //!
 use fluvio_protocol::api::Request;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 use fluvio_types::SpuId;

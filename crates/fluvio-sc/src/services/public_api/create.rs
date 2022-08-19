@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 
 use tracing::{instrument, debug};
 
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
 use fluvio_sc_schema::objects::{ObjectApiCreateRequest, ObjectCreateRequest};
@@ -71,7 +71,7 @@ mod create_handler {
     use fluvio_stream_dispatcher::store::StoreContext;
     use tracing::{info, trace, instrument};
 
-    use fluvio_protocol::api::ErrorCode;
+    use fluvio_protocol::link::ErrorCode;
     use fluvio_sc_schema::{AdminSpec, Status};
     use fluvio_sc_schema::objects::{CommonCreateRequest};
     use fluvio_controlplane_metadata::extended::SpecExt;

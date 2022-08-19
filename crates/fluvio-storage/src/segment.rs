@@ -10,7 +10,7 @@ use fluvio_future::fs::remove_file;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_protocol::record::{Batch, BatchRecords};
 use fluvio_protocol::record::{Offset, Size, Size64};
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;

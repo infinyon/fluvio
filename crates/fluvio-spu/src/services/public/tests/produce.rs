@@ -3,7 +3,8 @@ use std::{env::temp_dir, time::Duration};
 use tracing::debug;
 
 use fluvio_protocol::{
-    api::{RequestMessage, ErrorCode, RequestKind},
+    api::{RequestMessage, RequestKind},
+    link::ErrorCode,
 };
 use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
 use fluvio_future::timer::sleep;

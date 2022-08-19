@@ -2,7 +2,7 @@ use std::io::Error;
 use tracing::{trace, instrument};
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage, Request};
-use fluvio_protocol::api::versions::{
+use fluvio_protocol::link::versions::{
     ApiVersionKey, ApiVersionsRequest, ApiVersionsResponse, PlatformVersion,
 };
 use fluvio_sc_schema::objects::{

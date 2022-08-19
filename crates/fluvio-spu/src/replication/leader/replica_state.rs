@@ -686,7 +686,7 @@ mod test_leader {
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
     use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo, ReplicaSlice};
     use fluvio_protocol::record::{Offset};
-    use fluvio_protocol::api::ErrorCode;
+    use fluvio_protocol::link::ErrorCode;
     use fluvio_protocol::record::BatchRecords;
     use fluvio_protocol::fixture::{create_recordset};
 

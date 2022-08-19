@@ -12,8 +12,8 @@ mod isolation;
 pub mod file;
 
 pub mod errors {
-    pub use fluvio_protocol::api::ErrorCode;
+    pub use fluvio_protocol::link::ErrorCode;
 }
 
-pub use fluvio_protocol::api::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
+pub use fluvio_protocol::link::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 pub use isolation::*;

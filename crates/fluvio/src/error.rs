@@ -1,6 +1,6 @@
 use std::io::Error as IoError;
 
-use fluvio_protocol::api::smartmodule::SmartModuleRuntimeError;
+use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 use semver::Version;
 
 use fluvio_compression::CompressionError;

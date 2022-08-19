@@ -14,7 +14,7 @@ use fluvio::Offset;
 use fluvio_future::timer::sleep;
 use fluvio_future::io::Stream;
 use fluvio_protocol::record::ConsumerRecord;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use crate::tests::TestRecord;
 
 use super::MyTestCase;

@@ -1,12 +1,8 @@
 mod request;
 mod response;
-mod error_code;
-pub mod smartmodule;
-pub mod versions;
 
 pub use self::response::*;
 pub use self::request::*;
-pub use error_code::*;
 
 pub const MAX_BYTES: i32 = 52428800;
 
@@ -24,7 +20,7 @@ macro_rules! api_decode {
 pub use common::*;
 mod common {
 
-    use std::fmt::{self, Debug};
+    use std::fmt::{self, Debug, Display, Formatter};
     use std::path::Path;
     use std::fs::File;
     use std::io::{Cursor, Error as IoError, ErrorKind, Read};
@@ -160,6 +156,24 @@ mod common {
     impl From<&RequestHeader> for i32 {
         fn from(header: &RequestHeader) -> i32 {
             header.correlation_id()
+        }
+    }
+
+    #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
+    #[non_exhaustive]
+    pub enum RequestKind {
+        Produce,
+    }
+
+    impl Default for RequestKind {
+        fn default() -> Self {
+            RequestKind::Produce
+        }
+    }
+
+    impl Display for RequestKind {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self)
         }
     }
 }

@@ -1,3 +1,5 @@
+/// This module is kept in this crate because it is referenced in the ErrorCode
+///
 use std::fmt;
 
 use crate::{

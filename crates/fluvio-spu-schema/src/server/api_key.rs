@@ -2,7 +2,7 @@ use fluvio_protocol::{Decoder, Encoder};
 
 // Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
 static_assertions::const_assert_eq!(
-    fluvio_protocol::api::versions::VERSIONS_API_KEY,
+    fluvio_protocol::link::versions::VERSIONS_API_KEY,
     SpuServerApiKey::ApiVersion as u16,
 );
 

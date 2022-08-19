@@ -14,7 +14,7 @@ use fluvio_protocol::bytes::{Buf};
 use fluvio_protocol::api::{ApiMessage, RequestHeader, RequestMessage};
 use fluvio_protocol::api::api_decode;
 use fluvio_protocol::core::{Decoder};
-use fluvio_protocol::api::versions::ApiVersionsRequest;
+use fluvio_protocol::link::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
 use crate::objects::{

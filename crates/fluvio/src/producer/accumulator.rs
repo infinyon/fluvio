@@ -14,7 +14,7 @@ use futures_util::{FutureExt, ready};
 use fluvio_protocol::record::{Batch, memory::MemoryBatch};
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_spu_schema::produce::ProduceResponse;
 use fluvio_protocol::record::Record;
 use fluvio_socket::SocketError;

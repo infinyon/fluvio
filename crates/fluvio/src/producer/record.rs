@@ -4,7 +4,7 @@ use async_channel::Receiver;
 use async_lock::RwLock;
 
 use fluvio_protocol::record::Offset;
-use fluvio_protocol::api::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_types::PartitionId;
 
 use crate::error::Result;

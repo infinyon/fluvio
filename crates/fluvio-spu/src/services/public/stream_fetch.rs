@@ -11,9 +11,10 @@ use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
 use fluvio_protocol::{
-    api::{RequestMessage, RequestHeader, ErrorCode, smartmodule::SmartModuleRuntimeError},
+    api::{RequestMessage, RequestHeader},
     record::{RecordSet, Offset, RawRecords},
 };
+use fluvio_protocol::link::{ErrorCode, smartmodule::SmartModuleRuntimeError};
 use fluvio_compression::CompressionError;
 use fluvio_spu_schema::{
     server::stream_fetch::{

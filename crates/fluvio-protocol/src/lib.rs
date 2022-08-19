@@ -19,6 +19,9 @@ pub mod codec;
 #[cfg(feature = "record")]
 pub mod record;
 
+#[cfg(feature = "link")]
+pub mod link;
+
 #[cfg(feature = "fixture")]
 pub mod fixture;
 

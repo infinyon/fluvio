@@ -3,12 +3,9 @@
 //!
 //! Error code definitions described here.
 //!
-
-use std::fmt::{Display, Formatter};
-
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 
-use crate::{Encoder, Decoder};
+use crate::{Encoder, Decoder, api::RequestKind};
 
 // -----------------------------------
 // Error Definition & Implementation
@@ -199,24 +196,6 @@ impl ErrorCode {
 
     pub fn is_error(&self) -> bool {
         !self.is_ok()
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-#[non_exhaustive]
-pub enum RequestKind {
-    Produce,
-}
-
-impl Default for RequestKind {
-    fn default() -> Self {
-        RequestKind::Produce
-    }
-}
-
-impl Display for RequestKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

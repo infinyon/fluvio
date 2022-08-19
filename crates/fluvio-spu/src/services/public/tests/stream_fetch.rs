@@ -22,7 +22,7 @@ use fluvio_spu_schema::Isolation;
 use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
-    api::smartmodule::SmartModuleKind as SmartModuleKindError,
+    link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
 };
 use fluvio_smartengine::metadata::{
     SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
@@ -42,7 +42,7 @@ use crate::replication::leader::LeaderReplicaState;
 use crate::services::public::create_public_server;
 
 use fluvio_protocol::{
-    api::{ErrorCode, RequestMessage},
+    api::{RequestMessage},
     record::RecordSet,
 };
 
