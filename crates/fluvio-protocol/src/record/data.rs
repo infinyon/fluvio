@@ -44,7 +44,7 @@ static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
 /// # Examples
 ///
 /// ```
-/// # use fluvio_dataplane_protocol::record::RecordKey;
+/// # use fluvio_protocol::record::RecordKey;
 /// let key = RecordKey::NULL;
 /// let key: RecordKey = "Hello, world!".into();
 /// let key: RecordKey = String::from("Hello, world!").into();
