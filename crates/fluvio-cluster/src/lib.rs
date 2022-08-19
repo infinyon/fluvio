@@ -97,6 +97,11 @@ mod common {
         Remote(String),
     }
 
+    /// Returns paths to certificates.
+    ///
+    /// If the certs were specified as paths, returns a `Cow::Borrowed` of those paths.
+    /// If the certs were specified inline, creates a temporary directory to store them,
+    /// and returns a `Cow::Owned` of the paths to the temporary files.
     pub fn tls_config_to_cert_paths(config: &TlsConfig) -> Result<Cow<TlsPaths>, IoError> {
         use std::fs::write;
         use rand::distributions::Alphanumeric;
@@ -106,6 +111,7 @@ mod common {
         let cert_paths: Cow<TlsPaths> = match config {
             TlsConfig::Files(paths) => Cow::Borrowed(paths),
             TlsConfig::Inline(certs) => Cow::Owned({
+                // Generate a random 12 digit alphanmueric string
                 const NUM_RAND_DIR_CHARS: usize = 12;
 
                 let mut rng = rand::thread_rng();
