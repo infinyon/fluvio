@@ -8,9 +8,10 @@
 //! reading a previously-stored message from that same Fluvio cluster. Let's get started
 //! with a quick example where we produce and consume some messages.
 //!
-//! # Prerequisites
+//! # Examples
 //!
-//! [Install Fluvio](#installation)
+//! Fluvio's documentation provide a set of examples for Rust.
+//! You can visit the examples page [following this link](https://www.fluvio.io/api/official/rust/examples/).
 //!
 //! # Fluvio Echo
 //!
