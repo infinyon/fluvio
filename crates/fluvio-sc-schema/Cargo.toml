@@ -25,7 +25,7 @@ paste = "1.0"
 # Fluvio dependencies
 fluvio-types = { version = "0.3.0", path = "../fluvio-types" }
 fluvio-controlplane-metadata = { version = "0.18.0", default-features = false, path = "../fluvio-controlplane-metadata" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.7.10", features = ["link"]}
 
 
 [dev-dependencies]
