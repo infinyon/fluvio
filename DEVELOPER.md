@@ -180,7 +180,7 @@ $ ./k8-util/cluster/reset-kind.sh
 # x86_64 (most computers):
 $ rustup target add x86_64-unknown-linux-musl
 # M1 Macs:
-$ rustup target add aarch-unknown-linux-musl
+$ rustup target add aarch64-unknown-linux-musl
 
 # This will build the Fluvio cli and then create a docker image
 $ make build-cli build_k8_image
