@@ -8,6 +8,7 @@ mod local;
 mod k8;
 mod sys;
 mod tls;
+pub(super) mod kube_config;
 
 use crate::cli::ClusterCliError;
 use tls::TlsOpt;

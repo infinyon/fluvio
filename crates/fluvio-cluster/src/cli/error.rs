@@ -4,8 +4,9 @@ use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
 use crate::check::ClusterCheckError;
-use crate::{LocalInstallError};
+use crate::LocalInstallError;
 use crate::ClusterError;
+use super::start::kube_config::KubeConfigError;
 
 /// Cluster Command Error
 #[derive(thiserror::Error, Debug)]
@@ -32,6 +33,8 @@ pub enum ClusterCliError {
     ClusterCheckError(#[from] ClusterCheckError),
     #[error(transparent)]
     LocalInstallError(#[from] LocalInstallError),
+    #[error(transparent)]
+    KubeConfigError(#[from] KubeConfigError),
 }
 
 impl ClusterCliError {

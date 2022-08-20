@@ -7,6 +7,7 @@ use clap::Parser;
 use fluvio::config::{TlsPolicy, TlsPaths};
 
 use crate::cli::ClusterCliError;
+use super::kube_config::{read_kube_config, KubeConfigError};
 
 #[derive(Debug, Parser)]
 pub struct TlsOpt {
@@ -45,43 +46,76 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
     /// Returns (Client TLS Policy, Server TLS Policy)
     fn try_from(opt: TlsOpt) -> Result<Self, Self::Error> {
         if !opt.tls {
-            debug!("no optional tls");
+            debug!("No TLS");
             return Ok((TlsPolicy::Disabled, TlsPolicy::Disabled));
         }
 
-        // Use self-executing closure to strip out Options nicely
-        let policies = (|| -> Option<(TlsPolicy, TlsPolicy)> {
-            let domain = opt.domain?;
-            let ca_cert = opt.ca_cert?;
-            let client_cert = opt.client_cert?;
-            let client_key = opt.client_key?;
-            let server_cert = opt.server_cert?;
-            let server_key = opt.server_key?;
+        // If ca_cert, client_cert or client_key were not specified, read them from the kubeconfig.
+        let mut ca_cert = opt.ca_cert;
+        let mut client_cert = opt.client_cert;
+        let mut client_key = opt.client_key;
 
-            let server_policy = TlsPolicy::from(TlsPaths {
-                domain: domain.clone(),
-                ca_cert: ca_cert.clone(),
-                cert: server_cert,
-                key: server_key,
-            });
+        // Only read the kubeconfig if at least one of the optional files is not specified.
+        if [&ca_cert, &client_cert, &client_key]
+            .into_iter()
+            .any(|f| f.is_none())
+        {
+            debug!("One or more TLS files were not specified. Reading kubeconfig...");
+            let kubeconfig = read_kube_config()?;
+            if ca_cert.is_none() {
+                debug!("CA cert was not specified. Reading CA cert from kubeconfig...");
+                let first_cluster = kubeconfig.clusters.get(0);
+                match first_cluster {
+                    Some(cluster) => {
+                        ca_cert = Some(cluster.certificate_authority_data.clone().into())
+                    }
+                    None => return Err(KubeConfigError::MissingClusters.into()),
+                }
+            }
+            if client_cert.is_none() {
+                debug!("Client cert was not specified. Reading client cert from kubeconfig...");
+                let first_user = kubeconfig.users.get(0);
+                match first_user {
+                    Some(user) => client_cert = Some(user.client_certificate_data.clone().into()),
+                    None => return Err(KubeConfigError::MissingUsers.into()),
+                }
+            }
+            if client_key.is_none() {
+                debug!("Client key was not specified. Reading clinet key from kubeconfig...");
+                let first_user = kubeconfig.users.get(0);
+                match first_user {
+                    Some(user) => client_key = Some(user.client_key_data.clone().into()),
+                    None => return Err(KubeConfigError::MissingUsers.into()),
+                }
+            }
+        }
+        // All None values have been replaced with Some
+        let ca_cert = ca_cert.unwrap();
+        let client_cert = client_cert.unwrap();
+        let client_key = client_key.unwrap();
 
-            let client_policy = TlsPolicy::from(TlsPaths {
-                domain,
-                ca_cert,
-                cert: client_cert,
-                key: client_key,
-            });
+        let (domain, server_cert, server_key) =
+            (|| -> Option<_> { Some((opt.domain?, opt.server_cert?, opt.server_key?)) })().ok_or(
+                ClusterCliError::Other(
+                    "Missing required args after --tls: --domain, --server-cert, --server-key"
+                        .to_string(),
+                ),
+            )?;
 
-            Some((client_policy, server_policy))
-        })();
+        let server_policy = TlsPolicy::from(TlsPaths {
+            domain: domain.clone(),
+            ca_cert: ca_cert.clone(),
+            cert: server_cert,
+            key: server_key,
+        });
 
-        policies.ok_or_else(|| {
-            ClusterCliError::Other(
-                "Missing required args after --tls:\
-  --domain, --ca-cert, --client-cert, --client-key, --server-cert, --server-key"
-                    .to_string(),
-            )
-        })
+        let client_policy = TlsPolicy::from(TlsPaths {
+            domain,
+            ca_cert,
+            cert: client_cert,
+            key: client_key,
+        });
+        Ok((server_policy, client_policy))
     }
 }
 
