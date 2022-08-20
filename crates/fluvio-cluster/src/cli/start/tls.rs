@@ -67,7 +67,7 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
                 let first_cluster = kubeconfig.clusters.get(0);
                 match first_cluster {
                     Some(cluster) => {
-                        ca_cert = Some(cluster.certificate_authority_data.clone().into())
+                        ca_cert = Some(cluster.cluster.ca_cert.clone().into())
                     }
                     None => return Err(KubeConfigError::MissingClusters.into()),
                 }
@@ -76,15 +76,15 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
                 debug!("Client cert was not specified. Reading client cert from kubeconfig...");
                 let first_user = kubeconfig.users.get(0);
                 match first_user {
-                    Some(user) => client_cert = Some(user.client_certificate_data.clone().into()),
+                    Some(user) => client_cert = Some(user.user.client_cert.clone().into()),
                     None => return Err(KubeConfigError::MissingUsers.into()),
                 }
             }
             if client_key.is_none() {
-                debug!("Client key was not specified. Reading clinet key from kubeconfig...");
+                debug!("Client key was not specified. Reading client key from kubeconfig...");
                 let first_user = kubeconfig.users.get(0);
                 match first_user {
-                    Some(user) => client_key = Some(user.client_key_data.clone().into()),
+                    Some(user) => client_key = Some(user.user.client_key.clone().into()),
                     None => return Err(KubeConfigError::MissingUsers.into()),
                 }
             }
