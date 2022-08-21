@@ -47,13 +47,13 @@ impl MapFnKind {
 }
 
 impl SmartModuleMap {
-    #[tracing::instrument(skip(module,params))]
+    #[tracing::instrument(skip(module, params))]
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self, Error> {
-        debug!(base_fn = MAP_FN_NAME,?params,"instantiating mapping");
+        debug!(base_fn = MAP_FN_NAME, ?params, "instantiating mapping");
         let mut base = SmartModuleContext::new(module, params, version)?;
         let map_fn = if let Ok(map_fn) = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)
         {

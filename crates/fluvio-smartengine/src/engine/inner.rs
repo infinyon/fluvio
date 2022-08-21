@@ -55,7 +55,6 @@ impl SmartEngine {
         smart_payload: LegacySmartModulePayload,
         maybe_version: Option<i16>,
     ) -> Result<Box<dyn SmartModuleInstance>> {
-        
         let version = maybe_version.unwrap_or(DEFAULT_SMARTENGINE_VERSION);
         let smartmodule = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
         let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
@@ -289,8 +288,7 @@ impl Debug for SmartModuleContext {
 }
 
 impl SmartModuleContext {
-
-    #[tracing::instrument(skip(module,params))]
+    #[tracing::instrument(skip(module, params))]
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
