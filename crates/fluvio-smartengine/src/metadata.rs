@@ -33,7 +33,7 @@ pub struct SmartModuleInvocation {
     pub params: SmartModuleExtraParams,
 }
 
-#[derive(Debug, Clone, Encoder, Decoder)]
+#[derive(Clone, Encoder, Decoder)]
 pub enum SmartModuleInvocationWasm {
     /// Name of SmartModule
     Predefined(String),
@@ -53,9 +53,22 @@ impl Default for SmartModuleInvocationWasm {
     }
 }
 
+impl Debug for SmartModuleInvocationWasm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Predefined(module) => write!(f, "Predefined{}", module),
+            Self::AdHoc(bytes) => f
+                .debug_tuple("Adhoc")
+                .field(&format!("{} bytes", bytes.len()))
+                .finish(),
+        }
+    }
+}
+
 /// Indicates the type of SmartModule as well as any special data required
-#[derive(Debug, Clone, Encoder, Decoder)]
+#[derive(Debug, Clone, Encoder, Decoder, Default)]
 pub enum SmartModuleKind {
+    #[default]
     Filter,
     Map,
     #[fluvio(min_version = ARRAY_MAP_WASM_API)]
@@ -92,8 +105,9 @@ impl std::fmt::Display for SmartModuleKind {
     }
 }
 
-#[derive(Debug, Clone, Encoder, Decoder)]
+#[derive(Debug, Clone, Encoder, Decoder, Default)]
 pub enum SmartModuleContextData {
+    #[default]
     None,
     Aggregate {
         accumulator: Vec<u8>,
@@ -103,18 +117,6 @@ pub enum SmartModuleContextData {
         topic: String,
         derivedstream: String,
     },
-}
-
-impl Default for SmartModuleContextData {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-impl Default for SmartModuleKind {
-    fn default() -> Self {
-        Self::Filter
-    }
 }
 
 /// Different possible representations of WASM modules.

@@ -49,14 +49,14 @@ impl SmartEngine {
         })
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self, smart_payload))]
     pub fn create_module_from_payload(
         self,
         smart_payload: LegacySmartModulePayload,
         maybe_version: Option<i16>,
     ) -> Result<Box<dyn SmartModuleInstance>> {
         let version = maybe_version.unwrap_or(DEFAULT_SMARTENGINE_VERSION);
-        debug!(version,"Creating module from payload");
+        debug!(version,kind = %smart_payload.kind,"Creating module from payload");
         let smartmodule = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
         let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
             SmartModuleKind::Filter => {

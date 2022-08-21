@@ -28,6 +28,7 @@ helm_pkg:
 clean:
 	cargo clean
 	make -C k8-util/helm clean
+	make -C crates/fluvio-smartmodule/examples clean
 
 
 .EXPORT_ALL_VARIABLES:

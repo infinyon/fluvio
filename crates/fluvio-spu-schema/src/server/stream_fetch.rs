@@ -3,9 +3,10 @@
 //!
 //! Stream records to client
 //!
-use std::fmt::Debug;
+use std::fmt::{Debug};
 use std::marker::PhantomData;
 
+use educe::Educe;
 use fluvio_protocol::record::RawRecords;
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
@@ -43,7 +44,8 @@ pub const GENERIC_SMARTMODULE_API: i16 = 17;
 
 /// Fetch records continuously
 /// Output will be send back as stream
-#[derive(Decoder, Encoder, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Educe)]
+#[educe(Debug)]
 pub struct StreamFetchRequest<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -55,6 +57,7 @@ where
     pub isolation: Isolation,
     /// no longer used, but keep to avoid breaking compatibility, this will not be honored
     // TODO: remove in 0.10
+    #[educe(Debug(ignore))]
     #[fluvio(min_version = 11)]
     pub wasm_module: Vec<u8>,
     // TODO: remove in 0.10

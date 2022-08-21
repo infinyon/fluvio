@@ -46,6 +46,7 @@ impl MapFnKind {
 }
 
 impl SmartModuleMap {
+    #[tracing::instrument(skip(module, params))]
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
