@@ -103,28 +103,8 @@ mod common {
     /// If any items were specified inline, creates a temporary directory to store them, writes
     /// them to disk, and returns a `Cow::Owned` of the paths to the files.
     pub fn tls_config_to_cert_paths(config: &TlsConfig) -> Result<Cow<TlsPaths>, IoError> {
-        use std::fs::write;
-
         let cert_paths: Cow<TlsPaths> = match config {
             TlsConfig::Files(paths) => Cow::Borrowed(paths),
-            TlsConfig::Inline(certs) => Cow::Owned({
-                let tmp_dir = create_temp_dir()?;
-
-                let tls_key = tmp_dir.join("tls.key");
-                let tls_cert = tmp_dir.join("tls.crt");
-                let ca_cert = tmp_dir.join("ca.crt");
-
-                write(&tls_key, certs.key.as_bytes())?;
-                write(&tls_cert, certs.cert.as_bytes())?;
-                write(&ca_cert, certs.ca_cert.as_bytes())?;
-
-                TlsPaths {
-                    domain: certs.domain.clone(),
-                    key: tls_key,
-                    cert: tls_cert,
-                    ca_cert,
-                }
-            }),
             TlsConfig::Mixed(config) => Cow::Owned({
                 // Only create a temporary directory if there is at least one inline item.
                 if config.is_all_paths() {

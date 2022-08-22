@@ -1,8 +1,7 @@
 use std::convert::TryFrom;
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::fmt::{Debug, self};
+use std::fmt::{Debug};
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
@@ -37,11 +36,11 @@ impl From<TlsConfig> for TlsPolicy {
     }
 }
 
-impl From<TlsCerts> for TlsPolicy {
-    fn from(certs: TlsCerts) -> Self {
-        Self::Verified(certs.into())
-    }
-}
+// impl From<TlsCerts> for TlsPolicy {
+//     fn from(certs: TlsCerts) -> Self {
+//         Self::Verified(certs.into())
+//     }
+// }
 
 impl From<TlsPaths> for TlsPolicy {
     fn from(paths: TlsPaths) -> Self {
@@ -59,9 +58,6 @@ impl From<TlsData> for TlsPolicy {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "tls_source", content = "certs")]
 pub enum TlsConfig {
-    /// TLS client config with inline keys and certs
-    #[serde(rename = "inline")]
-    Inline(TlsCerts),
     /// TLS client config with paths to keys and certs
     #[serde(rename = "files", alias = "file")]
     Files(TlsPaths),
@@ -75,15 +71,9 @@ impl TlsConfig {
     pub fn domain(&self) -> &str {
         match self {
             TlsConfig::Files(TlsPaths { domain, .. }) => &**domain,
-            TlsConfig::Inline(TlsCerts { domain, .. }) => &**domain,
+            // TlsConfig::Inline(TlsCerts { domain, .. }) => &**domain,
             TlsConfig::Mixed(TlsData { domain, .. }) => &**domain,
         }
-    }
-}
-
-impl From<TlsCerts> for TlsConfig {
-    fn from(certs: TlsCerts) -> Self {
-        Self::Inline(certs)
     }
 }
 
@@ -96,119 +86,6 @@ impl From<TlsPaths> for TlsConfig {
 impl From<TlsData> for TlsConfig {
     fn from(config: TlsData) -> Self {
         Self::Mixed(config)
-    }
-}
-
-/// TLS config with inline keys and certs
-///
-/// Keys and certs stored in the `TlsCerts` type should be PEM PKCS1
-/// encoded, with text headers and a base64 encoded body. The
-/// stringified contents of a `TlsCerts` should have text resembling
-/// the following:
-///
-/// ```text
-/// -----BEGIN RSA PRIVATE KEY-----
-/// MIIJKAIBAAKCAgEAsqV4GUKER1wy4sbNvd6gHMp745L4x+ilVElk1ucWGT2akzA6
-/// TEvDiAKFF4txkEaLTECh1dUev6rB5HnboWxd5gdg1K4ck2wrZ3Jv2OTA0unXAkoA
-/// ...
-/// Jh/5Lo8/sj0GmoM6hZyrBZUWI4Q1/l8rgIyu0Lj8okoCmHwZiMrJDDsvdHqET8/n
-/// dyIzkH0j11JkN5EJR+U65PJHWPpU3WCAV+0tFzctmiB83e6O9iahZ3OflWs=
-/// -----END RSA PRIVATE KEY-----
-/// ```
-///
-/// And certificates should look something like this:
-///
-/// ```text
-/// -----BEGIN CERTIFICATE-----
-/// MIIGezCCBGOgAwIBAgIUTYr3REzVKe5JZl2JzLR+rKbv05UwDQYJKoZIhvcNAQEL
-/// BQAwYTELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMRIwEAYDVQQHDAlTdW5ueXZh
-/// ...
-/// S6shmu+0il4xqv7pM82iYlaauEfcy0cpjimSQySKDA4S0KB3X8oe7SZqStTJEvtb
-/// IuH6soJvn4Mpk5MpTwBw1raCOoKSz2H4oE0B1dBAmQ==
-/// -----END CERTIFICATE-----
-/// ```
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TlsCerts {
-    /// Domain name
-    pub domain: String,
-    /// Client or Server private key
-    pub key: String,
-    /// Client or Server certificate
-    pub cert: String,
-    /// Certificate Authority cert
-    pub ca_cert: String,
-}
-
-impl Debug for TlsCerts {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "TlsCerts {{ domain: {} }}", self.domain)
-    }
-}
-
-impl TryFrom<TlsPaths> for TlsCerts {
-    type Error = IoError;
-
-    fn try_from(paths: TlsPaths) -> Result<Self, Self::Error> {
-        use std::fs::read;
-        Ok(Self {
-            domain: paths.domain,
-            key: String::from_utf8(read(paths.key)?).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("key should be UTF-8: {}", e),
-                )
-            })?,
-            cert: String::from_utf8(read(paths.cert)?).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("cert should be UTF-8: {}", e),
-                )
-            })?,
-            ca_cert: String::from_utf8(read(paths.ca_cert)?).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("CA cert should be UTF-8: {}", e),
-                )
-            })?,
-        })
-    }
-}
-
-impl TryFrom<TlsData> for TlsCerts {
-    type Error = IoError;
-
-    fn try_from(config: TlsData) -> Result<Self, Self::Error> {
-        use std::fs::read;
-        Ok(Self {
-            domain: config.domain,
-            key: match config.key {
-                TlsItem::Inline(key) => key,
-                TlsItem::Path(key) => String::from_utf8(read(key)?).map_err(|e| {
-                    IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("key should be UTF-8: {}", e),
-                    )
-                })?,
-            },
-            cert: match config.cert {
-                TlsItem::Inline(cert) => cert,
-                TlsItem::Path(cert) => String::from_utf8(read(cert)?).map_err(|e| {
-                    IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("cert should be UTF-8: {}", e),
-                    )
-                })?,
-            },
-            ca_cert: match config.ca_cert {
-                TlsItem::Inline(ca_cert) => ca_cert,
-                TlsItem::Path(ca_cert) => String::from_utf8(read(ca_cert)?).map_err(|e| {
-                    IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("CA cert should be UTF-8: {}", e),
-                    )
-                })?,
-            },
-        })
     }
 }
 
@@ -334,32 +211,6 @@ cfg_if::cfg_if! {
                             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
                             .add_root_certificate(
                                 X509PemBuilder::from_path(&tls.ca_cert)?
-                                .build()?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
-
-
-                        Ok(Box::new(TlsDomainConnector::new(
-                            builder.build(),
-                            tls.domain,
-                        )))
-                    }
-                    TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
-                        info!(
-                            domain = &*tls.domain,
-                            "Using verified TLS with inline certificates"
-                        );
-                        let builder = TlsConnector::builder()
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
-                            .with_identity(
-                                IdentityBuilder::from_x509(
-                                    X509PemBuilder::from_reader(&mut tls.cert.as_bytes())?,
-                                    PrivateKeyBuilder::from_reader(&mut tls.key.as_bytes())?
-                                )?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
-                            .add_root_certificate(
-                                X509PemBuilder::from_reader(&mut tls.ca_cert.as_bytes())?
                                 .build()?
                             )
                             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;

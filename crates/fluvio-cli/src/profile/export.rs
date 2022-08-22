@@ -59,12 +59,6 @@ impl ExportOpt {
                 TlsPolicy::Disabled => ProfileExportTls::Disabled,
                 TlsPolicy::Anonymous => ProfileExportTls::Anonymous,
                 TlsPolicy::Verified(tls_config) => ProfileExportTls::Verified(match tls_config {
-                    TlsConfig::Inline(tls_certs) => ProfileExportTlsCerts {
-                        domain: tls_certs.domain.to_owned(),
-                        key: tls_certs.key.to_owned(),
-                        cert: tls_certs.cert.to_owned(),
-                        ca_cert: tls_certs.ca_cert.to_owned(),
-                    },
                     TlsConfig::Mixed(tls_certs) if tls_certs.is_all_inline() => ProfileExportTlsCerts {
                         domain: tls_certs.domain.clone(),
                         key: tls_certs.key.clone().unwrap_inline(),

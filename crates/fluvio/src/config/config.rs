@@ -459,7 +459,6 @@ pub mod test {
     use super::*;
     use std::path::PathBuf;
     use std::env::temp_dir;
-    use crate::config::{TlsPolicy, TlsConfig, TlsCerts};
 
     //#[test]
     #[allow(unused)]
@@ -512,29 +511,6 @@ pub mod test {
         assert_eq!(config.current_profile_name(), Some("remote"));
         assert!(!config.profile.contains_key("local"));
         assert!(config.profile.contains_key("remote"));
-    }
-
-    /// test TOML save generation
-    #[test]
-    fn test_tls_save() {
-        let mut config = Config::new_with_local_cluster("localhost:9003".to_owned());
-        let inline_tls_config = TlsConfig::Inline(TlsCerts {
-            key: "ABCDEFF".to_owned(),
-            cert: "JJJJ".to_owned(),
-            ca_cert: "XXXXX".to_owned(),
-            domain: "my_domain".to_owned(),
-        });
-
-        println!("temp: {:#?}", temp_dir());
-        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = inline_tls_config.into();
-        config
-            .save_to(temp_dir().join("inline.toml"))
-            .expect("save should succeed");
-
-        config.cluster_mut(LOCAL_PROFILE).unwrap().tls = TlsPolicy::Disabled;
-        config
-            .save_to(temp_dir().join("noverf.toml"))
-            .expect("save should succeed");
     }
 
     #[test]
