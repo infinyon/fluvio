@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use tracing::debug;
 use clap::Parser;
 
-use fluvio::config::{TlsPolicy, TlsPaths};
+use fluvio::config::{TlsData, TlsItem, TlsPolicy};
 
 use crate::cli::ClusterCliError;
 use super::kube_config::{read_kube_config, KubeConfigError};
@@ -50,71 +50,89 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             return Ok((TlsPolicy::Disabled, TlsPolicy::Disabled));
         }
 
-        // If ca_cert, client_cert or client_key were not specified, read them from the kubeconfig.
-        let mut ca_cert = opt.ca_cert;
-        let mut client_cert = opt.client_cert;
-        let mut client_key = opt.client_key;
-
-        // Only read the kubeconfig if at least one of the optional files is not specified.
-        if [&ca_cert, &client_cert, &client_key]
-            .into_iter()
-            .any(|f| f.is_none())
-        {
-            debug!("One or more TLS files were not specified. Reading kubeconfig...");
-            let kubeconfig = read_kube_config()?;
-            if ca_cert.is_none() {
-                debug!("CA cert was not specified. Reading CA cert from kubeconfig...");
-                let first_cluster = kubeconfig.clusters.get(0);
-                match first_cluster {
-                    Some(cluster) => {
-                        ca_cert = Some(cluster.cluster.ca_cert.clone().into())
-                    }
-                    None => return Err(KubeConfigError::MissingClusters.into()),
-                }
-            }
-            if client_cert.is_none() {
-                debug!("Client cert was not specified. Reading client cert from kubeconfig...");
-                let first_user = kubeconfig.users.get(0);
-                match first_user {
-                    Some(user) => client_cert = Some(user.user.client_cert.clone().into()),
-                    None => return Err(KubeConfigError::MissingUsers.into()),
-                }
-            }
-            if client_key.is_none() {
-                debug!("Client key was not specified. Reading client key from kubeconfig...");
-                let first_user = kubeconfig.users.get(0);
-                match first_user {
-                    Some(user) => client_key = Some(user.user.client_key.clone().into()),
-                    None => return Err(KubeConfigError::MissingUsers.into()),
-                }
-            }
+        let mut missing_args = vec![];
+        if opt.domain.is_none() {
+            missing_args.push("--domain");
         }
-        // All None values have been replaced with Some
-        let ca_cert = ca_cert.unwrap();
-        let client_cert = client_cert.unwrap();
-        let client_key = client_key.unwrap();
+        if opt.server_cert.is_none() {
+            missing_args.push("--server-cert");
+        }
+        if opt.server_key.is_none() {
+            missing_args.push("--server-key");
+        }
+        if !missing_args.is_empty() {
+            return Err(ClusterCliError::Other(format!(
+                "Missing required arguments after --tls: {}",
+                missing_args.join(", ")
+            )));
+        }
 
-        let (domain, server_cert, server_key) =
-            (|| -> Option<_> { Some((opt.domain?, opt.server_cert?, opt.server_key?)) })().ok_or(
-                ClusterCliError::Other(
-                    "Missing required args after --tls: --domain, --server-cert, --server-key"
-                        .to_string(),
-                ),
-            )?;
+        let (client_key, client_cert, ca_cert) =
+            if [&opt.ca_cert, &opt.client_cert, &opt.client_key]
+                .into_iter()
+                .any(|f| f.is_none())
+            {
+                debug!("One or more TLS files were not specified. Reading kubeconfig...");
+                let kubeconfig = read_kube_config()?;
 
-        let server_policy = TlsPolicy::from(TlsPaths {
-            domain: domain.clone(),
-            ca_cert: ca_cert.clone(),
-            cert: server_cert,
-            key: server_key,
-        });
-
-        let client_policy = TlsPolicy::from(TlsPaths {
-            domain,
-            ca_cert,
-            cert: client_cert,
+                let client_key = match opt.client_key {
+                    Some(key) => TlsItem::Path(key),
+                    None => {
+                        // Get the first user listed in the kubeconfig
+                        let user = kubeconfig.users.get(0);
+                        match user {
+                            Some(user) => TlsItem::Inline(user.user.client_key.clone().into()),
+                            None => return Err(KubeConfigError::MissingUsers.into()),
+                        }
+                    }
+                };
+                let client_cert = match opt.client_cert {
+                    Some(cert) => TlsItem::Path(cert),
+                    None => {
+                        // Get the first user listed in the kubeconfig
+                        let user = kubeconfig.users.get(0);
+                        match user {
+                            Some(user) => TlsItem::Inline(user.user.client_cert.clone().into()),
+                            None => return Err(KubeConfigError::MissingUsers.into()),
+                        }
+                    }
+                };
+                let ca_cert = match opt.ca_cert.clone() {
+                    Some(ca_cert) => TlsItem::Path(ca_cert),
+                    None => {
+                        // Get the first cluster listed in the kubeconfig
+                        let cluster = kubeconfig.clusters.get(0);
+                        match cluster {
+                            Some(cluster) => {
+                                TlsItem::Inline(cluster.cluster.ca_cert.clone().into())
+                            }
+                            None => return Err(KubeConfigError::MissingClusters.into()),
+                        }
+                    }
+                };
+                (client_key, client_cert, ca_cert)
+            } else {
+                // --client-key, --client-cert and --ca-cert were all given.
+                (
+                    TlsItem::Path(opt.client_key.unwrap()),
+                    TlsItem::Path(opt.client_cert.unwrap()),
+                    TlsItem::Path(opt.ca_cert.unwrap()),
+                )
+            };
+        let client_policy = TlsPolicy::from(TlsData {
+            domain: opt.domain.clone().unwrap(),
             key: client_key,
+            cert: client_cert,
+            ca_cert: ca_cert.clone(),
         });
+        // --domain, --server-key and --server-cert were all given.
+        let server_policy = TlsPolicy::from(TlsData {
+            domain: opt.domain.unwrap(),
+            key: TlsItem::Path(opt.server_key.unwrap()),
+            cert: TlsItem::Path(opt.server_cert.unwrap()),
+            ca_cert,
+        });
+
         Ok((server_policy, client_policy))
     }
 }

@@ -65,8 +65,14 @@ impl ExportOpt {
                         cert: tls_certs.cert.to_owned(),
                         ca_cert: tls_certs.ca_cert.to_owned(),
                     },
-                    TlsConfig::Files(_) => {
-                        return Err(CliError::Other(format!("Cluster {} uses externals TLS certs. Only inline TLS certs are supported.", cluster_name)));
+                    TlsConfig::Mixed(tls_certs) if tls_certs.is_all_inline() => ProfileExportTlsCerts {
+                        domain: tls_certs.domain.clone(),
+                        key: tls_certs.key.clone().unwrap_inline(),
+                        cert: tls_certs.cert.clone().unwrap_inline(),
+                        ca_cert: tls_certs.ca_cert.clone().unwrap_inline(),
+                    },
+                    TlsConfig::Files(_) | TlsConfig::Mixed(_) => {
+                        return Err(CliError::Other(format!("Cluster {} uses external TLS certs. Only inline TLS certs are supported.", cluster_name)));
                     }
                 }),
             };
