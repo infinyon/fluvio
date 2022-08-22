@@ -22,6 +22,7 @@ mod output;
 mod partitioning;
 mod record;
 mod partition_producer;
+mod memory_batch;
 
 pub use fluvio_protocol::record::{RecordKey, RecordData};
 

@@ -14,7 +14,7 @@ derive = ["fluvio-protocol-derive"]
 api = [ ]
 codec = ["tokio-util"]
 store = ["fluvio-future"]
-record = ["crc32c","content_inspector","fluvio-compression","chrono","once_cell","fluvio-types"]
+record = ["crc32c","content_inspector","fluvio-compression","once_cell","fluvio-types"]
 link = ["api","record","thiserror","flv-util","semver","eyre"]
 fixture = ["record","derive_builder"]
 
@@ -39,11 +39,7 @@ flv-util = { version = "0.5.0", optional = true }
 fluvio-compression = { version = "0.2", path = "../fluvio-compression", optional = true}
 fluvio-types = { version = "0.3.5", path = "../fluvio-types", optional = true }
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-chrono = {version =  "0.4", default-features = false, features = ["clock"], optional = true}
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-chrono = {version =  "0.4", features = ["wasmbind", "clock"], optional = true}
 
 [dev-dependencies]
 trybuild = "1.0.64"

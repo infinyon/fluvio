@@ -174,6 +174,7 @@ async fn test_stream_fetch_basic() {
                 batch
                     .memory_records()
                     .expect("failed to get memory records")[1]
+                    .get_header()
                     .get_offset_delta(),
                 1
             );
@@ -503,6 +504,7 @@ async fn test_stream_fetch_filter(
             batch
                 .memory_records()
                 .expect("failed to get memory records")[0]
+                .get_header()
                 .get_offset_delta(),
             1
         );
@@ -2250,6 +2252,7 @@ async fn test_stream_fetch_filter_with_params(
             batch
                 .memory_records()
                 .expect("failed to get memory records")[0]
+                .get_header()
                 .get_offset_delta(),
             0
         );
@@ -2305,6 +2308,7 @@ async fn test_stream_fetch_filter_with_params(
             batch
                 .memory_records()
                 .expect("failed to get memory records")[0]
+                .get_header()
                 .get_offset_delta(),
             1
         );

@@ -1603,6 +1603,7 @@ dependencies = [
  "built",
  "bytes 1.2.1",
  "cfg-if",
+ "chrono",
  "derive_builder",
  "dirs",
  "event-listener",
@@ -1978,7 +1979,6 @@ name = "fluvio-protocol"
 version = "0.8.0"
 dependencies = [
  "bytes 1.2.1",
- "chrono",
  "content_inspector",
  "crc32c",
  "derive_builder",

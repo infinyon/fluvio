@@ -364,16 +364,26 @@ pub struct RecordHeader {
 }
 
 impl RecordHeader {
+    #[inline]
+    pub fn get_offset_delta(&self) -> Offset {
+        self.offset_delta
+    }
+
     pub fn set_offset_delta(&mut self, delta: Offset) {
         self.offset_delta = delta;
     }
 
+    #[inline]
     pub fn offset_delta(&self) -> Offset {
         self.offset_delta
     }
 
-    pub(crate) fn set_timestamp_delta(&mut self, delta: Timestamp) {
+    pub fn set_timestamp_delta(&mut self, delta: Timestamp) {
         self.timestamp_delta = delta;
+    }
+
+    pub fn add_base_offset(&mut self, relative_base_offset: Offset) {
+        self.offset_delta += relative_base_offset;
     }
 }
 
@@ -386,8 +396,14 @@ pub struct Record<B = RecordData> {
 }
 
 impl<B: Default> Record<B> {
-    pub fn get_offset_delta(&self) -> Offset {
-        self.preamble.offset_delta
+    /// return reference to header
+    pub fn get_header(&self) -> &RecordHeader {
+        &self.preamble
+    }
+
+    /// return mutable reference to header
+    pub fn get_mut_header(&mut self) -> &mut RecordHeader {
+        &mut self.preamble
     }
 
     /// add offset delta with new relative base offset
@@ -440,7 +456,7 @@ impl Record {
         }
     }
 
-    pub(crate) fn timestamp_delta(&self) -> Timestamp {
+    pub fn timestamp_delta(&self) -> Timestamp {
         self.preamble.timestamp_delta
     }
 }
@@ -613,8 +629,8 @@ mod test {
         assert_eq!(record.as_bytes(0)?.len(), data.len());
 
         assert_eq!(record.write_size(0), data.len());
-        println!("offset_delta: {:?}", record.get_offset_delta());
-        assert_eq!(record.get_offset_delta(), 1);
+        println!("offset_delta: {:?}", record.get_header().get_offset_delta());
+        assert_eq!(record.get_header().get_offset_delta(), 1);
 
         let value = record.value.as_ref();
         assert_eq!(value.len(), 3);
