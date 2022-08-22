@@ -177,8 +177,8 @@ mod common {
         Ok(tmp_dir)
     }
 
-    /// If the TLS item is inline, write it the file at the specified path. If the item is a path,
-    /// return it.
+    /// If the TLS item is inline, write it to the file at the specified path.
+    /// If the item is a path, return it.
     fn write_if_inline(
         item: &TlsItem,
         path: PathBuf,
