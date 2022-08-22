@@ -67,14 +67,22 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             )));
         }
 
-        let any_optional_certs_missing = [&opt.ca_cert, &opt.client_cert, &opt.client_key]
+        let no_optional_certs_missing = [&opt.ca_cert, &opt.client_cert, &opt.client_key]
             .into_iter()
-            .any(|f| f.is_none());
+            .all(|f| f.is_some());
 
-        let (client_key, client_cert, ca_cert) = if any_optional_certs_missing {
+        let (client_key, client_cert, ca_cert) = if no_optional_certs_missing {
+            // --client-key, --client-cert and --ca-cert were all given. No need to read the kubeconfig.
+            (
+                TlsItem::Path(opt.client_key.unwrap()),
+                TlsItem::Path(opt.client_cert.unwrap()),
+                TlsItem::Path(opt.ca_cert.unwrap()),
+            )
+        } else {
             debug!("One or more TLS files were not specified. Reading kubeconfig...");
             let kubeconfig = KubeConfig::from_home()?;
 
+            // If --client-key was specified, use that. Otherwise try to read it from the kubeconfig.
             let client_key = match opt.client_key {
                 Some(key) => TlsItem::Path(key),
                 None => {
@@ -94,6 +102,7 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
                     }
                 }
             };
+            // If --client-cert was specified, use that. Otherwise try to read it from the kubeconfig.
             let client_cert = match opt.client_cert {
                 Some(cert) => TlsItem::Path(cert),
                 None => {
@@ -114,6 +123,7 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
                     }
                 }
             };
+            // If --ca-cert was specified, use that. Otherwise try to read it from the kubeconfig.
             let ca_cert = match opt.ca_cert.clone() {
                 Some(ca_cert) => TlsItem::Path(ca_cert),
                 None => {
@@ -135,13 +145,6 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
                 }
             };
             (client_key, client_cert, ca_cert)
-        } else {
-            // --client-key, --client-cert and --ca-cert were all given.
-            (
-                TlsItem::Path(opt.client_key.unwrap()),
-                TlsItem::Path(opt.client_cert.unwrap()),
-                TlsItem::Path(opt.ca_cert.unwrap()),
-            )
         };
         let client_policy = TlsPolicy::from(TlsData {
             domain: opt.domain.clone().unwrap(),
