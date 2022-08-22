@@ -137,30 +137,12 @@ mod common {
                 } else {
                     let temp_dir = create_temp_dir()?;
 
-                    let key = match &config.key {
-                        TlsItem::Path(key) => key.clone(),
-                        TlsItem::Inline(key) => {
-                            let path = temp_dir.join("tls.key");
-                            write(&path, format_cert_data(key, CertKind::Key)?.as_bytes())?;
-                            path
-                        }
-                    };
-                    let cert = match &config.cert {
-                        TlsItem::Path(cert) => cert.clone(),
-                        TlsItem::Inline(cert) => {
-                            let path = temp_dir.join("tls.crt");
-                            write(&path, format_cert_data(cert, CertKind::Cert)?.as_bytes())?;
-                            path
-                        }
-                    };
-                    let ca_cert = match &config.ca_cert {
-                        TlsItem::Path(ca_cert) => ca_cert.clone(),
-                        TlsItem::Inline(ca_cert) => {
-                            let path = temp_dir.join("ca.crt");
-                            write(&path, format_cert_data(ca_cert, CertKind::Cert)?.as_bytes())?;
-                            path
-                        }
-                    };
+                    let key =
+                        write_if_inline(&config.key, temp_dir.join("tls.key"), CertKind::Key)?;
+                    let cert =
+                        write_if_inline(&config.cert, temp_dir.join("tls.crt"), CertKind::Cert)?;
+                    let ca_cert =
+                        write_if_inline(&config.ca_cert, temp_dir.join("ca.crt"), CertKind::Cert)?;
                     TlsPaths {
                         domain: config.domain.clone(),
                         key,
@@ -173,6 +155,7 @@ mod common {
         Ok(cert_paths)
     }
 
+    /// Create a temporary directory to store TLS certs in.
     fn create_temp_dir() -> Result<PathBuf, IoError> {
         use rand::distributions::Alphanumeric;
         use std::iter;
@@ -192,6 +175,24 @@ mod common {
 
         std::fs::create_dir(&tmp_dir)?;
         Ok(tmp_dir)
+    }
+
+    /// If the TLS item is inline, write it the file at the specified path. If the item is a path,
+    /// return it.
+    fn write_if_inline(
+        item: &TlsItem,
+        path: PathBuf,
+        cert_kind: CertKind,
+    ) -> Result<PathBuf, IoError> {
+        use std::fs::write;
+
+        Ok(match item {
+            TlsItem::Path(p) => p.clone(),
+            TlsItem::Inline(key) => {
+                write(&path, format_cert_data(key, cert_kind)?.as_bytes())?;
+                path
+            }
+        })
     }
 
     enum CertKind {
@@ -214,10 +215,14 @@ mod common {
         let data = data.as_bytes();
         let chunks = data.chunks(64);
         // Allocate enough space for the original data, plus one newline every 64 chars, plus the pre and postfix.
-        let mut formatted = String::with_capacity(data.len() + data.len() / 64 + prefix.len() + postfix.len());
+        let mut formatted =
+            String::with_capacity(data.len() + data.len() / 64 + prefix.len() + postfix.len());
         formatted.push_str(prefix);
         for chunk in chunks {
-            formatted.push_str(std::str::from_utf8(chunk).map_err(|e| IoError::new(IoErrorKind::InvalidData, e))?);
+            formatted.push_str(
+                std::str::from_utf8(chunk)
+                    .map_err(|e| IoError::new(IoErrorKind::InvalidData, e))?,
+            );
             formatted.push_str("\n");
         }
         formatted.push_str(postfix);
