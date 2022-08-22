@@ -56,7 +56,7 @@ pub use common::*;
 mod common {
 
     use std::{path::PathBuf, borrow::Cow};
-    use std::io::Error as IoError;
+    use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
     use fluvio::config::{TlsPaths, TlsConfig, TlsItem};
 
@@ -141,8 +141,7 @@ mod common {
                         TlsItem::Path(key) => key.clone(),
                         TlsItem::Inline(key) => {
                             let path = temp_dir.join("tls.key");
-                            let key_text = "-----BEGIN RSA PRIVATE KEY-----\n".to_owned() + key + "\n-----END RSA PRIVATE KEY-----";
-                            write(&path, key_text.as_bytes())?;
+                            write(&path, format_cert_data(key, CertKind::Key)?.as_bytes())?;
                             path
                         }
                     };
@@ -150,8 +149,7 @@ mod common {
                         TlsItem::Path(cert) => cert.clone(),
                         TlsItem::Inline(cert) => {
                             let path = temp_dir.join("tls.crt");
-                            let cert_text = "-----BEGIN CERTIFICATE-----\n".to_owned() + cert + "\n-----END CERTIFICATE-----";
-                            write(&path, cert_text.as_bytes())?;
+                            write(&path, format_cert_data(cert, CertKind::Cert)?.as_bytes())?;
                             path
                         }
                     };
@@ -159,8 +157,7 @@ mod common {
                         TlsItem::Path(ca_cert) => ca_cert.clone(),
                         TlsItem::Inline(ca_cert) => {
                             let path = temp_dir.join("ca.crt");
-                            let ca_cert_text = "-----BEGIN CERTIFICATE-----\n".to_owned() + ca_cert + "\n-----END CERTIFICATE-----";
-                            write(&path, ca_cert_text.as_bytes())?;
+                            write(&path, format_cert_data(ca_cert, CertKind::Cert)?.as_bytes())?;
                             path
                         }
                     };
@@ -195,5 +192,35 @@ mod common {
 
         std::fs::create_dir(&tmp_dir)?;
         Ok(tmp_dir)
+    }
+
+    enum CertKind {
+        Key,
+        Cert,
+    }
+
+    /// Formats cert data according to PEM requirements.
+    ///
+    /// PEM formatted certs require a newline every 64 characters.
+    fn format_cert_data(data: &String, kind: CertKind) -> Result<String, IoError> {
+        let prefix = match kind {
+            CertKind::Key => "-----BEGIN RSA PRIVATE KEY-----\n",
+            CertKind::Cert => "-----BEGIN CERTIFICATE-----\n",
+        };
+        let postfix = match kind {
+            CertKind::Key => "-----END RSA PRIVATE KEY-----",
+            CertKind::Cert => "-----END CERTIFICATE-----",
+        };
+        let data = data.as_bytes();
+        let chunks = data.chunks(64);
+        // Allocate enough space for the original data, plus one newline every 64 chars, plus the pre and postfix.
+        let mut formatted = String::with_capacity(data.len() + data.len() / 64 + prefix.len() + postfix.len());
+        formatted.push_str(prefix);
+        for chunk in chunks {
+            formatted.push_str(std::str::from_utf8(chunk).map_err(|e| IoError::new(IoErrorKind::InvalidData, e))?);
+            formatted.push_str("\n");
+        }
+        formatted.push_str(postfix);
+        Ok(formatted)
     }
 }

@@ -3,11 +3,11 @@ use std::convert::TryFrom;
 
 use tracing::debug;
 use clap::Parser;
+use k8_config::{KubeConfig, ConfigError as KubeConfigError};
 
 use fluvio::config::{TlsData, TlsItem, TlsPolicy};
 
 use crate::cli::ClusterCliError;
-use super::kube_config::{read_kube_config, KubeConfigError};
 
 #[derive(Debug, Parser)]
 pub struct TlsOpt {
@@ -73,40 +73,69 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
                 .any(|f| f.is_none())
             {
                 debug!("One or more TLS files were not specified. Reading kubeconfig...");
-                let kubeconfig = read_kube_config()?;
+                let kubeconfig = KubeConfig::from_home()?;
 
                 let client_key = match opt.client_key {
                     Some(key) => TlsItem::Path(key),
                     None => {
-                        // Get the first user listed in the kubeconfig
-                        let user = kubeconfig.users.get(0);
+                        let user = kubeconfig.current_user();
                         match user {
-                            Some(user) => TlsItem::Inline(user.user.client_key.clone().into()),
-                            None => return Err(KubeConfigError::MissingUsers.into()),
+                            Some(user) => match user.user.client_key_data.clone() {
+                                Some(client_key) => TlsItem::Inline(client_key),
+                                None => {
+                                    return Err(KubeConfigError::Other(
+                                        "Missing client key".to_owned(),
+                                    )
+                                    .into())
+                                }
+                            },
+                            None => {
+                                return Err(KubeConfigError::Other("Missing user".to_owned()).into())
+                            }
                         }
                     }
                 };
                 let client_cert = match opt.client_cert {
                     Some(cert) => TlsItem::Path(cert),
                     None => {
-                        // Get the first user listed in the kubeconfig
-                        let user = kubeconfig.users.get(0);
+                        let user = kubeconfig.current_user();
                         match user {
-                            Some(user) => TlsItem::Inline(user.user.client_cert.clone().into()),
-                            None => return Err(KubeConfigError::MissingUsers.into()),
+                            Some(user) => match user.user.client_certificate_data.clone() {
+                                Some(client_cert) => TlsItem::Inline(client_cert),
+                                None => {
+                                    return Err(KubeConfigError::Other(
+                                        "Missing client certificate".to_owned(),
+                                    )
+                                    .into())
+                                }
+                            },
+                            None => {
+                                return Err(KubeConfigError::Other("Missing user".to_owned()).into())
+                            }
                         }
                     }
                 };
                 let ca_cert = match opt.ca_cert.clone() {
                     Some(ca_cert) => TlsItem::Path(ca_cert),
                     None => {
-                        // Get the first cluster listed in the kubeconfig
-                        let cluster = kubeconfig.clusters.get(0);
+                        let cluster = kubeconfig.current_cluster();
                         match cluster {
                             Some(cluster) => {
-                                TlsItem::Inline(cluster.cluster.ca_cert.clone().into())
+                                match cluster.cluster.certificate_authority_data.clone() {
+                                    Some(ca_cert) => TlsItem::Inline(ca_cert),
+                                    None => {
+                                        return Err(KubeConfigError::Other(
+                                            "Missing CA certificate".to_owned(),
+                                        )
+                                        .into())
+                                    }
+                                }
                             }
-                            None => return Err(KubeConfigError::MissingClusters.into()),
+                            None => {
+                                return Err(
+                                    KubeConfigError::Other("Missing cluster".to_owned()).into()
+                                )
+                            }
                         }
                     }
                 };
