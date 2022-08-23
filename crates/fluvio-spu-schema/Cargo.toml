@@ -12,7 +12,7 @@ name = "fluvio_spu_schema"
 path = "src/lib.rs"
 
 [features]
-file = ["fluvio-protocol/store", "fluvio-future/fs"]
+file = ["fluvio-future","fluvio-protocol/store"]
 
 [dependencies]
 
