@@ -2112,7 +2112,6 @@ dependencies = [
  "anyhow",
  "cargo",
  "cfg-if",
- "eyre",
  "flate2",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
