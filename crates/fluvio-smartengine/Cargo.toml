@@ -12,6 +12,7 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = []
 wasi = ["wasmtime-wasi", "engine"]
 unstable = ["engine"]
 engine = [
