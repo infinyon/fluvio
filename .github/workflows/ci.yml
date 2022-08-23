@@ -117,6 +117,7 @@ jobs:
  #   if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         rust-target:
           - aarch64-apple-darwin
