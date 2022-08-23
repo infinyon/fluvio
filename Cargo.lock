@@ -2116,6 +2116,7 @@ dependencies = [
  "flate2",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
+ "fluvio-smartengine",
  "fluvio-smartmodule",
  "fluvio-types",
  "nix 0.25.0",
