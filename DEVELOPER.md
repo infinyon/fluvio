@@ -29,6 +29,9 @@ Please read [doc](https://www.fluvio.io) for a technical arch and operation guid
 
 ## Setting up Development Environment
 
+The development environment requires the Rust toolchain and a few other build dependencies to build changes to the source code.
+
+To deploy and test the source code, Kubernetes is required because Fluvio stores its metadata in Kubernetes. Fluvio binaries can be tested locally, running outside of any k8s cluster using the `--local` parameter or they can be built into a docker image and deployed into the Kubernetes cluster.
 
 ### Rust toolchain
 
@@ -36,6 +39,9 @@ Please read [doc](https://www.fluvio.io) for a technical arch and operation guid
 Please follow [setup](https://www.rust-lang.org/tools/install) instructions to install Rust and Cargo.
 
 ### Build time dependencies
+
+Most of these are required for building a docker image: it is also possible to not install these and just `cargo build` the binaries you need and test them with a local setup.
+
 * make
 * zig
 * lld (v14)
@@ -43,9 +49,9 @@ Please follow [setup](https://www.rust-lang.org/tools/install) instructions to i
 
 ### Kubernetes dependencies
 
-Kubernetes is required for running Fluvio.
+Kubernetes is required for Fluvio to store its metadata.
 
-Following Kubernetes distribution, please use one of the following supported kubernetes distros to set up Kubernetes Cluster.
+To run Kubernetes locally, please use one of the following supported kubernetes distros.
 
 * [Rancher desktop](https://rancherdesktop.io)
 * [k3d](https://k3d.io)
@@ -58,21 +64,6 @@ Helm is used for installing Fluvio on Kubernetes.
 
 Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install the helm.
 
-### Testing dependencies
-
-#### Installing Bats-core
-
-Bats-core is used for our CLI-based testing.
-
-Please follow the [bats-core](https://bats-core.readthedocs.io/en/stable/installation.html) installation guide.
-
-## Checking out source code
-
-You can clone the source code with the following command:
-```
-$ git clone https://github.com/infinyon/fluvio.git
-```
-
 ## Make targets
 
 You can build from the source code using `make`.  The following targets are available:
@@ -84,7 +75,7 @@ You can build from the source code using `make`.  The following targets are avai
 
 ### Build Pre-requisites
 
-Zig and LLD(version 12 or higher) are required to build the image.
+Zig and LLD(version 12 or higher) are required to build the docker image.
 
 For mac:
 
@@ -102,7 +93,7 @@ export FLUVIO_BUILD_LLD=lld-12
 
 ### Problem installing lld
 
-If you have a problem installing `lld-14`, please see https://apt.llvm.org.
+If you have a problem installing `lld`, please see https://apt.llvm.org.
 
 ## Starting Fluvio cluster for development
 
@@ -146,7 +137,7 @@ both `fluvio-run` and `fluvio`, then execute `fluvio` and pass the arguments to 
 
 ### Kubernetes as a requirement
 
-Kubernetes is currently a requirement for running Fluvio. We use Kubernetes to manage Fluvio's metadata. Running in "local" mode still requires kubernetes.  Fluvio's processes run locally instead of within Kubernetes pods.
+Kubernetes is currently a requirement for running Fluvio because metadata is stored in Kubernetes. Running in "local" mode still requires kubernetes but instead of deploying fluvio as pods will run them locally.
 
 
 * Default mode: [Kubernetes-based Fluvio cluster](#kubernetes-based-fluvio-cluster)
@@ -173,16 +164,20 @@ $ ./k8-util/cluster/reset-kind.sh
 ```
 
 
-#### Build Fluvio CLI and docker image from source code
+#### Build the Fluvio CLI and deploy the docker image to k8s
+
+The docker image requires first installing a cross compilation toolchain, along with other build dependencies mentioned such as lld.
 
 ```
-# Install the cross-compilation toolchain needed to compile the docker image (only required the first time)
 # x86_64 (most computers):
 $ rustup target add x86_64-unknown-linux-musl
 # M1 Macs:
 $ rustup target add aarch64-unknown-linux-musl
+```
 
-# This will build the Fluvio cli and then create a docker image
+This will build the Fluvio cli and then create a docker image and import it into your local k8s cluster:
+
+```
 $ make build-cli build_k8_image
 ```
 
@@ -460,6 +455,15 @@ We have 3 types of tests:
 - Tests run with `bats`
     - These are CLI tests written and executed with `bats-core`
     - Run with `make cli-smoke`
+
+### Testing dependencies
+
+#### Installing Bats-core
+
+Bats-core is used for our CLI-based testing.
+
+Please follow the [bats-core](https://bats-core.readthedocs.io/en/stable/installation.html) installation guide.
+
 
 ### Running local smoke test
 
