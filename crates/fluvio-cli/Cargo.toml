@@ -35,7 +35,7 @@ k8s = [
     "fluvio-cluster",
 ]
 stats = [ "fluvio/stats" ]
-#smartengine = ["fluvio-smartengine/unstable"]
+smartengine = ["fluvio-smartengine/unstable"]
 
 [dependencies]
 tracing = "0.1.19"

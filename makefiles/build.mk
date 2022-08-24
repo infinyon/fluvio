@@ -14,7 +14,7 @@ build-test:	install_rustup_target
 	cargo build --bin fluvio-test -p fluvio-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-channel: install_rustup_target
-	$(CARGO_BUILDER) build --bin fluvio-channel -p fluvio-channel $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	$(CARGO_BUILDER) build --bin fluvio-channel -p fluvio-channel-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
 	./build-scripts/install_target.sh
