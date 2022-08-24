@@ -3,8 +3,8 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use dataplane::core::{Encoder, Decoder};
-use dataplane::api::{Request};
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::{Request};
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 

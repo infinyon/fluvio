@@ -7,7 +7,7 @@
 //!
 use std::fmt;
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]

@@ -1,8 +1,8 @@
 #![allow(clippy::assign_op_pattern)]
 
-use dataplane::core::{Encoder, Decoder};
-use dataplane::api::Request;
-use dataplane::Offset;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
+use fluvio_protocol::record::Offset;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use super::LeaderPeerApiEnum;

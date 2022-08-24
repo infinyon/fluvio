@@ -1,6 +1,6 @@
 use async_channel::RecvError;
 use fluvio_future::retry::TimeoutError;
-use dataplane::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 
 use super::record::RecordMetadata;
 

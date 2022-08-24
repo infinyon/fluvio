@@ -2,14 +2,15 @@ use std::sync::Arc;
 use std::fmt::Debug;
 use std::time::Instant;
 
-use dataplane::batch::BatchRecords;
 use tracing::{debug, instrument};
 use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+use fluvio_protocol::record::BatchRecords;
 use fluvio_controlplane_metadata::partition::{ReplicaKey};
-use dataplane::{Isolation, record::RecordSet};
-use dataplane::core::Encoder;
-use dataplane::{Offset, ErrorCode};
+use fluvio_spu_schema::Isolation;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::record::{Offset, RecordSet};
+use fluvio_protocol::link::ErrorCode;
 use fluvio_storage::{ReplicaStorage, StorageError, OffsetInfo, ReplicaSlice};
 use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;

@@ -5,7 +5,7 @@
 //!
 //!
 use fluvio_types::SpuId;
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec, CompressionAlgorithm};
 

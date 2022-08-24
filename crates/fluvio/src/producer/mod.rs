@@ -3,13 +3,13 @@ use std::sync::Arc;
 
 use async_lock::RwLock;
 
-use dataplane::ReplicaKey;
-use dataplane::record::Record;
+use fluvio_protocol::record::ReplicaKey;
+use fluvio_protocol::record::Record;
 
 use fluvio_compression::Compression;
 use fluvio_sc_schema::topic::CompressionAlgorithm;
 #[cfg(feature = "smartengine")]
-use fluvio_smartengine::SmartModuleInstance;
+use fluvio_smartengine::engine::SmartModuleInstance;
 use fluvio_types::PartitionId;
 use fluvio_types::event::StickyEvent;
 use tracing::instrument;
@@ -22,8 +22,9 @@ mod output;
 mod partitioning;
 mod record;
 mod partition_producer;
+mod memory_batch;
 
-pub use dataplane::record::{RecordKey, RecordData};
+pub use fluvio_protocol::record::{RecordKey, RecordData};
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
@@ -216,9 +217,11 @@ impl InnerTopicProducer {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
-        use fluvio_spu_schema::server::stream_fetch::{SmartModuleWasmCompressed, SmartModuleContextData, SmartModuleKind, LegacySmartModulePayload};
+
         use std::collections::BTreeMap;
-        use fluvio_smartengine::SmartEngine;
+
+        use fluvio_smartengine::metadata::{SmartModuleWasmCompressed, SmartModuleContextData, SmartModuleKind, LegacySmartModulePayload};
+        use fluvio_smartengine::engine::SmartEngine;
 
         impl TopicProducer {
             fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
@@ -464,8 +467,10 @@ impl TopicProducer {
         cfg_if::cfg_if! {
             if #[cfg(feature = "smartengine")] {
                 let mut entries = vec![record];
-                use dataplane::smartmodule::SmartModuleInput;
+
                 use std::convert::TryFrom;
+                use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
+
 
                 if let Some(
                     smartmodule_instance_ref

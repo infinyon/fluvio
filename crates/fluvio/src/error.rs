@@ -1,10 +1,11 @@
 use std::io::Error as IoError;
 
+use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
+use semver::Version;
+
 use fluvio_compression::CompressionError;
 use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
-use semver::Version;
-use dataplane::smartmodule::SmartModuleRuntimeError;
 
 use crate::config::ConfigError;
 use crate::producer::ProducerError;

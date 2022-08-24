@@ -6,6 +6,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
+use fluvio_smartengine::engine::SmartEngine;
 use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::Replica;
@@ -19,7 +20,6 @@ use crate::replication::leader::{
     SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
 };
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
-use fluvio_smartengine::SmartEngine;
 
 use super::leader_client::LeaderConnections;
 use super::smartmodule::SmartModuleLocalStore;

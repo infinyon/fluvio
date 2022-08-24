@@ -7,7 +7,7 @@ use std::{
 use tracing::{warn, debug};
 use async_rwlock::RwLock;
 
-use dataplane::ReplicaKey;
+use fluvio_protocol::record::ReplicaKey;
 use fluvio_types::{
     SpuId,
     event::offsets::{OffsetChangeListener, OffsetPublisher},

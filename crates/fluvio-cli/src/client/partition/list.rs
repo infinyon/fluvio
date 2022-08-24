@@ -43,11 +43,11 @@ mod display {
 
     use comfy_table::{Row, Cell};
 
+    use fluvio_protocol::record::PartitionError;
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::partition::*;
-    use fluvio::dataplane::PartitionError;
 
     //use crate::error::CliError;
     use crate::common::t_println;

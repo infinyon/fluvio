@@ -9,9 +9,11 @@ use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
-use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size, Size64};
-use dataplane::batch::{Batch, BatchRecords};
-use dataplane::record::RecordSet;
+use fluvio_protocol::link::ErrorCode;
+use fluvio_spu_schema::Isolation;
+use fluvio_protocol::record::{Offset, ReplicaKey, Size, Size64};
+use fluvio_protocol::record::{Batch, BatchRecords};
+use fluvio_protocol::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
 use crate::segments::SharedSegments;
@@ -433,13 +435,14 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use dataplane::{Isolation, batch::Batch};
-    use dataplane::Offset;
-    use dataplane::core::{Decoder, Encoder};
-    use dataplane::record::{Record, RecordSet};
-    use dataplane::batch::MemoryRecords;
-    use dataplane::fixture::{BatchProducer, create_batch, create_batch_with_producer};
-    use dataplane::fixture::read_bytes_from_file;
+    use fluvio_spu_schema::Isolation;
+    use fluvio_protocol::record::Batch;
+    use fluvio_protocol::record::Offset;
+    use fluvio_protocol::{Decoder, Encoder};
+    use fluvio_protocol::record::{Record, RecordSet};
+    use fluvio_protocol::record::MemoryRecords;
+    use fluvio_protocol::fixture::{BatchProducer, create_batch, create_batch_with_producer};
+    use fluvio_protocol::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
 
     use crate::config::{ReplicaConfig, StorageConfig};

@@ -7,17 +7,17 @@ use std::time::Duration;
 
 use async_lock::Mutex;
 use async_channel::Sender;
+use tracing::trace;
+
 use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
-
-use dataplane::batch::{Batch, memory::MemoryBatch};
+use fluvio_protocol::record::{Batch};
 use fluvio_compression::Compression;
-use tracing::trace;
-
-use dataplane::{Offset, ErrorCode};
-use dataplane::produce::ProduceResponse;
-use dataplane::record::Record;
+use fluvio_protocol::record::Offset;
+use fluvio_protocol::link::ErrorCode;
+use fluvio_spu_schema::produce::ProduceResponse;
+use fluvio_protocol::record::Record;
 use fluvio_socket::SocketError;
 use fluvio_types::{PartitionId, Timestamp};
 
@@ -26,6 +26,7 @@ use crate::producer::ProducerError;
 use crate::error::Result;
 
 use super::event::EventHandler;
+use super::memory_batch::MemoryBatch;
 
 const RECORD_ENQUEUE_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -301,8 +302,8 @@ impl Future for ProducePartitionResponseFuture {
 #[cfg(test)]
 mod test {
     use super::*;
-    use dataplane::{record::Record, batch::RawRecords};
-    use dataplane::produce::{PartitionProduceResponse, TopicProduceResponse};
+    use fluvio_protocol::record::{Record, RawRecords};
+    use fluvio_spu_schema::produce::{PartitionProduceResponse, TopicProduceResponse};
     use fluvio_protocol::Encoder;
 
     #[test]

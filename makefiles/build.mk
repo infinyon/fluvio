@@ -1,20 +1,20 @@
 # Build targets
 build-cli: install_rustup_target
-	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
+	$(CARGO_BUILDER) build --bin fluvio -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
-	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer --manifest-path ./crates/fluvio-cli/Cargo.toml
+	cargo build --bin fluvio -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer
 
 
 build-cluster: install_rustup_target
-	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG)
+	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG)
 
 build-test:	install_rustup_target 
-	cargo build --bin fluvio-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo build --bin fluvio-test -p fluvio-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-channel: install_rustup_target
-	$(CARGO_BUILDER) build --bin fluvio-channel $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	$(CARGO_BUILDER) build --bin fluvio-channel -p fluvio-channel-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
 	./build-scripts/install_target.sh

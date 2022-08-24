@@ -3,16 +3,17 @@ use std::fmt::Debug;
 use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
-use dataplane::batch::BatchRecords;
-use fluvio_storage::config::ReplicaConfig;
 use tracing::{debug, warn, instrument};
 use async_rwlock::{RwLock};
 
+use fluvio_protocol::record::BatchRecords;
+use fluvio_storage::config::ReplicaConfig;
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
-use dataplane::record::RecordSet;
-use dataplane::Offset;
+use fluvio_protocol::record::RecordSet;
+use fluvio_protocol::record::Offset;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
+
 use crate::replication::leader::ReplicaOffsetRequest;
 use crate::core::{FileGlobalContext};
 use crate::storage::SharableReplicaStorage;

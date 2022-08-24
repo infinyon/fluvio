@@ -1,16 +1,16 @@
 use tracing::{debug, trace, instrument};
 
+use fluvio_spu_schema::file::FileRecordSet;
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_socket::SocketError;
-use dataplane::{ErrorCode, api::RequestMessage};
-use dataplane::fetch::{
+use fluvio_protocol::{link::ErrorCode, api::RequestMessage};
+use fluvio_spu_schema::fetch::{
     FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse,
     FetchablePartitionResponse, FetchPartition, FetchableTopic, FetchableTopicResponse,
 };
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
-use dataplane::record::FileRecordSet;
 
 /// perform log fetch request using zero copy write
 #[instrument(

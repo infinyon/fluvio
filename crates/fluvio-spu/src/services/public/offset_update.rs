@@ -4,8 +4,8 @@ use tracing::{debug, error, instrument};
 use fluvio_spu_schema::server::update_offset::{
     OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
 };
-use dataplane::ErrorCode;
-use dataplane::api::{ResponseMessage, RequestMessage};
+use fluvio_protocol::link::ErrorCode;
+use fluvio_protocol::api::{ResponseMessage, RequestMessage};
 use crate::services::public::conn_context::ConnectionContext;
 
 #[instrument(skip(conn_ctx, request))]

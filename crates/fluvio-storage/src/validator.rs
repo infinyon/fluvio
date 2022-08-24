@@ -4,12 +4,12 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::path::PathBuf;
 
-use dataplane::batch::BatchRecords;
+use fluvio_protocol::record::BatchRecords;
 use tracing::error;
 use tracing::instrument;
 use tracing::{debug, warn};
 
-use dataplane::Offset;
+use fluvio_protocol::record::Offset;
 
 use crate::batch::FileBatchStream;
 use crate::batch::StorageBytesIterator;
@@ -294,7 +294,7 @@ mod tests {
 
     use fluvio_future::fs::BoundedFileSink;
     use fluvio_future::fs::BoundedFileOption;
-    use dataplane::Offset;
+    use fluvio_protocol::record::Offset;
 
     use crate::LogIndex;
     use crate::fixture::BatchProducer;

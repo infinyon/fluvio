@@ -1,17 +1,14 @@
 use std::time::Duration;
+
 use futures_lite::StreamExt;
-
 use tracing::debug;
-
-use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
-use fluvio::dataplane::batch::Batch;
-use fluvio::dataplane::batch::RawRecords;
-
-use dataplane::core::Encoder;
-
-use fluvio_controlplane_metadata::partition::PartitionSpec;
 use clap::Parser;
 
+use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
+use fluvio_protocol::record::Batch;
+use fluvio_protocol::record::RawRecords;
+use fluvio_protocol::Encoder;
+use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_case_derive::MyTestCase;
 

@@ -9,16 +9,16 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::SystemTimeError;
 
-use fluvio_future::fs::remove_file;
 use tracing::debug;
+use tracing::error;
+use tracing::info;
 
 use fluvio_future::fs::File;
+use fluvio_future::fs::remove_file;
 use fluvio_future::fs::util as file_util;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::AsyncFileExtension;
-use dataplane::{Offset, Size, Size64};
-use tracing::error;
-use tracing::info;
+use fluvio_protocol::record::{Offset, Size, Size64};
 
 use crate::LogIndex;
 use crate::config::SharedReplicaConfig;

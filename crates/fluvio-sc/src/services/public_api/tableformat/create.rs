@@ -8,7 +8,7 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{debug, info, trace, instrument};
 
-use dataplane::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{Status};
 use fluvio_sc_schema::objects::{CommonCreateRequest};
 use fluvio_sc_schema::tableformat::TableFormatSpec;

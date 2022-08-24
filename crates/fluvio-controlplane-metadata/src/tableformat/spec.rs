@@ -1,7 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
-use dataplane::core::{Encoder, Decoder};
-//use std::collections::BTreeMap;
+use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Encoder, Decoder, Default, Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(

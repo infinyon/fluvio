@@ -6,7 +6,7 @@ use tracing::instrument;
 
 use fluvio_storage::OffsetInfo;
 use fluvio_socket::{FluvioSink, SocketError, FluvioStream};
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::RequestMessage;
 use fluvio_types::SpuId;
 
 use crate::{

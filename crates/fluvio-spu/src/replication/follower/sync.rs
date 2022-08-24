@@ -7,15 +7,16 @@ use std::io::Error as IoError;
 use std::marker::PhantomData;
 
 use bytes::BytesMut;
-use dataplane::batch::RawRecords;
 use tracing::trace;
 
-use dataplane::core::{Encoder, Decoder, Version};
-use dataplane::record::{RecordSet, FileRecordSet};
-use dataplane::api::Request;
-use dataplane::ErrorCode;
-use dataplane::store::StoreValue;
-use dataplane::store::FileWrite;
+use fluvio_protocol::store::StoreValue;
+use fluvio_protocol::store::FileWrite;
+use fluvio_protocol::{Encoder, Decoder, Version};
+use fluvio_protocol::record::{RecordSet};
+use fluvio_protocol::api::Request;
+use fluvio_protocol::link::ErrorCode;
+use fluvio_protocol::record::RawRecords;
+use fluvio_spu_schema::file::FileRecordSet;
 
 use super::api_key::FollowerPeerApiEnum;
 

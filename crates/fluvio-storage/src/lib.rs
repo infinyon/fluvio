@@ -29,9 +29,11 @@ mod inner {
 
     use async_trait::async_trait;
 
-    use dataplane::batch::BatchRecords;
-    use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size64};
-    use dataplane::record::RecordSet;
+    use fluvio_protocol::record::BatchRecords;
+    use fluvio_protocol::link::ErrorCode;
+    use fluvio_spu_schema::Isolation;
+    use fluvio_protocol::record::{Offset, ReplicaKey, Size64};
+    use fluvio_protocol::record::RecordSet;
     use fluvio_controlplane_metadata::partition::Replica;
     use fluvio_future::file_slice::AsyncFileSlice;
 

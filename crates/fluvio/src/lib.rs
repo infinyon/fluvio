@@ -262,5 +262,5 @@ pub mod metadata {
 }
 
 pub mod dataplane {
-    pub use dataplane::*;
+    pub use fluvio_protocol::*;
 }

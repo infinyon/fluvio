@@ -1,22 +1,33 @@
 [package]
 name = "fluvio-smartmodule"
-version = "0.2.5"
+version = "0.4.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 categories = ["wasm", "database", "encoding"]
 keywords = ["streaming", "stream", "wasm", "fluvio"]
 repository = "https://github.com/infinyon/fluvio"
-description = "Fluvio SmartModule WASM library"
+description = "Used by Fluvio SmartModule"
 
 
 [lib]
 crate-type = ['lib']
 
+
+[features]
+default = ["smartmodule"]
+smartmodule = []
+
 [dependencies]
-eyre = { version = ">=0.6.8", default-features = false, features=["auto-install"] }
-fluvio-dataplane-protocol = { version = "0.11.0", path = "../fluvio-dataplane-protocol", default-features = false }
+tracing = "0.1.27"
+thiserror = "1"
+eyre = { version = ">=0.6.8", default-features = false, features = [
+    "auto-install",
+] }
 fluvio-smartmodule-derive = { version = "0.2.0", path = "../fluvio-smartmodule-derive" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = [
+    "link",
+] }
 
 [dev-dependencies]
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }

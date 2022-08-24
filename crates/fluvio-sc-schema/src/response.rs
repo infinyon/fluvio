@@ -5,8 +5,8 @@
 //!
 //! Response sent to client. Sends entity name, error code and error message.
 //!
-use dataplane::core::{Encoder, Decoder};
-use dataplane::ErrorCode;
+use fluvio_protocol::{Encoder, Decoder};
+use crate::errors::ErrorCode;
 
 use crate::ApiError;
 

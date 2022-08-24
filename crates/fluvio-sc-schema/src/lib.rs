@@ -20,7 +20,7 @@ pub use response::*;
 pub use admin::*;
 
 pub mod errors {
-    pub use dataplane::ErrorCode;
+    pub use fluvio_protocol::link::ErrorCode;
 }
 
 pub use fluvio_controlplane_metadata::core;
@@ -31,7 +31,7 @@ pub use fluvio_controlplane_metadata::message;
 #[derive(thiserror::Error, Debug)]
 pub enum ApiError {
     #[error("Received error code: {0:#?} ({1:?})")]
-    Code(dataplane::ErrorCode, Option<String>),
+    Code(crate::errors::ErrorCode, Option<String>),
     #[error("No resource found: {0}")]
     NoResourceFound(String),
 }
@@ -40,7 +40,7 @@ mod admin {
 
     use std::fmt::Debug;
 
-    use dataplane::core::{Encoder, Decoder};
+    use fluvio_protocol::{Encoder, Decoder};
     use fluvio_controlplane_metadata::{store::MetadataStoreObject};
 
     use super::core::{Spec};

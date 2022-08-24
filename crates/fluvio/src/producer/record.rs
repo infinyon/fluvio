@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
-use dataplane::{Offset, ErrorCode};
-use fluvio_types::PartitionId;
 use async_channel::Receiver;
 use async_lock::RwLock;
+
+use fluvio_protocol::record::Offset;
+use fluvio_protocol::link::ErrorCode;
+use fluvio_types::PartitionId;
 
 use crate::error::Result;
 use crate::producer::accumulator::ProducePartitionResponseFuture;

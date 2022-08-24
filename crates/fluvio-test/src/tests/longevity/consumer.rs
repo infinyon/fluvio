@@ -6,18 +6,18 @@ use futures_lite::StreamExt;
 use futures::future::try_join_all;
 use tokio::select;
 use async_channel;
+use tracing::info;
 
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
 use fluvio_future::io::Stream;
-use fluvio::dataplane::record::ConsumerRecord;
-use fluvio::dataplane::ErrorCode;
-use tracing::info;
+use fluvio_protocol::record::ConsumerRecord;
+use fluvio_protocol::link::ErrorCode;
+use crate::tests::TestRecord;
 
 use super::MyTestCase;
-use crate::tests::TestRecord;
 
 // This is for joining multiple topic support per process
 async fn consume_from_stream(

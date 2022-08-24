@@ -4,10 +4,10 @@
 //! API that allows CLI to fetch topic offsets.
 use std::fmt;
 
-use dataplane::api::Request;
-use dataplane::core::{Encoder, Decoder};
-use dataplane::PartitionOffset;
-use dataplane::ReplicaKey;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::record::PartitionOffset;
+use fluvio_protocol::record::ReplicaKey;
 
 use crate::errors::ErrorCode;
 use super::SpuServerApiKey;

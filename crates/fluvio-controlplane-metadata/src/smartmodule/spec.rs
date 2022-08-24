@@ -4,7 +4,7 @@
 
 use std::collections::{BTreeMap};
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]

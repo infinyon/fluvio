@@ -9,9 +9,9 @@ use cargo::core::Workspace;
 use cargo::ops::CompileOptions;
 use cargo::util::interning::InternedString;
 
-use dataplane::smartmodule::SmartModuleExtraParams;
-use fluvio_smartengine::filter::SmartModuleFilter;
-use fluvio_smartengine::SmartEngine;
+use fluvio_smartengine::engine::SmartEngine;
+use fluvio_smartengine::engine::filter::SmartModuleFilter;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 #[ignore]
 #[test]

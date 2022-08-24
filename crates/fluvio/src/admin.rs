@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
-use dataplane::api::{Request};
+use fluvio_protocol::api::{Request};
 use fluvio_future::net::DomainConnector;
 use tracing::{debug, trace, instrument};
 

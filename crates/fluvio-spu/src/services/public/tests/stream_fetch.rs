@@ -3,7 +3,9 @@ use std::{
     path::{PathBuf, Path},
     time::Duration,
 };
+use std::sync::Arc;
 
+use tracing::{debug};
 use flate2::{Compression, bufread::GzEncoder};
 
 use fluvio_controlplane_metadata::{
@@ -16,33 +18,30 @@ use futures_util::{Future, StreamExt};
 
 use fluvio_future::timer::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket};
-use dataplane::{
-    Isolation,
-    fetch::DefaultFetchRequest,
+use fluvio_spu_schema::Isolation;
+use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
+    link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
 };
-use dataplane::fixture::{create_batch, TEST_RECORD};
-use fluvio_spu_schema::server::{
-    stream_fetch::{
-        SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartModuleContextData,
+use fluvio_smartengine::metadata::{
+    SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
+    SmartModuleInvocationWasm, SmartModuleContextData,
+};
+use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
+use fluvio_spu_schema::{
+    server::{
+        update_offset::{UpdateOffsetsRequest, OffsetUpdate},
     },
-    update_offset::{UpdateOffsetsRequest, OffsetUpdate},
+    fetch::DefaultFetchRequest,
 };
-use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
-use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
 use crate::{core::GlobalContext, services::public::tests::create_filter_records};
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
 use crate::services::public::create_public_server;
 
-use std::sync::Arc;
-
-use tracing::{debug};
-
-use dataplane::{
-    ErrorCode,
+use fluvio_protocol::{
     api::{RequestMessage},
     record::RecordSet,
 };
@@ -175,6 +174,7 @@ async fn test_stream_fetch_basic() {
                 batch
                     .memory_records()
                     .expect("failed to get memory records")[1]
+                    .get_header()
                     .get_offset_delta(),
                 1
             );
@@ -504,6 +504,7 @@ async fn test_stream_fetch_filter(
             batch
                 .memory_records()
                 .expect("failed to get memory records")[0]
+                .get_header()
                 .get_offset_delta(),
             1
         );
@@ -844,7 +845,7 @@ async fn test_stream_filter_error_fetch(
             assert_eq!(error.offset, 10);
             assert!(error.record_key.is_none());
             assert_eq!(error.record_value.as_ref(), "ten".as_bytes());
-            assert_eq!(error.kind, dataplane::smartmodule::SmartModuleKind::Filter);
+            assert_eq!(error.kind, SmartModuleKindError::Filter);
             let rendered = format!("{}", error);
             assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartModule Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
         }
@@ -1306,7 +1307,7 @@ async fn test_stream_fetch_map_error(
     match &response.partition.error_code {
         ErrorCode::SmartModuleRuntimeError(error) => {
             assert_eq!(error.offset, 9);
-            assert_eq!(error.kind, dataplane::smartmodule::SmartModuleKind::Map);
+            assert_eq!(error.kind, SmartModuleKindError::Map);
             assert_eq!(error.record_value.as_ref(), "nine".as_bytes());
         }
         _ => panic!("should get runtime error"),
@@ -2251,6 +2252,7 @@ async fn test_stream_fetch_filter_with_params(
             batch
                 .memory_records()
                 .expect("failed to get memory records")[0]
+                .get_header()
                 .get_offset_delta(),
             0
         );
@@ -2306,6 +2308,7 @@ async fn test_stream_fetch_filter_with_params(
             batch
                 .memory_records()
                 .expect("failed to get memory records")[0]
+                .get_header()
                 .get_offset_delta(),
             1
         );

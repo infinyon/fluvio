@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use dataplane::{
+use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record, RecordSet},
 };

@@ -8,7 +8,7 @@ use std::fmt;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::MetadataStoreObject;
 use fluvio_types::SmartModuleName;
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 #[cfg(feature = "k8")]
 mod k8;

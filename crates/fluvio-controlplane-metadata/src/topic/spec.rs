@@ -19,9 +19,9 @@ use tracing::{trace, debug};
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 
-use dataplane::core::Version;
-use dataplane::bytes::{Buf, BufMut};
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::Version;
+use fluvio_protocol::bytes::{Buf, BufMut};
+use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(

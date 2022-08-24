@@ -8,10 +8,10 @@ use std::time::Duration;
 use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tracing::{debug, trace, error, instrument, info};
 
-use dataplane::{ErrorCode, Size64};
+use fluvio_protocol::link::ErrorCode;
+use fluvio_protocol::record::Size64;
+use fluvio_protocol::record::Offset;
 use fluvio_future::file_slice::AsyncFileSlice;
-
-use dataplane::Offset;
 
 use crate::config::SharedReplicaConfig;
 use crate::segment::ReadSegment;
@@ -283,8 +283,8 @@ mod tests {
     use std::sync::Arc;
 
     use flv_util::fixture::ensure_new_dir;
-    use dataplane::fixture::create_batch;
-    use dataplane::Offset;
+    use fluvio_protocol::fixture::create_batch;
+    use fluvio_protocol::record::Offset;
 
     use crate::StorageError;
     use crate::config::SharedReplicaConfig;

@@ -65,10 +65,10 @@ mod custom_metadata {
 
     use tracing::trace;
 
-    use dataplane::core::Encoder;
-    use dataplane::core::Decoder;
-    use dataplane::core::Version;
-    use dataplane::bytes::{Buf, BufMut};
+    use fluvio_protocol::Encoder;
+    use fluvio_protocol::Decoder;
+    use fluvio_protocol::Version;
+    use fluvio_protocol::bytes::{Buf, BufMut};
 
     use crate::core::{Spec, Removable, Creatable};
     use crate::extended::{ObjectType, SpecExt};

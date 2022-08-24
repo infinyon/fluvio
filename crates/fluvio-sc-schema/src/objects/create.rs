@@ -2,10 +2,12 @@
 
 use std::fmt::Debug;
 
-use dataplane::core::{Encoder, Decoder};
-use dataplane::api::Request;
+use fluvio_protocol::bytes::{BufMut, Buf};
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
 use fluvio_controlplane_metadata::derivedstream::DerivedStreamSpec;
 use fluvio_protocol::Version;
+
 use crate::topic::TopicSpec;
 use crate::customspu::CustomSpuSpec;
 use crate::smartmodule::SmartModuleSpec;
@@ -73,7 +75,7 @@ impl ObjectCreateRequest {
 }
 
 impl Encoder for ObjectCreateRequest {
-    fn write_size(&self, version: dataplane::core::Version) -> usize {
+    fn write_size(&self, version: Version) -> usize {
         let type_size = (0u8).write_size(version);
 
         type_size
@@ -88,13 +90,9 @@ impl Encoder for ObjectCreateRequest {
             }
     }
 
-    fn encode<T>(
-        &self,
-        dest: &mut T,
-        version: dataplane::core::Version,
-    ) -> Result<(), std::io::Error>
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), std::io::Error>
     where
-        T: dataplane::bytes::BufMut,
+        T: BufMut,
     {
         self.type_value().encode(dest, version)?;
         match self {
@@ -114,10 +112,10 @@ impl Encoder for ObjectCreateRequest {
 // We implement decode signature even thought this will be never called.
 // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
 // to provide decode implementation but should be never called
-impl dataplane::core::Decoder for ObjectCreateRequest {
+impl Decoder for ObjectCreateRequest {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
     where
-        T: dataplane::bytes::Buf,
+        T: Buf,
     {
         let mut typ: u8 = 0;
         typ.decode(src, version)?;

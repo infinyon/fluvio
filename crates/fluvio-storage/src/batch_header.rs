@@ -1,5 +1,5 @@
-use dataplane::core::{Decoder, Encoder};
-use dataplane::batch::BatchRecords;
+use fluvio_protocol::{Decoder, Encoder};
+use fluvio_protocol::record::BatchRecords;
 
 use crate::batch::FileBatchStream;
 use crate::batch::FileBatchPos;
@@ -25,9 +25,10 @@ mod tests {
     use std::sync::Arc;
     use std::time::Instant;
 
-    use dataplane::Offset;
-    use flv_util::fixture::{ensure_new_dir};
     use tracing::debug;
+
+    use fluvio_protocol::record::Offset;
+    use flv_util::fixture::{ensure_new_dir};
 
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;

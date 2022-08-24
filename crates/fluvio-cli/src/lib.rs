@@ -351,7 +351,7 @@ mod root {
 }
 
 mod util {
-    use fluvio::dataplane::Isolation;
+    use fluvio_spu_schema::Isolation;
 
     pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
         match s {

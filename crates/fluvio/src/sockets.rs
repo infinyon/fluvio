@@ -6,9 +6,9 @@ use std::time::Duration;
 
 use tracing::{debug, instrument, info};
 
-use dataplane::api::RequestMessage;
-use dataplane::api::Request;
-use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::link::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::{AsyncResponse, SocketError};
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
@@ -312,7 +312,7 @@ impl SerialFrame for VersionedSerialSocket {
 
 #[cfg(test)]
 mod test {
-    use dataplane::versions::ApiVersionKey;
+    use fluvio_protocol::link::versions::ApiVersionKey;
 
     use super::ApiVersionsResponse;
     use super::Versions;

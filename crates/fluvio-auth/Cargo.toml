@@ -22,7 +22,6 @@ tracing = "0.1"
 x509-parser = "0.14.0"
 
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
-dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-future = { version = "0.4.0", features = ["net", "openssl_tls"] }
 fluvio-protocol = { path = "../fluvio-protocol" }
 fluvio-socket = { path = "../fluvio-socket" }

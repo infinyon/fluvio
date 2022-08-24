@@ -1,5 +1,9 @@
 use std::sync::Arc;
 
+use fluvio_smartengine::metadata::{
+    SmartModuleInvocationWasm, SmartModuleWasmCompressed, LegacySmartModulePayload,
+    SmartModuleInvocation,
+};
 use futures_util::stream::{Stream, select_all};
 use tracing::{debug, error, trace, instrument, info};
 use once_cell::sync::Lazy;
@@ -10,23 +14,20 @@ use futures_util::FutureExt;
 use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
 use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
-    LegacySmartModulePayload, SmartModuleWasmCompressed, WASM_MODULE_API, WASM_MODULE_V2_API,
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, WASM_MODULE_API, SMART_MODULE_API,
+    WASM_MODULE_V2_API, GZIP_WASM_API,
 };
-pub use fluvio_spu_schema::server::stream_fetch::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, DerivedStreamInvocation,
-};
-use dataplane::Isolation;
-use dataplane::ReplicaKey;
-use dataplane::ErrorCode;
-use dataplane::batch::Batch;
+use fluvio_spu_schema::Isolation;
+use fluvio_protocol::record::ReplicaKey;
+use fluvio_protocol::link::ErrorCode;
+use fluvio_protocol::record::Batch;
 
 use crate::FluvioError;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
 
-pub use dataplane::record::ConsumerRecord as Record;
+pub use fluvio_protocol::record::ConsumerRecord as Record;
 
 /// An interface for consuming events from a particular partition
 ///
@@ -223,7 +224,7 @@ where
     ) -> Result<
         (
             impl Stream<Item = Result<Batch, ErrorCode>>,
-            dataplane::Offset,
+            fluvio_protocol::record::Offset,
         ),
         FluvioError,
     > {
@@ -277,7 +278,7 @@ where
     ) -> Result<
         (
             impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
-            dataplane::Offset,
+            fluvio_protocol::record::Offset,
         ),
         FluvioError,
     > {
@@ -572,10 +573,12 @@ mod publish_stream {
 static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     use std::env;
     use fluvio_protocol::Encoder;
-    use crate::dataplane::fetch::FetchResponse;
-    use crate::dataplane::fetch::FetchableTopicResponse;
-    use crate::dataplane::fetch::FetchablePartitionResponse;
-    use crate::dataplane::batch::MemoryRecords;
+    use fluvio_spu_schema::fetch::FetchResponse;
+    use fluvio_spu_schema::fetch::FetchableTopicResponse;
+    use fluvio_spu_schema::fetch::FetchablePartitionResponse;
+
+    use fluvio_protocol::record::MemoryRecords;
+
     let var_value = env::var("FLV_CLIENT_MAX_FETCH_BYTES").unwrap_or_default();
     let max_bytes: i32 = var_value.parse().unwrap_or_else(|_| {
         FetchResponse::<MemoryRecords>::default().write_size(0) as i32
@@ -602,7 +605,8 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
-    pub(crate) derivedstream: Option<DerivedStreamInvocation>,
+    pub(crate) derivedstream:
+        Option<fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation>,
 }
 
 impl ConsumerConfig {

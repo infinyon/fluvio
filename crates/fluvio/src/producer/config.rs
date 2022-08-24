@@ -3,9 +3,9 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use derive_builder::Builder;
-use fluvio_future::retry::{ExponentialBackoff, FibonacciBackoff, FixedDelay};
-use dataplane::Isolation;
 
+use fluvio_future::retry::{ExponentialBackoff, FibonacciBackoff, FixedDelay};
+use fluvio_spu_schema::Isolation;
 use fluvio_compression::Compression;
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};

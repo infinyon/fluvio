@@ -10,7 +10,7 @@ use std::time::Duration;
 use fluvio_stream_dispatcher::actions::WSAction;
 use tracing::{info, trace, instrument};
 
-use dataplane::ErrorCode;
+use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::{CommonCreateRequest};
 use fluvio_sc_schema::spg::SpuGroupSpec;

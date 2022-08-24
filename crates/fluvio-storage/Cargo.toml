@@ -42,17 +42,16 @@ fluvio-types = { path = "../fluvio-types", features = [
 ], version = "0.3.1" }
 fluvio-future = { version = "0.4.0", features = ["fs", "mmap", "zero_copy"] }
 fluvio-protocol = { path = "../fluvio-protocol" }
-dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
+fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
+fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
     "file",
 ] }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
 
 [dev-dependencies]
+derive_builder = { version = "0.11.0" }
 fluvio-future = { version = "0.4.0", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
 fluvio-storage = { path = ".", features = ["fixture"] }
-dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
-    "fixture",
-] }
-derive_builder = { version = "0.11.0" }
+fluvio-protocol = { path = "../fluvio-protocol", features = ["fixture"] }
+

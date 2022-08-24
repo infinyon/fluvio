@@ -3,23 +3,23 @@
 use std::{env::temp_dir, sync::Arc};
 use std::time::Duration;
 
+use fluvio_spu_schema::Isolation;
 use tracing::debug;
 use futures_lite::StreamExt;
 use futures_lite::future::zip;
 
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
-use dataplane::{
+use fluvio_spu_schema::{
     fetch::{
         FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
         FilePartitionResponse, FileTopicResponse,
     },
-    record::RecordSet,
 };
-use dataplane::api::RequestMessage;
-use dataplane::record::Record;
-use dataplane::Offset;
-use dataplane::fixture::BatchProducer;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::record::{Record, RecordSet};
+use fluvio_protocol::record::Offset;
+use fluvio_protocol::fixture::BatchProducer;
 
 use fluvio_socket::{FluvioSocket, SocketError};
 use flv_util::fixture::ensure_clean_dir;
@@ -101,7 +101,7 @@ async fn handle_response(socket: &mut FluvioSocket, replica: &FileReplica) {
         .read_partition_slice(
             fetch_offset,
             FileReplica::PREFER_MAX_LEN,
-            dataplane::Isolation::ReadUncommitted,
+            Isolation::ReadUncommitted,
         )
         .await
         .expect("read");

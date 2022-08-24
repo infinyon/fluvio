@@ -76,6 +76,7 @@ impl FollowerGroups {
 use inner::*;
 mod inner {
 
+    use tracing::info;
     use tokio::select;
     use futures_util::StreamExt;
     use once_cell::sync::Lazy;
@@ -85,11 +86,11 @@ mod inner {
     use fluvio_socket::FluvioSocket;
     use fluvio_socket::FluvioSink;
     use fluvio_socket::SocketError;
-    use dataplane::{ReplicaKey, api::RequestMessage};
-    use fluvio_types::{SpuId};
+    use fluvio_protocol::record::ReplicaKey;
+    use fluvio_protocol::api::RequestMessage;
+    use fluvio_types::SpuId;
     use fluvio_storage::FileReplica;
     use fluvio_controlplane_metadata::spu::SpuSpec;
-    use tracing::info;
 
     use crate::{replication::leader::UpdateOffsetRequest, core::SharedSpuConfig};
     use crate::services::internal::FetchStreamRequest;

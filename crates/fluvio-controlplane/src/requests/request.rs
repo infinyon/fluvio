@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 use fluvio_controlplane_metadata::message::Message;
 
 /// General control plane request

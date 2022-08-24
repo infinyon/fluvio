@@ -1,4 +1,4 @@
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 /// Api Key for Spu Client API (from server to client)
 #[repr(u16)]

@@ -1,9 +1,10 @@
 #![allow(clippy::assign_op_pattern)]
 
-use dataplane::derive::Decoder;
-use dataplane::derive::Encoder;
-use dataplane::api::Request;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::Encoder;
+use fluvio_protocol::api::Request;
 use fluvio_controlplane_metadata::message::DerivedStreamControlData;
+
 use crate::InternalSpuApi;
 
 use super::ControlPlaneRequest;

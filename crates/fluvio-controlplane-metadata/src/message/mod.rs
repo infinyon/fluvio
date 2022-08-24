@@ -36,7 +36,7 @@ mod smart_stream_msg {
 
     use std::fmt;
 
-    use dataplane::core::{Encoder, Decoder};
+    use fluvio_protocol::{Encoder, Decoder};
     use fluvio_stream_model::{core::MetadataItem, store::MetadataStoreObject};
 
     use crate::derivedstream::DerivedStreamSpec;

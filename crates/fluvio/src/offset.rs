@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 
 use tracing::{debug, trace};
-use dataplane::ReplicaKey;
+use fluvio_protocol::record::ReplicaKey;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 

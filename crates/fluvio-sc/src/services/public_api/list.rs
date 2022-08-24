@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 
 use tracing::{debug, instrument};
 
-use dataplane::api::{RequestMessage, ResponseMessage};
+use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{
     objects::{ObjectApiListRequest, ObjectApiListResponse},
 };

@@ -5,7 +5,7 @@ use std::io::{Error as IoError, ErrorKind};
 use async_trait::async_trait;
 use blocking::unblock;
 use bytes::{BytesMut, Bytes};
-use dataplane::Size;
+use fluvio_protocol::record::Size;
 
 use libc::{c_void};
 use nix::errno::Errno;

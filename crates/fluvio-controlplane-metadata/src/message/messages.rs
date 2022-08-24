@@ -6,7 +6,7 @@
 use std::fmt::{self, Display};
 use std::fmt::Debug;
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 use super::Message;
 
