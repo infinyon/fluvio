@@ -28,8 +28,8 @@ tracing = "0.1.27"
 flate2 = { version = "1.0.20" }
 thiserror = "1"
 anyhow = { version = "1.0.38", optional = true }
-wasmtime = { version = "0.39.0", optional = true }
-wasmtime-wasi = { version = "0.39.0", optional = true }
+wasmtime = { version = "0.40.0", optional = true }
+wasmtime-wasi = { version = "0.40.0", optional = true }
 nix = { version = "0.25", optional = true }
 
 
