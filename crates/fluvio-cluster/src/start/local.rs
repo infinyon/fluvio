@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::fs::create_dir_all;
-use std::process::{Command};
+use std::process::Command;
 use std::time::{Duration, SystemTime};
 
 use colored::Colorize;
@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
-use fluvio_controlplane_metadata::spu::{SpuSpec};
+use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
@@ -19,7 +19,7 @@ use k8_client::SharedK8Client;
 
 use crate::render::{ProgressRenderedText, ProgressRenderer};
 use crate::{ClusterChecker, LocalInstallError, StartStatus, UserChartLocation};
-use crate::charts::{ChartConfig};
+use crate::charts::ChartConfig;
 use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
 use crate::progress::{InstallProgressMessage, ProgressBarFactory};
@@ -276,11 +276,11 @@ impl LocalConfigBuilder {
             }
             // If the client and server domains do not match, give a warning
             (TlsPolicy::Verified(client), TlsPolicy::Verified(server))
-                if client.domain() != server.domain() =>
+                if client.domain != server.domain =>
             {
                 warn!(
-                    client_domain = client.domain(),
-                    server_domain = server.domain(),
+                    client_domain = client.domain,
+                    server_domain = server.domain,
                     "Client TLS config has a different domain than the Server TLS config!"
                 );
             }
@@ -527,7 +527,7 @@ impl LocalInstaller {
         client: SharedK8Client,
     ) -> Result<(), LocalInstallError> {
         use k8_client::meta_client::MetadataClient;
-        use crate::runtime::spu::{SpuClusterManager};
+        use crate::runtime::spu::SpuClusterManager;
 
         let spu_process = cluster_manager.create_spu_relative(spu_index);
 

@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use fluvio::config::{TlsPolicy, TlsPaths};
+use fluvio::config::{TlsPolicy, TlsConfig, TlsItem};
 
 pub fn cert_dir() -> PathBuf {
     std::env::current_dir().unwrap().join("tls").join("certs")
@@ -8,17 +8,17 @@ pub fn cert_dir() -> PathBuf {
 pub fn load_tls(client_user: &str) -> (TlsPolicy, TlsPolicy) {
     const DOMAIN: &str = "fluvio.local";
     let cert_dir = cert_dir();
-    let client_policy = TlsPolicy::from(TlsPaths {
+    let client_policy = TlsPolicy::from(TlsConfig {
         domain: DOMAIN.to_string(),
-        key: cert_dir.join(format!("client-{}.key", client_user)),
-        cert: cert_dir.join(format!("client-{}.crt", client_user)),
-        ca_cert: cert_dir.join("ca.crt"),
+        key: TlsItem::Path(cert_dir.join(format!("client-{}.key", client_user))),
+        cert: TlsItem::Path(cert_dir.join(format!("client-{}.crt", client_user))),
+        ca_cert: TlsItem::Path(cert_dir.join("ca.crt")),
     });
-    let server_policy = TlsPolicy::from(TlsPaths {
+    let server_policy = TlsPolicy::from(TlsConfig {
         domain: DOMAIN.to_string(),
-        key: cert_dir.join("server.key"),
-        cert: cert_dir.join("server.crt"),
-        ca_cert: cert_dir.join("ca.crt"),
+        key: TlsItem::Path(cert_dir.join("server.key")),
+        cert: TlsItem::Path(cert_dir.join("server.crt")),
+        ca_cert: TlsItem::Path(cert_dir.join("ca.crt")),
     });
     (client_policy, server_policy)
 }

@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use tracing::debug;
 use clap::Parser;
 
-use fluvio::config::{TlsPolicy, TlsPaths};
+use fluvio::config::{TlsPolicy, TlsConfig, TlsItem};
 use crate::target::TargetError;
 
 /// Optional Tls Configuration to Client
@@ -56,11 +56,11 @@ impl TryFrom<TlsClientOpt> for TlsPolicy {
             let client_cert = opt.client_cert?;
             let client_key = opt.client_key?;
 
-            let policy = TlsPolicy::from(TlsPaths {
+            let policy = TlsPolicy::from(TlsConfig {
                 domain,
-                ca_cert,
-                cert: client_cert,
-                key: client_key,
+                ca_cert: TlsItem::Path(ca_cert),
+                cert: TlsItem::Path(client_cert),
+                key: TlsItem::Path(client_key),
             });
 
             Some(policy)
@@ -98,13 +98,22 @@ mod tests {
         ]);
         let policy: TlsPolicy = tls_opt.try_into().unwrap();
 
-        use fluvio::config::{TlsPolicy::*, TlsConfig::*};
+        use fluvio::config::TlsPolicy::*;
         match policy {
-            Verified(Files(paths)) => {
+            Verified(paths) => {
                 assert_eq!(paths.domain, "fluvio.io");
-                assert_eq!(paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
-                assert_eq!(paths.cert, PathBuf::from("/tmp/certs/client.crt"));
-                assert_eq!(paths.key, PathBuf::from("/tmp/certs/client.key"));
+                assert_eq!(
+                    paths.ca_cert.unwrap_path(),
+                    PathBuf::from("/tmp/certs/ca.crt")
+                );
+                assert_eq!(
+                    paths.cert.unwrap_path(),
+                    PathBuf::from("/tmp/certs/client.crt")
+                );
+                assert_eq!(
+                    paths.key.unwrap_path(),
+                    PathBuf::from("/tmp/certs/client.key")
+                );
             }
             _ => panic!("Failed to parse TlsPolicy from TlsClientOpt"),
         }

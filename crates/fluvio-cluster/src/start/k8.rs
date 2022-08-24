@@ -28,7 +28,7 @@ use semver::Version;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
-use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile};
+use fluvio::config::{TlsPolicy, TlsConfig, TlsConfigPaths, ConfigFile};
 use fluvio_future::timer::sleep;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
@@ -43,11 +43,10 @@ use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderedText;
 use crate::render::ProgressRenderer;
 use crate::start::common::check_crd;
-use crate::tls_config_to_cert_paths;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, ClusterChecker};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::UserChartLocation;
-use crate::progress::{InstallProgressMessage};
+use crate::progress::InstallProgressMessage;
 
 use super::constants::*;
 use super::common::try_connect_to_sc;
@@ -484,10 +483,10 @@ impl ClusterConfigBuilder {
                 warn!("Client TLS policy type is different than the Server TLS policy type!");
             }
             // If the client and server domains do not match, give a warning
-            (Verified(client), Verified(server)) if client.domain() != server.domain() => {
+            (Verified(client), Verified(server)) if client.domain != server.domain => {
                 warn!(
-                    client_domain = client.domain(),
-                    server_domain = server.domain(),
+                    client_domain = client.domain,
+                    server_domain = server.domain,
                     "Client TLS config has a different domain than the Server TLS config!"
                 );
             }
@@ -751,7 +750,7 @@ impl ClusterInstaller {
             &self.config.client_tls_policy,
         ) {
             self.upload_tls_secrets(server_tls, client_tls)?;
-            install_settings.push(("cert.domain", Cow::Borrowed(server_tls.domain())));
+            install_settings.push(("cert.domain", Cow::Borrowed(&server_tls.domain)));
         }
 
         let mut chart_values = Vec::new();
@@ -885,9 +884,9 @@ impl ClusterInstaller {
         server_tls: &TlsConfig,
         client_tls: &TlsConfig,
     ) -> Result<(), K8InstallError> {
-        let server_paths: Cow<TlsPaths> = tls_config_to_cert_paths(server_tls)?;
-        let client_paths: Cow<TlsPaths> = tls_config_to_cert_paths(client_tls)?;
-        self.upload_tls_secrets_from_files(server_paths.as_ref(), client_paths.as_ref())?;
+        let server_paths = server_tls.write_inline_to_disk()?;
+        let client_paths = client_tls.write_inline_to_disk()?;
+        self.upload_tls_secrets_from_files(&server_paths, &client_paths)?;
         Ok(())
     }
 
@@ -1196,28 +1195,29 @@ impl ClusterInstaller {
     }
 
     /// Install server-side TLS by uploading secrets to kubernetes
+    /// Panics if any `server_paths` or `client_paths` contain inline items.
     #[instrument(skip(self, server_paths, client_paths))]
     fn upload_tls_secrets_from_files(
         &self,
-        server_paths: &TlsPaths,
-        client_paths: &TlsPaths,
+        server_paths: &TlsConfigPaths,
+        client_paths: &TlsConfigPaths,
     ) -> Result<(), K8InstallError> {
-        let ca_cert = server_paths
-            .ca_cert
-            .to_str()
-            .ok_or_else(|| IoError::new(ErrorKind::InvalidInput, "ca_cert must be a valid path"))?;
-        let server_cert = server_paths.cert.to_str().ok_or_else(|| {
+        let ca_cert =
+            server_paths.ca_cert.as_ref().to_str().ok_or_else(|| {
+                IoError::new(ErrorKind::InvalidInput, "ca_cert must be a valid path")
+            })?;
+        let server_cert = server_paths.cert.as_ref().to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "server_cert must be a valid path")
         })?;
-        let server_key = server_paths.key.to_str().ok_or_else(|| {
+        let server_key = server_paths.key.as_ref().to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "server_key must be a valid path")
         })?;
         debug!("Using server TLS from paths: {:?}", server_paths);
 
-        let client_cert = client_paths.cert.to_str().ok_or_else(|| {
+        let client_cert = client_paths.cert.as_ref().to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "client_cert must be a valid path")
         })?;
-        let client_key = client_paths.key.to_str().ok_or_else(|| {
+        let client_key = client_paths.key.as_ref().to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "client_key must be a valid path")
         })?;
         debug!("Using client TLS from paths: {:?}", client_paths);

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use clap::Parser;
 use serde::Serialize;
 
-use fluvio::config::{ConfigFile, TlsPolicy, TlsConfig};
+use fluvio::config::{ConfigFile, TlsPolicy};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::output::OutputType;
 
@@ -58,17 +58,18 @@ impl ExportOpt {
             let tls = match &cluster.tls {
                 TlsPolicy::Disabled => ProfileExportTls::Disabled,
                 TlsPolicy::Anonymous => ProfileExportTls::Anonymous,
-                TlsPolicy::Verified(tls_config) => ProfileExportTls::Verified(match tls_config {
-                    TlsConfig::Mixed(tls_certs) if tls_certs.is_all_inline() => ProfileExportTlsCerts {
-                        domain: tls_certs.domain.clone(),
-                        key: tls_certs.key.clone().unwrap_inline(),
-                        cert: tls_certs.cert.clone().unwrap_inline(),
-                        ca_cert: tls_certs.ca_cert.clone().unwrap_inline(),
-                    },
-                    TlsConfig::Files(_) | TlsConfig::Mixed(_) => {
+                TlsPolicy::Verified(tls_config) => ProfileExportTls::Verified(
+                    if tls_config.is_all_inline() {
+                        ProfileExportTlsCerts {
+                            domain: tls_config.domain.clone(),
+                            key: tls_config.key.clone().unwrap_inline(),
+                            cert: tls_config.cert.clone().unwrap_inline(),
+                            ca_cert: tls_config.ca_cert.clone().unwrap_inline(),
+                        }
+                    } else {
                         return Err(CliError::Other(format!("Cluster {} uses external TLS certs. Only inline TLS certs are supported.", cluster_name)));
                     }
-                }),
+                )
             };
             ProfileExport {
                 endpoint: cluster.endpoint.clone(),

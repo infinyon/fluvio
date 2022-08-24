@@ -5,7 +5,7 @@ use tracing::debug;
 use clap::Parser;
 use k8_config::{KubeConfig, ConfigError as KubeConfigError};
 
-use fluvio::config::{TlsData, TlsItem, TlsPolicy};
+use fluvio::config::{TlsConfig, TlsItem, TlsPolicy};
 
 use crate::cli::ClusterCliError;
 
@@ -146,14 +146,14 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             };
             (client_key, client_cert, ca_cert)
         };
-        let client_policy = TlsPolicy::from(TlsData {
+        let client_policy = TlsPolicy::from(TlsConfig {
             domain: opt.domain.clone().unwrap(),
             key: client_key,
             cert: client_cert,
             ca_cert: ca_cert.clone(),
         });
         // --domain, --server-key and --server-cert were all given.
-        let server_policy = TlsPolicy::from(TlsData {
+        let server_policy = TlsPolicy::from(TlsConfig {
             domain: opt.domain.unwrap(),
             key: TlsItem::Path(opt.server_key.unwrap()),
             cert: TlsItem::Path(opt.server_cert.unwrap()),
@@ -189,20 +189,38 @@ mod tests {
         ]);
         let (client, server): (TlsPolicy, TlsPolicy) = tls_opt.try_into().unwrap();
 
-        use fluvio::config::{TlsPolicy::*, TlsConfig::*};
+        use fluvio::config::TlsPolicy::*;
         match (client, server) {
-            (Verified(Files(client_paths)), Verified(Files(server_paths))) => {
+            (Verified(client_paths), Verified(server_paths)) => {
                 // Client checks
                 assert_eq!(client_paths.domain, "fluvio.io");
-                assert_eq!(client_paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
-                assert_eq!(client_paths.cert, PathBuf::from("/tmp/certs/client.crt"));
-                assert_eq!(client_paths.key, PathBuf::from("/tmp/certs/client.key"));
+                assert_eq!(
+                    client_paths.ca_cert.unwrap_path(),
+                    PathBuf::from("/tmp/certs/ca.crt")
+                );
+                assert_eq!(
+                    client_paths.cert.unwrap_path(),
+                    PathBuf::from("/tmp/certs/client.crt")
+                );
+                assert_eq!(
+                    client_paths.key.unwrap_path(),
+                    PathBuf::from("/tmp/certs/client.key")
+                );
 
                 // Server checks
                 assert_eq!(server_paths.domain, "fluvio.io");
-                assert_eq!(server_paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
-                assert_eq!(server_paths.cert, PathBuf::from("/tmp/certs/server.crt"));
-                assert_eq!(server_paths.key, PathBuf::from("/tmp/certs/server.key"));
+                assert_eq!(
+                    server_paths.ca_cert.unwrap_path(),
+                    PathBuf::from("/tmp/certs/ca.crt")
+                );
+                assert_eq!(
+                    server_paths.cert.unwrap_path(),
+                    PathBuf::from("/tmp/certs/server.crt")
+                );
+                assert_eq!(
+                    server_paths.key.unwrap_path(),
+                    PathBuf::from("/tmp/certs/server.key")
+                );
             }
             _ => panic!("Failed to parse TlsProfiles from TlsOpt"),
         }

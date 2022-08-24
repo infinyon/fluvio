@@ -11,7 +11,7 @@ mod error {
 
     use std::io::Error as IoError;
 
-    use fluvio_command::{CommandError};
+    use fluvio_command::CommandError;
 
     #[derive(thiserror::Error, Debug)]
     pub enum LocalRuntimeError {
@@ -31,13 +31,11 @@ mod error {
 
 mod process {
 
-    use std::{borrow::Cow, process::Command};
+    use std::process::Command;
 
     use tracing::{info, instrument};
 
-    use fluvio::config::{TlsConfig, TlsPaths};
-
-    use crate::tls_config_to_cert_paths;
+    use fluvio::config::TlsConfig;
 
     use super::LocalRuntimeError;
 
@@ -49,16 +47,16 @@ mod process {
             tls: &TlsConfig,
             port: u16,
         ) -> Result<(), LocalRuntimeError> {
-            let paths: Cow<TlsPaths> = tls_config_to_cert_paths(tls)?;
+            let paths = tls.write_inline_to_disk()?;
 
             info!("starting SC with TLS options");
-            let ca_cert = paths.ca_cert.to_str().ok_or_else(|| {
+            let ca_cert = paths.ca_cert.as_ref().to_str().ok_or_else(|| {
                 LocalRuntimeError::Other("ca_cert must be a valid path".to_string())
             })?;
-            let server_cert = paths.cert.to_str().ok_or_else(|| {
+            let server_cert = paths.cert.as_ref().to_str().ok_or_else(|| {
                 LocalRuntimeError::Other("server_cert must be a valid path".to_string())
             })?;
-            let server_key = paths.key.to_str().ok_or_else(|| {
+            let server_key = paths.key.as_ref().to_str().ok_or_else(|| {
                 LocalRuntimeError::Other("server_key must be a valid path".to_string())
             })?;
             cmd.arg("--tls")

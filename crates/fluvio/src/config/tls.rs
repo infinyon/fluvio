@@ -1,7 +1,8 @@
 use std::convert::TryFrom;
-use std::io::Error as IoError;
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::path::PathBuf;
-use std::fmt::{Debug};
+use std::fmt::Debug;
+use std::borrow::Cow;
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
@@ -36,70 +37,99 @@ impl From<TlsConfig> for TlsPolicy {
     }
 }
 
-// impl From<TlsCerts> for TlsPolicy {
-//     fn from(certs: TlsCerts) -> Self {
-//         Self::Verified(certs.into())
-//     }
-// }
-
-impl From<TlsPaths> for TlsPolicy {
-    fn from(paths: TlsPaths) -> Self {
-        Self::Verified(paths.into())
-    }
-}
-
-impl From<TlsData> for TlsPolicy {
-    fn from(data: TlsData) -> Self {
-        Self::Verified(data.into())
-    }
-}
-
-/// Describes the TLS configuration either inline or via file paths
+/// Describes the TLS configuration
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "tls_source", content = "certs")]
-pub enum TlsConfig {
-    /// TLS client config with paths to keys and certs
-    #[serde(rename = "files", alias = "file")]
-    Files(TlsPaths),
-    /// Tls client config with either inline keys and certs or paths to them
-    #[serde(rename = "mixed")]
-    Mixed(TlsData),
+pub struct TlsConfig {
+    pub domain: String,
+    pub key: TlsItem,
+    pub cert: TlsItem,
+    pub ca_cert: TlsItem,
 }
 
 impl TlsConfig {
-    /// Returns the domain which this TLS configuration is valid for
-    pub fn domain(&self) -> &str {
-        match self {
-            TlsConfig::Files(TlsPaths { domain, .. }) => &**domain,
-            // TlsConfig::Inline(TlsCerts { domain, .. }) => &**domain,
-            TlsConfig::Mixed(TlsData { domain, .. }) => &**domain,
+    pub fn is_all_paths(&self) -> bool {
+        match (&self.key, &self.cert, &self.ca_cert) {
+            (TlsItem::Path(_), TlsItem::Path(_), TlsItem::Path(_)) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_all_inline(&self) -> bool {
+        match (&self.key, &self.cert, &self.ca_cert) {
+            (TlsItem::Inline(_), TlsItem::Inline(_), TlsItem::Inline(_)) => true,
+            _ => false,
+        }
+    }
+
+    /// Writes any inline items to disk and returns a `TlsConfig` that is all paths.
+    /// If all items were already paths, returns `Cow::Borrowed(self)`. Otherwise, returns
+    /// `Cow::Owned` of a new `TlsConfig` consisting only of paths.
+    pub fn write_inline_to_disk(&self) -> Result<TlsConfigPaths, IoError> {
+        let domain = &self.domain;
+
+        // Only create a temporary directory if there is at least one inline item.
+        if let (TlsItem::Path(key), TlsItem::Path(cert), TlsItem::Path(ca_cert)) =
+            (&self.key, &self.cert, &self.ca_cert)
+        {
+            Ok(TlsConfigPaths {
+                domain,
+                key: Cow::Borrowed(key),
+                cert: Cow::Borrowed(cert),
+                ca_cert: Cow::Borrowed(ca_cert),
+            })
+        } else {
+            let temp_dir = create_temp_dir()?;
+
+            let key = Cow::Owned(
+                self.key
+                    .write_if_inline(temp_dir.join("tls.key"), CertKind::Key)?,
+            );
+            let cert = Cow::Owned(
+                self.cert
+                    .write_if_inline(temp_dir.join("tls.crt"), CertKind::Cert)?,
+            );
+            let ca_cert = Cow::Owned(
+                self.ca_cert
+                    .write_if_inline(temp_dir.join("ca.crt"), CertKind::Cert)?,
+            );
+            Ok(TlsConfigPaths {
+                domain,
+                key,
+                cert,
+                ca_cert,
+            })
         }
     }
 }
 
-impl From<TlsPaths> for TlsConfig {
-    fn from(paths: TlsPaths) -> Self {
-        Self::Files(paths)
-    }
+#[derive(Debug)]
+pub struct TlsConfigPaths<'a> {
+    pub domain: &'a str,
+    pub key: Cow<'a, PathBuf>,
+    pub cert: Cow<'a, PathBuf>,
+    pub ca_cert: Cow<'a, PathBuf>,
 }
 
-impl From<TlsData> for TlsConfig {
-    fn from(config: TlsData) -> Self {
-        Self::Mixed(config)
-    }
-}
+/// Create a temporary directory to store TLS certs in.
+fn create_temp_dir() -> Result<PathBuf, IoError> {
+    use rand::distributions::Alphanumeric;
+    use std::iter;
+    use rand::Rng;
 
-/// TLS config with paths to keys and certs
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TlsPaths {
-    /// Domain name
-    pub domain: String,
-    /// Path to client or server private key
-    pub key: PathBuf,
-    /// Path to client or server certificate
-    pub cert: PathBuf,
-    /// Path to Certificate Authority certificate
-    pub ca_cert: PathBuf,
+    // Generate a random 12 digit alphanmueric string
+    const NUM_RAND_DIR_CHARS: usize = 12;
+
+    let mut rng = rand::thread_rng();
+    let rand_dir_name: String = iter::repeat(())
+        .map(|()| rng.sample(Alphanumeric))
+        .map(char::from)
+        .take(NUM_RAND_DIR_CHARS)
+        .collect();
+
+    let tmp_dir = std::env::temp_dir().join(rand_dir_name);
+
+    std::fs::create_dir(&tmp_dir)?;
+    Ok(tmp_dir)
 }
 
 /// Either the path to, or the contents of, a key or cert
@@ -107,34 +137,6 @@ pub struct TlsPaths {
 pub enum TlsItem {
     Inline(String),
     Path(PathBuf),
-}
-
-/// TLS config with either inline keys and certs, or paths to them
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TlsData {
-    /// Domain name
-    pub domain: String,
-    /// A client or server private key
-    pub key: TlsItem,
-    /// A client or server certificate
-    pub cert: TlsItem,
-    /// A certificate authority certificate
-    pub ca_cert: TlsItem,
-}
-
-impl TlsData {
-    pub fn is_all_paths(&self) -> bool {
-        match (&self.key, &self.cert, &self.ca_cert) {
-            (TlsItem::Path(_), TlsItem::Path(_), TlsItem::Path(_)) => true,
-            _ => false,
-        }
-    }
-    pub fn is_all_inline(&self) -> bool {
-        match (&self.key, &self.cert, &self.ca_cert) {
-            (TlsItem::Inline(_), TlsItem::Inline(_), TlsItem::Inline(_)) => true,
-            _ => false,
-        }
-    }
 }
 
 impl TlsItem {
@@ -153,6 +155,53 @@ impl TlsItem {
             TlsItem::Path(_) => panic!("Failed to unwrap TlsItem. Item is not an inline string."),
         }
     }
+
+    /// If the TLS item is inline, write it to the file at the specified path.
+    /// If the item is a path, return it.
+    fn write_if_inline(&self, path: PathBuf, cert_kind: CertKind) -> Result<PathBuf, IoError> {
+        use std::fs::write;
+
+        Ok(match self {
+            TlsItem::Path(p) => p.clone(),
+            TlsItem::Inline(data) => {
+                write(&path, format_cert_data(data, cert_kind)?.as_bytes())?;
+                path
+            }
+        })
+    }
+}
+
+/// Formats cert data according to PEM requirements.
+///
+/// PEM formatted certs require a newline every 64 characters.
+fn format_cert_data(data: &String, kind: CertKind) -> Result<String, IoError> {
+    let prefix = match kind {
+        CertKind::Key => "-----BEGIN RSA PRIVATE KEY-----\n",
+        CertKind::Cert => "-----BEGIN CERTIFICATE-----\n",
+    };
+    let postfix = match kind {
+        CertKind::Key => "-----END RSA PRIVATE KEY-----",
+        CertKind::Cert => "-----END CERTIFICATE-----",
+    };
+    let data = data.as_bytes();
+    let chunks = data.chunks(64);
+    // Allocate enough space for the original data, plus one newline every 64 chars, plus the pre and postfix.
+    let mut formatted =
+        String::with_capacity(data.len() + data.len() / 64 + prefix.len() + postfix.len());
+    formatted.push_str(prefix);
+    for chunk in chunks {
+        formatted.push_str(
+            std::str::from_utf8(chunk).map_err(|e| IoError::new(IoErrorKind::InvalidData, e))?,
+        );
+        formatted.push_str("\n");
+    }
+    formatted.push_str(postfix);
+    Ok(formatted)
+}
+
+enum CertKind {
+    Key,
+    Cert,
 }
 
 cfg_if::cfg_if! {
@@ -194,34 +243,7 @@ cfg_if::cfg_if! {
                         Ok(Box::new(connector))
 
                     }
-                    TlsPolicy::Verified(TlsConfig::Files(tls)) => {
-                        info!(
-                            domain = &*tls.domain,
-                            "Using verified TLS with certificates from paths"
-                        );
-
-                        let builder = TlsConnector::builder()
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
-                            .with_identity(
-                                IdentityBuilder::from_x509(
-                                    X509PemBuilder::from_path(&tls.cert)?,
-                                    PrivateKeyBuilder::from_path(&tls.key)?
-                                )?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
-                            .add_root_certificate(
-                                X509PemBuilder::from_path(&tls.ca_cert)?
-                                .build()?
-                            )
-                            .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
-
-
-                        Ok(Box::new(TlsDomainConnector::new(
-                            builder.build(),
-                            tls.domain,
-                        )))
-                    }
-                    TlsPolicy::Verified(TlsConfig::Mixed(tls)) => {
+                    TlsPolicy::Verified(tls) => {
                         info!(
                             domain = &*tls.domain,
                             "Using verified TLS with mixed inline certificates and paths"
