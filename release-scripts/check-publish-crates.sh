@@ -38,7 +38,7 @@ function cargo_publish_dry_run_all() {
                 # Multi-line/dedicated dep without version in first line
                 deps_header=2
                 bad_dep=$line
-            elif [[ $deps_header -eq 2 ]] && [[ $line =~ ^((.*\}.*)())$ ]] && \
+            elif [[ $deps_header -eq 2 ]] && [[ $line =~ ^((.*\}.*)|())$ ]] && \
                  [[ ! $line =~ ^(.*version.*)$ ]]; then
                 # Multi-line/dedicated dep without version in any line
                 echo "❌ $crate has no version pinned for dependency: $bad_dep"
