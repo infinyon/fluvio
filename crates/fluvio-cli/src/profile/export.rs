@@ -3,7 +3,7 @@ use std::sync::Arc;
 use clap::Parser;
 use serde::Serialize;
 
-use fluvio::config::{ConfigFile, TlsPolicy};
+use fluvio::config::{ConfigFile, TlsPolicy, TlsConfig};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::output::OutputType;
 
@@ -55,22 +55,23 @@ impl ExportOpt {
         };
 
         let profile_export = if let Some(cluster) = config_file.config().cluster(&cluster_name) {
-            let tls = match &cluster.tls {
-                TlsPolicy::Disabled => ProfileExportTls::Disabled,
-                TlsPolicy::Anonymous => ProfileExportTls::Anonymous,
-                TlsPolicy::Verified(tls_config) => ProfileExportTls::Verified(
-                    if tls_config.is_all_inline() {
-                        ProfileExportTlsCerts {
-                            domain: tls_config.domain.clone(),
-                            key: tls_config.key.clone().unwrap_inline(),
-                            cert: tls_config.cert.clone().unwrap_inline(),
-                            ca_cert: tls_config.ca_cert.clone().unwrap_inline(),
-                        }
-                    } else {
-                        return Err(CliError::Other(format!("Cluster {} uses external TLS certs. Only inline TLS certs are supported.", cluster_name)));
+            let tls =
+                match &cluster.tls {
+                    TlsPolicy::Disabled => ProfileExportTls::Disabled,
+                    TlsPolicy::Anonymous => ProfileExportTls::Anonymous,
+                    TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
+                        ProfileExportTls::Verified(ProfileExportTlsCerts {
+                            domain: tls.domain.clone(),
+                            key: tls.key.clone(),
+                            cert: tls.cert.clone(),
+                            ca_cert: tls.ca_cert.clone(),
+                        })
                     }
-                )
-            };
+                    TlsPolicy::Verified(_) => return Err(CliError::Other(format!(
+                        "Cluster {} uses external TLS certs. Only inline TLS certs are supported.",
+                        cluster_name
+                    ))),
+                };
             ProfileExport {
                 endpoint: cluster.endpoint.clone(),
                 tls,

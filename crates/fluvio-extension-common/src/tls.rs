@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use tracing::debug;
 use clap::Parser;
 
-use fluvio::config::{TlsPolicy, TlsConfig, TlsDoc};
+use fluvio::config::{TlsPolicy, TlsDocs, TlsDoc};
 use crate::target::TargetError;
 
 /// Optional Tls Configuration to Client
@@ -56,7 +56,7 @@ impl TryFrom<TlsClientOpt> for TlsPolicy {
             let client_cert = opt.client_cert?;
             let client_key = opt.client_key?;
 
-            let policy = TlsPolicy::from(TlsConfig {
+            let policy = TlsPolicy::from(TlsDocs {
                 domain,
                 ca_cert: TlsDoc::Path(ca_cert),
                 cert: TlsDoc::Path(client_cert),
@@ -101,6 +101,7 @@ mod tests {
         use fluvio::config::TlsPolicy::*;
         match policy {
             Verified(paths) => {
+                let paths = paths.into_docs();
                 assert_eq!(paths.domain, "fluvio.io");
                 assert_eq!(
                     paths.ca_cert.unwrap_path(),

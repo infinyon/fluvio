@@ -5,7 +5,7 @@ use tracing::debug;
 use clap::Parser;
 use k8_config::{KubeConfig, ConfigError as KubeConfigError};
 
-use fluvio::config::{TlsConfig, TlsDoc, TlsPolicy};
+use fluvio::config::{TlsDocs, TlsDoc, TlsPolicy};
 
 use crate::cli::ClusterCliError;
 
@@ -146,14 +146,14 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             };
             (client_key, client_cert, ca_cert)
         };
-        let client_policy = TlsPolicy::from(TlsConfig {
+        let client_policy = TlsPolicy::from(TlsDocs {
             domain: opt.domain.clone().unwrap(),
             key: client_key,
             cert: client_cert,
             ca_cert: ca_cert.clone(),
         });
         // --domain, --server-key and --server-cert were all given.
-        let server_policy = TlsPolicy::from(TlsConfig {
+        let server_policy = TlsPolicy::from(TlsDocs {
             domain: opt.domain.unwrap(),
             key: TlsDoc::Path(opt.server_key.unwrap()),
             cert: TlsDoc::Path(opt.server_cert.unwrap()),
@@ -193,7 +193,7 @@ mod tests {
         match (client, server) {
             (Verified(client_paths), Verified(server_paths)) => {
                 // Client checks
-                assert_eq!(client_paths.domain, "fluvio.io");
+                assert_eq!(client_paths.domain(), "fluvio.io");
                 assert_eq!(
                     client_paths.ca_cert.unwrap_path(),
                     PathBuf::from("/tmp/certs/ca.crt")

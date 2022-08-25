@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::path::PathBuf;
-use std::fmt::Debug;
+use std::{fmt, fmt::Debug};
 use std::borrow::Cow;
 
 use tracing::info;
@@ -37,24 +37,193 @@ impl From<TlsConfig> for TlsPolicy {
     }
 }
 
-/// Describes the TLS configuration
+impl From<TlsDocs> for TlsPolicy {
+    fn from(tls: TlsDocs) -> Self {
+        Self::Verified(tls.into())
+    }
+}
+
+/// Describes the TLS configuration as represented in the fluvio config (~/.fluvio/config)
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TlsConfig {
-    pub domain: String,
-    pub key: TlsDoc,
-    pub cert: TlsDoc,
-    pub ca_cert: TlsDoc,
+#[serde(tag = "tls_source", content = "certs")]
+pub enum TlsConfig {
+    /// TLS client config with inline keys and certs
+    #[serde(rename = "inline")]
+    Inline(TlsConfigInline),
+    /// TLS client config with paths to keys and certs
+    #[serde(rename = "files", alias = "file")]
+    Files(TlsConfigPaths),
+    /// TLS client config with mixed paths and inline certs
+    #[serde(rename = "mixed")]
+    Mixed(TlsDocs),
+}
+
+impl From<TlsDocs> for TlsConfig {
+    fn from(tls: TlsDocs) -> Self {
+        Self::Mixed(tls)
+    }
 }
 
 impl TlsConfig {
-    pub fn is_all_paths(&self) -> bool {
+    pub fn into_docs(self) -> TlsDocs {
+        self.into()
+    }
+
+    pub fn domain(&self) -> &str {
+        match self {
+            Self::Files(f) => &f.domain,
+            Self::Inline(f) => &f.domain,
+            Self::Mixed(f) => &f.domain,
+        }
+    }
+
+    /// Writes any inline items to disk and returns [`TlsPaths`].
+    pub fn write_inline_to_disk(&self) -> Result<TlsPaths, IoError> {
+        use std::fs::write;
+
+        match self {
+            Self::Files(paths) => Ok(TlsPaths {
+                domain: &paths.domain,
+                key: Cow::Borrowed(&paths.key),
+                cert: Cow::Borrowed(&paths.cert),
+                ca_cert: Cow::Borrowed(&paths.ca_cert),
+            }),
+            Self::Inline(docs) => {
+                let temp_dir = create_temp_dir()?;
+                let key_path = temp_dir.join("tls.key");
+                let cert_path = temp_dir.join("tls.crt");
+                let ca_cert_path = temp_dir.join("ca.crt");
+                write(
+                    &key_path,
+                    format_cert_data(&docs.key, CertKind::Key)?.as_bytes(),
+                )?;
+                write(
+                    &cert_path,
+                    format_cert_data(&docs.cert, CertKind::Cert)?.as_bytes(),
+                )?;
+                write(
+                    &ca_cert_path,
+                    format_cert_data(&docs.ca_cert, CertKind::Cert)?.as_bytes(),
+                )?;
+
+                Ok(TlsPaths {
+                    domain: &docs.domain,
+                    key: Cow::Owned(key_path),
+                    cert: Cow::Owned(cert_path),
+                    ca_cert: Cow::Owned(ca_cert_path),
+                })
+            }
+            Self::Mixed(docs) => docs.write_inline_to_disk(),
+        }
+    }
+}
+
+/// TLS config with inline keys and certs as represented in the fluvio config (~/.fluvio/config)
+///
+/// Keys and certs stored in the `TlsCerts` type should be PEM PKCS1
+/// encoded, with text headers and a base64 encoded body. The
+/// stringified contents of a `TlsCerts` should have text resembling
+/// the following:
+///
+/// ```text
+/// -----BEGIN RSA PRIVATE KEY-----
+/// MIIJKAIBAAKCAgEAsqV4GUKER1wy4sbNvd6gHMp745L4x+ilVElk1ucWGT2akzA6
+/// TEvDiAKFF4txkEaLTECh1dUev6rB5HnboWxd5gdg1K4ck2wrZ3Jv2OTA0unXAkoA
+/// ...
+/// Jh/5Lo8/sj0GmoM6hZyrBZUWI4Q1/l8rgIyu0Lj8okoCmHwZiMrJDDsvdHqET8/n
+/// dyIzkH0j11JkN5EJR+U65PJHWPpU3WCAV+0tFzctmiB83e6O9iahZ3OflWs=
+/// -----END RSA PRIVATE KEY-----
+/// ```
+///
+/// And certificates should look something like this:
+///
+/// ```text
+/// -----BEGIN CERTIFICATE-----
+/// MIIGezCCBGOgAwIBAgIUTYr3REzVKe5JZl2JzLR+rKbv05UwDQYJKoZIhvcNAQEL
+/// BQAwYTELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMRIwEAYDVQQHDAlTdW5ueXZh
+/// ...
+/// S6shmu+0il4xqv7pM82iYlaauEfcy0cpjimSQySKDA4S0KB3X8oe7SZqStTJEvtb
+/// IuH6soJvn4Mpk5MpTwBw1raCOoKSz2H4oE0B1dBAmQ==
+/// -----END CERTIFICATE-----
+/// ```
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct TlsConfigInline {
+    /// Domain name
+    pub domain: String,
+    /// Client or server private key
+    pub key: String,
+    /// Client or server certificate
+    pub cert: String,
+    /// Certificate authority certificate
+    pub ca_cert: String,
+}
+
+impl Debug for TlsConfigInline {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "TlsConfigInline {{ domain: {} }}", self.domain)
+    }
+}
+
+/// TLS config with paths to keys and certs, as represented in the fluvio config (~/.fluvio/config)
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct TlsConfigPaths {
+    /// Domain name
+    pub domain: String,
+    /// Path to a client or server private key
+    pub key: PathBuf,
+    /// Path to a client or server certificate
+    pub cert: PathBuf,
+    /// Path to a certificate authority certificate
+    pub ca_cert: PathBuf,
+}
+
+/// TLS config with keys and certs, either inline or paths, as represented in the fluvio config (~/.fluvio/config)
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct TlsDocs {
+    /// Domain name
+    pub domain: String,
+    /// Client or server private key
+    pub key: TlsDoc,
+    /// Client or server certificate
+    pub cert: TlsDoc,
+    /// Certificate authority certificate
+    pub ca_cert: TlsDoc,
+}
+
+impl From<TlsConfig> for TlsDocs {
+    fn from(config: TlsConfig) -> Self {
+        match config {
+            TlsConfig::Files(config) => Self {
+                domain: config.domain,
+                key: TlsDoc::Path(config.key),
+                cert: TlsDoc::Path(config.cert),
+                ca_cert: TlsDoc::Path(config.ca_cert),
+            },
+            TlsConfig::Inline(config) => Self {
+                domain: config.domain,
+                key: TlsDoc::Inline(config.key),
+                cert: TlsDoc::Inline(config.cert),
+                ca_cert: TlsDoc::Inline(config.ca_cert),
+            },
+            TlsConfig::Mixed(config) => Self {
+                domain: config.domain,
+                key: config.key,
+                cert: config.cert,
+                ca_cert: config.ca_cert,
+            },
+        }
+    }
+}
+
+impl TlsDocs {
+    pub fn is_only_paths(&self) -> bool {
         match (&self.key, &self.cert, &self.ca_cert) {
             (TlsDoc::Path(_), TlsDoc::Path(_), TlsDoc::Path(_)) => true,
             _ => false,
         }
     }
 
-    pub fn is_all_inline(&self) -> bool {
+    pub fn is_only_inline(&self) -> bool {
         match (&self.key, &self.cert, &self.ca_cert) {
             (TlsDoc::Inline(_), TlsDoc::Inline(_), TlsDoc::Inline(_)) => true,
             _ => false,
@@ -245,9 +414,10 @@ cfg_if::cfg_if! {
 
                     }
                     TlsPolicy::Verified(tls) => {
+                        let tls = tls.into_docs();
                         info!(
                             domain = &*tls.domain,
-                            "Using verified TLS with mixed inline certificates and paths"
+                            "Using verified TLS"
                         );
                         let builder = TlsConnector::builder()
                             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?

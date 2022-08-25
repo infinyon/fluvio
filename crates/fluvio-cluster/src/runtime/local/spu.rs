@@ -6,8 +6,8 @@ use tracing::{debug, info, instrument};
 
 use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
 
-use fluvio_command::{CommandExt};
-use fluvio::config::{TlsPolicy};
+use fluvio_command::CommandExt;
+use fluvio::config::TlsPolicy;
 use fluvio_types::SpuId;
 
 use crate::runtime::spu::{SpuClusterManager, SpuTarget};

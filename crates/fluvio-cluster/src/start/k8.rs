@@ -483,10 +483,10 @@ impl ClusterConfigBuilder {
                 warn!("Client TLS policy type is different than the Server TLS policy type!");
             }
             // If the client and server domains do not match, give a warning
-            (Verified(client), Verified(server)) if client.domain != server.domain => {
+            (Verified(client), Verified(server)) if client.domain() != server.domain() => {
                 warn!(
-                    client_domain = client.domain,
-                    server_domain = server.domain,
+                    client_domain = client.domain(),
+                    server_domain = server.domain(),
                     "Client TLS config has a different domain than the Server TLS config!"
                 );
             }
@@ -750,7 +750,7 @@ impl ClusterInstaller {
             &self.config.client_tls_policy,
         ) {
             self.upload_tls_secrets(server_tls, client_tls)?;
-            install_settings.push(("cert.domain", Cow::Borrowed(&server_tls.domain)));
+            install_settings.push(("cert.domain", Cow::Borrowed(&server_tls.domain())));
         }
 
         let mut chart_values = Vec::new();

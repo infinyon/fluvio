@@ -276,11 +276,11 @@ impl LocalConfigBuilder {
             }
             // If the client and server domains do not match, give a warning
             (TlsPolicy::Verified(client), TlsPolicy::Verified(server))
-                if client.domain != server.domain =>
+                if client.domain() != server.domain() =>
             {
                 warn!(
-                    client_domain = client.domain,
-                    server_domain = server.domain,
+                    client_domain = client.domain(),
+                    server_domain = server.domain(),
                     "Client TLS config has a different domain than the Server TLS config!"
                 );
             }

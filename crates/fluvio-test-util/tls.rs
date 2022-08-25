@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use fluvio::config::{TlsPolicy, TlsConfig, TlsDoc};
+use fluvio::config::{TlsPolicy, TlsDocs, TlsDoc};
 
 pub fn cert_dir() -> PathBuf {
     std::env::current_dir().unwrap().join("tls").join("certs")
@@ -8,13 +8,13 @@ pub fn cert_dir() -> PathBuf {
 pub fn load_tls(client_user: &str) -> (TlsPolicy, TlsPolicy) {
     const DOMAIN: &str = "fluvio.local";
     let cert_dir = cert_dir();
-    let client_policy = TlsPolicy::from(TlsConfig {
+    let client_policy = TlsPolicy::from(TlsDocs {
         domain: DOMAIN.to_string(),
         key: TlsDoc::Path(cert_dir.join(format!("client-{}.key", client_user))),
         cert: TlsDoc::Path(cert_dir.join(format!("client-{}.crt", client_user))),
         ca_cert: TlsDoc::Path(cert_dir.join("ca.crt")),
     });
-    let server_policy = TlsPolicy::from(TlsConfig {
+    let server_policy = TlsPolicy::from(TlsDocs {
         domain: DOMAIN.to_string(),
         key: TlsDoc::Path(cert_dir.join("server.key")),
         cert: TlsDoc::Path(cert_dir.join("server.crt")),

@@ -32,7 +32,7 @@ impl ScProcess {
             cmd
         };
         if let TlsPolicy::Verified(tls) = &self.tls_policy {
-            self.set_server_tls(&mut binary, tls, 9005)?;
+            self.set_server_tls(&mut binary, &tls.clone().into(), 9005)?;
         }
         binary.env("RUST_LOG", &self.rust_log);
 
