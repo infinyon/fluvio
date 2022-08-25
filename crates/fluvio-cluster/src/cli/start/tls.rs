@@ -5,7 +5,7 @@ use tracing::debug;
 use clap::Parser;
 use k8_config::{KubeConfig, ConfigError as KubeConfigError};
 
-use fluvio::config::{TlsConfig, TlsItem, TlsPolicy};
+use fluvio::config::{TlsConfig, TlsDoc, TlsPolicy};
 
 use crate::cli::ClusterCliError;
 
@@ -74,9 +74,9 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
         let (client_key, client_cert, ca_cert) = if no_optional_certs_missing {
             // --client-key, --client-cert and --ca-cert were all given. No need to read the kubeconfig.
             (
-                TlsItem::Path(opt.client_key.unwrap()),
-                TlsItem::Path(opt.client_cert.unwrap()),
-                TlsItem::Path(opt.ca_cert.unwrap()),
+                TlsDoc::Path(opt.client_key.unwrap()),
+                TlsDoc::Path(opt.client_cert.unwrap()),
+                TlsDoc::Path(opt.ca_cert.unwrap()),
             )
         } else {
             debug!("One or more TLS files were not specified. Reading kubeconfig...");
@@ -84,12 +84,12 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
 
             // If --client-key was specified, use that. Otherwise try to read it from the kubeconfig.
             let client_key = match opt.client_key {
-                Some(key) => TlsItem::Path(key),
+                Some(key) => TlsDoc::Path(key),
                 None => {
                     let user = kubeconfig.current_user();
                     match user {
                         Some(user) => match user.user.client_key_data.clone() {
-                            Some(client_key) => TlsItem::Inline(client_key),
+                            Some(client_key) => TlsDoc::Inline(client_key),
                             None => {
                                 return Err(
                                     KubeConfigError::Other("Missing client key".to_owned()).into()
@@ -104,12 +104,12 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             };
             // If --client-cert was specified, use that. Otherwise try to read it from the kubeconfig.
             let client_cert = match opt.client_cert {
-                Some(cert) => TlsItem::Path(cert),
+                Some(cert) => TlsDoc::Path(cert),
                 None => {
                     let user = kubeconfig.current_user();
                     match user {
                         Some(user) => match user.user.client_certificate_data.clone() {
-                            Some(client_cert) => TlsItem::Inline(client_cert),
+                            Some(client_cert) => TlsDoc::Inline(client_cert),
                             None => {
                                 return Err(KubeConfigError::Other(
                                     "Missing client certificate".to_owned(),
@@ -125,12 +125,12 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             };
             // If --ca-cert was specified, use that. Otherwise try to read it from the kubeconfig.
             let ca_cert = match opt.ca_cert.clone() {
-                Some(ca_cert) => TlsItem::Path(ca_cert),
+                Some(ca_cert) => TlsDoc::Path(ca_cert),
                 None => {
                     let cluster = kubeconfig.current_cluster();
                     match cluster {
                         Some(cluster) => match cluster.cluster.certificate_authority_data.clone() {
-                            Some(ca_cert) => TlsItem::Inline(ca_cert),
+                            Some(ca_cert) => TlsDoc::Inline(ca_cert),
                             None => {
                                 return Err(KubeConfigError::Other(
                                     "Missing CA certificate".to_owned(),
@@ -155,8 +155,8 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
         // --domain, --server-key and --server-cert were all given.
         let server_policy = TlsPolicy::from(TlsConfig {
             domain: opt.domain.unwrap(),
-            key: TlsItem::Path(opt.server_key.unwrap()),
-            cert: TlsItem::Path(opt.server_cert.unwrap()),
+            key: TlsDoc::Path(opt.server_key.unwrap()),
+            cert: TlsDoc::Path(opt.server_cert.unwrap()),
             ca_cert,
         });
 

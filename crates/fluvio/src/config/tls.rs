@@ -41,22 +41,22 @@ impl From<TlsConfig> for TlsPolicy {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TlsConfig {
     pub domain: String,
-    pub key: TlsItem,
-    pub cert: TlsItem,
-    pub ca_cert: TlsItem,
+    pub key: TlsDoc,
+    pub cert: TlsDoc,
+    pub ca_cert: TlsDoc,
 }
 
 impl TlsConfig {
     pub fn is_all_paths(&self) -> bool {
         match (&self.key, &self.cert, &self.ca_cert) {
-            (TlsItem::Path(_), TlsItem::Path(_), TlsItem::Path(_)) => true,
+            (TlsDoc::Path(_), TlsDoc::Path(_), TlsDoc::Path(_)) => true,
             _ => false,
         }
     }
 
     pub fn is_all_inline(&self) -> bool {
         match (&self.key, &self.cert, &self.ca_cert) {
-            (TlsItem::Inline(_), TlsItem::Inline(_), TlsItem::Inline(_)) => true,
+            (TlsDoc::Inline(_), TlsDoc::Inline(_), TlsDoc::Inline(_)) => true,
             _ => false,
         }
     }
@@ -68,7 +68,7 @@ impl TlsConfig {
         let domain = &self.domain;
 
         // Only create a temporary directory if there is at least one inline item.
-        if let (TlsItem::Path(key), TlsItem::Path(cert), TlsItem::Path(ca_cert)) =
+        if let (TlsDoc::Path(key), TlsDoc::Path(cert), TlsDoc::Path(ca_cert)) =
             (&self.key, &self.cert, &self.ca_cert)
         {
             Ok(TlsConfigPaths {
@@ -135,25 +135,25 @@ fn create_temp_dir() -> Result<PathBuf, IoError> {
 /// Either the path to, or the contents of, a key or cert
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
-pub enum TlsItem {
+pub enum TlsDoc {
     Inline(String),
     Path(PathBuf),
 }
 
-impl TlsItem {
+impl TlsDoc {
     /// Returns the item if it is a path. Panics if it is an inline string.
     pub fn unwrap_path(self) -> PathBuf {
         match self {
-            TlsItem::Path(path) => path,
-            TlsItem::Inline(_) => panic!("Failed to unwrap TlsItem. Item is not a path."),
+            TlsDoc::Path(path) => path,
+            TlsDoc::Inline(_) => panic!("Failed to unwrap TlsItem. Item is not a path."),
         }
     }
 
     /// Returns the item if it is an inline string. Panics if it is a path.
     pub fn unwrap_inline(self) -> String {
         match self {
-            TlsItem::Inline(inline) => inline,
-            TlsItem::Path(_) => panic!("Failed to unwrap TlsItem. Item is not an inline string."),
+            TlsDoc::Inline(inline) => inline,
+            TlsDoc::Path(_) => panic!("Failed to unwrap TlsItem. Item is not an inline string."),
         }
     }
 
@@ -163,8 +163,8 @@ impl TlsItem {
         use std::fs::write;
 
         Ok(match self {
-            TlsItem::Path(p) => p.clone(),
-            TlsItem::Inline(data) => {
+            TlsDoc::Path(p) => p.clone(),
+            TlsDoc::Inline(data) => {
                 write(&path, format_cert_data(data, cert_kind)?.as_bytes())?;
                 path
             }
@@ -254,20 +254,20 @@ cfg_if::cfg_if! {
                             .with_identity(
                                 IdentityBuilder::from_x509(
                                     match tls.cert {
-                                        TlsItem::Inline(cert) => X509PemBuilder::from_reader(&mut cert.as_bytes())?,
-                                        TlsItem::Path(cert) => X509PemBuilder::from_path(&cert)?,
+                                        TlsDoc::Inline(cert) => X509PemBuilder::from_reader(&mut cert.as_bytes())?,
+                                        TlsDoc::Path(cert) => X509PemBuilder::from_path(&cert)?,
                                     },
                                     match tls.key {
-                                        TlsItem::Inline(key) => PrivateKeyBuilder::from_reader(&mut key.as_bytes())?,
-                                        TlsItem::Path(key) => PrivateKeyBuilder::from_path(&key)?,
+                                        TlsDoc::Inline(key) => PrivateKeyBuilder::from_reader(&mut key.as_bytes())?,
+                                        TlsDoc::Path(key) => PrivateKeyBuilder::from_path(&key)?,
                                     }
                                 )?
                             )
                             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
                             .add_root_certificate(
                                 match tls.ca_cert {
-                                    TlsItem::Inline(ca_cert) => X509PemBuilder::from_reader(&mut ca_cert.as_bytes())?.build()?,
-                                    TlsItem::Path(ca_cert) => X509PemBuilder::from_path(&ca_cert)?.build()?,
+                                    TlsDoc::Inline(ca_cert) => X509PemBuilder::from_reader(&mut ca_cert.as_bytes())?.build()?,
+                                    TlsDoc::Path(ca_cert) => X509PemBuilder::from_path(&ca_cert)?.build()?,
                                 }
                             )
                             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
