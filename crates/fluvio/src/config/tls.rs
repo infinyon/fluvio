@@ -134,6 +134,7 @@ fn create_temp_dir() -> Result<PathBuf, IoError> {
 
 /// Either the path to, or the contents of, a key or cert
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
 pub enum TlsItem {
     Inline(String),
     Path(PathBuf),
