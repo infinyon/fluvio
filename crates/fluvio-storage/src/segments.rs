@@ -178,14 +178,6 @@ impl SegmentList {
         self.segments.len()
     }
 
-    #[instrument(skip(self))]
-    pub fn get_total_logs_len(&self) -> usize {
-        self.segments
-            .values()
-            .map(|segment| segment.get_msg_log().get_len() as usize)
-            .sum()
-    }
-
     pub fn occupied_memory(&self) -> Size64 {
         self.segments
             .values()

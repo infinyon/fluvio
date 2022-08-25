@@ -1153,7 +1153,7 @@ impl ClusterInstaller {
         let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
         let time = SystemTime::now();
         pb.set_message(format!(
-            "🖥️ Waiting for SPUs to be ready and have ingress... (timeout: {}s)",
+            "🖥️ Waiting for SPUs to be ready and have ingress... (timeout: {timeout}s)",
             timeout = *MAX_PROVISION_TIME_SEC
         ));
 
