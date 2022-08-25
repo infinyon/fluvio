@@ -28,7 +28,7 @@ use semver::Version;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
-use fluvio::config::{TlsPolicy, TlsConfig, TlsConfigPaths, ConfigFile};
+use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile};
 use fluvio_future::timer::sleep;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
@@ -1199,8 +1199,8 @@ impl ClusterInstaller {
     #[instrument(skip(self, server_paths, client_paths))]
     fn upload_tls_secrets_from_files(
         &self,
-        server_paths: &TlsConfigPaths,
-        client_paths: &TlsConfigPaths,
+        server_paths: &TlsPaths,
+        client_paths: &TlsPaths,
     ) -> Result<(), K8InstallError> {
         let ca_cert =
             server_paths.ca_cert.as_ref().to_str().ok_or_else(|| {

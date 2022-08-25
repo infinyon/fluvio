@@ -64,14 +64,14 @@ impl TlsConfig {
     /// Writes any inline items to disk and returns a `TlsConfig` that is all paths.
     /// If all items were already paths, returns `Cow::Borrowed(self)`. Otherwise, returns
     /// `Cow::Owned` of a new `TlsConfig` consisting only of paths.
-    pub fn write_inline_to_disk(&self) -> Result<TlsConfigPaths, IoError> {
+    pub fn write_inline_to_disk(&self) -> Result<TlsPaths, IoError> {
         let domain = &self.domain;
 
         // Only create a temporary directory if there is at least one inline item.
         if let (TlsDoc::Path(key), TlsDoc::Path(cert), TlsDoc::Path(ca_cert)) =
             (&self.key, &self.cert, &self.ca_cert)
         {
-            Ok(TlsConfigPaths {
+            Ok(TlsPaths {
                 domain,
                 key: Cow::Borrowed(key),
                 cert: Cow::Borrowed(cert),
@@ -92,7 +92,7 @@ impl TlsConfig {
                 self.ca_cert
                     .write_if_inline(temp_dir.join("ca.crt"), CertKind::Cert)?,
             );
-            Ok(TlsConfigPaths {
+            Ok(TlsPaths {
                 domain,
                 key,
                 cert,
@@ -103,7 +103,7 @@ impl TlsConfig {
 }
 
 #[derive(Debug)]
-pub struct TlsConfigPaths<'a> {
+pub struct TlsPaths<'a> {
     pub domain: &'a str,
     pub key: Cow<'a, PathBuf>,
     pub cert: Cow<'a, PathBuf>,
