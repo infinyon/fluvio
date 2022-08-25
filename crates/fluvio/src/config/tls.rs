@@ -1,9 +1,10 @@
 use std::convert::TryFrom;
-use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::{fmt, fmt::Debug};
 use std::borrow::Cow;
 
+use {base64, base64::DecodeError};
 use tracing::info;
 use serde::{Deserialize, Serialize};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
@@ -78,7 +79,7 @@ impl TlsConfig {
     }
 
     /// Writes any inline items to disk and returns [`TlsPaths`].
-    pub fn write_inline_to_disk(&self) -> Result<TlsPaths, IoError> {
+    pub fn write_inline_to_disk(&self) -> Result<TlsPaths, TlsError> {
         use std::fs::write;
 
         match self {
@@ -93,18 +94,14 @@ impl TlsConfig {
                 let key_path = temp_dir.join("tls.key");
                 let cert_path = temp_dir.join("tls.crt");
                 let ca_cert_path = temp_dir.join("ca.crt");
-                write(
-                    &key_path,
-                    format_cert_data(&docs.key, CertKind::Key)?.as_bytes(),
-                )?;
-                write(
-                    &cert_path,
-                    format_cert_data(&docs.cert, CertKind::Cert)?.as_bytes(),
-                )?;
-                write(
-                    &ca_cert_path,
-                    format_cert_data(&docs.ca_cert, CertKind::Cert)?.as_bytes(),
-                )?;
+
+                let decoded_key = base64::decode(&docs.key)?;
+                let decoded_cert = base64::decode(&docs.cert)?;
+                let decoded_ca_cert = base64::decode(&docs.ca_cert)?;
+
+                write(&key_path, &decoded_key)?;
+                write(&cert_path, &decoded_cert)?;
+                write(&ca_cert_path, &decoded_ca_cert)?;
 
                 Ok(TlsPaths {
                     domain: &docs.domain,
@@ -233,7 +230,7 @@ impl TlsDocs {
     /// Writes any inline items to disk and returns a `TlsConfig` that is all paths.
     /// If all items were already paths, returns `Cow::Borrowed(self)`. Otherwise, returns
     /// `Cow::Owned` of a new `TlsConfig` consisting only of paths.
-    pub fn write_inline_to_disk(&self) -> Result<TlsPaths, IoError> {
+    pub fn write_inline_to_disk(&self) -> Result<TlsPaths, TlsError> {
         let domain = &self.domain;
 
         // Only create a temporary directory if there is at least one inline item.
@@ -251,15 +248,15 @@ impl TlsDocs {
 
             let key = Cow::Owned(
                 self.key
-                    .write_if_inline(temp_dir.join("tls.key"), CertKind::Key)?,
+                    .write_if_inline(temp_dir.join("tls.key"))?,
             );
             let cert = Cow::Owned(
                 self.cert
-                    .write_if_inline(temp_dir.join("tls.crt"), CertKind::Cert)?,
+                    .write_if_inline(temp_dir.join("tls.crt"))?,
             );
             let ca_cert = Cow::Owned(
                 self.ca_cert
-                    .write_if_inline(temp_dir.join("ca.crt"), CertKind::Cert)?,
+                    .write_if_inline(temp_dir.join("ca.crt"))?,
             );
             Ok(TlsPaths {
                 domain,
@@ -277,6 +274,14 @@ pub struct TlsPaths<'a> {
     pub key: Cow<'a, PathBuf>,
     pub cert: Cow<'a, PathBuf>,
     pub ca_cert: Cow<'a, PathBuf>,
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum TlsError {
+    #[error(transparent)]
+    IoError(#[from] IoError),
+    #[error(transparent)]
+    DecodeError(#[from] DecodeError),
 }
 
 /// Create a temporary directory to store TLS certs in.
@@ -328,50 +333,18 @@ impl TlsDoc {
 
     /// If the TLS item is inline, write it to the file at the specified path.
     /// If the item is a path, return it.
-    fn write_if_inline(&self, path: PathBuf, cert_kind: CertKind) -> Result<PathBuf, IoError> {
+    fn write_if_inline(&self, path: PathBuf) -> Result<PathBuf, TlsError> {
         use std::fs::write;
 
         Ok(match self {
             TlsDoc::Path(p) => p.clone(),
             TlsDoc::Inline(data) => {
-                write(&path, format_cert_data(data, cert_kind)?.as_bytes())?;
+                let decoded_bytes = base64::decode(&data)?;
+                write(&path, &decoded_bytes)?;
                 path
             }
         })
     }
-}
-
-/// Formats cert data according to PEM requirements.
-///
-/// PEM formatted certs require a newline every 64 characters.
-fn format_cert_data(data: &String, kind: CertKind) -> Result<String, IoError> {
-    let prefix = match kind {
-        CertKind::Key => "-----BEGIN RSA PRIVATE KEY-----\n",
-        CertKind::Cert => "-----BEGIN CERTIFICATE-----\n",
-    };
-    let postfix = match kind {
-        CertKind::Key => "-----END RSA PRIVATE KEY-----",
-        CertKind::Cert => "-----END CERTIFICATE-----",
-    };
-    let data = data.as_bytes();
-    let chunks = data.chunks(64);
-    // Allocate enough space for the original data, plus one newline every 64 chars, plus the pre and postfix.
-    let mut formatted =
-        String::with_capacity(data.len() + data.len() / 64 + prefix.len() + postfix.len());
-    formatted.push_str(prefix);
-    for chunk in chunks {
-        formatted.push_str(
-            std::str::from_utf8(chunk).map_err(|e| IoError::new(IoErrorKind::InvalidData, e))?,
-        );
-        formatted.push_str("\n");
-    }
-    formatted.push_str(postfix);
-    Ok(formatted)
-}
-
-enum CertKind {
-    Key,
-    Cert,
 }
 
 cfg_if::cfg_if! {

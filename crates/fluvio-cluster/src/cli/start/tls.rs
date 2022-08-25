@@ -193,7 +193,8 @@ mod tests {
         match (client, server) {
             (Verified(client_paths), Verified(server_paths)) => {
                 // Client checks
-                assert_eq!(client_paths.domain(), "fluvio.io");
+                let client_paths = client_paths.into_docs();
+                assert_eq!(client_paths.domain, "fluvio.io");
                 assert_eq!(
                     client_paths.ca_cert.unwrap_path(),
                     PathBuf::from("/tmp/certs/ca.crt")
@@ -208,6 +209,7 @@ mod tests {
                 );
 
                 // Server checks
+                let server_paths = server_paths.into_docs();
                 assert_eq!(server_paths.domain, "fluvio.io");
                 assert_eq!(
                     server_paths.ca_cert.unwrap_path(),

@@ -5,10 +5,11 @@ use anyhow::Error as AnyError;
 use indicatif::style::TemplateError;
 
 use fluvio::FluvioError;
-use k8_config::{ConfigError as K8ConfigError};
-use k8_client::{ClientError as K8ClientError};
+use k8_config::ConfigError as K8ConfigError;
+use k8_client::ClientError as K8ClientError;
 use fluvio_helm::HelmError;
 use fluvio_command::CommandError;
+use fluvio::config::TlsError;
 
 use crate::check::{CheckResults, CheckStatuses, ClusterCheckError};
 use crate::charts::ChartInstallError;
@@ -106,6 +107,9 @@ pub enum K8InstallError {
     PortForwardingFailed(ExitStatus),
     #[error("Progress Error")]
     ProgressError(#[from] TemplateError),
+    /// TLS error
+    #[error("TLS error")]
+    TlsError(#[from] TlsError),
 }
 
 /// Errors that may occur while trying to install Fluvio locally
