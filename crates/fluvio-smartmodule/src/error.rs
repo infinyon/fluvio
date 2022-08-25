@@ -29,6 +29,8 @@ pub enum SmartModuleInternalError {
     UndefinedRightRecord = -55,
     #[error("Init params are not found")]
     InitParamsNotFound = -60,
+    #[error("encountered unknown error Init params parsing")]
+    InitParamsParse = -61,
 }
 
 impl Default for SmartModuleInternalError {

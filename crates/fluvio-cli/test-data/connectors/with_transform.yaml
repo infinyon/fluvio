@@ -1,0 +1,22 @@
+version: 0.1.0
+name: my-test-mqtt
+type: mqtt
+topic: my-mqtt
+create_topic: false
+transform:
+  - uses: infinyon/sql
+    invoke: insert
+    with:
+      table: "topic_message"
+      map-columns:
+        "device_id":
+          json-key: "device.device_id"
+          value:
+            type: "int"
+            default: 0
+            required: true
+        "record":
+          json-key: "$"
+          value:
+            type: "jsonb"
+            required: true

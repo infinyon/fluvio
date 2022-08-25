@@ -1,0 +1,14 @@
+version: 0.1.0
+name: my-test-mqtt
+type: mqtt
+topic: my-mqtt
+create_topic: false
+transform:
+  - uses: infinyon/json-sql
+    invoke: insert
+    with:
+      table: "topic_message"
+  - uses: infinyon/avro-sql
+    invoke: insert
+    with:
+      table: "topic_message"
