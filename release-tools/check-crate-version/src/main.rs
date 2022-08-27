@@ -1,8 +1,10 @@
-use std::path::PathBuf;
-
 use flate2::bufread::GzDecoder;
 use tar::Archive;
 use serde::Deserialize;
+
+const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
+const DB_SNAPHSOT_DIR: &str = "./crates_io/db_snapshot";
+const DB_SNAPSHOT_URL: &str = "https://static.crates.io/db-dump.tar.gz";
 
 fn main() {
     let _publish_list = read_publish_list();
@@ -15,20 +17,18 @@ fn read_publish_list() -> Vec<String> {
         publish_list: Vec<String>,
     }
 
-    let list_toml = std::fs::read_to_string("./publish-list.toml").unwrap();
+    let list_toml = std::fs::read_to_string(PUBLISH_LIST_PATH).unwrap();
     let list: PublishList = toml::from_str(&list_toml).unwrap();
     list.publish_list
 }
 
 fn download_crates_io_data() {
-    let snapshot_dir = PathBuf::from("./crates_io/db_snapshot");
-    let snapshot_url = "https://static.crates.io/db-dump.tar.gz";
-    std::fs::create_dir_all(&snapshot_dir).unwrap();
+    std::fs::create_dir_all(&DB_SNAPHSOT_DIR).unwrap();
 
-    println!("Downloading crates.io data: {snapshot_url}");
+    println!("Downloading crates.io data: {DB_SNAPSHOT_URL}");
     // TODO: Find a way to not load the whole file into memory
     // TODO: Add progress indicator
-    let archive_data = reqwest::blocking::get(snapshot_url)
+    let archive_data = reqwest::blocking::get(DB_SNAPSHOT_URL)
         .unwrap()
         .bytes()
         .unwrap()
@@ -38,6 +38,6 @@ fn download_crates_io_data() {
     // TODO: Add progress indicator
     let gz_decoder = GzDecoder::new(archive_data.as_ref());
     let mut archive = Archive::new(gz_decoder);
-    archive.unpack(snapshot_dir).unwrap();
+    archive.unpack(DB_SNAPHSOT_DIR).unwrap();
 }
 
