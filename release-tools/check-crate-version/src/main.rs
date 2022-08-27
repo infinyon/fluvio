@@ -21,22 +21,21 @@ const DB_SNAPHSOT_DIR: &str = "./crates_io/db_snapshot";
 const DB_SNAPSHOT_URL: &str = "https://static.crates.io/db-dump.tar.gz";
 
 fn main() {
-    let publish_list = read_publish_list();
-    // download_crates_io_data();
     check_install_cargo_download();
 
-    download_all_crates(&publish_list);
-
-    // Compute the padding based on the length of the longest crate name
+    let publish_list = read_publish_list();
     let padding = publish_list
         .iter()
         .fold(0, |len, name| max(len, name.len()));
 
     for crate_name in publish_list {
-        let manifests = Manifests::read(&crate_name);
+        if !check_crate_published(&crate_name) {
+            println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)");
+            continue;
+        }
+        download_crate(&crate_name);
 
-        manifests.diff();
-        check_crate_published(&crate_name);
+        let manifests = Manifests::read(&crate_name);
 
         match (diff_crate_src(&crate_name), manifests.diff(), manifests.diff_versions()) {
             (_, _, true) => println!("🟢 {crate_name:-padding$} Version number has been updated"),
@@ -67,36 +66,13 @@ fn check_crate_published(crate_name: &str) -> bool {
         .user_agent("fluvio-check-crate-version")
         .build()
         .unwrap();
-    let url = "https://crates.io/api/v1/crates/{crate_name}/versions";
-    let response = client
-        .get(url)
-        .send()
-        // TODO: Don't unwrap this, check for {"errors": [{"detail": "Not Found"}]}, or maybe a 404 response
-        .unwrap()
-        .text()
-        .unwrap();
+    let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
+    let res = client.get(url).send().unwrap();
 
-    let json: serde_json::Value =
-        serde_json::from_str(&response).expect("Should recieve a valid JSON response");
-    match json.get("errors") {
-        None => true,
-        Some(errors) => {
-            let errors = errors.as_array().expect("'errors' should be an array");
-            let error = errors
-                .get(0)
-                .expect("'errors' array should contain at least one error");
-            let detail = error
-                .get("detail")
-                .expect("error should have a key named 'detail'");
-            let detail = detail
-                .as_str()
-                .expect("The value of 'detail' should be a string");
-            if detail == "Not Found" {
-                false
-            } else {
-                panic!("Error when retrieving info for {crate_name}.\n{url} returned response:\n{response}");
-            }
-        }
+    if res.status() == 404 {
+        false
+    } else {
+        true
     }
 }
 
@@ -109,21 +85,16 @@ fn download_all_crates(crate_list: &Vec<String>) {
 fn download_crate(crate_name: &str) {
     let crate_path = PathBuf::from(CRATES_IO_DIR).join(crate_name);
     if crate_path.exists() {
-        println!("Removing {}", crate_path.display());
         fs::remove_dir_all(&crate_path).unwrap();
     }
     fs::create_dir_all(&crate_path).unwrap();
 
-    println!("Downloading crate {crate_name}");
     Command::new("cargo")
         .arg("download")
         .arg("-x")
         .arg(crate_name)
         .arg("-o")
         .arg(crate_path)
-        // .arg("--verbose")
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
         .output()
         .expect(&format!("Failed to download crate {crate_name}"));
 }
