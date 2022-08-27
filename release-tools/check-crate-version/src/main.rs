@@ -25,7 +25,7 @@ fn main() {
     // download_crates_io_data();
     check_install_cargo_download();
 
-    // download_all_crates(&publish_list);
+    download_all_crates(&publish_list);
 
     // Compute the padding based on the length of the longest crate name
     let padding = publish_list
@@ -36,6 +36,7 @@ fn main() {
         let manifests = Manifests::read(&crate_name);
 
         manifests.diff();
+        check_crate_published(&crate_name);
 
         match (diff_crate_src(&crate_name), manifests.diff(), manifests.diff_versions()) {
             (_, _, true) => println!("🟢 {crate_name:-padding$} Version number has been updated"),
@@ -57,23 +58,46 @@ fn read_publish_list() -> Vec<String> {
     list.publish_list
 }
 
-fn download_crates_io_data() {
-    fs::create_dir_all(&DB_SNAPHSOT_DIR).unwrap();
-
-    println!("Downloading crates.io data: {DB_SNAPSHOT_URL}");
-    // TODO: Find a way to not load the whole file into memory
-    // TODO: Add progress indicator
-    let archive_data = reqwest::blocking::get(DB_SNAPSHOT_URL)
+/// Checks crates.io to see if the crate has been published. Returns `true` if it has.
+fn check_crate_published(crate_name: &str) -> bool {
+    // We have to identify ourselves, or crates.io will ignore our request
+    // TODO: Add an email to the user_agent filed - this will make us less likely to have our
+    // access blocked.
+    let client = reqwest::blocking::Client::builder()
+        .user_agent("fluvio-check-crate-version")
+        .build()
+        .unwrap();
+    let url = "https://crates.io/api/v1/crates/{crate_name}/versions";
+    let response = client
+        .get(url)
+        .send()
+        // TODO: Don't unwrap this, check for {"errors": [{"detail": "Not Found"}]}, or maybe a 404 response
         .unwrap()
-        .bytes()
-        .unwrap()
-        .to_vec();
+        .text()
+        .unwrap();
 
-    println!("Decoding gzip and unpacking tar archive");
-    // TODO: Add progress indicator
-    let gz_decoder = GzDecoder::new(archive_data.as_ref());
-    let mut archive = Archive::new(gz_decoder);
-    archive.unpack(DB_SNAPHSOT_DIR).unwrap();
+    let json: serde_json::Value =
+        serde_json::from_str(&response).expect("Should recieve a valid JSON response");
+    match json.get("errors") {
+        None => true,
+        Some(errors) => {
+            let errors = errors.as_array().expect("'errors' should be an array");
+            let error = errors
+                .get(0)
+                .expect("'errors' array should contain at least one error");
+            let detail = error
+                .get("detail")
+                .expect("error should have a key named 'detail'");
+            let detail = detail
+                .as_str()
+                .expect("The value of 'detail' should be a string");
+            if detail == "Not Found" {
+                false
+            } else {
+                panic!("Error when retrieving info for {crate_name}.\n{url} returned response:\n{response}");
+            }
+        }
+    }
 }
 
 fn download_all_crates(crate_list: &Vec<String>) {
@@ -199,18 +223,20 @@ impl Manifests {
                         }
                     }
                     false
-                },
+                }
                 (Table(local_table), Table(crates_io_table)) => {
                     // TODO: Make sure this can't get messed up if the keys come in different
                     // orders
-                    for ((local_key, local_val), (crates_io_key, crates_io_val)) in local_table.iter().zip(crates_io_table) {
-                        if local_key != crates_io_key || diff_rec(local_val, crates_io_val){
+                    for ((local_key, local_val), (crates_io_key, crates_io_val)) in
+                        local_table.iter().zip(crates_io_table)
+                    {
+                        if local_key != crates_io_key || diff_rec(local_val, crates_io_val) {
                             return true;
                         }
                     }
                     false
-                },
-                _ => true
+                }
+                _ => true,
             }
         }
         diff_rec(&self.local, &self.crates_io)

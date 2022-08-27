@@ -17,5 +17,6 @@ publish_list = [
     "fluvio-stream-dispatcher",
     "fluvio-package-index",
     "fluvio-extension-common",
+    # "fluvio-new-crate",
 ]
 

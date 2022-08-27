@@ -721,6 +721,7 @@ dependencies = [
  "flate2",
  "reqwest",
  "serde",
+ "serde_json",
  "tar",
  "toml",
  "walkdir",
