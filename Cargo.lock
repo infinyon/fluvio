@@ -723,6 +723,8 @@ dependencies = [
  "serde",
  "tar",
  "toml",
+ "walkdir",
+ "which",
 ]
 
 [[package]]
