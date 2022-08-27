@@ -33,10 +33,9 @@ fn main() {
         .fold(0, |len, name| max(len, name.len()));
 
     for crate_name in publish_list {
-        let crate_src_changed = diff_crate_src(&crate_name);
-        let version_changed = diff_versions(&crate_name);
+        let manifests = Manifests::read(&crate_name);
 
-        match (crate_src_changed, version_changed) {
+        match (diff_crate_src(&crate_name), manifests.diff_versions()) {
             (false, _) => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
             (true, true) => println!("🟢 {crate_name:-padding$} Version number has been updated"),
             (true, false) => {
@@ -155,30 +154,34 @@ fn diff_crate_src(crate_name: &str) -> bool {
     false
 }
 
-/// Returns `true` if the local crate has a different version than the one from crates.io.
-fn diff_versions(crate_name: &str) -> bool {
-    #[derive(Deserialize)]
-    struct Manifest {
-        package: Package,
+struct Manifests {
+    local: String,
+    crates_io: String,
+}
+
+impl Manifests {
+    fn read(crate_name: &str) -> Self {
+        let local_manifest_path = PathBuf::from(CRATES_DIR)
+            .join(crate_name)
+            .join("Cargo.toml");
+        let crates_io_manifest_path = PathBuf::from(CRATES_IO_DIR)
+            .join(crate_name)
+            .join("Cargo.toml");
+
+        let local = fs::read_to_string(&local_manifest_path).unwrap();
+        let crates_io = fs::read_to_string(&crates_io_manifest_path).unwrap();
+
+        Self { local, crates_io }
     }
 
-    #[derive(Deserialize)]
-    struct Package {
-        version: String,
+    fn diff_versions(&self) -> bool {
+        let local = toml::from_str::<toml::Value>(&self.local).unwrap();
+        let crates_io = toml::from_str::<toml::Value>(&self.crates_io).unwrap();
+
+        local["package"]["version"] != crates_io["package"]["version"]
     }
 
-    let local_manifest_path = PathBuf::from(CRATES_DIR)
-        .join(crate_name)
-        .join("Cargo.toml");
-    let crates_io_manifest_path = PathBuf::from(CRATES_IO_DIR)
-        .join(crate_name)
-        .join("Cargo.toml");
-
-    let local_manifest_text = fs::read_to_string(&local_manifest_path).unwrap();
-    let crates_io_manifest_text = fs::read_to_string(&crates_io_manifest_path).unwrap();
-
-    let local_manifest: Manifest = toml::from_str(&local_manifest_text).unwrap();
-    let crates_io_manifest: Manifest = toml::from_str(&crates_io_manifest_text).unwrap();
-
-    local_manifest.package.version != crates_io_manifest.package.version
+    fn diff(&self) -> bool {
+        todo!()
+    }
 }
