@@ -35,12 +35,13 @@ fn main() {
     for crate_name in publish_list {
         let manifests = Manifests::read(&crate_name);
 
-        match (diff_crate_src(&crate_name), manifests.diff_versions()) {
-            (false, _) => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
-            (true, true) => println!("🟢 {crate_name:-padding$} Version number has been updated"),
-            (true, false) => {
-                println!("⛔ {crate_name:-padding$} Code changed but version number did not")
-            }
+        manifests.diff();
+
+        match (diff_crate_src(&crate_name), manifests.diff(), manifests.diff_versions()) {
+            (_, _, true) => println!("🟢 {crate_name:-padding$} Version number has been updated"),
+            (false, false, _) => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
+            (true, _, false) => println!("⛔ {crate_name:-padding$} Code changed but version number did not"),
+            (false, true, false) => println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not")
         }
     }
 }
@@ -155,33 +156,63 @@ fn diff_crate_src(crate_name: &str) -> bool {
 }
 
 struct Manifests {
-    local: String,
-    crates_io: String,
+    local: toml::Value,
+    crates_io: toml::Value,
 }
 
 impl Manifests {
     fn read(crate_name: &str) -> Self {
-        let local_manifest_path = PathBuf::from(CRATES_DIR)
+        let local_path = PathBuf::from(CRATES_DIR)
             .join(crate_name)
             .join("Cargo.toml");
-        let crates_io_manifest_path = PathBuf::from(CRATES_IO_DIR)
+        let crates_io_path = PathBuf::from(CRATES_IO_DIR)
             .join(crate_name)
             .join("Cargo.toml");
 
-        let local = fs::read_to_string(&local_manifest_path).unwrap();
-        let crates_io = fs::read_to_string(&crates_io_manifest_path).unwrap();
+        let local_text = fs::read_to_string(&local_path).unwrap();
+        let crates_io_text = fs::read_to_string(&crates_io_path).unwrap();
+
+        let local = toml::from_str::<toml::Value>(&local_text).unwrap();
+        let crates_io = toml::from_str::<toml::Value>(&crates_io_text).unwrap();
 
         Self { local, crates_io }
     }
 
     fn diff_versions(&self) -> bool {
-        let local = toml::from_str::<toml::Value>(&self.local).unwrap();
-        let crates_io = toml::from_str::<toml::Value>(&self.crates_io).unwrap();
-
-        local["package"]["version"] != crates_io["package"]["version"]
+        self.local["package"]["version"] != self.crates_io["package"]["version"]
     }
 
     fn diff(&self) -> bool {
-        todo!()
+        // Recursively searches for differences in the manifests
+        fn diff_rec(local_val: &toml::Value, crates_io_val: &toml::Value) -> bool {
+            use toml::Value::*;
+            match (local_val, crates_io_val) {
+                (String(local_str), String(crates_io_str)) => local_str != crates_io_str,
+                (Integer(local_int), Integer(crates_io_int)) => local_int != crates_io_int,
+                (Float(local_float), Float(crates_io_float)) => local_float != crates_io_float,
+                (Boolean(local_bool), Boolean(crates_io_bool)) => local_bool != crates_io_bool,
+                (Datetime(local_dt), Datetime(crates_io_dt)) => local_dt != crates_io_dt,
+                (Array(local_array), Array(crates_io_array)) => {
+                    for (local_val, crates_io_val) in local_array.iter().zip(crates_io_array) {
+                        if diff_rec(local_val, crates_io_val) {
+                            return true;
+                        }
+                    }
+                    false
+                },
+                (Table(local_table), Table(crates_io_table)) => {
+                    // TODO: Make sure this can't get messed up if the keys come in different
+                    // orders
+                    for ((local_key, local_val), (crates_io_key, crates_io_val)) in local_table.iter().zip(crates_io_table) {
+                        if local_key != crates_io_key || diff_rec(local_val, crates_io_val){
+                            return true;
+                        }
+                    }
+                    false
+                },
+                _ => true
+            }
+        }
+        diff_rec(&self.local, &self.crates_io)
     }
 }
