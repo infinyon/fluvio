@@ -1,0 +1,13 @@
+[package]
+name = "check-crate-version"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+flate2 = "1.0.24"
+reqwest = { version = "0.11.11", features = ["blocking"] }
+serde = { version = "1.0.144", features = ["serde_derive"] }
+tar = "0.4.38"
+toml = "0.5.9"
