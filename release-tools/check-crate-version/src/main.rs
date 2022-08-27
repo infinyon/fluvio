@@ -33,10 +33,15 @@ fn main() {
         .fold(0, |len, name| max(len, name.len()));
 
     for crate_name in publish_list {
-        if crate_src_changed(&crate_name) {
-            println!("⛔ {crate_name:-padding$} Repo code has changed");
-        } else {
-            println!("🟢 {crate_name:-padding$} Repo code does not differ from crates.io");
+        let crate_src_changed = diff_crate_src(&crate_name);
+        let version_changed = diff_versions(&crate_name);
+
+        match (crate_src_changed, version_changed) {
+            (false, _) => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
+            (true, true) => println!("🟢 {crate_name:-padding$} Version number has been updated"),
+            (true, false) => {
+                println!("⛔ {crate_name:-padding$} Code changed but version number did not")
+            }
         }
     }
 }
@@ -117,42 +122,63 @@ fn check_install_cargo_download() {
     }
 }
 
-fn crate_src_changed(crate_name: &str) -> bool {
-    let crate_src_dir = PathBuf::from(CRATES_DIR).join(crate_name).join("src");
+/// Returns `true` if the local crate source is different from crates.io
+fn diff_crate_src(crate_name: &str) -> bool {
+    let local_src_dir = PathBuf::from(CRATES_DIR).join(crate_name).join("src");
     let crates_io_src_dir = PathBuf::from(CRATES_IO_DIR).join(crate_name).join("src");
 
-    diff_dirs(&crate_src_dir, &crates_io_src_dir)
-}
-
-/// Returns `true` if the contents of dir `a` and `b` are different.
-fn diff_dirs(a: &Path, b: &Path) -> bool {
-    let mut a_it = WalkDir::new(a)
+    let mut local_src_walker = WalkDir::new(local_src_dir)
         .sort_by(|a, b| a.file_name().cmp(b.file_name()))
         .into_iter();
-    let mut b_it = WalkDir::new(b)
+    let mut crates_io_src_walker = WalkDir::new(crates_io_src_dir)
         .sort_by(|a, b| a.file_name().cmp(b.file_name()))
         .into_iter();
 
-    for (a, b) in (&mut a_it).zip(&mut b_it) {
-        let (a, b) = (a.unwrap(), b.unwrap());
-        if a.depth() != b.depth()
-            || a.file_type() != b.file_type()
-            || a.file_name() != b.file_name()
+    for (local, crates_io) in (&mut local_src_walker).zip(&mut crates_io_src_walker) {
+        let (local, crates_io) = (local.unwrap(), crates_io.unwrap());
+        if local.depth() != crates_io.depth()
+            || local.file_type() != crates_io.file_type()
+            || local.file_name() != crates_io.file_name()
         {
             return true;
         } else {
-            if a.file_type().is_file() && diff_files(&a.path(), &b.path()) {
-                return true;
+            if local.file_type().is_file() {
+                let local_content = fs::read(local.path()).unwrap();
+                let crates_io_content = fs::read(crates_io.path()).unwrap();
+
+                if local_content != crates_io_content {
+                    return true;
+                }
             }
         }
     }
     false
 }
 
-/// Returns `true` if the contents of `a` and `b` are different.
-/// `a` and `b` must be files, or this will panic.
-fn diff_files(a: &Path, b: &Path) -> bool {
-    let a_contents = fs::read(a).unwrap();
-    let b_contents = fs::read(b).unwrap();
-    a_contents != b_contents
+/// Returns `true` if the local crate has a different version than the one from crates.io.
+fn diff_versions(crate_name: &str) -> bool {
+    #[derive(Deserialize)]
+    struct Manifest {
+        package: Package,
+    }
+
+    #[derive(Deserialize)]
+    struct Package {
+        version: String,
+    }
+
+    let local_manifest_path = PathBuf::from(CRATES_DIR)
+        .join(crate_name)
+        .join("Cargo.toml");
+    let crates_io_manifest_path = PathBuf::from(CRATES_IO_DIR)
+        .join(crate_name)
+        .join("Cargo.toml");
+
+    let local_manifest_text = fs::read_to_string(&local_manifest_path).unwrap();
+    let crates_io_manifest_text = fs::read_to_string(&crates_io_manifest_path).unwrap();
+
+    let local_manifest: Manifest = toml::from_str(&local_manifest_text).unwrap();
+    let crates_io_manifest: Manifest = toml::from_str(&crates_io_manifest_text).unwrap();
+
+    local_manifest.package.version != crates_io_manifest.package.version
 }
