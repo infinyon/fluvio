@@ -1,15 +1,10 @@
-// TODO: Remove this
-#![allow(unused)]
-
 use std::{
     cmp::max,
     fs,
-    path::{Path, PathBuf},
+    path::PathBuf,
     process::{Command, Stdio},
 };
 
-use flate2::bufread::GzDecoder;
-use tar::Archive;
 use serde::Deserialize;
 use walkdir::WalkDir;
 use which::which_all;
@@ -17,8 +12,6 @@ use which::which_all;
 const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
 const CRATES_DIR: &str = "../../crates";
 const CRATES_IO_DIR: &str = "./crates_io";
-const DB_SNAPHSOT_DIR: &str = "./crates_io/db_snapshot";
-const DB_SNAPSHOT_URL: &str = "https://static.crates.io/db-dump.tar.gz";
 
 fn main() {
     check_install_cargo_download();
@@ -73,12 +66,6 @@ fn check_crate_published(crate_name: &str) -> bool {
         false
     } else {
         true
-    }
-}
-
-fn download_all_crates(crate_list: &Vec<String>) {
-    for crate_name in crate_list {
-        download_crate(crate_name);
     }
 }
 
