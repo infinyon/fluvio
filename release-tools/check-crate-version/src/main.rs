@@ -1,4 +1,8 @@
+// TODO: Remove this
+#![allow(unused)]
+
 use std::{
+    cmp::max,
     fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -11,18 +15,29 @@ use walkdir::WalkDir;
 use which::which_all;
 
 const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
-const CRATES_DIR: &str = "../../../crates";
+const CRATES_DIR: &str = "../../crates";
 const CRATES_IO_DIR: &str = "./crates_io";
 const DB_SNAPHSOT_DIR: &str = "./crates_io/db_snapshot";
 const DB_SNAPSHOT_URL: &str = "https://static.crates.io/db-dump.tar.gz";
 
 fn main() {
     let publish_list = read_publish_list();
-    download_crates_io_data();
+    // download_crates_io_data();
     check_install_cargo_download();
 
+    // download_all_crates(&publish_list);
+
+    // Compute the padding based on the length of the longest crate name
+    let padding = publish_list
+        .iter()
+        .fold(0, |len, name| max(len, name.len()));
+
     for crate_name in publish_list {
-        download_crate(&crate_name);
+        if crate_src_changed(&crate_name) {
+            println!("⛔ {crate_name:-padding$} Repo code has changed");
+        } else {
+            println!("🟢 {crate_name:-padding$} Repo code does not differ from crates.io");
+        }
     }
 }
 
@@ -54,6 +69,12 @@ fn download_crates_io_data() {
     let gz_decoder = GzDecoder::new(archive_data.as_ref());
     let mut archive = Archive::new(gz_decoder);
     archive.unpack(DB_SNAPHSOT_DIR).unwrap();
+}
+
+fn download_all_crates(crate_list: &Vec<String>) {
+    for crate_name in crate_list {
+        download_crate(crate_name);
+    }
 }
 
 fn download_crate(crate_name: &str) {
