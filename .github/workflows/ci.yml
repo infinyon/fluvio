@@ -297,14 +297,14 @@ jobs:
         run: make run-all-unit-test
       - name: Crate version check
         if: matrix.check == 'crate-version'
-        run: ./release-scripts/test-crate-version.sh
+        run: ./release-tools/test-crate-version.sh
       - name: Audit crate licenses + advisories 
         if: matrix.check == 'crate-audit'
         continue-on-error: true
         uses: EmbarkStudios/cargo-deny-action@v1
       - name: Crate version check
         if: matrix.check == 'crate-publish-check'
-        run: ./release-scripts/check-publish-crates.sh
+        run: ./release-tools/check-publish-crates.sh
 
   # Run integration test. This always run on release mode
   check_integration:
