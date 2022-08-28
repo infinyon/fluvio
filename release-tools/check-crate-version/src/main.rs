@@ -38,7 +38,7 @@ fn main() {
         }
         download_crate(crate_name);
 
-        let manifests = Manifests::read(&crate_name);
+        let manifests = Manifests::read(crate_name);
 
         crate_status.insert(
             crate_name,
