@@ -8,7 +8,7 @@ use fluvio_smartengine::{
         LegacySmartModulePayload, SmartModuleContextData, SmartModuleInvocationWasm,
         SmartModuleWasmCompressed, SmartModuleInvocation, SmartModuleKind,
     },
-    engine::SmartModuleInstance,
+    SmartModuleInstance,
 };
 use fluvio::{ConsumerConfig};
 

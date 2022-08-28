@@ -9,7 +9,7 @@ use fluvio_protocol::record::Record;
 use fluvio_compression::Compression;
 use fluvio_sc_schema::topic::CompressionAlgorithm;
 #[cfg(feature = "smartengine")]
-use fluvio_smartengine::engine::SmartModuleInstance;
+use fluvio_smartengine::SmartModuleInstance;
 use fluvio_types::PartitionId;
 use fluvio_types::event::StickyEvent;
 use tracing::instrument;
@@ -221,12 +221,12 @@ cfg_if::cfg_if! {
         use std::collections::BTreeMap;
 
         use fluvio_smartengine::metadata::{SmartModuleWasmCompressed, SmartModuleContextData, SmartModuleKind, LegacySmartModulePayload};
-        use fluvio_smartengine::engine::SmartEngine;
+        use fluvio_smartengine::SmartEngine;
 
         impl TopicProducer {
             fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
-                let engine = SmartEngine::default();
-                let  smartmodule = engine.create_module_from_payload(
+                let engine = SmartEngine::new();
+                let  smartmodule = engine.create_new_context(
                     smart_payload,
                     None).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                 self.smartmodule_instance = Some(Arc::new(RwLock::new(smartmodule)));

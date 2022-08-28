@@ -1,6 +1,7 @@
 
 pub(crate) mod error;
 pub(crate) mod memory;
+pub(crate) mod file_batch;
 
 pub mod transforms;
 mod engine;

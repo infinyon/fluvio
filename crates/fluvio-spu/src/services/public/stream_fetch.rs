@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use std::time::Instant;
 
+use fluvio_smartengine::SmartModuleInstance;
 use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_smartengine::engine::{SmartModuleInstance, file_batch::FileBatchIterator};
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};

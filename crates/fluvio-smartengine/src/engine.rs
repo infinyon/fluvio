@@ -2,22 +2,26 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
-use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
+use derive_builder::Builder;
+use fluvio_protocol::{Encoder, Decoder};
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc, Store};
 
 use fluvio_protocol::record::Record;
 use fluvio_protocol::record::{Batch, MemoryRecords};
-use fluvio_protocol::{Encoder, Decoder};
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
 };
+use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 
+
+use crate::{WasmSlice, memory};
+use crate::file_batch::FileBatchIterator;
 
 use super::error;
 
-const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
+
 
 #[cfg(feature = "wasi")]
 type State = wasmtime_wasi::WasiCtx;
@@ -25,26 +29,31 @@ type State = wasmtime_wasi::WasiCtx;
 #[cfg(not(feature = "wasi"))]
 type State = ();
 
-#[derive(Default, Clone)]
+#[derive(Debug, Builder)]
+pub struct SmartEngineBuilder {
+}
+
+
+#[derive(Clone)]
 pub struct SmartEngine(pub(crate) Engine);
 
 impl SmartEngine {
-    pub fn create_module_from_binary(self, bytes: &[u8]) -> Result<SmartModuleWithEngine> {
-        let module = Module::from_binary(&self.0, bytes)?;
-        Ok(SmartModuleWithEngine {
-            module,
-            engine: self,
-        })
+    
+    pub fn new() -> Self {
+        Self(Engine::default())
     }
 
-    #[tracing::instrument(skip(self))]
-    pub fn create_module_from_payload(
-        self,
-        smart_payload: LegacySmartModulePayload,
-        maybe_version: Option<i16>,
+    #[tracing::instrument(skip(self,bytes))]
+    pub fn create_new_context(
+        &self,
+        bytes: impl AsRef<[u8]>
     ) -> Result<Box<dyn SmartModuleInstance>> {
-        let version = maybe_version.unwrap_or(DEFAULT_SMARTENGINE_VERSION);
-        let smartmodule = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
+    
+        let module = Module::new(&self.0,bytes)?;
+
+        todo!("create new context")
+
+        /* 
         let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
             SmartModuleKind::Filter => {
                 Box::new(smartmodule.create_filter(smart_payload.params, version)?)
@@ -74,7 +83,8 @@ impl SmartEngine {
                 smartmodule.create_generic_smartmodule(smart_payload.params, context, version)?
             }
         };
-        Ok(smartmodule_instance)
+        */
+
     }
 }
 
@@ -137,6 +147,7 @@ pub struct SmartModuleWithEngine {
     pub(crate) engine: SmartEngine,
 }
 
+/* 
 impl SmartModuleWithEngine {
     fn create_filter(
         &self,
@@ -259,6 +270,7 @@ impl SmartModuleWithEngine {
         Err(error::Error::NotValidExports)
     }
 }
+*/
 
 /// Context contains callback to invoke Host functions
 pub struct SmartModuleContext {
