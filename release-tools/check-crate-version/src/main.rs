@@ -1,5 +1,6 @@
 use std::{
     cmp::max,
+    collections::HashMap,
     fs,
     path::PathBuf,
     process::{Command, Stdio},
@@ -12,6 +13,14 @@ const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
 const CRATES_DIR: &str = "../../crates";
 const CRATES_IO_DIR: &str = "./crates_io";
 
+enum CrateStatus {
+    NotPublished,
+    VersionBumped,
+    Unchanged,
+    CodeChanged,
+    ManifestChanged,
+}
+
 fn main() {
     check_install_cargo_download();
 
@@ -20,20 +29,41 @@ fn main() {
         .iter()
         .fold(0, |len, name| max(len, name.len()));
 
-    for crate_name in publish_list {
-        if !check_crate_published(&crate_name) {
-            println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)");
+    let mut crate_status: HashMap<&str, CrateStatus> = HashMap::new();
+
+    for crate_name in &publish_list {
+        if !check_crate_published(crate_name) {
+            crate_status.insert(crate_name, CrateStatus::NotPublished);
             continue;
         }
-        download_crate(&crate_name);
+        download_crate(crate_name);
 
         let manifests = Manifests::read(&crate_name);
 
-        match (diff_crate_src(&crate_name), manifests.diff(), manifests.diff_versions()) {
-            (_, _, true) => println!("🟢 {crate_name:-padding$} Version number has been updated"),
-            (false, false, _) => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
-            (true, _, false) => println!("⛔ {crate_name:-padding$} Code changed but version number did not"),
-            (false, true, false) => println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not")
+        crate_status.insert(
+            crate_name,
+            match (
+                diff_crate_src(crate_name, true),
+                manifests.diff(),
+                manifests.diff_versions(),
+            ) {
+                (_, _, true) => CrateStatus::VersionBumped,
+                (false, false, _) => CrateStatus::Unchanged,
+                (true, _, false) => CrateStatus::CodeChanged,
+                (false, true, false) => CrateStatus::ManifestChanged,
+            },
+        );
+    }
+    for (crate_name, status) in crate_status.into_iter() {
+        match status {
+            CrateStatus::VersionBumped => println!("🟢 {crate_name:-padding$} Version number has been updated"),
+            CrateStatus::Unchanged => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
+            CrateStatus::CodeChanged => {
+                println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
+                diff_crate_src(crate_name, false);
+            },
+            CrateStatus::ManifestChanged => println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not"),
+            CrateStatus::NotPublished => println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)"),
         }
     }
 }
@@ -71,6 +101,7 @@ fn download_crate(crate_name: &str) {
     }
     fs::create_dir_all(&crate_path).unwrap();
 
+    println!("Donwloading {crate_name}");
     Command::new("cargo")
         .arg("download")
         .arg("-x")
@@ -100,14 +131,16 @@ fn check_install_cargo_download() {
 }
 
 /// Returns `true` if the local crate source is different from crates.io
-fn diff_crate_src(crate_name: &str) -> bool {
-    let status = Command::new("diff")
-        .arg("-rq")
+fn diff_crate_src(crate_name: &str, silent: bool) -> bool {
+    let mut cmd = Command::new("diff");
+    cmd.arg("-brq")
         .arg(format!("crates_io/{crate_name}"))
-        .arg(format!("../../crates/{crate_name}"))
-        .status()
-        .unwrap();
-    !status.success()
+        .arg(format!("../../crates/{crate_name}"));
+    if silent {
+        !cmd.output().unwrap().status.success()
+    } else {
+        !cmd.status().unwrap().success()
+    }
 }
 
 struct Manifests {
