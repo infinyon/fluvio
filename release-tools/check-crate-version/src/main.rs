@@ -174,6 +174,8 @@ impl Manifests {
         // Recursively searches for differences in the manifests
         fn diff_rec(local_val: &toml::Value, crates_io_val: &toml::Value) -> bool {
             use toml::Value::*;
+            // WARN: This will fail to notice if a key is removed from the local manifest.
+            // TODO: Add capability to show what changed
             match (local_val, crates_io_val) {
                 (String(local_str), String(crates_io_str)) => local_str != crates_io_str,
                 (Integer(local_int), Integer(crates_io_int)) => local_int != crates_io_int,
@@ -189,8 +191,6 @@ impl Manifests {
                     false
                 }
                 (Table(local_table), Table(crates_io_table)) => {
-                    // TODO: Make sure this can't get messed up if the keys come in different
-                    // orders
                     for ((local_key, local_val), (crates_io_key, crates_io_val)) in
                         local_table.iter().zip(crates_io_table)
                     {
