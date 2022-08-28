@@ -721,7 +721,6 @@ dependencies = [
  "reqwest",
  "serde",
  "toml",
- "walkdir",
  "which",
 ]
 

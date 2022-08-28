@@ -6,7 +6,6 @@ use std::{
 };
 
 use serde::Deserialize;
-use walkdir::WalkDir;
 use which::which_all;
 
 const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
@@ -106,35 +105,13 @@ fn check_install_cargo_download() {
 
 /// Returns `true` if the local crate source is different from crates.io
 fn diff_crate_src(crate_name: &str) -> bool {
-    let local_src_dir = PathBuf::from(CRATES_DIR).join(crate_name).join("src");
-    let crates_io_src_dir = PathBuf::from(CRATES_IO_DIR).join(crate_name).join("src");
-
-    let mut local_src_walker = WalkDir::new(local_src_dir)
-        .sort_by(|a, b| a.file_name().cmp(b.file_name()))
-        .into_iter();
-    let mut crates_io_src_walker = WalkDir::new(crates_io_src_dir)
-        .sort_by(|a, b| a.file_name().cmp(b.file_name()))
-        .into_iter();
-
-    for (local, crates_io) in (&mut local_src_walker).zip(&mut crates_io_src_walker) {
-        let (local, crates_io) = (local.unwrap(), crates_io.unwrap());
-        if local.depth() != crates_io.depth()
-            || local.file_type() != crates_io.file_type()
-            || local.file_name() != crates_io.file_name()
-        {
-            return true;
-        } else {
-            if local.file_type().is_file() {
-                let local_content = fs::read(local.path()).unwrap();
-                let crates_io_content = fs::read(crates_io.path()).unwrap();
-
-                if local_content != crates_io_content {
-                    return true;
-                }
-            }
-        }
-    }
-    false
+    let status = Command::new("diff")
+        .arg("-rq")
+        .arg(format!("crates_io/{crate_name}"))
+        .arg(format!("../../crates/{crate_name}"))
+        .status()
+        .unwrap();
+    !status.success()
 }
 
 struct Manifests {
