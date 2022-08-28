@@ -12,16 +12,10 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
-wasi = ["wasmtime-wasi", "engine"]
-unstable = ["engine"]
-engine = [
-    "wasmtime",
-    "nix",
-    "anyhow",
-    "fluvio-protocol/record",
-    "fluvio-future",
-]
+
+wasi = ["wasmtime-wasi"]
+unstable = []
+
 
 [dependencies]
 tracing = "0.1.27"
@@ -43,4 +37,4 @@ fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.4.0", defaul
 cargo = "0.64"
 cfg-if = "1.0.0"
 fluvio-types = { path = "../fluvio-types" }
-fluvio-smartengine = { path = "../fluvio-smartengine", features = ["engine"] }
+

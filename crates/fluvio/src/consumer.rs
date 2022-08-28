@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use fluvio_smartengine::metadata::{
-    SmartModuleInvocationWasm, SmartModuleWasmCompressed, LegacySmartModulePayload,
-    SmartModuleInvocation,
-};
-use futures_util::stream::{Stream, select_all};
+
+use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed, SmartModuleInvocation};
 use tracing::{debug, error, trace, instrument, info};
+use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
 use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};

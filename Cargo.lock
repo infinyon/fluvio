@@ -2098,7 +2098,6 @@ dependencies = [
  "flate2",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
- "fluvio-smartengine",
  "fluvio-smartmodule",
  "fluvio-types",
  "nix 0.25.0",
@@ -2212,9 +2211,9 @@ version = "0.10.1"
 dependencies = [
  "bytes 1.2.1",
  "educe",
+ "flate2",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
- "fluvio-smartengine",
  "fluvio-smartmodule",
  "fluvio-socket",
  "flv-util",

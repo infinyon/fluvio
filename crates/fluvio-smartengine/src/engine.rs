@@ -14,19 +14,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
 };
 
-use crate::WasmSlice;
-use crate::engine::memory;
-use crate::metadata::{LegacySmartModulePayload, SmartModuleKind, SmartModuleContextData};
 
-use super::filter::SmartModuleFilter;
-use super::map::SmartModuleMap;
-use super::filter_map::SmartModuleFilterMap;
-use super::array_map::SmartModuleArrayMap;
-use super::aggregate::SmartModuleAggregate;
-use super::join::SmartModuleJoin;
-use super::file_batch::FileBatchIterator;
-
-use super::join_stream::SmartModuleJoinStream;
 use super::error;
 
 const DEFAULT_SMARTENGINE_VERSION: i16 = 17;

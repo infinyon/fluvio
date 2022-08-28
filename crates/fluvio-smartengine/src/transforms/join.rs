@@ -8,16 +8,14 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::WasmSlice;
-
-use super::{SmartModuleContext, SmartModuleWithEngine, error::Error, SmartModuleInstance};
+use crate::{WasmSlice, SmartModuleWithEngine, SmartModuleContext, error::Error, SmartModuleInstance};
 
 const JOIN_FN_NAME: &str = "join";
 type OldJoinFn = TypedFunc<(i32, i32), i32>;
 type JoinFn = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
-pub struct SmartModuleJoinStream {
+pub struct SmartModuleJoin {
     base: SmartModuleContext,
     join_fn: JoinFnKind,
 }
@@ -45,7 +43,7 @@ impl JoinFnKind {
     }
 }
 
-impl SmartModuleJoinStream {
+impl SmartModuleJoin {
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
@@ -66,8 +64,8 @@ impl SmartModuleJoinStream {
     }
 }
 
-impl SmartModuleInstance for SmartModuleJoinStream {
-    #[instrument(skip(self, input), name = "JoinStream")]
+impl SmartModuleInstance for SmartModuleJoin {
+    #[instrument(skip(self, input), name = "Join")]
     fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         let slice = self.base.write_input(&input)?;
         debug!(len = slice.1, "WASM SLICE");

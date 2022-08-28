@@ -14,7 +14,7 @@ use fluvio_protocol::api::Request;
 use fluvio_protocol::record::RecordSet;
 
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
-use fluvio_smartengine::metadata::{LegacySmartModulePayload, SmartModuleInvocation};
+
 
 use crate::fetch::FetchablePartitionResponse;
 use crate::isolation::Isolation;
@@ -23,6 +23,8 @@ pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet<RawRecords>>
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet<RawRecords>>;
 
 use super::SpuServerApiKey;
+use super::smartmodule::{LegacySmartModulePayload, SmartModuleInvocation};
+
 
 // version for WASM_MODULE
 pub const WASM_MODULE_API: i16 = 11;
