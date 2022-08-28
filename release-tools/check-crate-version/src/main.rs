@@ -134,8 +134,8 @@ fn check_install_cargo_download() {
 fn diff_crate_src(crate_name: &str, silent: bool) -> bool {
     let mut cmd = Command::new("diff");
     cmd.arg("-brq")
-        .arg(format!("crates_io/{crate_name}"))
-        .arg(format!("../../crates/{crate_name}"));
+        .arg(format!("crates_io/{crate_name}/src"))
+        .arg(format!("../../crates/{crate_name}/src"));
     if silent {
         !cmd.output().unwrap().status.success()
     } else {
