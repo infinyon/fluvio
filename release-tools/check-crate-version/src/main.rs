@@ -155,7 +155,7 @@ impl Manifests {
             .join("Cargo.toml");
         let crates_io_path = PathBuf::from(CRATES_IO_DIR)
             .join(crate_name)
-            .join("Cargo.toml");
+            .join("Cargo.toml.orig");
 
         let local_text = fs::read_to_string(&local_path).unwrap();
         let crates_io_text = fs::read_to_string(&crates_io_path).unwrap();
