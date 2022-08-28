@@ -61,11 +61,7 @@ fn check_crate_published(crate_name: &str) -> bool {
     let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
     let res = client.get(url).send().unwrap();
 
-    if res.status() == 404 {
-        false
-    } else {
-        true
-    }
+    res.status() != 404
 }
 
 fn download_crate(crate_name: &str) {
@@ -82,7 +78,7 @@ fn download_crate(crate_name: &str) {
         .arg("-o")
         .arg(crate_path)
         .output()
-        .expect(&format!("Failed to download crate {crate_name}"));
+        .unwrap_or_else(|_| panic!("Failed to donwload {crate_name}"));
 }
 
 /// Install cargo-download if it is not already installed.
