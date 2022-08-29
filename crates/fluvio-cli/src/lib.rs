@@ -29,6 +29,7 @@ mod root {
 
     use clap::{Parser, AppSettings, Command as ClapCommand, IntoApp};
     use clap_complete::{generate, Shell};
+    use colored::Colorize;
     use tracing::debug;
 
     #[cfg(feature = "k8s")]
@@ -195,6 +196,12 @@ mod root {
                     metadata.process()?;
                 }
                 Self::ManagedConnector(group) => {
+                    eprintln!(
+                        "{} {} {}",
+                        "WARNING:".bold().yellow(),
+                        "`fluvio connector` is going to be removed from CLI.".yellow(),
+                        "Please check the instructions on how to manage connectors on https://www.fluvio.io/connectors/".yellow()
+                    );
                     let fluvio = root.target.connect().await?;
                     group.process(out, &fluvio).await?;
                 }
