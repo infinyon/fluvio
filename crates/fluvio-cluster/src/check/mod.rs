@@ -349,42 +349,15 @@ pub(crate) struct K8Version;
 
 #[async_trait]
 impl ClusterCheck for K8Version {
-    /// Check if required kubectl version is installed
+    /// Check that k8s server version is at or above the version requirement
     async fn perform_check(&self, _: &ProgressRenderer) -> CheckResult {
-        let kube_version = Command::new("kubectl")
-            .arg("version")
-            .arg("-o=json")
-            .output()
-            .map_err(ClusterCheckError::KubectlNotFoundError)?;
-
-        #[derive(Debug, serde::Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct ComponentVersion {
-            git_version: String,
-        }
-
-        #[derive(Debug, serde::Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct KubernetesVersion {
-            #[allow(dead_code)]
-            client_version: ComponentVersion,
-            server_version: Option<ComponentVersion>,
-        }
-
-        let kube_versions: KubernetesVersion = serde_json::from_slice(&kube_version.stdout)
-            .map_err(ClusterCheckError::KubectlVersionJsonError)?;
-
-        let server_version = match kube_versions.server_version {
-            Some(version) => version.git_version,
-            None => {
-                return Ok(CheckStatus::Unrecoverable(
-                    UnrecoverableCheckStatus::CannotConnectToKubernetes,
-                ))
-            }
-        };
+        let client = k8_client::load_and_share()
+            .map_err(|e| ClusterCheckError::K8ClientError(e))?;
+        
+        let server_version = client.server_version().await?;
 
         // Trim off the `v` in v0.1.2 to get just "0.1.2"
-        let server_version = &server_version[1..];
+        let server_version = &server_version.git_version[1..];
         if Version::parse(server_version)? < Version::parse(KUBE_VERSION)? {
             Ok(CheckStatus::Unrecoverable(
                 UnrecoverableCheckStatus::IncompatibleKubectlVersion {
