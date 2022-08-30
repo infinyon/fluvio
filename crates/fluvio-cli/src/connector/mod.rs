@@ -341,9 +341,9 @@ where
         {
             let json: serde_json::Value =
                 Deserialize::deserialize(serde::de::value::MapAccessDeserializer::new(map))?;
-            Ok(serde_json::to_string(&json).map_err(|err| {
+            serde_json::to_string(&json).map_err(|err| {
                 serde::de::Error::custom(format!("unable to serialize to json: {}", err))
-            })?)
+            })
         }
     }
     deserializer.deserialize_any(MapAsJsonString)
