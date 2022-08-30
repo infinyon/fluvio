@@ -68,6 +68,10 @@ pub struct ScOpt {
     /// only allow white list of controllers
     #[clap(long)]
     white_list: Vec<String>,
+
+    /// Disable managed connectors creation
+    #[clap(long, env = "FLUVIO_SC_DISABLE_MANAGED_CONNECTORS_CREATION")]
+    disable_managed_connectors_creation: bool,
 }
 
 impl ScOpt {
@@ -103,6 +107,8 @@ impl ScOpt {
     #[allow(clippy::wrong_self_convention)]
     fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
+
+        config.disable_managed_connectors_creation = self.disable_managed_connectors_creation;
 
         // apply our option
         if let Some(public_addr) = self.bind_public {

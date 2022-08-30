@@ -27,6 +27,18 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     let name = create.name;
 
+    if auth_ctx
+        .global_ctx
+        .config()
+        .disable_managed_connectors_creation
+    {
+        return Ok(Status::new(
+            name.to_string(),
+            ErrorCode::ManagedConnectorError,
+            Some("Managed connector creation is disabled by SC".to_string()),
+        ));
+    }
+
     info!(connector_name = %name, "creating managed connector");
 
     if auth_ctx
@@ -84,5 +96,48 @@ async fn process_managed_connector_request(
     } else {
         info!(connector_name = %name, "managed connector created");
         Status::new_ok(name.clone())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+    use fluvio_protocol::link::ErrorCode;
+    use fluvio_sc_schema::objects::CommonCreateRequest;
+
+    use crate::{
+        services::{
+            public_api::connector::handle_create_managed_connector_request,
+            auth::{AuthServiceContext, RootAuthContext},
+        },
+        config::ScConfig,
+        core::Context,
+    };
+
+    #[fluvio_future::test]
+    async fn test_managed_connector_creation_disabled() {
+        let create = CommonCreateRequest {
+            name: "test".to_string(),
+            ..Default::default()
+        };
+        let spec = ManagedConnectorSpec {
+            ..Default::default()
+        };
+        let mut sc_config = ScConfig::default();
+        sc_config.disable_managed_connectors_creation = true;
+
+        let global_ctx = Context::shared_metadata(sc_config);
+        let auth = RootAuthContext {};
+
+        let auth_ctx = AuthServiceContext::new(global_ctx, auth);
+        let response = handle_create_managed_connector_request(create, spec, &auth_ctx)
+            .await
+            .expect("failed");
+
+        assert_eq!(response.error_code, ErrorCode::ManagedConnectorError);
+        assert_eq!(
+            response.error_message,
+            Some("Managed connector creation is disabled by SC".to_string())
+        );
     }
 }

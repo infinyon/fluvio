@@ -27,6 +27,7 @@ pub struct ScConfig {
     pub namespace: String,
     pub x509_auth_scopes: Option<PathBuf>,
     pub white_list: HashSet<String>,
+    pub disable_managed_connectors_creation: bool,
 }
 
 impl ::std::default::Default for ScConfig {
@@ -38,6 +39,7 @@ impl ::std::default::Default for ScConfig {
             namespace: "default".to_owned(),
             x509_auth_scopes: None,
             white_list: HashSet::new(),
+            disable_managed_connectors_creation: false,
         }
     }
 }
