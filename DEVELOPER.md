@@ -58,6 +58,9 @@ To run Kubernetes locally, please use one of the following supported kubernetes 
 * [minikube](https://minikube.sigs.k8s.io/docs/start/)
 * [kind](https://kind.sigs.k8s.io)
 
+Alternatively, you can run kube-apiserver-local.
+This option is experimental and explained later in the README.
+
 #### Installing Helm
 
 Helm is used for installing Fluvio on Kubernetes.
@@ -519,4 +522,21 @@ sh k8-util/minikube/reset-minikube.sh
 In certain cases, partition may not be deleted correctly.  In this case, you can manually force delete by:
 ```
 kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
+```
+
+### kube-apiserver-local: slimmed down K8s storage without docker
+
+This will run kube-apiserver without the need for Docker.
+It uses kubebrain to store the data locally and satisfy the etcd interface.
+It only works with running the binaries externally using the --local flag and additionally the --develop flag for cluster start
+
+```
+git clone https://github.com/gregwebs/kube-apiserver-local
+cd kube-apiserver-local
+./apiserver.sh
+```
+
+```
+./kubeconfig.sh
+KUBECONFIG=admin.kubeconfig kubectl ...
 ```
