@@ -197,10 +197,11 @@ mod root {
                 }
                 Self::ManagedConnector(group) => {
                     eprintln!(
-                        "{} {} {}",
-                        "WARNING:".bold().yellow(),
-                        "`fluvio connector` is going to be removed from CLI.".yellow(),
-                        "Please check the instructions on how to manage connectors on https://www.fluvio.io/connectors/".yellow()
+                        "{} {}\n{}\n{}",
+                        "DEPRECATION NOTICE:".bold().yellow(),
+                        "`fluvio connectors` and managed connector support will be removed in a future release.".yellow(),
+                        "For migration and future self-management instructions, please check out our docs (https://www.fluvio.io/connectors).".yellow(),
+                        "For questions or comments reach our to us on our Discord (https://discord.com/invite/bBG2dTz) or email (team@infinyon.com)".yellow(),
                     );
                     let fluvio = root.target.connect().await?;
                     group.process(out, &fluvio).await?;
