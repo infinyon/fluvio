@@ -19,7 +19,7 @@ type BaseArrayMapFn = TypedFunc<(i32, i32), i32>;
 type ArrayMapFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
-pub struct SmartModuleArrayMap {
+pub(crate) struct SmartModuleArrayMap {
     array_map_fn: ArrayMapFnKind,
 }
 
@@ -49,7 +49,7 @@ impl ArrayMapFnKind {
 impl SmartModuleArrayMap {
     pub fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
         base.get_wasm_func(chain, ARRAY_MAP_FN_NAME)
             .ok_or(Error::NotNamedExport(ARRAY_MAP_FN_NAME))
@@ -64,39 +64,13 @@ impl SmartModuleArrayMap {
             })
     }
 
-    /*
-    pub fn new(
-        module: &SmartModuleWithEngine,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<Self, Error> {
-        let mut base = SmartModuleContext::new(module, params, version)?;
-        let map_fn = if let Ok(array_map_fn) = base
-            .instance
-            .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)
-        {
-            ArrayMapFnKind::New(array_map_fn)
-        } else {
-            let array_map_fn = base
-                .instance
-                .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)
-                .map_err(|err| Error::NotNamedExport(ARRAY_MAP_FN_NAME, err))?;
-            ArrayMapFnKind::Old(array_map_fn)
-        };
-
-        Ok(Self {
-            base,
-            array_map_fn: map_fn,
-        })
-    }
-    */
 }
 
 impl SmartModuleTransform for SmartModuleArrayMap {
     fn process(
         &mut self,
         input: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, chain)?;
@@ -108,7 +82,7 @@ impl SmartModuleTransform for SmartModuleArrayMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.base.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(chain)?;
         Ok(output)
     }
 }

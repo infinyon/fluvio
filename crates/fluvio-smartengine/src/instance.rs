@@ -31,9 +31,11 @@ impl<T> SmartModuleInstance<T>
 where
     T: SmartModuleTransform,
 {
-    #[instrument(skip(self, iter, max_bytes, join_last_record))]
+    #[instrument(skip(self, iter, max_bytes, join_last_record,chain))]
     pub fn process_batch(
         &mut self,
+        ctx: &mut SmartModuleInstanceContext,
+        chain: &mut SmartModuleChain,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
@@ -76,9 +78,9 @@ where
                 base_offset: file_batch.batch.base_offset,
                 record_data: file_batch.records.clone(),
                 join_record,
-                params: self.params().clone(),
+                params: self.ctx.params.clone(),
             };
-            let output = self.process(input)?;
+            let output = self.transform.process(input,ctx,chain)?;
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;
@@ -139,32 +141,7 @@ where
         }
     }
 
-    /// initialize smartmodule instance using parameters
-    /// it must be have fn called init with parameters
-    /// this is experimental feature and may be removed in future
-    #[cfg(feature = "unstable")]
-    #[instrument]
-    pub fn invoke_constructor(&mut self) -> Result<(), Error> {
-        use wasmtime::TypedFunc;
-        use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInternalError;
-
-        const INIT_FN_NAME: &str = "init";
-
-        let params = self.params();
-        let ctx = self.base;
-        let slice = ctx.write_input(&params)?;
-        let init_fn: TypedFunc<(i32, i32, u32), i32> =
-            ctx.instance.get_typed_func(&mut ctx.store, INIT_FN_NAME)?;
-        let filter_output = init_fn.call(&mut ctx.store, slice)?;
-
-        if filter_output < 0 {
-            let internal_error = SmartModuleInternalError::try_from(filter_output)
-                .unwrap_or(SmartModuleInternalError::UnknownError);
-            return Err(internal_error.into());
-        }
-
-        Ok(())
-    }
+    
 }
 
 pub(crate) struct SmartModuleInstanceContext {
@@ -185,7 +162,7 @@ impl SmartModuleInstanceContext {
     #[tracing::instrument(skip(module, params, chain))]
     pub(crate) fn instantiate(
         module: Module,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self, error::Error> {
@@ -216,12 +193,12 @@ impl SmartModuleInstanceContext {
         })
     }
 
-    ///
-    pub(crate) fn get_wasm_func(
-        &self,
-        chain: &SmartModuleChain,
+    /// get wasm function from instance
+    pub(crate) fn get_wasm_func<'a,'b>(
+        &'a self,
+        chain: &'b mut SmartModuleChain,
         name: &str,
-    ) -> Option<WasmFunction> {
+    ) -> Option<WasmFunction<'b>> {
         self.instance
             .get_func(chain.as_context_mut(), name)
             .map(|func| WasmFunction { func, chain })
@@ -251,6 +228,36 @@ impl SmartModuleInstanceContext {
         output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
         Ok(output)
     }
+
+    /// initialize smartmodule instance using parameters
+    /// it must be have fn called init with parameters
+    /// this is experimental feature and may be removed in future
+    #[instrument(skip(chain))]
+    pub fn invoke_constructor(&mut self,chain: &mut SmartModuleChain) -> Result<(), Error> {
+        use wasmtime::TypedFunc;
+        use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInternalError;
+
+        const INIT_FN_NAME: &str = "init";
+
+        let params = self.params.clone();
+        let slice = self.write_input(&params,chain)?;
+        if let Some(func) = self.get_wasm_func(chain, INIT_FN_NAME) {
+            let init_fn: TypedFunc<(i32, i32, u32), i32> = func.typed()?;
+            let filter_output = init_fn.call(chain.as_context_mut(), slice)?;
+            if filter_output < 0 {
+                let internal_error = SmartModuleInternalError::try_from(filter_output)
+                    .unwrap_or(SmartModuleInternalError::UnknownError);
+                return Err(internal_error.into());
+            }
+
+        } else {
+            debug!("smartmodule does not have init function");
+        }
+        
+
+        Ok(())
+    }
+
 }
 
 pub(crate) struct WasmFunction<'a> {
@@ -268,11 +275,11 @@ impl<'a> WasmFunction<'a> {
     }
 }
 
-pub trait SmartModuleTransform {
+pub(crate) trait SmartModuleTransform {
     fn process(
         &mut self,
         input: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput>;
 }

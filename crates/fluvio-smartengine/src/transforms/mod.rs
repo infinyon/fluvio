@@ -11,37 +11,20 @@ mod instance {
     use anyhow::{Result};
     use wasmtime::{Module};
 
-    use crate::instance::SmartModuleInstance;
+    use crate::{
+        instance::{SmartModuleInstance, SmartModuleTransform, SmartModuleInstanceContext},
+        SmartModuleChain,
+        error::Error,
+    };
 
-    pub(crate) fn create_transform(instance: Module) -> Result<Box<dyn SmartModuleInstance>> {
-        let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
-            SmartModuleKind::Filter => {
-                Box::new(smartmodule.create_filter(smart_payload.params, version)?)
-            }
-            SmartModuleKind::FilterMap => {
-                Box::new(smartmodule.create_filter_map(smart_payload.params, version)?)
-            }
-            SmartModuleKind::Map => {
-                Box::new(smartmodule.create_map(smart_payload.params, version)?)
-            }
-            SmartModuleKind::ArrayMap => {
-                Box::new(smartmodule.create_array_map(smart_payload.params, version)?)
-            }
-            SmartModuleKind::Join(_) => {
-                Box::new(smartmodule.create_join(smart_payload.params, version)?)
-            }
-            SmartModuleKind::JoinStream {
-                topic: _,
-                derivedstream: _,
-            } => Box::new(smartmodule.create_join_stream(smart_payload.params, version)?),
-            SmartModuleKind::Aggregate { accumulator } => Box::new(smartmodule.create_aggregate(
-                smart_payload.params,
-                accumulator.clone(),
-                version,
-            )?),
-            SmartModuleKind::Generic(context) => {
-                smartmodule.create_generic_smartmodule(smart_payload.params, context, version)?
-            }
-        };
+    use super::{filter::SmartModuleFilter, map::SmartModuleMap};
+
+    pub(crate) fn create_transform(
+        ctx: SmartModuleInstanceContext,
+        chain: &mut SmartModuleChain,
+    ) -> Result<Box<dyn SmartModuleTransform>, Error> {
+        SmartModuleFilter::try_instantiate(ctx, chain)?
+            .map(|transform| Ok(Box::new(transform) as Box<dyn SmartModuleTransform>))
+            .unwrap_or_else(|| Err(Error::UnknownSmartModule))
     }
 }

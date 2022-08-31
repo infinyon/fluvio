@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
-use wasmtime::{Engine, Module, IntoFunc, Store, Instance};
+use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
 
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams};
 
@@ -15,50 +15,6 @@ impl SmartEngine {
     pub fn new() -> Self {
         Self(Engine::default())
     }
-
-    /*
-    #[tracing::instrument(skip(self, bytes))]
-    pub fn create_new_context(
-        &self,
-        bytes: impl AsRef<[u8]>,
-    ) -> Result<Box<dyn SmartModuleInstance>> {
-        let module = Module::new(&self.0, bytes)?;
-
-        todo!("create new context")
-
-
-        let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
-            SmartModuleKind::Filter => {
-                Box::new(smartmodule.create_filter(smart_payload.params, version)?)
-            }
-            SmartModuleKind::FilterMap => {
-                Box::new(smartmodule.create_filter_map(smart_payload.params, version)?)
-            }
-            SmartModuleKind::Map => {
-                Box::new(smartmodule.create_map(smart_payload.params, version)?)
-            }
-            SmartModuleKind::ArrayMap => {
-                Box::new(smartmodule.create_array_map(smart_payload.params, version)?)
-            }
-            SmartModuleKind::Join(_) => {
-                Box::new(smartmodule.create_join(smart_payload.params, version)?)
-            }
-            SmartModuleKind::JoinStream {
-                topic: _,
-                derivedstream: _,
-            } => Box::new(smartmodule.create_join_stream(smart_payload.params, version)?),
-            SmartModuleKind::Aggregate { accumulator } => Box::new(smartmodule.create_aggregate(
-                smart_payload.params,
-                accumulator.clone(),
-                version,
-            )?),
-            SmartModuleKind::Generic(context) => {
-                smartmodule.create_generic_smartmodule(smart_payload.params, context, version)?
-            }
-        };
-
-    }
-    */
 }
 
 cfg_if::cfg_if! {
@@ -82,7 +38,7 @@ cfg_if::cfg_if! {
         impl SmartEngine {
             fn new_chain(&self) -> SmartModuleChain {
                 SmartModuleChain {
-                    store: Store::new(&self.0),
+                    store: Store::new(&self.0,()),
                     modules: vec![],
                 }
             }
@@ -99,7 +55,7 @@ impl Debug for SmartEngine {
 /// Chain of SmartModule which can be execute
 pub struct SmartModuleChain {
     store: Store<State>,
-    modules: Vec<Box<SmartModuleInstance<dyn SmartModuleTransform>>>,
+    modules: Vec<SmartModuleInstance<Box<dyn SmartModuleTransform>>>,
 }
 
 impl Deref for SmartModuleChain {
@@ -143,7 +99,7 @@ cfg_if::cfg_if! {
                     copy_records_fn_import.name(),
                     host_fn,
                 )?;
-                linker.instantiate(self.store, module)
+                linker.instantiate(self.as_context_mut(), module)
             }
         }
     } else  {
@@ -154,8 +110,12 @@ cfg_if::cfg_if! {
                 module: &Module,
                 host_fn: impl IntoFunc<State, Params, Args>,
             ) -> Result<Instance, Error> {
-                let func = Func::wrap(&mut *self.0, host_fn);
-                Instance::new(self.0, module, &[func.into()])
+
+                use wasmtime::AsContext;
+                use wasmtime::Func;
+
+                let func = Func::wrap(self.as_context_mut(), host_fn);
+                Instance::new(self.as_context_mut(), module, &[func.into()])
             }
 
 
@@ -167,14 +127,14 @@ cfg_if::cfg_if! {
 impl SmartModuleChain {
     /// add new smart module to chain
     pub fn add_smart_module(
-        &self,
+        &mut self,
         params: SmartModuleExtraParams,
         version: i16,
         bytes: impl AsRef<[u8]>,
     ) -> Result<()> {
         let module = Module::new(&self.store.engine(), bytes)?;
 
-        let instance = SmartModuleInstanceContext::instantiate(module, &self, params, version)?;
+        let instance = SmartModuleInstanceContext::instantiate(module, self, params, version)?;
 
         Ok(())
     }

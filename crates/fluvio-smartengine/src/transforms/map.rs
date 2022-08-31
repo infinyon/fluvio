@@ -47,9 +47,9 @@ impl MapFnKind {
 
 impl SmartModuleMap {
     #[tracing::instrument(skip(base, chain))]
-    pub fn try_instantiate(
+    pub(crate) fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
         base.get_wasm_func(chain, MAP_FN_NAME)
             .ok_or(Error::NotNamedExport(MAP_FN_NAME))
@@ -63,40 +63,18 @@ impl SmartModuleMap {
             })
     }
 
-    /*
-    pub fn new(
-        module: &SmartModuleWithEngine,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<Self, Error> {
-        debug!(base_fn = MAP_FN_NAME, ?params, "instantiating mapping");
-        let mut base = SmartModuleContext::new(module, params, version)?;
-        let map_fn = if let Ok(map_fn) = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)
-        {
-            debug!("found new map function");
-            MapFnKind::New(map_fn)
-        } else {
-            debug!("not found map function");
-            let map_fn: OldMapFn = base
-                .instance
-                .get_typed_func(&mut base.store, MAP_FN_NAME)
-                .map_err(|err| Error::NotNamedExport(MAP_FN_NAME, err))?;
-            MapFnKind::Old(map_fn)
-        };
-        Ok(Self { base, map_fn })
-    }
-    */
+
 }
 
 impl SmartModuleTransform for SmartModuleMap {
     fn process(
         &mut self,
         input: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, chain)?;
-        let map_output = self.map_fn.call(chain, slice)?;
+        let map_output = self.map_fn.call(chain.as_context_mut(), slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)

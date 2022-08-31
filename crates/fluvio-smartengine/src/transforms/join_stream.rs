@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
@@ -11,7 +11,7 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 use crate::{
     WasmSlice,
     error::Error,
-    instance::{SmartModuleInstance, SmartModuleInstanceContext, SmartModuleTransform},
+    instance::{ SmartModuleInstanceContext, SmartModuleTransform},
     SmartModuleChain,
 };
 
@@ -48,9 +48,9 @@ impl JoinFnKind {
 }
 
 impl SmartModuleJoinStream {
-    pub fn try_instantiate(
+    pub(crate) fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
         base.get_wasm_func(chain, JOIN_FN_NAME)
             .ok_or(Error::NotNamedExport(JOIN_FN_NAME))
@@ -64,26 +64,7 @@ impl SmartModuleJoinStream {
                     .map_err(|wasm_err| Error::TypeConversion(JOIN_FN_NAME, wasm_err))
             })
     }
-    /*
-    pub fn new(
-        module: &SmartModuleWithEngine,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<Self, Error> {
-        let mut base = SmartModuleContext::new(module, params, version)?;
-        let join_fn =
-            if let Ok(join_fn) = base.instance.get_typed_func(&mut base.store, JOIN_FN_NAME) {
-                JoinFnKind::New(join_fn)
-            } else {
-                let join_fn = base
-                    .instance
-                    .get_typed_func(&mut base.store, JOIN_FN_NAME)
-                    .map_err(|err| Error::NotNamedExport(JOIN_FN_NAME, err))?;
-                JoinFnKind::Old(join_fn)
-            };
-        Ok(Self { base, join_fn })
-    }
-    */
+    
 }
 
 impl SmartModuleTransform for SmartModuleJoinStream {
@@ -91,7 +72,7 @@ impl SmartModuleTransform for SmartModuleJoinStream {
     fn process(
         &mut self,
         input: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input,chain)?;
@@ -104,7 +85,7 @@ impl SmartModuleTransform for SmartModuleJoinStream {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.base.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(chain)?;
         Ok(output)
     }
 

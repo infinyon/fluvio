@@ -21,7 +21,7 @@ type BaseAggregateFn = TypedFunc<(i32, i32), i32>;
 type AggregateFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
-pub struct SmartModuleAggregate {
+pub(crate) struct SmartModuleAggregate {
     aggregate_fn: AggregateFnKind,
     accumulator: Vec<u8>,
 }
@@ -51,7 +51,7 @@ impl AggregateFnKind {
 impl SmartModuleAggregate {
     pub fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
         base.get_wasm_func(chain, AGGREGATE_FN_NAME)
             .ok_or(Error::NotNamedExport(AGGREGATE_FN_NAME))
@@ -75,46 +75,17 @@ impl SmartModuleAggregate {
     }
 }
 
-/*
-pub fn new(
-    module: &SmartModuleWithEngine,
-    params: SmartModuleExtraParams,
-    accumulator: Vec<u8>,
-    version: i16,
-) -> Result<Self, Error> {
-    let mut base = SmartModuleContext::new(module, params, version)?;
-    let aggregate_fn: AggregateFnKind = if let Ok(agg_fn) = base
-        .instance
-        .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
-    {
-        AggregateFnKind::New(agg_fn)
-    } else {
-        let agg_fn: OldAggregateFn = base
-            .instance
-            .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
-            .map_err(|err| Error::NotNamedExport(AGGREGATE_FN_NAME, err))?;
-        AggregateFnKind::Old(agg_fn)
-    };
-
-    Ok(Self {
-        base,
-        aggregate_fn,
-        accumulator,
-    })
-}
-*/
-
 impl SmartModuleTransform for SmartModuleAggregate {
-    #[instrument(skip(self,base),fields(offset = base.base_offset))]
+    #[instrument(skip(self,ctx,chain),fields(offset = input.base_offset))]
     fn process(
         &mut self,
-        base: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        input: SmartModuleInput,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput> {
         debug!("start aggregration");
         let input = SmartModuleAggregateInput {
-            base,
+            base: input,
             accumulator: self.accumulator.clone(),
         };
         let slice = ctx.write_input(&input, chain)?;
@@ -127,7 +98,7 @@ impl SmartModuleTransform for SmartModuleAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleAggregateOutput = ctx.base.read_output(chain)?;
+        let output: SmartModuleAggregateOutput = ctx.read_output(chain)?;
         self.accumulator = output.accumulator;
         Ok(output.base)
     }

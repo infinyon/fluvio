@@ -19,7 +19,7 @@ type BaseFilterFn = TypedFunc<(i32, i32), i32>;
 type FilterFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
-pub struct SmartModuleFilter {
+pub(crate) struct SmartModuleFilter {
     filter_fn: FilterFnKind,
 }
 
@@ -50,7 +50,7 @@ impl SmartModuleFilter {
     /// Try to create filter by matching function, if function is not found, then return empty
     pub fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
         base.get_wasm_func(chain, FILTER_FN_NAME)
             .ok_or(Error::NotNamedExport("filter"))
@@ -70,7 +70,7 @@ impl SmartModuleTransform for SmartModuleFilter {
     fn process(
         &mut self,
         input: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, chain)?;

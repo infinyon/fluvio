@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
@@ -11,7 +11,7 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 use crate::{
     WasmSlice,
     error::Error,
-    instance::{SmartModuleInstance, SmartModuleInstanceContext, SmartModuleTransform},
+    instance::{SmartModuleInstanceContext, SmartModuleTransform},
     SmartModuleChain,
 };
 
@@ -48,9 +48,9 @@ impl JoinFnKind {
 }
 
 impl SmartModuleJoin {
-    pub fn try_instantiate(
+    pub(crate) fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
         base.get_wasm_func(chain, JOIN_FN_NAME)
             .ok_or(Error::NotNamedExport(JOIN_FN_NAME))
@@ -88,14 +88,14 @@ impl SmartModuleJoin {
 }
 
 impl SmartModuleTransform for SmartModuleJoin {
-    #[instrument(skip(self, input), name = "Join")]
+    #[instrument(skip(self, input, ctx, chain), name = "Join")]
     fn process(
         &mut self,
         input: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input,chain)?;
+        let slice = ctx.write_input(&input, chain)?;
         debug!(len = slice.1, "WASM SLICE");
         let map_output = self.join_fn.call(chain.as_context_mut(), slice)?;
 
@@ -108,5 +108,4 @@ impl SmartModuleTransform for SmartModuleJoin {
         let output: SmartModuleOutput = ctx.read_output(chain)?;
         Ok(output)
     }
-
 }

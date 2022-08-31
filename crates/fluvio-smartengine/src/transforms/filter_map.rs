@@ -19,7 +19,7 @@ type BaseFilterMapFn = TypedFunc<(i32, i32), i32>;
 type FilterMapFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
-pub struct SmartModuleFilterMap {
+pub(crate) struct SmartModuleFilterMap {
     filter_map_fn: FilterMapFnKind,
 }
 
@@ -49,7 +49,7 @@ impl FilterMapFnKind {
 impl SmartModuleFilterMap {
     pub fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &SmartModuleChain,
+        chain: &mut SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
         base.get_wasm_func(chain, FILTER_MAP_FN_NAME)
             .ok_or(Error::NotNamedExport(FILTER_MAP_FN_NAME))
@@ -99,7 +99,7 @@ impl SmartModuleTransform for SmartModuleFilterMap {
     fn process(
         &mut self,
         input: SmartModuleInput,
-        ctx: &SmartModuleInstanceContext,
+        ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, chain)?;
