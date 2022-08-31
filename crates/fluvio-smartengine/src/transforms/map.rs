@@ -2,33 +2,31 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
-use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
-};
-use tracing::debug;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::{WasmSlice, SmartModuleWithEngine, SmartModuleContext, error::Error, SmartModuleInstance};
+use fluvio_smartmodule::dataplane::smartmodule::{
+     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+};
+use crate::{WasmSlice,  error::Error,  instance::{ SmartModuleInstanceContext, SmartModuleTransform}, SmartModuleChain};
 
 const MAP_FN_NAME: &str = "map";
-type OldMapFn = TypedFunc<(i32, i32), i32>;
-type MapFn = TypedFunc<(i32, i32, u32), i32>;
+type BaseMapFn = TypedFunc<(i32, i32), i32>;
+type MapWithParamFn = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
 pub struct SmartModuleMap {
-    base: SmartModuleContext,
     map_fn: MapFnKind,
 }
 enum MapFnKind {
-    Old(OldMapFn),
-    New(MapFn),
+    Base(BaseMapFn),
+    Param(MapWithParamFn),
 }
 
 impl Debug for MapFnKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Old(..) => write!(f, "OldMapFn"),
-            Self::New(..) => write!(f, "MapFn"),
+            Self::Base(..) => write!(f, "BaseMapFn"),
+            Self::Param(..) => write!(f, "MapFnWithParam"),
         }
     }
 }
@@ -36,14 +34,34 @@ impl Debug for MapFnKind {
 impl MapFnKind {
     fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
         match self {
-            Self::Old(map_fn) => map_fn.call(store, (slice.0, slice.1)),
-            Self::New(map_fn) => map_fn.call(store, slice),
+            Self::Base(map_fn) => map_fn.call(store, (slice.0, slice.1)),
+            Self::Param(map_fn) => map_fn.call(store, slice),
         }
     }
 }
 
 impl SmartModuleMap {
-    #[tracing::instrument(skip(module, params))]
+    #[tracing::instrument(skip(base, chain))]
+    pub fn try_instantiate(
+        base: SmartModuleInstanceContext,
+        chain: &SmartModuleChain,
+    ) -> Result<Option<Self>, Error> {
+
+
+        base.get_wasm_func(chain, MAP_FN_NAME)
+            .ok_or(Error::NotNamedExport(MAP_FN_NAME))
+            .and_then(|func| {
+                // check type signature
+                func.typed()
+                    .map(|typed_fn| MapFnKind::Base(typed_fn))
+                    .or_else(|_| func.typed().map(|typed_fn| MapFnKind::Param(typed_fn)))
+                    .map(|map_fn| Some(Self { map_fn }))
+                    .map_err(|wasm_err| Error::TypeConversion(MAP_FN_NAME, wasm_err))
+            })
+    }
+        
+
+    /*    
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
@@ -65,12 +83,13 @@ impl SmartModuleMap {
         };
         Ok(Self { base, map_fn })
     }
+    */
 }
 
-impl SmartModuleInstance for SmartModuleMap {
-    fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
-        let slice = self.base.write_input(&input)?;
-        let map_output = self.map_fn.call(&mut self.base.store, slice)?;
+impl SmartModuleTransform for SmartModuleMap {
+    fn process(&mut self, input: SmartModuleInput,ctx: &SmartModuleInstanceContext,chain: &mut SmartModuleChain) -> Result<SmartModuleOutput> {
+        let slice = ctx.write_input(&input,chain)?;
+        let map_output = self.map_fn.call(chain, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
@@ -78,15 +97,8 @@ impl SmartModuleInstance for SmartModuleMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = self.base.read_output()?;
+        let output: SmartModuleOutput = ctx.read_output(chain)?;
         Ok(output)
     }
 
-    fn params(&self) -> SmartModuleExtraParams {
-        self.base.get_params().clone()
-    }
-
-    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
-        &mut self.base
-    }
 }

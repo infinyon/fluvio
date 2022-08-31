@@ -7,7 +7,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::{WasmSlice, SmartModuleWithEngine, SmartModuleContext, error::Error, SmartModuleInstance};
+use crate::{WasmSlice,  error::Error,  instance::SmartModuleInstance};
 
 const FILTER_MAP_FN_NAME: &str = "filter_map";
 type OldFilterMapFn = TypedFunc<(i32, i32), i32>;

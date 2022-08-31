@@ -7,8 +7,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::WasmSlice;
-use crate::{ SmartModuleWithEngine, SmartModuleContext, error::Error, SmartModuleInstance};
+use crate::{WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext, instance::SmartModuleInstance};
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
 type OldArrayMapFn = TypedFunc<(i32, i32), i32>;

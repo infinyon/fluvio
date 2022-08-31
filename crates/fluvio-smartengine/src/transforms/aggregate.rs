@@ -9,7 +9,8 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput,
     SmartModuleInternalError, SmartModuleAggregateOutput,
 };
-use crate::{WasmSlice, SmartModuleWithEngine, SmartModuleContext, error::Error, SmartModuleInstance};
+use crate::{WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext, instance::SmartModuleInstance};
+
 
 
 

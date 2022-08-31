@@ -25,7 +25,7 @@ anyhow = { version = "1.0.38" }
 wasmtime = { version = "0.40.0"}
 wasmtime-wasi = { version = "0.40.0", optional = true}
 nix = { version = "0.25"}
-derive_builder = "0.11.0"
+cfg-if = "1.0.0"
 
 fluvio-future = { version = "0.4.0"  }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = [
