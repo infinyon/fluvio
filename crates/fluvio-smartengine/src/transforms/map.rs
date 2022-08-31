@@ -5,9 +5,14 @@ use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
-     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
-use crate::{WasmSlice,  error::Error,  instance::{ SmartModuleInstanceContext, SmartModuleTransform}, SmartModuleChain};
+use crate::{
+    WasmSlice,
+    error::Error,
+    instance::{SmartModuleInstanceContext, SmartModuleTransform},
+    SmartModuleChain,
+};
 
 const MAP_FN_NAME: &str = "map";
 type BaseMapFn = TypedFunc<(i32, i32), i32>;
@@ -46,8 +51,6 @@ impl SmartModuleMap {
         base: SmartModuleInstanceContext,
         chain: &SmartModuleChain,
     ) -> Result<Option<Self>, Error> {
-
-
         base.get_wasm_func(chain, MAP_FN_NAME)
             .ok_or(Error::NotNamedExport(MAP_FN_NAME))
             .and_then(|func| {
@@ -59,9 +62,8 @@ impl SmartModuleMap {
                     .map_err(|wasm_err| Error::TypeConversion(MAP_FN_NAME, wasm_err))
             })
     }
-        
 
-    /*    
+    /*
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
@@ -87,8 +89,13 @@ impl SmartModuleMap {
 }
 
 impl SmartModuleTransform for SmartModuleMap {
-    fn process(&mut self, input: SmartModuleInput,ctx: &SmartModuleInstanceContext,chain: &mut SmartModuleChain) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input,chain)?;
+    fn process(
+        &mut self,
+        input: SmartModuleInput,
+        ctx: &SmartModuleInstanceContext,
+        chain: &mut SmartModuleChain,
+    ) -> Result<SmartModuleOutput> {
+        let slice = ctx.write_input(&input, chain)?;
         let map_output = self.map_fn.call(chain, slice)?;
 
         if map_output < 0 {
@@ -100,5 +107,4 @@ impl SmartModuleTransform for SmartModuleMap {
         let output: SmartModuleOutput = ctx.read_output(chain)?;
         Ok(output)
     }
-
 }

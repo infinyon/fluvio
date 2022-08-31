@@ -8,7 +8,10 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::{WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext, instance::SmartModuleInstance};
+use crate::{
+    WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext,
+    instance::SmartModuleInstance,
+};
 
 const JOIN_FN_NAME: &str = "join";
 type OldJoinFn = TypedFunc<(i32, i32), i32>;

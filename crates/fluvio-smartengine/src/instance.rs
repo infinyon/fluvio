@@ -2,11 +2,12 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
-
-
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
-use wasmtime::{Memory,  Module, Caller, Extern, Trap, Instance,  Store, Func, TypedFunc, WasmParams, WasmResults, AsContextMut, AsContext};
+use wasmtime::{
+    Memory, Module, Caller, Extern, Trap, Instance, Store, Func, TypedFunc, WasmParams,
+    WasmResults, AsContextMut, AsContext,
+};
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::Record;
@@ -16,22 +17,19 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 
-
-use crate::{WasmSlice, memory, SmartModuleChain, State,};
+use crate::{WasmSlice, memory, SmartModuleChain, State};
 use crate::file_batch::FileBatchIterator;
 
 use super::error;
 
-
 pub(crate) struct SmartModuleInstance<T> {
     ctx: SmartModuleInstanceContext,
-    transform: T
+    transform: T,
 }
 
-
-impl <T>    SmartModuleInstance<T>
-    where T: SmartModuleTransform
-
+impl<T> SmartModuleInstance<T>
+where
+    T: SmartModuleTransform,
 {
     #[instrument(skip(self, iter, max_bytes, join_last_record))]
     pub fn process_batch(
@@ -229,18 +227,21 @@ impl SmartModuleInstanceContext {
             .map(|func| WasmFunction { func, chain })
     }
 
-    pub fn write_input<E: Encoder>(&mut self, input: &E,chain: &mut SmartModuleChain) -> Result<WasmSlice> {
+    pub fn write_input<E: Encoder>(
+        &mut self,
+        input: &E,
+        chain: &mut SmartModuleChain,
+    ) -> Result<WasmSlice> {
         self.records_cb.clear();
         let mut input_data = Vec::new();
         input.encode(&mut input_data, self.version)?;
         debug!(len = input_data.len(), "input data");
-        let array_ptr =
-            memory::copy_memory_to_instance(chain, &self.instance, &input_data)?;
+        let array_ptr = memory::copy_memory_to_instance(chain, &self.instance, &input_data)?;
         let length = input_data.len();
         Ok((array_ptr as i32, length as i32, self.version as u32))
     }
 
-    pub fn read_output<D: Decoder + Default>(&mut self,chain: &mut SmartModuleChain) -> Result<D> {
+    pub fn read_output<D: Decoder + Default>(&mut self, chain: &mut SmartModuleChain) -> Result<D> {
         let bytes = self
             .records_cb
             .get()
@@ -267,14 +268,14 @@ impl<'a> WasmFunction<'a> {
     }
 }
 
-
-
-
 pub trait SmartModuleTransform {
-    fn process(&mut self, input: SmartModuleInput,ctx: &SmartModuleInstanceContext,chain: &mut SmartModuleChain) -> Result<SmartModuleOutput>;
+    fn process(
+        &mut self,
+        input: SmartModuleInput,
+        ctx: &SmartModuleInstanceContext,
+        chain: &mut SmartModuleChain,
+    ) -> Result<SmartModuleOutput>;
 }
-
-
 
 #[derive(Clone)]
 pub struct RecordsMemory {

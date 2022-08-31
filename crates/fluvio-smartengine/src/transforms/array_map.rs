@@ -3,32 +3,36 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::{WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext, instance::SmartModuleInstance};
+use crate::{
+    WasmSlice,
+    error::Error,
+    instance::{SmartModuleInstanceContext, SmartModuleTransform},
+    SmartModuleChain,
+};
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
-type OldArrayMapFn = TypedFunc<(i32, i32), i32>;
-type ArrayMapFn = TypedFunc<(i32, i32, u32), i32>;
+type BaseArrayMapFn = TypedFunc<(i32, i32), i32>;
+type ArrayMapFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
 pub struct SmartModuleArrayMap {
-    base: SmartModuleContext,
     array_map_fn: ArrayMapFnKind,
 }
 
 enum ArrayMapFnKind {
-    Old(OldArrayMapFn),
-    New(ArrayMapFn),
+    Base(BaseArrayMapFn),
+    Param(ArrayMapFnWithParam),
 }
 
 impl Debug for ArrayMapFnKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Old(..) => write!(f, "OldArrayMapFn"),
-            Self::New(..) => write!(f, "ArrayMapFn"),
+            Self::Base(..) => write!(f, "BaseArrayMapFn"),
+            Self::Param(..) => write!(f, "ArrayMapFnWithParam"),
         }
     }
 }
@@ -36,13 +40,31 @@ impl Debug for ArrayMapFnKind {
 impl ArrayMapFnKind {
     fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
         match self {
-            Self::Old(array_map_fn) => array_map_fn.call(store, (slice.0, slice.1)),
-            Self::New(array_map_fn) => array_map_fn.call(store, slice),
+            Self::Base(array_map_fn) => array_map_fn.call(store, (slice.0, slice.1)),
+            Self::Param(array_map_fn) => array_map_fn.call(store, slice),
         }
     }
 }
 
 impl SmartModuleArrayMap {
+    pub fn try_instantiate(
+        base: SmartModuleInstanceContext,
+        chain: &SmartModuleChain,
+    ) -> Result<Option<Self>, Error> {
+        base.get_wasm_func(chain, ARRAY_MAP_FN_NAME)
+            .ok_or(Error::NotNamedExport(ARRAY_MAP_FN_NAME))
+            .and_then(|func| {
+                // check type signature
+
+                func.typed()
+                    .map(|typed_fn| ArrayMapFnKind::Base(typed_fn))
+                    .or_else(|_| func.typed().map(|typed_fn| ArrayMapFnKind::Param(typed_fn)))
+                    .map(|array_map_fn| Some(Self { array_map_fn }))
+                    .map_err(|wasm_err| Error::TypeConversion(ARRAY_MAP_FN_NAME, wasm_err))
+            })
+    }
+
+    /*
     pub fn new(
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
@@ -67,12 +89,18 @@ impl SmartModuleArrayMap {
             array_map_fn: map_fn,
         })
     }
+    */
 }
 
-impl SmartModuleInstance for SmartModuleArrayMap {
-    fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
-        let slice = self.base.write_input(&input)?;
-        let map_output = self.array_map_fn.call(&mut self.base.store, slice)?;
+impl SmartModuleTransform for SmartModuleArrayMap {
+    fn process(
+        &mut self,
+        input: SmartModuleInput,
+        ctx: &SmartModuleInstanceContext,
+        chain: &mut SmartModuleChain,
+    ) -> Result<SmartModuleOutput> {
+        let slice = ctx.write_input(&input, chain)?;
+        let map_output = self.array_map_fn.call(chain.as_context_mut(), slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
@@ -80,15 +108,7 @@ impl SmartModuleInstance for SmartModuleArrayMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = self.base.read_output()?;
+        let output: SmartModuleOutput = ctx.base.read_output(chain)?;
         Ok(output)
-    }
-
-    fn params(&self) -> SmartModuleExtraParams {
-        self.base.get_params().clone()
-    }
-
-    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
-        &mut self.base
     }
 }

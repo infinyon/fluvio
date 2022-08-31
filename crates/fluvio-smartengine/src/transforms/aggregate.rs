@@ -9,10 +9,10 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput,
     SmartModuleInternalError, SmartModuleAggregateOutput,
 };
-use crate::{WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext, instance::SmartModuleInstance};
-
-
-
+use crate::{
+    WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext,
+    instance::SmartModuleInstance,
+};
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
 type OldAggregateFn = TypedFunc<(i32, i32), i32>;

@@ -3,14 +3,16 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
-    WasmSlice, error::Error, instance::{ SmartModuleInstanceContext, SmartModuleTransform}, SmartModuleChain,
+    WasmSlice,
+    error::Error,
+    instance::{SmartModuleInstanceContext, SmartModuleTransform},
+    SmartModuleChain,
 };
-
 
 const FILTER_FN_NAME: &str = "filter";
 type BaseFilterFn = TypedFunc<(i32, i32), i32>;
@@ -65,8 +67,13 @@ impl SmartModuleFilter {
 }
 
 impl SmartModuleTransform for SmartModuleFilter {
-    fn process(&mut self, input: SmartModuleInput,ctx: &SmartModuleInstanceContext,chain: &mut SmartModuleChain) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input,chain)?;
+    fn process(
+        &mut self,
+        input: SmartModuleInput,
+        ctx: &SmartModuleInstanceContext,
+        chain: &mut SmartModuleChain,
+    ) -> Result<SmartModuleOutput> {
+        let slice = ctx.write_input(&input, chain)?;
         let filter_output = self.filter_fn.call(chain.as_context_mut(), slice)?;
 
         if filter_output < 0 {

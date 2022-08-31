@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-
-use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed, SmartModuleInvocation};
+use fluvio_spu_schema::server::smartmodule::{
+    SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
+    SmartModuleInvocation,
+};
 use tracing::{debug, error, trace, instrument, info};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;

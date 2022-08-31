@@ -9,12 +9,11 @@ mod join_stream;
 mod instance {
 
     use anyhow::{Result};
-    use wasmtime::{ Module};
+    use wasmtime::{Module};
 
     use crate::instance::SmartModuleInstance;
 
     pub(crate) fn create_transform(instance: Module) -> Result<Box<dyn SmartModuleInstance>> {
-
         let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
             SmartModuleKind::Filter => {
                 Box::new(smartmodule.create_filter(smart_payload.params, version)?)
@@ -44,7 +43,5 @@ mod instance {
                 smartmodule.create_generic_smartmodule(smart_payload.params, context, version)?
             }
         };
-
     }
-
 }

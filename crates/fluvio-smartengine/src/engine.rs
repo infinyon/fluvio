@@ -82,7 +82,7 @@ cfg_if::cfg_if! {
         impl SmartEngine {
             fn new_chain(&self) -> SmartModuleChain {
                 SmartModuleChain {
-                    store: Store::new(&self.0)
+                    store: Store::new(&self.0),
                     modules: vec![],
                 }
             }
