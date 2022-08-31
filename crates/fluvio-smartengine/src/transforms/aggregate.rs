@@ -6,34 +6,35 @@ use anyhow::Result;
 use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput,
-    SmartModuleInternalError, SmartModuleAggregateOutput,
+    SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleInternalError,
+    SmartModuleAggregateOutput,
 };
 use crate::{
-    WasmSlice, SmartModuleWithEngine, error::Error, context::SmartModuleContext,
-    instance::SmartModuleInstance,
+    WasmSlice,
+    error::Error,
+    instance::{SmartModuleInstanceContext, SmartModuleTransform},
+    SmartModuleChain,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
-type OldAggregateFn = TypedFunc<(i32, i32), i32>;
-type AggregateFn = TypedFunc<(i32, i32, u32), i32>;
+type BaseAggregateFn = TypedFunc<(i32, i32), i32>;
+type AggregateFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
 #[derive(Debug)]
 pub struct SmartModuleAggregate {
-    base: SmartModuleContext,
     aggregate_fn: AggregateFnKind,
     accumulator: Vec<u8>,
 }
 pub enum AggregateFnKind {
-    Old(OldAggregateFn),
-    New(AggregateFn),
+    Base(BaseAggregateFn),
+    Param(AggregateFnWithParam),
 }
 
 impl Debug for AggregateFnKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Old(_aggregate_fn) => write!(f, "OldAggregateFn"),
-            Self::New(_aggregate_fn) => write!(f, "AggregateFn"),
+            Self::Base(_aggregate_fn) => write!(f, "OldAggregateFn"),
+            Self::Param(_aggregate_fn) => write!(f, "AggregateFn"),
         }
     }
 }
@@ -41,51 +42,83 @@ impl Debug for AggregateFnKind {
 impl AggregateFnKind {
     fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
         match self {
-            Self::Old(aggregate_fn) => aggregate_fn.call(store, (slice.0, slice.1)),
-            Self::New(aggregate_fn) => aggregate_fn.call(store, slice),
+            Self::Base(aggregate_fn) => aggregate_fn.call(store, (slice.0, slice.1)),
+            Self::Param(aggregate_fn) => aggregate_fn.call(store, slice),
         }
     }
 }
 
 impl SmartModuleAggregate {
-    pub fn new(
-        module: &SmartModuleWithEngine,
-        params: SmartModuleExtraParams,
-        accumulator: Vec<u8>,
-        version: i16,
-    ) -> Result<Self, Error> {
-        let mut base = SmartModuleContext::new(module, params, version)?;
-        let aggregate_fn: AggregateFnKind = if let Ok(agg_fn) = base
-            .instance
-            .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
-        {
-            AggregateFnKind::New(agg_fn)
-        } else {
-            let agg_fn: OldAggregateFn = base
-                .instance
-                .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
-                .map_err(|err| Error::NotNamedExport(AGGREGATE_FN_NAME, err))?;
-            AggregateFnKind::Old(agg_fn)
-        };
+    pub fn try_instantiate(
+        base: SmartModuleInstanceContext,
+        chain: &SmartModuleChain,
+    ) -> Result<Option<Self>, Error> {
+        base.get_wasm_func(chain, AGGREGATE_FN_NAME)
+            .ok_or(Error::NotNamedExport(AGGREGATE_FN_NAME))
+            .and_then(|func| {
+                // check type signature
 
-        Ok(Self {
-            base,
-            aggregate_fn,
-            accumulator,
-        })
+                func.typed()
+                    .map(|typed_fn| AggregateFnKind::Base(typed_fn))
+                    .or_else(|_| {
+                        func.typed()
+                            .map(|typed_fn| AggregateFnKind::Param(typed_fn))
+                    })
+                    .map(|aggregate_fn| {
+                        Some(Self {
+                            aggregate_fn,
+                            accumulator: vec![],
+                        })
+                    })
+                    .map_err(|wasm_err| Error::TypeConversion(AGGREGATE_FN_NAME, wasm_err))
+            })
     }
 }
 
-impl SmartModuleInstance for SmartModuleAggregate {
+/*
+pub fn new(
+    module: &SmartModuleWithEngine,
+    params: SmartModuleExtraParams,
+    accumulator: Vec<u8>,
+    version: i16,
+) -> Result<Self, Error> {
+    let mut base = SmartModuleContext::new(module, params, version)?;
+    let aggregate_fn: AggregateFnKind = if let Ok(agg_fn) = base
+        .instance
+        .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
+    {
+        AggregateFnKind::New(agg_fn)
+    } else {
+        let agg_fn: OldAggregateFn = base
+            .instance
+            .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
+            .map_err(|err| Error::NotNamedExport(AGGREGATE_FN_NAME, err))?;
+        AggregateFnKind::Old(agg_fn)
+    };
+
+    Ok(Self {
+        base,
+        aggregate_fn,
+        accumulator,
+    })
+}
+*/
+
+impl SmartModuleTransform for SmartModuleAggregate {
     #[instrument(skip(self,base),fields(offset = base.base_offset))]
-    fn process(&mut self, base: SmartModuleInput) -> Result<SmartModuleOutput> {
+    fn process(
+        &mut self,
+        base: SmartModuleInput,
+        ctx: &SmartModuleInstanceContext,
+        chain: &mut SmartModuleChain,
+    ) -> Result<SmartModuleOutput> {
         debug!("start aggregration");
         let input = SmartModuleAggregateInput {
             base,
             accumulator: self.accumulator.clone(),
         };
-        let slice = self.base.write_input(&input)?;
-        let aggregate_output = self.aggregate_fn.call(&mut self.base.store, slice)?;
+        let slice = ctx.write_input(&input, chain)?;
+        let aggregate_output = self.aggregate_fn.call(chain.as_context_mut(), slice)?;
 
         debug!(aggregate_output);
         if aggregate_output < 0 {
@@ -94,15 +127,8 @@ impl SmartModuleInstance for SmartModuleAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleAggregateOutput = self.base.read_output()?;
+        let output: SmartModuleAggregateOutput = ctx.base.read_output(chain)?;
         self.accumulator = output.accumulator;
         Ok(output.base)
-    }
-    fn params(&self) -> SmartModuleExtraParams {
-        self.base.get_params().clone()
-    }
-
-    fn mut_ctx(&mut self) -> &mut SmartModuleContext {
-        &mut self.base
     }
 }

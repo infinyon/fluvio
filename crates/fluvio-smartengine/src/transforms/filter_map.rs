@@ -111,7 +111,7 @@ impl SmartModuleTransform for SmartModuleFilterMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.base.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(chain)?;
         Ok(output)
     }
 }
