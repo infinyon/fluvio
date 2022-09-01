@@ -48,7 +48,7 @@ impl MapFnKind {
 impl SmartModuleMap {
     #[tracing::instrument(skip(base, store))]
     pub(crate) fn try_instantiate(
-        base: SmartModuleInstanceContext,
+        base: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
         base.get_wasm_func(store, MAP_FN_NAME)

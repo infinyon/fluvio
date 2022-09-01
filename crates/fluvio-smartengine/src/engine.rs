@@ -123,7 +123,6 @@ cfg_if::cfg_if! {
                 host_fn: impl IntoFunc<State, Params, Args>,
             ) -> Result<Instance, Error> {
 
-                use wasmtime::AsContext;
                 use wasmtime::Func;
 
                 let func = Func::wrap(self.as_context_mut(), host_fn);
@@ -494,7 +493,7 @@ mod test {
         //we try to create a map smartmodule with a filter smartmodule
 
         let filter = read_wasm_module(FLUVIO_WASM_FILTER);
-        let engine = SmartEngine::default()
+        let engine = SmartEngine::new()
             .create_module_from_binary(&filter)
             .expect("Failed to create join");
 

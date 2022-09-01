@@ -48,7 +48,7 @@ impl ArrayMapFnKind {
 
 impl SmartModuleArrayMap {
     pub fn try_instantiate(
-        base: SmartModuleInstanceContext,
+        base: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
         base.get_wasm_func(&mut *store, ARRAY_MAP_FN_NAME)

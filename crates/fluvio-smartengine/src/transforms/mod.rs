@@ -18,14 +18,46 @@ mod instance {
         error::EngineError,
     };
 
-    use super::{filter::SmartModuleFilter, map::SmartModuleMap};
+    use super::{
+        filter::SmartModuleFilter, map::SmartModuleMap, filter_map::SmartModuleFilterMap,
+        array_map::SmartModuleArrayMap, join::SmartModuleJoin, join_stream::SmartModuleJoinStream,
+        aggregate::SmartModuleAggregate,
+    };
 
     pub(crate) fn create_transform(
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Box<dyn SmartModuleTransform>, EngineError> {
-        SmartModuleFilter::try_instantiate(ctx, store)?
-            .map(|transform| Ok(Box::new(transform) as Box<dyn SmartModuleTransform>))
-            .unwrap_or_else(|| Err(EngineError::UnknownSmartModule))
+        if let Some(tr) = SmartModuleFilter::try_instantiate(ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+        {
+            Ok(tr)
+        } else if let Some(tr) = SmartModuleMap::try_instantiate(ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+        {
+            Ok(tr)
+        } else if let Some(tr) = SmartModuleFilterMap::try_instantiate(ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+        {
+            Ok(tr)
+        } else if let Some(tr) = SmartModuleArrayMap::try_instantiate(ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+        {
+            Ok(tr)
+        } else if let Some(tr) = SmartModuleJoin::try_instantiate(ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+        {
+            Ok(tr)
+        } else if let Some(tr) = SmartModuleJoinStream::try_instantiate(ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+        {
+            Ok(tr)
+        } else if let Some(tr) = SmartModuleAggregate::try_instantiate(ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+        {
+            Ok(tr)
+        } else {
+            Err(EngineError::UnknownSmartModule)
+        }
     }
 }

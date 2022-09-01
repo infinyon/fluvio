@@ -49,7 +49,7 @@ impl JoinFnKind {
 
 impl SmartModuleJoinStream {
     pub(crate) fn try_instantiate(
-        base: SmartModuleInstanceContext,
+        base: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
         base.get_wasm_func(&mut *store, JOIN_FN_NAME)

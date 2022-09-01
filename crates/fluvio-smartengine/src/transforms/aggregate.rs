@@ -13,7 +13,7 @@ use crate::{
     WasmSlice,
     error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleChain, WasmState,
+    WasmState,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
@@ -50,7 +50,7 @@ impl AggregateFnKind {
 
 impl SmartModuleAggregate {
     pub fn try_instantiate(
-        base: SmartModuleInstanceContext,
+        base: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
         base.get_wasm_func(&mut *store, AGGREGATE_FN_NAME)
