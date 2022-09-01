@@ -257,7 +257,7 @@ impl SmartModuleInstanceContext {
     }
 }
 
-pub(crate) trait SmartModuleTransform {
+pub(crate) trait SmartModuleTransform: Send + Sync {
     fn process(
         &mut self,
         input: SmartModuleInput,

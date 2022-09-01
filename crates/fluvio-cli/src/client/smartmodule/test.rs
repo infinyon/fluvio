@@ -7,14 +7,14 @@ use clap::Parser;
 
 use fluvio::{FluvioError, RecordKey, Fluvio};
 use fluvio_protocol::record::{RecordData, Record};
-use fluvio_smartengine::metadata::{
-    LegacySmartModulePayload, SmartModuleWasmCompressed, SmartModuleKind,
-};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
-use fluvio_smartengine::engine::SmartEngine;
+use fluvio_smartengine::SmartEngine;
 
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
+use fluvio_spu_schema::server::smartmodule::{
+    LegacySmartModulePayload, SmartModuleWasmCompressed, SmartModuleKind,
+};
 use tracing::debug;
 
 use crate::{Result, error::CliError, client::cmd::ClientCmd};
@@ -77,14 +77,15 @@ impl ClientCmd for TestSmartModuleOpt {
         };
 
         debug!("loading module");
-        let engine = SmartEngine::default();
-        let mut smartmodule = engine
-            .create_module_from_payload(payload, None)
+        let engine = SmartEngine::new();
+        let mut chain = engine.new_chain();
+        chain
+            .add_smart_module(payload.params, None, payload.wasm.get_raw()?)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
         debug!("SmartModule created");
 
-        smartmodule
+        chain
             .invoke_constructor()
             .map_err(|e| FluvioError::Other(format!("SmartEngine constructor - {:?}", e)))?;
 

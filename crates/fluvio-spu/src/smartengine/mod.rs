@@ -209,7 +209,8 @@ impl SmartModuleContext {
                         error: err.to_string(),
                     }
                 }
-            })
+            })?;
+        Ok(chain)
     }
 }
 
