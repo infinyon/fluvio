@@ -480,10 +480,10 @@ impl TopicProducer {
 
 
                 if let Some(
-                    smartmodule_instance_ref
+                    smart_chain_ref
                 ) = &self.sm_chain {
-                    let mut smartengine = smartmodule_instance_ref.write().await;
-                    let output = smartengine.process(SmartModuleInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    let mut sm_chain = smart_chain_ref.write().await;
+                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;
                 }
             } else {

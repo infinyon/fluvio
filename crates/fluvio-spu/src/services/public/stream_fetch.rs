@@ -1,9 +1,8 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use fluvio_smartengine::SmartModuleInstance;
-use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
+use futures_util::StreamExt;
 use tokio::select;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;

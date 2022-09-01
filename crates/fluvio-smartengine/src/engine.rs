@@ -150,15 +150,11 @@ impl SmartModuleChain {
     }
 
     /// process a record
-    pub fn process(
-        &mut self,
-        store: &mut WasmState,
-        input: SmartModuleInput,
-    ) -> Result<SmartModuleOutput> {
+    pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         // only perform a single transform now
         let first_transform = self.transforms.first_mut();
         if let Some(transform) = first_transform {
-            transform.process(input, store)
+            transform.process(input, &mut self.store)
         } else {
             Err(Error::msg("No transform found"))
         }
