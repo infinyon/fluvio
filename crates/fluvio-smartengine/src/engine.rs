@@ -2,12 +2,17 @@ use std::ops::{Deref, DerefMut};
 use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
+use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
+use fluvio_protocol::record::Batch;
+use fluvio_smartmodule::Record;
+use tracing::instrument;
 use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
 };
 
+use crate::file_batch::FileBatchIterator;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
 use crate::transforms::create_transform;
 
@@ -34,7 +39,7 @@ cfg_if::cfg_if! {
                     .build();
                 SmartModuleChain {
                     store: Store::new(&self.0, wasi),
-                    transforms: vec![],
+                    instances: vec![],
                 }
             }
         }
@@ -44,7 +49,7 @@ cfg_if::cfg_if! {
             pub fn new_chain(&self) -> SmartModuleChain {
                 SmartModuleChain {
                     store: Store::new(&self.0,()),
-                    transforms: vec![],
+                    instances: vec![],
                 }
             }
         }
@@ -62,7 +67,7 @@ pub type WasmState = Store<State>;
 /// Chain of SmartModule which can be execute
 pub struct SmartModuleChain {
     store: Store<State>,
-    transforms: Vec<SmartModuleInstance>,
+    instances: Vec<SmartModuleInstance>,
 }
 
 impl Deref for SmartModuleChain {
@@ -144,7 +149,7 @@ impl SmartModuleChain {
         let version = maybe_version.unwrap_or(DEFAULT_SMARTENGINE_VERSION);
         let ctx = SmartModuleInstanceContext::instantiate(module, self, params, version)?;
         let transform = create_transform(&ctx, &mut self.as_context_mut())?;
-        self.transforms
+        self.instances
             .push(SmartModuleInstance::new(ctx, transform));
         Ok(())
     }
@@ -152,145 +157,171 @@ impl SmartModuleChain {
     /// process a record
     pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         // only perform a single transform now
-        let first_transform = self.transforms.first_mut();
-        if let Some(transform) = first_transform {
-            transform.process(input, &mut self.store)
+        let first_instance = self.instances.first_mut();
+        if let Some(instance) = first_instance {
+            instance.process(input, &mut self.store)
         } else {
             Err(Error::msg("No transform found"))
         }
     }
+
+    #[instrument(skip(self))]
+    pub fn invoke_constructor(&mut self) -> Result<(), Error> {
+        // only perform a single transform now
+        let first_instance = self.instances.first_mut();
+        if let Some(instance) = first_instance {
+            instance.invoke_constructor(&mut self.store)
+        } else {
+            Err(Error::msg("No transform found"))
+        }
+    }
+
+    #[instrument(skip(self, iter, max_bytes, join_last_record))]
+    pub fn process_batch(
+        &mut self,
+        iter: &mut FileBatchIterator,
+        max_bytes: usize,
+        join_last_record: Option<&Record>,
+    ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
+        let first_instance = self.instances.first_mut();
+        if let Some(instance) = first_instance {
+            instance.process_batch(&mut self.store, iter, max_bytes, join_last_record)
+        } else {
+            Err(Error::msg("No transform found"))
+        }
+    }
+
+    /*
+    pub struct SmartModuleWithEngine {
+        pub(crate) module: Module,
+        pub(crate) engine: SmartEngine,
+    }
+
+    /
+    impl SmartModuleWithEngine {
+        fn create_filter(
+            &self,
+            params: SmartModuleExtraParams,
+            version: i16,
+        ) -> Result<SmartModuleFilter, error::Error> {
+            let filter = SmartModuleFilter::new(self, params, version)?;
+            Ok(filter)
+        }
+
+        fn create_map(
+            &self,
+            params: SmartModuleExtraParams,
+            version: i16,
+        ) -> Result<SmartModuleMap, error::Error> {
+            let map = SmartModuleMap::new(self, params, version)?;
+            Ok(map)
+        }
+
+        fn create_filter_map(
+            &self,
+            params: SmartModuleExtraParams,
+            version: i16,
+        ) -> Result<SmartModuleFilterMap, error::Error> {
+            let filter_map = SmartModuleFilterMap::new(self, params, version)?;
+            Ok(filter_map)
+        }
+
+        fn create_array_map(
+            &self,
+            params: SmartModuleExtraParams,
+            version: i16,
+        ) -> Result<SmartModuleArrayMap, error::Error> {
+            let map = SmartModuleArrayMap::new(self, params, version)?;
+            Ok(map)
+        }
+
+        fn create_join(
+            &self,
+            params: SmartModuleExtraParams,
+            version: i16,
+        ) -> Result<SmartModuleJoin, error::Error> {
+            let join = SmartModuleJoin::new(self, params, version)?;
+            Ok(join)
+        }
+
+        fn create_join_stream(
+            &self,
+            params: SmartModuleExtraParams,
+            version: i16,
+        ) -> Result<SmartModuleJoinStream, error::Error> {
+            let join = SmartModuleJoinStream::new(self, params, version)?;
+            Ok(join)
+        }
+
+        fn create_aggregate(
+            &self,
+            params: SmartModuleExtraParams,
+            accumulator: Vec<u8>,
+            version: i16,
+        ) -> Result<SmartModuleAggregate, error::Error> {
+            let aggregate = SmartModuleAggregate::new(self, params, accumulator, version)?;
+            Ok(aggregate)
+        }
+
+        /// Create smartmodule without knowing its type. This function will try to initialize the smartmodule as each one of
+        /// the available smartmodules until there is success or all the kinds of smartmodules is tried.
+        fn create_generic_smartmodule(
+            &self,
+            params: SmartModuleExtraParams,
+            context: &SmartModuleContextData,
+            version: i16,
+        ) -> Result<Box<dyn SmartModuleInstance>, error::Error> {
+            match self.create_filter(params.clone(), version) {
+                Ok(filter) => return Ok(Box::new(filter)),
+                Err(error::Error::NotNamedExport(_, _)) => {}
+                Err(any_other_error) => return Err(any_other_error),
+            }
+
+            match self.create_map(params.clone(), version) {
+                Ok(map) => return Ok(Box::new(map)),
+                Err(error::Error::NotNamedExport(_, _)) => {}
+                Err(any_other_error) => return Err(any_other_error),
+            }
+
+            match self.create_filter_map(params.clone(), version) {
+                Ok(filter_map) => return Ok(Box::new(filter_map)),
+                Err(error::Error::NotNamedExport(_, _)) => {}
+                Err(any_other_error) => return Err(any_other_error),
+            }
+
+            match self.create_array_map(params.clone(), version) {
+                Ok(array_map) => return Ok(Box::new(array_map)),
+                Err(error::Error::NotNamedExport(_, _)) => {}
+                Err(any_other_error) => return Err(any_other_error),
+            }
+
+            let accumulator = match context {
+                SmartModuleContextData::Aggregate { accumulator } => accumulator.clone(),
+                _ => vec![],
+            };
+            match self.create_aggregate(params.clone(), accumulator, version) {
+                Ok(aggregate) => return Ok(Box::new(aggregate)),
+                Err(error::Error::NotNamedExport(_, _)) => {}
+                Err(any_other_error) => return Err(any_other_error),
+            }
+
+            match self.create_join(params.clone(), version) {
+                Ok(join) => return Ok(Box::new(join)),
+                Err(error::Error::NotNamedExport(_, _)) => {}
+                Err(any_other_error) => return Err(any_other_error),
+            }
+
+            match self.create_join_stream(params, version) {
+                Ok(join_stream) => return Ok(Box::new(join_stream)),
+                Err(error::Error::NotNamedExport(_, _)) => {}
+                Err(any_other_error) => return Err(any_other_error),
+            }
+
+            Err(error::Error::NotValidExports)
+        }
+    }
+    */
 }
-
-/*
-pub struct SmartModuleWithEngine {
-    pub(crate) module: Module,
-    pub(crate) engine: SmartEngine,
-}
-
-/
-impl SmartModuleWithEngine {
-    fn create_filter(
-        &self,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<SmartModuleFilter, error::Error> {
-        let filter = SmartModuleFilter::new(self, params, version)?;
-        Ok(filter)
-    }
-
-    fn create_map(
-        &self,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<SmartModuleMap, error::Error> {
-        let map = SmartModuleMap::new(self, params, version)?;
-        Ok(map)
-    }
-
-    fn create_filter_map(
-        &self,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<SmartModuleFilterMap, error::Error> {
-        let filter_map = SmartModuleFilterMap::new(self, params, version)?;
-        Ok(filter_map)
-    }
-
-    fn create_array_map(
-        &self,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<SmartModuleArrayMap, error::Error> {
-        let map = SmartModuleArrayMap::new(self, params, version)?;
-        Ok(map)
-    }
-
-    fn create_join(
-        &self,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<SmartModuleJoin, error::Error> {
-        let join = SmartModuleJoin::new(self, params, version)?;
-        Ok(join)
-    }
-
-    fn create_join_stream(
-        &self,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<SmartModuleJoinStream, error::Error> {
-        let join = SmartModuleJoinStream::new(self, params, version)?;
-        Ok(join)
-    }
-
-    fn create_aggregate(
-        &self,
-        params: SmartModuleExtraParams,
-        accumulator: Vec<u8>,
-        version: i16,
-    ) -> Result<SmartModuleAggregate, error::Error> {
-        let aggregate = SmartModuleAggregate::new(self, params, accumulator, version)?;
-        Ok(aggregate)
-    }
-
-    /// Create smartmodule without knowing its type. This function will try to initialize the smartmodule as each one of
-    /// the available smartmodules until there is success or all the kinds of smartmodules is tried.
-    fn create_generic_smartmodule(
-        &self,
-        params: SmartModuleExtraParams,
-        context: &SmartModuleContextData,
-        version: i16,
-    ) -> Result<Box<dyn SmartModuleInstance>, error::Error> {
-        match self.create_filter(params.clone(), version) {
-            Ok(filter) => return Ok(Box::new(filter)),
-            Err(error::Error::NotNamedExport(_, _)) => {}
-            Err(any_other_error) => return Err(any_other_error),
-        }
-
-        match self.create_map(params.clone(), version) {
-            Ok(map) => return Ok(Box::new(map)),
-            Err(error::Error::NotNamedExport(_, _)) => {}
-            Err(any_other_error) => return Err(any_other_error),
-        }
-
-        match self.create_filter_map(params.clone(), version) {
-            Ok(filter_map) => return Ok(Box::new(filter_map)),
-            Err(error::Error::NotNamedExport(_, _)) => {}
-            Err(any_other_error) => return Err(any_other_error),
-        }
-
-        match self.create_array_map(params.clone(), version) {
-            Ok(array_map) => return Ok(Box::new(array_map)),
-            Err(error::Error::NotNamedExport(_, _)) => {}
-            Err(any_other_error) => return Err(any_other_error),
-        }
-
-        let accumulator = match context {
-            SmartModuleContextData::Aggregate { accumulator } => accumulator.clone(),
-            _ => vec![],
-        };
-        match self.create_aggregate(params.clone(), accumulator, version) {
-            Ok(aggregate) => return Ok(Box::new(aggregate)),
-            Err(error::Error::NotNamedExport(_, _)) => {}
-            Err(any_other_error) => return Err(any_other_error),
-        }
-
-        match self.create_join(params.clone(), version) {
-            Ok(join) => return Ok(Box::new(join)),
-            Err(error::Error::NotNamedExport(_, _)) => {}
-            Err(any_other_error) => return Err(any_other_error),
-        }
-
-        match self.create_join_stream(params, version) {
-            Ok(join_stream) => return Ok(Box::new(join_stream)),
-            Err(error::Error::NotNamedExport(_, _)) => {}
-            Err(any_other_error) => return Err(any_other_error),
-        }
-
-        Err(error::Error::NotValidExports)
-    }
-}
-*/
 
 #[cfg(test)]
 mod test {

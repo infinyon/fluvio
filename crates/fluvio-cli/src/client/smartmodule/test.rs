@@ -104,7 +104,7 @@ impl ClientCmd for TestSmartModuleOpt {
         let record_value: RecordData = raw_input.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
 
-        let output = smartmodule
+        let output = chain
             .process(SmartModuleInput::try_from(entries)?)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 

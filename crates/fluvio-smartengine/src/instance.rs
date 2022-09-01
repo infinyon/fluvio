@@ -4,7 +4,7 @@ use std::fmt::{self, Debug};
 
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
-use wasmtime::{Memory, Module, Caller, Extern, Trap, Instance, Store, Func, WasmResults, AsContextMut};
+use wasmtime::{Memory, Module, Caller, Extern, Trap, Instance, Func, AsContextMut};
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::Record;
@@ -39,11 +39,18 @@ impl SmartModuleInstance {
         self.transform.process(input, &mut self.ctx, store)
     }
 
-    #[instrument(skip(self, iter, max_bytes, join_last_record, chain))]
+    /// initialize smartmodule instance using parameters
+    /// it must be have fn called init with parameters
+    /// this is experimental feature and may be removed in future
+    #[instrument(skip(self, store))]
+    pub fn invoke_constructor(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
+        self.ctx.invoke_constructor(store)
+    }
+
+    #[instrument(skip(self, store, iter, max_bytes, join_last_record))]
     pub(crate) fn process_batch(
         &mut self,
-        ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
@@ -88,7 +95,7 @@ impl SmartModuleInstance {
                 join_record,
                 params: self.ctx.params.clone(),
             };
-            let output = self.transform.process(input, ctx, chain)?;
+            let output = self.transform.process(input, &mut self.ctx, store)?;
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;
@@ -204,7 +211,7 @@ impl SmartModuleInstanceContext {
         self.instance.get_func(store, name)
     }
 
-    pub fn write_input<E: Encoder>(
+    pub(crate) fn write_input<E: Encoder>(
         &mut self,
         input: &E,
         store: &mut impl AsContextMut,
@@ -218,7 +225,10 @@ impl SmartModuleInstanceContext {
         Ok((array_ptr as i32, length as i32, self.version as u32))
     }
 
-    pub fn read_output<D: Decoder + Default>(&mut self, store: impl AsContextMut) -> Result<D> {
+    pub(crate) fn read_output<D: Decoder + Default>(
+        &mut self,
+        store: impl AsContextMut,
+    ) -> Result<D> {
         let bytes = self
             .records_cb
             .get()
@@ -233,7 +243,10 @@ impl SmartModuleInstanceContext {
     /// it must be have fn called init with parameters
     /// this is experimental feature and may be removed in future
     #[instrument(skip(store))]
-    pub fn invoke_constructor(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
+    pub(crate) fn invoke_constructor(
+        &mut self,
+        store: &mut impl AsContextMut,
+    ) -> Result<(), Error> {
         use wasmtime::TypedFunc;
         use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInternalError;
 

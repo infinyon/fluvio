@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use fluvio_smartengine::SmartModuleChain;
+use fluvio_smartengine::{SmartModuleChain, file_batch::FileBatchIterator};
 use tracing::{debug, error, instrument, trace};
 use futures_util::StreamExt;
 use tokio::select;
@@ -433,7 +433,7 @@ impl StreamFetchHandler {
         }
 
         let output = match sm_chain {
-            Some(smartmodule_instance) => {
+            Some(chain) => {
                 // If a SmartModule is provided, we need to read records from file to memory
                 // In-memory records are then processed by SmartModule and returned to consumer
 
@@ -441,7 +441,7 @@ impl StreamFetchHandler {
                 let mut file_batch_iterator =
                     FileBatchIterator::from_raw_slice(records.raw_slice());
 
-                let (batch, smartmodule_error) = smartmodule_instance
+                let (batch, smartmodule_error) = chain
                     .process_batch(
                         &mut file_batch_iterator,
                         self.max_bytes as usize,
