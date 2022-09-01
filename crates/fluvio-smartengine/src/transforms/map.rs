@@ -9,9 +9,9 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use crate::{
     WasmSlice,
-    error::Error,
+    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleChain,
+    WasmState,
 };
 
 const MAP_FN_NAME: &str = "map";
@@ -46,24 +46,25 @@ impl MapFnKind {
 }
 
 impl SmartModuleMap {
-    #[tracing::instrument(skip(base, chain))]
+    #[tracing::instrument(skip(base, store))]
     pub(crate) fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
-    ) -> Result<Option<Self>, Error> {
-        base.get_wasm_func(chain, MAP_FN_NAME)
-            .ok_or(Error::NotNamedExport(MAP_FN_NAME))
+        store: &mut impl AsContextMut,
+    ) -> Result<Option<Self>, EngineError> {
+        base.get_wasm_func(store, MAP_FN_NAME)
+            .ok_or(EngineError::NotNamedExport(MAP_FN_NAME))
             .and_then(|func| {
                 // check type signature
-                func.typed()
+                func.typed(&mut *store)
                     .map(|typed_fn| MapFnKind::Base(typed_fn))
-                    .or_else(|_| func.typed().map(|typed_fn| MapFnKind::Param(typed_fn)))
+                    .or_else(|_| {
+                        func.typed(&mut *store)
+                            .map(|typed_fn| MapFnKind::Param(typed_fn))
+                    })
                     .map(|map_fn| Some(Self { map_fn }))
-                    .map_err(|wasm_err| Error::TypeConversion(MAP_FN_NAME, wasm_err))
+                    .map_err(|wasm_err| EngineError::TypeConversion(MAP_FN_NAME, wasm_err))
             })
     }
-
-
 }
 
 impl SmartModuleTransform for SmartModuleMap {
@@ -71,10 +72,10 @@ impl SmartModuleTransform for SmartModuleMap {
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input, chain)?;
-        let map_output = self.map_fn.call(chain.as_context_mut(), slice)?;
+        let slice = ctx.write_input(&input, &mut *store)?;
+        let map_output = self.map_fn.call(&mut *store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
@@ -82,7 +83,7 @@ impl SmartModuleTransform for SmartModuleMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
     }
 }

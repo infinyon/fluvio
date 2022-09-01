@@ -10,9 +10,9 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
     WasmSlice,
-    error::Error,
+    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleChain,
+    WasmState,
 };
 
 const JOIN_FN_NAME: &str = "join";
@@ -50,54 +50,36 @@ impl JoinFnKind {
 impl SmartModuleJoin {
     pub(crate) fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
-    ) -> Result<Option<Self>, Error> {
-        base.get_wasm_func(chain, JOIN_FN_NAME)
-            .ok_or(Error::NotNamedExport(JOIN_FN_NAME))
+        store: &mut impl AsContextMut,
+    ) -> Result<Option<Self>, EngineError> {
+        base.get_wasm_func(&mut *store, JOIN_FN_NAME)
+            .ok_or(EngineError::NotNamedExport(JOIN_FN_NAME))
             .and_then(|func| {
                 // check type signature
 
-                func.typed()
+                func.typed(&mut *store)
                     .map(|typed_fn| JoinFnKind::Base(typed_fn))
-                    .or_else(|_| func.typed().map(|typed_fn| JoinFnKind::Param(typed_fn)))
+                    .or_else(|_| {
+                        func.typed(store)
+                            .map(|typed_fn| JoinFnKind::Param(typed_fn))
+                    })
                     .map(|join_fn| Some(Self { join_fn }))
-                    .map_err(|wasm_err| Error::TypeConversion(JOIN_FN_NAME, wasm_err))
+                    .map_err(|wasm_err| EngineError::TypeConversion(JOIN_FN_NAME, wasm_err))
             })
     }
-
-    /*
-    pub fn new(
-        module: &SmartModuleWithEngine,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<Self, Error> {
-        let mut base = SmartModuleContext::new(module, params, version)?;
-        let join_fn =
-            if let Ok(join_fn) = base.instance.get_typed_func(&mut base.store, JOIN_FN_NAME) {
-                JoinFnKind::New(join_fn)
-            } else {
-                let join_fn = base
-                    .instance
-                    .get_typed_func(&mut base.store, JOIN_FN_NAME)
-                    .map_err(|err| Error::NotNamedExport(JOIN_FN_NAME, err))?;
-                JoinFnKind::Old(join_fn)
-            };
-        Ok(Self { base, join_fn })
-    }
-    */
 }
 
 impl SmartModuleTransform for SmartModuleJoin {
-    #[instrument(skip(self, input, ctx, chain), name = "Join")]
+    #[instrument(skip(self, input, ctx, store), name = "Join")]
     fn process(
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input, chain)?;
+        let slice = ctx.write_input(&input, &mut *store)?;
         debug!(len = slice.1, "WASM SLICE");
-        let map_output = self.join_fn.call(chain.as_context_mut(), slice)?;
+        let map_output = self.join_fn.call(&mut *store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
@@ -105,7 +87,7 @@ impl SmartModuleTransform for SmartModuleJoin {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
     }
 }

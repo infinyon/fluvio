@@ -9,9 +9,9 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
     WasmSlice,
-    error::Error,
+    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleChain,
+    WasmState,
 };
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
@@ -49,21 +49,23 @@ impl ArrayMapFnKind {
 impl SmartModuleArrayMap {
     pub fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
-    ) -> Result<Option<Self>, Error> {
-        base.get_wasm_func(chain, ARRAY_MAP_FN_NAME)
-            .ok_or(Error::NotNamedExport(ARRAY_MAP_FN_NAME))
+        store: &mut impl AsContextMut,
+    ) -> Result<Option<Self>, EngineError> {
+        base.get_wasm_func(&mut *store, ARRAY_MAP_FN_NAME)
+            .ok_or(EngineError::NotNamedExport(ARRAY_MAP_FN_NAME))
             .and_then(|func| {
                 // check type signature
 
-                func.typed()
+                func.typed(&mut *store)
                     .map(|typed_fn| ArrayMapFnKind::Base(typed_fn))
-                    .or_else(|_| func.typed().map(|typed_fn| ArrayMapFnKind::Param(typed_fn)))
+                    .or_else(|_| {
+                        func.typed(store)
+                            .map(|typed_fn| ArrayMapFnKind::Param(typed_fn))
+                    })
                     .map(|array_map_fn| Some(Self { array_map_fn }))
-                    .map_err(|wasm_err| Error::TypeConversion(ARRAY_MAP_FN_NAME, wasm_err))
+                    .map_err(|wasm_err| EngineError::TypeConversion(ARRAY_MAP_FN_NAME, wasm_err))
             })
     }
-
 }
 
 impl SmartModuleTransform for SmartModuleArrayMap {
@@ -71,10 +73,10 @@ impl SmartModuleTransform for SmartModuleArrayMap {
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input, chain)?;
-        let map_output = self.array_map_fn.call(chain.as_context_mut(), slice)?;
+        let slice = ctx.write_input(&input, &mut *store)?;
+        let map_output = self.array_map_fn.call(&mut *store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
@@ -82,7 +84,7 @@ impl SmartModuleTransform for SmartModuleArrayMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
     }
 }

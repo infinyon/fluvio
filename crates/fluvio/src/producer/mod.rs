@@ -1,18 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use tracing::instrument;
 use async_lock::RwLock;
 
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::Record;
-
 use fluvio_compression::Compression;
 use fluvio_sc_schema::topic::CompressionAlgorithm;
-#[cfg(feature = "smartengine")]
-use fluvio_smartengine::SmartModuleInstance;
 use fluvio_types::PartitionId;
 use fluvio_types::event::StickyEvent;
-use tracing::instrument;
 
 mod accumulator;
 mod config;
@@ -55,7 +52,7 @@ use crate::error::Result;
 pub struct TopicProducer {
     inner: Arc<InnerTopicProducer>,
     #[cfg(feature = "smartengine")]
-    pub(crate) smartmodule_instance: Option<Arc<RwLock<Box<dyn SmartModuleInstance>>>>,
+    sm_chain: Option<Arc<RwLock<fluvio_smartengine::SmartModuleChain>>>,
 }
 
 /// Pool of producers for a given topic. There is a producer per partition
@@ -219,17 +216,27 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
 
         use std::collections::BTreeMap;
+        use once_cell::sync::Lazy;
 
-        use fluvio_smartengine::metadata::{SmartModuleWasmCompressed, SmartModuleContextData, SmartModuleKind, LegacySmartModulePayload};
+        use fluvio_spu_schema::server::smartmodule::{LegacySmartModulePayload,SmartModuleContextData,SmartModuleKind,SmartModuleWasmCompressed};
         use fluvio_smartengine::SmartEngine;
+
+        static SM_ENGINE: Lazy<SmartEngine> = Lazy::new(|| {
+            fluvio_smartengine::SmartEngine::new()
+        });
+
+
+
 
         impl TopicProducer {
             fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
-                let engine = SmartEngine::new();
-                let  smartmodule = engine.create_new_context(
-                    smart_payload,
-                    None).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-                self.smartmodule_instance = Some(Arc::new(RwLock::new(smartmodule)));
+                let mut chain = SM_ENGINE.new_chain();
+                chain.add_smart_module(
+                   smart_payload.params,
+                    None,
+                    smart_payload.wasm.get_raw()?,
+                    ).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                self.sm_chain = Some(Arc::new(RwLock::new(chain)));
                 Ok(())
             }
             /// Adds a SmartModule filter to this TopicProducer
@@ -413,7 +420,7 @@ impl TopicProducer {
                 client_stats,
             }),
             #[cfg(feature = "smartengine")]
-            smartmodule_instance: Default::default(),
+            sm_chain: Default::default(),
         })
     }
 
@@ -474,7 +481,7 @@ impl TopicProducer {
 
                 if let Some(
                     smartmodule_instance_ref
-                ) = &self.smartmodule_instance {
+                ) = &self.sm_chain {
                     let mut smartengine = smartmodule_instance_ref.write().await;
                     let output = smartengine.process(SmartModuleInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;

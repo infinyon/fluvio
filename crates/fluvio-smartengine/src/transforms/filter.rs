@@ -9,9 +9,9 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
     WasmSlice,
-    error::Error,
+    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleChain,
+    WasmState,
 };
 
 const FILTER_FN_NAME: &str = "filter";
@@ -49,19 +49,22 @@ impl FilterFnKind {
 impl SmartModuleFilter {
     /// Try to create filter by matching function, if function is not found, then return empty
     pub fn try_instantiate(
-        base: SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
-    ) -> Result<Option<Self>, Error> {
-        base.get_wasm_func(chain, FILTER_FN_NAME)
-            .ok_or(Error::NotNamedExport("filter"))
+        ctx: &SmartModuleInstanceContext,
+        store: &mut impl AsContextMut,
+    ) -> Result<Option<Self>, EngineError> {
+        ctx.get_wasm_func(store, FILTER_FN_NAME)
+            .ok_or(EngineError::NotNamedExport("filter"))
             .and_then(|func| {
                 // check type signature
 
-                func.typed()
+                func.typed(&mut *store)
                     .map(|typed_fn| FilterFnKind::Base(typed_fn))
-                    .or_else(|_| func.typed().map(|typed_fn| FilterFnKind::Param(typed_fn)))
+                    .or_else(|_| {
+                        func.typed(store)
+                            .map(|typed_fn| FilterFnKind::Param(typed_fn))
+                    })
                     .map(|filter_fn| Some(Self { filter_fn }))
-                    .map_err(|wasm_err| Error::TypeConversion(FILTER_FN_NAME, wasm_err))
+                    .map_err(|wasm_err| EngineError::TypeConversion(FILTER_FN_NAME, wasm_err))
             })
     }
 }
@@ -71,10 +74,10 @@ impl SmartModuleTransform for SmartModuleFilter {
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input, chain)?;
-        let filter_output = self.filter_fn.call(chain.as_context_mut(), slice)?;
+        let slice = ctx.write_input(&input, &mut *store)?;
+        let filter_output = self.filter_fn.call(&mut *store, slice)?;
 
         if filter_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(filter_output)
@@ -82,7 +85,7 @@ impl SmartModuleTransform for SmartModuleFilter {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
     }
 }

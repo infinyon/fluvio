@@ -4,10 +4,7 @@ use std::fmt::{self, Debug};
 
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
-use wasmtime::{
-    Memory, Module, Caller, Extern, Trap, Instance, Store, Func, TypedFunc, WasmParams,
-    WasmResults, AsContextMut, AsContext,
-};
+use wasmtime::{Memory, Module, Caller, Extern, Trap, Instance, Store, Func, WasmResults, AsContextMut};
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::Record;
@@ -17,22 +14,33 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 
-use crate::{WasmSlice, memory, SmartModuleChain, State};
+use crate::error::EngineError;
+use crate::{WasmSlice, memory, SmartModuleChain, State, WasmState};
 use crate::file_batch::FileBatchIterator;
 
-use super::error;
-
-pub(crate) struct SmartModuleInstance<T> {
+pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,
-    transform: T,
+    transform: Box<dyn SmartModuleTransform>,
 }
 
-impl<T> SmartModuleInstance<T>
-where
-    T: SmartModuleTransform,
-{
-    #[instrument(skip(self, iter, max_bytes, join_last_record,chain))]
-    pub fn process_batch(
+impl SmartModuleInstance {
+    pub(crate) fn new(
+        ctx: SmartModuleInstanceContext,
+        transform: Box<dyn SmartModuleTransform>,
+    ) -> Self {
+        Self { ctx, transform }
+    }
+
+    pub(crate) fn process(
+        &mut self,
+        input: SmartModuleInput,
+        store: &mut WasmState,
+    ) -> Result<SmartModuleOutput> {
+        self.transform.process(input, &mut self.ctx, store)
+    }
+
+    #[instrument(skip(self, iter, max_bytes, join_last_record, chain))]
+    pub(crate) fn process_batch(
         &mut self,
         ctx: &mut SmartModuleInstanceContext,
         chain: &mut SmartModuleChain,
@@ -80,7 +88,7 @@ where
                 join_record,
                 params: self.ctx.params.clone(),
             };
-            let output = self.transform.process(input,ctx,chain)?;
+            let output = self.transform.process(input, ctx, chain)?;
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;
@@ -140,8 +148,6 @@ where
             }
         }
     }
-
-    
 }
 
 pub(crate) struct SmartModuleInstanceContext {
@@ -165,7 +171,7 @@ impl SmartModuleInstanceContext {
         chain: &mut SmartModuleChain,
         params: SmartModuleExtraParams,
         version: i16,
-    ) -> Result<Self, error::Error> {
+    ) -> Result<Self, EngineError> {
         debug!("creating WasmModuleInstance");
         let cb = Arc::new(RecordsCallBack::new());
         let records_cb = cb.clone();
@@ -184,7 +190,7 @@ impl SmartModuleInstanceContext {
         debug!("instantiating WASMtime");
         let instance = chain
             .instantiate(&module, copy_records_fn)
-            .map_err(error::Error::Instantiate)?;
+            .map_err(EngineError::Instantiate)?;
         Ok(Self {
             instance,
             records_cb,
@@ -194,35 +200,29 @@ impl SmartModuleInstanceContext {
     }
 
     /// get wasm function from instance
-    pub(crate) fn get_wasm_func<'a,'b>(
-        &'a self,
-        chain: &'b mut SmartModuleChain,
-        name: &str,
-    ) -> Option<WasmFunction<'b>> {
-        self.instance
-            .get_func(chain.as_context_mut(), name)
-            .map(|func| WasmFunction { func, chain })
+    pub(crate) fn get_wasm_func(&self, store: &mut impl AsContextMut, name: &str) -> Option<Func> {
+        self.instance.get_func(store, name)
     }
 
     pub fn write_input<E: Encoder>(
         &mut self,
         input: &E,
-        chain: &mut SmartModuleChain,
+        store: &mut impl AsContextMut,
     ) -> Result<WasmSlice> {
         self.records_cb.clear();
         let mut input_data = Vec::new();
         input.encode(&mut input_data, self.version)?;
         debug!(len = input_data.len(), "input data");
-        let array_ptr = memory::copy_memory_to_instance(chain, &self.instance, &input_data)?;
+        let array_ptr = memory::copy_memory_to_instance(store, &self.instance, &input_data)?;
         let length = input_data.len();
         Ok((array_ptr as i32, length as i32, self.version as u32))
     }
 
-    pub fn read_output<D: Decoder + Default>(&mut self, chain: &mut SmartModuleChain) -> Result<D> {
+    pub fn read_output<D: Decoder + Default>(&mut self, store: impl AsContextMut) -> Result<D> {
         let bytes = self
             .records_cb
             .get()
-            .and_then(|m| m.copy_memory_from(chain).ok())
+            .and_then(|m| m.copy_memory_from(store).ok())
             .unwrap_or_default();
         let mut output = D::default();
         output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
@@ -232,46 +232,28 @@ impl SmartModuleInstanceContext {
     /// initialize smartmodule instance using parameters
     /// it must be have fn called init with parameters
     /// this is experimental feature and may be removed in future
-    #[instrument(skip(chain))]
-    pub fn invoke_constructor(&mut self,chain: &mut SmartModuleChain) -> Result<(), Error> {
+    #[instrument(skip(store))]
+    pub fn invoke_constructor(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
         use wasmtime::TypedFunc;
         use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInternalError;
 
         const INIT_FN_NAME: &str = "init";
 
         let params = self.params.clone();
-        let slice = self.write_input(&params,chain)?;
-        if let Some(func) = self.get_wasm_func(chain, INIT_FN_NAME) {
-            let init_fn: TypedFunc<(i32, i32, u32), i32> = func.typed()?;
-            let filter_output = init_fn.call(chain.as_context_mut(), slice)?;
+        let slice = self.write_input(&params, store)?;
+        if let Some(func) = self.get_wasm_func(store, INIT_FN_NAME) {
+            let init_fn: TypedFunc<(i32, i32, u32), i32> = func.typed(store.as_context_mut())?;
+            let filter_output = init_fn.call(store, slice)?;
             if filter_output < 0 {
                 let internal_error = SmartModuleInternalError::try_from(filter_output)
                     .unwrap_or(SmartModuleInternalError::UnknownError);
                 return Err(internal_error.into());
             }
-
         } else {
             debug!("smartmodule does not have init function");
         }
-        
 
         Ok(())
-    }
-
-}
-
-pub(crate) struct WasmFunction<'a> {
-    func: Func,
-    chain: &'a SmartModuleChain,
-}
-
-impl<'a> WasmFunction<'a> {
-    pub fn typed<Params, Results>(&self) -> Result<TypedFunc<Params, Results>>
-    where
-        Params: WasmParams,
-        Results: WasmResults,
-    {
-        self.func.typed(self.chain.as_context())
     }
 }
 
@@ -280,7 +262,7 @@ pub(crate) trait SmartModuleTransform {
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
     ) -> Result<SmartModuleOutput>;
 }
 
@@ -292,7 +274,7 @@ pub struct RecordsMemory {
 }
 
 impl RecordsMemory {
-    fn copy_memory_from(&self, store: &mut Store<State>) -> Result<Vec<u8>> {
+    fn copy_memory_from(&self, store: impl AsContextMut) -> Result<Vec<u8>> {
         let mut bytes = vec![0u8; self.len as u32 as usize];
         self.memory.read(store, self.ptr as usize, &mut bytes)?;
         Ok(bytes)

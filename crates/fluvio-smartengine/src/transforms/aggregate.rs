@@ -11,9 +11,9 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use crate::{
     WasmSlice,
-    error::Error,
+    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleChain,
+    SmartModuleChain, WasmState,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
@@ -51,17 +51,17 @@ impl AggregateFnKind {
 impl SmartModuleAggregate {
     pub fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
-    ) -> Result<Option<Self>, Error> {
-        base.get_wasm_func(chain, AGGREGATE_FN_NAME)
-            .ok_or(Error::NotNamedExport(AGGREGATE_FN_NAME))
+        store: &mut impl AsContextMut,
+    ) -> Result<Option<Self>, EngineError> {
+        base.get_wasm_func(&mut *store, AGGREGATE_FN_NAME)
+            .ok_or(EngineError::NotNamedExport(AGGREGATE_FN_NAME))
             .and_then(|func| {
                 // check type signature
 
-                func.typed()
+                func.typed(&mut *store)
                     .map(|typed_fn| AggregateFnKind::Base(typed_fn))
                     .or_else(|_| {
-                        func.typed()
+                        func.typed(store)
                             .map(|typed_fn| AggregateFnKind::Param(typed_fn))
                     })
                     .map(|aggregate_fn| {
@@ -70,26 +70,26 @@ impl SmartModuleAggregate {
                             accumulator: vec![],
                         })
                     })
-                    .map_err(|wasm_err| Error::TypeConversion(AGGREGATE_FN_NAME, wasm_err))
+                    .map_err(|wasm_err| EngineError::TypeConversion(AGGREGATE_FN_NAME, wasm_err))
             })
     }
 }
 
 impl SmartModuleTransform for SmartModuleAggregate {
-    #[instrument(skip(self,ctx,chain),fields(offset = input.base_offset))]
+    #[instrument(skip(self,ctx,store),fields(offset = input.base_offset))]
     fn process(
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
         debug!("start aggregration");
         let input = SmartModuleAggregateInput {
             base: input,
             accumulator: self.accumulator.clone(),
         };
-        let slice = ctx.write_input(&input, chain)?;
-        let aggregate_output = self.aggregate_fn.call(chain.as_context_mut(), slice)?;
+        let slice = ctx.write_input(&input, &mut *store)?;
+        let aggregate_output = self.aggregate_fn.call(&mut *store, slice)?;
 
         debug!(aggregate_output);
         if aggregate_output < 0 {
@@ -98,7 +98,7 @@ impl SmartModuleTransform for SmartModuleAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleAggregateOutput = ctx.read_output(chain)?;
+        let output: SmartModuleAggregateOutput = ctx.read_output(store)?;
         self.accumulator = output.accumulator;
         Ok(output.base)
     }

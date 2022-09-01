@@ -1,5 +1,5 @@
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum EngineError {
     #[error("Failed to get valid exports for {0}")]
     NotNamedExport(&'static str),
     #[error("Function Ty failed conversion {0}: {1}")]
@@ -10,4 +10,6 @@ pub enum Error {
     UnknownSmartModule,
     #[error("Failed to instantiate: {0}")]
     Instantiate(anyhow::Error),
+    #[error("Other Error{0}")]
+    Other(&'static str),
 }

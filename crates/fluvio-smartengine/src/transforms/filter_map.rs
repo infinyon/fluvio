@@ -9,9 +9,9 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
     WasmSlice,
-    error::Error,
+    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleChain,
+    WasmState,
 };
 
 const FILTER_MAP_FN_NAME: &str = "filter_map";
@@ -49,50 +49,23 @@ impl FilterMapFnKind {
 impl SmartModuleFilterMap {
     pub fn try_instantiate(
         base: SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
-    ) -> Result<Option<Self>, Error> {
-        base.get_wasm_func(chain, FILTER_MAP_FN_NAME)
-            .ok_or(Error::NotNamedExport(FILTER_MAP_FN_NAME))
+        store: &mut impl AsContextMut,
+    ) -> Result<Option<Self>, EngineError> {
+        base.get_wasm_func(&mut *store, FILTER_MAP_FN_NAME)
+            .ok_or(EngineError::NotNamedExport(FILTER_MAP_FN_NAME))
             .and_then(|func| {
                 // check type signature
 
-                func.typed()
+                func.typed(&mut *store)
                     .map(|typed_fn| FilterMapFnKind::Base(typed_fn))
                     .or_else(|_| {
-                        func.typed()
+                        func.typed(store)
                             .map(|typed_fn| FilterMapFnKind::Param(typed_fn))
                     })
                     .map(|filter_map_fn| Some(Self { filter_map_fn }))
-                    .map_err(|wasm_err| Error::TypeConversion(FILTER_MAP_FN_NAME, wasm_err))
+                    .map_err(|wasm_err| EngineError::TypeConversion(FILTER_MAP_FN_NAME, wasm_err))
             })
     }
-
-    /*
-    pub fn new(
-        module: &SmartModuleWithEngine,
-        params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<Self, Error> {
-        let mut base = SmartModuleContext::new(module, params, version)?;
-        let filter_map_fn = if let Ok(fmap_fn) = base
-            .instance
-            .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
-        {
-            FilterMapFnKind::New(fmap_fn)
-        } else {
-            let fmap_fn: OldFilterMapFn = base
-                .instance
-                .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
-                .map_err(|err| Error::NotNamedExport(FILTER_MAP_FN_NAME, err))?;
-            FilterMapFnKind::Old(fmap_fn)
-        };
-
-        Ok(Self {
-            base,
-            filter_map_fn,
-        })
-    }
-    */
 }
 
 impl SmartModuleTransform for SmartModuleFilterMap {
@@ -100,10 +73,10 @@ impl SmartModuleTransform for SmartModuleFilterMap {
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
-        chain: &mut SmartModuleChain,
+        store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        let slice = ctx.write_input(&input, chain)?;
-        let map_output = self.filter_map_fn.call(chain.as_context_mut(), slice)?;
+        let slice = ctx.write_input(&input, &mut *store)?;
+        let map_output = self.filter_map_fn.call(&mut *store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
@@ -111,7 +84,7 @@ impl SmartModuleTransform for SmartModuleFilterMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = ctx.read_output(chain)?;
+        let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
     }
 }
