@@ -1,10 +1,13 @@
-mod filter;
-mod map;
-mod array_map;
-mod filter_map;
-mod aggregate;
-mod join;
-mod join_stream;
+pub(crate) mod filter;
+pub(crate) mod map;
+pub(crate) mod array_map;
+pub(crate) mod filter_map;
+pub(crate) mod aggregate;
+pub(crate) mod join;
+pub(crate) mod join_stream;
+
+#[cfg(test)]
+mod test;
 
 pub(crate) use instance::create_transform;
 

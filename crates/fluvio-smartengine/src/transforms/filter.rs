@@ -14,7 +14,7 @@ use crate::{
     WasmState,
 };
 
-const FILTER_FN_NAME: &str = "filter";
+pub(crate) const FILTER_FN_NAME: &str = "filter";
 type BaseFilterFn = TypedFunc<(i32, i32), i32>;
 type FilterFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
@@ -53,7 +53,7 @@ impl SmartModuleFilter {
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
         ctx.get_wasm_func(store, FILTER_FN_NAME)
-            .ok_or(EngineError::NotNamedExport("filter"))
+            .ok_or(EngineError::NotNamedExport(FILTER_FN_NAME))
             .and_then(|func| {
                 // check type signature
 
@@ -87,5 +87,9 @@ impl SmartModuleTransform for SmartModuleFilter {
 
         let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
+    }
+
+    fn name(&self) -> &str {
+        FILTER_FN_NAME
     }
 }

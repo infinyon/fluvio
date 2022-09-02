@@ -24,6 +24,11 @@ pub(crate) struct SmartModuleInstance {
 }
 
 impl SmartModuleInstance {
+    #[cfg(test)]
+    pub(crate) fn transform(self) -> Box<dyn SmartModuleTransform> {
+        self.transform
+    }
+
     pub(crate) fn new(
         ctx: SmartModuleInstanceContext,
         transform: Box<dyn SmartModuleTransform>,
@@ -271,12 +276,16 @@ impl SmartModuleInstanceContext {
 }
 
 pub(crate) trait SmartModuleTransform: Send + Sync {
+    /// transform records
     fn process(
         &mut self,
         input: SmartModuleInput,
         ctx: &mut SmartModuleInstanceContext,
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput>;
+
+    /// return name of transform, this is used for identifying transform and debugging
+    fn name(&self) -> &str;
 }
 
 #[derive(Clone)]

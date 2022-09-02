@@ -16,7 +16,7 @@ use crate::{
     WasmState,
 };
 
-const AGGREGATE_FN_NAME: &str = "aggregate";
+pub(crate) const AGGREGATE_FN_NAME: &str = "aggregate";
 type BaseAggregateFn = TypedFunc<(i32, i32), i32>;
 type AggregateFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
@@ -101,5 +101,9 @@ impl SmartModuleTransform for SmartModuleAggregate {
         let output: SmartModuleAggregateOutput = ctx.read_output(store)?;
         self.accumulator = output.accumulator;
         Ok(output.base)
+    }
+
+    fn name(&self) -> &str {
+        AGGREGATE_FN_NAME
     }
 }

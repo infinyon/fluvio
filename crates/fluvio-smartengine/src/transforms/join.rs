@@ -15,7 +15,7 @@ use crate::{
     WasmState,
 };
 
-const JOIN_FN_NAME: &str = "join";
+pub(crate) const JOIN_FN_NAME: &str = "join";
 type BaseJoinFn = TypedFunc<(i32, i32), i32>;
 type JoinFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
@@ -89,5 +89,9 @@ impl SmartModuleTransform for SmartModuleJoin {
 
         let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
+    }
+
+    fn name(&self) -> &str {
+        JOIN_FN_NAME
     }
 }

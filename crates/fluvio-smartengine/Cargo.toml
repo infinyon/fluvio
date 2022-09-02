@@ -34,7 +34,5 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = [
 fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.4.0", default-features = false }
 
 [dev-dependencies]
-cargo = "0.64"
-cfg-if = "1.0.0"
 fluvio-types = { path = "../fluvio-types" }
 

@@ -4,8 +4,8 @@ pub enum EngineError {
     NotNamedExport(&'static str),
     #[error("Function Ty failed conversion {0}: {1}")]
     TypeConversion(&'static str, anyhow::Error),
-    #[error("No smartmodule found")]
+    #[error("No valid smartmodule found")]
     UnknownSmartModule,
     #[error("Failed to instantiate: {0}")]
-    Instantiate(anyhow::Error)
+    Instantiate(anyhow::Error),
 }

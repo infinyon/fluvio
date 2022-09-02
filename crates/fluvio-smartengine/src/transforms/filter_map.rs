@@ -14,7 +14,7 @@ use crate::{
     WasmState,
 };
 
-const FILTER_MAP_FN_NAME: &str = "filter_map";
+pub(crate) const FILTER_MAP_FN_NAME: &str = "filter_map";
 type BaseFilterMapFn = TypedFunc<(i32, i32), i32>;
 type FilterMapFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
@@ -86,5 +86,9 @@ impl SmartModuleTransform for SmartModuleFilterMap {
 
         let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
+    }
+
+    fn name(&self) -> &str {
+        FILTER_MAP_FN_NAME
     }
 }

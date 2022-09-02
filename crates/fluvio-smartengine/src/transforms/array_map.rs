@@ -14,7 +14,7 @@ use crate::{
     WasmState,
 };
 
-const ARRAY_MAP_FN_NAME: &str = "array_map";
+pub(crate) const ARRAY_MAP_FN_NAME: &str = "array_map";
 type BaseArrayMapFn = TypedFunc<(i32, i32), i32>;
 type ArrayMapFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
@@ -86,5 +86,9 @@ impl SmartModuleTransform for SmartModuleArrayMap {
 
         let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
+    }
+
+    fn name(&self) -> &str {
+        ARRAY_MAP_FN_NAME
     }
 }
