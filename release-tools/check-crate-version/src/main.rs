@@ -8,6 +8,7 @@ use std::{
 
 use serde::Deserialize;
 use which::which_all;
+use toml_diff::TomlDiff;
 
 const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
 const CRATES_DIR: &str = "../../crates";
@@ -18,7 +19,7 @@ enum CrateStatus {
     VersionBumped,
     Unchanged,
     CodeChanged,
-    ManifestChanged,
+    ManifestChanged(String),
 }
 
 fn main() {
@@ -36,21 +37,22 @@ fn main() {
             crate_status.insert(crate_name, CrateStatus::NotPublished);
             continue;
         }
-        download_crate(crate_name);
+        // download_crate(crate_name);
 
         let manifests = Manifests::read(crate_name);
+        let manifest_diff = manifests.diff();
 
         crate_status.insert(
             crate_name,
             match (
                 diff_crate_src(crate_name, true),
-                manifests.diff(),
+                manifest_diff.is_some(),
                 manifests.diff_versions(),
             ) {
                 (_, _, true) => CrateStatus::VersionBumped,
                 (false, false, _) => CrateStatus::Unchanged,
                 (true, _, false) => CrateStatus::CodeChanged,
-                (false, true, false) => CrateStatus::ManifestChanged,
+                (false, true, false) => CrateStatus::ManifestChanged(manifest_diff.unwrap()),
             },
         );
     }
@@ -62,7 +64,10 @@ fn main() {
                 println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
                 diff_crate_src(crate_name, false);
             },
-            CrateStatus::ManifestChanged => println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not"),
+            CrateStatus::ManifestChanged(diff) => {
+                println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not:");
+                print!("{}", diff);
+            },
             CrateStatus::NotPublished => println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)"),
         }
     }
@@ -170,39 +175,13 @@ impl Manifests {
         self.local["package"]["version"] != self.crates_io["package"]["version"]
     }
 
-    fn diff(&self) -> bool {
-        // Recursively searches for differences in the manifests
-        fn diff_rec(local_val: &toml::Value, crates_io_val: &toml::Value) -> bool {
-            use toml::Value::*;
-            // WARN: This will fail to notice if a key is removed from the local manifest.
-            // TODO: Add capability to show what changed
-            match (local_val, crates_io_val) {
-                (String(local_str), String(crates_io_str)) => local_str != crates_io_str,
-                (Integer(local_int), Integer(crates_io_int)) => local_int != crates_io_int,
-                (Float(local_float), Float(crates_io_float)) => local_float != crates_io_float,
-                (Boolean(local_bool), Boolean(crates_io_bool)) => local_bool != crates_io_bool,
-                (Datetime(local_dt), Datetime(crates_io_dt)) => local_dt != crates_io_dt,
-                (Array(local_array), Array(crates_io_array)) => {
-                    for (local_val, crates_io_val) in local_array.iter().zip(crates_io_array) {
-                        if diff_rec(local_val, crates_io_val) {
-                            return true;
-                        }
-                    }
-                    false
-                }
-                (Table(local_table), Table(crates_io_table)) => {
-                    for ((local_key, local_val), (crates_io_key, crates_io_val)) in
-                        local_table.iter().zip(crates_io_table)
-                    {
-                        if local_key != crates_io_key || diff_rec(local_val, crates_io_val) {
-                            return true;
-                        }
-                    }
-                    false
-                }
-                _ => true,
-            }
+    fn diff(&self) -> Option<String> {
+        let diff = TomlDiff::diff(&self.local, &self.crates_io);
+        if diff.changes.len() == 0 {
+            None
+        } else {
+            Some(diff.to_string())
         }
-        diff_rec(&self.local, &self.crates_io)
     }
 }
+
