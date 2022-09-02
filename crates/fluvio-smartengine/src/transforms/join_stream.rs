@@ -49,12 +49,11 @@ impl JoinFnKind {
 
 impl SmartModuleJoinStream {
     pub(crate) fn try_instantiate(
-        base: &SmartModuleInstanceContext,
+        ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
-        base.get_wasm_func(&mut *store, JOIN_FN_NAME)
-            .ok_or(EngineError::NotNamedExport(JOIN_FN_NAME))
-            .and_then(|func| {
+        match ctx.get_wasm_func(&mut *store, JOIN_FN_NAME) {
+            Some(func) => {
                 // check type signature
 
                 func.typed(&mut *store)
@@ -65,7 +64,9 @@ impl SmartModuleJoinStream {
                     })
                     .map(|join_fn| Some(Self { join_fn }))
                     .map_err(|wasm_err| EngineError::TypeConversion(JOIN_FN_NAME, wasm_err))
-            })
+            }
+            None => Ok(None),
+        }
     }
 }
 

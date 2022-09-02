@@ -48,12 +48,11 @@ impl FilterMapFnKind {
 
 impl SmartModuleFilterMap {
     pub fn try_instantiate(
-        base: &SmartModuleInstanceContext,
+        ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
-        base.get_wasm_func(&mut *store, FILTER_MAP_FN_NAME)
-            .ok_or(EngineError::NotNamedExport(FILTER_MAP_FN_NAME))
-            .and_then(|func| {
+        match ctx.get_wasm_func(&mut *store, FILTER_MAP_FN_NAME) {
+            Some(func) => {
                 // check type signature
 
                 func.typed(&mut *store)
@@ -64,7 +63,9 @@ impl SmartModuleFilterMap {
                     })
                     .map(|filter_map_fn| Some(Self { filter_map_fn }))
                     .map_err(|wasm_err| EngineError::TypeConversion(FILTER_MAP_FN_NAME, wasm_err))
-            })
+            }
+            None => Ok(None),
+        }
     }
 }
 

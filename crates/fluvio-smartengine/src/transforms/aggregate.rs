@@ -50,12 +50,11 @@ impl AggregateFnKind {
 
 impl SmartModuleAggregate {
     pub fn try_instantiate(
-        base: &SmartModuleInstanceContext,
+        ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
-        base.get_wasm_func(&mut *store, AGGREGATE_FN_NAME)
-            .ok_or(EngineError::NotNamedExport(AGGREGATE_FN_NAME))
-            .and_then(|func| {
+        match ctx.get_wasm_func(&mut *store, AGGREGATE_FN_NAME) {
+            Some(func) => {
                 // check type signature
 
                 func.typed(&mut *store)
@@ -71,7 +70,9 @@ impl SmartModuleAggregate {
                         })
                     })
                     .map_err(|wasm_err| EngineError::TypeConversion(AGGREGATE_FN_NAME, wasm_err))
-            })
+            }
+            None => Ok(None),
+        }
     }
 }
 

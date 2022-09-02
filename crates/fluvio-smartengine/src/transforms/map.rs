@@ -46,14 +46,13 @@ impl MapFnKind {
 }
 
 impl SmartModuleMap {
-    #[tracing::instrument(skip(base, store))]
+    #[tracing::instrument(skip(ctx, store))]
     pub(crate) fn try_instantiate(
-        base: &SmartModuleInstanceContext,
+        ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
-        base.get_wasm_func(store, MAP_FN_NAME)
-            .ok_or(EngineError::NotNamedExport(MAP_FN_NAME))
-            .and_then(|func| {
+        match ctx.get_wasm_func(store, MAP_FN_NAME) {
+            Some(func) => {
                 // check type signature
                 func.typed(&mut *store)
                     .map(|typed_fn| MapFnKind::Base(typed_fn))
@@ -63,7 +62,9 @@ impl SmartModuleMap {
                     })
                     .map(|map_fn| Some(Self { map_fn }))
                     .map_err(|wasm_err| EngineError::TypeConversion(MAP_FN_NAME, wasm_err))
-            })
+            }
+            None => Ok(None),
+        }
     }
 }
 

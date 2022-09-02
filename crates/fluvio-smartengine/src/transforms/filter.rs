@@ -52,20 +52,19 @@ impl SmartModuleFilter {
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
-        ctx.get_wasm_func(store, FILTER_FN_NAME)
-            .ok_or(EngineError::NotNamedExport(FILTER_FN_NAME))
-            .and_then(|func| {
-                // check type signature
-
-                func.typed(&mut *store)
-                    .map(|typed_fn| FilterFnKind::Base(typed_fn))
-                    .or_else(|_| {
-                        func.typed(store)
-                            .map(|typed_fn| FilterFnKind::Param(typed_fn))
-                    })
-                    .map(|filter_fn| Some(Self { filter_fn }))
-                    .map_err(|wasm_err| EngineError::TypeConversion(FILTER_FN_NAME, wasm_err))
-            })
+        match ctx.get_wasm_func(store, FILTER_FN_NAME) {
+            // check type signature
+            Some(func) => func
+                .typed(&mut *store)
+                .map(|typed_fn| FilterFnKind::Base(typed_fn))
+                .or_else(|_| {
+                    func.typed(store)
+                        .map(|typed_fn| FilterFnKind::Param(typed_fn))
+                })
+                .map(|filter_fn| Some(Self { filter_fn }))
+                .map_err(|wasm_err| EngineError::TypeConversion(FILTER_FN_NAME, wasm_err)),
+            None => Ok(None),
+        }
     }
 }
 
