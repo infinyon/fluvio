@@ -136,7 +136,7 @@ impl Manifests {
 
     fn diff(&self) -> Option<String> {
         let diff = TomlDiff::diff(&self.local, &self.crates_io);
-        if diff.changes.len() == 0 {
+        if diff.changes.is_empty() {
             None
         } else {
             Some(diff.to_string())

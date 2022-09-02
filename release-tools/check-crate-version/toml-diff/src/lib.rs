@@ -126,14 +126,12 @@ impl<'a> TomlDiff<'a> {
                     changes.extend(a_pairs_it.map(|(k, v)| {
                         let mut key_path = key_path.clone();
                         key_path.push(k);
-                        let change = TomlChange::Added(key_path, v);
-                        change
+                        TomlChange::Added(key_path, v)
                     }));
                     changes.extend(b_pairs_it.map(|(k, v)| {
                         let mut key_path = key_path.clone();
                         key_path.push(k);
-                        let change = TomlChange::Deleted(key_path, v);
-                        change
+                        TomlChange::Deleted(key_path, v)
                     }))
                 }
                 _ => unreachable!("We only ever push `Array`s and `Table`s to `stack`"),

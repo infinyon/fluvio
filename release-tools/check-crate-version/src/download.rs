@@ -57,7 +57,7 @@ fn download_crate_archive(name: &str, version: &Version) -> Vec<u8> {
 }
 
 fn extract_crate(buf: Vec<u8>, name: &str, version: &Version, path: &str) {
-    let extract_dir = PathBuf::from(format!("{path}"));
+    let extract_dir = PathBuf::from(path);
     fs::create_dir_all(&extract_dir).unwrap();
 
     // The path that the crate will be extracted to
