@@ -135,7 +135,8 @@ mod file {
 
 #[cfg(test)]
 mod tests {
-    use fluvio_smartengine::metadata::{SmartModuleWasmCompressed, SmartModuleKind};
+
+    use crate::server::smartmodule::{SmartModuleKind, SmartModuleWasmCompressed};
 
     use super::*;
 

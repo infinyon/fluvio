@@ -18,15 +18,17 @@ use futures_util::{Future, StreamExt};
 
 use fluvio_future::timer::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket};
-use fluvio_spu_schema::Isolation;
+use fluvio_spu_schema::{
+    Isolation,
+    server::smartmodule::{
+        SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation,
+        SmartModuleWasmCompressed, SmartModuleInvocationWasm, SmartModuleContextData,
+    },
+};
 use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
     link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
-};
-use fluvio_smartengine::metadata::{
-    SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
-    SmartModuleInvocationWasm, SmartModuleContextData,
 };
 use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
 use fluvio_spu_schema::{

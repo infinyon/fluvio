@@ -1,16 +1,10 @@
 use std::{
     path::{PathBuf, Path},
-    any::Any,
 };
 
-use crate::{
-    SmartEngine,
-    transforms::filter::SmartModuleFilter,
-    instance::{self, SmartModuleTransform},
-};
+use crate::{SmartEngine};
 
 const FLUVIO_WASM_FILTER: &str = "fluvio_wasm_filter";
-const FLUVIO_WASM_MAP: &str = "fluvio_wasm_map_double";
 const FLUVIO_WASM_ARRAY_MAP: &str = "fluvio_wasm_array_map_array";
 const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
 const FLUVIO_WASM_AGGREGATE: &str = "fluvio_wasm_aggregate";
