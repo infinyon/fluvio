@@ -184,4 +184,3 @@ impl Manifests {
         }
     }
 }
-
