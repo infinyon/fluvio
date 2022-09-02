@@ -3,12 +3,15 @@ use std::{
     collections::HashMap,
     fs,
     path::PathBuf,
-    process::{Command, Stdio},
+    process::Command,
 };
 
 use serde::Deserialize;
-use which::which_all;
 use toml_diff::TomlDiff;
+
+mod download;
+
+use download::download_crate;
 
 const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
 const CRATES_DIR: &str = "../../crates";
@@ -23,8 +26,6 @@ enum CrateStatus {
 }
 
 fn main() {
-    check_install_cargo_download();
-
     let publish_list = read_publish_list();
     let padding = publish_list
         .iter()
@@ -37,7 +38,7 @@ fn main() {
             crate_status.insert(crate_name, CrateStatus::NotPublished);
             continue;
         }
-        // download_crate(crate_name);
+        download_crate(crate_name, "./crates_io");
 
         let manifests = Manifests::read(crate_name);
         let manifest_diff = manifests.diff();
@@ -97,42 +98,6 @@ fn check_crate_published(crate_name: &str) -> bool {
     let res = client.get(url).send().unwrap();
 
     res.status() != 404
-}
-
-fn download_crate(crate_name: &str) {
-    let crate_path = PathBuf::from(CRATES_IO_DIR).join(crate_name);
-    if crate_path.exists() {
-        fs::remove_dir_all(&crate_path).unwrap();
-    }
-    fs::create_dir_all(&crate_path).unwrap();
-
-    println!("Donwloading {crate_name}");
-    Command::new("cargo")
-        .arg("download")
-        .arg("-x")
-        .arg(crate_name)
-        .arg("-o")
-        .arg(crate_path)
-        .output()
-        .unwrap_or_else(|_| panic!("Failed to donwload {crate_name}"));
-}
-
-/// Install cargo-download if it is not already installed.
-fn check_install_cargo_download() {
-    // TODO: Find a way to do this without external commands
-    if which_all("cargo-download").unwrap().next().is_none() {
-        println!("cargo-download not found");
-        println!("Installing cargo-download");
-        Command::new("cargo")
-            .arg("install")
-            .arg("cargo-download")
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-            .expect("Failed to install cargo-download");
-    } else {
-        println!("🔧 cargo-download found");
-    }
 }
 
 /// Returns `true` if the local crate source is different from crates.io
