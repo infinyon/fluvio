@@ -18,15 +18,26 @@ fn get_latest_version(crate_name: &str) -> Version {
     let res: JsonValue = client.get(&url).send().unwrap().json().unwrap();
 
     // Parse response as a list of `semver::Version`s
-    let versions = res.pointer("/versions").and_then(|vs| vs.as_array()).map(|vs| {
-        vs.iter().filter_map(|v| {
-            v.as_object().and_then(|v| v.get("num")).and_then(|n| n.as_str())
+    let versions = res
+        .pointer("/versions")
+        .and_then(|vs| vs.as_array())
+        .map(|vs| {
+            vs.iter()
+                .filter_map(|v| {
+                    v.as_object()
+                        .and_then(|v| v.get("num"))
+                        .and_then(|n| n.as_str())
+                })
+                .filter_map(|v| Version::parse(v).ok())
+                .collect::<Vec<_>>()
         })
-        .filter_map(|v| Version::parse(v).ok())
-        .collect::<Vec<_>>()
-    }).ok_or_else(|| format!("malformed response from {}", url)).unwrap();
+        .ok_or_else(|| format!("malformed response from {}", url))
+        .unwrap();
 
-    versions.into_iter().max().expect("No versions found for crate {crate_name} on crates.io")
+    versions
+        .into_iter()
+        .max()
+        .expect("No versions found for crate {crate_name} on crates.io")
 }
 
 fn download_crate_archive(name: &str, version: &Version) -> Vec<u8> {
@@ -62,7 +73,9 @@ fn extract_crate(buf: Vec<u8>, name: &str, version: &Version, path: &str) {
     println!("Extracting crate {name}");
     let gz_decoder = GzDecoder::new(&buf[..]);
     let mut archive = Archive::new(gz_decoder);
-    archive.unpack(&extract_dir).expect("Failed to extract crate {name}");
+    archive
+        .unpack(&extract_dir)
+        .expect("Failed to extract crate {name}");
     // Remove the version from the crate name
     fs::rename(extracted_path, renamed_path).unwrap();
 }

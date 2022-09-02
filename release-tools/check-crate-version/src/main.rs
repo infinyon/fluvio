@@ -1,10 +1,4 @@
-use std::{
-    cmp::max,
-    collections::HashMap,
-    fs,
-    path::PathBuf,
-    process::Command,
-};
+use std::{cmp::max, collections::HashMap, fs, path::PathBuf, process::Command};
 
 use serde::Deserialize;
 use toml_diff::TomlDiff;
