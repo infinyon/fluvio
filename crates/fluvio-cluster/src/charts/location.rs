@@ -154,6 +154,7 @@ mod inline {
             let contents = inline_file.contents();
             let mut chart_file = File::create(&chart)?;
             chart_file.write_all(contents)?;
+            chart_file.sync_all()?;
 
             // if there is debug env file, output it as well
             if let Ok(debug_dir) = std::env::var("FLV_INLINE_CHART_DIR") {
@@ -166,6 +167,7 @@ mod inline {
                 let mut debug_file = File::create(debug_chart_path.join(inline_file.path()))
                     .expect("chart cant' be created");
                 debug_file.write_all(contents)?;
+                debug_file.sync_all()?;
             }
 
             Ok(chart)

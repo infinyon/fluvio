@@ -149,7 +149,7 @@ where
         self.offset = pos;
         self.offset.write_to(&mut contents);
         self.file.write_all(&contents).await?;
-        self.file.flush().await?;
+        self.file.sync_all().await?;
         Ok(())
     }
 }
