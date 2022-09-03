@@ -13,7 +13,6 @@ pub struct TomlDiff<'a> {
 
 #[derive(Debug)]
 pub enum TomlChange<'a> {
-    Same,
     Added(Vec<&'a str>, &'a TomlValue),
     Deleted(Vec<&'a str>, &'a TomlValue),
 }
