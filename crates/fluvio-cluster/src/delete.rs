@@ -189,16 +189,18 @@ impl ClusterUninstaller {
         use k8_types::app::stateful::StatefulSetSpec;
 
         // delete objects if not removed already
-        let _ = self.remove_custom_objects::<SpuGroupSpec>(ns, None, false).await;
+        // let _ = self.remove_custom_objects::<SpuGroupSpec>(ns, None, false).await; // XXX wrong spec type?
         let _ = self.remove_custom_objects::<SpuSpec>(ns, None, false).await;
         let _ = self.remove_custom_objects::<TopicSpec>(ns, None, false).await;
         let _ = self.remove_finalizers_for_partitions(ns).await;
         let _ = self.remove_custom_objects::<PartitionSpec>(ns, None, true).await;
         let _ = self.remove_custom_objects::<StatefulSetSpec>(ns, None, false).await;
+        /* XXX not sure why there isn't a persistent-volume-claim spec
         let _ =
-            self.remove_custom_objects::<PersistentVolumeClaim>(ns, Some("app=spu"), false);
+            self.remove_custom_objects::<PersistentVolumeClaimSpec>(ns, Some("app=spu"), false);
+            */
         let _ = self.remove_custom_objects::<TableFormatSpec>(ns, None, false); // XXX object type "tables"...?
-        let _ = self.remove_custom_objects::<ManagedConnectorSpec>(ns, None, false);
+        // let _ = self.remove_custom_objects::<ManagedConnectorSpec>(ns, None, false); // XXX wrong spec type?
         let _ = self.remove_custom_objects::<DerivedStreamSpec>(ns, None, false);
         let _ = self.remove_custom_objects::<SmartModuleSpec>(ns, None, false);
 
@@ -241,7 +243,7 @@ impl ClusterUninstaller {
             None
         };
         // Ignore the 'DeleteStatus', as long as the deletion succeeds.
-        client.delete_collection::<S, _>(NameSpace::Named(namespace.to_owned()), selector, options).await?.map(|_|());
+        client.delete_collection::<S>(NameSpace::Named(namespace.to_owned()), selector, options).await?;
         Ok(())
     }
 
