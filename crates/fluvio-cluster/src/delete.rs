@@ -2,7 +2,11 @@ use std::process::Command;
 use std::fs::remove_dir_all;
 
 use derive_builder::Builder;
-use tracing::{info, warn, debug, instrument};
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use k8_metadata_client::MetadataClient;
+use k8_types::Spec;
+use k8_types::app::stateful::PersistentVolumeClaim;
+use tracing::{warn, debug, instrument};
 
 use fluvio_command::CommandExt;
 
@@ -179,19 +183,24 @@ impl ClusterUninstaller {
         pb.set_message("Cleaning up objects and secrets created during the installation process");
         let ns = &self.config.namespace;
 
+        use fluvio_controlplane_metadata::{
+            connector::ManagedConnectorSpec, derivedstream::DerivedStreamSpec, partition::PartitionSpec,
+            spg::SpuGroupSpec, spu::SpuSpec, tableformat::TableFormatSpec, topic::TopicSpec};
+        use k8_types::app::stateful::StatefulSetSpec;
+
         // delete objects if not removed already
-        let _ = self.remove_custom_objects("spugroups", ns, None, false, &pb);
-        let _ = self.remove_custom_objects("spus", ns, None, false, &pb);
-        let _ = self.remove_custom_objects("topics", ns, None, false, &pb);
+        let _ = self.remove_custom_objects::<SpuGroupSpec>(ns, None, false).await;
+        let _ = self.remove_custom_objects::<SpuSpec>(ns, None, false).await;
+        let _ = self.remove_custom_objects::<TopicSpec>(ns, None, false).await;
         let _ = self.remove_finalizers_for_partitions(ns).await;
-        let _ = self.remove_custom_objects("partitions", ns, None, true, &pb);
-        let _ = self.remove_custom_objects("statefulset", ns, None, false, &pb);
+        let _ = self.remove_custom_objects::<PartitionSpec>(ns, None, true).await;
+        let _ = self.remove_custom_objects::<StatefulSetSpec>(ns, None, false).await;
         let _ =
-            self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"), false, &pb);
-        let _ = self.remove_custom_objects("tables", ns, None, false, &pb);
-        let _ = self.remove_custom_objects("managedconnectors", ns, None, false, &pb);
-        let _ = self.remove_custom_objects("derivedstreams", ns, None, false, &pb);
-        let _ = self.remove_custom_objects("smartmodules", ns, None, false, &pb);
+            self.remove_custom_objects::<PersistentVolumeClaim>(ns, Some("app=spu"), false);
+        let _ = self.remove_custom_objects::<TableFormatSpec>(ns, None, false); // XXX object type "tables"...?
+        let _ = self.remove_custom_objects::<ManagedConnectorSpec>(ns, None, false);
+        let _ = self.remove_custom_objects::<DerivedStreamSpec>(ns, None, false);
+        let _ = self.remove_custom_objects::<SmartModuleSpec>(ns, None, false);
 
         // delete secrets
         let _ = self.remove_secrets("fluvio-ca");
@@ -203,35 +212,36 @@ impl ClusterUninstaller {
     }
 
     /// Remove objects of specified type, namespace
-    fn remove_custom_objects(
+    async fn remove_custom_objects<S>(
         &self,
-        object_type: &str,
         namespace: &str,
         selector: Option<&str>,
         force: bool,
-        pb: &ProgressRenderer,
-    ) -> Result<(), UninstallError> {
-        pb.set_message(format!("Removing {} objects", object_type));
-        let mut cmd = Command::new("kubectl");
-        cmd.arg("delete");
-        cmd.arg(object_type);
-        cmd.arg("--namespace");
-        cmd.arg(namespace);
-        if force {
-            cmd.arg("--force");
-        }
-        if let Some(label) = selector {
-            info!(
-                "deleting label '{}' object {} in: {}",
-                label, object_type, namespace
-            );
-            cmd.arg("--selector").arg(label);
-        } else {
-            info!("deleting all {} in: {}", object_type, namespace);
-            cmd.arg("--all");
-        }
-        cmd.result()?;
+    ) -> Result<(), UninstallError>
+    where
+        S: Spec,
+    {
+        use k8_metadata_client::NameSpace;
+        use k8_types::{options::DeleteOptions, InputObjectMeta};
 
+        // pb.set_message(format!("Removing {} objects", object_type)); // XXX remove
+        let client = k8_client::load_and_share()?;
+
+        let mut meta = InputObjectMeta {
+            namespace: namespace.to_owned(),
+            ..Default::default()
+        };
+        let options = if force {
+            Some(DeleteOptions {
+                // It appears this is technically stricter than `--force`.
+                grace_period_seconds: Some(0),
+                ..Default::default()
+            })
+        } else {
+            None
+        };
+        // Ignore the 'DeleteStatus', as long as the deletion succeeds.
+        client.delete_collection::<S, _>(NameSpace::Named(namespace.to_owned()), selector, options).await?.map(|_|());
         Ok(())
     }
 
@@ -244,7 +254,6 @@ impl ClusterUninstaller {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
         use k8_client::load_and_share;
-        use k8_metadata_client::MetadataClient;
         use k8_metadata_client::PatchMergeType::JsonMerge;
 
         let client = load_and_share().map_err(UninstallError::K8ClientError)?;
