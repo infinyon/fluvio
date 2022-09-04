@@ -168,7 +168,7 @@ fn test_display_nested_table() {
     assert_eq!(diff, expected);
 }
 
-fn get_toml_values<'a>(a: &str, b: &str) -> (TomlValue, TomlValue) {
+fn get_toml_values(a: &str, b: &str) -> (TomlValue, TomlValue) {
     let a = read(format!("./test_data/{a}.toml")).unwrap();
     let b = read(format!("./test_data/{b}.toml")).unwrap();
     let a = String::from_utf8_lossy(&a);
