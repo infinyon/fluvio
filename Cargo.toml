@@ -69,3 +69,8 @@ codegen-units = 256
 [profile.release-lto]
 inherits = "release"
 lto = true
+
+[patch.crates-io]
+k8-client = { path = "../k8-api/src/k8-client" }
+k8-metadata-client = { path = "../k8-api/src/k8-metadata-client" }
+k8-types = { path = "../k8-api/src/k8-types" }

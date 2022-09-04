@@ -1735,7 +1735,7 @@ dependencies = [
  "humantime-serde",
  "indicatif",
  "k8-client",
- "k8-config",
+ "k8-config 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "k8-types",
  "pretty_assertions",
  "semver 1.0.13",
@@ -1803,7 +1803,7 @@ dependencies = [
  "include_dir",
  "indicatif",
  "k8-client",
- "k8-config",
+ "k8-config 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "k8-metadata-client",
  "k8-types",
  "once_cell",
@@ -3230,8 +3230,6 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "7.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3807003ac1d68b31c1cccc9dd0375f2c582ac2f8bb8f35ff581a3b8ed52d9b4"
 dependencies = [
  "async-trait",
  "base64",
@@ -3241,7 +3239,7 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "k8-config",
+ "k8-config 2.0.0",
  "k8-diff",
  "k8-metadata-client",
  "k8-types",
@@ -3251,6 +3249,19 @@ dependencies = [
  "serde_json",
  "serde_qs",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "k8-config"
+version = "2.0.0"
+dependencies = [
+ "dirs",
+ "hostfile",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "thiserror",
  "tracing",
 ]
 
@@ -3272,19 +3283,14 @@ dependencies = [
 [[package]]
 name = "k8-diff"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef435d912eeb448129d7ae11d3c497691f1f383d2d2ff1dff4365a81c7bd4f3b"
 dependencies = [
  "serde",
  "serde_json",
- "tracing",
 ]
 
 [[package]]
 name = "k8-metadata-client"
 version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b5e61b295e6ba9428a64a6a8aee6b05626e8cbe6d4dbcd00617603a7fc8dfa"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -3299,8 +3305,6 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7652c08ed3d6416ff52f6fa3214519d4ec293921b3a51a21cbd003f2e74c771e"
 dependencies = [
  "serde",
  "serde_json",
