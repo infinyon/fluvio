@@ -229,10 +229,6 @@ impl ClusterUninstaller {
         // pb.set_message(format!("Removing {} objects", object_type)); // XXX remove
         let client = k8_client::load_and_share()?;
 
-        let mut meta = InputObjectMeta {
-            namespace: namespace.to_owned(),
-            ..Default::default()
-        };
         let options = if force {
             Some(DeleteOptions {
                 // It appears this is technically stricter than `--force`.
