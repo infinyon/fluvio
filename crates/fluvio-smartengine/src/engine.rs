@@ -195,6 +195,7 @@ impl SmartModuleChain {
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum SmartModuleInitialData {
+    None,
     Aggregate { accumulator: Vec<u8> },
 }
 
@@ -204,17 +205,25 @@ impl SmartModuleInitialData {
     }
 }
 
+impl Default for SmartModuleInitialData {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
 /// SmartModule configuration
 #[derive(Builder)]
 pub struct SmartModuleConfig {
     #[builder(default, setter(strip_option))]
-    initial_data: Option<SmartModuleInitialData>,
+    initial_data: SmartModuleInitialData,
     #[builder(default)]
     params: SmartModuleExtraParams,
     // this will be deprecated in the future
     #[builder(default, setter(into, strip_option))]
     version: Option<i16>,
 }
+
+impl SmartModuleConfig {}
 
 impl SmartModuleConfig {
     pub fn builder() -> SmartModuleConfigBuilder {

@@ -30,7 +30,7 @@ mod instance {
 
     pub(crate) fn create_transform(
         ctx: &SmartModuleInstanceContext,
-        initial_data: Option<SmartModuleInitialData>,
+        initial_data: SmartModuleInitialData,
         store: &mut impl AsContextMut,
     ) -> Result<Box<dyn SmartModuleTransform>, EngineError> {
         if let Some(tr) = SmartModuleFilter::try_instantiate(ctx, store)?
