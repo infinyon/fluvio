@@ -19,6 +19,7 @@ mod instance {
     use crate::{
         instance::{SmartModuleTransform, SmartModuleInstanceContext},
         error::EngineError,
+        SmartModuleInitialData,
     };
 
     use super::{
@@ -29,6 +30,7 @@ mod instance {
 
     pub(crate) fn create_transform(
         ctx: &SmartModuleInstanceContext,
+        initial_data: Option<SmartModuleInitialData>,
         store: &mut impl AsContextMut,
     ) -> Result<Box<dyn SmartModuleTransform>, EngineError> {
         if let Some(tr) = SmartModuleFilter::try_instantiate(ctx, store)?
@@ -55,7 +57,7 @@ mod instance {
             .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
         {
             Ok(tr)
-        } else if let Some(tr) = SmartModuleAggregate::try_instantiate(ctx, store)?
+        } else if let Some(tr) = SmartModuleAggregate::try_instantiate(ctx, initial_data, store)?
             .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
         {
             Ok(tr)

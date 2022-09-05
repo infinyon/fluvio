@@ -9,7 +9,7 @@ use fluvio::{FluvioError, RecordKey, Fluvio};
 use fluvio_protocol::record::{RecordData, Record};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
-use fluvio_smartengine::SmartEngine;
+use fluvio_smartengine::{SmartEngine, SmartModuleConfig};
 
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use fluvio_spu_schema::server::smartmodule::{
@@ -80,7 +80,12 @@ impl ClientCmd for TestSmartModuleOpt {
         let engine = SmartEngine::new();
         let mut chain = engine.new_chain();
         chain
-            .add_smart_module(payload.params, None, payload.wasm.get_raw()?)
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .params(payload.params)
+                    .build()?,
+                payload.wasm.get_raw()?,
+            )
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
         debug!("SmartModule created");

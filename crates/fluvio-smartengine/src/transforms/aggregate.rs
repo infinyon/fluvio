@@ -13,7 +13,7 @@ use crate::{
     WasmSlice,
     error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    WasmState,
+    WasmState, SmartModuleInitialData,
 };
 
 pub(crate) const AGGREGATE_FN_NAME: &str = "aggregate";
@@ -51,8 +51,17 @@ impl AggregateFnKind {
 impl SmartModuleAggregate {
     pub fn try_instantiate(
         ctx: &SmartModuleInstanceContext,
+        initial_data: Option<SmartModuleInitialData>,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>, EngineError> {
+        // get initial -data
+        let accumulator = match initial_data {
+            Some(initial_data) => match initial_data {
+                SmartModuleInitialData::Aggregate { accumulator } => accumulator,
+            },
+            None => return Err(EngineError::MissingInitialData("accumulator")),
+        };
+
         match ctx.get_wasm_func(&mut *store, AGGREGATE_FN_NAME) {
             Some(func) => {
                 // check type signature
@@ -66,7 +75,7 @@ impl SmartModuleAggregate {
                     .map(|aggregate_fn| {
                         Some(Self {
                             aggregate_fn,
-                            accumulator: vec![],
+                            accumulator,
                         })
                     })
                     .map_err(|wasm_err| EngineError::TypeConversion(AGGREGATE_FN_NAME, wasm_err))

@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut};
 use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
+use derive_builder::Builder;
 use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 use fluvio_protocol::record::Batch;
 use fluvio_smartmodule::Record;
@@ -136,15 +137,16 @@ impl SmartModuleChain {
     /// add new smart module to chain
     pub fn add_smart_module(
         &mut self,
-        params: SmartModuleExtraParams,
-        maybe_version: Option<i16>,
+        config: SmartModuleConfig,
         bytes: impl AsRef<[u8]>,
     ) -> Result<()> {
         let module = Module::new(&self.store.engine(), bytes)?;
 
-        let version = maybe_version.unwrap_or(DEFAULT_SMARTENGINE_VERSION);
+        let version = config.version();
+        let params = config.params;
+        let initial_data = config.initial_data;
         let ctx = SmartModuleInstanceContext::instantiate(module, self, params, version)?;
-        let transform = create_transform(&ctx, &mut self.as_context_mut())?;
+        let transform = create_transform(&ctx, initial_data, &mut self.as_context_mut())?;
         self.instances
             .push(SmartModuleInstance::new(ctx, transform));
         Ok(())
@@ -185,5 +187,40 @@ impl SmartModuleChain {
         } else {
             Err(Error::msg("No transform found"))
         }
+    }
+}
+
+/// Initial seed data to passed, this will be send back as part of the output
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub enum SmartModuleInitialData {
+    Aggregate { accumulator: Vec<u8> },
+}
+
+impl SmartModuleInitialData {
+    pub fn with_aggregate(accumulator: Vec<u8>) -> Self {
+        Self::Aggregate { accumulator }
+    }
+}
+
+/// SmartModule configuration
+#[derive(Builder)]
+pub struct SmartModuleConfig {
+    #[builder(default, setter(strip_option))]
+    initial_data: Option<SmartModuleInitialData>,
+    #[builder(default)]
+    params: SmartModuleExtraParams,
+    // this will be deprecated in the future
+    #[builder(default, setter(into, strip_option))]
+    version: Option<i16>,
+}
+
+impl SmartModuleConfig {
+    pub fn builder() -> SmartModuleConfigBuilder {
+        SmartModuleConfigBuilder::default()
+    }
+
+    pub(crate) fn version(&self) -> i16 {
+        self.version.unwrap_or(DEFAULT_SMARTENGINE_VERSION)
     }
 }

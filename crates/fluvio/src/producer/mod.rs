@@ -220,6 +220,7 @@ cfg_if::cfg_if! {
 
         use fluvio_spu_schema::server::smartmodule::{LegacySmartModulePayload,SmartModuleContextData,SmartModuleKind,SmartModuleWasmCompressed};
         use fluvio_smartengine::SmartEngine;
+        use fluvio_smartengine::SmartModuleConfig;
 
         static SM_ENGINE: Lazy<SmartEngine> = Lazy::new(|| {
             fluvio_smartengine::SmartEngine::new()
@@ -227,13 +228,12 @@ cfg_if::cfg_if! {
 
 
 
-
         impl TopicProducer {
             fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
                 let mut chain = SM_ENGINE.new_chain();
                 chain.add_smart_module(
-                   smart_payload.params,
-                    None,
+                    SmartModuleConfig::builder()
+                     .params(smart_payload.params).build()?,
                     smart_payload.wasm.get_raw()?,
                     ).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                 self.sm_chain = Some(Arc::new(RwLock::new(chain)));

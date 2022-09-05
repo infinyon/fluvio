@@ -1,4 +1,4 @@
-use fluvio_smartengine::SmartModuleChain;
+use fluvio_smartengine::{SmartModuleChain, SmartModuleConfig};
 use tracing::{debug, error};
 
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
@@ -192,7 +192,17 @@ impl SmartModuleContext {
         let kind = payload.kind.clone();
 
         chain
-            .add_smart_module(payload.params, Some(version), raw)
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .params(payload.params)
+                    .version(version)
+                    .build()
+                    .map_err(|err| ErrorCode::SmartModuleInvalid {
+                        error: err.to_string(),
+                        name: None,
+                    })?,
+                raw,
+            )
             .map_err(|err| {
                 error!(
                     error = err.to_string().as_str(),

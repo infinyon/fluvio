@@ -6,4 +6,6 @@ pub enum EngineError {
     UnknownSmartModule,
     #[error("Failed to instantiate: {0}")]
     Instantiate(anyhow::Error),
+    #[error("Missing initial data: {0}")]
+    MissingInitialData(&'static str),
 }

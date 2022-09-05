@@ -1412,6 +1412,7 @@ dependencies = [
 name = "fluvio"
 version = "0.14.0"
 dependencies = [
+ "anyhow",
  "async-channel",
  "async-lock",
  "async-rwlock",
@@ -1928,6 +1929,7 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "cfg-if",
+ "derive_builder",
  "flate2",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
