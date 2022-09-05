@@ -19,37 +19,29 @@ enum CrateStatus {
     ManifestChanged(String),
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let publish_list = read_publish_list();
     let padding = publish_list
         .iter()
         .fold(0, |len, name| max(len, name.len()));
 
-    let mut crate_status: HashMap<&str, CrateStatus> = HashMap::new();
+    let status_checks: Vec<_> = publish_list
+        .into_iter()
+        .map(|crate_name| {
+            (
+                crate_name.clone(),
+                tokio::spawn(check_crate_status(crate_name)),
+            )
+        })
+        .collect();
+    let mut crate_status: HashMap<String, CrateStatus> =
+        HashMap::with_capacity(status_checks.len());
 
-    for crate_name in &publish_list {
-        if !check_crate_published(crate_name) {
-            crate_status.insert(crate_name, CrateStatus::NotPublished);
-            continue;
-        }
-        download_crate(crate_name, "./crates_io");
-
-        let manifests = Manifests::read(crate_name);
-        let manifest_diff = manifests.diff();
-
-        crate_status.insert(
-            crate_name,
-            match (
-                diff_crate_src(crate_name, true),
-                manifest_diff.is_some(),
-                manifests.diff_versions(),
-            ) {
-                (_, _, true) => CrateStatus::VersionBumped,
-                (false, false, _) => CrateStatus::Unchanged,
-                (true, _, false) => CrateStatus::CodeChanged,
-                (false, true, false) => CrateStatus::ManifestChanged(manifest_diff.unwrap()),
-            },
-        );
+    for status_check in status_checks {
+        let (name, status) = status_check;
+        let status = status.await.unwrap();
+        crate_status.insert(name, status);
     }
     for (crate_name, status) in crate_status.into_iter() {
         match status {
@@ -57,7 +49,7 @@ fn main() {
             CrateStatus::Unchanged => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
             CrateStatus::CodeChanged => {
                 println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
-                diff_crate_src(crate_name, false);
+                diff_crate_src(&crate_name, false);
             },
             CrateStatus::ManifestChanged(diff) => {
                 println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not:");
@@ -65,6 +57,27 @@ fn main() {
             },
             CrateStatus::NotPublished => println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)"),
         }
+    }
+}
+
+async fn check_crate_status(crate_name: String) -> CrateStatus {
+    if !check_crate_published(&crate_name).await {
+        return CrateStatus::NotPublished;
+    }
+    download_crate(&crate_name, "./crates_io").await;
+
+    let manifests = Manifests::read(&crate_name);
+    let manifest_diff = manifests.diff();
+
+    match (
+        diff_crate_src(&crate_name, true),
+        manifest_diff.is_some(),
+        manifests.diff_versions(),
+    ) {
+        (_, _, true) => CrateStatus::VersionBumped,
+        (false, false, _) => CrateStatus::Unchanged,
+        (true, _, false) => CrateStatus::CodeChanged,
+        (false, true, false) => CrateStatus::ManifestChanged(manifest_diff.unwrap()),
     }
 }
 
@@ -80,16 +93,16 @@ fn read_publish_list() -> Vec<String> {
 }
 
 /// Checks crates.io to see if the crate has been published. Returns `true` if it has.
-fn check_crate_published(crate_name: &str) -> bool {
+async fn check_crate_published(crate_name: &str) -> bool {
     // We have to identify ourselves, or crates.io will ignore our request
     // TODO: Add an email to the user_agent filed - this will make us less likely to have our
     // access blocked.
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .user_agent("fluvio-check-crate-version")
         .build()
         .unwrap();
     let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
-    let res = client.get(url).send().unwrap();
+    let res = client.get(url).send().await.unwrap();
 
     res.status() != 404
 }

@@ -9,10 +9,18 @@ impl<'a> fmt::Display for TomlDiff<'a> {
         for change in &self.changes {
             match change {
                 TomlChange::Added(key_path, val) => {
-                    writeln!(f, "{}", format_change(ChangeKind::Added, key_path.clone(), val)?)
+                    writeln!(
+                        f,
+                        "{}",
+                        format_change(ChangeKind::Added, key_path.clone(), val)?
+                    )
                 }
                 TomlChange::Deleted(key_path, val) => {
-                    writeln!(f, "{}", format_change(ChangeKind::Deleted, key_path.clone(), val)?)
+                    writeln!(
+                        f,
+                        "{}",
+                        format_change(ChangeKind::Deleted, key_path.clone(), val)?
+                    )
                 }
             }?;
         }

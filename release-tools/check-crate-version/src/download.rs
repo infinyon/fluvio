@@ -1,4 +1,3 @@
-use std::io::Read;
 use std::fs;
 use std::path::PathBuf;
 
@@ -9,13 +8,13 @@ use tar::Archive;
 
 const API_URL: &str = "https://crates.io/api/v1/crates";
 
-fn get_latest_version(crate_name: &str) -> Version {
+async fn get_latest_version(crate_name: &str) -> Version {
     let url = format!("{API_URL}/{crate_name}/versions");
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .user_agent("fluvio-check-crate-version")
         .build()
         .unwrap();
-    let res: JsonValue = client.get(&url).send().unwrap().json().unwrap();
+    let res: JsonValue = client.get(&url).send().await.unwrap().json().await.unwrap();
 
     // Parse response as a list of `semver::Version`s
     let versions = res
@@ -40,20 +39,22 @@ fn get_latest_version(crate_name: &str) -> Version {
         .expect("No versions found for crate {crate_name} on crates.io")
 }
 
-fn download_crate_archive(name: &str, version: &Version) -> Vec<u8> {
+async fn download_crate_archive(name: &str, version: &Version) -> Vec<u8> {
     let url = format!("{API_URL}/{name}/{version}/download");
     println!("Downloading crate {name} = \"{version}\"");
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .user_agent("fluvio-check-crate-version")
         .build()
         .unwrap();
-    let mut res = client.get(&url).send().unwrap();
-    let mut buf = match res.content_length() {
-        Some(len) => Vec::with_capacity(len as usize),
-        None => Vec::new(),
-    };
-    res.read_to_end(&mut buf).unwrap();
-    buf
+    client
+        .get(&url)
+        .send()
+        .await
+        .unwrap()
+        .bytes()
+        .await
+        .unwrap()
+        .into()
 }
 
 fn extract_crate(buf: Vec<u8>, name: &str, version: &Version, path: &str) {
@@ -80,8 +81,8 @@ fn extract_crate(buf: Vec<u8>, name: &str, version: &Version, path: &str) {
     fs::rename(extracted_path, renamed_path).unwrap();
 }
 
-pub fn download_crate(name: &str, path: &str) {
-    let version = get_latest_version(name);
-    let archive_data = download_crate_archive(name, &version);
+pub async fn download_crate(name: &str, path: &str) {
+    let version = get_latest_version(name).await;
+    let archive_data = download_crate_archive(name, &version).await;
     extract_crate(archive_data, name, &version, path);
 }
