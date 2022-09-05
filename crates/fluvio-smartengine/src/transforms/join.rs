@@ -57,11 +57,8 @@ impl SmartModuleJoin {
                 // check type signature
 
                 func.typed(&mut *store)
-                    .map(|typed_fn| JoinFnKind::Base(typed_fn))
-                    .or_else(|_| {
-                        func.typed(store)
-                            .map(|typed_fn| JoinFnKind::Param(typed_fn))
-                    })
+                    .map(JoinFnKind::Base)
+                    .or_else(|_| func.typed(store).map(JoinFnKind::Param))
                     .map(|join_fn| Some(Self { join_fn }))
                     .map_err(|wasm_err| EngineError::TypeConversion(JOIN_FN_NAME, wasm_err))
             }

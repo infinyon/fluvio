@@ -67,11 +67,8 @@ impl SmartModuleAggregate {
                 // check type signature
 
                 func.typed(&mut *store)
-                    .map(|typed_fn| AggregateFnKind::Base(typed_fn))
-                    .or_else(|_| {
-                        func.typed(store)
-                            .map(|typed_fn| AggregateFnKind::Param(typed_fn))
-                    })
+                    .map(AggregateFnKind::Base)
+                    .or_else(|_| func.typed(store).map(AggregateFnKind::Param))
                     .map(|aggregate_fn| {
                         Some(Self {
                             aggregate_fn,

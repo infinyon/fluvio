@@ -22,6 +22,7 @@ const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
 #[derive(Clone)]
 pub struct SmartEngine(Engine);
 
+#[allow(clippy::new_without_default)]
 impl SmartEngine {
     pub fn new() -> Self {
         Self(Engine::default())
@@ -93,7 +94,7 @@ cfg_if::cfg_if! {
                 module: &Module,
                 host_fn: impl IntoFunc<State, Params, Args>,
             ) -> Result<Instance, Error> {
-                let mut linker = wasmtime::Linker::new(&self.store.engine());
+                let mut linker = wasmtime::Linker::new(self.store.engine());
                 wasmtime_wasi::add_to_linker(&mut linker, |c| c)?;
                 let copy_records_fn_import = module
                     .imports()
@@ -140,7 +141,7 @@ impl SmartModuleChain {
         config: SmartModuleConfig,
         bytes: impl AsRef<[u8]>,
     ) -> Result<()> {
-        let module = Module::new(&self.store.engine(), bytes)?;
+        let module = Module::new(self.store.engine(), bytes)?;
 
         let version = config.version();
         let params = config.params;

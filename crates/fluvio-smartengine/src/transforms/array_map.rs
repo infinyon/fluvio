@@ -56,11 +56,8 @@ impl SmartModuleArrayMap {
                 // check type signature
 
                 func.typed(&mut *store)
-                    .map(|typed_fn| ArrayMapFnKind::Base(typed_fn))
-                    .or_else(|_| {
-                        func.typed(store)
-                            .map(|typed_fn| ArrayMapFnKind::Param(typed_fn))
-                    })
+                    .map(ArrayMapFnKind::Base)
+                    .or_else(|_| func.typed(store).map(ArrayMapFnKind::Param))
                     .map(|array_map_fn| Some(Self { array_map_fn }))
                     .map_err(|wasm_err| EngineError::TypeConversion(ARRAY_MAP_FN_NAME, wasm_err))
             }

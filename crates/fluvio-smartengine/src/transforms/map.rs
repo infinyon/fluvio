@@ -55,11 +55,8 @@ impl SmartModuleMap {
             Some(func) => {
                 // check type signature
                 func.typed(&mut *store)
-                    .map(|typed_fn| MapFnKind::Base(typed_fn))
-                    .or_else(|_| {
-                        func.typed(&mut *store)
-                            .map(|typed_fn| MapFnKind::Param(typed_fn))
-                    })
+                    .map(MapFnKind::Base)
+                    .or_else(|_| func.typed(&mut *store).map(MapFnKind::Param))
                     .map(|map_fn| Some(Self { map_fn }))
                     .map_err(|wasm_err| EngineError::TypeConversion(MAP_FN_NAME, wasm_err))
             }

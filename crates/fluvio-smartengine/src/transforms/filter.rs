@@ -56,11 +56,8 @@ impl SmartModuleFilter {
             // check type signature
             Some(func) => func
                 .typed(&mut *store)
-                .map(|typed_fn| FilterFnKind::Base(typed_fn))
-                .or_else(|_| {
-                    func.typed(store)
-                        .map(|typed_fn| FilterFnKind::Param(typed_fn))
-                })
+                .map(FilterFnKind::Base)
+                .or_else(|_| func.typed(store).map(FilterFnKind::Param))
                 .map(|filter_fn| Some(Self { filter_fn }))
                 .map_err(|wasm_err| EngineError::TypeConversion(FILTER_FN_NAME, wasm_err)),
             None => Ok(None),
