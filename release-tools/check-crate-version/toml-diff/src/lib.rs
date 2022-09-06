@@ -73,7 +73,7 @@ impl<'a> TomlDiff<'a> {
                     changes
                         .extend(a.map(|(a_elem, _)| TomlChange::Added(key_path.clone(), a_elem)));
                     changes
-                        .extend(b.map(|(b_elem, _)| TomlChange::Added(key_path.clone(), b_elem)));
+                        .extend(b.map(|(b_elem, _)| TomlChange::Deleted(key_path.clone(), b_elem)));
                 }
                 (TomlValue::Table(a), TomlValue::Table(b)) => {
                     let mut a_pairs: Vec<_> = a.iter().collect();

@@ -65,11 +65,9 @@ async fn main() {
             CrateStatus::Unchanged => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
             CrateStatus::CodeChanged(manifest_diff) => {
                 println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
-                diff_crate_src(&crate_name, verbose);
-                if verbose {
-                    if let Some(manifest_diff) = manifest_diff {
-                        println!("{manifest_diff}");
-                    }
+                diff_crate_src(&crate_name, true);
+                if let Some(manifest_diff) = manifest_diff {
+                    println!("{manifest_diff}");
                 }
             },
             CrateStatus::ManifestChanged(manifest_diff) => {

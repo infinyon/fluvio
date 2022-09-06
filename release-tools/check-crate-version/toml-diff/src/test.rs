@@ -204,11 +204,7 @@ fn test_display_array_reorder() {
 #[test]
 fn test_display_array_delete() {
     let diff = get_diff("array_delete_a", "array_delete_b");
-    let expected = format!(
-        "\
-{RED}- array = \"element_b\"{RESET}
-"
-    );
+    let expected = format!("{RED}- array = \"element_b\"{RESET}\n");
     println!("Expected:\n{expected}");
     println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
@@ -217,11 +213,16 @@ fn test_display_array_delete() {
 #[test]
 fn test_display_array_add() {
     let diff = get_diff("array_add_a", "array_add_b");
-    let expected = format!(
-        "\
-{GREEN}+ array = \"element_b\"{RESET}
-"
-    );
+    let expected = format!("{GREEN}+ array = \"element_b\"{RESET}\n");
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
+    assert_eq!(diff, expected);
+}
+
+#[test]
+fn test_display_array_delete_one() {
+    let diff = get_diff("array_delete_one_a", "array_delete_one_b");
+    let expected = format!("{RED}- array = \"element\"{RESET}\n");
     println!("Expected:\n{expected}");
     println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
