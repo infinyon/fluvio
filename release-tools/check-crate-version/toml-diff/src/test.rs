@@ -184,7 +184,6 @@ fn test_display_nested_table() {
     assert_eq!(diff, expected);
 }
 
-#[ignore]
 #[test]
 fn test_array_reorder() {
     let (a, b) = get_toml_values("array_reorder_a", "array_reorder_b");
@@ -193,7 +192,6 @@ fn test_array_reorder() {
     assert!(changes.is_empty());
 }
 
-#[ignore]
 #[test]
 fn test_display_array_reorder() {
     let diff = get_diff("array_reorder_a", "array_reorder_b");
@@ -203,13 +201,12 @@ fn test_display_array_reorder() {
     assert_eq!(diff, expected);
 }
 
-#[ignore]
 #[test]
 fn test_display_array_delete() {
     let diff = get_diff("array_delete_a", "array_delete_b");
     let expected = format!(
         "\
-{RED}- array_a = \"element_b\"{RESET}
+{RED}- array = \"element_b\"{RESET}
 "
     );
     println!("Expected:\n{expected}");
@@ -217,13 +214,12 @@ fn test_display_array_delete() {
     assert_eq!(diff, expected);
 }
 
-#[ignore]
 #[test]
 fn test_display_array_add() {
     let diff = get_diff("array_add_a", "array_add_b");
     let expected = format!(
         "\
-{GREEN}+ array_b = \"element_b\"{RESET}
+{GREEN}+ array = \"element_b\"{RESET}
 "
     );
     println!("Expected:\n{expected}");

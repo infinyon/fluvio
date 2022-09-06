@@ -36,34 +36,44 @@ impl<'a> TomlDiff<'a> {
         while let Some((a, b, key_path)) = stack.pop() {
             match (a, b) {
                 (TomlValue::Array(a), TomlValue::Array(b)) => {
-                    let mut a_it = a.iter();
-                    let mut b_it = b.iter();
+                    // Get each value's toml representation and store it alongside
+                    let mut a: Vec<_> =
+                        a.iter().map(|e| (e, toml::to_string(e).unwrap())).collect();
+                    let mut b: Vec<_> =
+                        b.iter().map(|e| (e, toml::to_string(e).unwrap())).collect();
+                    // Sort the lists by their toml representations
+                    a.sort_by(|x, y| x.1.cmp(&y.1));
+                    b.sort_by(|x, y| x.1.cmp(&y.1));
+                    let mut a = a.into_iter().peekable();
+                    let mut b = b.into_iter().peekable();
 
-                    // TODO: Ideally we would sort elements first, then track additions and
-                    // deletions as we do for keys in Tables, but TomlValue does not implement Ord,
-                    // so we can't sort. We could get around this by implementing Ord for
-                    // TomlValue.
-                    for (a_elem, b_elem) in a_it.by_ref().zip(b_it.by_ref()) {
-                        if a_elem == b_elem {
-                            // No change in this array element
-                            continue;
-                        }
-                        if discriminant(a_elem) != discriminant(b_elem) {
-                            // Elements have different types
-                            changes.push(TomlChange::Added(key_path.clone(), a_elem));
-                            changes.push(TomlChange::Deleted(key_path.clone(), b_elem));
-                            continue;
-                        }
-                        if a_elem.is_table() || a_elem.is_array() {
-                            stack.push((a_elem, b_elem, key_path.clone()));
-                        } else {
-                            changes.push(TomlChange::Added(key_path.clone(), a_elem));
-                            changes.push(TomlChange::Deleted(key_path.clone(), b_elem));
+                    while let (Some((&ref a_elem, a_toml)), Some((&ref b_elem, b_toml))) =
+                        (a.peek(), b.peek())
+                    {
+                        // Toml values are sorted low to high, so if the values are different, that
+                        // means that the lesser value is missing from the other array.
+                        match a_toml.cmp(b_toml) {
+                            Ordering::Less => {
+                                // Elements missing from `b` are considered "added" in `a`
+                                changes.push(TomlChange::Added(key_path.clone(), a_elem));
+                                a.next();
+                            }
+                            Ordering::Greater => {
+                                // Elements missing from `a` are considered "deleted" from `b`
+                                changes.push(TomlChange::Deleted(key_path.clone(), b_elem));
+                                b.next();
+                            }
+                            Ordering::Equal => {
+                                a.next();
+                                b.next();
+                            }
                         }
                     }
-                    // Anything left in `a_it` is an addition (doesn't exist in `b`), and vice versa
-                    changes.extend(a_it.map(|e| TomlChange::Added(key_path.clone(), e)));
-                    changes.extend(b_it.map(|e| TomlChange::Deleted(key_path.clone(), e)));
+                    // Anything left over in `a` is an addition (doesn't exist in `b`) and vice versa
+                    changes
+                        .extend(a.map(|(a_elem, _)| TomlChange::Added(key_path.clone(), a_elem)));
+                    changes
+                        .extend(b.map(|(b_elem, _)| TomlChange::Added(key_path.clone(), b_elem)));
                 }
                 (TomlValue::Table(a), TomlValue::Table(b)) => {
                     let mut a_pairs: Vec<_> = a.iter().collect();
@@ -98,28 +108,29 @@ impl<'a> TomlDiff<'a> {
                             Ordering::Equal => {
                                 a_pairs_it.next();
                                 b_pairs_it.next();
+
+                                // Keys are the same
+                                if a_val == b_val {
+                                    continue;
+                                }
+                                // Values are different
+                                let mut key_path = key_path.clone();
+                                key_path.push(a_key);
+
+                                if discriminant(a_val) != discriminant(b_val) {
+                                    // Values have different types
+                                    changes.push(TomlChange::Added(key_path.clone(), a_val));
+                                    changes.push(TomlChange::Deleted(key_path, b_val));
+                                    continue;
+                                }
+                                if a_val.is_table() || a_val.is_array() {
+                                    stack.push((a_val, b_val, key_path));
+                                    continue;
+                                }
+                                changes.push(TomlChange::Added(key_path.clone(), a_val));
+                                changes.push(TomlChange::Deleted(key_path, b_val));
                             }
                         }
-                        // Keys are the same
-                        if a_val == b_val {
-                            continue;
-                        }
-                        let mut key_path = key_path.clone();
-                        key_path.push(a_key);
-
-                        // Values are different
-                        if discriminant(a_val) != discriminant(b_val) {
-                            // Values have different types
-                            changes.push(TomlChange::Added(key_path.clone(), a_val));
-                            changes.push(TomlChange::Deleted(key_path, b_val));
-                            continue;
-                        }
-                        if a_val.is_table() || a_val.is_array() {
-                            stack.push((a_val, b_val, key_path));
-                            continue;
-                        }
-                        changes.push(TomlChange::Added(key_path.clone(), a_val));
-                        changes.push(TomlChange::Deleted(key_path, b_val));
                     }
                     // Anything left over in `a_pairs_it` is an addition (doesn't exist in `b`) and vice versa
                     changes.extend(a_pairs_it.map(|(k, v)| {
