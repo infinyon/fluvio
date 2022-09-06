@@ -1724,7 +1724,6 @@ async fn test_stream_fetch_and_new_request(
     debug!("terminated controller");
 }
 
-
 const FLUVIO_WASM_ARRAY_MAP_ARRAY: &str = "fluvio_wasm_array_map_array";
 
 #[fluvio_future::test(ignore)]
