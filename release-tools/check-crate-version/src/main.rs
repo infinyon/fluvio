@@ -1,5 +1,6 @@
 use std::{cmp::max, collections::HashMap, fs, path::PathBuf, process::Command};
 
+use clap::Parser;
 use serde::Deserialize;
 use toml_diff::TomlDiff;
 
@@ -13,14 +14,23 @@ const CRATES_IO_DIR: &str = "./crates_io";
 
 enum CrateStatus {
     NotPublished,
-    VersionBumped,
+    VersionBumped(String),
     Unchanged,
-    CodeChanged,
+    CodeChanged(Option<String>),
     ManifestChanged(String),
+}
+
+#[derive(Parser, Debug)]
+pub struct Cli {
+    #[clap(short, long)]
+    verbose: bool,
 }
 
 #[tokio::main]
 async fn main() {
+    let cli = Cli::parse();
+    let verbose = cli.verbose;
+
     let publish_list = read_publish_list();
     let padding = publish_list
         .iter()
@@ -39,21 +49,32 @@ async fn main() {
         HashMap::with_capacity(status_checks.len());
 
     for status_check in status_checks {
-        let (name, status) = status_check;
+        let (crate_name, status) = status_check;
         let status = status.await.unwrap();
-        crate_status.insert(name, status);
+        crate_status.insert(crate_name, status);
     }
     for (crate_name, status) in crate_status.into_iter() {
         match status {
-            CrateStatus::VersionBumped => println!("🟢 {crate_name:-padding$} Version number has been updated"),
+            CrateStatus::VersionBumped(manifest_diff) => {
+                println!("🟢 {crate_name:-padding$} Version number has been updated");
+                diff_crate_src(&crate_name, verbose);
+                if verbose {
+                    println!("{manifest_diff}");
+                }
+            }
             CrateStatus::Unchanged => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
-            CrateStatus::CodeChanged => {
+            CrateStatus::CodeChanged(manifest_diff) => {
                 println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
-                diff_crate_src(&crate_name, false);
+                diff_crate_src(&crate_name, verbose);
+                if verbose {
+                    if let Some(manifest_diff) = manifest_diff {
+                        println!("{manifest_diff}");
+                    }
+                }
             },
-            CrateStatus::ManifestChanged(diff) => {
+            CrateStatus::ManifestChanged(manifest_diff) => {
                 println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not:");
-                print!("{}", diff);
+                print!("{manifest_diff}");
             },
             CrateStatus::NotPublished => println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)"),
         }
@@ -70,13 +91,13 @@ async fn check_crate_status(crate_name: String) -> CrateStatus {
     let manifest_diff = manifests.diff();
 
     match (
-        diff_crate_src(&crate_name, true),
+        diff_crate_src(&crate_name, false),
         manifest_diff.is_some(),
         manifests.diff_versions(),
     ) {
-        (_, _, true) => CrateStatus::VersionBumped,
+        (_, _, true) => CrateStatus::VersionBumped(manifest_diff.unwrap()),
         (false, false, _) => CrateStatus::Unchanged,
-        (true, _, false) => CrateStatus::CodeChanged,
+        (true, _, false) => CrateStatus::CodeChanged(manifest_diff),
         (false, true, false) => CrateStatus::ManifestChanged(manifest_diff.unwrap()),
     }
 }
@@ -108,15 +129,15 @@ async fn check_crate_published(crate_name: &str) -> bool {
 }
 
 /// Returns `true` if the local crate source is different from crates.io
-fn diff_crate_src(crate_name: &str, silent: bool) -> bool {
+fn diff_crate_src(crate_name: &str, verbose: bool) -> bool {
     let mut cmd = Command::new("diff");
     cmd.arg("-brq")
         .arg(format!("crates_io/{crate_name}/src"))
         .arg(format!("../../crates/{crate_name}/src"));
-    if silent {
-        !cmd.output().unwrap().status.success()
-    } else {
+    if verbose {
         !cmd.status().unwrap().success()
+    } else {
+        !cmd.output().unwrap().status.success()
     }
 }
 
