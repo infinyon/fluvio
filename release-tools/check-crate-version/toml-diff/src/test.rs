@@ -38,7 +38,7 @@ fn test_string() {
 fn test_display_string() {
     let diff = get_diff("strings_a", "strings_b");
     let expected = format!(
-"\
+        "\
 {GREEN}+ b = \"def\"{RESET}
 {RED}- c = \"ghi\"{RESET}
 {GREEN}+ e = \"mno\"{RESET}
@@ -94,7 +94,7 @@ fn test_array() {
 fn test_display_array() {
     let diff = get_diff("arrays_a", "arrays_b");
     let expected = format!(
-"\
+        "\
 {GREEN}+ a = [1, 2, 3]{RESET}
 {RED}- c = [3, 4, 5]{RESET}
 {RED}- e = [5, 6, 7]{RESET}
@@ -132,7 +132,7 @@ fn test_table() {
 fn test_display_table() {
     let diff = get_diff("tables_a", "tables_b");
     let expected = format!(
-"\
+        "\
 {GREEN}+ [b]{RESET}
 {GREEN}+ c = \"ghi\"{RESET}
 {GREEN}+ d = \"jkl\"{RESET}
@@ -172,7 +172,7 @@ fn test_nested_table() {
 fn test_display_nested_table() {
     let diff = get_diff("nested_tables_a", "nested_tables_b");
     let expected = format!(
-"\
+        "\
 {GREEN}+ [outer.inner_b]{RESET}
 {GREEN}+ b = 2{RESET}
 {RED}- [outer.inner_c]{RESET}
@@ -208,9 +208,10 @@ fn test_display_array_reorder() {
 fn test_display_array_delete() {
     let diff = get_diff("array_delete_a", "array_delete_b");
     let expected = format!(
-"\
+        "\
 {RED}- array_a = \"element_b\"{RESET}
-");
+"
+    );
     println!("Expected:\n{expected}");
     println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
@@ -221,9 +222,10 @@ fn test_display_array_delete() {
 fn test_display_array_add() {
     let diff = get_diff("array_add_a", "array_add_b");
     let expected = format!(
-"\
+        "\
 {GREEN}+ array_b = \"element_b\"{RESET}
-");
+"
+    );
     println!("Expected:\n{expected}");
     println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
