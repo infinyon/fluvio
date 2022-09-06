@@ -45,6 +45,8 @@ fn test_display_string() {
 {GREEN}+ f = \"pqr\"{RESET}
 "
     );
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
 }
 
@@ -99,6 +101,8 @@ fn test_display_array() {
 {RED}- f = [6, 7, 8]{RESET}
 "
     );
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
 }
 
@@ -137,6 +141,8 @@ fn test_display_table() {
 {RED}- f = \"pqr\"{RESET}
 "
     );
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
 }
 
@@ -173,6 +179,8 @@ fn test_display_nested_table() {
 {RED}- c = 3{RESET}
 "
     );
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
 }
 
@@ -189,8 +197,35 @@ fn test_array_reorder() {
 #[test]
 fn test_display_array_reorder() {
     let diff = get_diff("array_reorder_a", "array_reorder_b");
-    println!("{diff}");
     let expected = "";
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
+    assert_eq!(diff, expected);
+}
+
+#[ignore]
+#[test]
+fn test_display_array_delete() {
+    let diff = get_diff("array_delete_a", "array_delete_b");
+    let expected = format!(
+"\
+{RED}- array_a = \"element_b\"{RESET}
+");
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
+    assert_eq!(diff, expected);
+}
+
+#[ignore]
+#[test]
+fn test_display_array_add() {
+    let diff = get_diff("array_add_a", "array_add_b");
+    let expected = format!(
+"\
+{GREEN}+ array_b = \"element_b\"{RESET}
+");
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
     assert_eq!(diff, expected);
 }
 
