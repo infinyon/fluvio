@@ -195,6 +195,9 @@ impl SmartModuleContext {
             SmartModuleKind::Aggregate { ref accumulator } => {
                 SmartModuleInitialData::with_aggregate(accumulator.clone())
             }
+            SmartModuleKind::Generic(SmartModuleContextData::Aggregate { ref accumulator }) => {
+                SmartModuleInitialData::with_aggregate(accumulator.clone())
+            }
             _ => SmartModuleInitialData::default(),
         };
 
