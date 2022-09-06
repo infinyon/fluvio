@@ -14,7 +14,6 @@ description = "The official Fluvio SmartEngine"
 [features]
 
 wasi = ["wasmtime-wasi"]
-unstable = []
 
 
 [dependencies]
