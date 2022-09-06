@@ -176,6 +176,24 @@ fn test_display_nested_table() {
     assert_eq!(diff, expected);
 }
 
+#[ignore]
+#[test]
+fn test_array_reorder() {
+    let (a, b) = get_toml_values("array_reorder_a", "array_reorder_b");
+    let diff = TomlDiff::diff(&a, &b);
+    let changes = diff.changes;
+    assert!(changes.is_empty());
+}
+
+#[ignore]
+#[test]
+fn test_display_array_reorder() {
+    let diff = get_diff("array_reorder_a", "array_reorder_b");
+    println!("{diff}");
+    let expected = "";
+    assert_eq!(diff, expected);
+}
+
 fn get_toml_values(a: &str, b: &str) -> (TomlValue, TomlValue) {
     let a = read(format!("./test_data/{a}.toml")).unwrap();
     let b = read(format!("./test_data/{b}.toml")).unwrap();
