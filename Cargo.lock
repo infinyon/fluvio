@@ -1930,7 +1930,6 @@ dependencies = [
  "anyhow",
  "cfg-if",
  "derive_builder",
- "flate2",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
  "fluvio-smartmodule",
