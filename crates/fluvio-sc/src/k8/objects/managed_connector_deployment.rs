@@ -11,7 +11,7 @@ pub use k8_types::app::deployment::DeploymentStatus as K8DeploymentStatus;
 pub use k8_types::app::deployment::DeploymentSpec as K8DeploymentSpec;
 
 /// Statefulset Spec
-#[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct ManagedConnectorDeploymentSpec(K8DeploymentSpec);
 
@@ -35,7 +35,7 @@ impl From<ManagedConnectorDeploymentSpec> for K8DeploymentSpec {
 }
 
 /// Statefulset Spec
-#[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct DeploymentStatus(pub K8DeploymentStatus);
 

@@ -57,7 +57,7 @@ duct = { version = "0.13", default-features = false, optional = true }
 comfy-table = { version = "6.0.0", default-features = false, optional = true }
 flate2 = { version = "1", default-features = false, optional = true }
 tar = { version = "0.4", default-features = false, optional = true }
-sysinfo = { version = "0.25.0", default-features = false}
+sysinfo = { version = "0.26.0", default-features = false}
 portpicker = "0.1.1"
 
 # External Fluvio dependencies

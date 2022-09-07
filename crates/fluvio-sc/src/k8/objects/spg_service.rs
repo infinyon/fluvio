@@ -10,7 +10,7 @@ use crate::dispatcher::core::Status;
 use crate::stores::spg::SpuGroupSpec;
 
 /// Service associated with SPU
-#[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SpgServiceSpec(K8ServiceSpec);
 
@@ -39,7 +39,7 @@ impl From<SpgServiceSpec> for K8ServiceSpec {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Default, Clone)]
 pub struct SpgServiceStatus(K8ServiceStatus);
 
 impl fmt::Display for SpgServiceStatus {

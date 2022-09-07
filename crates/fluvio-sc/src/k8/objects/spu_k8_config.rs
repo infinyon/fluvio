@@ -17,7 +17,7 @@ use crate::dispatcher::core::{Spec, Status};
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
 // this is same struct as in helm config
-#[derive(Deserialize, Debug, Clone, PartialEq, Default)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PodConfig {
     #[serde(default)]
@@ -27,7 +27,7 @@ pub struct PodConfig {
     pub base_node_port: Option<u16>,
 }
 
-#[derive(Debug, PartialEq, Default, Clone)]
+#[derive(Debug, Eq, PartialEq, Default, Clone)]
 pub struct ScK8Config {
     pub image: String,
     pub pod_security_context: Option<PodSecurityContext>,
