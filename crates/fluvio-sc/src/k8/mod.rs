@@ -71,7 +71,6 @@ pub fn main_k8_loop(opt: ScOpt) {
 
 /// print out system information
 fn inspect_system() {
-
     use sysinfo::System;
     use sysinfo::SystemExt;
 
