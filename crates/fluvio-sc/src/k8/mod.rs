@@ -12,6 +12,7 @@ mod objects;
 mod fixture;
 
 use k8_client::new_shared;
+use tracing::info;
 
 use crate::cli::ScOpt;
 
@@ -34,10 +35,12 @@ pub fn main_k8_loop(opt: ScOpt) {
     inspect_system();
 
     run_block_on(async move {
+        info!("initializing k8 client");
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
 
+        info!("starting main loop");
         let ctx = start_main_loop((sc_config.clone(), auth_policy), k8_client.clone()).await;
 
         if !is_local {
