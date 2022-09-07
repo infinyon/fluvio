@@ -1412,7 +1412,6 @@ dependencies = [
 name = "fluvio"
 version = "0.14.0"
 dependencies = [
- "anyhow",
  "async-channel",
  "async-lock",
  "async-rwlock",
