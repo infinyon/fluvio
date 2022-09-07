@@ -186,7 +186,7 @@ cli-platform-cross-version-test:
 	bats -t ./tests/cli/cli-platform-cross-version.bats
 
 cli-smoke:
-	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
+	bats --verbose-run $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
 	bats ./tests/cli/smoke_tests/non-concurrent/cluster-delete.bats
 
 cli-basic-test:
