@@ -11,7 +11,7 @@ pub use k8_types::app::stateful::StatefulSetSpec as K8StatefulSetSpec;
 pub use k8_types::app::stateful::StatefulSetStatus as K8StatefulSetStatus;
 
 /// Statefulset Spec
-#[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct StatefulsetSpec(K8StatefulSetSpec);
 
@@ -35,7 +35,7 @@ impl From<StatefulsetSpec> for K8StatefulSetSpec {
 }
 
 /// Statefulset Spec
-#[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone, Eq, PartialEq)]
 #[serde(transparent)]
 pub struct StatefulsetStatus(K8StatefulSetStatus);
 

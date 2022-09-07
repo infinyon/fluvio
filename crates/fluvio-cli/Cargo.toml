@@ -57,7 +57,7 @@ serde_yaml = "0.9"
 comfy-table = "6.0.0"
 static_assertions = "1.1.0"
 tempdir = "0.3.7"
-sysinfo = "0.25.0"
+sysinfo = "0.26.0"
 atty = { version = "0.2.14", optional = true }
 ctrlc = { version = "3.1.3", optional = true }
 colored = "2"
