@@ -8,10 +8,6 @@ mod download;
 
 use download::download_crate;
 
-const PUBLISH_LIST_PATH: &str = "./publish-list.toml";
-const CRATES_DIR: &str = "../../crates";
-const CRATES_IO_DIR: &str = "./crates_io";
-
 enum CrateStatus {
     NotPublished,
     VersionBumped(String),
@@ -24,6 +20,12 @@ enum CrateStatus {
 pub struct Cli {
     #[clap(short, long)]
     verbose: bool,
+    #[clap(long, env, default_value = "./publish-list.toml")]
+    publish_list_path: String,
+    #[clap(long, env, default_value = "../../crates")]
+    crates_dir: String,
+    #[clap(long, env, default_value = "./crates_io")]
+    crates_io_dir: String,
 }
 
 #[tokio::main]
@@ -31,7 +33,7 @@ async fn main() {
     let cli = Cli::parse();
     let verbose = cli.verbose;
 
-    let publish_list = read_publish_list();
+    let publish_list = read_publish_list(&cli.publish_list_path);
     let padding = publish_list
         .iter()
         .fold(0, |len, name| max(len, name.len()));
@@ -41,11 +43,25 @@ async fn main() {
     let mut status_checks = Vec::with_capacity(publish_list.len());
     let mut publish_list = publish_list.into_iter();
     if let Some(crate_name) = publish_list.next() {
-        status_checks.push((crate_name.clone(), tokio::spawn(check_crate_status(crate_name))));
+        status_checks.push((
+            crate_name.clone(),
+            tokio::spawn(check_crate_status(
+                crate_name,
+                cli.crates_dir.clone(),
+                cli.crates_io_dir.clone(),
+            )),
+        ));
     }
     for crate_name in publish_list {
         std::thread::sleep(std::time::Duration::from_secs(1));
-        status_checks.push((crate_name.clone(), tokio::spawn(check_crate_status(crate_name))));
+        status_checks.push((
+            crate_name.clone(),
+            tokio::spawn(check_crate_status(
+                crate_name,
+                cli.crates_dir.clone(),
+                cli.crates_io_dir.clone(),
+            )),
+        ));
     }
 
     let mut crate_status: HashMap<String, CrateStatus> =
@@ -60,7 +76,7 @@ async fn main() {
         match status {
             CrateStatus::VersionBumped(manifest_diff) => {
                 println!("🟢 {crate_name:-padding$} Version number has been updated");
-                diff_crate_src(&crate_name, verbose);
+                diff_crate_src(&crate_name, &cli.crates_dir, &cli.crates_io_dir, verbose);
                 if verbose {
                     println!("{manifest_diff}");
                 }
@@ -68,7 +84,7 @@ async fn main() {
             CrateStatus::Unchanged => println!("🟢 {crate_name:-padding$} Code does not differ from crates.io"),
             CrateStatus::CodeChanged(manifest_diff) => {
                 println!("⛔ {crate_name:-padding$} Code changed but version number did not:");
-                diff_crate_src(&crate_name, true);
+                diff_crate_src(&crate_name, &cli.crates_dir, &cli.crates_io_dir, true);
                 if let Some(manifest_diff) = manifest_diff {
                     println!("{manifest_diff}");
                 }
@@ -82,17 +98,21 @@ async fn main() {
     }
 }
 
-async fn check_crate_status(crate_name: String) -> CrateStatus {
+async fn check_crate_status(
+    crate_name: String,
+    crates_dir: String,
+    crates_io_dir: String,
+) -> CrateStatus {
     if !check_crate_published(&crate_name).await {
         return CrateStatus::NotPublished;
     }
-    download_crate(&crate_name, "./crates_io").await;
+    download_crate(&crate_name, &crates_io_dir).await;
 
-    let manifests = Manifests::read(&crate_name);
+    let manifests = Manifests::read(&crate_name, crates_dir.as_ref(), crates_io_dir.as_ref());
     let manifest_diff = manifests.diff();
 
     match (
-        diff_crate_src(&crate_name, false),
+        diff_crate_src(&crate_name, &crates_dir, &crates_io_dir, false),
         manifest_diff.is_some(),
         manifests.diff_versions(),
     ) {
@@ -103,13 +123,13 @@ async fn check_crate_status(crate_name: String) -> CrateStatus {
     }
 }
 
-fn read_publish_list() -> Vec<String> {
+fn read_publish_list(path: &str) -> Vec<String> {
     #[derive(Deserialize)]
     struct PublishList {
         publish_list: Vec<String>,
     }
 
-    let list_toml = fs::read_to_string(PUBLISH_LIST_PATH).unwrap();
+    let list_toml = fs::read_to_string(path).unwrap();
     let list: PublishList = toml::from_str(&list_toml).unwrap();
     list.publish_list
 }
@@ -117,8 +137,6 @@ fn read_publish_list() -> Vec<String> {
 /// Checks crates.io to see if the crate has been published. Returns `true` if it has.
 async fn check_crate_published(crate_name: &str) -> bool {
     // We have to identify ourselves, or crates.io will ignore our request
-    // TODO: Add an email to the user_agent filed - this will make us less likely to have our
-    // access blocked.
     let client = reqwest::Client::builder()
         .user_agent("fluvio-check-crate-version (team@infinyon.com)")
         .build()
@@ -130,11 +148,11 @@ async fn check_crate_published(crate_name: &str) -> bool {
 }
 
 /// Returns `true` if the local crate source is different from crates.io
-fn diff_crate_src(crate_name: &str, verbose: bool) -> bool {
+fn diff_crate_src(crate_name: &str, crates_dir: &str, crates_io_dir: &str, verbose: bool) -> bool {
     let mut cmd = Command::new("diff");
     cmd.arg("-brq")
-        .arg(format!("crates_io/{crate_name}/src"))
-        .arg(format!("../../crates/{crate_name}/src"));
+        .arg(format!("{crates_io_dir}/{crate_name}/src"))
+        .arg(format!("{crates_dir}/{crate_name}/src"));
     if verbose {
         !cmd.status().unwrap().success()
     } else {
@@ -148,11 +166,11 @@ struct Manifests {
 }
 
 impl Manifests {
-    fn read(crate_name: &str) -> Self {
-        let local_path = PathBuf::from(CRATES_DIR)
+    fn read(crate_name: &str, crates_dir: &str, crates_io_dir: &str) -> Self {
+        let local_path = PathBuf::from(crates_dir)
             .join(crate_name)
             .join("Cargo.toml");
-        let crates_io_path = PathBuf::from(CRATES_IO_DIR)
+        let crates_io_path = PathBuf::from(crates_io_dir)
             .join(crate_name)
             .join("Cargo.toml.orig");
 
