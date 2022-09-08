@@ -7,6 +7,23 @@ const GREEN: &str = "\u{1b}[32m";
 const RESET: &str = "\u{1b}[0m";
 
 #[test]
+fn test_control() {
+    let (a, b) = get_toml_values("control_a", "control_b");
+    let diff = TomlDiff::diff(&a, &b);
+    let changes = diff.changes;
+    assert!(changes.is_empty());
+}
+
+#[test]
+fn test_display_control() {
+    let diff = get_diff("control_a", "control_b");
+    let expected = "";
+    println!("Expected:\n{expected}");
+    println!("Actual:\n{diff}");
+    assert_eq!(diff, expected);
+}
+
+#[test]
 fn test_string() {
     let (a, b) = get_toml_values("strings_a", "strings_b");
     let diff = TomlDiff::diff(&a, &b);
