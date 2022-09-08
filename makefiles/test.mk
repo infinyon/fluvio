@@ -189,6 +189,18 @@ cli-smoke:
 	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
 	bats ./tests/cli/smoke_tests/non-concurrent/cluster-delete.bats
 
+cli-basic-test:
+	bats ./tests/cli/smoke_tests/e2e-basic.bats
+
+cli-smartmodule-all-test:
+	bats  ./tests/cli/smoke_tests/e2e-smartmodule-basic.bats
+	
+cli-smartmodule-aggregate-test:
+	bats  -f aggregate  ./tests/cli/smoke_tests/e2e-smartmodule-basic.bats
+
+
+cli-smartmodule-basic-test:
+	bats   ./tests/cli/smoke_tests/smart-module-basic.bats
 
 stats-test:
 	$(TEST_BIN) stats -- $(VERBOSE_FLAG) --tolerance=5

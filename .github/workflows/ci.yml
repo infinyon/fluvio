@@ -805,9 +805,6 @@ jobs:
           profile: minimal
           override: true
       - uses: Swatinem/rust-cache@v2
-      - name: Build smartmodules for E2E test
-        run: |
-          make build_smartmodules
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
@@ -849,6 +846,9 @@ jobs:
       - name: Start cluster
         timeout-minutes: 10
         run: fluvio cluster start --develop
+      - name: Build smartmodules for E2E test
+        run: |
+          make build_smartmodules
       - name: Run CLI smoke tests
         timeout-minutes: 5
         run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
