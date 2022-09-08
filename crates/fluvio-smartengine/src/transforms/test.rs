@@ -110,6 +110,7 @@ fn create_aggregate() {
 #[ignore]
 #[test]
 fn create_aggregate_no_initial_data() {
+    // should work with no initial data
     let engine = SmartEngine::new();
     let mut chain = engine.new_chain();
 
@@ -118,7 +119,12 @@ fn create_aggregate_no_initial_data() {
             SmartModuleConfig::builder().build().unwrap(),
             read_wasm_module(FLUVIO_WASM_AGGREGATE),
         )
-        .expect_err("aggregate should fail without initial data");
+        .expect("failed to create smartmodule");
+
+    assert_eq!(
+        chain.instances().remove(0).transform().name(),
+        crate::transforms::aggregate::AGGREGATE_FN_NAME
+    );
 }
 
 #[ignore]
