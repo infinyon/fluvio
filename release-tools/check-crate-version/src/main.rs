@@ -174,7 +174,8 @@ impl Manifests {
             .join(crate_name)
             .join("Cargo.toml.orig");
 
-        let local_text = fs::read_to_string(&local_path).unwrap_or_else(|_| panic!("{} not found", local_path.display()));
+        let local_text = fs::read_to_string(&local_path)
+            .unwrap_or_else(|_| panic!("{} not found", local_path.display()));
         let crates_io_text = fs::read_to_string(&crates_io_path).unwrap();
 
         let local = toml::from_str::<toml::Value>(&local_text).unwrap();
