@@ -19,11 +19,11 @@ pub enum TomlChange<'a> {
 
 impl<'a> TomlDiff<'a> {
     /// Return a list of differences between `a` and `b`. A is considered "new" and `b` is
-    /// considered "old", so items missing from `a` are considdered "deletions", while items
+    /// considered "old", so items missing from `a` are considered "deletions", while items
     /// missing from `b` are considered "additions".
     ///
-    /// Changes in table keys are always considdered either "deletions" or "additions", while
-    /// changes in the value of a key are considdered "changes".
+    /// Changes in table keys are always considered either "deletions" or "additions", while
+    /// changes in the value of a key are considered "changes".
     pub fn diff(a: &'a TomlValue, b: &'a TomlValue) -> Self {
         if !matches!((a, b), (TomlValue::Table(_), TomlValue::Table(_))) {
             panic!("Expected a table at the top level");
@@ -90,7 +90,7 @@ impl<'a> TomlDiff<'a> {
                         // that the lesser key is missing from the other table.
                         match a_key.cmp(b_key) {
                             Ordering::Less => {
-                                // Keys missing from `b` are considdered "added" in `a`
+                                // Keys missing from `b` are considered "added" in `a`
                                 let mut key_path = key_path.clone();
                                 key_path.push(a_key);
                                 changes.push(TomlChange::Added(key_path, a_val));
