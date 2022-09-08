@@ -19,8 +19,9 @@ setup_file() {
 @test "Create smart-module" {
     run timeout 15s "$FLUVIO_BIN" smart-module create "$SMART_MODULE_NAME" --wasm-file "$(mktemp)"
     debug_msg "status: $status"
+    echo "cmd: $BATS_RUN_COMMAND"
     debug_msg "output: ${lines[0]}"
-    assert_success
+    assert_output "smart-module \"$SMART_MODULE_NAME\" has been created."
 }
 
 # Create smart-module - Negative test
@@ -29,6 +30,7 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" smart-module create "$SMART_MODULE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
+    echo "cmd: $BATS_RUN_COMMAND"
     assert_failure
     assert_output --partial "Smartmodule already exists"
 }

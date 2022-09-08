@@ -20,40 +20,47 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="uppercase"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_map.wasm 
-    assert_success
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_map.wasm
+    # Print out cmd since we need complete trace of cmd not just failing
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "smart-module \"$SMARTMODULE_NAME\" has been created."
 
     # Create topic
     TOPIC_NAME="$(random_string)"
     export TOPIC_NAME
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
-    assert_success
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "topic \"$TOPIC_NAME\" created"
 
     # Produce to topic
-    TEST_MESSAGE="$(random_string 10)"
+    TEST_MESSAGE="Banana"
     export TEST_MESSAGE
     run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Consume from topic
-    EXPECTED_OUTPUT="${TEST_MESSAGE^^}"
+    EXPECTED_OUTPUT="BANANA"
     export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --map "$SMARTMODULE_NAME"
-
-    assert_output --partial "$EXPECTED_OUTPUT"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "$EXPECTED_OUTPUT"
     assert_success
 
     # Consume from topic with --smartmodule
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
-    assert_output --partial "$EXPECTED_OUTPUT"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "$EXPECTED_OUTPUT"
     assert_success
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Delete smart-module
     run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
 
@@ -61,28 +68,33 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="contains-a"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_filter.wasm 
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_filter.wasm
+    echo "cmd: $BATS_RUN_COMMAND" >&2 
     assert_success
 
     # Create topic
     TOPIC_NAME="$(random_string)"
     export TOPIC_NAME
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Produce to topic
     NEGATIVE_TEST_MESSAGE="zzzzzzzzzzzzzz"
     export NEGATIVE_TEST_MESSAGE
     run bash -c 'echo "$NEGATIVE_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     TEST_MESSAGE="$(random_string 10)aaa"
     export TEST_MESSAGE
     run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --compression gzip'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Consume from topic and verify we should have 2 entries
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
     assert_line --index 1 "$TEST_MESSAGE"
 
@@ -90,19 +102,23 @@ setup_file() {
     EXPECTED_OUTPUT="${TEST_MESSAGE}"
     export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --filter "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
 
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Delete smart-module
     run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
 
@@ -276,40 +292,48 @@ setup_file() {
     SMARTMODULE_NAME="concat-strings"
     export SMARTMODULE_NAME
     run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_aggregate.wasm 
-    assert_success
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "smart-module \"$SMARTMODULE_NAME\" has been created."
 
     # Create topic
     TOPIC_NAME="$(random_string)"
     export TOPIC_NAME
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
-    assert_success
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "topic \"$TOPIC_NAME\" created"
 
     # Produce to topic
     TEST_MESSAGE_1="$(random_string 10)"
     export TEST_MESSAGE_1
     run bash -c 'echo "$TEST_MESSAGE_1" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     TEST_MESSAGE_2="$(random_string 10)"
     export TEST_MESSAGE_2
     run bash -c 'echo "$TEST_MESSAGE_2" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Consume from topic
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --aggregate "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_line --index 0 "$TEST_MESSAGE_1"
     assert_line --index 1 "$TEST_MESSAGE_1$TEST_MESSAGE_2"
 
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_line --index 0 "$TEST_MESSAGE_1"
     assert_line --index 1 "$TEST_MESSAGE_1$TEST_MESSAGE_2"
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Delete smart-module
     run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
 
