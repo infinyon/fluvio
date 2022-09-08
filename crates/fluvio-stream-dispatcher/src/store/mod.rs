@@ -223,7 +223,7 @@ mod context {
         where
             S::IndexKey: Display,
         {
-            self.wait_action_with_timeout(key, action, Duration::from_secs(*MAX_WAIT_TIME))
+            self.wait_action_with_timeout(key, action, Duration::from_secs(self.wait_time))
                 .await
         }
 
