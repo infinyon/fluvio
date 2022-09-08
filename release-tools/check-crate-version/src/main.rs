@@ -36,15 +36,18 @@ async fn main() {
         .iter()
         .fold(0, |len, name| max(len, name.len()));
 
-    let status_checks: Vec<_> = publish_list
-        .into_iter()
-        .map(|crate_name| {
-            (
-                crate_name.clone(),
-                tokio::spawn(check_crate_status(crate_name)),
-            )
-        })
-        .collect();
+    // Start downloading crates, one per second, to comply with crates.io's crawler policy
+    // https://crates.io/policies#crawlers
+    let mut status_checks = Vec::with_capacity(publish_list.len());
+    let mut publish_list = publish_list.into_iter();
+    if let Some(crate_name) = publish_list.next() {
+        status_checks.push((crate_name.clone(), tokio::spawn(check_crate_status(crate_name))));
+    }
+    for crate_name in publish_list {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        status_checks.push((crate_name.clone(), tokio::spawn(check_crate_status(crate_name))));
+    }
+
     let mut crate_status: HashMap<String, CrateStatus> =
         HashMap::with_capacity(status_checks.len());
 
@@ -117,7 +120,7 @@ async fn check_crate_published(crate_name: &str) -> bool {
     // TODO: Add an email to the user_agent filed - this will make us less likely to have our
     // access blocked.
     let client = reqwest::Client::builder()
-        .user_agent("fluvio-check-crate-version")
+        .user_agent("fluvio-check-crate-version (team@infinyon.com)")
         .build()
         .unwrap();
     let url = format!("https://crates.io/api/v1/crates/{crate_name}/versions");
