@@ -58,7 +58,8 @@ impl SmartModuleAggregate {
         let accumulator = match initial_data {
             SmartModuleInitialData::Aggregate { accumulator } => accumulator,
             SmartModuleInitialData::None => {
-                return Err(EngineError::MissingInitialData("accumulator"))
+                // if no initial data, then we initialize as default
+                vec![]
             }
         };
 
