@@ -1,0 +1,21 @@
+# This list is approximately sorted for dependency resolution
+
+publish_list = [
+    "fluvio-types",
+    "fluvio-compression",
+    "fluvio-protocol-derive",
+    "fluvio-protocol",
+    "fluvio-socket",
+    "fluvio-stream-model",
+    "fluvio-controlplane-metadata",
+    "fluvio-spu-schema",
+    "fluvio-smartengine",
+    "fluvio-smartmodule-derive",
+    "fluvio-smartmodule",
+    "fluvio-sc-schema",
+    "fluvio",
+    "fluvio-stream-dispatcher",
+    "fluvio-package-index",
+    "fluvio-extension-common",
+]
+

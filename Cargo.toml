@@ -40,6 +40,7 @@ members = [
     "crates/fluvio-test-util",
     "crates/fluvio-types",
     "examples/sm-regex",
+    "release-tools/check-crate-version",
 ]
 resolver = "2"
 

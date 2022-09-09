@@ -57,7 +57,7 @@ jobs:
           VERBOSE: true
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          ./release-scripts/publish-crates.sh
+          ./release-tools/publish-crates.sh
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3

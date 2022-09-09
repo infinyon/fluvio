@@ -1,0 +1,9 @@
+[outer.inner_a]
+a = 1
+
+[outer.inner_b]
+b = 2
+
+[outer.inner_d]
+d = 4
+
