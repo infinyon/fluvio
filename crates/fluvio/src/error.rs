@@ -1,8 +1,8 @@
 use std::io::Error as IoError;
 
-use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 use semver::Version;
 
+use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 use fluvio_compression::CompressionError;
 use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
@@ -58,6 +58,9 @@ To interact with this cluster, please install the matching CLI version using the
     TopicProducerConfigBuilder(#[from] TopicProducerConfigBuilderError),
     #[error("Compression error: {0}")]
     Compression(#[from] CompressionError),
+    #[cfg(feature = "smartengine")]
+    #[error("SmartModuleEngine config: {0}")]
+    SmartModuleConfigBuilder(#[from] fluvio_smartengine::SmartModuleConfigBuilderError),
     #[error("Unknown error: {0}")]
     Other(String),
 }

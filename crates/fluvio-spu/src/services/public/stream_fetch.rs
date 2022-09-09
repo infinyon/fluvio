@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use futures_util::StreamExt;
+use fluvio_smartengine::{SmartModuleChain, file_batch::FileBatchIterator};
 use tracing::{debug, error, instrument, trace};
+use futures_util::StreamExt;
 use tokio::select;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_smartengine::engine::{SmartModuleInstance, file_batch::FileBatchIterator};
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
@@ -214,7 +214,7 @@ impl StreamFetchHandler {
         let (mut smartmodule_instance, mut right_consumer_stream) =
             if let Some(ctx) = derivedstream_ctx {
                 let SmartModuleContext {
-                    smartmodule_instance: st,
+                    sm_chain: st,
                     right_consumer_stream,
                 } = ctx;
                 (Some(st), right_consumer_stream)
@@ -376,13 +376,13 @@ impl StreamFetchHandler {
     /// return (next offset, consumer wait)
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
-        skip(self, smartmodule_instance, join_last_record),
+        skip(self, sm_chain, join_last_record),
         fields(stream_id = self.stream_id)
     )]
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
-        smartmodule_instance: Option<&mut Box<dyn SmartModuleInstance>>,
+        sm_chain: Option<&mut SmartModuleChain>,
         join_last_record: Option<&fluvio::consumer::Record>,
     ) -> Result<(Offset, bool), StreamFetchError> {
         let now = Instant::now();
@@ -432,8 +432,8 @@ impl StreamFetchHandler {
             return Ok((starting_offset, false));
         }
 
-        let output = match smartmodule_instance {
-            Some(smartmodule_instance) => {
+        let output = match sm_chain {
+            Some(chain) => {
                 // If a SmartModule is provided, we need to read records from file to memory
                 // In-memory records are then processed by SmartModule and returned to consumer
 
@@ -441,7 +441,7 @@ impl StreamFetchHandler {
                 let mut file_batch_iterator =
                     FileBatchIterator::from_raw_slice(records.raw_slice());
 
-                let (batch, smartmodule_error) = smartmodule_instance
+                let (batch, smartmodule_error) = chain
                     .process_batch(
                         &mut file_batch_iterator,
                         self.max_bytes as usize,

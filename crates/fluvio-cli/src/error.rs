@@ -88,12 +88,13 @@ pub enum CliError {
     ProfileNotFoundInConfig(String),
     #[error("Cluster not found in config: {0}")]
     ClusterNotFoundInConfig(String),
-
     #[error("Connector not found: {0}")]
     ConnectorNotFound(String),
-
     #[error("Progress Error")]
     ProgressError(#[from] ProgressTemplateError),
+    #[cfg(feature = "smartengine")]
+    #[error("SmartModuleEngine config: {0}")]
+    SmartModuleConfigBuilder(#[from] fluvio_smartengine::SmartModuleConfigBuilderError),
 }
 
 impl CliError {

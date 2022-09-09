@@ -237,7 +237,9 @@ impl Config {
             toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{}", err)))?;
 
         let mut file = File::create(path_ref)?;
-        file.write_all(&toml)
+        file.write_all(&toml)?;
+        // On windows flush() is noop, but sync_all() calls FlushFileBuffers.
+        file.sync_all()
     }
 
     pub fn version(&self) -> &str {

@@ -16,7 +16,7 @@ path = "src/lib.rs"
 [features]
 default = []
 admin = ["fluvio-sc-schema/use_serde"]
-smartengine = ["fluvio-smartengine/engine"]
+smartengine = ["fluvio-smartengine"]
 stats = ["sysinfo", "quantities", "hdrhistogram", "strum", "num-traits"]
 unstable = []
 
@@ -41,7 +41,7 @@ siphasher = "0.3.5"
 cfg-if = "1.0.0"
 derive_builder = "0.11.0"
 async-trait = "0.1.51"
-sysinfo = { version = "0.25", optional = true }
+sysinfo = { version = "0.26", optional = true }
 quantities = { version = "0.10.0", features = [
     "datavolume",
     "datathroughput",
@@ -70,11 +70,11 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
 ] }
 fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
 fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.4.0", default-features = false }
-fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.4.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "4.0.0"
 chrono = {version =  "0.4", default-features = false, features = ["clock"]}
+fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.4.0",  optional = true}
 
 [target.'cfg(unix)'.dependencies]
 fluvio-spu-schema = { version = "0.10.0", path = "../fluvio-spu-schema", features = [

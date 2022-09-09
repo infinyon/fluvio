@@ -15,6 +15,7 @@ use async_trait::async_trait;
 use url::ParseError;
 use semver::Version;
 use serde_json::Error as JsonError;
+use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_helm::{HelmClient, HelmError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
@@ -685,33 +686,18 @@ struct LocalClusterCheck;
 #[async_trait]
 impl ClusterCheck for LocalClusterCheck {
     async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
-        match Command::new("pgrep").arg("fluvio-run").output() {
-            Ok(output) => {
-                if let Some(code) = output.status.code() {
-                    debug!(code, "pgrep fluvio exit code");
-                    if code == 1 {
-                        return Ok(CheckStatus::pass("Local Fluvio is not installed"));
-                    } else if code == 0 {
-                        Ok(CheckStatus::Unrecoverable(
-                            UnrecoverableCheckStatus::ExistingLocalCluster,
-                        ))
-                    } else {
-                        Err(ClusterCheckError::Other(format!(
-                            "pgrep returned unexpected code: {}",
-                            code
-                        )))
-                    }
-                } else {
-                    Err(ClusterCheckError::Other(
-                        "pgrep returned no code".to_string(),
-                    ))
-                }
-            }
-            Err(err) => Err(ClusterCheckError::Other(format!(
-                "unable to check local cluster: {:#?}",
-                err
-            ))),
+        let mut sys = System::new();
+        sys.refresh_processes(); // Only load what we need.
+        let proc_count = sys
+            .processes_by_exact_name("fluvio-run")
+            .map(|x| debug!("Found existing fluvio-run process. pid: {}", x.pid()))
+            .count();
+        if proc_count > 0 {
+            return Ok(CheckStatus::Unrecoverable(
+                UnrecoverableCheckStatus::ExistingLocalCluster,
+            ));
         }
+        Ok(CheckStatus::pass("Local Fluvio is not installed"))
     }
 
     fn label(&self) -> &str {

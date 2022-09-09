@@ -3,6 +3,7 @@ use std::fs::remove_dir_all;
 
 use derive_builder::Builder;
 use tracing::{info, warn, debug, instrument};
+use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_command::CommandExt;
 
@@ -131,23 +132,36 @@ impl ClusterUninstaller {
 
     async fn uninstall_local(&self) -> Result<(), ClusterError> {
         let pb = self.pb_factory.create()?;
-
         pb.set_message("Uninstalling fluvio local components");
-        Command::new("pkill")
-            .arg("-f")
-            .arg("fluvio cluster run")
-            .output()
-            .map_err(UninstallError::IoError)?;
-        Command::new("pkill")
-            .arg("-f")
-            .arg("fluvio run")
-            .output()
-            .map_err(UninstallError::IoError)?;
-        Command::new("pkill")
-            .arg("-f")
-            .arg("fluvio-run")
-            .output()
-            .map_err(UninstallError::IoError)?;
+
+        let kill_proc = |name: &str, command_args: Option<&[String]>| {
+            let mut sys = System::new();
+            sys.refresh_processes(); // Only load what we need.
+            for process in sys.processes_by_exact_name(name) {
+                if let Some(cmd_args) = command_args {
+                    // First command is the executable so cut that out.
+                    let proc_cmds = &process.cmd()[1..];
+                    if cmd_args.len() > proc_cmds.len() {
+                        continue; // Ignore procs with less command_args than the target.
+                    }
+                    if cmd_args.iter().ne(proc_cmds[..cmd_args.len()].iter()) {
+                        continue; // Ignore procs which don't match.
+                    }
+                }
+                if !process.kill() {
+                    // This will fail if called on a proc running as root, so only log failure.
+                    debug!(
+                        "Sysinto process.kill() returned false. pid: {}, name: {}: user: {:?}",
+                        process.pid(),
+                        process.name(),
+                        process.user_id(),
+                    );
+                }
+            }
+        };
+        kill_proc("fluvio", Some(&["cluster".into(), "run".into()]));
+        kill_proc("fluvio", Some(&["run".into()]));
+        kill_proc("fluvio-run", None);
 
         // delete fluvio file
         debug!("Removing fluvio directory");

@@ -30,7 +30,7 @@ Please open an Issue on GitHub with the label `question`.
 
 Follow our [Download Fluvio](https://www.fluvio.io/download/) and the corresponding "Get Started" page to get fluvio up and running.
 
-To learn about the Fluvio Architecture and contribute to Fluvio project, please visit the [Architecture](https://www.fluvio.io/docs/architecture/) section.
+To learn about the Fluvio Architecture and contribute to Fluvio project, please visit the [Architecture](https://www.fluvio.io/docs/architecture/overview/) section.
 
 ## Contributing
 
