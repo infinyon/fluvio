@@ -20,6 +20,9 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
+    use fluvio_spu_schema::server::smartmodule::{
+        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
+    };
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -36,9 +39,6 @@ mod cmd {
     };
     use handlebars::{self, Handlebars};
 
-    use fluvio_smartengine::metadata::{
-        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
-    };
     use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
     use fluvio_protocol::record::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::{TableFormatSpec};

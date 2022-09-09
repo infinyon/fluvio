@@ -10,8 +10,8 @@ const MEMORY: &str = "memory";
 
 /// Copy a byte array into an instance's linear memory
 /// and return the offset relative to the module's memory.
-pub(crate) fn copy_memory_to_instance<T>(
-    store: &mut Store<T>,
+pub(crate) fn copy_memory_to_instance(
+    store: &mut impl AsContextMut,
     instance: &Instance,
     bytes: &[u8],
 ) -> Result<isize, Error> {

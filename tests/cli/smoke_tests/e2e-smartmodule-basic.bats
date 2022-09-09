@@ -8,12 +8,14 @@ load "$TEST_HELPER_DIR"/fluvio_dev.bash
 load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
+# disabling compiling because it has no feedback
+# this should be done before running test
 setup_file() {
     # Compile the smart-module examples
-    pushd "$BATS_TEST_DIRNAME/../../.." && make build_smartmodules && popd
+#    pushd "$BATS_TEST_DIRNAME/../../.." && make build_smartmodules && popd
     SMARTMODULE_BUILD_DIR="$BATS_TEST_DIRNAME/../../../crates/fluvio-smartmodule/examples/target/wasm32-unknown-unknown/release/"
     export SMARTMODULE_BUILD_DIR
-    
+   
 }
 
 @test "smart-module map" {
@@ -303,13 +305,13 @@ setup_file() {
     assert_output "topic \"$TOPIC_NAME\" created"
 
     # Produce to topic
-    TEST_MESSAGE_1="$(random_string 10)"
+    TEST_MESSAGE_1="abc"
     export TEST_MESSAGE_1
     run bash -c 'echo "$TEST_MESSAGE_1" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
-    TEST_MESSAGE_2="$(random_string 10)"
+    TEST_MESSAGE_2="def"
     export TEST_MESSAGE_2
     run bash -c 'echo "$TEST_MESSAGE_2" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     echo "cmd: $BATS_RUN_COMMAND" >&2
@@ -338,6 +340,7 @@ setup_file() {
 }
 
 @test "smart-module join" {
+    skip "join is deprecated"
     # Load the smart-module
     SMARTMODULE_NAME="join-sum"
     export SMARTMODULE_NAME

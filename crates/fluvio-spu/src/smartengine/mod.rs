@@ -1,23 +1,22 @@
-use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
-use fluvio_protocol::link::ErrorCode;
-use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
+use fluvio_smartengine::{SmartModuleChain, SmartModuleConfig, SmartModuleInitialData};
 use tracing::{debug, error};
 
-use fluvio_smartengine::{
-    metadata::{
-        LegacySmartModulePayload, SmartModuleContextData, SmartModuleInvocationWasm,
-        SmartModuleWasmCompressed, SmartModuleInvocation, SmartModuleKind,
+use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
+use fluvio_protocol::link::ErrorCode;
+use fluvio_spu_schema::server::{
+    stream_fetch::DerivedStreamInvocation,
+    smartmodule::{
+        LegacySmartModulePayload, SmartModuleInvocation, SmartModuleKind, SmartModuleContextData,
+        SmartModuleInvocationWasm, SmartModuleWasmCompressed,
     },
-    engine::SmartModuleInstance,
 };
 use fluvio::{ConsumerConfig};
-
 use futures_util::{StreamExt, stream::BoxStream};
 
 use crate::core::DefaultSharedGlobalContext;
 
 pub struct SmartModuleContext {
-    pub smartmodule_instance: Box<dyn SmartModuleInstance>,
+    pub sm_chain: SmartModuleChain,
     pub right_consumer_stream:
         Option<BoxStream<'static, Result<fluvio::consumer::Record, ErrorCode>>>,
 }
@@ -52,7 +51,7 @@ impl SmartModuleContext {
             None => {
                 if let Some(payload) = wasm_payload {
                     Ok(Some(Self {
-                        smartmodule_instance: Self::payload_to_smartmodule(payload, version, ctx)?,
+                        sm_chain: Self::payload_to_smartmodule(payload, version, ctx)?,
                         right_consumer_stream: None,
                     }))
                 } else {
@@ -167,7 +166,7 @@ impl SmartModuleContext {
         };
 
         Ok(Self {
-            smartmodule_instance: Self::payload_to_smartmodule(payload, version, ctx)?,
+            sm_chain: Self::payload_to_smartmodule(payload, version, ctx)?,
             right_consumer_stream,
         })
     }
@@ -176,7 +175,7 @@ impl SmartModuleContext {
         payload: LegacySmartModulePayload,
         version: i16,
         ctx: &DefaultSharedGlobalContext,
-    ) -> Result<Box<dyn SmartModuleInstance>, ErrorCode> {
+    ) -> Result<SmartModuleChain, ErrorCode> {
         let raw = payload
             .wasm
             .get_raw()
@@ -188,10 +187,33 @@ impl SmartModuleContext {
         debug!(len = raw.len(), "SmartModule with bytes");
 
         let sm_engine = ctx.smartengine_owned();
+        let mut chain = sm_engine.new_chain();
+
         let kind = payload.kind.clone();
 
-        sm_engine
-            .create_module_from_payload(payload, Some(version))
+        let initial_data = match kind {
+            SmartModuleKind::Aggregate { ref accumulator } => {
+                SmartModuleInitialData::with_aggregate(accumulator.clone())
+            }
+            SmartModuleKind::Generic(SmartModuleContextData::Aggregate { ref accumulator }) => {
+                SmartModuleInitialData::with_aggregate(accumulator.clone())
+            }
+            _ => SmartModuleInitialData::default(),
+        };
+
+        chain
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .params(payload.params)
+                    .version(version)
+                    .initial_data(initial_data)
+                    .build()
+                    .map_err(|err| ErrorCode::SmartModuleInvalid {
+                        error: err.to_string(),
+                        name: None,
+                    })?,
+                raw,
+            )
             .map_err(|err| {
                 error!(
                     error = err.to_string().as_str(),
@@ -208,7 +230,8 @@ impl SmartModuleContext {
                         error: err.to_string(),
                     }
                 }
-            })
+            })?;
+        Ok(chain)
     }
 }
 

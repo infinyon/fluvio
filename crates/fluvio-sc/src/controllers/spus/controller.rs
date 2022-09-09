@@ -29,7 +29,7 @@ impl SpuController {
             counter: 0,
         };
 
-        debug!("starting spu controller");
+        info!("starting spu controller");
         spawn(controller.dispatch_loop());
     }
 

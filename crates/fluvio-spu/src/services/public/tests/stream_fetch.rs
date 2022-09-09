@@ -18,15 +18,17 @@ use futures_util::{Future, StreamExt};
 
 use fluvio_future::timer::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket};
-use fluvio_spu_schema::Isolation;
+use fluvio_spu_schema::{
+    Isolation,
+    server::smartmodule::{
+        SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation,
+        SmartModuleWasmCompressed, SmartModuleInvocationWasm, SmartModuleContextData,
+    },
+};
 use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
     link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
-};
-use fluvio_smartengine::metadata::{
-    SmartModuleKind, LegacySmartModulePayload, SmartModuleInvocation, SmartModuleWasmCompressed,
-    SmartModuleInvocationWasm, SmartModuleContextData,
 };
 use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
 use fluvio_spu_schema::{
@@ -1717,132 +1719,6 @@ async fn test_stream_fetch_and_new_request(
         .await;
 
     assert!(response.is_ok());
-
-    server_end_event.notify();
-    debug!("terminated controller");
-}
-
-#[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_wasm_module_legacy() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module_legacy");
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
-
-    let ctx = GlobalContext::new_shared_context(spu_config);
-    let wasm = Vec::from("Hello, world, I'm not a valid WASM module!");
-    let wasm_payload = LegacySmartModulePayload {
-        wasm: SmartModuleWasmCompressed::Raw(wasm),
-        kind: SmartModuleKind::Filter,
-        ..Default::default()
-    };
-
-    test_stream_fetch_invalid_wasm_module(ctx, test_path, Some(wasm_payload), None).await
-}
-
-#[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_wasm_module_adhoc() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module_adhoc");
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
-
-    let ctx = GlobalContext::new_shared_context(spu_config);
-    let wasm = zip(Vec::from("Hello, world, I'm not a valid WASM module!"));
-    let smartmodule = SmartModuleInvocation {
-        wasm: SmartModuleInvocationWasm::AdHoc(wasm),
-        kind: SmartModuleKind::Filter,
-        ..Default::default()
-    };
-
-    test_stream_fetch_invalid_wasm_module(ctx, test_path, None, Some(smartmodule)).await
-}
-
-#[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_wasm_module_predefined() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module_predefined");
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path.clone();
-
-    let ctx = GlobalContext::new_shared_context(spu_config);
-
-    let wasm = zip(Vec::from("Hello, world, I'm not a valid WASM module!"));
-    ctx.smartmodule_localstore().insert(SmartModule {
-        name: "invalid_wasm".to_owned(),
-        spec: SmartModuleSpec {
-            wasm: SmartModuleWasm {
-                format: SmartModuleWasmFormat::Binary,
-                payload: wasm,
-            },
-            ..Default::default()
-        },
-    });
-
-    let smartmodule = SmartModuleInvocation {
-        wasm: SmartModuleInvocationWasm::Predefined("invalid_wasm".to_owned()),
-        kind: SmartModuleKind::Filter,
-        ..Default::default()
-    };
-
-    test_stream_fetch_invalid_wasm_module(ctx, test_path, None, Some(smartmodule)).await
-}
-
-async fn test_stream_fetch_invalid_wasm_module(
-    ctx: Arc<GlobalContext<FileReplica>>,
-    test_path: PathBuf,
-    wasm_payload: Option<LegacySmartModulePayload>,
-    smartmodule: Option<SmartModuleInvocation>,
-) {
-    ensure_clean_dir(&test_path);
-    let port = portpicker::pick_unused_port().expect("No free ports left");
-
-    let addr = format!("127.0.0.1:{}", port);
-
-    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
-
-    // wait for stream controller async to start
-    sleep(Duration::from_millis(100)).await;
-
-    let client_socket =
-        MultiplexerSocket::shared(FluvioSocket::connect(&addr).await.expect("connect"));
-
-    // perform for two versions
-    let topic = "test_invalid_wasm";
-    let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
-    let test_id = test.id.clone();
-    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
-        .await
-        .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone()).await;
-
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        wasm_module: Vec::new(),
-        wasm_payload,
-        smartmodule,
-        ..Default::default()
-    };
-
-    let mut stream = client_socket
-        .create_stream(RequestMessage::new_request(stream_request), 11)
-        .await
-        .expect("create stream");
-
-    let response = stream
-        .next()
-        .await
-        .expect("should get response")
-        .expect("response should be Ok");
-
-    assert_eq!(
-        response.partition.error_code,
-        ErrorCode::SmartModuleInvalidExports {
-            kind: "filter".to_owned(),
-            error: "failed to parse WebAssembly module".to_owned()
-        }
-    );
 
     server_end_event.notify();
     debug!("terminated controller");

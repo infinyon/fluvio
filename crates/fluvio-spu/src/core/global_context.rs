@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use fluvio_smartengine::engine::SmartEngine;
+use fluvio_smartengine::SmartEngine;
 use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::Replica;
@@ -75,7 +75,7 @@ where
             followers_state: FollowersState::new_shared(),
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
-            sm_engine: SmartEngine::default(),
+            sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
         }
     }
