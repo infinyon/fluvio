@@ -3,48 +3,30 @@ use std::fmt::Debug;
 
 use tracing::{debug, instrument};
 use anyhow::Result;
-use wasmtime::{AsContextMut, Trap, TypedFunc};
+use wasmtime::{AsContextMut, TypedFunc};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleInternalError,
     SmartModuleAggregateOutput,
 };
 use crate::{
-    WasmSlice,
     error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState, SmartModuleInitialData,
 };
 
 pub(crate) const AGGREGATE_FN_NAME: &str = "aggregate";
-type BaseAggregateFn = TypedFunc<(i32, i32), i32>;
-type AggregateFnWithParam = TypedFunc<(i32, i32, u32), i32>;
 
-#[derive(Debug)]
+type WasmAggregateFn = TypedFunc<(i32, i32, u32), i32>;
+
 pub(crate) struct SmartModuleAggregate {
-    aggregate_fn: AggregateFnKind,
+    aggregate_fn: WasmAggregateFn,
     accumulator: Vec<u8>,
 }
-pub enum AggregateFnKind {
-    Base(BaseAggregateFn),
-    Param(AggregateFnWithParam),
-}
 
-impl Debug for AggregateFnKind {
+impl Debug for SmartModuleAggregate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Base(_aggregate_fn) => write!(f, "OldAggregateFn"),
-            Self::Param(_aggregate_fn) => write!(f, "AggregateFn"),
-        }
-    }
-}
-
-impl AggregateFnKind {
-    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
-        match self {
-            Self::Base(aggregate_fn) => aggregate_fn.call(store, (slice.0, slice.1)),
-            Self::Param(aggregate_fn) => aggregate_fn.call(store, slice),
-        }
+        write!(f, "AggregateFn")
     }
 }
 
@@ -68,8 +50,7 @@ impl SmartModuleAggregate {
                 // check type signature
 
                 func.typed(&mut *store)
-                    .map(AggregateFnKind::Base)
-                    .or_else(|_| func.typed(store).map(AggregateFnKind::Param))
+                    .or_else(|_| func.typed(store))
                     .map(|aggregate_fn| {
                         Some(Self {
                             aggregate_fn,

@@ -2,46 +2,26 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
-use wasmtime::{AsContextMut, Trap, TypedFunc};
+use wasmtime::{AsContextMut, TypedFunc};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
 use crate::{
-    WasmSlice,
     error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState,
 };
 
 pub(crate) const MAP_FN_NAME: &str = "map";
-type BaseMapFn = TypedFunc<(i32, i32), i32>;
-type MapWithParamFn = TypedFunc<(i32, i32, u32), i32>;
 
-#[derive(Debug)]
-pub struct SmartModuleMap {
-    map_fn: MapFnKind,
-}
-enum MapFnKind {
-    Base(BaseMapFn),
-    Param(MapWithParamFn),
-}
+type WasmMapFn = TypedFunc<(i32, i32, u32), i32>;
 
-impl Debug for MapFnKind {
+pub struct SmartModuleMap(WasmMapFn);
+
+impl Debug for SmartModuleMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Base(..) => write!(f, "BaseMapFn"),
-            Self::Param(..) => write!(f, "MapFnWithParam"),
-        }
-    }
-}
-
-impl MapFnKind {
-    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
-        match self {
-            Self::Base(map_fn) => map_fn.call(store, (slice.0, slice.1)),
-            Self::Param(map_fn) => map_fn.call(store, slice),
-        }
+        write!(f, "MapFnWithParam")
     }
 }
 
@@ -55,9 +35,8 @@ impl SmartModuleMap {
             Some(func) => {
                 // check type signature
                 func.typed(&mut *store)
-                    .map(MapFnKind::Base)
-                    .or_else(|_| func.typed(&mut *store).map(MapFnKind::Param))
-                    .map(|map_fn| Some(Self { map_fn }))
+                    .or_else(|_| func.typed(&mut *store))
+                    .map(|map_fn| Some(Self(map_fn)))
                     .map_err(|wasm_err| EngineError::TypeConversion(MAP_FN_NAME, wasm_err))
             }
             None => Ok(None),
@@ -73,7 +52,7 @@ impl SmartModuleTransform for SmartModuleMap {
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, &mut *store)?;
-        let map_output = self.map_fn.call(&mut *store, slice)?;
+        let map_output = self.0.call(&mut *store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)

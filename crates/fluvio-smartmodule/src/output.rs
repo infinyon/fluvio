@@ -17,3 +17,10 @@ pub struct SmartModuleAggregateOutput {
     #[fluvio(min_version = 16)]
     pub accumulator: Vec<u8>,
 }
+
+/// A type used to return processed records and/or an error from a SmartModule
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct SmartModuleInitOutput {
+    /// Any runtime error if one was encountered
+    pub error: Option<SmartModuleRuntimeError>,
+}

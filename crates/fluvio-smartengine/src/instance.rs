@@ -15,11 +15,13 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 
 use crate::error::EngineError;
+use crate::init::SmartModuleInit;
 use crate::{WasmSlice, memory, SmartModuleChain, State, WasmState};
 use crate::file_batch::FileBatchIterator;
 
 pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,
+    init: Option<SmartModuleInit>,
     transform: Box<dyn SmartModuleTransform>,
 }
 
@@ -31,9 +33,14 @@ impl SmartModuleInstance {
 
     pub(crate) fn new(
         ctx: SmartModuleInstanceContext,
+        init: Option<SmartModuleInit>,
         transform: Box<dyn SmartModuleTransform>,
     ) -> Self {
-        Self { ctx, transform }
+        Self {
+            ctx,
+            init,
+            transform,
+        }
     }
 
     pub(crate) fn process(
@@ -42,14 +49,6 @@ impl SmartModuleInstance {
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
         self.transform.process(input, &mut self.ctx, store)
-    }
-
-    /// initialize smartmodule instance using parameters
-    /// it must be have fn called init with parameters
-    /// this is experimental feature and may be removed in future
-    #[instrument(skip(self, store))]
-    pub fn invoke_constructor(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
-        self.ctx.invoke_constructor(store)
     }
 
     #[instrument(skip(self, store, iter, max_bytes, join_last_record))]
@@ -242,36 +241,6 @@ impl SmartModuleInstanceContext {
         let mut output = D::default();
         output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
         Ok(output)
-    }
-
-    /// initialize smartmodule instance using parameters
-    /// it must be have fn called init with parameters
-    /// this is experimental feature and may be removed in future
-    #[instrument(skip(store))]
-    pub(crate) fn invoke_constructor(
-        &mut self,
-        store: &mut impl AsContextMut,
-    ) -> Result<(), Error> {
-        use wasmtime::TypedFunc;
-        use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInternalError;
-
-        const INIT_FN_NAME: &str = "init";
-
-        let params = self.params.clone();
-        let slice = self.write_input(&params, store)?;
-        if let Some(func) = self.get_wasm_func(store, INIT_FN_NAME) {
-            let init_fn: TypedFunc<(i32, i32, u32), i32> = func.typed(store.as_context_mut())?;
-            let filter_output = init_fn.call(store, slice)?;
-            if filter_output < 0 {
-                let internal_error = SmartModuleInternalError::try_from(filter_output)
-                    .unwrap_or(SmartModuleInternalError::UnknownError);
-                return Err(internal_error.into());
-            }
-        } else {
-            debug!("smartmodule does not have init function");
-        }
-
-        Ok(())
     }
 }
 

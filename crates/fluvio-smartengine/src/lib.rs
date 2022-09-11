@@ -3,6 +3,7 @@ pub(crate) mod memory;
 pub mod file_batch;
 
 pub(crate) mod transforms;
+pub(crate) mod init;
 mod engine;
 pub use engine::*;
 pub mod instance;

@@ -21,7 +21,7 @@ impl SmartModuleExtraParams {
     }
 }
 
-/// Common data that gets passed as input to every SmartModule WASM module
+/// Old Common data that gets passed as input to every SmartModule WASM module
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleInput {
     /// The base offset of this batch of records
@@ -63,4 +63,10 @@ pub struct SmartModuleAggregateInput {
     pub base: SmartModuleInput,
     /// The current value of the Aggregate's accumulator
     pub accumulator: Vec<u8>,
+}
+
+/// Input to SmartModule Init
+#[derive(Debug, Default, Clone, Encoder, Decoder)]
+pub struct SmartModuleInitInput {
+    pub params: SmartModuleExtraParams,
 }

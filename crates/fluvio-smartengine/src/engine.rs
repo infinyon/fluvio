@@ -14,6 +14,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 
 use crate::file_batch::FileBatchIterator;
+use crate::init::SmartModuleInit;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
 use crate::transforms::create_transform;
 
@@ -135,7 +136,7 @@ impl SmartModuleChain {
         self.instances
     }
 
-    /// add new smart module to chain
+    /// Add Smart Module with a single transform and init
     pub fn add_smart_module(
         &mut self,
         config: SmartModuleConfig,
@@ -147,9 +148,10 @@ impl SmartModuleChain {
         let params = config.params;
         let initial_data = config.initial_data;
         let ctx = SmartModuleInstanceContext::instantiate(module, self, params, version)?;
+        let init = SmartModuleInit::try_instantiate(&ctx, &mut self.as_context_mut())?;
         let transform = create_transform(&ctx, initial_data, &mut self.as_context_mut())?;
         self.instances
-            .push(SmartModuleInstance::new(ctx, transform));
+            .push(SmartModuleInstance::new(ctx, init, transform));
         Ok(())
     }
 
@@ -159,17 +161,6 @@ impl SmartModuleChain {
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
             instance.process(input, &mut self.store)
-        } else {
-            Err(Error::msg("No transform found"))
-        }
-    }
-
-    #[instrument(skip(self))]
-    pub fn invoke_constructor(&mut self) -> Result<(), Error> {
-        // only perform a single transform now
-        let first_instance = self.instances.first_mut();
-        if let Some(instance) = first_instance {
-            instance.invoke_constructor(&mut self.store)
         } else {
             Err(Error::msg("No transform found"))
         }

@@ -5,44 +5,22 @@ use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
 };
-use wasmtime::{AsContextMut, Trap, TypedFunc};
+use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
-    WasmSlice,
     error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState,
 };
 
 pub(crate) const ARRAY_MAP_FN_NAME: &str = "array_map";
-type BaseArrayMapFn = TypedFunc<(i32, i32), i32>;
-type ArrayMapFnWithParam = TypedFunc<(i32, i32, u32), i32>;
+type WasmArrayMapFn = TypedFunc<(i32, i32, u32), i32>;
 
-#[derive(Debug)]
-pub(crate) struct SmartModuleArrayMap {
-    array_map_fn: ArrayMapFnKind,
-}
+pub(crate) struct SmartModuleArrayMap(WasmArrayMapFn);
 
-enum ArrayMapFnKind {
-    Base(BaseArrayMapFn),
-    Param(ArrayMapFnWithParam),
-}
-
-impl Debug for ArrayMapFnKind {
+impl Debug for SmartModuleArrayMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Base(..) => write!(f, "BaseArrayMapFn"),
-            Self::Param(..) => write!(f, "ArrayMapFnWithParam"),
-        }
-    }
-}
-
-impl ArrayMapFnKind {
-    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
-        match self {
-            Self::Base(array_map_fn) => array_map_fn.call(store, (slice.0, slice.1)),
-            Self::Param(array_map_fn) => array_map_fn.call(store, slice),
-        }
+        write!(f, "ArrayMapFnWithParam")
     }
 }
 
@@ -56,9 +34,8 @@ impl SmartModuleArrayMap {
                 // check type signature
 
                 func.typed(&mut *store)
-                    .map(ArrayMapFnKind::Base)
-                    .or_else(|_| func.typed(store).map(ArrayMapFnKind::Param))
-                    .map(|array_map_fn| Some(Self { array_map_fn }))
+                    .or_else(|_| func.typed(store))
+                    .map(|array_map_fn| Some(Self(array_map_fn)))
                     .map_err(|wasm_err| EngineError::TypeConversion(ARRAY_MAP_FN_NAME, wasm_err))
             }
             None => Ok(None),
@@ -74,7 +51,7 @@ impl SmartModuleTransform for SmartModuleArrayMap {
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, &mut *store)?;
-        let map_output = self.array_map_fn.call(&mut *store, slice)?;
+        let map_output = self.0.call(&mut *store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartModuleInternalError::try_from(map_output)
