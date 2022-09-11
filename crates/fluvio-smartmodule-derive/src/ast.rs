@@ -8,35 +8,13 @@ use proc_macro2::Ident;
 #[derive(Debug)]
 pub struct SmartModuleConfig {
     pub kind: SmartModuleKind,
-    pub has_params: bool,
-}
-
-#[allow(clippy::ptr_arg)]
-fn has_params(args: &AttributeArgs) -> bool {
-    args.iter()
-        .filter_map(|it| match it {
-            NestedMeta::Meta(Meta::Path(it)) => {
-                it.segments
-                    .iter()
-                    .rev()
-                    .next()
-                    .and_then(|it| match &*it.ident.to_string() {
-                        "params" => Some(true),
-                        _ => None,
-                    })
-            }
-            _ => None,
-        })
-        .next()
-        .is_some()
 }
 
 impl SmartModuleConfig {
     #[allow(clippy::ptr_arg)]
     pub fn from_ast(args: &AttributeArgs) -> SynResult<Self> {
         let kind = SmartModuleKind::from_ast(args)?;
-        let has_params = has_params(args);
-        Ok(Self { kind, has_params })
+        Ok(Self { kind })
     }
 }
 

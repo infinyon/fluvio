@@ -8,7 +8,7 @@ members = [
     "filter_odd",
     "filter_json",
     "filter_regex",
-    "filter_with_parameters",
+    "filter_with_param_v1",
     "join",
     "map",
     "map_double",

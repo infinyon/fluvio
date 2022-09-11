@@ -2,33 +2,13 @@ use quote::quote;
 use proc_macro2::TokenStream;
 use crate::SmartModuleFn;
 
-pub fn generate_filter_map_smartmodule(func: &SmartModuleFn, has_params: bool) -> TokenStream {
+pub fn generate_filter_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
 
-    let params_parsing = if has_params {
-        quote!(
-            use std::convert::TryInto;
-
-            let params = match smartmodule_input.params.try_into(){
-                Ok(params) => params,
-                Err(err) => return SmartModuleInternalError::ParsingExtraParams as i32,
-            };
-
-        )
-    } else {
-        quote!()
-    };
-
-    let function_call = if has_params {
-        quote!(
-            super:: #user_fn(&record, &params)
-        )
-    } else {
-        quote!(
-            super:: #user_fn(&record)
-        )
-    };
+    let function_call = quote!(
+        super:: #user_fn(&record)
+    );
 
     quote! {
 
@@ -64,7 +44,6 @@ pub fn generate_filter_map_smartmodule(func: &SmartModuleFn, has_params: bool) -
                     return SmartModuleInternalError::DecodingRecords as i32;
                 };
 
-                #params_parsing
 
                 // PROCESSING
                 let mut output = SmartModuleOutput {

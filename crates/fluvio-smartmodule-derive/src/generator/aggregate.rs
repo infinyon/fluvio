@@ -2,33 +2,13 @@ use quote::quote;
 use proc_macro2::TokenStream;
 use crate::SmartModuleFn;
 
-pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) -> TokenStream {
+pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
 
-    let params_parsing = if has_params {
-        quote!(
-            use std::convert::TryInto;
-
-            let params = match smartmodule_input.base.params.try_into(){
-                Ok(params) => params,
-                Err(err) => return SmartModuleInternalError::ParsingExtraParams as i32,
-            };
-
-        )
-    } else {
-        quote!()
-    };
-
-    let function_call = if has_params {
-        quote!(
-            super:: #user_fn(acc_data, &record, &params)
-        )
-    } else {
-        quote!(
-            super:: #user_fn(acc_data, &record)
-        )
-    };
+    let function_call = quote!(
+        super:: #user_fn(acc_data, &record)
+    );
 
     quote! {
 
@@ -60,7 +40,6 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
 
                 let mut accumulator = smartmodule_input.accumulator;
 
-                #params_parsing
 
                 let records_input = smartmodule_input.base.record_data;
                 let mut records: Vec<Record> = vec![];
