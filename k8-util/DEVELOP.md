@@ -32,5 +32,5 @@ Starting to serve on 127.0.0.1:8001
 Use `tcpdump` to inspect:
 
 ```bash
- sudo tcpdump -i any  port 8001 -A
+sudo tcpdump -i any  port 8001 -A
 ```
