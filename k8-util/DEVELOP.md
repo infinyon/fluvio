@@ -8,9 +8,12 @@ Starting to serve on 127.0.0.1:8001
 ```
 Add proxy cluster configuration to ~/.kube/config
 ```
+clusters:
 - cluster:
     server: http://localhost:8001
   name: proxy
+
+contexts:
 - context:
     cluster: proxy
     user: minikube
