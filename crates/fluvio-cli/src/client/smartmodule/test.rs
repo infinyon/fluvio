@@ -90,9 +90,11 @@ impl ClientCmd for TestSmartModuleOpt {
 
         debug!("SmartModule created");
 
+        /*
         chain
             .invoke_constructor()
             .map_err(|e| FluvioError::Other(format!("SmartEngine constructor - {:?}", e)))?;
+            */
 
         // get raw json in one of other ways
         let raw_input = if let Some(input) = self.input {

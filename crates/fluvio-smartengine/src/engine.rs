@@ -156,11 +156,21 @@ impl SmartModuleChain {
     }
 
     /// process a record
-    pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
+    pub(crate) fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         // only perform a single transform now
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
             instance.process(input, &mut self.store)
+        } else {
+            Err(Error::msg("No transform found"))
+        }
+    }
+
+    pub fn init(&mut self) -> Result<SmartModuleOutput> {
+        // only perform a single transform now
+        let first_instance = self.instances.first_mut();
+        if let Some(instance) = first_instance {
+            instance.init(&mut self.store)
         } else {
             Err(Error::msg("No transform found"))
         }
@@ -175,7 +185,7 @@ impl SmartModuleChain {
     ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
-            instance.process_batch(&mut self.store, iter, max_bytes, join_last_record)
+            instance.(&mut self.store, iter, max_bytes, join_last_record)
         } else {
             Err(Error::msg("No transform found"))
         }

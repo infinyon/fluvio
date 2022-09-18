@@ -10,7 +10,7 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::Record;
 use fluvio_protocol::record::{Batch, MemoryRecords};
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
 };
 use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 
@@ -51,6 +51,7 @@ impl SmartModuleInstance {
         self.transform.process(input, &mut self.ctx, store)
     }
 
+    // TODO: Move this to SPU
     #[instrument(skip(self, store, iter, max_bytes, join_last_record))]
     pub(crate) fn process_batch(
         &mut self,
@@ -158,6 +159,10 @@ impl SmartModuleInstance {
                 return Ok((smartmodule_batch, maybe_error));
             }
         }
+    }
+
+    pub fn init(&self, _store: &mut WasmState) -> Result<SmartModuleOutput, Error> {
+        todo!()
     }
 }
 
