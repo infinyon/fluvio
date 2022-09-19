@@ -43,7 +43,8 @@ impl SmartModuleInit {
 }
 
 impl SmartModuleInit {
-    pub(crate) fn process(
+    /// initialize SmartModule
+    pub(crate) fn initialize(
         &mut self,
         input: SmartModuleInitInput,
         ctx: &mut SmartModuleInstanceContext,
