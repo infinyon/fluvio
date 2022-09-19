@@ -10,13 +10,13 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::Record;
 use fluvio_protocol::record::{Batch, MemoryRecords};
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
+    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
 };
 use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 
 use crate::error::EngineError;
 use crate::init::SmartModuleInit;
-use crate::{WasmSlice, memory, SmartModuleChain, State, WasmState};
+use crate::{WasmSlice, memory, SmartModuleChainBuilder, State, WasmState};
 use crate::file_batch::FileBatchIterator;
 
 pub(crate) struct SmartModuleInstance {
@@ -184,7 +184,7 @@ impl SmartModuleInstanceContext {
     #[tracing::instrument(skip(module, params, chain))]
     pub(crate) fn instantiate(
         module: Module,
-        chain: &mut SmartModuleChain,
+        chain: &mut SmartModuleChainBuilder,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self, EngineError> {

@@ -31,7 +31,7 @@ fn read_module_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
 #[test]
 fn create_filter() {
     let engine = SmartEngine::new();
-    let mut chain = engine.new_chain();
+    let mut chain = engine.builder();
 
     chain
         .add_smart_module(
@@ -50,7 +50,7 @@ fn create_filter() {
 #[test]
 fn create_filter_map() {
     let engine = SmartEngine::new();
-    let mut chain = engine.new_chain();
+    let mut chain = engine.builder();
 
     chain
         .add_smart_module(
@@ -70,7 +70,7 @@ fn create_filter_map() {
 #[test]
 fn create_array_map() {
     let engine = SmartEngine::new();
-    let mut chain = engine.new_chain();
+    let mut chain = engine.builder();
 
     chain
         .add_smart_module(
@@ -89,7 +89,7 @@ fn create_array_map() {
 #[test]
 fn create_aggregate() {
     let engine = SmartEngine::new();
-    let mut chain = engine.new_chain();
+    let mut chain = engine.builder();
 
     chain
         .add_smart_module(
@@ -112,7 +112,7 @@ fn create_aggregate() {
 fn create_aggregate_no_initial_data() {
     // should work with no initial data
     let engine = SmartEngine::new();
-    let mut chain = engine.new_chain();
+    let mut chain = engine.builder();
 
     chain
         .add_smart_module(
@@ -131,7 +131,7 @@ fn create_aggregate_no_initial_data() {
 #[test]
 fn create_join() {
     let engine = SmartEngine::new();
-    let mut chain = engine.new_chain();
+    let mut chain = engine.builder();
 
     chain
         .add_smart_module(

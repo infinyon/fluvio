@@ -142,6 +142,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 6004)]
     #[error("SmartModule runtime error {0}")]
     SmartModuleRuntimeError(super::smartmodule::SmartModuleRuntimeError),
+    #[fluvio(tag = 6005)]
+    #[error("Error initializing {0} SmartModule Chain")]
+    SmartModuleChainInitError(String),
 
     // TableFormat Errors
     #[fluvio(tag = 7000)]

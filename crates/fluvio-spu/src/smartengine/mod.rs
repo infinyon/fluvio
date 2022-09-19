@@ -1,4 +1,4 @@
-use fluvio_smartengine::{SmartModuleChain, SmartModuleConfig, SmartModuleInitialData};
+use fluvio_smartengine::{SmartModuleConfig, SmartModuleInitialData, SmartModuleChainInstance};
 use tracing::{debug, error};
 
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
@@ -16,7 +16,7 @@ use futures_util::{StreamExt, stream::BoxStream};
 use crate::core::DefaultSharedGlobalContext;
 
 pub struct SmartModuleContext {
-    pub sm_chain: SmartModuleChain,
+    pub chain: SmartModuleChainInstance,
     pub right_consumer_stream:
         Option<BoxStream<'static, Result<fluvio::consumer::Record, ErrorCode>>>,
 }
@@ -51,7 +51,7 @@ impl SmartModuleContext {
             None => {
                 if let Some(payload) = wasm_payload {
                     Ok(Some(Self {
-                        sm_chain: Self::payload_to_smartmodule(payload, version, ctx)?,
+                        chain: Self::payload_to_smartmodule(payload, version, ctx)?,
                         right_consumer_stream: None,
                     }))
                 } else {
@@ -166,7 +166,7 @@ impl SmartModuleContext {
         };
 
         Ok(Self {
-            sm_chain: Self::payload_to_smartmodule(payload, version, ctx)?,
+            chain: Self::payload_to_smartmodule(payload, version, ctx)?,
             right_consumer_stream,
         })
     }
@@ -175,7 +175,7 @@ impl SmartModuleContext {
         payload: LegacySmartModulePayload,
         version: i16,
         ctx: &DefaultSharedGlobalContext,
-    ) -> Result<SmartModuleChain, ErrorCode> {
+    ) -> Result<SmartModuleChainInstance, ErrorCode> {
         let raw = payload
             .wasm
             .get_raw()
@@ -187,7 +187,7 @@ impl SmartModuleContext {
         debug!(len = raw.len(), "SmartModule with bytes");
 
         let sm_engine = ctx.smartengine_owned();
-        let mut chain = sm_engine.new_chain();
+        let mut chain_builder = sm_engine.builder();
 
         let kind = payload.kind.clone();
 
@@ -201,7 +201,7 @@ impl SmartModuleContext {
             _ => SmartModuleInitialData::default(),
         };
 
-        chain
+        chain_builder
             .add_smart_module(
                 SmartModuleConfig::builder()
                     .params(payload.params)
@@ -231,6 +231,13 @@ impl SmartModuleContext {
                     }
                 }
             })?;
+        let chain = chain_builder.init().map_err(|err| {
+            error!(
+                error = err.to_string().as_str(),
+                "Error Initializing SmartModule"
+            );
+            ErrorCode::SmartModuleChainInitError(err.to_string())
+        })?;
         Ok(chain)
     }
 }

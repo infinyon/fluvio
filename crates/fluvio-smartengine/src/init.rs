@@ -3,14 +3,13 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleInitInput,
-    SmartModuleInitOutput,
+    SmartModuleInternalError, SmartModuleInitInput, SmartModuleInitOutput,
 };
-use wasmtime::{AsContextMut, Trap, TypedFunc};
+use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
     error::EngineError,
-    instance::{SmartModuleInstanceContext, SmartModuleTransform},
+    instance::{SmartModuleInstanceContext},
     WasmState,
 };
 
