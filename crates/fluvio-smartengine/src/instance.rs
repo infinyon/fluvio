@@ -236,7 +236,11 @@ impl SmartModuleInstanceContext {
         self.records_cb.clear();
         let mut input_data = Vec::new();
         input.encode(&mut input_data, self.version)?;
-        debug!(len = input_data.len(), "input data");
+        debug!(
+            len = input_data.len(),
+            version = self.version,
+            "input encoded"
+        );
         let array_ptr = memory::copy_memory_to_instance(store, &self.instance, &input_data)?;
         let length = input_data.len();
         Ok((array_ptr as i32, length as i32, self.version as u32))

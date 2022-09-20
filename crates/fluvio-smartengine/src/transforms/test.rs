@@ -1,6 +1,9 @@
 use std::{
     path::{PathBuf, Path},
+    convert::TryFrom,
 };
+
+use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
 use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
 
@@ -50,7 +53,19 @@ fn test_filter() {
         crate::transforms::filter::FILTER_FN_NAME
     );
 
-    let mut _chain = chain_builder.initialize().expect("failed to build chain");
+    let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+    let input = vec![Record::new("hello world")];
+    let output = chain
+        .process(SmartModuleInput::try_from(input).expect("input"))
+        .expect("process");
+    assert_eq!(output.successes.len(), 0);
+
+    let input = vec![Record::new("apple")];
+    let output = chain
+        .process(SmartModuleInput::try_from(input).expect("input"))
+        .expect("process");
+    assert_eq!(output.successes.len(), 1);
 }
 
 #[ignore]
