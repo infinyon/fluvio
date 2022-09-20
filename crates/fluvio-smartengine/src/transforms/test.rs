@@ -3,11 +3,15 @@ use std::{
     convert::TryFrom,
 };
 
-use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
+use fluvio_smartmodule::{
+    dataplane::smartmodule::{SmartModuleInput, SmartModuleInternalError},
+    Record,
+};
 
 use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
 
 const SM_FILTER: &str = "fluvio_smartmodule_filter";
+const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
 const SM_ARRAY_MAP: &str = "fluvio_wasm_array_map_array";
 const SM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
 const SM_AGGEGRATE: &str = "fluvio_wasm_aggregate";
@@ -40,6 +44,79 @@ fn test_filter() {
         .add_smart_module(
             SmartModuleConfig::builder().build().unwrap(),
             read_wasm_module(SM_FILTER),
+        )
+        .expect("failed to create filter");
+
+    assert_eq!(
+        chain_builder
+            .instances()
+            .first()
+            .expect("first")
+            .transform()
+            .name(),
+        crate::transforms::filter::FILTER_FN_NAME
+    );
+
+    let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+    let input = vec![Record::new("hello world")];
+    let output = chain
+        .process(SmartModuleInput::try_from(input).expect("input"))
+        .expect("process");
+    assert_eq!(output.successes.len(), 0); // no records passed
+
+    let input = vec![Record::new("apple"), Record::new("fruit")];
+    let output = chain
+        .process(SmartModuleInput::try_from(input).expect("input"))
+        .expect("process");
+    assert_eq!(output.successes.len(), 1); // one record passed
+    assert_eq!(output.successes[0].value.as_ref(), b"apple");
+}
+
+#[ignore]
+#[test]
+fn test_filter_with_init_invalid_param() {
+    let engine = SmartEngine::new();
+    let mut chain_builder = engine.builder();
+
+    chain_builder
+        .add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_FILTER_INIT),
+        )
+        .expect("failed to create filter");
+
+    assert_eq!(
+        chain_builder
+            .instances()
+            .first()
+            .expect("first")
+            .transform()
+            .name(),
+        crate::transforms::filter::FILTER_FN_NAME
+    );
+
+    let param_error: SmartModuleInternalError = chain_builder
+        .initialize()
+        .expect_err("should return param error")
+        .downcast()
+        .expect("downcast");
+    assert_eq!(param_error, SmartModuleInternalError::InitParamsNotFound);
+}
+
+#[ignore]
+#[test]
+fn test_filter_with_init_ok() {
+    let engine = SmartEngine::new();
+    let mut chain_builder = engine.builder();
+
+    chain_builder
+        .add_smart_module(
+            SmartModuleConfig::builder()
+                .param("key", "apple")
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_INIT),
         )
         .expect("failed to create filter");
 

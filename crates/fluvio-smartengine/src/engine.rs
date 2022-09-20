@@ -180,6 +180,12 @@ pub struct SmartModuleChainInstance {
     instances: Vec<SmartModuleInstance>,
 }
 
+impl Debug for SmartModuleChainInstance {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SmartModuleChainInstance")
+    }
+}
+
 impl Deref for SmartModuleChainInstance {
     type Target = Store<State>;
 
@@ -255,6 +261,17 @@ pub struct SmartModuleConfig {
     version: Option<i16>,
 }
 
+impl SmartModuleConfigBuilder {
+    /// add initial parameters
+    pub fn param(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
+        let mut new = self;
+        let mut params = new.params.take().unwrap_or_default();
+        params.insert(key.into(), value.into());
+        new.params = Some(params);
+        new
+    }
+}
+
 impl SmartModuleConfig {}
 
 impl SmartModuleConfig {
@@ -264,5 +281,21 @@ impl SmartModuleConfig {
 
     pub(crate) fn version(&self) -> i16 {
         self.version.unwrap_or(DEFAULT_SMARTENGINE_VERSION)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::SmartModuleConfig;
+
+    #[test]
+    fn test_param() {
+        let config = SmartModuleConfig::builder()
+            .param("key", "apple")
+            .build()
+            .unwrap();
+
+        assert_eq!(config.params.get("key"), Some(&"apple".to_string()));
     }
 }

@@ -19,6 +19,10 @@ impl SmartModuleExtraParams {
     pub fn get(&self, key: &str) -> Option<&String> {
         self.inner.get(key)
     }
+
+    pub fn insert(&mut self, key: String, value: String) {
+        self.inner.insert(key, value);
+    }
 }
 
 /// Old Common data that gets passed as input to every SmartModule WASM module
