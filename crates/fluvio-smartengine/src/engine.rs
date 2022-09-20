@@ -169,7 +169,7 @@ impl SmartModuleChainBuilder {
                 instances: self.instances,
             })
         } else {
-            Err(Error::msg("No transform found"))
+            Err(Error::msg("No init found"))
         }
     }
 }

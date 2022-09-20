@@ -120,15 +120,20 @@ fn test_filter_with_init_ok() {
         )
         .expect("failed to create filter");
 
+
+    let instance =    chain_builder
+    .instances()
+    .first()
+    .expect("first");
+
     assert_eq!(
-        chain_builder
-            .instances()
-            .first()
-            .expect("first")
+       instance
             .transform()
             .name(),
         crate::transforms::filter::FILTER_FN_NAME
     );
+
+    assert!(instance.get_init().is_some());
 
     let mut chain = chain_builder.initialize().expect("failed to build chain");
 

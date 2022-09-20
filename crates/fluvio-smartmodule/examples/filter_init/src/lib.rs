@@ -6,7 +6,7 @@ use fluvio_smartmodule::{smartmodule, Record, Result, dataplane::smartmodule::{S
 static CRITERIA: OnceCell<String> = OnceCell::new();
 
 #[smartmodule(init)]
-fn init(params: SmartModuleExtraParams) -> i32 {
+fn init(params: SmartModuleExtraParams) -> Result<()> {
     if let Some(regex) = params.get("key") {
         CRITERIA.set(regex.clone()).unwrap();
         0

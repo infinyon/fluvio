@@ -1,6 +1,6 @@
 use fluvio_protocol::{Encoder, Decoder};
 
-/// Indicates an internal error from within a SmartModule.
+/// Error during processing SmartModule Instance processing
 //
 // The presence of one of these errors most likely indicates a logic bug.
 // This error type is `#[repr(i32)]` because these errors are returned
@@ -11,11 +11,12 @@ use fluvio_protocol::{Encoder, Decoder};
 //
 // THEREFORE, THE DISCRIMINANTS FOR ALL VARIANTS ON THIS TYPE MUST BE NEGATIVE
 #[repr(i32)]
-#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
+#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Default, Decoder)]
 #[non_exhaustive]
 #[fluvio(encode_discriminant)]
-pub enum SmartModuleInternalError {
+pub enum SmartModuleInstanceProcessError {
     #[error("encountered unknown error during SmartModule processing")]
+    #[default]
     UnknownError = -1,
     #[error("failed to decode SmartModule base input")]
     DecodingBaseInput = -11,
@@ -33,8 +34,15 @@ pub enum SmartModuleInternalError {
     InitParamsParse = -61,
 }
 
-impl Default for SmartModuleInternalError {
-    fn default() -> Self {
-        Self::UnknownError
-    }
+#[repr(i32)]
+pub enum SmartModuleInstanceStatus {
+    Success(u32),
+    SmartModuleInstanceProcessError
+}
+
+
+pub enum SmartModuleInitError {
+
+
+
 }

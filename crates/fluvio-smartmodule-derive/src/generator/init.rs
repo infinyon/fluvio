@@ -18,19 +18,24 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn init(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
-                    SmartModuleInternalError, SmartModuleExtraParams,
+                    SmartModuleInternalError, SmartModuleInitInput,
                 };
                 use fluvio_smartmodule::dataplane::core::{Decoder};
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
-                let mut params = SmartModuleExtraParams::default();
+                let mut input = SmartModuleInitInput::default();
                 if let Err(_err) =
-                    Decoder::decode(&mut params, &mut std::io::Cursor::new(input_data), version)
+                    Decoder::decode(&mut input, &mut std::io::Cursor::new(input_data), version)
                 {
                     return SmartModuleInternalError::ParsingExtraParams as i32;
                 }
 
-                super::init(params)
+                let init_output = super::init(input.params);
+
+                let mut output = SmartModuleInitOutput {
+                    error: None,
+                };
+
             }
         }
     }

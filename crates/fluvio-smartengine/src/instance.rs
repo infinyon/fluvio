@@ -32,6 +32,12 @@ impl SmartModuleInstance {
         &self.transform
     }
 
+    
+    #[cfg(test)]
+    pub(crate) fn get_init(&self) -> &Option<SmartModuleInit> {
+        &self.init
+    }
+
     pub(crate) fn new(
         ctx: SmartModuleInstanceContext,
         init: Option<SmartModuleInit>,
