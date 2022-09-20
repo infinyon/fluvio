@@ -237,7 +237,7 @@ cfg_if::cfg_if! {
                     smart_payload.wasm.get_raw()?,
                     ).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-                let chain_instance = chain.init().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                let chain_instance = chain.initialize().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                 self.sm_chain = Some(Arc::new(RwLock::new(chain_instance)));
                 Ok(())
             }

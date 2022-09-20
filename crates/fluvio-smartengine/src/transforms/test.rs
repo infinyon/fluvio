@@ -4,7 +4,7 @@ use std::{
 
 use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
 
-const SM_FILTER: &str = "fluvio_wasm_filter";
+const SM_FILTER: &str = "fluvio_smartmodule_filter";
 const SM_ARRAY_MAP: &str = "fluvio_wasm_array_map_array";
 const SM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
 const SM_AGGEGRATE: &str = "fluvio_wasm_aggregate";
@@ -41,9 +41,16 @@ fn test_filter() {
         .expect("failed to create filter");
 
     assert_eq!(
-        chain_builder.instances().remove(0).transform().name(),
+        chain_builder
+            .instances()
+            .first()
+            .expect("first")
+            .transform()
+            .name(),
         crate::transforms::filter::FILTER_FN_NAME
     );
+
+    let mut _chain = chain_builder.initialize().expect("failed to build chain");
 }
 
 #[ignore]
@@ -61,7 +68,7 @@ fn create_filter_map() {
 
     // generic
     assert_eq!(
-        chain.instances().remove(0).transform().name(),
+        chain.instances().first().expect("first").transform().name(),
         crate::transforms::filter_map::FILTER_MAP_FN_NAME
     );
 }
@@ -80,7 +87,7 @@ fn create_array_map() {
         .expect("failed to create smart module");
 
     assert_eq!(
-        chain.instances().remove(0).transform().name(),
+        chain.instances().first().expect("first").transform().name(),
         crate::transforms::array_map::ARRAY_MAP_FN_NAME
     );
 }
@@ -102,7 +109,7 @@ fn create_aggregate() {
         .expect("failed to create smartmodule");
 
     assert_eq!(
-        chain.instances().remove(0).transform().name(),
+        chain.instances().first().expect("first").transform().name(),
         crate::transforms::aggregate::AGGREGATE_FN_NAME
     );
 }
@@ -122,7 +129,7 @@ fn create_aggregate_no_initial_data() {
         .expect("failed to create smartmodule");
 
     assert_eq!(
-        chain.instances().remove(0).transform().name(),
+        chain.instances().first().expect("first").transform().name(),
         crate::transforms::aggregate::AGGREGATE_FN_NAME
     );
 }
@@ -141,7 +148,7 @@ fn create_join() {
         .expect("failed to create filter");
 
     assert_eq!(
-        chain.instances().remove(0).transform().name(),
+        chain.instances().first().expect("first").transform().name(),
         crate::transforms::join::JOIN_FN_NAME
     );
 }

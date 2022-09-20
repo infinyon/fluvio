@@ -28,8 +28,8 @@ pub(crate) struct SmartModuleInstance {
 
 impl SmartModuleInstance {
     #[cfg(test)]
-    pub(crate) fn transform(self) -> Box<dyn SmartModuleTransform> {
-        self.transform
+    pub(crate) fn transform(&self) -> &Box<dyn SmartModuleTransform> {
+        &self.transform
     }
 
     pub(crate) fn new(

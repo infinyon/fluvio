@@ -91,7 +91,7 @@ impl ClientCmd for TestSmartModuleOpt {
         debug!("SmartModule created");
 
         let mut chain = chain_builder
-            .init()
+            .initialize()
             .map_err(|e| FluvioError::Other(format!("SmartEngine init - {:?}", e)))?;
 
         // get raw json in one of other ways

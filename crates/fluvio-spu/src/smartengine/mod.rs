@@ -231,7 +231,7 @@ impl SmartModuleContext {
                     }
                 }
             })?;
-        let chain = chain_builder.init().map_err(|err| {
+        let chain = chain_builder.initialize().map_err(|err| {
             error!(
                 error = err.to_string().as_str(),
                 "Error Initializing SmartModule"

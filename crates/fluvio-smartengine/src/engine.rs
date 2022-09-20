@@ -134,8 +134,8 @@ cfg_if::cfg_if! {
 
 impl SmartModuleChainBuilder {
     #[cfg(test)]
-    pub(crate) fn instances(self) -> Vec<SmartModuleInstance> {
-        self.instances
+    pub(crate) fn instances(&self) -> &Vec<SmartModuleInstance> {
+        &self.instances
     }
 
     /// Add Smart Module with a single transform and init
@@ -158,7 +158,7 @@ impl SmartModuleChainBuilder {
     }
 
     /// stop adding smart module and return SmartModuleChain that can be executed
-    pub fn init(mut self) -> Result<SmartModuleChainInstance> {
+    pub fn initialize(mut self) -> Result<SmartModuleChainInstance> {
         // only perform a single transform now
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
