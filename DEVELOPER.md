@@ -141,7 +141,7 @@ Kubernetes is currently a requirement for running Fluvio because metadata is sto
 
 
 * Default mode: [Kubernetes-based Fluvio cluster](#kubernetes-based-fluvio-cluster)
-* "local" mode: [OS-process based Fluvio cluster](#os-process-based-fluvio-cluster)
+* `local` mode: [Running Fluvio cluster using native binaries](#running-fluvio-cluster-using-native-binaries)
 
 ### Kubernetes-based Fluvio cluster
 
