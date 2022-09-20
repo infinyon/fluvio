@@ -59,13 +59,13 @@ fn test_filter() {
     let output = chain
         .process(SmartModuleInput::try_from(input).expect("input"))
         .expect("process");
-    assert_eq!(output.successes.len(), 0);
+    assert_eq!(output.successes.len(), 0); // no records passed
 
-    let input = vec![Record::new("apple")];
+    let input = vec![Record::new("apple"), Record::new("fruit")];
     let output = chain
         .process(SmartModuleInput::try_from(input).expect("input"))
         .expect("process");
-    assert_eq!(output.successes.len(), 1);
+    assert_eq!(output.successes.len(), 1); // one record passed
 }
 
 #[ignore]
