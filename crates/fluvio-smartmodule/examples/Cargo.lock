@@ -263,6 +263,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-filter"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.4.0",
+]
+
+[[package]]
+name = "fluvio-smartmodule-filter-init"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.4.0",
+ "once_cell",
+]
+
+[[package]]
 name = "fluvio-types"
 version = "0.3.8"
 dependencies = [
@@ -335,14 +350,6 @@ dependencies = [
  "fluvio-smartmodule 0.4.0",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "fluvio-wasm-filter"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule 0.4.0",
- "once_cell",
 ]
 
 [[package]]

@@ -4,11 +4,11 @@ use std::{
 
 use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
 
-const FLUVIO_WASM_FILTER: &str = "fluvio_wasm_filter";
-const FLUVIO_WASM_ARRAY_MAP: &str = "fluvio_wasm_array_map_array";
-const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
-const FLUVIO_WASM_AGGREGATE: &str = "fluvio_wasm_aggregate";
-const FLUVIO_WASM_JOIN: &str = "fluvio_wasm_join";
+const SM_FILTER: &str = "fluvio_wasm_filter";
+const SM_ARRAY_MAP: &str = "fluvio_wasm_array_map_array";
+const SM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
+const SM_AGGEGRATE: &str = "fluvio_wasm_aggregate";
+const SM_JOIN: &str = "fluvio_wasm_join";
 
 fn read_wasm_module(module_name: &str) -> Vec<u8> {
     let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
@@ -29,19 +29,19 @@ fn read_module_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
 
 #[ignore]
 #[test]
-fn create_filter() {
+fn test_filter() {
     let engine = SmartEngine::new();
-    let mut chain = engine.builder();
+    let mut chain_builder = engine.builder();
 
-    chain
+    chain_builder
         .add_smart_module(
             SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(FLUVIO_WASM_FILTER),
+            read_wasm_module(SM_FILTER),
         )
         .expect("failed to create filter");
 
     assert_eq!(
-        chain.instances().remove(0).transform().name(),
+        chain_builder.instances().remove(0).transform().name(),
         crate::transforms::filter::FILTER_FN_NAME
     );
 }
@@ -55,7 +55,7 @@ fn create_filter_map() {
     chain
         .add_smart_module(
             SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(FLUVIO_WASM_FILTER_MAP),
+            read_wasm_module(SM_FILTER_MAP),
         )
         .expect("failed to create filter");
 
@@ -75,7 +75,7 @@ fn create_array_map() {
     chain
         .add_smart_module(
             SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(FLUVIO_WASM_ARRAY_MAP),
+            read_wasm_module(SM_ARRAY_MAP),
         )
         .expect("failed to create smart module");
 
@@ -97,7 +97,7 @@ fn create_aggregate() {
                 .initial_data(SmartModuleInitialData::with_aggregate(vec![]))
                 .build()
                 .unwrap(),
-            read_wasm_module(FLUVIO_WASM_AGGREGATE),
+            read_wasm_module(SM_AGGEGRATE),
         )
         .expect("failed to create smartmodule");
 
@@ -117,7 +117,7 @@ fn create_aggregate_no_initial_data() {
     chain
         .add_smart_module(
             SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(FLUVIO_WASM_AGGREGATE),
+            read_wasm_module(SM_AGGEGRATE),
         )
         .expect("failed to create smartmodule");
 
@@ -136,7 +136,7 @@ fn create_join() {
     chain
         .add_smart_module(
             SmartModuleConfig::builder().build().unwrap(),
-            read_wasm_module(FLUVIO_WASM_JOIN),
+            read_wasm_module(SM_JOIN),
         )
         .expect("failed to create filter");
 
