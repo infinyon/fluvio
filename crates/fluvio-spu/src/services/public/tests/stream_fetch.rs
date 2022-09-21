@@ -376,7 +376,7 @@ async fn predefined_test<Fut, TestFn>(
     test_fn(ctx, test_path, None, Some(smartmodule)).await
 }
 
-const FLUVIO_WASM_FILTER: &str = "fluvio_wasm_filter";
+const FLUVIO_WASM_FILTER: &str = "fluvio_smartmodule_filter";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_filter_legacy() {
