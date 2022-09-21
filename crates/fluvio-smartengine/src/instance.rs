@@ -12,7 +12,6 @@ use fluvio_protocol::record::Record;
 use fluvio_protocol::record::{Batch, MemoryRecords};
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
-    SmartModuleInitOutput,
 };
 
 use crate::error::EngineError;
@@ -167,14 +166,14 @@ impl SmartModuleInstance {
         }
     }
 
-    pub fn init(&mut self, store: &mut WasmState) -> Result<SmartModuleInitOutput, Error> {
+    pub fn init(&mut self, store: &mut WasmState) -> Result<(), Error> {
         if let Some(init) = &mut self.init {
             let input = SmartModuleInitInput {
                 params: self.ctx.params.clone(),
             };
             init.initialize(input, &mut self.ctx, store)
         } else {
-            Ok(SmartModuleInitOutput::default())
+            Ok(())
         }
     }
 }

@@ -1,12 +1,13 @@
 use std::convert::TryFrom;
 use std::fmt::Debug;
 
-use anyhow::Result;
-use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInitInput, SmartModuleInitOutput};
+use anyhow::{Result, Ok};
+use fluvio_smartmodule::dataplane::smartmodule::{
+    SmartModuleInitInput, SmartModuleInitOutput, SmartModuleInitErrorStatus,
+};
 use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
-    error::EngineError,
     instance::{SmartModuleInstanceContext},
     WasmState,
 };
@@ -27,14 +28,13 @@ impl SmartModuleInit {
     pub fn try_instantiate(
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>, EngineError> {
+    ) -> Result<Option<Self>> {
         match ctx.get_wasm_func(store, INIT_FN_NAME) {
             // check type signature
             Some(func) => func
                 .typed(&mut *store)
                 .or_else(|_| func.typed(store))
-                .map(|init_fn| Some(Self(init_fn)))
-                .map_err(|wasm_err| EngineError::TypeConversion(INIT_FN_NAME, wasm_err)),
+                .map(|init_fn| Some(Self(init_fn))),
             None => Ok(None),
         }
     }
@@ -47,19 +47,23 @@ impl SmartModuleInit {
         input: SmartModuleInitInput,
         ctx: &mut SmartModuleInstanceContext,
         store: &mut WasmState,
-    ) -> Result<SmartModuleInitOutput> {
+    ) -> Result<()> {
         let slice = ctx.write_input(&input, &mut *store)?;
         let init_output = self.0.call(&mut *store, slice)?;
 
-        /*
         if init_output < 0 {
             let internal_error = SmartModuleInitErrorStatus::try_from(init_output)
                 .unwrap_or(SmartModuleInitErrorStatus::UnknownError);
-            return Err(internal_error.into());
-        }
-        */
 
-        let output: SmartModuleInitOutput = ctx.read_output(store)?;
-        Ok(output)
+            match internal_error {
+                SmartModuleInitErrorStatus::InitError => {
+                    let output: SmartModuleInitOutput = ctx.read_output(store)?;
+                    Err(output.error.into())
+                }
+                _ => Err(internal_error.into()),
+            }
+        } else {
+            Ok(())
+        }
     }
 }

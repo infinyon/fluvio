@@ -26,5 +26,5 @@ pub struct SmartModuleAggregateOutput {
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct SmartModuleInitOutput {
     /// Any runtime error if one was encountered
-    pub error: Option<SmartModuleInitRuntimeError>,
+    pub error: SmartModuleInitRuntimeError,
 }

@@ -2,10 +2,11 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
+use wasmtime::{AsContextMut, TypedFunc};
+
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
 };
-use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
     error::EngineError,

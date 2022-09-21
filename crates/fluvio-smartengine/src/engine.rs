@@ -163,7 +163,7 @@ impl SmartModuleChainBuilder {
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
             // ignore output
-            let _output = instance.init(&mut self.store)?;
+            instance.init(&mut self.store)?;
             Ok(SmartModuleChainInstance {
                 store: self.store,
                 instances: self.instances,

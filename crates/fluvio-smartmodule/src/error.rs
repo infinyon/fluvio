@@ -35,11 +35,15 @@ pub enum SmartModuleTransformErrorStatus {
 #[non_exhaustive]
 #[fluvio(encode_discriminant)]
 pub enum SmartModuleInitErrorStatus {
-    #[error("encountered unknown error during SmartModule init")]
+    #[error("encountered unknown error during SmartModule processing")]
     #[default]
     UnknownError = -1,
+    #[error("Error during initialization")]
+    InitError = -2,
     #[error("failed to decode SmartModule init input")]
-    DecodingInput = -2,
+    DecodingInput = -10,
+    #[error("failed to encode SmartModule init output")]
+    EncodingOutput = -11,
 }
 
 /// Error during processing SmartModule initialization

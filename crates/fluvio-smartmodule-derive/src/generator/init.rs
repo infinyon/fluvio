@@ -14,15 +14,21 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
         #[cfg(target_arch = "wasm32")]
         mod _system {
 
+
+
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn init(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
                     SmartModuleInitError, SmartModuleInitInput,
                     SmartModuleInitOutput,
-                    SmartModuleInitErrorStatus
+                    SmartModuleInitErrorStatus,
+                    SmartModuleInitRuntimeError
                 };
-                use fluvio_smartmodule::dataplane::core::{Decoder};
+                use fluvio_smartmodule::dataplane::core::{Decoder,Encoder};
+
+
+
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut input = SmartModuleInitInput::default();
@@ -32,39 +38,35 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     return SmartModuleInitErrorStatus::DecodingInput as i32;
                 }
 
-                let mut output = SmartModuleInitOutput {
-                    error: None,
-                };
 
-                let result = super::init(input.params);
-
-                /*
-
-                let status = match result {
+                match super::init(input.params) {
                     Ok(_) => 0,
                     Err(err) =>  {
-                        let error = SmartModuleInitError::new(
-                            err,
-                        );
-                        output.error = Some(error);
-                        -1
+
+                        // copy data from wasm memory
+                        extern "C" {
+                            fn copy_records(putr: i32, len: i32);
+                        }
+
+                        let mut output = SmartModuleInitOutput {
+                            error: SmartModuleInitRuntimeError::new(err)
+                        };
+
+
+                        let mut out = vec![];
+                        if let Err(_) = Encoder::encode(&output, &mut out, version) {
+                            return SmartModuleInitErrorStatus::EncodingOutput as i32;
+                        }
+
+
+                        let out_len = out.len();
+                        let ptr = out.as_mut_ptr();
+                        std::mem::forget(out);
+                        copy_records(ptr as i32, out_len as i32);
+
+                        SmartModuleInitErrorStatus::InitError as i32
                     }
-                };
-
-                let mut out = vec![];
-                if let Err(_) = Encoder::encode(&output, &mut out, version) {
-                    return SmartModuleInstanceProcessError::EncodingOutput as i32;
                 }
-
-                let out_len = out.len();
-                let ptr = out.as_mut_ptr();
-                std::mem::forget(out);
-                copy_records(ptr as i32, out_len as i32);
-                */
-                0
-
-
-
 
             }
         }

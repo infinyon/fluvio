@@ -31,7 +31,7 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn) -> TokenStream {
             pub unsafe fn filter(ptr: *mut u8, len: usize, version: i16) -> i32 {
 
 
-                // DECODING
+                // copy data from wasm memory
                 extern "C" {
                     fn copy_records(putr: i32, len: i32);
                 }
