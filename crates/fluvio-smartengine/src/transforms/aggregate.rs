@@ -10,7 +10,6 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleTransformErrorStatus,
 };
 use crate::{
-    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState, SmartModuleInitialData,
 };
@@ -35,7 +34,7 @@ impl SmartModuleAggregate {
         ctx: &SmartModuleInstanceContext,
         initial_data: SmartModuleInitialData,
         store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>, EngineError> {
+    ) -> Result<Option<Self>> {
         // get initial -data
         let accumulator = match initial_data {
             SmartModuleInitialData::Aggregate { accumulator } => accumulator,
@@ -57,7 +56,6 @@ impl SmartModuleAggregate {
                             accumulator,
                         })
                     })
-                    .map_err(|wasm_err| EngineError::TypeConversion(AGGREGATE_FN_NAME, wasm_err))
             }
             None => Ok(None),
         }

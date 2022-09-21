@@ -21,8 +21,8 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn array_map(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
-                    SmartModuleInput, SmartModuleInstanceProcessError,
-                    SmartModuleRuntimeError, SmartModuleKind, SmartModuleOutput,
+                    SmartModuleInput, SmartModuleTransformErrorStatus,
+                    SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput,
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData, RecordKey};
@@ -35,13 +35,13 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut smartmodule_input = SmartModuleInput::default();
                 if let Err(_err) = Decoder::decode(&mut smartmodule_input, &mut std::io::Cursor::new(input_data), version) {
-                    return SmartModuleInstanceProcessError::DecodingBaseInput as i32;
+                    return SmartModuleTransformErrorStatus::DecodingBaseInput as i32;
                 }
 
                 let records_input = smartmodule_input.record_data;
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
-                    return SmartModuleInstanceProcessError::DecodingRecords as i32;
+                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
                 };
 
 
@@ -62,7 +62,7 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
                             }
                         }
                         Err(err) => {
-                            let error = SmartModuleRuntimeError::new(
+                            let error = SmartModuleTransformRuntimeError::new(
                                 &record,
                                 smartmodule_input.base_offset,
                                 SmartModuleKind::ArrayMap,
@@ -77,7 +77,7 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 // ENCODING
                 let mut out = vec![];
                 if let Err(_) = Encoder::encode(&mut output, &mut out, version) {
-                    return SmartModuleInstanceProcessError::EncodingOutput as i32;
+                    return SmartModuleTransformErrorStatus::EncodingOutput as i32;
                 }
 
                 let out_len = out.len();

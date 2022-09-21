@@ -32,7 +32,7 @@ mod instance {
         ctx: &SmartModuleInstanceContext,
         initial_data: SmartModuleInitialData,
         store: &mut impl AsContextMut,
-    ) -> Result<Box<dyn SmartModuleTransform>, EngineError> {
+    ) -> Result<Box<dyn SmartModuleTransform>> {
         if let Some(tr) = SmartModuleFilter::try_instantiate(ctx, store)?
             .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
         {
@@ -62,7 +62,7 @@ mod instance {
         {
             Ok(tr)
         } else {
-            Err(EngineError::UnknownSmartModule)
+            Err(EngineError::UnknownSmartModule.into())
         }
     }
 }

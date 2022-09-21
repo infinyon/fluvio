@@ -1,19 +1,18 @@
 use once_cell::sync::OnceCell;
 
 use fluvio_smartmodule::{
-    smartmodule, Record, Result,
-    dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInstanceProcessError},
+    smartmodule, Record, Result,eyre,
+    dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError},
 };
 
 static CRITERIA: OnceCell<String> = OnceCell::new();
 
 #[smartmodule(init)]
-fn init(params: SmartModuleExtraParams) -> Result<(),SmartModuleInitError> {
-    if let Some(regex) = params.get("key") {
-        CRITERIA.set(regex.clone()).unwrap();
-        Ok(())
+fn init(params: SmartModuleExtraParams) -> Result<()> {
+    if let Some(key) = params.get("key") {
+        CRITERIA.set(key.clone()).map_err(|err| eyre!("failed setting key: {:#?}", err))
     } else {
-        Err(SmartModuleInitError::MissingParam("key".to_string()))
+        Err(SmartModuleInitError::MissingParam("key".to_string()).into())
     }
 }
 

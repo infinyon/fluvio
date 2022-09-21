@@ -27,6 +27,7 @@ pub(crate) struct SmartModuleInstance {
 
 impl SmartModuleInstance {
     #[cfg(test)]
+    #[allow(clippy::borrowed_box)]
     pub(crate) fn transform(&self) -> &Box<dyn SmartModuleTransform> {
         &self.transform
     }

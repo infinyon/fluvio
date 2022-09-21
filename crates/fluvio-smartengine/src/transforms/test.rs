@@ -4,7 +4,7 @@ use std::{
 };
 
 use fluvio_smartmodule::{
-    dataplane::smartmodule::{SmartModuleInput, SmartModuleTransformErrorStatus},
+    dataplane::smartmodule::{SmartModuleInput},
     Record,
 };
 
@@ -96,17 +96,13 @@ fn test_filter_with_init_invalid_param() {
         crate::transforms::filter::FILTER_FN_NAME
     );
 
-    /*
-    let param_error: SmartModuleInitErrorStatus = chain_builder
-        .initialize()
-        .expect_err("should return param error")
-        .downcast()
-        .expect("downcast");
     assert_eq!(
-        param_error,
-        SmartModuleInstanceProcessError::InitParamsNotFound
+        chain_builder
+            .initialize()
+            .expect_err("should return param error")
+            .to_string(),
+        "Missing param key\n\nSmartModule Init Error: \n"
     );
-    */
 }
 
 #[ignore]

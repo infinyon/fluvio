@@ -9,7 +9,6 @@ use tracing::{debug, instrument};
 use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
-    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState,
 };
@@ -30,7 +29,7 @@ impl SmartModuleJoin {
     pub(crate) fn try_instantiate(
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>, EngineError> {
+    ) -> Result<Option<Self>> {
         match ctx.get_wasm_func(&mut *store, JOIN_FN_NAME) {
             Some(func) => {
                 // check type signature
@@ -38,7 +37,6 @@ impl SmartModuleJoin {
                 func.typed(&mut *store)
                     .or_else(|_| func.typed(store))
                     .map(|join_fn| Some(Self(join_fn)))
-                    .map_err(|wasm_err| EngineError::TypeConversion(JOIN_FN_NAME, wasm_err))
             }
             None => Ok(None),
         }

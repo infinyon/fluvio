@@ -8,7 +8,6 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
-    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState,
 };
@@ -28,7 +27,7 @@ impl SmartModuleArrayMap {
     pub fn try_instantiate(
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>, EngineError> {
+    ) -> Result<Option<Self>> {
         match ctx.get_wasm_func(&mut *store, ARRAY_MAP_FN_NAME) {
             Some(func) => {
                 // check type signature
@@ -36,7 +35,6 @@ impl SmartModuleArrayMap {
                 func.typed(&mut *store)
                     .or_else(|_| func.typed(store))
                     .map(|array_map_fn| Some(Self(array_map_fn)))
-                    .map_err(|wasm_err| EngineError::TypeConversion(ARRAY_MAP_FN_NAME, wasm_err))
             }
             None => Ok(None),
         }

@@ -9,7 +9,6 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 
 use crate::{
-    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState,
 };
@@ -31,14 +30,13 @@ impl SmartModuleFilter {
     pub fn try_instantiate(
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>, EngineError> {
+    ) -> Result<Option<Self>> {
         match ctx.get_wasm_func(store, FILTER_FN_NAME) {
             // check type signature
             Some(func) => func
                 .typed(&mut *store)
                 .or_else(|_| func.typed(store))
-                .map(|filter_fn| Some(Self(filter_fn)))
-                .map_err(|wasm_err| EngineError::TypeConversion(FILTER_FN_NAME, wasm_err)),
+                .map(|filter_fn| Some(Self(filter_fn))),
             None => Ok(None),
         }
     }
