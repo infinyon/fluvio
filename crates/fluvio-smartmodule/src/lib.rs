@@ -4,6 +4,7 @@ pub use fluvio_smartmodule_derive::{smartmodule, SmartOpt};
 pub const ENCODING_ERROR: i32 = -1;
 
 pub use eyre::Error;
+pub use eyre::eyre;
 pub type Result<T> = eyre::Result<T>;
 
 /// used only in smartmodule

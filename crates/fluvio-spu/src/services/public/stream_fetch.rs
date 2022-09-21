@@ -14,7 +14,7 @@ use fluvio_protocol::{
     api::{RequestMessage, RequestHeader},
     record::{RecordSet, Offset, RawRecords},
 };
-use fluvio_protocol::link::{ErrorCode, smartmodule::SmartModuleRuntimeError};
+use fluvio_protocol::link::{ErrorCode, smartmodule::SmartModuleTransformRuntimeError};
 use fluvio_compression::CompressionError;
 use fluvio_spu_schema::{
     server::stream_fetch::{
@@ -500,7 +500,7 @@ impl StreamFetchHandler {
         file_partition_response: FilePartitionResponse,
         next_offset: Offset,
         batch: Batch,
-        smartmodule_error: Option<SmartModuleRuntimeError>,
+        smartmodule_error: Option<SmartModuleTransformRuntimeError>,
     ) -> Result<(Offset, bool), StreamFetchError> {
         type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet<RawRecords>>;
 

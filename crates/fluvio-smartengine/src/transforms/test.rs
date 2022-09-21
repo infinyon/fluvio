@@ -4,7 +4,7 @@ use std::{
 };
 
 use fluvio_smartmodule::{
-    dataplane::smartmodule::{SmartModuleInput, SmartModuleInternalError},
+    dataplane::smartmodule::{SmartModuleInput, SmartModuleTransformErrorStatus},
     Record,
 };
 
@@ -96,12 +96,15 @@ fn test_filter_with_init_invalid_param() {
         crate::transforms::filter::FILTER_FN_NAME
     );
 
-    let param_error: SmartModuleInternalError = chain_builder
+    let param_error: SmartModuleInitErrorStatus = chain_builder
         .initialize()
         .expect_err("should return param error")
         .downcast()
         .expect("downcast");
-    assert_eq!(param_error, SmartModuleInternalError::InitParamsNotFound);
+    assert_eq!(
+        param_error,
+        SmartModuleInstanceProcessError::InitParamsNotFound
+    );
 }
 
 #[ignore]
@@ -120,16 +123,10 @@ fn test_filter_with_init_ok() {
         )
         .expect("failed to create filter");
 
-
-    let instance =    chain_builder
-    .instances()
-    .first()
-    .expect("first");
+    let instance = chain_builder.instances().first().expect("first");
 
     assert_eq!(
-       instance
-            .transform()
-            .name(),
+        instance.transform().name(),
         crate::transforms::filter::FILTER_FN_NAME
     );
 

@@ -2,7 +2,7 @@ use std::io::Error as IoError;
 
 use semver::Version;
 
-use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
+use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
 use fluvio_compression::CompressionError;
 use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
@@ -51,7 +51,7 @@ To interact with this cluster, please install the matching CLI version using the
     #[error("Consumer config error: {0}")]
     ConsumerConfig(String),
     #[error("SmartModule runtime error {0}")]
-    SmartModuleRuntime(#[from] SmartModuleRuntimeError),
+    SmartModuleRuntime(#[from] SmartModuleTransformRuntimeError),
     #[error("Producer error: {0}")]
     Producer(#[from] ProducerError),
     #[error("Error building producer config: {0}")]

@@ -3,7 +3,7 @@ use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
 use derive_builder::Builder;
-use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
+use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
 use fluvio_protocol::record::Batch;
 use fluvio_smartmodule::Record;
 use tracing::instrument;
@@ -219,7 +219,7 @@ impl SmartModuleChainInstance {
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
-    ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
+    ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
             instance.process_batch(&mut self.store, iter, max_bytes, join_last_record)

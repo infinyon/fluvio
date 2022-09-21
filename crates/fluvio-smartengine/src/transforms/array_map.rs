@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
 };
 use wasmtime::{AsContextMut, TypedFunc};
 
@@ -54,8 +54,8 @@ impl SmartModuleTransform for SmartModuleArrayMap {
         let map_output = self.0.call(&mut *store, slice)?;
 
         if map_output < 0 {
-            let internal_error = SmartModuleInternalError::try_from(map_output)
-                .unwrap_or(SmartModuleInternalError::UnknownError);
+            let internal_error = SmartModuleTransformErrorStatus::try_from(map_output)
+                .unwrap_or(SmartModuleTransformErrorStatus::UnknownError);
             return Err(internal_error.into());
         }
 

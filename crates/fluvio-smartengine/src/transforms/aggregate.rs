@@ -6,8 +6,8 @@ use anyhow::Result;
 use wasmtime::{AsContextMut, TypedFunc};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleInternalError,
-    SmartModuleAggregateOutput,
+    SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleAggregateOutput,
+    SmartModuleTransformErrorStatus,
 };
 use crate::{
     error::EngineError,
@@ -82,8 +82,8 @@ impl SmartModuleTransform for SmartModuleAggregate {
 
         debug!(aggregate_output);
         if aggregate_output < 0 {
-            let internal_error = SmartModuleInternalError::try_from(aggregate_output)
-                .unwrap_or(SmartModuleInternalError::UnknownError);
+            let internal_error = SmartModuleTransformErrorStatus::try_from(aggregate_output)
+                .unwrap_or(SmartModuleTransformErrorStatus::UnknownError);
             return Err(internal_error.into());
         }
 

@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
+use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Module, Caller, Extern, Trap, Instance, Func, AsContextMut};
@@ -13,7 +14,6 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
     SmartModuleInitOutput,
 };
-use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
 
 use crate::error::EngineError;
 use crate::init::SmartModuleInit;
@@ -32,7 +32,6 @@ impl SmartModuleInstance {
         &self.transform
     }
 
-    
     #[cfg(test)]
     pub(crate) fn get_init(&self) -> &Option<SmartModuleInit> {
         &self.init
@@ -66,7 +65,7 @@ impl SmartModuleInstance {
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
-    ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
+    ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
         let mut smartmodule_batch = Batch::<MemoryRecords>::default();
         smartmodule_batch.base_offset = -1; // indicate this is uninitialized
         smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly

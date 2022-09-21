@@ -5,7 +5,7 @@ use anyhow::Result;
 use wasmtime::{AsContextMut, TypedFunc};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
 };
 use crate::{
     error::EngineError,
@@ -55,8 +55,8 @@ impl SmartModuleTransform for SmartModuleMap {
         let map_output = self.0.call(&mut *store, slice)?;
 
         if map_output < 0 {
-            let internal_error = SmartModuleInternalError::try_from(map_output)
-                .unwrap_or(SmartModuleInternalError::UnknownError);
+            let internal_error = SmartModuleTransformErrorStatus::try_from(map_output)
+                .unwrap_or(SmartModuleTransformErrorStatus::UnknownError);
             return Err(internal_error.into());
         }
 

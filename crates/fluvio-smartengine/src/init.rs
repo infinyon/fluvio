@@ -2,9 +2,7 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
-use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInternalError, SmartModuleInitInput, SmartModuleInitOutput,
-};
+use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInitInput, SmartModuleInitOutput};
 use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
@@ -53,11 +51,13 @@ impl SmartModuleInit {
         let slice = ctx.write_input(&input, &mut *store)?;
         let init_output = self.0.call(&mut *store, slice)?;
 
+        /*
         if init_output < 0 {
-            let internal_error = SmartModuleInternalError::try_from(init_output)
-                .unwrap_or(SmartModuleInternalError::UnknownError);
+            let internal_error = SmartModuleInitErrorStatus::try_from(init_output)
+                .unwrap_or(SmartModuleInitErrorStatus::UnknownError);
             return Err(internal_error.into());
         }
+        */
 
         let output: SmartModuleInitOutput = ctx.read_output(store)?;
         Ok(output)

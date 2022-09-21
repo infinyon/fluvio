@@ -1,6 +1,6 @@
 use fluvio_protocol::{Encoder, Decoder};
 
-/// Error during processing SmartModule Instance processing
+/// Error during processing SmartModule transform error
 //
 // The presence of one of these errors most likely indicates a logic bug.
 // This error type is `#[repr(i32)]` because these errors are returned
@@ -14,7 +14,7 @@ use fluvio_protocol::{Encoder, Decoder};
 #[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Default, Decoder)]
 #[non_exhaustive]
 #[fluvio(encode_discriminant)]
-pub enum SmartModuleInstanceProcessError {
+pub enum SmartModuleTransformErrorStatus {
     #[error("encountered unknown error during SmartModule processing")]
     #[default]
     UnknownError = -1,
@@ -28,21 +28,23 @@ pub enum SmartModuleInstanceProcessError {
     ParsingExtraParams = -44,
     #[error("undefined right record in Join SmartModule")]
     UndefinedRightRecord = -55,
-    #[error("Init params are not found")]
-    InitParamsNotFound = -60,
-    #[error("encountered unknown error in Init params parsing")]
-    InitParamsParse = -61,
 }
 
 #[repr(i32)]
-pub enum SmartModuleInstanceStatus {
-    Success(u32),
-    SmartModuleInstanceProcessError
+#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Default, Decoder)]
+#[non_exhaustive]
+#[fluvio(encode_discriminant)]
+pub enum SmartModuleInitErrorStatus {
+    #[error("encountered unknown error during SmartModule init")]
+    #[default]
+    UnknownError = -1,
+    #[error("failed to decode SmartModule init input")]
+    DecodingInput = -2,
 }
 
-
+/// Error during processing SmartModule initialization
+#[derive(thiserror::Error, Debug)]
 pub enum SmartModuleInitError {
-
-
-
+    #[error("Missing param {0}")]
+    MissingParam(String),
 }

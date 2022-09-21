@@ -1,20 +1,21 @@
 use once_cell::sync::OnceCell;
 
-use fluvio_smartmodule::{smartmodule, Record, Result, dataplane::smartmodule::{SmartModuleExtraParams,SmartModuleInternalError}};
-
+use fluvio_smartmodule::{
+    smartmodule, Record, Result,
+    dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInstanceProcessError},
+};
 
 static CRITERIA: OnceCell<String> = OnceCell::new();
 
 #[smartmodule(init)]
-fn init(params: SmartModuleExtraParams) -> Result<()> {
+fn init(params: SmartModuleExtraParams) -> Result<(),SmartModuleInitError> {
     if let Some(regex) = params.get("key") {
         CRITERIA.set(regex.clone()).unwrap();
-        0
+        Ok(())
     } else {
-        SmartModuleInternalError::InitParamsNotFound as i32
+        Err(SmartModuleInitError::MissingParam("key".to_string()))
     }
 }
-
 
 #[smartmodule(filter)]
 pub fn filter(record: &Record) -> Result<bool> {

@@ -2,19 +2,20 @@ use regex::Regex;
 use once_cell::sync::OnceCell;
 
 use fluvio_smartmodule::{
-    smartmodule, Record, Result,
-    dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInternalError},
+    smartmodule, Record, Result, eyre,
+    dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError},
 };
 
 static REGEX: OnceCell<Regex> = OnceCell::new();
 
 #[smartmodule(init)]
-fn init(params: SmartModuleExtraParams) -> i32 {
+fn init(params: SmartModuleExtraParams) -> Result<()> {
     if let Some(regex) = params.get("regex") {
-        REGEX.set(Regex::new(regex).unwrap()).unwrap();
-        0
+        REGEX
+            .set(Regex::new(regex)?)
+            .map_err(|err| eyre!("regex init: {:#?}", err))
     } else {
-        SmartModuleInternalError::InitParamsNotFound as i32
+        Err(SmartModuleInitError::MissingParam("regex".to_string()).into())
     }
 }
 

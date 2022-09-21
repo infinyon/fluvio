@@ -21,7 +21,7 @@ pub fn generate_join_smartmodule(func: &SmartModuleFn) -> TokenStream {
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn join(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
-                    SmartModuleInput, SmartModuleInternalError,
+                    SmartModuleInput, SmartModuleInstanceProcessError,
                     SmartModuleRuntimeError, SmartModuleKind, SmartModuleOutput,
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
@@ -35,23 +35,23 @@ pub fn generate_join_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut smartmodule_input = SmartModuleInput::default();
                 if let Err(_err) = Decoder::decode(&mut smartmodule_input, &mut std::io::Cursor::new(input_data), version) {
-                    return SmartModuleInternalError::DecodingBaseInput as i32;
+                    return SmartModuleInstanceProcessError::DecodingBaseInput as i32;
                 }
 
                 let records_input = smartmodule_input.record_data;
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
-                    return SmartModuleInternalError::DecodingRecords as i32;
+                    return SmartModuleInstanceProcessError::DecodingRecords as i32;
                 };
 
                 let join_last_record_input = smartmodule_input.join_record;
                 let mut join_last_record: Option<Record> = None;
                 if let Err(_err) = Decoder::decode(&mut join_last_record, &mut std::io::Cursor::new(join_last_record_input), version) {
-                    return SmartModuleInternalError::UndefinedRightRecord as i32;
+                    return SmartModuleInstanceProcessError::UndefinedRightRecord as i32;
                 };
                 let join_last_record = match join_last_record {
                     Some(record) => record,
-                    None => return SmartModuleInternalError::UndefinedRightRecord as i32,
+                    None => return SmartModuleInstanceProcessError::UndefinedRightRecord as i32,
                 };
 
 
@@ -85,7 +85,7 @@ pub fn generate_join_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 // ENCODING
                 let mut out = vec![];
                 if let Err(_) = Encoder::encode(&mut output, &mut out, version) {
-                    return SmartModuleInternalError::EncodingOutput as i32;
+                    return SmartModuleInstanceProcessError::EncodingOutput as i32;
                 }
 
                 let out_len = out.len();
