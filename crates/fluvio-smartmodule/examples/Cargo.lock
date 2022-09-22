@@ -278,6 +278,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-map"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.3.0",
+]
+
+[[package]]
 name = "fluvio-types"
 version = "0.3.8"
 dependencies = [
@@ -393,13 +400,6 @@ dependencies = [
 
 [[package]]
 name = "fluvio-wasm-join"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule 0.3.0",
-]
-
-[[package]]
-name = "fluvio-wasm-map"
 version = "0.0.0"
 dependencies = [
  "fluvio-smartmodule 0.3.0",

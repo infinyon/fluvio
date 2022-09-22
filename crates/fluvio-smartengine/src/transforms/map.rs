@@ -66,3 +66,54 @@ impl SmartModuleTransform for SmartModuleMap {
         MAP_FN_NAME
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    use std::{convert::TryFrom};
+
+    use fluvio_smartmodule::{
+        dataplane::smartmodule::{SmartModuleInput},
+        Record,
+    };
+
+    use crate::{SmartEngine, SmartModuleConfig};
+
+    const SM_MAP: &str = "fluvio_smartmodule_map";
+
+    use super::super::test::read_wasm_module;
+
+    #[ignore]
+    #[test]
+    fn test_map() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder().build().unwrap(),
+                read_wasm_module(SM_MAP),
+            )
+            .expect("failed to create map");
+
+        assert_eq!(
+            chain_builder
+                .instances()
+                .first()
+                .expect("first")
+                .transform()
+                .name(),
+            crate::transforms::map::MAP_FN_NAME
+        );
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        let input = vec![Record::new("apple"), Record::new("fruit")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 2); // one record passed
+        assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
+        assert_eq!(output.successes[1].value.as_ref(), b"FRUIT");
+    }
+}
