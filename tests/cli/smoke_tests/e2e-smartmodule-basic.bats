@@ -128,7 +128,7 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="contains-a-or-param"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_with_param.wasm 
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_param.wasm 
     assert_success
 
     # Create topic

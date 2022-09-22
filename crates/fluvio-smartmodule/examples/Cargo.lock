@@ -258,6 +258,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-array-map-object"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.3.0",
+ "serde_json",
+]
+
+[[package]]
 name = "fluvio-smartmodule-derive"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -355,14 +363,6 @@ name = "fluvio-wasm-aggregate-sum"
 version = "0.0.0"
 dependencies = [
  "fluvio-smartmodule 0.3.0",
-]
-
-[[package]]
-name = "fluvio-wasm-array-map-object"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule 0.3.0",
- "serde_json",
 ]
 
 [[package]]
