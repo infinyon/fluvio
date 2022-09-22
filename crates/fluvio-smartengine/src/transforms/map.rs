@@ -12,7 +12,7 @@ use crate::{
     WasmState,
 };
 
-pub(crate) const MAP_FN_NAME: &str = "map";
+const MAP_FN_NAME: &str = "map";
 
 type WasmMapFn = TypedFunc<(i32, i32, u32), i32>;
 
@@ -103,7 +103,7 @@ mod test {
                 .expect("first")
                 .transform()
                 .name(),
-            crate::transforms::map::MAP_FN_NAME
+            super::MAP_FN_NAME
         );
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");

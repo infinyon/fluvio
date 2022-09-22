@@ -13,7 +13,7 @@ use crate::{
     WasmState,
 };
 
-pub(crate) const FILTER_FN_NAME: &str = "filter";
+const FILTER_FN_NAME: &str = "filter";
 
 type WasmFilterFn = TypedFunc<(i32, i32, u32), i32>;
 
@@ -104,7 +104,7 @@ mod test {
                 .expect("first")
                 .transform()
                 .name(),
-            crate::transforms::filter::FILTER_FN_NAME
+            super::FILTER_FN_NAME
         );
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");
