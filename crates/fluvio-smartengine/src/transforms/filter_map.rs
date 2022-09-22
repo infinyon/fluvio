@@ -79,7 +79,7 @@ mod test {
 
     use crate::{SmartEngine, SmartModuleConfig};
 
-    const SM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
+    const SM_FILTER_MAP: &str = "fluvio_smartmodule_filter_map";
 
     use super::super::test::read_wasm_module;
 
