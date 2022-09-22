@@ -14,7 +14,7 @@ use crate::{
     WasmState, SmartModuleInitialData,
 };
 
-pub(crate) const AGGREGATE_FN_NAME: &str = "aggregate";
+const AGGREGATE_FN_NAME: &str = "aggregate";
 
 type WasmAggregateFn = TypedFunc<(i32, i32, u32), i32>;
 
@@ -92,5 +92,92 @@ impl SmartModuleTransform for SmartModuleAggregate {
 
     fn name(&self) -> &str {
         AGGREGATE_FN_NAME
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use std::{convert::TryFrom};
+
+    use fluvio_smartmodule::{
+        dataplane::smartmodule::{SmartModuleInput},
+        Record,
+    };
+
+    use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
+
+    const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
+
+    use super::super::test::read_wasm_module;
+
+    #[ignore]
+    #[test]
+    fn test_aggregate() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder().build().unwrap(),
+                read_wasm_module(SM_AGGEGRATE),
+            )
+            .expect("failed to create aggegrate");
+
+        assert_eq!(
+            chain_builder
+                .instances()
+                .first()
+                .expect("first")
+                .transform()
+                .name(),
+            super::AGGREGATE_FN_NAME
+        );
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        let input = vec![Record::new("a")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 1);
+        assert_eq!(output.successes[0].value.as_ref(), b"a");
+
+        // new record should accumulate
+        let input = vec![Record::new("b")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 1); // generate 3 records
+        assert_eq!(output.successes[0].value.as_ref(), b"ab");
+    }
+
+    #[ignore]
+    #[test]
+    fn test_aggregate_with_initial() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .initial_data(SmartModuleInitialData::with_aggregate(
+                        "a".to_string().as_bytes().to_vec(),
+                    ))
+                    .build()
+                    .unwrap(),
+                read_wasm_module(SM_AGGEGRATE),
+            )
+            .expect("failed to create aggegrate");
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        // new record should accumulate
+        let input = vec![Record::new("b")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 1); // generate 3 records
+        assert_eq!(output.successes[0].value.as_ref(), b"ab");
     }
 }

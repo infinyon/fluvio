@@ -1321,7 +1321,7 @@ async fn test_stream_fetch_map_error(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_AGGREGATE: &str = "fluvio_wasm_aggregate";
+const FLUVIO_WASM_AGGREGATE: &str = "fluvio_smartmodule_aggregate";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_aggregate_fetch_single_batch_legacy() {

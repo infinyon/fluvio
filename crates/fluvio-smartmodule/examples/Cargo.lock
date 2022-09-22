@@ -243,6 +243,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-aggregate"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.3.0",
+]
+
+[[package]]
 name = "fluvio-smartmodule-array-map-array"
 version = "0.0.0"
 dependencies = [
@@ -315,13 +322,6 @@ checksum = "9a675cf4a60aa0bff6f5d9d2c3c5201fc5a214cbb9e9d7f0127c7792314714bf"
 dependencies = [
  "thiserror",
  "tracing",
-]
-
-[[package]]
-name = "fluvio-wasm-aggregate"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule 0.3.0",
 ]
 
 [[package]]
