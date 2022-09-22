@@ -233,7 +233,7 @@ impl SegmentList {
         if offset < self.min_offset {
             None
         } else if offset == self.min_offset {
-            (&self.segments)
+            self.segments
                 .range((Included(offset), Included(offset)))
                 .next_back()
         } else if offset >= self.max_offset {
@@ -244,7 +244,7 @@ impl SegmentList {
                 Included(offset),
             );
             //  println!("range: {:?}", range);
-            (&self.segments).range(range).next_back()
+            self.segments.range(range).next_back()
         }
     }
 

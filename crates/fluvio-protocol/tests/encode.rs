@@ -14,7 +14,7 @@ pub struct RecordSet {
 
 impl RecordSet {
     fn add_record(&mut self, record: SimpleRecord) {
-        (&mut self.records).push(record);
+        self.records.push(record);
     }
 }
 

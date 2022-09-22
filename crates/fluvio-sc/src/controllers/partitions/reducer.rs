@@ -127,10 +127,7 @@ where
             spus.into_iter().partition(|v| v.status.is_online());
 
         // remove init
-        offline_spus = offline_spus
-            .into_iter()
-            .filter(|v| !v.status.is_init())
-            .collect();
+        offline_spus.retain(|v| !v.status.is_init());
 
         // election due to offline spu
         debug!(offline = offline_spus.len(), "offline spus");

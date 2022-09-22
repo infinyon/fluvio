@@ -121,12 +121,7 @@ where
     where
         R: Debug,
     {
-        for r_topic in &self.topics {
-            if r_topic.name == *topic {
-                return Some(r_topic);
-            }
-        }
-        None
+        self.topics.iter().find(|&r_topic| r_topic.name == *topic)
     }
 }
 
