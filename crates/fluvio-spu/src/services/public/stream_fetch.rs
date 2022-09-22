@@ -245,7 +245,7 @@ impl StreamFetchHandler {
         let mut counter: i32 = 0;
         // since we don't need to wait for consumer, can move consumer to same offset as last read
         let mut last_known_consumer_offset: Option<Offset> =
-            (!consumer_wait).then(|| last_partition_offset);
+            (!consumer_wait).then_some(last_partition_offset);
 
         loop {
             counter += 1;

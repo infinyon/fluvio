@@ -59,7 +59,7 @@ impl FluvioSink {
     where
         RequestMessage<R>: FlvEncoder + Default + Debug,
     {
-        (&mut self.inner).send((req_msg, 0)).await?;
+        self.inner.send((req_msg, 0)).await?;
         Ok(())
     }
 
@@ -74,7 +74,7 @@ impl FluvioSink {
         ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
         trace!("sending response {:#?}", &resp_msg);
-        (&mut self.inner).send((resp_msg, version)).await?;
+        self.inner.send((resp_msg, version)).await?;
         Ok(())
     }
 }

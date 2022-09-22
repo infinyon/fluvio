@@ -144,7 +144,7 @@ mod test {
             .status
             .set_replica_map(topic2.status.replica_map.clone());
         topic1.status.reason = topic2.status.reason.clone();
-        topic1.status.resolution = (&topic2.status.resolution).clone();
+        topic1.status.resolution = topic2.status.resolution.clone();
 
         // topics should be identical
         assert_eq!(topic1, topic2);

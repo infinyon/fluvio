@@ -269,7 +269,7 @@ impl Future for ProducePartitionResponseFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match self.get_mut().inner {
             Either::Left(ref mut pair) => {
-                let response = ready!((&mut pair.0).poll_unpin(cx));
+                let response = ready!((pair.0).poll_unpin(cx));
                 match response.as_ref() {
                     Ok(response) => Poll::Ready(
                         response

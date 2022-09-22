@@ -56,7 +56,7 @@ impl TableOutputHandler for ListSpus {
                     Cell::new(metadata.name.to_string()),
                     Cell::new(metadata.status.to_string()),
                     Cell::new(spu.spu_type.to_string()),
-                    Cell::new((&spu.rack).as_ref().unwrap_or(&"-".to_string())),
+                    Cell::new(spu.rack.as_ref().unwrap_or(&"-".to_string())),
                     Cell::new(spu.public_endpoint.to_string()),
                     Cell::new(spu.private_endpoint.to_string()),
                 ])
