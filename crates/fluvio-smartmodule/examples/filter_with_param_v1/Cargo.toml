@@ -1,9 +1,10 @@
 [package]
-name = "fluvio-wasm-filter-with-parameters"
+name = "fluvio-wasm-filter-with-parameters-v1"
 version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2021"
 publish = false
+description = "Old Fluvio WASM Filter with Parameters"
 
 [lib]
 crate-type = ['cdylib']

@@ -300,6 +300,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-filter-param"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.3.0",
+ "once_cell",
+]
+
+[[package]]
 name = "fluvio-smartmodule-map"
 version = "0.0.0"
 dependencies = [
@@ -392,7 +400,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-wasm-filter-with-parameters"
+name = "fluvio-wasm-filter-with-parameters-v1"
 version = "0.0.0"
 dependencies = [
  "fluvio-smartmodule 0.2.5",

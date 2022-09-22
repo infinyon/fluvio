@@ -201,6 +201,7 @@ impl SmartModuleContext {
             _ => SmartModuleInitialData::default(),
         };
 
+        println!("param: {:#?}", payload.params);
         chain_builder
             .add_smart_module(
                 SmartModuleConfig::builder()

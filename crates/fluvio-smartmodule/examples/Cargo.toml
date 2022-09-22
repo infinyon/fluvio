@@ -6,6 +6,7 @@ members = [
     "aggregate-average",
     "filter",
     "filter_init",
+    "filter_with_param",
     "filter_odd",
     "filter_json",
     "filter_regex",
