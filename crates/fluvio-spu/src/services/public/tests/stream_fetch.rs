@@ -1992,7 +1992,7 @@ async fn test_stream_fetch_filter_map(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_FILTER_WITH_PARAMETERS: &str = "fluvio_wasm_filter_with_parameters";
+const FLUVIO_WASM_FILTER_WITH_PARAMETERS: &str = "fluvio-smartmodule-filter-init";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_filter_with_params_legacy() {

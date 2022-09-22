@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use fluvio_smartengine::{file_batch::FileBatchIterator, SmartModuleChainInstance};
+use fluvio_smartengine::{SmartModuleChainInstance};
 use tracing::{debug, error, instrument, trace};
 use futures_util::StreamExt;
 use tokio::select;
@@ -31,7 +31,9 @@ use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::conn_context::ConnectionContext;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
-use crate::smartengine::SmartModuleContext;
+use crate::smartengine::context::SmartModuleContext;
+use crate::smartengine::batch::BatchSmartEngine;
+use crate::smartengine::file_batch::FileBatchIterator;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {

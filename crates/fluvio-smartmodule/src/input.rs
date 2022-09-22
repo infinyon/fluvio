@@ -32,6 +32,8 @@ pub struct SmartModuleInput {
     pub base_offset: Offset,
     /// The records for the SmartModule to process
     pub record_data: Vec<u8>,
+    /// This is deprecrated, extra parameters should not be passed, they will be removed in the future
+    #[deprecated]
     pub params: SmartModuleExtraParams,
     #[fluvio(min_version = 16)]
     pub join_record: Vec<u8>,

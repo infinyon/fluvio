@@ -1,6 +1,5 @@
 pub(crate) mod error;
 pub(crate) mod memory;
-pub mod file_batch;
 
 pub(crate) mod transforms;
 pub(crate) mod init;

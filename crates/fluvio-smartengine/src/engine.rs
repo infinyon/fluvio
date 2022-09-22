@@ -3,17 +3,12 @@ use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
 use derive_builder::Builder;
-use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
-use fluvio_protocol::record::Batch;
-use fluvio_smartmodule::Record;
-use tracing::instrument;
 use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
 };
 
-use crate::file_batch::FileBatchIterator;
 use crate::init::SmartModuleInit;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
 use crate::transforms::create_transform;
@@ -207,22 +202,6 @@ impl SmartModuleChainInstance {
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
             instance.process(input, &mut self.store)
-        } else {
-            Err(Error::msg("No transform found"))
-        }
-    }
-
-    // TODO: This should be moved to SPU
-    #[instrument(skip(self, iter, max_bytes, join_last_record))]
-    pub fn process_batch(
-        &mut self,
-        iter: &mut FileBatchIterator,
-        max_bytes: usize,
-        join_last_record: Option<&Record>,
-    ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
-        let first_instance = self.instances.first_mut();
-        if let Some(instance) = first_instance {
-            instance.process_batch(&mut self.store, iter, max_bytes, join_last_record)
         } else {
             Err(Error::msg("No transform found"))
         }
