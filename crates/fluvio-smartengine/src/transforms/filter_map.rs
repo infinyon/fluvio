@@ -12,7 +12,7 @@ use crate::{
     WasmState,
 };
 
-pub(crate) const FILTER_MAP_FN_NAME: &str = "filter_map";
+const FILTER_MAP_FN_NAME: &str = "filter_map";
 
 type WasmFilterMapFn = TypedFunc<(i32, i32, u32), i32>;
 
@@ -64,5 +64,55 @@ impl SmartModuleTransform for SmartModuleFilterMap {
 
     fn name(&self) -> &str {
         FILTER_MAP_FN_NAME
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use std::{convert::TryFrom};
+
+    use fluvio_smartmodule::{
+        dataplane::smartmodule::{SmartModuleInput},
+        Record,
+    };
+
+    use crate::{SmartEngine, SmartModuleConfig};
+
+    const SM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
+
+    use super::super::test::read_wasm_module;
+
+    #[ignore]
+    #[test]
+    fn test_filter_map() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder().build().unwrap(),
+                read_wasm_module(SM_FILTER_MAP),
+            )
+            .expect("failed to create filter map");
+
+        assert_eq!(
+            chain_builder
+                .instances()
+                .first()
+                .expect("first")
+                .transform()
+                .name(),
+            super::FILTER_MAP_FN_NAME
+        );
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        let input = vec![Record::new("10"), Record::new("11")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 1); // one record passed
+        assert_eq!(output.successes[0].value.as_ref(), b"5");
     }
 }

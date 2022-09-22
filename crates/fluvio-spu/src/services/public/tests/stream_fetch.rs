@@ -1724,7 +1724,7 @@ async fn test_stream_fetch_and_new_request(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_ARRAY_MAP_ARRAY: &str = "fluvio_wasm_array_map_array";
+const FLUVIO_WASM_ARRAY_MAP_ARRAY: &str = "fluvio_smartmodule_array_map_array";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_array_map_legacy() {
@@ -1857,7 +1857,7 @@ async fn test_stream_fetch_array_map(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
+const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_smartmodule_filter_map";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_filter_map_legacy() {

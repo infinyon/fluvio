@@ -243,6 +243,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-array-map-array"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.3.0",
+ "serde_json",
+]
+
+[[package]]
 name = "fluvio-smartmodule-derive"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -275,6 +283,13 @@ version = "0.0.0"
 dependencies = [
  "fluvio-smartmodule 0.3.0",
  "once_cell",
+]
+
+[[package]]
+name = "fluvio-smartmodule-filter-map"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.3.0",
 ]
 
 [[package]]
@@ -335,14 +350,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-wasm-array-map-array"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule 0.3.0",
- "serde_json",
-]
-
-[[package]]
 name = "fluvio-wasm-array-map-object"
 version = "0.0.0"
 dependencies = [
@@ -366,13 +373,6 @@ dependencies = [
  "fluvio-smartmodule 0.3.0",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "fluvio-wasm-filter-map"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule 0.3.0",
 ]
 
 [[package]]
