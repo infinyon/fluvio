@@ -3,17 +3,13 @@ use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
 use derive_builder::Builder;
-use fluvio_protocol::link::smartmodule::SmartModuleRuntimeError;
-use fluvio_protocol::record::Batch;
-use fluvio_smartmodule::Record;
-use tracing::instrument;
 use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
 };
 
-use crate::file_batch::FileBatchIterator;
+use crate::init::SmartModuleInit;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
 use crate::transforms::create_transform;
 
@@ -34,12 +30,13 @@ cfg_if::cfg_if! {
 
         pub(crate) type State = wasmtime_wasi::WasiCtx;
         impl SmartEngine {
-            pub fn new_chain(&self) -> SmartModuleChain {
+            /// create new chain builder
+            pub fn builder(&self) -> SmartModuleChainBuilder {
                 let wasi = wasmtime_wasi::WasiCtxBuilder::new()
                     .inherit_stderr()
                     .inherit_stdout()
                     .build();
-                SmartModuleChain {
+                SmartModuleChainBuilder {
                     store: Store::new(&self.0, wasi),
                     instances: vec![],
                 }
@@ -48,8 +45,9 @@ cfg_if::cfg_if! {
     } else  {
         pub(crate) type State = ();
         impl SmartEngine {
-            pub fn new_chain(&self) -> SmartModuleChain {
-                SmartModuleChain {
+            /// create new chain builder
+            pub fn builder(&self) -> SmartModuleChainBuilder {
+                SmartModuleChainBuilder {
                     store: Store::new(&self.0,()),
                     instances: vec![],
                 }
@@ -66,13 +64,13 @@ impl Debug for SmartEngine {
 
 pub type WasmState = Store<State>;
 
-/// Chain of SmartModule which can be execute
-pub struct SmartModuleChain {
+/// Building SmartModule
+pub struct SmartModuleChainBuilder {
     store: Store<State>,
     instances: Vec<SmartModuleInstance>,
 }
 
-impl Deref for SmartModuleChain {
+impl Deref for SmartModuleChainBuilder {
     type Target = Store<State>;
 
     fn deref(&self) -> &Self::Target {
@@ -80,7 +78,7 @@ impl Deref for SmartModuleChain {
     }
 }
 
-impl DerefMut for SmartModuleChain {
+impl DerefMut for SmartModuleChainBuilder {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.store
     }
@@ -88,7 +86,7 @@ impl DerefMut for SmartModuleChain {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "wasi")] {
-        impl SmartModuleChain {
+        impl SmartModuleChainBuilder {
             pub(crate) fn instantiate<Params, Args>(
                 &mut self,
                 module: &Module,
@@ -109,7 +107,7 @@ cfg_if::cfg_if! {
             }
         }
     } else  {
-        impl SmartModuleChain {
+        impl SmartModuleChainBuilder {
 
             pub(crate) fn instantiate<Params, Args>(
                 &mut self,
@@ -129,13 +127,13 @@ cfg_if::cfg_if! {
     }
 }
 
-impl SmartModuleChain {
+impl SmartModuleChainBuilder {
     #[cfg(test)]
-    pub(crate) fn instances(self) -> Vec<SmartModuleInstance> {
-        self.instances
+    pub(crate) fn instances(&self) -> &Vec<SmartModuleInstance> {
+        &self.instances
     }
 
-    /// add new smart module to chain
+    /// Add Smart Module with a single transform and init
     pub fn add_smart_module(
         &mut self,
         config: SmartModuleConfig,
@@ -147,44 +145,63 @@ impl SmartModuleChain {
         let params = config.params;
         let initial_data = config.initial_data;
         let ctx = SmartModuleInstanceContext::instantiate(module, self, params, version)?;
+        let init = SmartModuleInit::try_instantiate(&ctx, &mut self.as_context_mut())?;
         let transform = create_transform(&ctx, initial_data, &mut self.as_context_mut())?;
         self.instances
-            .push(SmartModuleInstance::new(ctx, transform));
+            .push(SmartModuleInstance::new(ctx, init, transform));
         Ok(())
     }
 
+    /// stop adding smart module and return SmartModuleChain that can be executed
+    pub fn initialize(mut self) -> Result<SmartModuleChainInstance> {
+        // only perform a single transform now
+        let first_instance = self.instances.first_mut();
+        if let Some(instance) = first_instance {
+            // ignore output
+            instance.init(&mut self.store)?;
+            Ok(SmartModuleChainInstance {
+                store: self.store,
+                instances: self.instances,
+            })
+        } else {
+            Err(Error::msg("No init found"))
+        }
+    }
+}
+
+/// SmartModule Chain Instance that can be executed
+pub struct SmartModuleChainInstance {
+    store: Store<State>,
+    instances: Vec<SmartModuleInstance>,
+}
+
+impl Debug for SmartModuleChainInstance {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SmartModuleChainInstance")
+    }
+}
+
+impl Deref for SmartModuleChainInstance {
+    type Target = Store<State>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.store
+    }
+}
+
+impl DerefMut for SmartModuleChainInstance {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.store
+    }
+}
+
+impl SmartModuleChainInstance {
     /// process a record
     pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         // only perform a single transform now
         let first_instance = self.instances.first_mut();
         if let Some(instance) = first_instance {
             instance.process(input, &mut self.store)
-        } else {
-            Err(Error::msg("No transform found"))
-        }
-    }
-
-    #[instrument(skip(self))]
-    pub fn invoke_constructor(&mut self) -> Result<(), Error> {
-        // only perform a single transform now
-        let first_instance = self.instances.first_mut();
-        if let Some(instance) = first_instance {
-            instance.invoke_constructor(&mut self.store)
-        } else {
-            Err(Error::msg("No transform found"))
-        }
-    }
-
-    #[instrument(skip(self, iter, max_bytes, join_last_record))]
-    pub fn process_batch(
-        &mut self,
-        iter: &mut FileBatchIterator,
-        max_bytes: usize,
-        join_last_record: Option<&Record>,
-    ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
-        let first_instance = self.instances.first_mut();
-        if let Some(instance) = first_instance {
-            instance.process_batch(&mut self.store, iter, max_bytes, join_last_record)
         } else {
             Err(Error::msg("No transform found"))
         }
@@ -223,6 +240,17 @@ pub struct SmartModuleConfig {
     version: Option<i16>,
 }
 
+impl SmartModuleConfigBuilder {
+    /// add initial parameters
+    pub fn param(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
+        let mut new = self;
+        let mut params = new.params.take().unwrap_or_default();
+        params.insert(key.into(), value.into());
+        new.params = Some(params);
+        new
+    }
+}
+
 impl SmartModuleConfig {}
 
 impl SmartModuleConfig {
@@ -232,5 +260,21 @@ impl SmartModuleConfig {
 
     pub(crate) fn version(&self) -> i16 {
         self.version.unwrap_or(DEFAULT_SMARTENGINE_VERSION)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::SmartModuleConfig;
+
+    #[test]
+    fn test_param() {
+        let config = SmartModuleConfig::builder()
+            .param("key", "apple")
+            .build()
+            .unwrap();
+
+        assert_eq!(config.params.get("key"), Some(&"apple".to_string()));
     }
 }

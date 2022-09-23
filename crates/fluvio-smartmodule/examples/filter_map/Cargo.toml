@@ -1,5 +1,5 @@
 [package]
-name = "fluvio-wasm-filter-map"
+name = "fluvio-smartmodule-filter-map"
 version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2021"

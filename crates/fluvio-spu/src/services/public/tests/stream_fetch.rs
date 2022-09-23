@@ -376,7 +376,7 @@ async fn predefined_test<Fut, TestFn>(
     test_fn(ctx, test_path, None, Some(smartmodule)).await
 }
 
-const FLUVIO_WASM_FILTER: &str = "fluvio_wasm_filter";
+const FLUVIO_WASM_FILTER: &str = "fluvio_smartmodule_filter";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_filter_legacy() {
@@ -1321,7 +1321,7 @@ async fn test_stream_fetch_map_error(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_AGGREGATE: &str = "fluvio_wasm_aggregate";
+const FLUVIO_WASM_AGGREGATE: &str = "fluvio_smartmodule_aggregate";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_aggregate_fetch_single_batch_legacy() {
@@ -1724,7 +1724,7 @@ async fn test_stream_fetch_and_new_request(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_ARRAY_MAP_ARRAY: &str = "fluvio_wasm_array_map_array";
+const FLUVIO_WASM_ARRAY_MAP_ARRAY: &str = "fluvio_smartmodule_array_map_array";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_array_map_legacy() {
@@ -1857,7 +1857,7 @@ async fn test_stream_fetch_array_map(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
+const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_smartmodule_filter_map";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_filter_map_legacy() {
@@ -1992,7 +1992,7 @@ async fn test_stream_fetch_filter_map(
     debug!("terminated controller");
 }
 
-const FLUVIO_WASM_FILTER_WITH_PARAMETERS: &str = "fluvio_wasm_filter_with_parameters";
+const FLUVIO_WASM_FILTER_WITH_PARAMETERS: &str = "fluvio_smartmodule_filter_param";
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_filter_with_params_legacy() {

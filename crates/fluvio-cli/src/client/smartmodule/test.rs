@@ -78,8 +78,8 @@ impl ClientCmd for TestSmartModuleOpt {
 
         debug!("loading module");
         let engine = SmartEngine::new();
-        let mut chain = engine.new_chain();
-        chain
+        let mut chain_builder = engine.builder();
+        chain_builder
             .add_smart_module(
                 SmartModuleConfig::builder()
                     .params(payload.params)
@@ -90,9 +90,9 @@ impl ClientCmd for TestSmartModuleOpt {
 
         debug!("SmartModule created");
 
-        chain
-            .invoke_constructor()
-            .map_err(|e| FluvioError::Other(format!("SmartEngine constructor - {:?}", e)))?;
+        let mut chain = chain_builder
+            .initialize()
+            .map_err(|e| FluvioError::Other(format!("SmartEngine init - {:?}", e)))?;
 
         // get raw json in one of other ways
         let raw_input = if let Some(input) = self.input {

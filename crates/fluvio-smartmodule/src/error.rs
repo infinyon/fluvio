@@ -1,6 +1,6 @@
 use fluvio_protocol::{Encoder, Decoder};
 
-/// Indicates an internal error from within a SmartModule.
+/// Error during processing SmartModule transform error
 //
 // The presence of one of these errors most likely indicates a logic bug.
 // This error type is `#[repr(i32)]` because these errors are returned
@@ -11,11 +11,12 @@ use fluvio_protocol::{Encoder, Decoder};
 //
 // THEREFORE, THE DISCRIMINANTS FOR ALL VARIANTS ON THIS TYPE MUST BE NEGATIVE
 #[repr(i32)]
-#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
+#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Default, Decoder)]
 #[non_exhaustive]
 #[fluvio(encode_discriminant)]
-pub enum SmartModuleInternalError {
+pub enum SmartModuleTransformErrorStatus {
     #[error("encountered unknown error during SmartModule processing")]
+    #[default]
     UnknownError = -1,
     #[error("failed to decode SmartModule base input")]
     DecodingBaseInput = -11,
@@ -27,14 +28,27 @@ pub enum SmartModuleInternalError {
     ParsingExtraParams = -44,
     #[error("undefined right record in Join SmartModule")]
     UndefinedRightRecord = -55,
-    #[error("Init params are not found")]
-    InitParamsNotFound = -60,
-    #[error("encountered unknown error in Init params parsing")]
-    InitParamsParse = -61,
 }
 
-impl Default for SmartModuleInternalError {
-    fn default() -> Self {
-        Self::UnknownError
-    }
+#[repr(i32)]
+#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Default, Decoder)]
+#[non_exhaustive]
+#[fluvio(encode_discriminant)]
+pub enum SmartModuleInitErrorStatus {
+    #[error("encountered unknown error during SmartModule processing")]
+    #[default]
+    UnknownError = -1,
+    #[error("Error during initialization")]
+    InitError = -2,
+    #[error("failed to decode SmartModule init input")]
+    DecodingInput = -10,
+    #[error("failed to encode SmartModule init output")]
+    EncodingOutput = -11,
+}
+
+/// Error during processing SmartModule initialization
+#[derive(thiserror::Error, Debug)]
+pub enum SmartModuleInitError {
+    #[error("Missing param {0}")]
+    MissingParam(String),
 }

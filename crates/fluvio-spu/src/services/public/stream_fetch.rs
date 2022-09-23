@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use fluvio_smartengine::{SmartModuleChain, file_batch::FileBatchIterator};
+use fluvio_smartengine::{SmartModuleChainInstance};
 use tracing::{debug, error, instrument, trace};
 use futures_util::StreamExt;
 use tokio::select;
@@ -14,7 +14,7 @@ use fluvio_protocol::{
     api::{RequestMessage, RequestHeader},
     record::{RecordSet, Offset, RawRecords},
 };
-use fluvio_protocol::link::{ErrorCode, smartmodule::SmartModuleRuntimeError};
+use fluvio_protocol::link::{ErrorCode, smartmodule::SmartModuleTransformRuntimeError};
 use fluvio_compression::CompressionError;
 use fluvio_spu_schema::{
     server::stream_fetch::{
@@ -31,7 +31,9 @@ use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::conn_context::ConnectionContext;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
-use crate::smartengine::SmartModuleContext;
+use crate::smartengine::context::SmartModuleContext;
+use crate::smartengine::batch::BatchSmartEngine;
+use crate::smartengine::file_batch::FileBatchIterator;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -214,7 +216,7 @@ impl StreamFetchHandler {
         let (mut smartmodule_instance, mut right_consumer_stream) =
             if let Some(ctx) = derivedstream_ctx {
                 let SmartModuleContext {
-                    sm_chain: st,
+                    chain: st,
                     right_consumer_stream,
                 } = ctx;
                 (Some(st), right_consumer_stream)
@@ -382,7 +384,7 @@ impl StreamFetchHandler {
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
-        sm_chain: Option<&mut SmartModuleChain>,
+        sm_chain: Option<&mut SmartModuleChainInstance>,
         join_last_record: Option<&fluvio::consumer::Record>,
     ) -> Result<(Offset, bool), StreamFetchError> {
         let now = Instant::now();
@@ -500,7 +502,7 @@ impl StreamFetchHandler {
         file_partition_response: FilePartitionResponse,
         next_offset: Offset,
         batch: Batch,
-        smartmodule_error: Option<SmartModuleRuntimeError>,
+        smartmodule_error: Option<SmartModuleTransformRuntimeError>,
     ) -> Result<(Offset, bool), StreamFetchError> {
         type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet<RawRecords>>;
 

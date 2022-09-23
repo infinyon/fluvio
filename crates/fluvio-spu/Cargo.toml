@@ -39,6 +39,7 @@ adaptive_backoff = "0.2.1"
 thiserror = "1"
 once_cell = "1.5"
 sysinfo = "0.26.0"
+nix = { version = "0.25"}
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }

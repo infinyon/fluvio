@@ -2,47 +2,26 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
+use wasmtime::{AsContextMut, TypedFunc};
+
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
 };
-use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
-    WasmSlice,
-    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState,
 };
 
-pub(crate) const FILTER_FN_NAME: &str = "filter";
-type BaseFilterFn = TypedFunc<(i32, i32), i32>;
-type FilterFnWithParam = TypedFunc<(i32, i32, u32), i32>;
+const FILTER_FN_NAME: &str = "filter";
 
-#[derive(Debug)]
-pub(crate) struct SmartModuleFilter {
-    filter_fn: FilterFnKind,
-}
+type WasmFilterFn = TypedFunc<(i32, i32, u32), i32>;
 
-enum FilterFnKind {
-    Base(BaseFilterFn),
-    Param(FilterFnWithParam),
-}
+pub(crate) struct SmartModuleFilter(WasmFilterFn);
 
-impl Debug for FilterFnKind {
+impl Debug for SmartModuleFilter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Base(_) => write!(f, "BaseFilterFn"),
-            Self::Param(_) => write!(f, "FilterFnWithParam"),
-        }
-    }
-}
-
-impl FilterFnKind {
-    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
-        match self {
-            Self::Base(filter_fn) => filter_fn.call(store, (slice.0, slice.1)),
-            Self::Param(filter_fn) => filter_fn.call(store, slice),
-        }
+        write!(f, "FilterFn")
     }
 }
 
@@ -51,15 +30,13 @@ impl SmartModuleFilter {
     pub fn try_instantiate(
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>, EngineError> {
+    ) -> Result<Option<Self>> {
         match ctx.get_wasm_func(store, FILTER_FN_NAME) {
             // check type signature
             Some(func) => func
                 .typed(&mut *store)
-                .map(FilterFnKind::Base)
-                .or_else(|_| func.typed(store).map(FilterFnKind::Param))
-                .map(|filter_fn| Some(Self { filter_fn }))
-                .map_err(|wasm_err| EngineError::TypeConversion(FILTER_FN_NAME, wasm_err)),
+                .or_else(|_| func.typed(store))
+                .map(|filter_fn| Some(Self(filter_fn))),
             None => Ok(None),
         }
     }
@@ -73,11 +50,11 @@ impl SmartModuleTransform for SmartModuleFilter {
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, &mut *store)?;
-        let filter_output = self.filter_fn.call(&mut *store, slice)?;
+        let filter_output = self.0.call(&mut *store, slice)?;
 
         if filter_output < 0 {
-            let internal_error = SmartModuleInternalError::try_from(filter_output)
-                .unwrap_or(SmartModuleInternalError::UnknownError);
+            let internal_error = SmartModuleTransformErrorStatus::try_from(filter_output)
+                .unwrap_or(SmartModuleTransformErrorStatus::UnknownError);
             return Err(internal_error.into());
         }
 
@@ -87,5 +64,165 @@ impl SmartModuleTransform for SmartModuleFilter {
 
     fn name(&self) -> &str {
         FILTER_FN_NAME
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use std::{convert::TryFrom};
+
+    use fluvio_smartmodule::{
+        dataplane::smartmodule::{SmartModuleInput},
+        Record,
+    };
+
+    use crate::{SmartEngine, SmartModuleConfig};
+
+    const SM_FILTER: &str = "fluvio_smartmodule_filter";
+    const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
+
+    use super::super::test::read_wasm_module;
+
+    #[ignore]
+    #[test]
+    fn test_filter() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder().build().unwrap(),
+                read_wasm_module(SM_FILTER),
+            )
+            .expect("failed to create filter");
+
+        assert_eq!(
+            chain_builder
+                .instances()
+                .first()
+                .expect("first")
+                .transform()
+                .name(),
+            super::FILTER_FN_NAME
+        );
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        let input = vec![Record::new("hello world")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 0); // no records passed
+
+        let input = vec![Record::new("apple"), Record::new("fruit")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 1); // one record passed
+        assert_eq!(output.successes[0].value.as_ref(), b"apple");
+    }
+
+    #[ignore]
+    #[test]
+    fn test_filter_with_init_invalid_param() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder().build().unwrap(),
+                read_wasm_module(SM_FILTER_INIT),
+            )
+            .expect("failed to create filter");
+
+        assert_eq!(
+            chain_builder
+                .instances()
+                .first()
+                .expect("first")
+                .transform()
+                .name(),
+            crate::transforms::filter::FILTER_FN_NAME
+        );
+
+        assert_eq!(
+            chain_builder
+                .initialize()
+                .expect_err("should return param error")
+                .to_string(),
+            "Missing param key\n\nSmartModule Init Error: \n"
+        );
+    }
+
+    #[ignore]
+    #[test]
+    fn test_filter_with_init_ok() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .param("key", "a")
+                    .build()
+                    .unwrap(),
+                read_wasm_module(SM_FILTER_INIT),
+            )
+            .expect("failed to create filter");
+
+        let instance = chain_builder.instances().first().expect("first");
+
+        assert_eq!(
+            instance.transform().name(),
+            crate::transforms::filter::FILTER_FN_NAME
+        );
+
+        assert!(instance.get_init().is_some());
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        let input = vec![Record::new("hello world")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 0); // no records passed
+
+        let input = vec![
+            Record::new("apple"),
+            Record::new("fruit"),
+            Record::new("banana"),
+        ];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 2); // one record passed
+        assert_eq!(output.successes[0].value.as_ref(), b"apple");
+        assert_eq!(output.successes[1].value.as_ref(), b"banana");
+
+        // build 2nd chain with different parameter
+        let mut chain_builder = engine.builder();
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .param("key", "b")
+                    .build()
+                    .unwrap(),
+                read_wasm_module(SM_FILTER_INIT),
+            )
+            .expect("failed to create filter");
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        let input = vec![
+            Record::new("apple"),
+            Record::new("fruit"),
+            Record::new("banana"),
+        ];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 1); // only banana
+        assert_eq!(output.successes[0].value.as_ref(), b"banana");
     }
 }

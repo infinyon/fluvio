@@ -1968,7 +1968,6 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-types",
- "nix 0.25.0",
  "thiserror",
  "tracing",
  "wasmtime",
@@ -1977,7 +1976,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.4.0"
+version = "0.3.0"
 dependencies = [
  "eyre",
  "fluvio-protocol",
@@ -1989,7 +1988,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2060,6 +2059,7 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
+ "nix 0.25.0",
  "once_cell",
  "pin-utils",
  "portpicker",

@@ -140,8 +140,14 @@ pub enum ErrorCode {
     #[error("SmartModule is not a valid '{kind}' SmartModule due to {error}. Are you missing a #[smartmodule({kind})] attribute?")]
     SmartModuleInvalidExports { error: String, kind: String },
     #[fluvio(tag = 6004)]
-    #[error("SmartModule runtime error {0}")]
-    SmartModuleRuntimeError(super::smartmodule::SmartModuleRuntimeError),
+    #[error("SmartModule transform error {0}")]
+    SmartModuleRuntimeError(super::smartmodule::SmartModuleTransformRuntimeError),
+    #[fluvio(tag = 6005)]
+    #[error("Error initializing {0} SmartModule Chain")]
+    SmartModuleChainInitError(String),
+    #[fluvio(tag = 6006)]
+    #[error("SmartModule init error {0}")]
+    SmartModuleInitError(super::smartmodule::SmartModuleInitRuntimeError),
 
     // TableFormat Errors
     #[fluvio(tag = 7000)]

@@ -9,7 +9,7 @@ use crate::{
 
 /// A type used to capture and serialize errors from within a SmartModule
 #[derive(thiserror::Error, Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
-pub struct SmartModuleRuntimeError {
+pub struct SmartModuleTransformRuntimeError {
     /// Error hint: meant for users, not for code
     pub hint: String,
     /// The offset of the Record that had a runtime error
@@ -22,7 +22,7 @@ pub struct SmartModuleRuntimeError {
     pub record_value: RecordData,
 }
 
-impl SmartModuleRuntimeError {
+impl SmartModuleTransformRuntimeError {
     pub fn new(
         record: &Record,
         base_offset: Offset,
@@ -43,7 +43,7 @@ impl SmartModuleRuntimeError {
     }
 }
 
-impl fmt::Display for SmartModuleRuntimeError {
+impl fmt::Display for SmartModuleTransformRuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let key = self
             .record_key
@@ -104,7 +104,7 @@ impl fmt::Display for SmartModuleKind {
 #[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 pub enum LegacySmartModuleError {
     #[error("Runtime error")]
-    Runtime(#[from] SmartModuleRuntimeError),
+    Runtime(#[from] SmartModuleTransformRuntimeError),
     #[error("WASM Module error: {0}")]
     InvalidWasmModule(String),
     #[error("WASM module is not a valid '{0}' DerivedStream. Are you missing a #[smartmodule({0})] attribute?")]
@@ -114,5 +114,30 @@ pub enum LegacySmartModuleError {
 impl Default for LegacySmartModuleError {
     fn default() -> Self {
         Self::Runtime(Default::default())
+    }
+}
+
+/// A type used to capture and serialize errors from within a SmartModule
+#[derive(thiserror::Error, Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
+pub struct SmartModuleInitRuntimeError {
+    /// Error hint: meant for users, not for code
+    pub hint: String,
+}
+
+impl SmartModuleInitRuntimeError {
+    pub fn new(error: eyre::Error) -> Self {
+        let hint = format!("{:?}", error);
+        Self { hint }
+    }
+}
+
+impl fmt::Display for SmartModuleInitRuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}\n\n\
+            SmartModule Init Error: \n",
+            self.hint
+        )
     }
 }

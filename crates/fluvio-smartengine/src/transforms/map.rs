@@ -2,46 +2,25 @@ use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
-use wasmtime::{AsContextMut, Trap, TypedFunc};
+use wasmtime::{AsContextMut, TypedFunc};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
 };
 use crate::{
-    WasmSlice,
-    error::EngineError,
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     WasmState,
 };
 
-pub(crate) const MAP_FN_NAME: &str = "map";
-type BaseMapFn = TypedFunc<(i32, i32), i32>;
-type MapWithParamFn = TypedFunc<(i32, i32, u32), i32>;
+const MAP_FN_NAME: &str = "map";
 
-#[derive(Debug)]
-pub struct SmartModuleMap {
-    map_fn: MapFnKind,
-}
-enum MapFnKind {
-    Base(BaseMapFn),
-    Param(MapWithParamFn),
-}
+type WasmMapFn = TypedFunc<(i32, i32, u32), i32>;
 
-impl Debug for MapFnKind {
+pub struct SmartModuleMap(WasmMapFn);
+
+impl Debug for SmartModuleMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Base(..) => write!(f, "BaseMapFn"),
-            Self::Param(..) => write!(f, "MapFnWithParam"),
-        }
-    }
-}
-
-impl MapFnKind {
-    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
-        match self {
-            Self::Base(map_fn) => map_fn.call(store, (slice.0, slice.1)),
-            Self::Param(map_fn) => map_fn.call(store, slice),
-        }
+        write!(f, "MapFnWithParam")
     }
 }
 
@@ -50,15 +29,13 @@ impl SmartModuleMap {
     pub(crate) fn try_instantiate(
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>, EngineError> {
+    ) -> Result<Option<Self>> {
         match ctx.get_wasm_func(store, MAP_FN_NAME) {
             Some(func) => {
                 // check type signature
                 func.typed(&mut *store)
-                    .map(MapFnKind::Base)
-                    .or_else(|_| func.typed(&mut *store).map(MapFnKind::Param))
-                    .map(|map_fn| Some(Self { map_fn }))
-                    .map_err(|wasm_err| EngineError::TypeConversion(MAP_FN_NAME, wasm_err))
+                    .or_else(|_| func.typed(&mut *store))
+                    .map(|map_fn| Some(Self(map_fn)))
             }
             None => Ok(None),
         }
@@ -73,11 +50,11 @@ impl SmartModuleTransform for SmartModuleMap {
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
         let slice = ctx.write_input(&input, &mut *store)?;
-        let map_output = self.map_fn.call(&mut *store, slice)?;
+        let map_output = self.0.call(&mut *store, slice)?;
 
         if map_output < 0 {
-            let internal_error = SmartModuleInternalError::try_from(map_output)
-                .unwrap_or(SmartModuleInternalError::UnknownError);
+            let internal_error = SmartModuleTransformErrorStatus::try_from(map_output)
+                .unwrap_or(SmartModuleTransformErrorStatus::UnknownError);
             return Err(internal_error.into());
         }
 
@@ -87,5 +64,56 @@ impl SmartModuleTransform for SmartModuleMap {
 
     fn name(&self) -> &str {
         MAP_FN_NAME
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use std::{convert::TryFrom};
+
+    use fluvio_smartmodule::{
+        dataplane::smartmodule::{SmartModuleInput},
+        Record,
+    };
+
+    use crate::{SmartEngine, SmartModuleConfig};
+
+    const SM_MAP: &str = "fluvio_smartmodule_map";
+
+    use super::super::test::read_wasm_module;
+
+    #[ignore]
+    #[test]
+    fn test_map() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder().build().unwrap(),
+                read_wasm_module(SM_MAP),
+            )
+            .expect("failed to create map");
+
+        assert_eq!(
+            chain_builder
+                .instances()
+                .first()
+                .expect("first")
+                .transform()
+                .name(),
+            super::MAP_FN_NAME
+        );
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+
+        let input = vec![Record::new("apple"), Record::new("fruit")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 2); // one record passed
+        assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
+        assert_eq!(output.successes[1].value.as_ref(), b"FRUIT");
     }
 }

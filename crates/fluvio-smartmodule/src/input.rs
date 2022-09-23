@@ -19,15 +19,21 @@ impl SmartModuleExtraParams {
     pub fn get(&self, key: &str) -> Option<&String> {
         self.inner.get(key)
     }
+
+    pub fn insert(&mut self, key: String, value: String) {
+        self.inner.insert(key, value);
+    }
 }
 
-/// Common data that gets passed as input to every SmartModule WASM module
+/// Old Common data that gets passed as input to every SmartModule WASM module
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleInput {
     /// The base offset of this batch of records
     pub base_offset: Offset,
     /// The records for the SmartModule to process
     pub record_data: Vec<u8>,
+    /// This is deprecrated, extra parameters should not be passed, they will be removed in the future
+    #[deprecated]
     pub params: SmartModuleExtraParams,
     #[fluvio(min_version = 16)]
     pub join_record: Vec<u8>,
@@ -63,4 +69,10 @@ pub struct SmartModuleAggregateInput {
     pub base: SmartModuleInput,
     /// The current value of the Aggregate's accumulator
     pub accumulator: Vec<u8>,
+}
+
+/// Input to SmartModule Init
+#[derive(Debug, Default, Clone, Encoder, Decoder)]
+pub struct SmartModuleInitInput {
+    pub params: SmartModuleExtraParams,
 }

@@ -52,7 +52,7 @@ use crate::error::Result;
 pub struct TopicProducer {
     inner: Arc<InnerTopicProducer>,
     #[cfg(feature = "smartengine")]
-    sm_chain: Option<Arc<RwLock<fluvio_smartengine::SmartModuleChain>>>,
+    sm_chain: Option<Arc<RwLock<fluvio_smartengine::SmartModuleChainInstance>>>,
 }
 
 /// Pool of producers for a given topic. There is a producer per partition
@@ -230,13 +230,15 @@ cfg_if::cfg_if! {
 
         impl TopicProducer {
             fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
-                let mut chain = SM_ENGINE.new_chain();
+                let mut chain = SM_ENGINE.builder();
                 chain.add_smart_module(
                     SmartModuleConfig::builder()
                      .params(smart_payload.params).build()?,
                     smart_payload.wasm.get_raw()?,
                     ).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-                self.sm_chain = Some(Arc::new(RwLock::new(chain)));
+
+                let chain_instance = chain.initialize().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                self.sm_chain = Some(Arc::new(RwLock::new(chain_instance)));
                 Ok(())
             }
             /// Adds a SmartModule filter to this TopicProducer

@@ -22,7 +22,7 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="uppercase"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_map.wasm
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm
     # Print out cmd since we need complete trace of cmd not just failing
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_output "smart-module \"$SMARTMODULE_NAME\" has been created."
@@ -70,7 +70,7 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="contains-a"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_filter.wasm
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter.wasm
     echo "cmd: $BATS_RUN_COMMAND" >&2 
     assert_success
 
@@ -128,7 +128,7 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="contains-a-or-param"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_filter_with_parameters.wasm 
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_param.wasm 
     assert_success
 
     # Create topic
@@ -193,7 +193,7 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="divide-even-by-2"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_filter_map.wasm 
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_map.wasm 
     assert_success
 
     # Create topic
@@ -242,7 +242,7 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="json-object-flatten"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_array_map_object.wasm 
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_array_map_object.wasm 
 
     assert_success
 
@@ -293,7 +293,7 @@ setup_file() {
     # Load the smart-module
     SMARTMODULE_NAME="concat-strings"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_aggregate.wasm 
+    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_aggregate.wasm 
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_output "smart-module \"$SMARTMODULE_NAME\" has been created."
 
