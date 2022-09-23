@@ -40,7 +40,6 @@ semver = "1.0.0"
 once_cell = "1.5"
 cfg-if = { version = "1.0.0" }
 sysinfo = "0.26.0"
-serde_yaml = "0.9.4"
 
 # Fluvio dependencies
 fluvio-auth = { path = "../fluvio-auth" }
