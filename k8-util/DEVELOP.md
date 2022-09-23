@@ -1,5 +1,13 @@
 ## Trace K8 API 
 
+Set up Local Proxy to minikube.  It's easy to confingure for other K8 cluster
+as well:
+
+```bash
+kubectl proxy --context=minikube
+Starting to serve on 127.0.0.1:8001
+```
+
 Add proxy cluster configuration to `~/.kube/config`
 
 ```yml
@@ -13,20 +21,6 @@ contexts:
     cluster: proxy
     user: minikube
   name: proxy
-```
-
-Change kubectl to use proxy:
-
-```bash
-kubectl config use-context proxy
-```
-
-Set up Local Proxy to minikube.  It's easy to confingure for other K8 cluster
-as well:
-
-```bash
-kubectl proxy
-Starting to serve on 127.0.0.1:8001
 ```
 
 Use `tcpdump` to inspect:
