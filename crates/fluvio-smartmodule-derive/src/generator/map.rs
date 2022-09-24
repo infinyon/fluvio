@@ -1,5 +1,6 @@
 use quote::quote;
 use proc_macro2::TokenStream;
+use syn::ItemFn;
 use crate::SmartModuleFn;
 
 pub fn generate_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
@@ -10,6 +11,35 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
         super:: #user_fn(&record)
     );
 
+    generate_transform(
+        user_code,
+        quote! {
+            for mut record in records.into_iter() {
+                let result = #function_call;
+                match result {
+                    Ok((maybe_key, value)) => {
+                        record.key = maybe_key;
+                        record.value = value;
+                        output.successes.push(record);
+                    }
+                    Err(err) => {
+                        let error = SmartModuleTransformRuntimeError::new(
+                            &record,
+                            smartmodule_input.base_offset,
+                            SmartModuleKind::Map,
+                            err,
+                        );
+                        output.error = Some(error);
+                        break;
+                    }
+                }
+            }
+
+        },
+    )
+}
+
+fn generate_transform(user_code: &ItemFn, transform: TokenStream) -> TokenStream {
     quote! {
 
         #[allow(dead_code)]
@@ -51,26 +81,7 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     error: None,
                 };
 
-                for mut record in records.into_iter() {
-                    let result = #function_call;
-                    match result {
-                        Ok((maybe_key, value)) => {
-                            record.key = maybe_key;
-                            record.value = value;
-                            output.successes.push(record);
-                        }
-                        Err(err) => {
-                            let error = SmartModuleTransformRuntimeError::new(
-                                &record,
-                                smartmodule_input.base_offset,
-                                SmartModuleKind::Map,
-                                err,
-                            );
-                            output.error = Some(error);
-                            break;
-                        }
-                    }
-                }
+                #transform
 
                 // ENCODING
                 let mut out = vec![];
