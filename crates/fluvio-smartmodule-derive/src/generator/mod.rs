@@ -8,7 +8,7 @@ mod filter_map;
 mod aggregate;
 mod join;
 mod init;
-
+mod transform;
 pub mod opt;
 
 pub fn generate_smartmodule(config: &SmartModuleConfig, func: &SmartModuleFn) -> TokenStream {
