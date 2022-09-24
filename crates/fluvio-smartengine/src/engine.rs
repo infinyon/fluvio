@@ -206,6 +206,7 @@ impl SmartModuleChainInstance {
     pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
         let base_offset = input.base_offset();
         let mut records: VecDeque<Record> = VecDeque::new();
+        // always start with a single raw input
         let mut raw_inputs = VecDeque::from([input.into_raw_bytes()]);
 
         for instance in self.instances.iter_mut() {
@@ -216,6 +217,8 @@ impl SmartModuleChainInstance {
                 raw_inputs.push_back(raw_input);
             }
 
+            // pass raw inputs to transform instance
+            // each raw input may result in multiple records
             while let Some(raw_input) = raw_inputs.pop_front() {
                 let input = SmartModuleInput::new(raw_input, base_offset);
                 let output = instance.process(input, &mut self.store)?;
