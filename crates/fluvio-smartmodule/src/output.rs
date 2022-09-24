@@ -13,6 +13,22 @@ pub struct SmartModuleOutput {
     pub error: Option<SmartModuleTransformRuntimeError>,
 }
 
+impl SmartModuleOutput {
+    pub fn new(successes: Vec<Record>) -> Self {
+        Self {
+            successes,
+            error: None,
+        }
+    }
+
+    pub fn with_error(error: SmartModuleTransformRuntimeError) -> Self {
+        Self {
+            successes: vec![],
+            error: Some(error),
+        }
+    }
+}
+
 /// A type used to return processed records and/or an error from an Aggregate SmartModule
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct SmartModuleAggregateOutput {

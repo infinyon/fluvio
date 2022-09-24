@@ -23,12 +23,12 @@ pub(crate) trait BatchSmartEngine {
 }
 
 impl BatchSmartEngine for SmartModuleChainInstance {
-    #[instrument(skip(self, iter, max_bytes, join_last_record))]
+    #[instrument(skip(self, iter, max_bytes))]
     fn process_batch(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-        join_last_record: Option<&Record>,
+        _join_last_record: Option<&Record>,
     ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
         let mut smartmodule_batch = Batch::<MemoryRecords>::default();
         smartmodule_batch.base_offset = -1; // indicate this is uninitialized
@@ -61,15 +61,12 @@ impl BatchSmartEngine for SmartModuleChainInstance {
 
             let now = Instant::now();
 
-            let mut join_record = vec![];
-            join_last_record.encode(&mut join_record, 0)?;
+            //  let mut join_record = vec![];
+            //  join_last_record.encode(&mut join_record, 0)?;
 
-            let input = SmartModuleInput {
-                base_offset: file_batch.batch.base_offset,
-                record_data: file_batch.records.clone(),
-                join_record,
-                ..Default::default()
-            };
+            let input =
+                SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
+
             let output = self.process(input)?;
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 

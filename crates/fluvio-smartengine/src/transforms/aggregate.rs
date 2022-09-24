@@ -63,7 +63,7 @@ impl SmartModuleAggregate {
 }
 
 impl SmartModuleTransform for SmartModuleAggregate {
-    #[instrument(skip(self,ctx,store),fields(offset = input.base_offset))]
+    #[instrument(skip(self,ctx,store),fields(offset = input.base_offset()))]
     fn process(
         &mut self,
         input: SmartModuleInput,

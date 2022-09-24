@@ -1,8 +1,11 @@
+use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
 use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
 use derive_builder::Builder;
+use fluvio_protocol::Encoder;
+use fluvio_smartmodule::Record;
 use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
@@ -196,15 +199,32 @@ impl DerefMut for SmartModuleChainInstance {
 }
 
 impl SmartModuleChainInstance {
-    /// process a record
+    /// A single record is processed thru all smart modules in the chain.
+    /// The output of one smart module is the input of the next smart module.
+    /// A single record may result in multiple records.
+    /// The output of the last smart module is added to the output of the chain.
     pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
-        // only perform a single transform now
-        let first_instance = self.instances.first_mut();
-        if let Some(instance) = first_instance {
-            instance.process(input, &mut self.store)
-        } else {
-            Err(Error::msg("No transform found"))
+        let base_offset = input.base_offset();
+        let mut records: VecDeque<Record> = VecDeque::new();
+        let mut raw_inputs = VecDeque::from([input.into_raw_bytes()]);
+
+        for instance in self.instances.iter_mut() {
+            // first transform pending records into raw
+            while let Some(record) = records.pop_front() {
+                let mut raw_input = vec![];
+                record.encode(&mut raw_input, 0)?;
+                raw_inputs.push_back(raw_input);
+            }
+
+            while let Some(raw_input) = raw_inputs.pop_front() {
+                let input = SmartModuleInput::new(raw_input, base_offset);
+                let output = instance.process(input, &mut self.store)?;
+                let mut output_vec = VecDeque::from(output.successes);
+                records.append(&mut output_vec);
+            }
         }
+
+        Ok(SmartModuleOutput::new(records.into()))
     }
 }
 
