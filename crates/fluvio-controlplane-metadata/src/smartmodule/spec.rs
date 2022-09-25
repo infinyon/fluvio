@@ -101,8 +101,8 @@ mod map_init_params {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSourceCode {
-    language: SmartModuleSourceCodeLanguage,
-    payload: String,
+    pub language: SmartModuleSourceCodeLanguage,
+    pub payload: String,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
