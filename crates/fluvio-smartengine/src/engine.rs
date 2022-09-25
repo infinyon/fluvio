@@ -157,18 +157,13 @@ impl SmartModuleChainBuilder {
 
     /// stop adding smart module and return SmartModuleChain that can be executed
     pub fn initialize(mut self) -> Result<SmartModuleChainInstance> {
-        // only perform a single transform now
-        let first_instance = self.instances.first_mut();
-        if let Some(instance) = first_instance {
-            // ignore output
+        for instance in self.instances.iter_mut() {
             instance.init(&mut self.store)?;
-            Ok(SmartModuleChainInstance {
-                store: self.store,
-                instances: self.instances,
-            })
-        } else {
-            Err(Error::msg("No init found"))
         }
+        Ok(SmartModuleChainInstance {
+            store: self.store,
+            instances: self.instances,
+        })
     }
 }
 
@@ -199,6 +194,11 @@ impl DerefMut for SmartModuleChainInstance {
 }
 
 impl SmartModuleChainInstance {
+    #[cfg(test)]
+    pub(crate) fn instances(&self) -> &Vec<SmartModuleInstance> {
+        &self.instances
+    }
+
     /// A single record is processed thru all smart modules in the chain.
     /// The output of one smart module is the input of the next smart module.
     /// A single record may result in multiple records.
@@ -319,6 +319,7 @@ mod chaining_test {
     use crate::{SmartEngine, SmartModuleConfig};
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
+    const SM_MAP: &str = "fluvio_smartmodule_map";
 
     use crate::fixture::read_wasm_module;
 
@@ -338,7 +339,15 @@ mod chaining_test {
             )
             .expect("failed to create filter");
 
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder().build().unwrap(),
+                read_wasm_module(SM_MAP),
+            )
+            .expect("failed to create map");
+
         let mut chain = chain_builder.initialize().expect("failed to build chain");
+        assert_eq!(chain.instances().len(), 2);
 
         let input = vec![Record::new("hello world")];
         let output = chain
