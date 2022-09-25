@@ -9,3 +9,6 @@ pub mod instance;
 
 pub type WasmSlice = (i32, i32, u32);
 pub type Version = i16;
+
+#[cfg(test)]
+mod fixture;

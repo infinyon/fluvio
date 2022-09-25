@@ -109,7 +109,7 @@ mod test {
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 
-    use super::super::test::read_wasm_module;
+    use crate::fixture::read_wasm_module;
 
     #[ignore]
     #[test]

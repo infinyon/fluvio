@@ -82,7 +82,7 @@ mod test {
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
 
-    use super::super::test::read_wasm_module;
+    use crate::fixture::read_wasm_module;
 
     #[ignore]
     #[test]

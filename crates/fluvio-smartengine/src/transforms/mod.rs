@@ -6,9 +6,6 @@ pub(crate) mod aggregate;
 pub(crate) mod join;
 pub(crate) mod join_stream;
 
-#[cfg(test)]
-mod test;
-
 pub(crate) use instance::create_transform;
 
 mod instance {
