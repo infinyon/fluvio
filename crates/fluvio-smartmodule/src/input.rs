@@ -59,6 +59,10 @@ impl SmartModuleInput {
     pub fn into_raw_bytes(self) -> Vec<u8> {
         self.raw_bytes
     }
+
+    pub fn parts(self) -> (Vec<u8>, Vec<u8>) {
+        (self.raw_bytes, self.join_record)
+    }
 }
 
 impl std::convert::TryFrom<Vec<Record>> for SmartModuleInput {
