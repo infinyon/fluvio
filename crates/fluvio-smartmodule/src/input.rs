@@ -52,6 +52,10 @@ impl SmartModuleInput {
         self.base_offset
     }
 
+    pub fn set_base_offset(&mut self, base_offset: Offset) {
+        self.base_offset = base_offset;
+    }
+
     pub fn raw_bytes(&self) -> &[u8] {
         &self.raw_bytes
     }

@@ -1,12 +1,12 @@
-use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
 use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
 use derive_builder::Builder;
-use fluvio_protocol::Encoder;
-use fluvio_smartmodule::Record;
 use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
+
+use fluvio_protocol::record::Offset;
+use fluvio_smartmodule::Record;
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
@@ -204,34 +204,65 @@ impl SmartModuleChainInstance {
     /// A single record may result in multiple records.
     /// The output of the last smart module is added to the output of the chain.
     pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
-        let base_offset = input.base_offset();
-        let mut records: VecDeque<Record> = VecDeque::new();
-        // always start with a single raw input
-        let mut raw_inputs = VecDeque::from([input.into_raw_bytes()]);
+        enum SmartModuleStepInput {
+            Raw(Vec<u8>),
+            Records(Vec<Record>),
+        }
 
-        for instance in self.instances.iter_mut() {
-            // first transform pending records into raw
-            while let Some(record) = records.pop_front() {
-                let mut raw_input = vec![];
-                record.encode(&mut raw_input, 0)?;
-                raw_inputs.push_back(raw_input);
+        impl From<Vec<u8>> for SmartModuleStepInput {
+            fn from(input: Vec<u8>) -> Self {
+                SmartModuleStepInput::Raw(input)
+            }
+        }
+
+        impl From<Vec<Record>> for SmartModuleStepInput {
+            fn from(input: Vec<Record>) -> Self {
+                SmartModuleStepInput::Records(input)
+            }
+        }
+
+        impl SmartModuleStepInput {
+            fn into_input(self, base_offset: Offset) -> Result<SmartModuleInput> {
+                match self {
+                    SmartModuleStepInput::Raw(input) => {
+                        Ok(SmartModuleInput::new(input, base_offset))
+                    }
+                    SmartModuleStepInput::Records(records) => {
+                        let mut input: SmartModuleInput = records.try_into()?;
+                        input.set_base_offset(base_offset);
+                        Ok(input)
+                    }
+                }
             }
 
-            // pass raw inputs to transform instance
-            // each raw input may result in multiple records
-            while let Some(raw_input) = raw_inputs.pop_front() {
-                let input = SmartModuleInput::new(raw_input, base_offset);
-                let output = instance.process(input, &mut self.store)?;
-                let mut output_vec = VecDeque::from(output.successes);
-                records.append(&mut output_vec);
-                if output.error.is_some() {
-                    // encountered error, we stop processing and return partial output
-                    return Ok(SmartModuleOutput::with_error(records.into(), output.error));
+            fn try_into_output(self) -> Result<SmartModuleOutput> {
+                match self {
+                    SmartModuleStepInput::Raw(_) => Err(Error::msg("Unexpected raw input")),
+                    SmartModuleStepInput::Records(records) => Ok(SmartModuleOutput::new(records)),
                 }
             }
         }
 
-        Ok(SmartModuleOutput::new(records.into()))
+        let base_offset = input.base_offset();
+
+        let mut next_input: SmartModuleStepInput = input.into_raw_bytes().into();
+
+        for instance in self.instances.iter_mut() {
+            // pass raw inputs to transform instance
+            // each raw input may result in multiple records
+            //println!("raw records: {}", next_input.len());
+            let step_input = next_input.into_input(base_offset)?;
+            let output = instance.process(step_input, &mut self.store)?;
+
+            if output.error.is_some() {
+                // encountered error, we stop processing and return partial output
+                return Ok(output);
+            } else {
+                next_input = output.successes.into();
+            }
+        }
+
+        next_input.try_into_output()
     }
 }
 
@@ -364,32 +395,7 @@ mod chaining_test {
             .process(SmartModuleInput::try_from(input).expect("input"))
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
-        assert_eq!(output.successes[0].value.as_ref(), b"apple");
-        assert_eq!(output.successes[1].value.as_ref(), b"banana");
-
-        // build 2nd chain with different parameter
-        let mut chain_builder = engine.builder();
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .param("key", "b")
-                    .build()
-                    .unwrap(),
-                read_wasm_module(SM_FILTER_INIT),
-            )
-            .expect("failed to create filter");
-
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
-
-        let input = vec![
-            Record::new("apple"),
-            Record::new("fruit"),
-            Record::new("banana"),
-        ];
-        let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
-            .expect("process");
-        assert_eq!(output.successes.len(), 1); // only banana
-        assert_eq!(output.successes[0].value.as_ref(), b"banana");
+        assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
+        assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
     }
 }
