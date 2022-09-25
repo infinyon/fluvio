@@ -2,6 +2,7 @@ use proc_macro::TokenStream;
 use syn::{AttributeArgs, DeriveInput, ItemFn, parse_macro_input};
 use crate::ast::{SmartModuleConfig, SmartModuleFn, SmartModuleKind};
 mod ast;
+mod util;
 mod generator;
 
 #[proc_macro_attribute]
