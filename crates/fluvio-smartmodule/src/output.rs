@@ -21,11 +21,11 @@ impl SmartModuleOutput {
         }
     }
 
-    pub fn with_error(error: SmartModuleTransformRuntimeError) -> Self {
-        Self {
-            successes: vec![],
-            error: Some(error),
-        }
+    pub fn with_error(
+        successes: Vec<Record>,
+        error: Option<SmartModuleTransformRuntimeError>,
+    ) -> Self {
+        Self { successes, error }
     }
 }
 

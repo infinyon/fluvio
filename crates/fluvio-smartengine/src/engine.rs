@@ -224,6 +224,10 @@ impl SmartModuleChainInstance {
                 let output = instance.process(input, &mut self.store)?;
                 let mut output_vec = VecDeque::from(output.successes);
                 records.append(&mut output_vec);
+                if output.error.is_some() {
+                    // encountered error, we stop processing and return partial output
+                    return Ok(SmartModuleOutput::with_error(records.into(), output.error));
+                }
             }
         }
 
