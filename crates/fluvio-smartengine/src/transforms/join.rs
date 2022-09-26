@@ -1,11 +1,8 @@
-use std::convert::TryFrom;
 use std::fmt::Debug;
 
 use anyhow::Result;
-use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
-};
-use tracing::{debug, instrument};
+use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
+use tracing::{instrument};
 use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
@@ -44,13 +41,14 @@ impl SmartModuleJoin {
 }
 
 impl SmartModuleTransform for SmartModuleJoin {
-    #[instrument(skip(self, input, ctx, store), name = "Join")]
+    #[instrument(skip(self, _input, _ctx, _store), name = "Join")]
     fn process(
         &mut self,
-        input: SmartModuleInput,
-        ctx: &mut SmartModuleInstanceContext,
-        store: &mut WasmState,
+        _input: SmartModuleInput,
+        _ctx: &mut SmartModuleInstanceContext,
+        _store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
+        /*
         let slice = ctx.write_input(&input, &mut *store)?;
         debug!(len = slice.1, "WASM SLICE");
         let map_output = self.0.call(&mut *store, slice)?;
@@ -63,6 +61,8 @@ impl SmartModuleTransform for SmartModuleJoin {
 
         let output: SmartModuleOutput = ctx.read_output(store)?;
         Ok(output)
+        */
+        Err(anyhow::anyhow!("Join is disabled for now"))
     }
 
     fn name(&self) -> &str {
