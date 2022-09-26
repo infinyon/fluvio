@@ -38,6 +38,12 @@ pub struct SmartModuleAggregateOutput {
     pub accumulator: Vec<u8>,
 }
 
+impl SmartModuleAggregateOutput {
+    pub fn new(base: SmartModuleOutput, accumulator: Vec<u8>) -> Self {
+        Self { base, accumulator }
+    }
+}
+
 /// A type used to return processed records and/or an error from a SmartModule
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct SmartModuleInitOutput {

@@ -347,7 +347,7 @@ mod chaining_test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig};
+    use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
     const SM_MAP: &str = "fluvio_smartmodule_map";
@@ -356,7 +356,7 @@ mod chaining_test {
 
     #[ignore]
     #[test]
-    fn test_chain() {
+    fn test_chain_filter_map() {
         let engine = SmartEngine::new();
         let mut chain_builder = engine.builder();
 
@@ -397,5 +397,67 @@ mod chaining_test {
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
+    }
+
+    const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
+
+    #[ignore]
+    #[test]
+    fn test_chain_filter_aggregate() {
+        let engine = SmartEngine::new();
+        let mut chain_builder = engine.builder();
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .param("key", "a")
+                    .build()
+                    .unwrap(),
+                read_wasm_module(SM_FILTER_INIT),
+            )
+            .expect("failed to create filter");
+
+        chain_builder
+            .add_smart_module(
+                SmartModuleConfig::builder()
+                    .initial_data(SmartModuleInitialData::with_aggregate(
+                        "zero".to_string().as_bytes().to_vec(),
+                    ))
+                    .build()
+                    .unwrap(),
+                read_wasm_module(SM_AGGEGRATE),
+            )
+            .expect("failed to create aggegrate");
+
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        assert_eq!(chain.instances().len(), 2);
+
+        let input = vec![
+            Record::new("apple"),
+            Record::new("fruit"),
+            Record::new("banana"),
+        ];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 2); // one record passed
+        assert_eq!(output.successes[0].value().to_string(), "zeroapple");
+        assert_eq!(output.successes[1].value().to_string(), "zeroapplebanana");
+
+        let input = vec![Record::new("nothing")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 0); // one record passed
+
+        let input = vec![Record::new("elephant")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"))
+            .expect("process");
+        assert_eq!(output.successes.len(), 1); // one record passed
+        assert_eq!(
+            output.successes[0].value().to_string(),
+            "zeroapplebananaelephant"
+        );
     }
 }

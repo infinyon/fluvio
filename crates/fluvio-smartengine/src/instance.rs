@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::fmt::{self, Debug};
 
@@ -18,13 +19,13 @@ use crate::{WasmSlice, memory, SmartModuleChainBuilder, State, WasmState};
 pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,
     init: Option<SmartModuleInit>,
-    transform: Box<dyn SmartModuleTransform>,
+    transform: Box<dyn DowncastableTransform>,
 }
 
 impl SmartModuleInstance {
     #[cfg(test)]
     #[allow(clippy::borrowed_box)]
-    pub(crate) fn transform(&self) -> &Box<dyn SmartModuleTransform> {
+    pub(crate) fn transform(&self) -> &Box<dyn DowncastableTransform> {
         &self.transform
     }
 
@@ -36,7 +37,7 @@ impl SmartModuleInstance {
     pub(crate) fn new(
         ctx: SmartModuleInstanceContext,
         init: Option<SmartModuleInit>,
-        transform: Box<dyn SmartModuleTransform>,
+        transform: Box<dyn DowncastableTransform>,
     ) -> Self {
         Self {
             ctx,
@@ -154,7 +155,7 @@ impl SmartModuleInstanceContext {
     }
 }
 
-pub(crate) trait SmartModuleTransform: Send + Sync {
+pub(crate) trait SmartModuleTransform: Send + Sync + Any {
     /// transform records
     fn process(
         &mut self,
@@ -165,6 +166,16 @@ pub(crate) trait SmartModuleTransform: Send + Sync {
 
     /// return name of transform, this is used for identifying transform and debugging
     fn name(&self) -> &str;
+}
+
+pub(crate) trait DowncastableTransform: SmartModuleTransform + Any {
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl<T: SmartModuleTransform + Any> DowncastableTransform for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[derive(Clone)]

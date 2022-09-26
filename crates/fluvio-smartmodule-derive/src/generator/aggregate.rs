@@ -53,7 +53,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                         successes: Vec::with_capacity(records.len()),
                         error: None,
                     },
-                    accumulator: Vec::new()
+                    accumulator: accumulator.clone(),
                 };
 
                 for mut record in records.into_iter() {
@@ -64,7 +64,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                         Ok(value) => {
                             accumulator = Vec::from(value.as_ref());
                             output.accumulator = accumulator.clone();
-                            record.value = RecordData::from(accumulator.clone());
+                            record.value = RecordData::from(output.accumulator.clone());
                             output.base.successes.push(record);
                         }
                         Err(err) => {
