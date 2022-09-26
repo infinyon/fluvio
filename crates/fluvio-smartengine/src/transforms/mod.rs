@@ -6,9 +6,6 @@ pub(crate) mod aggregate;
 pub(crate) mod join;
 pub(crate) mod join_stream;
 
-#[cfg(test)]
-mod test;
-
 pub(crate) use instance::create_transform;
 
 mod instance {
@@ -17,7 +14,7 @@ mod instance {
     use wasmtime::{AsContextMut};
 
     use crate::{
-        instance::{SmartModuleTransform, SmartModuleInstanceContext},
+        instance::{SmartModuleInstanceContext, DowncastableTransform},
         error::EngineError,
         SmartModuleInitialData,
     };
@@ -32,33 +29,33 @@ mod instance {
         ctx: &SmartModuleInstanceContext,
         initial_data: SmartModuleInitialData,
         store: &mut impl AsContextMut,
-    ) -> Result<Box<dyn SmartModuleTransform>> {
+    ) -> Result<Box<dyn DowncastableTransform>> {
         if let Some(tr) = SmartModuleFilter::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleMap::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleFilterMap::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleArrayMap::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleJoin::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleJoinStream::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleAggregate::try_instantiate(ctx, initial_data, store)?
-            .map(|transform| Box::new(transform) as Box<dyn SmartModuleTransform>)
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else {

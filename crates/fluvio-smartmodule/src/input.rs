@@ -25,26 +25,57 @@ impl SmartModuleExtraParams {
     }
 }
 
-/// Old Common data that gets passed as input to every SmartModule WASM module
+/// A single SmartModule input record
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleInput {
     /// The base offset of this batch of records
-    pub base_offset: Offset,
-    /// The records for the SmartModule to process
-    pub record_data: Vec<u8>,
+    base_offset: Offset,
+    /// encoded version of Record
+    raw_bytes: Vec<u8>,
     /// This is deprecrated, extra parameters should not be passed, they will be removed in the future
     #[deprecated]
-    pub params: SmartModuleExtraParams,
+    params: SmartModuleExtraParams,
     #[fluvio(min_version = 16)]
-    pub join_record: Vec<u8>,
+    join_record: Vec<u8>,
 }
+
+impl SmartModuleInput {
+    pub fn new(raw_bytes: Vec<u8>, base_offset: Offset) -> Self {
+        Self {
+            base_offset,
+            raw_bytes,
+            ..Default::default()
+        }
+    }
+
+    pub fn base_offset(&self) -> Offset {
+        self.base_offset
+    }
+
+    pub fn set_base_offset(&mut self, base_offset: Offset) {
+        self.base_offset = base_offset;
+    }
+
+    pub fn raw_bytes(&self) -> &[u8] {
+        &self.raw_bytes
+    }
+
+    pub fn into_raw_bytes(self) -> Vec<u8> {
+        self.raw_bytes
+    }
+
+    pub fn parts(self) -> (Vec<u8>, Vec<u8>) {
+        (self.raw_bytes, self.join_record)
+    }
+}
+
 impl std::convert::TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
-        let mut record_data = Vec::new();
-        records.encode(&mut record_data, 0)?;
+        let mut raw_bytes = Vec::new();
+        records.encode(&mut raw_bytes, 0)?;
         Ok(SmartModuleInput {
-            record_data,
+            raw_bytes,
             ..Default::default()
         })
     }
@@ -56,7 +87,7 @@ impl Display for SmartModuleInput {
             f,
             "SmartModuleInput {{ base_offset: {:?}, record_data: {:?}, join_data: {:#?} }}",
             self.base_offset,
-            self.record_data.len(),
+            self.raw_bytes.len(),
             self.join_record.len()
         )
     }

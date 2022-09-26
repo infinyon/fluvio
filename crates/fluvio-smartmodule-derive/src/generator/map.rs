@@ -29,7 +29,7 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     Err(err) => {
                         let error = SmartModuleTransformRuntimeError::new(
                             &record,
-                            smartmodule_input.base_offset,
+                            base_offset,
                             SmartModuleKind::Map,
                             err,
                         );

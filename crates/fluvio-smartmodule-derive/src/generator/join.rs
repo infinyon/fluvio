@@ -38,13 +38,13 @@ pub fn generate_join_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     return SmartModuleTransformErrorStatus::DecodingBaseInput as i32;
                 }
 
-                let records_input = smartmodule_input.record_data;
+                let base_offset = smartmodule_input.base_offset();
+                let (records_input,join_last_record_input) = smartmodule_input.parts();
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
                     return SmartModuleTransformErrorStatus::DecodingRecords as i32;
                 };
 
-                let join_last_record_input = smartmodule_input.join_record;
                 let mut join_last_record: Option<Record> = None;
                 if let Err(_err) = Decoder::decode(&mut join_last_record, &mut std::io::Cursor::new(join_last_record_input), version) {
                     return SmartModuleTransformErrorStatus::UndefinedRightRecord as i32;
@@ -72,7 +72,7 @@ pub fn generate_join_smartmodule(func: &SmartModuleFn) -> TokenStream {
                         Err(err) => {
                             let error = SmartModuleTransformRuntimeError::new(
                                 &record,
-                                smartmodule_input.base_offset,
+                                base_offset,
                                 SmartModuleKind::Join,
                                 err,
                             );

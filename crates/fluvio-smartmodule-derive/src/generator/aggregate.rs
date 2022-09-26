@@ -40,8 +40,8 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
 
                 let mut accumulator = smartmodule_input.accumulator;
 
-
-                let records_input = smartmodule_input.base.record_data;
+                let base_offset = smartmodule_input.base.base_offset();
+                let records_input = smartmodule_input.base.into_raw_bytes();
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
                     return SmartModuleTransformErrorStatus::DecodingRecords as i32;
@@ -53,7 +53,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                         successes: Vec::with_capacity(records.len()),
                         error: None,
                     },
-                    accumulator: Vec::new()
+                    accumulator: accumulator.clone(),
                 };
 
                 for mut record in records.into_iter() {
@@ -64,13 +64,13 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                         Ok(value) => {
                             accumulator = Vec::from(value.as_ref());
                             output.accumulator = accumulator.clone();
-                            record.value = RecordData::from(accumulator.clone());
+                            record.value = RecordData::from(output.accumulator.clone());
                             output.base.successes.push(record);
                         }
                         Err(err) => {
                             let error = SmartModuleTransformRuntimeError::new(
                                 &record,
-                                smartmodule_input.base.base_offset,
+                                base_offset,
                                 SmartModuleKind::Aggregate,
                                 err,
                             );
