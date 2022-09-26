@@ -14,7 +14,7 @@ mod instance {
     use wasmtime::{AsContextMut};
 
     use crate::{
-        instance::{SmartModuleTransform, SmartModuleInstanceContext, DowncastableTransform},
+        instance::{SmartModuleInstanceContext, DowncastableTransform},
         error::EngineError,
         SmartModuleInitialData,
     };

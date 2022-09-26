@@ -103,15 +103,14 @@ impl SmartModuleTransform for SmartModuleAggregate {
 #[cfg(test)]
 mod test {
 
-    use std::{convert::TryFrom, any::Any};
+    use std::{convert::TryFrom};
 
     use fluvio_smartmodule::{
         dataplane::smartmodule::{SmartModuleInput},
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData, transforms::aggregate};
-    use crate::instance::DowncastableTransform;
+    use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 

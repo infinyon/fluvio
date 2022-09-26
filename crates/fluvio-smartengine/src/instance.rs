@@ -155,7 +155,7 @@ impl SmartModuleInstanceContext {
     }
 }
 
-pub(crate) trait SmartModuleTransform: Send + Sync + Any {
+pub(crate) trait SmartModuleTransform: Send + Sync {
     /// transform records
     fn process(
         &mut self,
@@ -168,6 +168,7 @@ pub(crate) trait SmartModuleTransform: Send + Sync + Any {
     fn name(&self) -> &str;
 }
 
+// In order turn to any, need following magic trick
 pub(crate) trait DowncastableTransform: SmartModuleTransform + Any {
     fn as_any(&self) -> &dyn Any;
 }
