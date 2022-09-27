@@ -68,8 +68,10 @@ fn read_wasm_module(module_name: &str) -> Vec<u8> {
     let wasm_path = PathBuf::from(spu_dir)
         .parent()
         .expect("parent")
+        .parent()
+        .expect("fluvio")
         .join(format!(
-            "fluvio-smartmodule/examples/target/wasm32-unknown-unknown/release/{}.wasm",
+            "smartmodule/examples/target/wasm32-unknown-unknown/release/{}.wasm",
             module_name
         ));
     read_filter_from_path(wasm_path)

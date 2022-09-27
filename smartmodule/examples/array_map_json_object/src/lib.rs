@@ -43,7 +43,7 @@
 //! Then, make sure you have compiled the SmartModule examples, and run the consumer:
 //!
 //! ```text
-//! $ cd crates/fluvio-smartmodule/examples
+//! $ cd smartmodule/examples
 //! $ cargo build --release
 //! $ fluvio consume array-map-object -B --key-value --array-map=target/wasm32-unknown-unknown/release/fluvio_wasm_array_map_object.wasm
 //! [a] "Apple"
