@@ -9,4 +9,4 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fluvio-smartmodule = { path = "../../" }
+fluvio-smartmodule = { workspace = true }

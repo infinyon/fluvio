@@ -10,4 +10,4 @@ crate-type = ['cdylib']
 
 [dependencies]
 thiserror = "1"
-fluvio-smartmodule = { path = "../../" }
+fluvio-smartmodule = { workspace = true }

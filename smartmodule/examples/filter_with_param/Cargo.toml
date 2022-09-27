@@ -11,4 +11,4 @@ crate-type = ['cdylib']
 
 [dependencies]
 once_cell = "1.13.0"
-fluvio-smartmodule = { path = "../../" }
+fluvio-smartmodule = { workspace = true }

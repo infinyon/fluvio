@@ -31,7 +31,7 @@ check-crate-audit: install-deny
 	cargo deny check
 
 build_smartmodules:
-	make -C crates/fluvio-smartmodule/examples build
+	make -C smartmodule/examples build
 
 run-all-unit-test: install_rustup_target
 	cargo test --lib --all-features $(BUILD_FLAGS)
