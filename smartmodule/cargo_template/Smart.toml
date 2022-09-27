@@ -1,0 +1,12 @@
+[package]
+name = "{{project-name}}"
+group = "{{project-group}}"
+version = "0.1.0"
+package_version = "0.1"
+description = "{{project-description}}"
+license = "Apache-2.0"
+
+
+
+[cargo]
+profile = "release"
