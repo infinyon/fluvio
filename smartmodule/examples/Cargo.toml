@@ -1,0 +1,31 @@
+[workspace]
+members = [
+    "aggregate",
+    "aggregate-sum",
+    "aggregate-json",
+    "aggregate-average",
+    "filter",
+    "filter_init",
+    "filter_with_param",
+    "filter_odd",
+    "filter_json",
+    "filter_regex",
+    "filter_with_param_v1",
+    "join",
+    "map",
+    "map_double",
+    "map_json",
+    "map_regex",
+    "array_map_json_array",
+    "array_map_json_object",
+    "array_map_json_reddit",
+    "filter_map",
+]
+
+[workspace.dependencies]
+fluvio-smartmodule = { path = "../../crates/fluvio-smartmodule" }
+
+
+# lto is need to reduce wasm binary size
+[profile.release]
+lto = true

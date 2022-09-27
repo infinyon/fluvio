@@ -1,0 +1,17 @@
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+authors = ["{{authors}}"]
+edition = "2021"
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fluvio-smartmodule = { {{smartmodule-version}} }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+
+[profile.release]
+lto = true

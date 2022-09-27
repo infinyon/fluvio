@@ -1,0 +1,15 @@
+[package]
+name = "fluvio-wasm-map-json"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9.0"
+fluvio-smartmodule = { workspace = true }
