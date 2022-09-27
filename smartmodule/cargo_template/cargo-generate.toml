@@ -1,0 +1,14 @@
+[placeholders.smartmodule-version]
+type = "string"
+default = "git = \"https://github.com/infinyon/fluvio.git\""
+prompt = "SmartModule Version"
+
+[placeholders.smartmodule-type]
+type = "string"
+prompt = "Which type of SmartModule would you like?"
+choices = ["filter", "map", "filter-map", "array-map", "aggregate"]
+default = "filter"
+[placeholders.smartmodule-init]
+type = "bool"
+prompt = "Want to use SmartModule init?"
+default = false

@@ -1,0 +1,13 @@
+[package]
+name = "fluvio-smartmodule-array-map-object"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fluvio-smartmodule = { workspace = true }
+serde_json = "1"
