@@ -13,6 +13,7 @@ pub use cmd::ConsumeOpt;
 
 mod cmd {
 
+    use std::path::Path;
     use std::time::{UNIX_EPOCH, Duration};
     use std::{io::Error as IoError, path::PathBuf};
     use std::io::{self, ErrorKind, Read, Stdout};
@@ -20,9 +21,6 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
-    use fluvio_spu_schema::server::smartmodule::{
-        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
-    };
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -39,7 +37,9 @@ mod cmd {
     };
     use handlebars::{self, Handlebars};
 
-    use fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation;
+    use fluvio_spu_schema::server::smartmodule::{
+        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
+    };
     use fluvio_protocol::record::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::{TableFormatSpec};
     use fluvio_future::io::StreamExt;
@@ -149,51 +149,26 @@ mod cmd {
         )]
         pub output: Option<ConsumeOutputType>,
 
-        /// Name of DerivedStream
-        #[clap(long)]
-        pub derived_stream: Option<String>,
-
-        /// Path to a SmartModule filter wasm file
-        #[clap(long, group("smartmodule_group"))]
-        pub filter: Option<String>,
-
-        /// Path to a SmartModule map wasm file
-        #[clap(long, group("smartmodule_group"))]
-        pub map: Option<String>,
-
-        /// Path to a SmartModule filter_map wasm file
-        #[clap(long, group("smartmodule_group"))]
-        pub filter_map: Option<String>,
-
-        /// Path to a SmartModule array_map wasm file
-        #[clap(long, group("smartmodule_group"))]
-        pub array_map: Option<String>,
-
-        /// Path to a SmartModule join wasm filee
-        #[clap(long, group("smartmodule_group"), group("join_group"))]
-        pub join: Option<String>,
-
-        /// Path to a WASM file for aggregation
-        #[clap(long, group("smartmodule_group"), group("aggregate_group"))]
-        pub aggregate: Option<String>,
-
-        /// Path or name to WASM module. This support any of the other
-        /// smartmodule types: filter, map, array_map, aggregate, join and filter_map
+        /// name of the smart module
         #[clap(
             long,
             group("smartmodule_group"),
             group("aggregate_group"),
-            group("join_group"),
-            alias = "smartmodule"
+            alias = "sm"
         )]
-        pub smart_module: Option<String>,
+        pub smartmodule: Option<String>,
 
-        #[clap(long, requires = "join_group")]
-        pub join_topic: Option<String>,
+        #[clap(
+            long,
+            group("smartmodule_group"),
+            group("aggregate_group"),
+            alias = "sm_path"
+        )]
+        pub smartmodule_path: Option<PathBuf>,
 
         /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
-        #[clap(long, requires = "aggregate_group")]
-        pub initial: Option<String>,
+        #[clap(long, requires = "aggregate_group", alias = "a-init")]
+        pub aggregate_initial: Option<String>,
 
         /// (Optional) Extra input parameters passed to the smartmodule module.
         /// They should be passed using key=value format
@@ -201,11 +176,11 @@ mod cmd {
         #[clap(
             short = 'e',
             requires = "smartmodule_group",
-            long= "extra-params",
+            long="params",
             parse(try_from_str = parse_key_val),
             number_of_values = 1
         )]
-        pub extra_params: Option<Vec<(String, String)>>,
+        pub params: Option<Vec<(String, String)>>,
 
         /// Isolation level that consumer must respect.
         /// Supported values: read_committed (ReadCommitted) - consume only committed records,
@@ -289,6 +264,16 @@ mod cmd {
             }
         }
 
+        fn smart_module_ctx(&self) -> SmartModuleContextData {
+            if let Some(agg_initial) = &self.aggregate_initial {
+                SmartModuleContextData::Aggregate {
+                    accumulator: agg_initial.clone().into_bytes(),
+                }
+            } else {
+                SmartModuleContextData::None
+            }
+        }
+
         pub async fn consume_records(
             &self,
             consumer: MultiplePartitionConsumer,
@@ -303,98 +288,28 @@ mod cmd {
                 builder.max_bytes(max_bytes);
             }
 
-            let extra_params = match &self.extra_params {
+            let initial_param = match &self.params {
                 None => BTreeMap::default(),
                 Some(params) => params.clone().into_iter().collect(),
             };
 
-            let derivedstream =
-                self.derived_stream
-                    .as_ref()
-                    .map(|derivedstream_name| DerivedStreamInvocation {
-                        stream: derivedstream_name.clone(),
-                        params: extra_params.clone().into(),
-                    });
-
-            builder.derivedstream(derivedstream);
-
-            let smartmodule = if let Some(name_or_path) = &self.smart_module {
-                let context = if let Some(acc_path) = &self.initial {
-                    let accumulator = std::fs::read(acc_path)?;
-                    SmartModuleContextData::Aggregate { accumulator }
-                } else if self.join_topic.is_some() {
-                    SmartModuleContextData::Join(self.join_topic.as_ref().unwrap().clone())
-                } else {
-                    SmartModuleContextData::None
-                };
+            let smart_module = if let Some(smart_module_name) = &self.smartmodule {
                 Some(create_smartmodule(
-                    name_or_path,
-                    SmartModuleKind::Generic(context),
-                    extra_params,
-                )?)
-            } else if let Some(name_or_path) = &self.filter {
-                Some(create_smartmodule(
-                    name_or_path,
-                    SmartModuleKind::Filter,
-                    extra_params,
-                )?)
-            } else if let Some(name_or_path) = &self.map {
-                Some(create_smartmodule(
-                    name_or_path,
-                    SmartModuleKind::Map,
-                    extra_params,
-                )?)
-            } else if let Some(name_or_path) = &self.array_map {
-                Some(create_smartmodule(
-                    name_or_path,
-                    SmartModuleKind::ArrayMap,
-                    extra_params,
-                )?)
-            } else if let Some(name_or_path) = &self.filter_map {
-                Some(create_smartmodule(
-                    name_or_path,
-                    SmartModuleKind::FilterMap,
-                    extra_params,
-                )?)
-            } else if let Some(name_or_path) = &self.join {
-                Some(create_smartmodule(
-                    name_or_path,
-                    SmartModuleKind::Join(
-                        self.join_topic
-                            .as_ref()
-                            .expect("Join topic field is required when using join")
-                            .to_owned(),
-                    ),
-                    extra_params,
+                    smart_module_name,
+                    self.smart_module_ctx(),
+                    initial_param,
+                ))
+            } else if let Some(path) = &self.smartmodule_path {
+                Some(create_smartmodule_from_path(
+                    path,
+                    self.smart_module_ctx(),
+                    initial_param,
                 )?)
             } else {
-                match (&self.aggregate, &self.initial) {
-                    (Some(name_or_path), Some(acc_path)) => {
-                        let accumulator = std::fs::read(acc_path)?;
-                        Some(create_smartmodule(
-                            name_or_path,
-                            SmartModuleKind::Aggregate { accumulator },
-                            extra_params,
-                        )?)
-                    }
-                    (Some(name_or_path), None) => Some(create_smartmodule(
-                        name_or_path,
-                        SmartModuleKind::Aggregate {
-                            accumulator: Vec::new(),
-                        },
-                        extra_params,
-                    )?),
-                    (None, Some(_)) => {
-                        println!(
-                            "In order to use --accumulator, you must also specify --aggregate"
-                        );
-                        return Ok(());
-                    }
-                    (None, None) => None,
-                }
+                None
             };
 
-            builder.smartmodule(smartmodule);
+            builder.smartmodule(smart_module);
 
             if self.disable_continuous {
                 builder.disable_continuous(true);
@@ -806,25 +721,34 @@ mod cmd {
         }
     }
 
+    /// create smartmodule from predefined name
     fn create_smartmodule(
-        name_or_path: &str,
-        kind: SmartModuleKind,
+        name: &str,
+        ctx: SmartModuleContextData,
+        params: BTreeMap<String, String>,
+    ) -> SmartModuleInvocation {
+        SmartModuleInvocation {
+            wasm: SmartModuleInvocationWasm::Predefined(name.to_string()),
+            kind: SmartModuleKind::Generic(ctx),
+            params: params.into(),
+        }
+    }
+
+    /// create smartmodule from wasm file
+    fn create_smartmodule_from_path(
+        path: &Path,
+        ctx: SmartModuleContextData,
         params: BTreeMap<String, String>,
     ) -> Result<SmartModuleInvocation> {
-        let wasm = if PathBuf::from(name_or_path).is_file() {
-            let raw_buffer = std::fs::read(name_or_path)?;
-            debug!(len = raw_buffer.len(), "read wasm bytes");
-            let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
-            let mut buffer = Vec::with_capacity(raw_buffer.len());
-            encoder.read_to_end(&mut buffer)?;
-            SmartModuleInvocationWasm::AdHoc(buffer)
-        } else {
-            SmartModuleInvocationWasm::Predefined(name_or_path.to_owned())
-        };
+        let raw_buffer = std::fs::read(path)?;
+        debug!(len = raw_buffer.len(), "read wasm bytes");
+        let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
+        let mut buffer = Vec::with_capacity(raw_buffer.len());
+        encoder.read_to_end(&mut buffer)?;
 
         Ok(SmartModuleInvocation {
-            wasm,
-            kind,
+            wasm: SmartModuleInvocationWasm::AdHoc(buffer),
+            kind: SmartModuleKind::Generic(ctx),
             params: params.into(),
         })
     }
