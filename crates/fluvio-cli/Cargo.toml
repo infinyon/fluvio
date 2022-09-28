@@ -42,7 +42,7 @@ tracing = "0.1.19"
 url = "2.1.1"
 semver = "1.0.0"
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
-clap_complete = "3.1.1"
+clap_complete = "4.0.1"
 dirs = "4.0.0"
 thiserror = "1.0.20"
 eyre = "0.6.1"
