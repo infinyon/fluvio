@@ -156,7 +156,7 @@ mod cmd {
             group("aggregate_group"),
             alias = "sm"
         )]
-        pub smart_module: Option<String>,
+        pub smartmodule: Option<String>,
 
         #[clap(
             long,
@@ -292,7 +292,7 @@ mod cmd {
                 Some(params) => params.clone().into_iter().collect(),
             };
 
-            let smart_module = if let Some(smart_module_name) = &self.smart_module {
+            let smart_module = if let Some(smart_module_name) = &self.smartmodule {
                 Some(create_smartmodule(
                     smart_module_name,
                     self.smart_module_ctx(),
