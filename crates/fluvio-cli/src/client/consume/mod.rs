@@ -164,7 +164,7 @@ mod cmd {
             group("aggregate_group"),
             alias = "sm_path"
         )]
-        pub smart_module_path: Option<PathBuf>,
+        pub smartmodule_path: Option<PathBuf>,
 
         /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
         #[clap(long, requires = "aggregate_group", alias = "a-init")]
@@ -174,8 +174,9 @@ mod cmd {
         /// They should be passed using key=value format
         /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
         #[clap(
-            short = 'p',
+            short = 'e',
             requires = "smartmodule_group",
+            long="params",
             parse(try_from_str = parse_key_val),
             number_of_values = 1
         )]
@@ -298,7 +299,7 @@ mod cmd {
                     self.smart_module_ctx(),
                     initial_param,
                 ))
-            } else if let Some(path) = &self.smart_module_path {
+            } else if let Some(path) = &self.smartmodule_path {
                 Some(create_smartmodule_from_path(
                     path,
                     self.smart_module_ctx(),

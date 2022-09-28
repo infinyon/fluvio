@@ -13,7 +13,7 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 setup_file() {
     # Compile the smart-module examples
 #    pushd "$BATS_TEST_DIRNAME/../../.." && make build_smartmodules && popd
-    SMARTMODULE_BUILD_DIR="$BATS_TEST_DIRNAME/../../../smartmodule/examples/target/wasm32-unknown-unknown/release/"
+    SMARTMODULE_BUILD_DIR="$BATS_TEST_DIRNAME/../../../smartmodule/examples/target/wasm32-unknown-unknown/release"
     export SMARTMODULE_BUILD_DIR
    
 }
@@ -41,12 +41,15 @@ setup_file() {
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
- 
-    # Consume from topic with --smartmodule
+    EXPECTED_OUTPUT="BANANA"
+    export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_output "$EXPECTED_OUTPUT"
     assert_success
+
+ 
+
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
@@ -93,11 +96,15 @@ setup_file() {
     assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
     assert_line --index 1 "$TEST_MESSAGE"
 
-
+    # Consume from topic with smart-module and verify we don't see the $NEGATIVE_TEST_MESSAGE
+    EXPECTED_OUTPUT="${TEST_MESSAGE}"
+    export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
+
+
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
@@ -207,6 +214,7 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$((EXPECTED_OUTPUT/2))"
+ 
 
 
     # Delete topic
