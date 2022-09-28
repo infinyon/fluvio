@@ -162,7 +162,7 @@ mod cmd {
             long,
             group("smartmodule_group"),
             group("aggregate_group"),
-            alias = "sm"
+            alias = "sm_path"
         )]
         pub smart_module_path: Option<PathBuf>,
 
@@ -174,13 +174,12 @@ mod cmd {
         /// They should be passed using key=value format
         /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
         #[clap(
-            short = 'i',
+            short = 'p',
             requires = "smartmodule_group",
-            alias = "sm-init",
             parse(try_from_str = parse_key_val),
             number_of_values = 1
         )]
-        pub smartmodule_initial: Option<Vec<(String, String)>>,
+        pub params: Option<Vec<(String, String)>>,
 
         /// Isolation level that consumer must respect.
         /// Supported values: read_committed (ReadCommitted) - consume only committed records,
@@ -288,7 +287,7 @@ mod cmd {
                 builder.max_bytes(max_bytes);
             }
 
-            let initial_param = match &self.smartmodule_initial {
+            let initial_param = match &self.params {
                 None => BTreeMap::default(),
                 Some(params) => params.clone().into_iter().collect(),
             };
@@ -301,7 +300,7 @@ mod cmd {
                 ))
             } else if let Some(path) = &self.smart_module_path {
                 Some(create_smartmodule_from_path(
-                    &path,
+                    path,
                     self.smart_module_ctx(),
                     initial_param,
                 )?)
