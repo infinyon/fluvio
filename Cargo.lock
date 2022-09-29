@@ -4373,6 +4373,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
 
 [[package]]
+name = "smdk"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "clap_complete",
+ "color-eyre",
+ "dirs",
+ "eyre",
+ "fluvio-future 0.4.2",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "snap"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
