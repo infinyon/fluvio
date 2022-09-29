@@ -41,6 +41,7 @@ members = [
     "crates/fluvio-types",
     "examples/sm-regex",
     "release-tools/check-crate-version",
+    "crates/smdk"
 ]
 resolver = "2"
 
