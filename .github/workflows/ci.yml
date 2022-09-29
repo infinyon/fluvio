@@ -60,7 +60,7 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel,smdk]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -102,6 +102,10 @@ jobs:
       - name: Build fluvio-channel
         if: matrix.binary == 'fluvio-channel'
         run: make build-channel
+
+      - name: Build smdk
+        if: matrix.binary == 'sdmk'
+        run: make smdk
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
