@@ -1,6 +1,5 @@
 mod build;
 mod cmd;
-mod generate;
 mod test;
 
 use clap::Parser;
