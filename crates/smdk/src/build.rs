@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::fmt::Debug;
 
 use anyhow::{Error, Result};
@@ -17,37 +17,27 @@ pub struct BuildOpt {
 
 impl BuildOpt {
     pub(crate) fn process(&self) -> Result<()> {
-        BuildOpt::check_cargo_exists()?;
-
-        let mut cmd = Command::new("cargo");
+        let mut cargo = BuildOpt::make_cargo_cmd()?;
         let cwd = std::env::current_dir()?;
 
-        cmd.current_dir(&cwd)
+        cargo
+            .current_dir(&cwd)
             .arg("build")
             .arg("--profile")
             .arg(self.release.as_str())
             .arg("--lib");
-        cmd.arg("--target").arg(BUILD_TARGET);
-
-        let status = cmd.status()?;
-
-        if status.success() {
-            return Ok(());
-        }
-
-        Err(Error::msg(
-            "An error ocurred building SmartModule into WASM",
-        ))
-    }
-
-    fn check_cargo_exists() -> Result<()> {
-        Command::new("cargo").arg("version").status().map_err(|e| {
-            Error::msg(format!(
-                "An error ocurrend checking `cargo version` installed. {}",
-                e
-            ))
-        })?;
+        cargo.arg("--target").arg(BUILD_TARGET);
+        cargo.status().map_err(Error::from)?;
 
         Ok(())
+    }
+
+    fn make_cargo_cmd() -> Result<Command> {
+        let mut cargo = Command::new("cargo");
+
+        cargo.stdout(Stdio::inherit());
+        cargo.stderr(Stdio::inherit());
+
+        Ok(cargo)
     }
 }
