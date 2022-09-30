@@ -2,20 +2,25 @@ use anyhow::{Error, Result};
 use clap::Parser;
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 
-const GIT_TEMPLATE: &str =
+const DEFAULT_TEMPLATE: &str =
     "https://github.com/infinyon/fluvio/tree/master/smartmodule/cargo_template";
 
 /// Generate new SmartModule project
 #[derive(Debug, Parser)]
 pub struct GenerateOpt {
     name: String,
+    /// Template to generate project from.
+    ///
+    /// Must be a GIT repository
+    #[clap(long, default_value = DEFAULT_TEMPLATE)]
+    temaplate: String,
 }
 
 impl GenerateOpt {
     pub(crate) fn process(&self) -> Result<()> {
         println!("Generating new SmartModule project: {}", self.name);
         let template_path = TemplatePath {
-            git: Some(String::from(GIT_TEMPLATE)),
+            git: Some(String::from(self.temaplate.as_str())),
             auto_path: None,
             subfolder: None,
             test: false,
