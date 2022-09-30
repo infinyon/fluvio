@@ -2,6 +2,7 @@ mod build;
 mod cmd;
 mod test;
 mod load;
+mod wasm;
 
 use clap::Parser;
 use anyhow::Result;

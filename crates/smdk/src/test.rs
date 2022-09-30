@@ -12,46 +12,18 @@ use fluvio_protocol::record::{RecordData, Record};
 use fluvio_smartengine::{SmartEngine, SmartModuleConfig};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
-/// Test SmartModule
 #[derive(Debug, Parser)]
-pub struct TestOpt {
-    // text input
-    #[clap(long)]
-    text: Option<String>,
-
-    // arbitrary file input
-    #[clap(long)]
-    file: Option<PathBuf>,
-
-    // release name
+pub struct WasmOption {
+    /// release name
     #[clap(long, default_value = "release-lto")]
     release: String,
 
-    // optional wasm_file path
+    /// optional wasm_file path
     #[clap(long)]
     wasm_file: Option<PathBuf>,
-
-    /// (Optional) Extra input parameters passed to the smartmodule module.
-    /// They should be passed using key=value format
-    /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
-
-    #[clap(
-        short = 'e',
-        long= "params",
-        parse(try_from_str = parse_key_val),
-        number_of_values = 1
-    )]
-    params: Vec<(String, String)>,
 }
 
-fn parse_key_val(s: &str) -> Result<(String, String)> {
-    let pos = s
-        .find('=')
-        .ok_or_else(|| anyhow::anyhow!(format!("invalid KEY=value: no `=` found in `{}`", s)))?;
-    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
-}
-
-impl TestOpt {
+impl WasmOption {
     fn wasm_file_path(&self) -> Result<PathBuf> {
         if let Some(wasm_path) = self.wasm_file.as_ref() {
             Ok(wasm_path.to_path_buf())
@@ -77,12 +49,48 @@ impl TestOpt {
             Ok(path)
         }
     }
+}
+
+/// Test SmartModule
+#[derive(Debug, Parser)]
+pub struct TestOpt {
+    // text input
+    #[clap(long)]
+    text: Option<String>,
+
+    // arbitrary file input
+    #[clap(long)]
+    file: Option<PathBuf>,
+
+    #[clap(flatten)]
+    wasm: WasmOption,
+
+    /// (Optional) Extra input parameters passed to the smartmodule module.
+    /// They should be passed using key=value format
+    /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
+
+    #[clap(
+        short = 'e',
+        long= "params",
+        parse(try_from_str = parse_key_val),
+        number_of_values = 1
+    )]
+    params: Vec<(String, String)>,
+}
+
+fn parse_key_val(s: &str) -> Result<(String, String)> {
+    let pos = s
+        .find('=')
+        .ok_or_else(|| anyhow::anyhow!(format!("invalid KEY=value: no `=` found in `{}`", s)))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+}
+
+impl TestOpt {
     pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
 
-        // load wasm file
-        let wasm_path = self.wasm_file_path()?;
-        println!("loading SmartModule from: {}", wasm_path.display());
+        let wasm_path = self.wasm.wasm_file_path()?;
+        println!("loading module at: {}", wasm_path.display());
         let raw = std::fs::read(wasm_path)?;
 
         let param: BTreeMap<String, String> = self.params.into_iter().collect();

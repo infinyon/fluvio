@@ -11,7 +11,7 @@ pub enum SmdkCommand {
     /// Builds SmartModule into WASM
     Build(BuildOpt),
     Test(TestOpt),
-    Load(LoadOpt)
+    Load(LoadOpt),
 }
 
 impl SmdkCommand {
