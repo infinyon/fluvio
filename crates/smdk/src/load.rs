@@ -1,10 +1,15 @@
 use clap::Parser;
 use anyhow::Result;
 
+use crate::wasm::WasmOption;
+
 /// Load SmartModule into Fluvio cluster
 #[derive(Debug, Parser)]
 pub struct LoadOpt {
     name: String,
+
+    #[clap(flatten)]
+    wasm: WasmOption,
 }
 impl LoadOpt {
     pub(crate) fn process(&self) -> Result<()> {
