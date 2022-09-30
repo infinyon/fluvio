@@ -19,12 +19,15 @@ doc = false
 [dependencies]
 tracing = "0.1.19"
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
-clap_complete = "3.1.1"
 dirs = "4.0.0"
 thiserror = "1.0.20"
-eyre = "0.6.1"
-color-eyre = { version = "0.6.0", default-features = false }
+anyhow = { version = "1.0.38" }
+cargo_metadata = "0.15.0"
+convert_case = "0.6.0"
 
+fluvio = { path = "../fluvio", default-features = false }
+fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-future = { version = "0.4.0", features = ["subscriber"]}
-
-
+fluvio-smartengine = { path = "../fluvio-smartengine" }
+fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
+fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }

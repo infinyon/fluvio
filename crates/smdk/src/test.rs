@@ -1,39 +1,38 @@
 use std::{collections::BTreeMap, path::PathBuf};
 use std::fmt::Debug;
-use std::sync::Arc;
 
-use async_trait::async_trait;
+use cargo_metadata::{MetadataCommand, CargoOpt};
 use clap::Parser;
+use anyhow::Result;
+use convert_case::{Case, Casing};
 
-use fluvio::{FluvioError, RecordKey, Fluvio};
+use fluvio::{FluvioError, RecordKey};
 use fluvio_protocol::record::{RecordData, Record};
-use fluvio_extension_common::Terminal;
-use fluvio_extension_common::target::ClusterTarget;
+
 use fluvio_smartengine::{SmartEngine, SmartModuleConfig};
 
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
-use fluvio_spu_schema::server::smartmodule::{
-    LegacySmartModulePayload, SmartModuleWasmCompressed, SmartModuleKind,
-};
+
 use tracing::debug;
 
-use crate::{Result, error::CliError, client::cmd::ClientCmd};
-
 /// Test SmartModule
-/// This is a unstable feature and is not yet ready for public use.
-/// This requires init function to be implemented.
 #[derive(Debug, Parser)]
-pub struct TestSmartModuleOpt {
-    // json value
+pub struct TestOpt {
+    // text input
     #[clap(long)]
-    input: Option<String>,
+    text: Option<String>,
 
-    // arbitrary file
+    // arbitrary file input
     #[clap(long)]
     file: Option<PathBuf>,
 
+    // release name
+    #[clap(long, default_value = "release-lto")]
+    release: String,
+
+    // optional wasm_file path
     #[clap(long)]
-    wasm_file: PathBuf,
+    wasm_file: Option<PathBuf>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
@@ -46,62 +45,75 @@ pub struct TestSmartModuleOpt {
         number_of_values = 1
     )]
     params: Vec<(String, String)>,
-    //#[clap(long)]
-    //regex: String,
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String)> {
-    let pos = s.find('=').ok_or_else(|| {
-        CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{}`", s))
-    })?;
+    let pos = s
+        .find('=')
+        .ok_or_else(|| anyhow::anyhow!(format!("invalid KEY=value: no `=` found in `{}`", s)))?;
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
-#[async_trait]
-impl ClientCmd for TestSmartModuleOpt {
-    async fn process<O: Terminal + Send + Sync + Debug>(
-        self,
-        _out: Arc<O>,
-        _target: ClusterTarget,
-    ) -> Result<()> {
+impl TestOpt {
+    fn wasm_file_path(&self) -> Result<PathBuf> {
+        if let Some(wasm_path) = self.wasm_file.as_ref() {
+            Ok(wasm_path.to_path_buf())
+        } else {
+            let metadata = MetadataCommand::new()
+                .manifest_path("./Cargo.toml")
+                .features(CargoOpt::AllFeatures)
+                .exec()?;
+
+            let root_package = metadata
+                .root_package()
+                .ok_or_else(|| anyhow::anyhow!("unable to find root package".to_owned()))?;
+            //print!("root package: {:#?}", metadata.);
+            let project_name = &root_package.name;
+            println!("project name: {:#?}", project_name);
+
+            let asset_name = project_name.to_case(Case::Snake);
+
+            let path = PathBuf::from(format!(
+                "target/wasm32-unknown-unknown/{}/{}.wasm",
+                self.release, asset_name
+            ));
+            Ok(path)
+        }
+    }
+    pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
-        let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
         // load wasm file
-        let raw = std::fs::read(self.wasm_file)?;
+        let wasm_path = self.wasm_file_path()?;
+        println!("loading module at: {}", wasm_path.display());
+        let raw = std::fs::read(wasm_path)?;
+        println!("module loaded");
 
-        let payload = LegacySmartModulePayload {
-            wasm: SmartModuleWasmCompressed::Raw(raw),
-            kind: SmartModuleKind::Filter,
-            params: param.into(),
-        };
+        let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
-        debug!("loading module");
         let engine = SmartEngine::new();
         let mut chain_builder = engine.builder();
         chain_builder
             .add_smart_module(
-                SmartModuleConfig::builder()
-                    .params(payload.params)
-                    .build()?,
-                payload.wasm.get_raw()?,
+                SmartModuleConfig::builder().params(param.into()).build()?,
+                raw,
             )
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-        debug!("SmartModule created");
+        println!("SmartModule created");
 
         let mut chain = chain_builder
             .initialize()
             .map_err(|e| FluvioError::Other(format!("SmartEngine init - {:?}", e)))?;
 
         // get raw json in one of other ways
-        let raw_input = if let Some(input) = self.input {
+        let raw_input = if let Some(input) = self.text {
             debug!(input, "input string");
             input.as_bytes().to_vec()
         } else if let Some(json_file) = &self.file {
             std::fs::read(json_file)?
         } else {
-            return Err(CliError::Other("No json provided".to_string()));
+            return Err(anyhow::anyhow!("No json provided"));
         };
 
         debug!(len = raw_input.len(), "input data");
@@ -122,14 +134,6 @@ impl ClientCmd for TestSmartModuleOpt {
             println!("{}", output_value);
         }
 
-        Ok(())
-    }
-
-    async fn process_client<O: Terminal + Debug + Send + Sync>(
-        self,
-        _out: Arc<O>,
-        _fluvio: &Fluvio,
-    ) -> Result<()> {
         Ok(())
     }
 }

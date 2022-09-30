@@ -339,6 +339,30 @@ jobs:
       - name: Integration test
         run: make run-integration-test
 
+  
+  build_smartmodule:
+    name: Build SmartModule
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+          target: wasm32-unknown-unknown
+
+      - name: Build Regex SmartModule
+        run: make -C smartmodule/sm-regex
+
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})

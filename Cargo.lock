@@ -508,6 +508,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
 
 [[package]]
+name = "camino"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88ad0e1e3e88dd237a156ab9f571021b8a158caa0ae44b1968a241efb5144c1e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cap-fs-ext"
 version = "0.25.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -582,6 +591,28 @@ dependencies = [
  "serde",
  "toml",
  "url",
+]
+
+[[package]]
+name = "cargo-platform"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbdb825da8a5df079a43676dbe042702f1707b1109f713a01420fbb4cc71fa27"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3abb7553d5b9b8421c6de7cb02606ff15e0c6eea7d8eadd75ef013fd636bec36"
+dependencies = [
+ "camino",
+ "cargo-platform",
+ "semver 1.0.14",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -782,6 +813,15 @@ name = "convert_case"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e1f025f441cdfb75831bec89b9d6a6ed02e5e763f78fc5e1ff30d4870fefaec"
+
+[[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "core-foundation"
@@ -1945,15 +1985,6 @@ dependencies = [
  "pin-utils",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "fluvio-sm-regex"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule",
- "once_cell",
- "regex",
 ]
 
 [[package]]
@@ -3803,7 +3834,7 @@ version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "543a19b46d693c95eee3a8ba21e3fb8dfdc38b4db9cb72c7e1bae16ba0faa962"
 dependencies = [
- "convert_case",
+ "convert_case 0.3.2",
  "proc-macro-error",
  "proc-macro2",
  "quote",
@@ -4376,12 +4407,17 @@ checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
 name = "smdk"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
+ "cargo_metadata",
  "clap",
- "clap_complete",
- "color-eyre",
+ "convert_case 0.6.0",
  "dirs",
- "eyre",
+ "fluvio",
+ "fluvio-extension-common",
  "fluvio-future 0.4.2",
+ "fluvio-protocol",
+ "fluvio-smartengine",
+ "fluvio-smartmodule",
  "thiserror",
  "tracing",
 ]
