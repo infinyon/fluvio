@@ -18,11 +18,11 @@ use tracing::debug;
 /// Test SmartModule
 #[derive(Debug, Parser)]
 pub struct TestOpt {
-    // json value
+    // text input
     #[clap(long)]
-    input: Option<String>,
+    text: Option<String>,
 
-    // arbitrary file
+    // arbitrary file input
     #[clap(long)]
     file: Option<PathBuf>,
 
@@ -107,7 +107,7 @@ impl TestOpt {
             .map_err(|e| FluvioError::Other(format!("SmartEngine init - {:?}", e)))?;
 
         // get raw json in one of other ways
-        let raw_input = if let Some(input) = self.input {
+        let raw_input = if let Some(input) = self.text {
             debug!(input, "input string");
             input.as_bytes().to_vec()
         } else if let Some(json_file) = &self.file {
