@@ -18,7 +18,13 @@ pub struct WasmOption {
 }
 
 impl WasmOption {
-    pub(crate) fn wasm_file_path(&self) -> Result<PathBuf> {
+    pub(crate) fn load_raw_wasm_file(&self) -> Result<Vec<u8>> {
+        let wasm_path = self.wasm_file_path()?;
+        println!("loading module at: {}", wasm_path.display());
+        std::fs::read(wasm_path).map_err(|err| anyhow::anyhow!("error reading wasm file: {}", err))
+    }
+
+    pub fn wasm_file_path(&self) -> Result<PathBuf> {
         if let Some(wasm_path) = self.wasm_file.as_ref() {
             Ok(wasm_path.to_path_buf())
         } else {

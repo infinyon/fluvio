@@ -1,6 +1,8 @@
 use clap::Parser;
 use anyhow::Result;
 
+use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
+
 use crate::wasm::WasmOption;
 
 /// Load SmartModule into Fluvio cluster
@@ -14,7 +16,6 @@ pub struct LoadOpt {
 }
 impl LoadOpt {
     pub(crate) fn process(&self) -> Result<()> {
-        //println!("loading SmartModule: {}", self.name);
         Ok(())
     }
 }

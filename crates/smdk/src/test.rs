@@ -50,9 +50,7 @@ impl TestOpt {
     pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
 
-        let wasm_path = self.wasm.wasm_file_path()?;
-        println!("loading module at: {}", wasm_path.display());
-        let raw = std::fs::read(wasm_path)?;
+        let raw = self.wasm.load_raw_wasm_file()?;
 
         let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
