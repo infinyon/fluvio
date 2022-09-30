@@ -5,15 +5,12 @@ use cargo_metadata::{MetadataCommand, CargoOpt};
 use clap::Parser;
 use anyhow::Result;
 use convert_case::{Case, Casing};
-
-use fluvio::{FluvioError, RecordKey};
-use fluvio_protocol::record::{RecordData, Record};
-
-use fluvio_smartengine::{SmartEngine, SmartModuleConfig};
-
-use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
-
 use tracing::debug;
+
+use fluvio::RecordKey;
+use fluvio_protocol::record::{RecordData, Record};
+use fluvio_smartengine::{SmartEngine, SmartModuleConfig};
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
 /// Test SmartModule
 #[derive(Debug, Parser)]
@@ -85,26 +82,21 @@ impl TestOpt {
 
         // load wasm file
         let wasm_path = self.wasm_file_path()?;
-        println!("loading module at: {}", wasm_path.display());
+        println!("loading SmartModule from: {}", wasm_path.display());
         let raw = std::fs::read(wasm_path)?;
-        println!("module loaded");
 
         let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
         let engine = SmartEngine::new();
         let mut chain_builder = engine.builder();
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder().params(param.into()).build()?,
-                raw,
-            )
-            .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().params(param.into()).build()?,
+            raw,
+        )?;
 
-        println!("SmartModule created");
+        debug!("SmartModule chain created");
 
-        let mut chain = chain_builder
-            .initialize()
-            .map_err(|e| FluvioError::Other(format!("SmartEngine init - {:?}", e)))?;
+        let mut chain = chain_builder.initialize()?;
 
         // get raw json in one of other ways
         let raw_input = if let Some(input) = self.text {
@@ -121,21 +113,14 @@ impl TestOpt {
         let record_value: RecordData = raw_input.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
 
-        let output = chain
-            .process(SmartModuleInput::try_from(entries)?)
-            .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+        let output = chain.process(SmartModuleInput::try_from(entries)?)?;
 
-        println!("{:?} records", output.successes.len());
+        println!("{:?} records outputed", output.successes.len());
         for output_record in output.successes {
-            let output_value = output_record
-                .value
-                .as_str()
-                .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+            let output_value = output_record.value.as_str()?;
             println!("{}", output_value);
         }
 
         Ok(())
     }
 }
-
-//  target/release/fluvio sm test --input ww --regex "[A-Z]" --wasm-file target/wasm32-unknown-unknown/release-lto/fluvio_wasm_component.wasm
