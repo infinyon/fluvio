@@ -1,0 +1,255 @@
+name: Generate CHANGELOG.md
+
+on:
+  workflow_call:
+
+env:
+  CHANGELOG_FILENAME: CHANGELOG.md
+  DEFAULT_BRANCH: main
+  ADD_PR_LABELS: bot
+  RESTART_PR_DELAY: 15s
+  GIT_BOT_USERNAME: github-actions[bot]
+  GIT_BOT_EMAIL: github-actions[bot]@users.noreply.github.com
+
+jobs:
+  get_pr_number_pr_event:
+    name: Get the PR number from PR event
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.pr.outputs.number }}
+    steps:
+      - name: Dump context
+        uses: crazy-max/ghaction-dump-context@v1.2.1
+      - name: Get PR number
+        id: pr
+        if: github.event_name == 'pull_request'
+        run: |
+          NUMBER=${{ github.event.pull_request.number }}
+          echo "PR number is: $NUMBER"
+          echo "PR_NUMBER=$NUMBER" >> $GITHUB_ENV
+          echo "::set-output name=number::$NUMBER"
+
+  get_pr_number_push_event:
+    name: Get the PR number from Push event
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.pr.outputs.number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Dump context
+        uses: crazy-max/ghaction-dump-context@v1.2.1
+
+      - name: Get PR number
+        id: pr
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        run: |
+          NUMBER=$( echo '${{ github.event.head_commit.message }}' | tr -cd [:digit:] )
+
+          echo "PR number is: $NUMBER"
+          echo "::set-output name=number::$NUMBER"
+
+  get_pr_number:
+    name: Get PR number from event
+    runs-on: ubuntu-latest
+    needs:
+      - get_pr_number_pr_event
+      - get_pr_number_push_event
+    outputs:
+      pr_number: ${{ steps.pr.outputs.number }}
+    steps:
+      #- name: Dump context
+      #  uses: crazy-max/ghaction-dump-context@v1.2.1
+
+      - name: Print PR number
+        id: pr
+        run: |
+          cat $GITHUB_ENV
+
+          if [[ ${{ github.event_name == 'pull_request' }}  = 'true' ]]; then
+            NUMBER=${{ needs.get_pr_number_pr_event.outputs.pr_number }}
+          fi
+
+          if [[ ${{ github.event_name == 'push' }}  = 'true' ]]; then
+            NUMBER=${{ needs.get_pr_number_push_event.outputs.pr_number }}
+          fi
+
+          echo "PR number is: $NUMBER"
+          echo "::set-output name=number::$NUMBER"
+
+  print_inputs:
+    name: Print the inputs to the workflow
+    runs-on: ubuntu-latest
+    needs:
+      - get_pr_number
+    steps:
+      - name: Print
+        run: |
+          echo event name: ${{ github.event_name }}
+          echo pr number: ${{ needs.get_pr_number.outputs.pr_number }}
+
+  get_pr_info:
+    name: Get the PR branch name and issue number
+    needs:
+      - get_pr_number
+      - print_inputs
+    outputs:
+      pr_branch: ${{ steps.pr_info.outputs.name }}
+      pr_number: ${{ steps.pr_info.outputs.number }}
+      pr_title: ${{ steps.pr_info.outputs.title }}
+    permissions: read-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get PR info from pull request event
+        if: github.event_name == 'pull_request'
+        id: info
+        uses: Brymastr/pr-info-action@v1
+
+      #- name: Dump context
+      #  uses: crazy-max/ghaction-dump-context@v1.2.1
+
+      - name: Set outputs from pull request event
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "PR_BRANCH=${{ steps.info.outputs.head_branch }}" >> $GITHUB_ENV
+          echo "PR_NUMBER=${{ needs.get_pr_number.outputs.pr_number }}" >> $GITHUB_ENV
+          echo "PR_TITLE=${{ steps.info.outputs.title }}" >> $GITHUB_ENV
+
+      - name: Get PR info from push event
+        if: github.event_name == 'push'
+        run: |
+          echo "PR_BRANCH='$(git rev-parse --abbrev-ref HEAD)'" >> $GITHUB_ENV
+          echo "PR_BRANCH='$(git rev-parse --abbrev-ref HEAD)'"
+          echo "PR_NUMBER='${{ needs.get_pr_number.outputs.pr_number }}'" >> $GITHUB_ENV
+          echo "PR_NUMBER='${{ needs.get_pr_number.outputs.pr_number }}'"
+
+          # The commit message can be multiple lines, but we only want the first one
+          echo '${{ github.event.head_commit.message }}' > /tmp/pr-title-tmp
+          cat /tmp/pr-title-tmp | head -1 > /tmp/pr-title
+          echo PR_TITLE="$(cat /tmp/pr-title)" >> $GITHUB_ENV
+          echo PR_TITLE="$(cat /tmp/pr-title)"
+
+          gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+          gh pr checkout ${{ needs.get_pr_number.outputs.pr_number }}
+
+      - name: Set outputs from push event
+        id: pr_info
+        run: |
+          echo "::set-output name=name::$PR_BRANCH"
+          echo "pr branch is: $PR_BRANCH"
+
+          echo "::set-output name=number::$PR_NUMBER"
+          echo "pr number is: $PR_NUMBER"
+
+          echo "::set-output name=title::$PR_TITLE"
+          echo "pr title is: $PR_TITLE"
+
+  generate_changelog:
+    name: Generate changelog
+    runs-on: ubuntu-latest
+    needs: get_pr_info
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Configure git user
+        run: |
+          git status
+          git config user.name "${{ env.GIT_BOT_USERNAME }}"
+          git config user.email "${{ env.GIT_BOT_EMAIL }}"
+
+      #- name: Dump context
+      #  uses: crazy-max/ghaction-dump-context@v1.2.1
+
+      - name: Simulate PR merge for changelog updates
+        run: |
+          git checkout ${{ env.DEFAULT_BRANCH }}
+          #git commit --all --allow-empty -m "${{ needs.get_pr_info.outputs.pr_title }} (#${{ needs.get_pr_info.outputs.pr_number }})"
+          git commit --all --allow-empty -m "${{ needs.get_pr_info.outputs.pr_title }}"
+          git log -5
+
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v1
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: ${{ env.CHANGELOG_FILENAME }}
+      - name: Print the changelog
+        run: cat "${{ steps.git-cliff.outputs.changelog }}"
+      - name: Upload generated CHANGELOG
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.CHANGELOG_FILENAME }}
+          path: ${{ env.CHANGELOG_FILENAME }}
+          retention-days: 1
+
+  commit_changelog:
+    name: Commit updates
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    needs:
+      - get_pr_info
+      - generate_changelog
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Get GH App token
+        id: app
+        uses: getsentry/action-github-app-token@v1
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ steps.app.outputs.token }}
+          fetch-depth: 0
+
+      #- name: Dump context
+      #  uses: crazy-max/ghaction-dump-context@v1.2.1
+
+      - name: Checkout PR branch
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          gh pr checkout ${{ needs.get_pr_info.outputs.pr_number }}
+          ls
+          git status
+
+      - name: Download ${{ env.CHANGELOG_FILENAME }}
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.CHANGELOG_FILENAME }}
+          path: .
+
+      #- name: Check repo
+      #  run: |
+      #    ls
+      #    git status
+
+      - name: Commit any updates to ${{ env.CHANGELOG_FILENAME }}
+        id: auto-commit-action
+        uses: stefanzweifel/git-auto-commit-action@v4.14.1
+        with:
+          commit_message: "Updating ${{ env.CHANGELOG_FILENAME }} [actions skip]"
+          commit_user_name: ${{ env.GIT_BOT_USERNAME }}
+          commit_user_email: ${{ env.GIT_BOT_EMAIL }}
+          commit_author: ${{ env.GIT_BOT_USERNAME }} <${{ env.GIT_BOT_EMAIL }}>
+
+      - name: Wait, then restart Bors and label PR
+        if: ${{ steps.auto-commit-action.outputs.changes_detected == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          sleep ${{ env.RESTART_PR_DELAY }}
+          gh pr edit ${{ needs.get_pr_info.outputs.pr_number }} --add-label ${{ env.ADD_PR_LABELS }}
+          printf "Updated changelog before staging build.\nbors r+" | gh pr comment ${{ needs.get_pr_info.outputs.pr_number }} --body-file -

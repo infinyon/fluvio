@@ -48,3 +48,21 @@ endif
 fluvio_image: fluvio_run_bin
 	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
 	k8-util/docker/build.sh $(TARGET) $(GIT_COMMIT) "./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
+
+
+# Build changelog
+install-git-cliff:
+	cargo install git-cliff
+
+generate-changelog: install-git-cliff
+	git cliff -o CHANGELOG-generated.md
+
+# Extract changelog section
+install-markdown-extract:
+	cargo install markdown-extract
+
+extract-first-changelog-section: install-markdown-extract generate-changelog
+	markdown-extract 'Platform Version VERSION - UNRELEASED' CHANGELOG-generated.md
+
+
+
