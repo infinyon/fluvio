@@ -1,4 +1,5 @@
 use clap::Parser;
+use anyhow::Result;
 
 use crate::generate::GenerateOpt;
 use crate::test::TestOpt;
@@ -12,14 +13,10 @@ pub enum SmdkCommand {
 }
 
 impl SmdkCommand {
-    pub(crate) fn process(self) {
+    pub(crate) fn process(self) -> Result<()> {
         match self {
-            Self::Generate(opt) => {
-                opt.process();
-            }
-            SmdkCommand::Test(opt) => {
-                opt.process();
-            }
+            Self::Generate(opt) => opt.process(),
+            SmdkCommand::Test(opt) => opt.process(),
         }
     }
 }

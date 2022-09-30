@@ -1,7 +1,8 @@
-use std::path::Path;
+use std::env;
 use std::{collections::BTreeMap, path::PathBuf};
 use std::fmt::Debug;
 
+use cargo_metadata::{MetadataCommand, CargoOpt};
 use clap::Parser;
 use anyhow::Result;
 
@@ -50,19 +51,28 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
 }
 
 impl TestOpt {
-    fn wasm_file_path(&self) -> &Path {
-        !todo!("get wasm file path")
+    fn wasm_file_path(&self) -> Result<PathBuf> {
+        let _metadata = MetadataCommand::new()
+            .manifest_path("./Cargo.toml")
+            .features(CargoOpt::AllFeatures)
+            .exec()?;
+        let mut path = env::current_dir()?;
+        path.push("target");
+        path.push("wasm32-unknown-unknown");
+        path.push("release-lto");
+        path.push("fluvio_smartmodule_map.wasm ");
+        Ok(path)
     }
-
     pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
 
         // load wasm file
-        let raw = std::fs::read(self.wasm_file_path())?;
+        let wasm_path = self.wasm_file_path()?;
+        println!("loading module at: {}", wasm_path.display());
+        let raw = std::fs::read(self.wasm_file_path()?)?;
 
         let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
-        debug!("loading module");
         let engine = SmartEngine::new();
         let mut chain_builder = engine.builder();
         chain_builder
@@ -72,7 +82,7 @@ impl TestOpt {
             )
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-        debug!("SmartModule created");
+        println!("SmartModule created");
 
         let mut chain = chain_builder
             .initialize()

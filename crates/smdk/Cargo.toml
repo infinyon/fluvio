@@ -19,10 +19,10 @@ doc = false
 [dependencies]
 tracing = "0.1.19"
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
-clap_complete = "3.1.1"
 dirs = "4.0.0"
 thiserror = "1.0.20"
 anyhow = { version = "1.0.38" }
+cargo_metadata = "0.15.0"
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }

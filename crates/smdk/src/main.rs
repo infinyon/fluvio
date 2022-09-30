@@ -11,7 +11,7 @@ fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
 
     let root: SmdkCommand = SmdkCommand::parse();
-    root.process();
+    root.process()?;
 
     Ok(())
 }
