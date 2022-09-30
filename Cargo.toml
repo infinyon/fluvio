@@ -39,7 +39,7 @@ members = [
     "crates/fluvio-test-case-derive",
     "crates/fluvio-test-util",
     "crates/fluvio-types",
-    "examples/sm-regex",
+    "smartmodule/sm-regex",
     "release-tools/check-crate-version",
     "crates/smdk"
 ]
