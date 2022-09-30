@@ -1,9 +1,11 @@
 mod cmd;
 mod generate;
+mod test;
 
 use clap::Parser;
+use anyhow::Result;
+
 use cmd::SmdkCommand;
-use color_eyre::eyre::Result;
 
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
