@@ -23,6 +23,7 @@ dirs = "4.0.0"
 thiserror = "1.0.20"
 anyhow = { version = "1.0.38" }
 cargo_metadata = "0.15.0"
+convert_case = "0.6.0"
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }

@@ -1,10 +1,10 @@
-use std::env;
 use std::{collections::BTreeMap, path::PathBuf};
 use std::fmt::Debug;
 
 use cargo_metadata::{MetadataCommand, CargoOpt};
 use clap::Parser;
 use anyhow::Result;
+use convert_case::{Case, Casing};
 
 use fluvio::{FluvioError, RecordKey};
 use fluvio_protocol::record::{RecordData, Record};
@@ -25,6 +25,10 @@ pub struct TestOpt {
     // arbitrary file
     #[clap(long)]
     file: Option<PathBuf>,
+
+    // release name
+    #[clap(long, default_value = "release-lto")]
+    release: String,
 
     // optional wasm_file path
     #[clap(long)]
@@ -52,16 +56,29 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
 
 impl TestOpt {
     fn wasm_file_path(&self) -> Result<PathBuf> {
-        let _metadata = MetadataCommand::new()
-            .manifest_path("./Cargo.toml")
-            .features(CargoOpt::AllFeatures)
-            .exec()?;
-        let mut path = env::current_dir()?;
-        path.push("target");
-        path.push("wasm32-unknown-unknown");
-        path.push("release-lto");
-        path.push("fluvio_smartmodule_map.wasm ");
-        Ok(path)
+        if let Some(wasm_path) = self.wasm_file.as_ref() {
+            Ok(wasm_path.to_path_buf())
+        } else {
+            let metadata = MetadataCommand::new()
+                .manifest_path("./Cargo.toml")
+                .features(CargoOpt::AllFeatures)
+                .exec()?;
+
+            let root_package = metadata
+                .root_package()
+                .ok_or_else(|| anyhow::anyhow!("unable to find root package".to_owned()))?;
+            //print!("root package: {:#?}", metadata.);
+            let project_name = &root_package.name;
+            println!("project name: {:#?}", project_name);
+
+            let asset_name = project_name.to_case(Case::Snake);
+
+            let path = PathBuf::from(format!(
+                "target/wasm32-unknown-unknown/{}/{}.wasm",
+                self.release, asset_name
+            ));
+            Ok(path)
+        }
     }
     pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
@@ -69,7 +86,8 @@ impl TestOpt {
         // load wasm file
         let wasm_path = self.wasm_file_path()?;
         println!("loading module at: {}", wasm_path.display());
-        let raw = std::fs::read(self.wasm_file_path()?)?;
+        let raw = std::fs::read(wasm_path)?;
+        println!("module loaded");
 
         let param: BTreeMap<String, String> = self.params.into_iter().collect();
 

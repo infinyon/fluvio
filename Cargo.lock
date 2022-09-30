@@ -815,6 +815,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e1f025f441cdfb75831bec89b9d6a6ed02e5e763f78fc5e1ff30d4870fefaec"
 
 [[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3834,7 +3843,7 @@ version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "543a19b46d693c95eee3a8ba21e3fb8dfdc38b4db9cb72c7e1bae16ba0faa962"
 dependencies = [
- "convert_case",
+ "convert_case 0.3.2",
  "proc-macro-error",
  "proc-macro2",
  "quote",
@@ -4410,6 +4419,7 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "clap",
+ "convert_case 0.6.0",
  "dirs",
  "fluvio",
  "fluvio-extension-common",
