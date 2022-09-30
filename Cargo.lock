@@ -1988,15 +1988,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-sm-regex"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule",
- "once_cell",
- "regex",
-]
-
-[[package]]
 name = "fluvio-smartengine"
 version = "0.4.0"
 dependencies = [

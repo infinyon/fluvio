@@ -39,9 +39,12 @@ members = [
     "crates/fluvio-test-case-derive",
     "crates/fluvio-test-util",
     "crates/fluvio-types",
-    "smartmodule/sm-regex",
     "release-tools/check-crate-version",
     "crates/smdk"
+]
+
+exclude = [
+    "smartmodule/sm-regex"
 ]
 resolver = "2"
 
