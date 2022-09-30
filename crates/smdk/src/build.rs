@@ -35,6 +35,7 @@ impl BuildOpt {
     fn make_cargo_cmd() -> Result<Command> {
         let mut cargo = Command::new("cargo");
 
+        cargo.output().map_err(Error::from)?;
         cargo.stdout(Stdio::inherit());
         cargo.stderr(Stdio::inherit());
 
