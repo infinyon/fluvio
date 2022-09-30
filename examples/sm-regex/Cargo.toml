@@ -12,3 +12,8 @@ crate-type = ['cdylib']
 regex = "1.5"
 once_cell = "1.13.0"
 fluvio-smartmodule = { path = "../../crates/fluvio-smartmodule" }
+
+
+[profile.release-lto]
+inherits = "release"
+lto = true

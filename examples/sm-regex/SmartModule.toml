@@ -9,11 +9,5 @@ authors = ["Infinyon"]
 repository = "https://github.com/infinyon/fluvio"
 
 
-[init]
-regex = { input = "string" }
 
-[map]
-regex_match = { input = "string", output = "string" }
 
-[cargo]
-profile = "release"
