@@ -112,10 +112,7 @@ impl GenerateOpt {
             other_args: None,
         };
 
-        generate(args).map_err(|err| {
-            println!("An error ocurred generating repo: {:?}", err);
-            Error::from(err)
-        })?;
+        generate(args).map_err(Error::from)?;
 
         Ok(())
     }
