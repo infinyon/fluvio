@@ -53,6 +53,7 @@ impl ClientCmd for CreateSmartModuleOpt {
                     name: m.package.name.clone(),
                     version: m.package.version.clone(),
                     group: m.package.group.clone(),
+                    ..Default::default()
                 }),
                 m.init
                     .into_iter()

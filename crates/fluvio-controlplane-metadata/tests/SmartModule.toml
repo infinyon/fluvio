@@ -1,12 +1,12 @@
 [package]
-name = "regex"
+name = "MyCustomModule"
 group = "infinyon"
 version = "0.1.0"
-api_version = "0.1"
-description = "Regex SmartModule"
+api_version = "0.1.0"
+description = "My Custom module"
 license = "Apache-2.0"
 repository = "https://github.com/infinyon/fluvio"
 
 
 [params]
-multiplier = { required = true, description = "used for mulitplier" }
+multiplier = { required = true, description = "multiply input" }

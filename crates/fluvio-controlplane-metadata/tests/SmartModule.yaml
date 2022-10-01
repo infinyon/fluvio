@@ -1,5 +1,6 @@
-name: 'MyCustomModule'
-description: 'My Custom module'
+name: "MyCustomModule"
+description: "My Custom module"
+group: "InfinyOn"
 version: 0.1.0
 api_version: 0.1.0
 params:
