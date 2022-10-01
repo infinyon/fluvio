@@ -12,6 +12,7 @@ name = "fluvio_controlplane_metadata"
 path = "src/lib.rs"
 
 [features]
+smartmodule = ["flate2"]
 use_serde = ["serde"]
 k8 = ["use_serde", "fluvio-stream-model/k8"]
 
@@ -22,6 +23,7 @@ async-trait = "0.1.21"
 thiserror = "1.0.20"
 base64 = "0.13.0"
 bytes = { version = "1" }
+flate2 = { version = "1.0.22", optional = true }
 
 # External Fluvio dependencies
 fluvio-future = { version = "0.4.0" }

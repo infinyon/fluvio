@@ -133,6 +133,29 @@ impl std::fmt::Debug for SmartModuleWasm {
     }
 }
 
+impl SmartModuleWasm {
+    /// Create SmartModule from compressed Gzip format
+    pub fn from_compressed_gzip(payload: Vec<u8>) -> Self {
+        SmartModuleWasm {
+            payload,
+            format: SmartModuleWasmFormat::Binary,
+        }
+    }
+
+    #[cfg(feature = "smartmodule")]
+    /// Create SmartModule from uncompressed Wasm format
+    pub fn from_raw_wasm_bytes(raw_payload: &[u8]) -> std::io::Result<Self> {
+        use std::io::Read;
+        use flate2::{Compression, bufread::GzEncoder};
+
+        let mut encoder = GzEncoder::new(raw_payload, Compression::default());
+        let mut buffer = Vec::with_capacity(raw_payload.len());
+        encoder.read_to_end(&mut buffer)?;
+
+        Ok(Self::from_compressed_gzip(buffer))
+    }
+}
+
 #[cfg(feature = "use_serde")]
 mod base64 {
     use serde::{Serialize, Deserialize};
@@ -147,14 +170,6 @@ mod base64 {
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
         let base64 = String::deserialize(d)?;
         base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
-    }
-}
-impl SmartModuleWasm {
-    pub fn from_binary_payload(payload: Vec<u8>) -> Self {
-        SmartModuleWasm {
-            payload,
-            format: SmartModuleWasmFormat::Binary,
-        }
     }
 }
 
