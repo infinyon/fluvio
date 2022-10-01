@@ -4421,6 +4421,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartengine",
  "fluvio-smartmodule",
+ "fluvio-smartmodule-package",
  "thiserror",
  "tracing",
 ]
