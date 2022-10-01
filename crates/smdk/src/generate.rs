@@ -19,28 +19,20 @@ pub struct GenerateOpt {
     template: Option<String>,
 }
 
-impl GenerateOpt {
-    pub(crate) fn process(self) -> Result<()> {
-        println!("Generating new SmartModule project: {}", self.name);
+struct Template {
+    template_path: TemplatePath,
+    _temp_dir: Option<TempDir>,
+}
 
-        let template_path = if self.template.is_some() {
-            TemplatePath {
-                git: self.template,
-                auto_path: None,
-                subfolder: None,
-                test: false,
-                branch: None,
-                tag: None,
-                path: None,
-                favorite: None,
-            }
-        } else {
-            let temp_dir = TempDir::new("smartmodule_template")?;
-            let path = temp_dir.path().to_str().unwrap().to_string();
-
-            SMART_MODULE_TEMPLATE.extract(temp_dir).map_err(Error::from)?;
-
-            TemplatePath {
+impl Template {
+    fn inline() -> Result<Self> {
+        let temp_dir = TempDir::new("smartmodule_template")?;
+        let path = temp_dir.path().to_str().unwrap().to_string();
+        SMART_MODULE_TEMPLATE
+            .extract(&temp_dir)
+            .map_err(Error::from)?;
+        let template = Self {
+            template_path: TemplatePath {
                 git: None,
                 auto_path: None,
                 subfolder: None,
@@ -49,7 +41,41 @@ impl GenerateOpt {
                 tag: None,
                 path: Some(path),
                 favorite: None,
-            }
+            },
+            _temp_dir: Some(temp_dir),
+        };
+
+        Ok(template)
+    }
+
+    fn git(repo_uri: String) -> Result<Self> {
+        Ok(Self {
+            template_path: TemplatePath {
+                git: Some(repo_uri),
+                auto_path: None,
+                subfolder: None,
+                test: false,
+                branch: None,
+                tag: None,
+                path: None,
+                favorite: None,
+            },
+            _temp_dir: None,
+        })
+    }
+}
+
+impl GenerateOpt {
+    pub(crate) fn process(self) -> Result<()> {
+        println!("Generating new SmartModule project: {}", self.name);
+
+        let Template {
+            template_path,
+            _temp_dir,
+        } = if let Some(git_uri) = self.template {
+            Template::git(git_uri)?
+        } else {
+            Template::inline()?
         };
 
         let args = GenerateArgs {
@@ -74,7 +100,11 @@ impl GenerateOpt {
             other_args: None,
         };
 
-        generate(args).map_err(Error::from)?;
+        generate(args).map_err(|err| {
+            println!("An error ocurred generating repo: {:?}", err);
+            Error::from(err)
+        })?;
+
         Ok(())
     }
 }
