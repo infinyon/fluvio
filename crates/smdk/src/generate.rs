@@ -2,8 +2,9 @@ use anyhow::{Error, Result};
 use clap::Parser;
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
+use tempdir::TempDir;
 
-static SMART_MODULE_TEMPLATE: Dir<'_> =
+static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
 
 /// Generate new SmartModule project
@@ -22,9 +23,9 @@ impl GenerateOpt {
     pub(crate) fn process(self) -> Result<()> {
         println!("Generating new SmartModule project: {}", self.name);
 
-        let template_path = match self.template {
-            Some(git) => TemplatePath {
-                git: Some(git),
+        let template_path = if self.template.is_some() {
+            TemplatePath {
+                git: self.template,
                 auto_path: None,
                 subfolder: None,
                 test: false,
@@ -32,20 +33,22 @@ impl GenerateOpt {
                 tag: None,
                 path: None,
                 favorite: None,
-            },
-            None => {
-                let path = SMART_MODULE_TEMPLATE.path().to_str().unwrap().to_string();
+            }
+        } else {
+            let temp_dir = TempDir::new("smartmodule_template")?;
+            let path = temp_dir.path().to_str().unwrap().to_string();
 
-                TemplatePath {
-                    git: None,
-                    auto_path: None,
-                    subfolder: None,
-                    test: false,
-                    branch: None,
-                    tag: None,
-                    path: Some(path),
-                    favorite: None,
-                }
+            SMART_MODULE_TEMPLATE.extract(temp_dir).map_err(Error::from)?;
+
+            TemplatePath {
+                git: None,
+                auto_path: None,
+                subfolder: None,
+                test: false,
+                branch: None,
+                tag: None,
+                path: Some(path),
+                favorite: None,
             }
         };
 

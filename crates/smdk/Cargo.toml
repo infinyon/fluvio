@@ -26,6 +26,7 @@ cargo_metadata = "0.15.0"
 cargo-generate = "0.16.0"
 convert_case = "0.6.0"
 include_dir = "0.7.2"
+tempdir = "0.3.7"
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
