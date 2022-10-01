@@ -79,7 +79,7 @@ impl ClientCmd for CreateSmartModuleOpt {
         };
 
         let spec: SmartModuleSpec = SmartModuleSpec {
-            wasm: SmartModuleWasm::from_binary_payload(buffer),
+            wasm: SmartModuleWasm::from_compressed_gzip(buffer),
             package: package_opt.0,
             init_params: package_opt.1,
             ..Default::default()
