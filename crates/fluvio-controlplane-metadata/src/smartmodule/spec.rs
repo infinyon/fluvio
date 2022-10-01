@@ -6,6 +6,9 @@ use std::collections::{BTreeMap};
 
 use fluvio_protocol::{Encoder, Decoder};
 
+
+use super::package::{SmartModulePackage};
+
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
@@ -22,23 +25,6 @@ pub struct SmartModuleSpec {
     )]
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
-
-/// SmartModule package definition
-/// This is defined in the `SmartModule.toml` in the root of the SmartModule project
-#[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartModulePackage {
-    pub name: String,
-    pub group: String,
-    pub version: String,
-    pub edition: String,
-    pub description: String,
-    #[serde(default)]
-    pub authors: Vec<String>,
-    pub license: String,
-    pub repository: String,
-}
-
 
 
 #[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
@@ -107,6 +93,10 @@ mod map_init_params {
         input: SmartModuleInitType,
     }
 }
+
+
+
+
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]

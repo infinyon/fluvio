@@ -1850,6 +1850,7 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
+ "semver 1.0.14",
  "serde",
  "serde_yaml 0.9.13",
  "thiserror",
