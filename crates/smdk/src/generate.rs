@@ -19,12 +19,24 @@ pub struct GenerateOpt {
     template: Option<String>,
 }
 
+/// Abstraction on different of template options available for generating a
+/// new SmartModule project.
+///
+/// May hold a reference to a `TempDir` which should not be dropped before
+/// accomplishing the project generation procedure.
 struct Template {
     template_path: TemplatePath,
     _temp_dir: Option<TempDir>,
 }
 
 impl Template {
+    /// Extracts inlined directory contents into a temporary directory and
+    /// builds a `TemplatePath` instance with the `path` pointing to the temp
+    /// directory created.
+    ///
+    /// Is important to hold the reference to the `_temp_dir` until generation
+    /// process is completed, otherwise the temp directory will be deleted
+    /// before reaching the generation process.
     fn inline() -> Result<Self> {
         let temp_dir = TempDir::new("smartmodule_template")?;
         let path = temp_dir.path().to_str().unwrap().to_string();

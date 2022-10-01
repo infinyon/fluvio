@@ -4983,6 +4983,8 @@ dependencies = [
  "fluvio-smartengine",
  "fluvio-smartmodule",
  "fluvio-smartmodule-package",
+ "include_dir",
+ "tempdir",
  "thiserror",
  "tracing",
 ]
