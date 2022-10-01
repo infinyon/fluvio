@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::io::Read;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -11,8 +10,7 @@ use tracing::debug;
 use clap::Parser;
 
 use fluvio::Fluvio;
-use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
-use flate2::{Compression, bufread::GzEncoder};
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use fluvio_smartmodule_package::package::{SmartModuleMetadata, InitType};
 
 use crate::Result;
@@ -41,10 +39,6 @@ impl ClientCmd for CreateSmartModuleOpt {
         _out: Arc<O>,
         fluvio: &Fluvio,
     ) -> Result<()> {
-        let raw = std::fs::read(self.wasm_file)?;
-        let mut encoder = GzEncoder::new(raw.as_slice(), Compression::default());
-        let mut buffer = Vec::with_capacity(raw.len());
-        encoder.read_to_end(&mut buffer)?;
         /*
             * TODO: Fix the CRD to work with this
         let buffer = vec!['a' as u8; self.size];
@@ -78,8 +72,10 @@ impl ClientCmd for CreateSmartModuleOpt {
             (None, BTreeMap::new())
         };
 
+        let raw = std::fs::read(self.wasm_file)?;
+
         let spec: SmartModuleSpec = SmartModuleSpec {
-            wasm: SmartModuleWasm::from_compressed_gzip(buffer),
+            wasm: SmartModuleWasm::from_raw_wasm_bytes(&raw)?,
             package: package_opt.0,
             init_params: package_opt.1,
             ..Default::default()

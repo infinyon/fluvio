@@ -90,6 +90,7 @@ fluvio-smartmodule-package = { path = "../fluvio-smartmodule-package" }
 fluvio-smartengine = { path = "../fluvio-smartengine",  optional = true }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
+fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }

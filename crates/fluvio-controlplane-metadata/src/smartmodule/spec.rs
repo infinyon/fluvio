@@ -134,7 +134,6 @@ impl std::fmt::Debug for SmartModuleWasm {
 }
 
 impl SmartModuleWasm {
-
     /// Create SmartModule from compressed Gzip format
     pub fn from_compressed_gzip(payload: Vec<u8>) -> Self {
         SmartModuleWasm {
@@ -143,10 +142,9 @@ impl SmartModuleWasm {
         }
     }
 
-    #[cfg(feature="smartmodule")]
+    #[cfg(feature = "smartmodule")]
     /// Create SmartModule from uncompressed Wasm format
     pub fn from_raw_wasm_bytes(raw_payload: &[u8]) -> std::io::Result<Self> {
-
         use std::io::Read;
         use flate2::{Compression, bufread::GzEncoder};
 
@@ -157,7 +155,6 @@ impl SmartModuleWasm {
         Ok(Self::from_compressed_gzip(buffer))
     }
 }
-
 
 #[cfg(feature = "use_serde")]
 mod base64 {

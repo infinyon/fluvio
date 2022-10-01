@@ -1608,6 +1608,7 @@ dependencies = [
  "fluvio-cli-common",
  "fluvio-cluster",
  "fluvio-command",
+ "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future 0.4.2",
  "fluvio-package-index",

@@ -16,8 +16,7 @@ pub struct LoadOpt {
 }
 impl LoadOpt {
     pub(crate) fn process(&self) -> Result<()> {
-
-        /* 
+        /*
         let mut encoder = GzEncoder::new(raw.as_slice(), Compression::default());
         let mut buffer = Vec::with_capacity(raw.len());
         encoder.read_to_end(&mut buffer)?;
@@ -30,7 +29,7 @@ impl LoadOpt {
         };
         let wasm = SmartModuleWasm::new(self.wasm.wasm_file.clone())?;
         */
-        
+
         Ok(())
     }
 }
