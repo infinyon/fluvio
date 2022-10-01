@@ -1,5 +1,5 @@
 [package]
-name = "smdk"
+name = "smart-module-development-kit"
 version = "0.0.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
