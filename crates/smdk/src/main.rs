@@ -1,5 +1,6 @@
 mod build;
 mod cmd;
+mod generate;
 mod test;
 mod load;
 mod wasm;

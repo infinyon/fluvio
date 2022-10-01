@@ -1,34 +1,54 @@
 use anyhow::{Error, Result};
 use clap::Parser;
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
+use include_dir::{Dir, include_dir};
 
-const DEFAULT_TEMPLATE: &str =
-    "https://github.com/infinyon/fluvio/tree/master/smartmodule/cargo_template";
+static SMART_MODULE_TEMPLATE: Dir<'_> =
+    include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
 
 /// Generate new SmartModule project
 #[derive(Debug, Parser)]
 pub struct GenerateOpt {
+    /// SmartModule Project Name
     name: String,
     /// Template to generate project from.
     ///
     /// Must be a GIT repository
-    #[clap(long, default_value = DEFAULT_TEMPLATE)]
-    temaplate: String,
+    #[clap(long)]
+    template: Option<String>,
 }
 
 impl GenerateOpt {
-    pub(crate) fn process(&self) -> Result<()> {
+    pub(crate) fn process(self) -> Result<()> {
         println!("Generating new SmartModule project: {}", self.name);
-        let template_path = TemplatePath {
-            git: Some(String::from(self.temaplate.as_str())),
-            auto_path: None,
-            subfolder: None,
-            test: false,
-            branch: None,
-            tag: None,
-            path: None,
-            favorite: None,
+
+        let template_path = match self.template {
+            Some(git) => TemplatePath {
+                git: Some(git),
+                auto_path: None,
+                subfolder: None,
+                test: false,
+                branch: None,
+                tag: None,
+                path: None,
+                favorite: None,
+            },
+            None => {
+                let path = SMART_MODULE_TEMPLATE.path().to_str().unwrap().to_string();
+
+                TemplatePath {
+                    git: None,
+                    auto_path: None,
+                    subfolder: None,
+                    test: false,
+                    branch: None,
+                    tag: None,
+                    path: Some(path),
+                    favorite: None,
+                }
+            }
         };
+
         let args = GenerateArgs {
             template_path,
             name: Some(self.name.clone()),
