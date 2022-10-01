@@ -1,0 +1,8 @@
+name: 'MyCustomModule'
+description: 'My Custom module'
+version: 0.1.0
+api_version: 0.1.0
+params:
+  multiplier:   
+    description: "Use for multiplying value" 
+    required: true

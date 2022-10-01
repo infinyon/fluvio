@@ -2,12 +2,11 @@
 name = "regex"
 group = "infinyon"
 version = "0.1.0"
-package_version = "0.1"
+api_version = "0.1"
 description = "Regex SmartModule"
 license = "Apache-2.0"
-authors = ["Infinyon"]
 repository = "https://github.com/infinyon/fluvio"
 
 
-[init]
-regex = { input = "string" }
+[params]
+multiplier = { required = true, description = "used for mulitplier" }
