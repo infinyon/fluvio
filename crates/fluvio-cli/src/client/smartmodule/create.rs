@@ -3,15 +3,15 @@ use std::path::PathBuf;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use fluvio_extension_common::Terminal;
-use fluvio_sc_schema::smartmodule::{SmartModulePackage, SmartModuleInitType, SmartModuleInitParam};
 use tracing::debug;
+use async_trait::async_trait;
 use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use fluvio_smartmodule_package::package::{SmartModuleMetadata, InitType};
+use fluvio_extension_common::Terminal;
+use fluvio_sc_schema::smartmodule::{SmartModulePackage, SmartModuleInitType, SmartModuleInitParam};
 
 use crate::Result;
 use crate::client::cmd::ClientCmd;
@@ -74,7 +74,7 @@ impl ClientCmd for CreateSmartModuleOpt {
 
         let raw = std::fs::read(self.wasm_file)?;
 
-        let spec: SmartModuleSpec = SmartModuleSpec {
+        let spec = SmartModuleSpec {
             wasm: SmartModuleWasm::from_raw_wasm_bytes(&raw)?,
             package: package_opt.0,
             init_params: package_opt.1,
