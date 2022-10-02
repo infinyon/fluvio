@@ -157,9 +157,9 @@ spec:
                           name:
                             type: string
                           description:
-                            type: String
+                            type: string
                           required:
-                            type: bool
+                            type: boolean
                 wasm:
                   type: object
                   required: ["format", "payload"]
