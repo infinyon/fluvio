@@ -96,6 +96,7 @@ impl Decoder for FluvioSemVersion {
 #[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleParam {
+    pub name: String,
     pub description: Option<String>,
     pub required: bool,
 }

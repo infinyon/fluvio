@@ -9,9 +9,7 @@ use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
-use fluvio_smartmodule_package::package::{SmartModuleMetadata, InitType};
 use fluvio_extension_common::Terminal;
-use fluvio_sc_schema::smartmodule::{SmartModulePackage, SmartModuleInitType, SmartModuleInitParam};
 
 use crate::Result;
 use crate::client::cmd::ClientCmd;
@@ -44,6 +42,7 @@ impl ClientCmd for CreateSmartModuleOpt {
         let buffer = vec!['a' as u8; self.size];
         */
 
+        /*
         // load package if provided
         let package_opt = if let Some(package_path) = self.package {
             let m = SmartModuleMetadata::from_file(package_path)?;
@@ -72,6 +71,7 @@ impl ClientCmd for CreateSmartModuleOpt {
         } else {
             (None, BTreeMap::new())
         };
+        */
 
         let raw = std::fs::read(self.wasm_file)?;
 

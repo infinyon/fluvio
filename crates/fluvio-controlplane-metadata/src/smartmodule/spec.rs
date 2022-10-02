@@ -13,7 +13,6 @@ pub struct SmartModuleSpec {
     pub wasm: SmartModuleWasm,
 }
 
-
 #[derive(Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {
@@ -68,7 +67,6 @@ impl Default for SmartModuleWasmFormat {
     }
 }
 
-
 #[cfg(feature = "use_serde")]
 mod base64 {
     use serde::{Serialize, Deserialize};
@@ -85,8 +83,6 @@ mod base64 {
         base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

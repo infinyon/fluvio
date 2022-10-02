@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use k8_client::{ClientError, K8Client, meta_client::MetadataClient};
-use fluvio_controlplane_metadata::topic::{TopicSpec, TopicV1Wrapper};
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
 use k8_types::{UpdatedK8Obj};
 use tracing::{debug, info};
 
@@ -17,6 +17,7 @@ impl SmartModuleMigrationController {
     }
 
     async fn migrate_crd(&self, ns: &str) -> Result<(), ClientError> {
+        /*
         let old_topics = self.0.retrieve_items::<TopicV1Wrapper, _>(ns).await?;
         info!(old_topic = old_topics.items.len(), "Old topics");
         for old_topic in old_topics.items {
@@ -35,6 +36,7 @@ impl SmartModuleMigrationController {
                 debug!(%old_metadata.name, "no v1 topic, skipping");
             }
         }
+        */
 
         Ok(())
     }

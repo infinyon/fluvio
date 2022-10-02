@@ -28,17 +28,13 @@ impl Spec for SmartModuleSpec {
 
 impl Status for SmartModuleStatus {}
 
-
-
-#[derive(Debug, Default, Clone, Eq, PartialEq,Serialize,Deserialize)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SmartModuleSpecV1 {
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub wasm: SmartModuleWasm,
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
-
-
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum SmartModuleInputKind {
@@ -70,7 +66,6 @@ impl std::fmt::Display for SmartModuleSpec {
         write!(f, "SmartModuleSpec")
     }
 }
-
 
 #[derive(Debug, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
 
