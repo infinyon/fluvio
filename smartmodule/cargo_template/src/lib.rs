@@ -1,3 +1,10 @@
+{% if smartmodule-init %}
+use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError};
+{% if smartmodule-type == "filter" %}
+use once_cell::sync::OnceCell;
+use fluvio_smartmodule::eyre;
+{% endif %}
+{% endif %}
 {% if smartmodule-type == "filter" %}
 use fluvio_smartmodule::{smartmodule, Result, Record};
 
@@ -78,4 +85,27 @@ pub fn aggregate(accumulator: RecordData, current: &Record{% if smartmodule-para
 {% if smartmodule-params  %}
 #[derive(fluvio_smartmodule::SmartOpt, Default)]
 pub struct SmartModuleOpt;
+{% endif %}
+{% if smartmodule-init %}
+{% if smartmodule-type == "filter" %}
+static CRITERIA: OnceCell<String> = OnceCell::new();
+
+#[smartmodule(init)]
+fn init(params: SmartModuleExtraParams) -> Result<()> {
+    // You can refer to the example SmartModules in Fluvio's GitHub Repository
+    // https://github.com/infinyon/fluvio/tree/master/smartmodule
+    if let Some(key) = params.get("key") {
+        CRITERIA.set(key.clone()).map_err(|err| eyre!("failed setting key: {:#?}", err))
+    } else {
+        Err(SmartModuleInitError::MissingParam("key".to_string()).into())
+    }
+}
+{% else %}
+#[smartmodule(init)]
+fn init(params: SmartModuleExtraParams) -> Result<()> {
+    // You can refer to the example SmartModules in Fluvio's GitHub Repository
+    // https://github.com/infinyon/fluvio/tree/master/smartmodule
+    todo!("Provide initialization logic for your SmartModule")
+}
+{% endif %}
 {% endif %}
