@@ -13,8 +13,3 @@ default = "filter"
 type = "bool"
 prompt = "Want to use SmartModule init?"
 default = false
-
-[placeholders.smartmodule-params]
-type = "bool"
-prompt = "Want to use SmartModule parameters?"
-default = false

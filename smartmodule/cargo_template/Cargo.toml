@@ -11,6 +11,11 @@ crate-type = ['cdylib']
 fluvio-smartmodule = { {{smartmodule-version}} }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+{% if smartmodule-init %}
+{% if smartmodule-type == "filter" %}
+once_cell = "1.13.0"
+{% endif %}
+{% endif %}
 
 [profile.release-lto]
 inherits = "release"

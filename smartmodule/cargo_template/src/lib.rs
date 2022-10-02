@@ -1,5 +1,9 @@
 {% if smartmodule-init %}
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError};
+{% if smartmodule-type == "filter" %}
+use once_cell::sync::OnceCell;
+use fluvio_smartmodule::eyre;
+{% endif %}
 {% endif %}
 {% if smartmodule-type == "filter" %}
 use fluvio_smartmodule::{smartmodule, Result, Record};
