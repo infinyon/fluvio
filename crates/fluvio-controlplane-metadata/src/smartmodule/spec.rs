@@ -4,34 +4,15 @@
 
 use fluvio_protocol::{Encoder, Decoder};
 
+use super::SmartModuleMetadata;
+
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
-    pub input_kind: SmartModuleInputKind,
-    pub output_kind: SmartModuleOutputKind,
-    pub source_code: Option<SmartModuleSourceCode>,
+    pub metadata: Option<SmartModuleMetadata>,
     pub wasm: SmartModuleWasm,
-    pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartModuleSourceCode {
-    language: SmartModuleSourceCodeLanguage,
-    payload: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartModuleSourceCodeLanguage {
-    Rust,
-}
-
-impl Default for SmartModuleSourceCodeLanguage {
-    fn default() -> SmartModuleSourceCodeLanguage {
-        SmartModuleSourceCodeLanguage::Rust
-    }
-}
 
 #[derive(Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
@@ -72,6 +53,22 @@ impl SmartModuleWasm {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum SmartModuleWasmFormat {
+    #[cfg_attr(feature = "use_serde", serde(rename = "BINARY"))]
+    Binary,
+    #[cfg_attr(feature = "use_serde", serde(rename = "TEXT"))]
+    Text,
+}
+
+impl Default for SmartModuleWasmFormat {
+    fn default() -> SmartModuleWasmFormat {
+        SmartModuleWasmFormat::Binary
+    }
+}
+
+
 #[cfg(feature = "use_serde")]
 mod base64 {
     use serde::{Serialize, Deserialize};
@@ -89,59 +86,7 @@ mod base64 {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartModuleWasmFormat {
-    #[cfg_attr(feature = "use_serde", serde(rename = "BINARY"))]
-    Binary,
-    #[cfg_attr(feature = "use_serde", serde(rename = "TEXT"))]
-    Text,
-}
 
-impl Default for SmartModuleWasmFormat {
-    fn default() -> SmartModuleWasmFormat {
-        SmartModuleWasmFormat::Binary
-    }
-}
-
-#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartModuleParameter {
-    name: String,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartModuleInputKind {
-    Stream,
-    External,
-}
-
-impl Default for SmartModuleInputKind {
-    fn default() -> SmartModuleInputKind {
-        SmartModuleInputKind::Stream
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartModuleOutputKind {
-    Stream,
-    External,
-    Table,
-}
-
-impl Default for SmartModuleOutputKind {
-    fn default() -> SmartModuleOutputKind {
-        SmartModuleOutputKind::Stream
-    }
-}
-
-impl std::fmt::Display for SmartModuleSpec {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "SmartModuleSpec")
-    }
-}
 
 #[cfg(test)]
 mod tests {
