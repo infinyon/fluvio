@@ -117,3 +117,34 @@ impl GenerateOpt {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::fs::read_dir;
+
+    use super::Template;
+
+    #[test]
+    fn test_inline_template() {
+        let template = Template::inline().unwrap();
+
+        assert!(
+            template._temp_dir.is_some(),
+            "The temporary directory reference is not provided"
+        );
+
+        let temp_dir = template._temp_dir.unwrap();
+        let temp_dir = read_dir(temp_dir.path());
+        assert!(temp_dir.is_ok(), "The temporary directory doesn't exists");
+
+        let mut temp_dir = temp_dir.unwrap();
+        let smart_toml =
+            temp_dir.find(|entry| entry.as_ref().unwrap().file_name().eq("Smart.toml"));
+
+        assert!(
+            smart_toml.is_some(),
+            "Smart.toml from template is not included in temporary dir"
+        );
+        assert!(smart_toml.unwrap().is_ok());
+    }
+}
