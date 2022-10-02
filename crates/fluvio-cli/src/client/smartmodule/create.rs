@@ -77,8 +77,6 @@ impl ClientCmd for CreateSmartModuleOpt {
 
         let spec = SmartModuleSpec {
             wasm: SmartModuleWasm::from_raw_wasm_bytes(&raw)?,
-            package: package_opt.0,
-            init_params: package_opt.1,
             ..Default::default()
         };
 
