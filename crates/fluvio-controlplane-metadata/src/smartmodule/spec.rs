@@ -24,7 +24,7 @@ impl SmartModuleSpec {
     pub fn version_label(&self) -> String {
         self.meta
             .as_ref()
-            .map(|meta| meta.package.version.to_string().clone())
+            .map(|meta| meta.package.version.to_string())
             .unwrap_or_else(|| "".to_owned())
     }
 }

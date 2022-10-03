@@ -109,7 +109,7 @@ impl Decoder for FluvioSemVersion {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(not(feature = "k8"), test, feature = "smartmodule"))]
 mod test {
 
     use super::FluvioSemVersion;

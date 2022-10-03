@@ -1844,7 +1844,6 @@ dependencies = [
  "base64",
  "bytes 1.2.1",
  "flate2",
- "fluvio-controlplane-metadata",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
  "fluvio-stream-model",
