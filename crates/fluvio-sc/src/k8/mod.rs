@@ -13,7 +13,7 @@ mod migration;
 mod fixture;
 
 use k8_client::new_shared;
-use tracing::{info, log::error};
+use tracing::{info, error};
 
 use crate::cli::ScOpt;
 
