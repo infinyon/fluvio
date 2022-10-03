@@ -18,7 +18,7 @@ doc = false
 
 [dependencies]
 tracing = "0.1.19"
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
+clap = { version = "4.0.9", features = ["std", "derive"], default-features = false }
 dirs = "4.0.0"
 thiserror = "1.0.20"
 anyhow = { version = "1.0.38" }

@@ -26,7 +26,7 @@ futures-lite = "1.7.0"
 pin-utils = "0.1.0-alpha.4"
 async-channel = "1.5.1"
 async-trait = "0.1.18"
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false, optional = true }
+clap = { version = "4.0.9", features = ["std", "derive"], default-features = false, optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
 async-lock = "2.4.0"
 derive_builder = "0.11.0"
