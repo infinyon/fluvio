@@ -33,8 +33,9 @@ impl SmartModuleMetadata {
         Ok(metadata)
     }
 
-    pub fn id(&self) -> &str {
-        &self.package.name
+    /// id that can be used to identify this smartmodule
+    pub fn id(&self) -> String {
+        self.package.qualified_name()
     }
 }
 
@@ -54,6 +55,18 @@ pub struct SmartModulePackage {
     pub description: Option<String>,
     pub license: Option<String>,
     pub repository: Option<String>,
+}
+
+impl SmartModulePackage {
+    /// return qualified name that can be fit into k8s resource name
+    pub fn qualified_name(&self) -> String {
+        format!(
+            "{}-{}-{}",
+            self.name,
+            self.group,
+            self.version.to_string().replace(".", "-")
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -106,6 +119,26 @@ impl Decoder for FluvioSemVersion {
             .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))?;
         self.0 = version;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod package_test {
+    use super::{SmartModulePackage, FluvioSemVersion};
+
+    #[test]
+    fn test_pkg_name() {
+        let pkg = SmartModulePackage {
+            name: "test".to_owned(),
+            group: "fluvio".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            description: None,
+            license: None,
+            repository: None,
+        };
+
+        assert_eq!(pkg.qualified_name(), "test-fluvio-0-1-0");
     }
 }
 

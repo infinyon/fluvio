@@ -14,14 +14,21 @@ pub struct SmartModuleSpec {
 }
 
 impl SmartModuleSpec {
-    pub fn group_label(&self) -> String {
+    pub fn pkg_name(&self) -> &str {
         self.meta
             .as_ref()
-            .map(|meta| meta.package.group.clone())
-            .unwrap_or_else(|| "".to_owned())
+            .map(|meta| &meta.package.name as &str)
+            .unwrap_or_else(|| "")
     }
 
-    pub fn version_label(&self) -> String {
+    pub fn pkg_group(&self) -> &str {
+        self.meta
+            .as_ref()
+            .map(|meta| &meta.package.group as &str)
+            .unwrap_or_else(|| "")
+    }
+
+    pub fn pkg_version(&self) -> String {
         self.meta
             .as_ref()
             .map(|meta| meta.package.version.to_string())
