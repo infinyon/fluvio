@@ -4,7 +4,6 @@
 
 use std::{
     io::Error as IoError,
-    collections::{BTreeMap},
 };
 
 use bytes::Buf;
@@ -12,11 +11,13 @@ use semver::Version as SemVersion;
 
 use fluvio_protocol::{Encoder, Decoder, Version};
 
+use super::params::SmartModuleParams;
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleMetadata {
     pub package: SmartModulePackage,
-    pub params: BTreeMap<String, SmartModuleParam>,
+    pub params: SmartModuleParams,
 }
 
 impl SmartModuleMetadata {
@@ -93,13 +94,8 @@ impl Decoder for FluvioSemVersion {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartModuleParam {
-    pub name: String,
-    pub description: Option<String>,
-    pub required: bool,
-}
+
+
 
 #[cfg(test)]
 mod test {

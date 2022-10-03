@@ -1,0 +1,74 @@
+use std::{
+    collections::{BTreeMap},
+};
+
+
+
+use fluvio_protocol::{Encoder, Decoder};
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartModuleParams {
+    #[cfg_attr(feature = "k8", serde(default), serde(with = "map_init_params"))]
+    params: BTreeMap<String, SmartModuleParam>
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartModuleParam {
+    pub description: Option<String>,
+    pub required: bool,
+}
+
+
+/// map parameters from list to map and vice versa
+/// this is only used for k8
+#[cfg(feature = "k8")]
+mod map_init_params {
+    use std::{collections::BTreeMap};
+
+    use serde::{Serializer, Serialize, Deserializer, Deserialize};
+
+    use super::SmartModuleParam;
+
+
+    // convert btreemap into param of vec
+    pub fn serialize<S>(
+        data: &BTreeMap<String, SmartModuleParam>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let param_seq: Vec<K8Param> = data
+            .iter()
+            .map(|(k, v)| K8Param {
+                name: k.clone(),
+                param: v.clone(),
+            })
+            .collect();
+        param_seq.serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<BTreeMap<String, SmartModuleParam>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let param_list: Vec<K8Param> = Vec::deserialize(deserializer)?;
+        let mut params = BTreeMap::new();
+        for k8_param in param_list {
+            params.insert(k8_param.name, k8_param.param);
+        }
+        Ok(params)
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    struct K8Param {
+        name: String,
+        #[serde(flatten)]
+        param: SmartModuleParam,
+    }
+}

@@ -113,3 +113,4 @@ impl From<SmartModuleSpecV1> for SmartModuleSpec {
         }
     }
 }
+
