@@ -13,6 +13,22 @@ pub struct SmartModuleSpec {
     pub wasm: SmartModuleWasm,
 }
 
+impl SmartModuleSpec {
+    pub fn group_label(&self) -> String {
+        self.meta
+            .as_ref()
+            .map(|meta| meta.package.group.clone())
+            .unwrap_or_else(|| "".to_owned())
+    }
+
+    pub fn version_label(&self) -> String {
+        self.meta
+            .as_ref()
+            .map(|meta| meta.package.version.to_string().clone())
+            .unwrap_or_else(|| "".to_owned())
+    }
+}
+
 #[derive(Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {

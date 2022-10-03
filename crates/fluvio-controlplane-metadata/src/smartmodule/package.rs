@@ -2,7 +2,10 @@
 //! # SmartModule Package
 //!
 
-use std::{io::Error as IoError};
+use std::{
+    io::Error as IoError,
+    fmt::{Display, Formatter},
+};
 
 use bytes::Buf;
 use semver::Version as SemVersion;
@@ -28,6 +31,10 @@ impl SmartModuleMetadata {
         let file_str: String = read_to_string(path_ref)?;
         let metadata = toml::from_str(&file_str)?;
         Ok(metadata)
+    }
+
+    pub fn id(&self) -> &str {
+        &self.package.name
     }
 }
 
@@ -62,6 +69,12 @@ impl FluvioSemVersion {
 impl Default for FluvioSemVersion {
     fn default() -> Self {
         Self(SemVersion::new(0, 1, 0))
+    }
+}
+
+impl Display for FluvioSemVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
