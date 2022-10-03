@@ -25,7 +25,7 @@ use crate::objects::{
 #[derive(Debug)]
 pub enum AdminPublicDecodedRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-    CreateRequest(RequestMessage<ObjectApiCreateRequest>),
+    CreateRequest(Box<RequestMessage<ObjectApiCreateRequest>>),
     DeleteRequest(RequestMessage<ObjectApiDeleteRequest>),
     ListRequest(RequestMessage<ObjectApiListRequest>),
     WatchRequest(RequestMessage<ObjectApiWatchRequest>),
@@ -63,10 +63,10 @@ impl ApiMessage for AdminPublicDecodedRequest {
         );
         match api_key {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
-            AdminPublicApiKey::Create => Ok(Self::CreateRequest(RequestMessage::new(
+            AdminPublicApiKey::Create => Ok(Self::CreateRequest(Box::new(RequestMessage::new(
                 header,
                 ObjectApiCreateRequest::decode_from(src, version)?,
-            ))),
+            )))),
             AdminPublicApiKey::Delete => Ok(Self::DeleteRequest(RequestMessage::new(
                 header,
                 ObjectApiDeleteRequest::decode_from(src, version)?,

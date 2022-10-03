@@ -170,9 +170,9 @@ mod test_v2_spec {
         assert_eq!(params.len(), 2);
         let input1 = params.get_param("multipler").unwrap();
         assert_eq!(input1.description.as_ref().unwrap(), "multipler");
-        assert_eq!(input1.optional, false);
+        assert!(!input1.optional);
         let input2 = params.get_param("scaler").unwrap();
         assert_eq!(input2.description.as_ref().unwrap(), "used for scaling");
-        assert_eq!(input2.optional, true);
+        assert!(input2.optional);
     }
 }
