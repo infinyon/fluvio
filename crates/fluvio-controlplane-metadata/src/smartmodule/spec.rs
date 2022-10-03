@@ -83,29 +83,3 @@ mod base64 {
         base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use std::collections::BTreeMap;
-
-    use serde::{Serialize, Deserialize};
-
-    use crate::smartmodule::SmartModuleInputKind;
-
-    #[test]
-    fn test_sm_spec_simple() {
-        use super::SmartModuleSpec;
-
-        let yaml_spec: &str = r#"
-input_kind: Stream
-output_kind: Stream
-wasm:
-    format: BINARY
-    payload: H4sIAAAAAAA
-"#;
-        let sm_spec: SmartModuleSpec =
-            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
-
-        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
-    }
-}

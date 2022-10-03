@@ -19,7 +19,6 @@ const SMART_MODULE_V2_API: Crd = Crd {
     },
 };
 
-
 impl Spec for SmartModuleSpec {
     type Status = SmartModuleStatus;
     type Header = DefaultHeader;
@@ -76,7 +75,6 @@ pub struct SmartModuleParameter {
     name: String,
 }
 
-
 const SMART_MODULE_V1_API: Crd = Crd {
     group: GROUP,
     version: V1,
@@ -88,7 +86,7 @@ const SMART_MODULE_V1_API: Crd = Crd {
 };
 
 /// SmartModuleV1 could be empty
-#[derive(Debug, Clone, PartialEq, Default,Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct SmartModuleV1Wrapper {
     #[serde(flatten)]
     pub inner: Option<SmartModuleSpecV1>,
@@ -103,8 +101,6 @@ impl Spec for SmartModuleV1Wrapper {
     }
 }
 
-
-
 impl From<SmartModuleSpecV1> for SmartModuleSpec {
     fn from(v1: SmartModuleSpecV1) -> Self {
         Self {
@@ -114,3 +110,25 @@ impl From<SmartModuleSpecV1> for SmartModuleSpec {
     }
 }
 
+#[cfg(test)]
+mod tests {
+
+    use crate::smartmodule::SmartModuleInputKind;
+
+    #[test]
+    fn test_sm_spec_v1_simple() {
+        use super::SmartModuleSpecV1;
+
+        let yaml_spec: &str = r#"
+input_kind: Stream
+output_kind: Stream
+wasm:
+    format: BINARY
+    payload: H4sIAAAAAAA
+"#;
+        let sm_spec: SmartModuleSpecV1 =
+            serde_yaml::from_str(yaml_spec).expect("Failed to deserialize");
+
+        assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
+    }
+}

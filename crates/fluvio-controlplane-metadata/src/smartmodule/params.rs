@@ -2,17 +2,24 @@ use std::{
     collections::{BTreeMap},
 };
 
-
-
 use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleParams {
     #[cfg_attr(feature = "k8", serde(default), serde(with = "map_init_params"))]
-    params: BTreeMap<String, SmartModuleParam>
+    params: BTreeMap<String, SmartModuleParam>,
 }
 
+impl SmartModuleParams {
+    pub fn len(&self) -> usize {
+        self.params.len()
+    }
+
+    pub fn get_param(&self, name: &str) -> Option<&SmartModuleParam> {
+        self.params.get(name)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Encoder, Default, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
@@ -20,7 +27,6 @@ pub struct SmartModuleParam {
     pub description: Option<String>,
     pub required: bool,
 }
-
 
 /// map parameters from list to map and vice versa
 /// this is only used for k8
@@ -31,7 +37,6 @@ mod map_init_params {
     use serde::{Serializer, Serialize, Deserializer, Deserialize};
 
     use super::SmartModuleParam;
-
 
     // convert btreemap into param of vec
     pub fn serialize<S>(

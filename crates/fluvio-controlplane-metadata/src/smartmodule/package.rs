@@ -2,9 +2,7 @@
 //! # SmartModule Package
 //!
 
-use std::{
-    io::Error as IoError,
-};
+use std::{io::Error as IoError};
 
 use bytes::Buf;
 use semver::Version as SemVersion;
@@ -94,9 +92,6 @@ impl Decoder for FluvioSemVersion {
     }
 }
 
-
-
-
 #[cfg(test)]
 mod test {
 
@@ -122,8 +117,9 @@ mod test {
             "https://github.com/infinyon/fluvio"
         );
 
-        assert_eq!(metadata.params.len(), 1);
-        let input1 = &metadata.params["multiplier"];
+        let params = metadata.params;
+        assert_eq!(params.len(), 1);
+        let input1 = &params.get_param("multiplier").unwrap();
         assert_eq!(input1.description.as_ref().unwrap(), "multiply input");
         assert!(input1.required);
     }
