@@ -14,6 +14,13 @@ pub struct SmartModuleSpec {
 }
 
 impl SmartModuleSpec {
+    /// return logical name.  if there is package then use it otherwise return it
+    pub fn logical_name(&self, object_name: &str) -> String {
+        self.meta
+            .as_ref()
+            .map(|meta| meta.package.name.to_string())
+            .unwrap_or_else(|| object_name.to_string())
+    }
     pub fn pkg_name(&self) -> &str {
         self.meta
             .as_ref()

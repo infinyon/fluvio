@@ -64,7 +64,7 @@ impl SmartModulePackage {
             "{}-{}-{}",
             self.name,
             self.group,
-            self.version.to_string().replace(".", "-")
+            self.version.to_string().replace('.', "-")
         )
     }
 }
