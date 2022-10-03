@@ -1703,7 +1703,6 @@ dependencies = [
  "fluvio-sc-schema",
  "fluvio-smartengine",
  "fluvio-smartmodule",
- "fluvio-smartmodule-package",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
@@ -1850,9 +1849,11 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
+ "semver 1.0.14",
  "serde",
  "serde_yaml 0.9.13",
  "thiserror",
+ "toml",
  "tracing",
 ]
 
@@ -2112,14 +2113,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "fluvio-smartmodule-package"
-version = "0.0.0"
-dependencies = [
- "serde",
- "toml",
 ]
 
 [[package]]
@@ -4982,7 +4975,6 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartengine",
  "fluvio-smartmodule",
- "fluvio-smartmodule-package",
  "include_dir",
  "tempdir",
  "thiserror",

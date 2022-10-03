@@ -1,8 +1,12 @@
 mod spec;
 mod status;
+mod package;
+mod params;
 
 pub use self::spec::*;
 pub use self::status::*;
+pub use self::package::*;
+
 use std::fmt;
 
 use fluvio_stream_model::core::MetadataItem;

@@ -109,7 +109,7 @@ pub mod target {
     }
 
     /// server configuration
-    #[derive(Debug, Parser, Default)]
+    #[derive(Debug, Parser, Default, Clone)]
     pub struct ClusterTarget {
         /// Address of cluster
         #[clap(short = 'c', long, value_name = "host:port")]

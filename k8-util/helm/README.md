@@ -45,3 +45,10 @@ To uninstall sys chart:
 $ helm uninstall fluvio-sys
 ```
 
+# Updating Helm Charts Only
+
+at top of repo:
+```
+make -C k8-util/helm clean; make helm_pkg; make build-cli;helm delete fluvio-sys;flvd cluster start --sys-only
+```
+

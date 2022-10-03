@@ -1,0 +1,12 @@
+# full V1 Kubernets CRD
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartModule
+metadata:
+  name: module1
+  namespace: default
+spec:
+  input_kind: Stream
+  output_kind: Stream
+  wasm:
+    format: BINARY
+    payload: H4sIAAAAAAAA/+y9B2AVVfY/PjN35r15LXlpJJB

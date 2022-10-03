@@ -1,0 +1,38 @@
+{
+    "apiVersion": "fluvio.infinyon.com/v2",
+    "kind": "SmartModule",
+    "metadata": {
+        "creationTimestamp": "2022-10-03T00:02:33Z",
+        "generation": 1,
+        "name": "module1",
+        "namespace": "default",
+        "resourceVersion": "1051521",
+        "uid": "9050bdba-5766-4a9b-a6a8-9930d24300c1"
+    },
+    "spec": {
+        "meta": {
+            "package": {
+                "apiVersion": "0.1.0",
+                "description": "This is a test module",
+                "group": "infinyon",
+                "name": "module1",
+                "version": "0.1.0"
+            },
+            "params": [
+                {
+                    "description": "multipler",
+                    "name": "multipler"
+                },
+                {
+                    "description": "used for scaling",
+                    "name": "scaler",
+                    "optional": true
+                }
+            ]
+        },
+        "wasm": {
+            "format": "BINARY",
+            "payload": "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu"
+        }
+    }
+}

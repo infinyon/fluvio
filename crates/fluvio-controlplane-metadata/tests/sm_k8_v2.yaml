@@ -1,0 +1,25 @@
+# full V2 Kubernets CRD
+# 
+apiVersion: fluvio.infinyon.com/v2
+kind: SmartModule
+metadata:
+  name: module1
+  namespace: default
+spec:
+  meta: 
+    package:
+      name: module1
+      group: infinyon
+      version: 0.1.0
+      apiVersion: 0.1.0
+      description: "This is a test module"
+    params:
+      - name: multipler
+        description: "multipler"
+      - name: scaler
+        description: "used for scaling"
+        optional: true
+  wasm:
+    format: BINARY
+    # Many hands make light work (not real WASM but for testing)
+    payload: TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu

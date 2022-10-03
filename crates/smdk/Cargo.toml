@@ -35,4 +35,3 @@ fluvio-smartengine = { path = "../fluvio-smartengine" }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
-fluvio-smartmodule-package = { path = "../fluvio-smartmodule-package" }

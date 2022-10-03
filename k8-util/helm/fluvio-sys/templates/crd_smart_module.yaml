@@ -12,7 +12,7 @@ spec:
   versions:
     - name: v1
       served: true
-      storage:  true
+      storage: false
       subresources:
           status: {}
       schema:
@@ -98,3 +98,83 @@ spec:
         - name: Output Kind
           type: string
           jsonPath: .spec.output_kind
+
+    - name: v2
+      served: true
+      storage:  true
+      subresources:
+          status: {}
+      schema:
+        openAPIV3Schema:
+          required: ["spec"]
+          type: object
+          properties:
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            spec:
+              type: object
+              required: ["wasm"]
+              properties:
+                meta:
+                  type: object
+                  required: ["package"]
+                  properties:
+                    package:
+                      type: object
+                      required: ["name", "group","version","apiVersion"]
+                      properties:
+                        name:
+                          type: string
+                          description: The name of the package.
+                        group:
+                          type: string
+                          description: The group of the package.
+                        version:
+                          type: string
+                          description: The version of the package.
+                        apiVersion:
+                          type: string
+                          description: The version of the package.
+                        description:
+                          type: string
+                          description: The description of the package.
+                        license:
+                          type: string
+                          description: The license of the package.
+                        repository:
+                          type: string
+                          description: The repository of the package.                
+                    params:
+                      type: array
+                      x-kubernetes-list-type: map
+                      x-kubernetes-list-map-keys: 
+                        - name
+                      items:
+                        type: object
+                        required: ["name"]
+                        properties:
+                          name:
+                            type: string
+                          description:
+                            type: string
+                          optional:
+                            type: boolean
+                wasm:
+                  type: object
+                  required: ["format", "payload"]
+                  properties:
+                    format:
+                      type: string
+                      enum:
+                        - BINARY
+                        - TEXT
+                    payload:
+                      type: string
+      additionalPrinterColumns:
+        - name: Version
+          type: string
+          jsonPath: .spec.meta.package.version
+        - name: Group
+          type: string
+          jsonPath: .spec.meta.package.group
