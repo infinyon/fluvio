@@ -122,7 +122,7 @@ mod test {
         );
 
         let params = metadata.params;
-        assert_eq!(params.len(), 1);
+        assert_eq!(params.len(), 2);
         let input1 = &params.get_param("multiplier").unwrap();
         assert_eq!(input1.description.as_ref().unwrap(), "multiply input");
         assert_eq!(input1.optional, false);
