@@ -32,7 +32,7 @@
         },
         "wasm": {
             "format": "BINARY",
-            "payload": "H4sIAAAAAAAA/+y9B2AVVfY/PjN35r15LXlpJJB"
+            "payload": "TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu"
         }
     }
 }

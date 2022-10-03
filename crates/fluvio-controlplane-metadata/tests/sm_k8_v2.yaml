@@ -21,4 +21,5 @@ spec:
         optional: true
   wasm:
     format: BINARY
-    payload: H4sIAAAAAAAA/+y9B2AVVfY/PjN35r15LXlpJJB
+    # Many hands make light work (not real WASM but for testing)
+    payload: TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu

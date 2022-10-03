@@ -152,26 +152,27 @@ mod test_v2_spec {
             serde_yaml::from_reader(reader).expect("failed to parse sm k8");
 
         let metadata = sm_k8.spec.meta.expect("metadata not found");
-        assert_eq!(metadata.package.name, "MyCustomModule");
+        assert_eq!(metadata.package.name, "module1");
         assert_eq!(
             metadata.package.version,
             FluvioSemVersion::parse("0.1.0").unwrap()
         );
-        assert_eq!(metadata.package.description.unwrap(), "My Custom module");
+        assert_eq!(
+            metadata.package.description.unwrap(),
+            "This is a test module"
+        );
         assert_eq!(
             metadata.package.api_version,
             FluvioSemVersion::parse("0.1.0").unwrap()
         );
-        assert_eq!(metadata.package.license.unwrap(), "Apache-2.0");
-        assert_eq!(
-            metadata.package.repository.unwrap(),
-            "https://github.com/infinyon/fluvio"
-        );
 
         let params = metadata.params;
-        assert_eq!(params.len(), 1);
-        let input1 = &params.get_param("multiplier").unwrap();
-        assert_eq!(input1.description.as_ref().unwrap(), "multiply input");
+        assert_eq!(params.len(), 2);
+        let input1 = params.get_param("multipler").unwrap();
+        assert_eq!(input1.description.as_ref().unwrap(), "multipler");
         assert_eq!(input1.optional, false);
+        let input2 = params.get_param("scaler").unwrap();
+        assert_eq!(input2.description.as_ref().unwrap(), "used for scaling");
+        assert_eq!(input2.optional, true);
     }
 }
