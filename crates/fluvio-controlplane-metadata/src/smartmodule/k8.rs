@@ -132,3 +132,46 @@ wasm:
         assert_eq!(sm_spec.input_kind, SmartModuleInputKind::Stream);
     }
 }
+
+#[cfg(test)]
+mod test_v2_spec {
+
+    use std::{io::BufReader, fs::File};
+
+    use fluvio_stream_model::k8_types::K8Obj;
+    use crate::smartmodule::FluvioSemVersion;
+
+    use super::SmartModuleSpec;
+
+    type K8SmartModuleSpec = K8Obj<SmartModuleSpec>;
+
+    #[test]
+    fn read_sm_from_k8() {
+        let reader = BufReader::new(File::open("tests/sm_k8_v2.yaml").expect("v2 not found"));
+        let sm_k8: K8SmartModuleSpec =
+            serde_yaml::from_reader(reader).expect("failed to parse sm k8");
+
+        let metadata = sm_k8.spec.meta.expect("metadata not found");
+        assert_eq!(metadata.package.name, "MyCustomModule");
+        assert_eq!(
+            metadata.package.version,
+            FluvioSemVersion::parse("0.1.0").unwrap()
+        );
+        assert_eq!(metadata.package.description.unwrap(), "My Custom module");
+        assert_eq!(
+            metadata.package.api_version,
+            FluvioSemVersion::parse("0.1.0").unwrap()
+        );
+        assert_eq!(metadata.package.license.unwrap(), "Apache-2.0");
+        assert_eq!(
+            metadata.package.repository.unwrap(),
+            "https://github.com/infinyon/fluvio"
+        );
+
+        let params = metadata.params;
+        assert_eq!(params.len(), 1);
+        let input1 = &params.get_param("multiplier").unwrap();
+        assert_eq!(input1.description.as_ref().unwrap(), "multiply input");
+        assert_eq!(input1.optional, false);
+    }
+}

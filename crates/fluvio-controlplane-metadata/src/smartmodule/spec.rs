@@ -9,7 +9,7 @@ use super::SmartModuleMetadata;
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
-    pub metadata: Option<SmartModuleMetadata>,
+    pub meta: Option<SmartModuleMetadata>,
     pub wasm: SmartModuleWasm,
 }
 

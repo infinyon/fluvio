@@ -34,7 +34,11 @@ impl SmartModuleMetadata {
 /// SmartModule package definition
 /// This is defined in the `SmartModule.toml` in the root of the SmartModule project
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SmartModulePackage {
     pub name: String,
     pub group: String,
@@ -121,6 +125,6 @@ mod test {
         assert_eq!(params.len(), 1);
         let input1 = &params.get_param("multiplier").unwrap();
         assert_eq!(input1.description.as_ref().unwrap(), "multiply input");
-        assert!(input1.required);
+        assert_eq!(input1.optional, false);
     }
 }
