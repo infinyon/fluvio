@@ -9,4 +9,5 @@ repository = "https://github.com/infinyon/fluvio"
 
 
 [params]
-multiplier = { required = true, description = "multiply input" }
+multiplier = { description = "multiply input" }
+scaler = { description = "scaling factor", optional = true }

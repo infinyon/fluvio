@@ -114,7 +114,7 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["input_kind", "output_kind", "wasm"]
+              required: ["wasm"]
               properties:
                 meta:
                   type: object
@@ -158,7 +158,7 @@ spec:
                             type: string
                           description:
                             type: string
-                          required:
+                          optional:
                             type: boolean
                 wasm:
                   type: object

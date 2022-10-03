@@ -7,9 +7,11 @@ use super::SmartModuleStatus;
 use super::SmartModuleSpec;
 use super::SmartModuleWasm;
 
-const SMART_MODULE_API: Crd = Crd {
+const V2: &str = "v2";
+
+const SMART_MODULE_V2_API: Crd = Crd {
     group: GROUP,
-    version: V1,
+    version: V2,
     names: CrdNames {
         kind: "SmartModule",
         plural: "smartmodules",
@@ -17,12 +19,13 @@ const SMART_MODULE_API: Crd = Crd {
     },
 };
 
+
 impl Spec for SmartModuleSpec {
     type Status = SmartModuleStatus;
     type Header = DefaultHeader;
 
     fn metadata() -> &'static Crd {
-        &SMART_MODULE_API
+        &SMART_MODULE_V2_API
     }
 }
 
@@ -71,4 +74,42 @@ impl std::fmt::Display for SmartModuleSpec {
 
 pub struct SmartModuleParameter {
     name: String,
+}
+
+
+const SMART_MODULE_V1_API: Crd = Crd {
+    group: GROUP,
+    version: V1,
+    names: CrdNames {
+        kind: "SmartModule",
+        plural: "smartmodules",
+        singular: "smartmodule",
+    },
+};
+
+/// SmartModuleV1 could be empty
+#[derive(Debug, Clone, PartialEq, Default,Serialize, Deserialize)]
+pub struct SmartModuleV1Wrapper {
+    #[serde(flatten)]
+    pub inner: Option<SmartModuleSpecV1>,
+}
+
+impl Spec for SmartModuleV1Wrapper {
+    type Status = SmartModuleStatus;
+    type Header = DefaultHeader;
+
+    fn metadata() -> &'static Crd {
+        &SMART_MODULE_V1_API
+    }
+}
+
+
+
+impl From<SmartModuleSpecV1> for SmartModuleSpec {
+    fn from(v1: SmartModuleSpecV1) -> Self {
+        Self {
+            wasm: v1.wasm,
+            ..Default::default()
+        }
+    }
 }
