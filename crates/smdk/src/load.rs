@@ -1,8 +1,7 @@
 use clap::Parser;
 use anyhow::Result;
 
-use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
-use fluvio_smartmodule_package::package::SmartModuleMetadata;
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec, SmartModuleMetadata};
 
 use crate::wasm::WasmOption;
 
@@ -17,7 +16,7 @@ pub struct LoadOpt {
 }
 impl LoadOpt {
     pub(crate) fn process(&self) -> Result<()> {
-        let _pkg_metadata = SmartModuleMetadata::from_file("./SmartModule.toml")?;
+        let _pkg_metadata = SmartModuleMetadata::from_toml("./SmartModule.toml")?;
 
         let raw_bytes = self.wasm.load_raw_wasm_file()?;
         let _spec = SmartModuleSpec {

@@ -26,7 +26,6 @@ members = [
     "crates/fluvio-service",
     "crates/fluvio-smartmodule",
     "crates/fluvio-smartmodule-derive",
-    "crates/fluvio-smartmodule-package",
     "crates/fluvio-smartengine",
     "crates/fluvio-socket",
     "crates/fluvio-spu",
