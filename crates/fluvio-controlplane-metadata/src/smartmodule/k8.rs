@@ -86,7 +86,7 @@ const SMART_MODULE_V1_API: Crd = Crd {
 };
 
 /// SmartModuleV1 could be empty
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct SmartModuleV1Wrapper {
     #[serde(flatten)]
     pub inner: Option<SmartModuleSpecV1>,

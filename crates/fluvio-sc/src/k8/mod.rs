@@ -13,7 +13,7 @@ mod migration;
 mod fixture;
 
 use k8_client::new_shared;
-use tracing::info;
+use tracing::{info, log::error};
 
 use crate::cli::ScOpt;
 
@@ -40,6 +40,12 @@ pub fn main_k8_loop(opt: ScOpt) {
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
+
+        if let Err(err) =
+            migration::SmartModuleMigrationController::migrate(k8_client.clone(), &namespace).await
+        {
+            error!("migration failed: {:#?}", err);
+        }
 
         info!("starting main loop");
         let ctx = start_main_loop((sc_config.clone(), auth_policy), k8_client.clone()).await;
