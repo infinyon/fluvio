@@ -9,6 +9,7 @@ use std::{
 
 use bytes::Buf;
 use semver::Version as SemVersion;
+use thiserror::Error;
 
 use fluvio_protocol::{Encoder, Decoder, Version};
 
@@ -69,6 +70,12 @@ impl SmartModulePackage {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum SmartModuleKeyError {
+    #[error("SmartModule version`{version}` is not valid because {error}")]
+    InvalidVersion { version: String, error: String },
+}
+
 #[derive(Default)]
 pub struct SmartModulePackageKey {
     pub name: String,
@@ -79,7 +86,7 @@ pub struct SmartModulePackageKey {
 impl SmartModulePackageKey {
     /// convert from qualified name into package info
     /// qualified name is in format of "group/name@version"
-    pub fn from_qualified_name(fqdn: &str) -> Result<Self, semver::Error> {
+    pub fn from_qualified_name(fqdn: &str) -> Result<Self, SmartModuleKeyError> {
         let mut pkg = Self::default();
         let mut split = fqdn.split("/");
         let first_token = split.next().unwrap().to_owned();
@@ -92,7 +99,14 @@ impl SmartModulePackageKey {
             if let Some(version_part) = version_split.next() {
                 // version is found
                 pkg.name = second_token;
-                pkg.version = Some(FluvioSemVersion::parse(version_part)?);
+                pkg.version = Some(FluvioSemVersion::new(
+                    lenient_semver::parse(version_part).map_err(|err| {
+                        SmartModuleKeyError::InvalidVersion {
+                            version: version_part.to_owned(),
+                            error: err.to_string(),
+                        }
+                    })?,
+                ));
                 Ok(pkg)
             } else {
                 // no version found
@@ -114,6 +128,10 @@ pub struct FluvioSemVersion(SemVersion);
 impl FluvioSemVersion {
     pub fn parse(version: &str) -> Result<Self, semver::Error> {
         Ok(Self(SemVersion::parse(version)?))
+    }
+
+    pub fn new(version: SemVersion) -> Self {
+        Self(version)
     }
 }
 
@@ -207,6 +225,14 @@ mod package_test {
         assert_eq!(pkg.name, "module2");
         assert_eq!(pkg.group, Some("group1".to_owned()));
         assert_eq!(pkg.version, None);
+    }
+
+    #[test]
+    fn test_pkg_key_versions() {
+        assert!(SmartModulePackageKey::from_qualified_name("group1/module2@10.").is_err());
+        assert!(SmartModulePackageKey::from_qualified_name("group1/module2@").is_err());
+        assert!(SmartModulePackageKey::from_qualified_name("group1/module2@10").is_ok());
+        assert!(SmartModulePackageKey::from_qualified_name("group1/module2@10.2").is_ok());
     }
 }
 
