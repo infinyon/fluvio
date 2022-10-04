@@ -35,7 +35,7 @@ impl SmartModuleMetadata {
 
     /// id that can be used to identify this smartmodule
     pub fn id(&self) -> String {
-        self.package.qualified_name()
+        self.package.store_key()
     }
 }
 
@@ -58,8 +58,14 @@ pub struct SmartModulePackage {
 }
 
 impl SmartModulePackage {
-    /// return qualified name that can be fit into k8s resource name
-    pub fn qualified_name(&self) -> String {
+    /// convert from qualified name into package info
+    /// qualified name is in format of "group/name@version"
+    pub fn from_qualified_name(fqdn: &str) -> Self {
+        Self::default()
+    }
+
+    /// return key for storing SmartModule in the store
+    pub fn store_key(&self) -> String {
         format!(
             "{}-{}-{}",
             self.name,
@@ -138,7 +144,7 @@ mod package_test {
             repository: None,
         };
 
-        assert_eq!(pkg.qualified_name(), "test-fluvio-0-1-0");
+        assert_eq!(pkg.store_key(), "test-fluvio-0-1-0");
     }
 }
 
