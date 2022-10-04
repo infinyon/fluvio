@@ -47,6 +47,8 @@ exclude = [
 ]
 resolver = "2"
 
+[workspace.dependencies]
+anyhow = { version = "1.0.38" }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

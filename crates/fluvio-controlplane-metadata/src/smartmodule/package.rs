@@ -120,21 +120,27 @@ impl SmartModulePackageKey {
         }
     }
 
-    /// Check if Package matches this key
-    pub fn is_match(&self, package: &SmartModulePackage) -> bool {
-        if let Some(version) = &self.version {
-            if package.version != *version {
-                return false;
+    /// Check if key matches against name and package
+    /// if package doesn't exists then it should match name only
+    /// otherwise it should match against package
+    pub fn is_match(&self, name: &str, package: Option<&SmartModulePackage>) -> bool {
+        if let Some(package) = package {
+            if let Some(version) = &self.version {
+                if package.version != *version {
+                    return false;
+                }
             }
-        }
 
-        if let Some(group) = &self.group {
-            if package.group != *group {
-                return false;
+            if let Some(group) = &self.group {
+                if package.group != *group {
+                    return false;
+                }
             }
-        }
 
-        self.name == package.name
+            self.name == package.name
+        } else {
+            self.name == name
+        }
     }
 }
 
@@ -263,18 +269,18 @@ mod package_test {
             api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
             ..Default::default()
         };
-        assert!(key.is_match(&valid_pkg));
+        assert!(key.is_match(&valid_pkg.store_key(), Some(&valid_pkg)));
         assert!(
             SmartModulePackageKey::from_qualified_name("mygroup/module1")
                 .expect("parse")
-                .is_match(&valid_pkg)
+                .is_match(&valid_pkg.store_key(), Some(&valid_pkg))
         );
         assert!(SmartModulePackageKey::from_qualified_name("module1")
             .expect("parse")
-            .is_match(&valid_pkg));
+            .is_match(&valid_pkg.store_key(), Some(&valid_pkg)));
         assert!(!SmartModulePackageKey::from_qualified_name("module2")
             .expect("parse")
-            .is_match(&valid_pkg));
+            .is_match(&valid_pkg.store_key(), Some(&valid_pkg)));
 
         let in_valid_pkg = SmartModulePackage {
             name: "module2".to_owned(),
@@ -283,7 +289,11 @@ mod package_test {
             api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
             ..Default::default()
         };
-        assert!(!key.is_match(&in_valid_pkg));
+        assert!(!key.is_match(&in_valid_pkg.store_key(), Some(&in_valid_pkg)));
+
+        assert!(SmartModulePackageKey::from_qualified_name("module1")
+            .expect("parse")
+            .is_match("module1", None));
     }
 }
 

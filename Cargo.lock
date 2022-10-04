@@ -2012,6 +2012,7 @@ dependencies = [
 name = "fluvio-sc"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-channel",
  "async-lock",
  "async-trait",
@@ -2067,6 +2068,7 @@ dependencies = [
 name = "fluvio-service"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "fluvio-future 0.4.2",
  "fluvio-protocol",
