@@ -58,12 +58,6 @@ pub struct SmartModulePackage {
 }
 
 impl SmartModulePackage {
-    /// convert from qualified name into package info
-    /// qualified name is in format of "group/name@version"
-    pub fn from_qualified_name(fqdn: &str) -> Self {
-        Self::default()
-    }
-
     /// return key for storing SmartModule in the store
     pub fn store_key(&self) -> String {
         format!(
@@ -72,6 +66,44 @@ impl SmartModulePackage {
             self.group,
             self.version.to_string().replace('.', "-")
         )
+    }
+}
+
+#[derive(Default)]
+pub struct SmartModulePackageKey {
+    pub name: String,
+    pub group: Option<String>,
+    pub version: Option<FluvioSemVersion>,
+}
+
+impl SmartModulePackageKey {
+    /// convert from qualified name into package info
+    /// qualified name is in format of "group/name@version"
+    pub fn from_qualified_name(fqdn: &str) -> Result<Self, semver::Error> {
+        let mut pkg = Self::default();
+        let mut split = fqdn.split("/");
+        let first_token = split.next().unwrap().to_owned();
+        if let Some(name_part) = split.next() {
+            // group name is found
+            pkg.group = Some(first_token);
+            // let split name part
+            let mut version_split = name_part.split("@");
+            let second_token = version_split.next().unwrap().to_owned();
+            if let Some(version_part) = version_split.next() {
+                // version is found
+                pkg.name = second_token;
+                pkg.version = Some(FluvioSemVersion::parse(version_part)?);
+                Ok(pkg)
+            } else {
+                // no version found
+                pkg.name = second_token;
+                Ok(pkg)
+            }
+        } else {
+            // no group parameter is specified, in this case we treat as name
+            pkg.name = first_token;
+            Ok(pkg)
+        }
     }
 }
 
@@ -130,6 +162,8 @@ impl Decoder for FluvioSemVersion {
 
 #[cfg(test)]
 mod package_test {
+    use crate::smartmodule::SmartModulePackageKey;
+
     use super::{SmartModulePackage, FluvioSemVersion};
 
     #[test]
@@ -145,6 +179,34 @@ mod package_test {
         };
 
         assert_eq!(pkg.store_key(), "test-fluvio-0-1-0");
+    }
+
+    #[test]
+    fn test_pkg_key_fully_qualified() {
+        let pkg =
+            SmartModulePackageKey::from_qualified_name("mygroup/module1@0.1.0").expect("parse");
+        assert_eq!(pkg.name, "module1");
+        assert_eq!(pkg.group, Some("mygroup".to_owned()));
+        assert_eq!(
+            pkg.version,
+            Some(FluvioSemVersion::parse("0.1.0").expect("parse"))
+        );
+    }
+
+    #[test]
+    fn test_pkg_key_name_only() {
+        let pkg = SmartModulePackageKey::from_qualified_name("module2").expect("parse");
+        assert_eq!(pkg.name, "module2");
+        assert_eq!(pkg.group, None);
+        assert_eq!(pkg.version, None);
+    }
+
+    #[test]
+    fn test_pkg_key_group() {
+        let pkg = SmartModulePackageKey::from_qualified_name("group1/module2").expect("parse");
+        assert_eq!(pkg.name, "module2");
+        assert_eq!(pkg.group, Some("group1".to_owned()));
+        assert_eq!(pkg.version, None);
     }
 }
 
