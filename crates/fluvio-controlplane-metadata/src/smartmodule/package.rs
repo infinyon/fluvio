@@ -119,6 +119,23 @@ impl SmartModulePackageKey {
             Ok(pkg)
         }
     }
+
+    /// Check if Package matches this key
+    pub fn is_match(&self, package: &SmartModulePackage) -> bool {
+        if let Some(version) = &self.version {
+            if package.version != *version {
+                return false;
+            }
+        }
+
+        if let Some(group) = &self.group {
+            if package.group != *group {
+                return false;
+            }
+        }
+
+        self.name == package.name
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -233,6 +250,40 @@ mod package_test {
         assert!(SmartModulePackageKey::from_qualified_name("group1/module2@").is_err());
         assert!(SmartModulePackageKey::from_qualified_name("group1/module2@10").is_ok());
         assert!(SmartModulePackageKey::from_qualified_name("group1/module2@10.2").is_ok());
+    }
+
+    #[test]
+    fn test_pkg_key_match() {
+        let key =
+            SmartModulePackageKey::from_qualified_name("mygroup/module1@0.1.0").expect("parse");
+        let valid_pkg = SmartModulePackage {
+            name: "module1".to_owned(),
+            group: "mygroup".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        };
+        assert!(key.is_match(&valid_pkg));
+        assert!(
+            SmartModulePackageKey::from_qualified_name("mygroup/module1")
+                .expect("parse")
+                .is_match(&valid_pkg)
+        );
+        assert!(SmartModulePackageKey::from_qualified_name("module1")
+            .expect("parse")
+            .is_match(&valid_pkg));
+        assert!(!SmartModulePackageKey::from_qualified_name("module2")
+            .expect("parse")
+            .is_match(&valid_pkg));
+
+        let in_valid_pkg = SmartModulePackage {
+            name: "module2".to_owned(),
+            group: "mygroup".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        };
+        assert!(!key.is_match(&in_valid_pkg));
     }
 }
 
