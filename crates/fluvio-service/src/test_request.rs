@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use async_trait::async_trait;
+use anyhow::Result;
 
 use fluvio_protocol::api::{
     api_decode, ApiMessage, Request, RequestHeader, RequestMessage, ResponseMessage,
@@ -14,7 +15,6 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::Decoder;
 use fluvio_protocol::derive::Encoder;
 
-use fluvio_socket::SocketError;
 use fluvio_socket::FluvioSocket;
 
 use crate::api_loop;
@@ -138,7 +138,7 @@ impl FluvioService for TestService {
         _context: Self::Context,
         socket: FluvioSocket,
         _connection: ConnectInfo,
-    ) -> Result<(), SocketError> {
+    ) -> Result<()> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 

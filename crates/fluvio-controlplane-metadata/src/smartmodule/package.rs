@@ -83,18 +83,21 @@ pub struct SmartModulePackageKey {
     pub version: Option<FluvioSemVersion>,
 }
 
+const GROUP_SEPARATOR: char = '/';
+const VERSION_SEPARATOR: char = '@';
+
 impl SmartModulePackageKey {
     /// convert from qualified name into package info
     /// qualified name is in format of "group/name@version"
     pub fn from_qualified_name(fqdn: &str) -> Result<Self, SmartModuleKeyError> {
         let mut pkg = Self::default();
-        let mut split = fqdn.split("/");
+        let mut split = fqdn.split(GROUP_SEPARATOR);
         let first_token = split.next().unwrap().to_owned();
         if let Some(name_part) = split.next() {
             // group name is found
             pkg.group = Some(first_token);
             // let split name part
-            let mut version_split = name_part.split("@");
+            let mut version_split = name_part.split(VERSION_SEPARATOR);
             let second_token = version_split.next().unwrap().to_owned();
             if let Some(version_part) = version_split.next() {
                 // version is found

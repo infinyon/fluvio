@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use fluvio_service::ConnectInfo;
-use tracing::instrument;
-use tracing::{debug, warn};
+use tracing::{debug, warn, instrument};
+use anyhow::Result;
 
-use fluvio_service::{wait_for_request, FluvioService};
-use fluvio_socket::{FluvioSocket, SocketError};
+use fluvio_service::{wait_for_request, FluvioService, ConnectInfo};
+use fluvio_socket::FluvioSocket;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::FollowerHandler;
@@ -34,7 +33,7 @@ impl FluvioService for InternalService {
         ctx: DefaultSharedGlobalContext,
         socket: FluvioSocket,
         _connection: ConnectInfo,
-    ) -> Result<(), SocketError> {
+    ) -> Result<()> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();
 

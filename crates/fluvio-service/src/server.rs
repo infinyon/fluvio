@@ -8,12 +8,13 @@ use std::os::unix::io::AsRawFd;
 use futures_util::StreamExt;
 use async_trait::async_trait;
 use tracing::{instrument, debug, error, info};
+use anyhow::Result;
 
 use fluvio_future::net::{TcpListener, TcpStream};
 use fluvio_future::task::spawn;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use fluvio_socket::{FluvioSocket, SocketError};
+use fluvio_socket::{FluvioSocket};
 use fluvio_types::event::StickyEvent;
 
 pub struct ConnectInfo {
@@ -40,7 +41,7 @@ pub trait FluvioService {
         context: Self::Context,
         socket: FluvioSocket,
         connection: ConnectInfo,
-    ) -> Result<(), SocketError>;
+    ) -> Result<()>;
 }
 
 /// Transform Service into Futures 01
