@@ -18,11 +18,12 @@ BUILD_FLAGS = $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 include makefiles/build.mk
 include makefiles/test.mk
 include makefiles/check.mk
+include makefiles/release.mk
 
 
 # misc stuff
 
-helm_pkg:	
+helm_pkg:
 	make -C k8-util/helm package
 
 clean:
