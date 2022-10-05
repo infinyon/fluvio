@@ -1,4 +1,4 @@
-VERSION := $(shell cat VERSION)
+VERSION ?= $(shell cat VERSION)
 RUSTV?=stable
 GIT_COMMIT=$(shell git rev-parse HEAD)
 ARCH=$(shell uname -m)

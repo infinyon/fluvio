@@ -31,6 +31,7 @@ env:
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
   FLV_CLUSTER_PROVISION_TIMEOUT: 600
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   # this job set up dynamic configuration shared among jobs
@@ -60,7 +61,7 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel,smdk]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -121,7 +122,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
-  #    fail-fast: false
+      #    fail-fast: false
       matrix:
         rust-target:
           - aarch64-apple-darwin
@@ -181,6 +182,27 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
 
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: arm-unknown-linux-gnueabihf
+            binary: smdk
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: smdk
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: smdk.exe
+          - os: macos-12
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: smdk
+          - os: macos-12
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: smdk
+
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -217,7 +239,7 @@ jobs:
       - name: Install Helm for Mac
         run: brew install helm
         if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
-        
+
       - name: Build fluvio
         timeout-minutes: 30
         if: matrix.binary == 'fluvio'
@@ -266,7 +288,17 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, doc-test, test, crate-version, crate-audit, crate-publish-check]
+        check:
+          [
+            fmt,
+            clippy,
+            doc,
+            doc-test,
+            test,
+            crate-version,
+            crate-audit,
+            crate-publish-check,
+          ]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -302,7 +334,7 @@ jobs:
       - name: Crate version check
         if: matrix.check == 'crate-version'
         run: cargo run --manifest-path release-tools/check-crate-version/Cargo.toml -- --crates-dir crates --publish-list-path release-tools/check-crate-version/publish-list.toml
-      - name: Audit crate licenses + advisories 
+      - name: Audit crate licenses + advisories
         if: matrix.check == 'crate-audit'
         continue-on-error: true
         uses: EmbarkStudios/cargo-deny-action@v1
@@ -339,7 +371,6 @@ jobs:
       - name: Integration test
         run: make run-integration-test
 
-  
   build_smartmodule:
     name: Build SmartModule
     runs-on: ${{ matrix.os }}
@@ -362,7 +393,6 @@ jobs:
 
       - name: Build Regex SmartModule
         run: make -C smartmodule/sm-regex
-
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
@@ -597,7 +627,6 @@ jobs:
           name: local-${{ matrix.run }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
           retention-days: 1
-      
 
   build_image:
     name: Build Fluvio Docker image
@@ -651,7 +680,13 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean, stats-test]
+        test:
+          [
+            smoke-test-k8,
+            smoke-test-k8-tls,
+            smoke-test-k8-tls-root-unclean,
+            stats-test,
+          ]
         k8: [k3d, minikube]
         spu: [3]
     steps:
@@ -793,7 +828,7 @@ jobs:
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
 
       - name: Run upgrade test with CI artifacts
-        timeout-minutes: 10 
+        timeout-minutes: 10
         env:
           TEST_DATA_BYTES: 10000
         run: |
@@ -1047,8 +1082,8 @@ jobs:
     permissions: write-all
     steps:
       - uses: actions/checkout@v3
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      #- name: Login GH CLI
+      #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Delete old release
         run: gh release delete -R infinyon/fluvio dev -y || true
       - name: Bump dev tag
@@ -1067,8 +1102,8 @@ jobs:
     permissions: write-all
     steps:
       - uses: actions/checkout@v3
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      #- name: Login GH CLI
+      #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: package helm
         run: make helm_pkg
       - name: Publish artifact
@@ -1091,7 +1126,7 @@ jobs:
           - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
-        artifact: [fluvio, fluvio-channel]
+        artifact: [fluvio, fluvio-channel, smdk]
         include:
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-run
@@ -1103,12 +1138,14 @@ jobs:
             artifact: fluvio.exe
           - rust-target: x86_64-pc-windows-gnu
             artifact: fluvio-channel.exe
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: smdk.exe
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-test
     permissions: write-all
     steps:
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      #- name: Login GH CLI
+      #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
