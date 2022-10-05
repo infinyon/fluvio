@@ -24,16 +24,21 @@ jobs:
   # Re-tag the docker image for this commit as 'latest'
   docker:
     name: Publish Docker Image
+    strategy:
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Login to Docker Hub
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: make docker-hub-login
+      #- name: Login to Docker Hub
+      #  env:
+      #    DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      #    DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      #  run: make docker-hub-login
       - name: Publish latest development Fluvio Image
+        #env:
+        #  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        #  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: make docker-push-manifest-dev
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
@@ -48,6 +53,8 @@ jobs:
   # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
   fluvio:
     name: Publish Fluvio CLI
+    strategy:
+      fail-fast: false
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -64,7 +71,7 @@ jobs:
           fi
 
           echo "VERSION=$VERSION"
-          make install-fluvio-curl
+          make curl-install-fluvio
           make install-fluvio-package
 
       - name: Download dev release
