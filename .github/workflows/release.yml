@@ -39,16 +39,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Check for success status of latest CD_Dev run
-        uses: xembly/validate-workflow-status@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: cd_dev.yaml
-          branch: master
-          status: success
-      #- name: Get status of latest CD_Dev run
-      #  id: cd_dev_check
-      #  run: make latest-cd-dev-status
+      #- name: Check for success status of latest CD_Dev run
+      #  uses: xembly/validate-workflow-status@v1
+      #  with:
+      #    token: ${{ secrets.GITHUB_TOKEN }}
+      #    workflow: cd_dev.yaml
+      #    branch: master
+      #    status: success
+      - name: Get status of latest CD_Dev run
+        id: cd_dev_check
+        run: make latest-cd-dev-status
   setup_job:
     name: Setup workflow
     strategy:
