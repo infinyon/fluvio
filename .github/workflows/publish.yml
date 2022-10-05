@@ -62,12 +62,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install fluvio-package
+        env:
+          CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
         run: |
           if [ -n "${{ github.event.inputs.installer_version }}" ]; then
               export VERSION=${{ github.event.inputs.installer_version }}
           else
               export VERSION=stable
-
           fi
 
           echo "VERSION=$VERSION"
@@ -78,8 +79,7 @@ jobs:
         run: make download-fluvio-release-dev
 
       - name: Publish artifacts
-        run: |
-          make publish-artifacts
+        run: make publish-artifacts
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()

@@ -8,6 +8,7 @@ ifneq ($(RELEASE),true)
 DRY_RUN_ECHO=echo
 #$(info Dry run mode - No public changes)
 else
+# TODO: Make this blank before merge
 DRY_RUN_ECHO=blahbreak
 #$(info Live mode - Public changes possible)
 endif
@@ -104,11 +105,11 @@ docker-push-manifest: docker-create-manifest-dev
 
 # Create latest development Fluvio image
 docker-create-manifest-dev: DOCKER_IMAGE_TAG=latest
-docker-create-manifest-dev: docker-hub-login
+docker-create-manifest-dev: docker-hub-login docker-create-manifest
 
 # Push docker manifest
 docker-push-manifest-dev: DOCKER_IMAGE_TAG=$(DEV_VERSION_TAG)
-docker-push-manifest-dev: docker-create-manifest-dev
+docker-push-manifest-dev: docker-create-manifest-dev docker-push-manifest
 
 # Uses $(VERSION)
 curl-install-fluvio:
@@ -193,8 +194,8 @@ update-public-installer-script-s3:
 
 latest-cd-dev-status:
 	gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt
-	echo "Latest CD_Dev run: $(shell cat /tmp/cd_dev_latest.txt | jq .html_url | tr -d '"')"
-ifeq ($(shell cat /tmp/cd_dev_latest.txt | jq .conclusion | tr -d '"'), success)
+	echo "Latest CD_Dev run: $(shell touch /tmp/cd_dev_latest.txt; cat /tmp/cd_dev_latest.txt | jq .html_url | tr -d '"')"
+ifeq ($(shell touch /tmp/cd_dev_latest.txt; cat /tmp/cd_dev_latest.txt | jq .conclusion | tr -d '"'), success)
 	echo $(shell echo ✅ Most recent CD_Dev run passed)
 	exit 0;
 else
