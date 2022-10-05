@@ -45,7 +45,7 @@ pub async fn handle_list_request<AC: AuthContext>(
         ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
             fetch_smart_modules(
                 req.name_filters,
-                auth_ctx,
+                &auth_ctx.auth,
                 auth_ctx.global_ctx.smartmodules(),
             )
             .await?,

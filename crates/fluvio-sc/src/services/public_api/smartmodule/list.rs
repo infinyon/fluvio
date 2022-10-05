@@ -1,9 +1,10 @@
 use std::io::{Error, ErrorKind};
+use std::fmt::Debug;
 
 use anyhow::Result;
 use tracing::{debug, trace, instrument};
 
-use fluvio_controlplane_metadata::core::Spec;
+use fluvio_controlplane_metadata::core::{Spec, MetadataItem};
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec, SmartModulePackageKey};
 use fluvio_sc_schema::AdminSpec;
 use fluvio_stream_dispatcher::store::StoreContext;
@@ -12,21 +13,19 @@ use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::services::auth::AuthServiceContext;
-
-#[instrument(skip(filters, auth_ctx))]
-pub(crate) async fn fetch_smart_modules<AC: AuthContext>(
+#[instrument(skip(filters, auth))]
+pub(crate) async fn fetch_smart_modules<AC: AuthContext, M>(
     filters: Vec<NameFilter>,
-    auth_ctx: &AuthServiceContext<AC>,
-    object_ctx: &StoreContext<SmartModuleSpec>,
+    auth: &AC,
+    object_ctx: &StoreContext<SmartModuleSpec, M>,
 ) -> Result<ListResponse<SmartModuleSpec>>
 where
     AC: AuthContext,
+    M: MetadataItem + Debug,
 {
     debug!("fetching list of smart modules");
 
-    if let Ok(authorized) = auth_ctx
-        .auth
+    if let Ok(authorized) = auth
         .allow_type_action(SmartModuleSpec::OBJECT_TYPE, TypeAction::Read)
         .await
     {
@@ -77,20 +76,34 @@ where
 
 #[cfg(test)]
 mod test {
+
+    use std::sync::Arc;
+
+    use fluvio_stream_dispatcher::store::StoreContext;
+    use fluvio_stream_model::fixture::TestMeta;
+    use fluvio_stream_model::store::{MetadataStoreObject, LocalStore};
+    use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+
     use crate::{
-        services::auth::{RootAuthContext, AuthServiceContext},
-        core::Context,
-        config::ScConfig,
+        services::auth::{RootAuthContext},
     };
 
     use super::fetch_smart_modules;
 
+    type TestSmartModuleStore = LocalStore<SmartModuleSpec, TestMeta>;
+    type SmartModuleTest = MetadataStoreObject<SmartModuleSpec, TestMeta>;
+
     #[fluvio_future::test]
     async fn test_sm_search() {
-        let global_ctx = Context::shared_metadata(ScConfig::default());
-        let auth_ctx = AuthServiceContext::new(global_ctx.clone(), RootAuthContext {});
-        let smart_modules = global_ctx.smartmodules();
-        smart_modules.apply(input).await.expect("apply");
-        let search = fetch_smart_modules(vec![], &auth_ctx, global_ctx.smartmodules()).await;
+        let root_auth = RootAuthContext {};
+
+        let sm1 = vec![SmartModuleTest::with_spec(
+            "sm1",
+            SmartModuleSpec::default(),
+        )];
+        let local_sm_store = TestSmartModuleStore::default();
+        _ = local_sm_store.sync_all(sm1).await;
+        let sm_ctx = StoreContext::new_with_store(Arc::new(local_sm_store));
+        let search = fetch_smart_modules(vec![], &root_auth, &sm_ctx).await;
     }
 }
