@@ -105,8 +105,8 @@ jobs:
         run: make build-channel
 
       - name: Build smdk
-        if: matrix.binary == 'sdmk'
-        run: make smdk
+        if: matrix.binary == 'smdk'
+        run: make build-smdk
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}

@@ -6,10 +6,10 @@ PUBLISH_BINARIES=fluvio-test
 RELEASE?=false
 ifneq ($(RELEASE),true)
 DRY_RUN_ECHO=echo
-$(info Dry run mode - No public changes)
+#$(info Dry run mode - No public changes)
 else
 DRY_RUN_ECHO=blahbreak
-$(info Live mode - Public changes possible)
+#$(info Live mode - Public changes possible)
 endif
 
 # Probably move these up to the base makefile?
@@ -21,20 +21,20 @@ CHANNEL_TAG?=latest
 # CHANNEL_TAG overrides VERSION
 ifeq ($(CHANNEL_TAG), stable)
 VERSION:=$(STABLE_VERSION_TAG)
-$(info Working with channel $(CHANNEL_TAG) version: $(VERSION))
+#$(info Working with channel $(CHANNEL_TAG) version: $(VERSION))
 else ifeq ($(CHANNEL_TAG), latest)
 VERSION:=$(DEV_VERSION_TAG)
-$(info Working with channel $(CHANNEL_TAG) version: $(VERSION))
+#$(info Working with channel $(CHANNEL_TAG) version: $(VERSION))
 else
 VERSION:=$(CHANNEL_TAG)
 endif
-$(info Working with version: $(VERSION))
+#$(info Working with version: $(VERSION))
 
 
 DOCKER_USERNAME?=test-docker-user
 DOCKER_PASSWORD?=test-docker-pass
 DOCKER_IMAGE_TAG?=$(VERSION)
-$(info Docker image tag: $(DOCKER_IMAGE_TAG))
+#$(info Docker image tag: $(DOCKER_IMAGE_TAG))
 
 GH_TOKEN?=
 GH_RELEASE_TAG?=dev
