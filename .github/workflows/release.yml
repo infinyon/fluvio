@@ -39,13 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      #- name: Check for success status of latest CD_Dev run
-      #  uses: xembly/validate-workflow-status@v1
-      #  with:
-      #    token: ${{ secrets.GITHUB_TOKEN }}
-      #    workflow: cd_dev.yaml
-      #    branch: master
-      #    status: success
       - name: Get status of latest CD_Dev run
         id: cd_dev_check
         run: make latest-cd-dev-status
@@ -182,15 +175,11 @@ jobs:
           make docker-hub-check-image-exists
 
       # if the check fails, then continue
-      - name: Login to Docker Hub
+      - name: Tag and push release image
         if: ${{ steps.docker_check.outcome == 'failure' }}
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: make docker-hub-login
-      - name: Tag and push release image
-        if: ${{ steps.docker_check.outcome == 'failure' }}
-        env:
           DOCKER_IMAGE_TAG: ${{ env.VERSION }}
           CHANNEL_TAG: stable
         run: |
@@ -225,6 +214,8 @@ jobs:
       - name: Attempt to install Fluvio CLI
         id: check_fluvio
         continue-on-error: true
+        env:
+          CHANNEL_TAG: ${{ env.VERSION }}
         run: make curl-install-fluvio
 
       # If this release does not already exist (i.e. check_fluvio failed), continue
@@ -270,7 +261,10 @@ jobs:
       TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
     steps:
+      - uses: actions/checkout@v3
       - name: Install fluvio-package
+        env:
+          CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
         run: |
           if [ -n "${{ github.event.inputs.installer_version }}" ]; then
               export VERSION=${{ github.event.inputs.installer_version }}

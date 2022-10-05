@@ -126,13 +126,12 @@ download-fluvio-release:
 	$(call DOWNLOAD_FLUVIO_RELEASE_CMD)
 
 unzip-gh-release-artifacts: download-fluvio-release
-	echo "unzip stuff"
-	echo $(foreach bin, $(wildcard *.zip), \
-		$(shell \
-			export DIRNAME=$(basename $(bin)); \
-			echo Unzipping $(bin) to $$DIRNAME; \
-			unzip -u -d $$DIRNAME $(bin); \
-		) \
+	@echo "unzip stuff"
+	@$(foreach bin, $(wildcard *.zip), \
+		printf "\n"; \
+		export DIRNAME=$(basename $(bin)); \
+		echo Unzipping $(bin) to $$DIRNAME; \
+		unzip -u -d $$DIRNAME $(bin); \
 	)
 
 # Publish artifacts from GH Releases to Fluvio Packages
@@ -157,9 +156,10 @@ unzip-gh-release-artifacts: download-fluvio-release
 #   fluvio-x86_64-unknown-linux-musl/
 #     fluvio
 #     .target
-publish-artifacts: unzip-gh-release-artifacts
-	echo "package stuff"
-	$(foreach bin, $(wildcard *.zip), \
+publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
+	@echo "package stuff"
+	@$(foreach bin, $(wildcard *.zip), \
+		printf "\n"; \
 		export DIRNAME=$(basename $(bin)); \
 		export TARGET=$(shell cat $(basename $(bin))/.target); \
 		export PACKAGE=$(subst -$$TARGET,,$$DIRNAME); \
@@ -168,22 +168,24 @@ publish-artifacts: unzip-gh-release-artifacts
 			--package=$$PACKAGE \
 			--version=$(GH_RELEASE_TAG) \
 			--target=$$TARGET \
-			$$ARTIFACT \
+			$$ARTIFACT; \
 	)
 
 publish-artifacts-dev: GH_RELEASE_TAG=dev
 publish-artifacts-dev: publish-artifacts
 
 # Version convention is different here. Notice the `+`
+bump-fluvio: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
 bump-fluvio: PUBLIC_VERSION=$(subst -,+,$(VERSION))
-bump-fluvio:
-	@$(DRY_RUN_ECHO) $(FLUVIO_BIN) package publish bump $(CHANNEL_TAG) $(PUBLIC_VERSION)
-	@$(DRY_RUN_ECHO) $(foreach bin, $(PUBLISH_BINARIES), \
-		$(shell $(DRY_RUN_ECHO) $(FLUVIO_BIN) package tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force) \
+bump-fluvio: install-fluvio-package
+	$(DRY_RUN_ECHO) $(FLUVIO_BIN) package publish bump $(CHANNEL_TAG) $(PUBLIC_VERSION)
+	@$(foreach bin, $(PUBLISH_BINARIES), \
+		printf "\n"; \
+		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force; \
 	)
 
 bump-fluvio-latest: VERSION=$(subst -, +, $(DEV_VERSION_TAG))
-bump-fluvio-latest: install-fluvio-latest install-fluvio-package bump-fluvio
+bump-fluvio-latest: install-fluvio-latest bump-fluvio
 
 update-public-installer-script-s3:
 	$(DRY_RUN_ECHO) aws s3 cp ./install.sh s3://packages.fluvio.io/v1/install.sh --acl public-read

@@ -30,15 +30,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      #- name: Login to Docker Hub
-      #  env:
-      #    DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      #    DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      #  run: make docker-hub-login
       - name: Publish latest development Fluvio Image
-        #env:
-        #  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        #  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: make docker-push-manifest-dev
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
