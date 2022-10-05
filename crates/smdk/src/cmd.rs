@@ -5,6 +5,8 @@ use crate::build::BuildOpt;
 use crate::generate::GenerateOpt;
 use crate::test::TestOpt;
 use crate::load::LoadOpt;
+use crate::publish::PublishOpt;
+use crate::set_hubid::SetHubidOpt;
 
 /// Manage and view Fluvio clusters
 #[derive(Debug, Parser)]
@@ -15,6 +17,11 @@ pub enum SmdkCommand {
     Generate(GenerateOpt),
     Test(TestOpt),
     Load(LoadOpt),
+    /// Publish SmartModule to Hub
+    Publish(PublishOpt),
+    /// Sethubid credentials
+    SetHubid(SetHubidOpt),
+
 }
 
 impl SmdkCommand {
@@ -24,6 +31,8 @@ impl SmdkCommand {
             SmdkCommand::Generate(opt) => opt.process(),
             SmdkCommand::Test(opt) => opt.process(),
             SmdkCommand::Load(opt) => opt.process(),
+            SmdkCommand::Publish(opt) => opt.process(),
+            SmdkCommand::SetHubid(opt) => opt.process(),
         }
     }
 }

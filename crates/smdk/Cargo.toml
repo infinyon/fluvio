@@ -29,6 +29,7 @@ include_dir = "0.7.2"
 tempdir = "0.3.7"
 
 fluvio = { path = "../fluvio", default-features = false }
+fluvio-hub-util = { path = "../fluvio-hub-util" }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-future = { version = "0.4.0", features = ["subscriber"]}
 fluvio-smartengine = { path = "../fluvio-smartengine" }

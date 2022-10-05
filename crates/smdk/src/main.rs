@@ -3,6 +3,8 @@ mod cmd;
 mod generate;
 mod test;
 mod load;
+mod publish;
+mod set_hubid;
 mod wasm;
 
 use clap::Parser;

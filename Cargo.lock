@@ -5652,6 +5652,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future 0.4.2",
+ "fluvio-hub-util",
  "fluvio-protocol",
  "fluvio-smartengine",
  "fluvio-smartmodule",
