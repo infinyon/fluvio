@@ -189,7 +189,8 @@ update-public-installer-script-s3:
 	$(DRY_RUN_ECHO) aws s3 cp ./install.sh s3://packages.fluvio.io/v1/install.sh --acl public-read
 
 latest-cd-dev-status:
-	gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt
+	gh api /repos/infinyon/fluvio/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt
+#	gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt
 	echo "Latest CD_Dev run: $(shell touch /tmp/cd_dev_latest.txt; cat /tmp/cd_dev_latest.txt | jq .html_url | tr -d '"')"
 ifeq ($(shell touch /tmp/cd_dev_latest.txt; cat /tmp/cd_dev_latest.txt | jq .conclusion | tr -d '"'), success)
 	echo $(shell echo ✅ Most recent CD_Dev run passed)
