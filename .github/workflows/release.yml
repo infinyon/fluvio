@@ -6,10 +6,6 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      force:
-        required: false
-        description: "If non-empty, extra force will be used push this release"
-        default: ""
       commit:
         required: false
         description: "Fluvio git commit override (latest `master` by default)"
@@ -18,14 +14,28 @@ on:
         required: false
         description: ""
         default: ""
+  workflow_call:
+    inputs:
+      commit:
+        required: false
+        type: boolean
+        description: "Fluvio git commit override (latest `master` by default)"
+        default: ""
+      installer_version:
+        required: false
+        type: string
+        description: "The version of Fluvio to download with install.sh"
+        default: "stable"
+
 env:
   USE_COMMIT: ${{ github.event.inputs.commit }}
-  FORCE_RELEASE: ${{ github.event.inputs.force }}
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   cd_dev_check:
     name: CD_Dev check
+    strategy:
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -34,6 +44,8 @@ jobs:
         run: make latest-cd-dev-status
   setup_job:
     name: Setup workflow
+    strategy:
+      fail-fast: false
     needs: [cd_dev_check]
     runs-on: ubuntu-latest
     outputs:
@@ -81,6 +93,8 @@ jobs:
 
   release_installer:
     name: Release Fluvio Installer
+    strategy:
+      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
@@ -99,6 +113,8 @@ jobs:
   # Check for Github Release
   release_github:
     name: Release Fluvio to GitHub Release
+    strategy:
+      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     permissions: write-all
@@ -140,6 +156,8 @@ jobs:
   ## Check for docker image
   release_docker:
     name: Release Docker Image
+    strategy:
+      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
@@ -152,7 +170,7 @@ jobs:
         id: docker_check
         continue-on-error: true
         env:
-          DOCKER_IMAGE_TAG: ${{ env.RELEASE_TAG }}
+          DOCKER_IMAGE_TAG: ${{ env.VERSION }}
         run: |
           make docker-hub-check-image-exists
 
@@ -167,6 +185,7 @@ jobs:
         if: ${{ steps.docker_check.outcome == 'failure' }}
         env:
           DOCKER_IMAGE_TAG: ${{ env.VERSION }}
+          CHANNEL_TAG: stable
         run: |
           make docker-create-manifest
           make docker-push-manifest
@@ -184,6 +203,8 @@ jobs:
   # Check for Fluvio CLI
   release_fluvio:
     name: Release Fluvio CLI package
+    strategy:
+      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
@@ -198,13 +219,13 @@ jobs:
         id: check_fluvio
         continue-on-error: true
         run: make curl-install-fluvio
-        #run: curl -fsS $INSTALLER_URL | VERSION=${{ env.VERSION }} bash
 
       # If this release does not already exist (i.e. check_fluvio failed), continue
       - name: Install fluvio-package
+        env:
+          CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
         run: |
-
-          make install-fluvio-curl
+          make curl-install-fluvio
           make install-fluvio-package
 
       - name: Download dev release
@@ -230,6 +251,8 @@ jobs:
 
   bump_stable_fluvio:
     name: Bump stable Fluvio
+    strategy:
+      fail-fast: false
     needs: [setup_job, release_github, release_docker, release_fluvio]
     #permissions: write-all
     runs-on: ubuntu-latest

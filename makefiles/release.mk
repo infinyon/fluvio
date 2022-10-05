@@ -35,7 +35,7 @@ endif
 
 DOCKER_USERNAME?=test-docker-user
 DOCKER_PASSWORD?=test-docker-pass
-DOCKER_IMAGE_TAG?=$(VERSION)
+DOCKER_IMAGE_TAG?=$(REPO_VERSION)
 #$(info Docker image tag: $(DOCKER_IMAGE_TAG))
 
 GH_TOKEN?=
@@ -83,14 +83,13 @@ docker-hub-login:
 	$(DRY_RUN_ECHO) docker login --username=$(DOCKER_USERNAME) --password=$(DOCKER_PASSWORD)
 
 docker-hub-check-image-exists:
-	$(info Checking on if infinyon/fluvio:$(DOCKER_IMAGE_TAG) exists in Docker Hub);
-	ifeq ($(shell docker pull --quiet infinyon/fluvio:$(DOCKER_IMAGE_TAG) > /dev/null 2>&1; echo $$?), 0)
-	$(shell echo true > /tmp/fluvio_image_exists);
-	$(info Image tag already exists);
-	else
-	$(shell echo false > /tmp/fluvio_image_exists);
-	$(error Image tag does not exist);
-	endif
+	if [ $(lastword $(shell docker pull --quiet infinyon/fluvio:$(DOCKER_IMAGE_TAG); echo $$?)) -eq 0 ]; then \
+		echo Image tag already exists; \
+		exit 0; \
+	else \
+		echo Image tag does not exist; \
+		exit 1; \
+	fi
 
 # Get Fluvio VERSION from Github, provided a given git SHA
 docker-create-manifest: docker-hub-login
@@ -98,7 +97,7 @@ docker-create-manifest: docker-hub-login
 		"docker.io/infinyon/fluvio:$(DEV_VERSION_TAG)-amd64" \
 		"docker.io/infinyon/fluvio:$(DEV_VERSION_TAG)-arm64v8"
 
-docker-push-manifest: docker-create-manifest-dev
+docker-push-manifest: docker-create-manifest
 	$(DRY_RUN_ECHO) docker manifest push "docker.io/infinyon/fluvio:$(DOCKER_IMAGE_TAG)"
 
 # Create latest development Fluvio image
@@ -201,7 +200,7 @@ else
 endif
 
 build-release-notes:
-	rm --verbose /tmp/release_notes
+	rm --verbose --force /tmp/release_notes
 	touch /tmp/release_notes
 	echo "# Release Notes" >> /tmp/release_notes
 	export VERSION=$(shell cat VERSION)
