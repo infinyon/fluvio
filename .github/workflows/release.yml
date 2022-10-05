@@ -18,7 +18,7 @@ on:
     inputs:
       commit:
         required: false
-        type: boolean
+        type: string
         description: "Fluvio git commit override (latest `master` by default)"
         default: ""
       installer_version:
