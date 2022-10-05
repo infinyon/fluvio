@@ -17,6 +17,9 @@ use crate::Result;
 pub struct ListSmartModuleOpt {
     #[clap(flatten)]
     output: OutputFormat,
+
+    #[clap(long)]
+    filter: Option<String>,
 }
 
 #[async_trait]
@@ -27,7 +30,12 @@ impl ClientCmd for ListSmartModuleOpt {
         fluvio: &Fluvio,
     ) -> Result<()> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SmartModuleSpec, _>(vec![]).await?;
+        let filters = if let Some(filter) = self.filter {
+            vec![filter]
+        } else {
+            vec![]
+        };
+        let lists = admin.list::<SmartModuleSpec, _>(filters).await?;
         output::smartmodules_response_to_output(out, lists, self.output.format)
     }
 }

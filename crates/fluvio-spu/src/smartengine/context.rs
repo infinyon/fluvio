@@ -147,8 +147,8 @@ impl SmartModuleContext {
                 if let Some(smartmodule) = ctx
                     .smartmodule_localstore()
                     .find_by_pk_key(&name)
-                    .map_err(|_err| ErrorCode::SmartModuleNotFound {
-                        name: name.to_owned(),
+                    .map_err(|err| {
+                        ErrorCode::Other(format!("error parsing SmartModule name: {}", err))
                     })?
                 {
                     let wasm = SmartModuleWasmCompressed::Gzip(smartmodule.spec.wasm.payload);
