@@ -15,9 +15,11 @@ endif
 
 # Probably move these up to the base makefile?
 GIT_COMMIT_SHA=$(shell git rev-parse HEAD)
-STABLE_VERSION_TAG?=$(shell cat VERSION)
-DEV_VERSION_TAG?=$(STABLE_VERSION_TAG)-$(GIT_COMMIT_SHA)
-CHANNEL_TAG?=latest
+#STABLE_VERSION_TAG?=$(shell cat VERSION)
+STABLE_VERSION_TAG?=stable
+REPO_VERSION?=$(shell cat VERSION)
+DEV_VERSION_TAG?=$(REPO_VERSION)-$(GIT_COMMIT_SHA)
+CHANNEL_TAG?=stable
 
 # CHANNEL_TAG overrides VERSION
 ifeq ($(CHANNEL_TAG), stable)
@@ -46,8 +48,6 @@ ifndef GH_TOKEN
 $(error GH_TOKEN required in CI)
 endif
 endif
-
-FLUVIO_BIN?=$(HOME)/.fluvio/bin/fluvio
 
 DIRNAME?=
 TARGET?=
@@ -121,7 +121,7 @@ install-fluvio-stable: curl-install-fluvio
 install-fluvio-latest: VERSION=latest
 install-fluvio-latest: curl-install-fluvio
 
-# Target that install fluvio-package
+install-fluvio-package: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
 install-fluvio-package:
 	$(FLUVIO_BIN) install fluvio-package
 
