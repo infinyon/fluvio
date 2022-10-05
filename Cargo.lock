@@ -2260,11 +2260,12 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "async-rwlock",
  "event-listener",
  "fluvio-future 0.4.2",
+ "fluvio-stream-model",
  "k8-types",
  "once_cell",
  "serde",

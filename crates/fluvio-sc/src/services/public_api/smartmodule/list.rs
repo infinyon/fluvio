@@ -49,16 +49,17 @@ where
     let objects: Vec<Metadata<SmartModuleSpec>> = reader
         .values()
         .filter_map(|value| {
-            if sm_keys
-                .iter()
-                .filter(|filter_value| {
-                    filter_value.is_match(
-                        value.key().as_ref(),
-                        value.spec().meta.as_ref().map(|m| &m.package),
-                    )
-                })
-                .count()
-                > 0
+            if sm_keys.is_empty()
+                || sm_keys
+                    .iter()
+                    .filter(|filter_value| {
+                        filter_value.is_match(
+                            value.key().as_ref(),
+                            value.spec().meta.as_ref().map(|m| &m.package),
+                        )
+                    })
+                    .count()
+                    > 0
             {
                 let list_obj = AdminSpec::convert_from(value);
                 Some(list_obj)
@@ -72,4 +73,24 @@ where
     trace!("fetch {:#?}", objects);
 
     Ok(ListResponse::new(objects))
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        services::auth::{RootAuthContext, AuthServiceContext},
+        core::Context,
+        config::ScConfig,
+    };
+
+    use super::fetch_smart_modules;
+
+    #[fluvio_future::test]
+    async fn test_sm_search() {
+        let global_ctx = Context::shared_metadata(ScConfig::default());
+        let auth_ctx = AuthServiceContext::new(global_ctx.clone(), RootAuthContext {});
+        let smart_modules = global_ctx.smartmodules();
+        smart_modules.apply(input).await.expect("apply");
+        let search = fetch_smart_modules(vec![], &auth_ctx, global_ctx.smartmodules()).await;
+    }
 }

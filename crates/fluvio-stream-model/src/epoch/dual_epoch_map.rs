@@ -400,7 +400,7 @@ where
 #[cfg(test)]
 mod test {
 
-    use crate::test_fixture::{DefaultTest, TestEpochMap};
+    use crate::fixture::{DefaultTest, TestEpochMap};
 
     use super::ChangeFlag;
 

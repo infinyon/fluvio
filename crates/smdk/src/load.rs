@@ -43,7 +43,7 @@ impl LoadOpt {
     }
 
     async fn create(&self, config: FluvioConfig, spec: SmartModuleSpec, id: String) -> Result<()> {
-        println!("trying connectiong to fluvio...");
+        println!("trying connectiong to fluvio {}", config.endpoint);
         let fluvio = Fluvio::connect_with_config(&config).await?;
 
         let admin = fluvio.admin().await;
