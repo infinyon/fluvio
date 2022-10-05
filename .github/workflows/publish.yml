@@ -99,7 +99,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Bump latest version of Fluvio CLI on fluvio-packages
+      - name: Install stable Fluvio CLI
+        env:
+          CHANNEL_TAG: stable
+        run: |
+          make curl-install-fluvio
+
+      - name: Bump latest version of Fluvio CLI with fluvio-packages
         env:
           CHANNEL_TAG: latest
         run: make bump-fluvio

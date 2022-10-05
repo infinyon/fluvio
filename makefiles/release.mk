@@ -174,6 +174,7 @@ publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 publish-artifacts-dev: GH_RELEASE_TAG=dev
 publish-artifacts-dev: publish-artifacts
 
+# Need to ensure that version is always a semver
 # Version convention is different here. Notice the `+`
 bump-fluvio: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
 bump-fluvio: PUBLIC_VERSION=$(subst -,+,$(VERSION))
@@ -184,7 +185,10 @@ bump-fluvio: install-fluvio-package
 		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force; \
 	)
 
-bump-fluvio-latest: VERSION=$(subst -, +, $(DEV_VERSION_TAG))
+bump-fluvio-stable: VERSION=$(REPO_VERSION)
+bump-fluvio-stable: install-fluvio-stable bump-fluvio
+
+bump-fluvio-latest: VERSION=$(subst -,+,$(DEV_VERSION_TAG))
 bump-fluvio-latest: install-fluvio-latest bump-fluvio
 
 update-public-installer-script-s3:
