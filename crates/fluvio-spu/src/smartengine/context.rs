@@ -144,7 +144,13 @@ impl SmartModuleContext {
         // then get smartmodule context
         let payload = match invocation.wasm {
             SmartModuleInvocationWasm::Predefined(name) => {
-                if let Some(smartmodule) = ctx.smartmodule_localstore().spec(&name) {
+                if let Some(smartmodule) = ctx
+                    .smartmodule_localstore()
+                    .find_by_pk_key(&name)
+                    .map_err(|_err| ErrorCode::SmartModuleNotFound {
+                        name: name.to_owned(),
+                    })?
+                {
                     let wasm = SmartModuleWasmCompressed::Gzip(smartmodule.spec.wasm.payload);
                     LegacySmartModulePayload {
                         wasm,

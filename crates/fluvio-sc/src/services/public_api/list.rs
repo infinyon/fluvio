@@ -18,6 +18,8 @@ pub async fn handle_list_request<AC: AuthContext>(
     let (header, req) = request.get_header_request();
     debug!("list request: {:#?}", req);
 
+    println!("List Request {:#?}", req);
+
     let response = match req {
         ObjectApiListRequest::Topic(req) => ObjectApiListResponse::Topic(
             super::topic::handle_fetch_topics_request(req.name_filters, auth_ctx).await?,

@@ -1,4 +1,7 @@
+use anyhow::Result;
+
 use fluvio_controlplane_metadata::smartmodule::SmartModule;
+use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_types::SmartModuleName;
 
 use crate::core::Spec;
@@ -19,3 +22,17 @@ impl Spec for SmartModule {
 }
 
 pub type SmartModuleLocalStore = LocalStore<SmartModule>;
+
+impl LocalStore<SmartModule> {
+    /// look by fully qualified SmartModule name
+    pub fn find_by_pk_key(&self, fqdn: &str) -> Result<Option<SmartModule>> {
+        let pkg_key = SmartModulePackageKey::from_qualified_name(fqdn)?;
+        let reader = self.read();
+        for (key, sm) in reader.iter() {
+            if pkg_key.is_match(key, sm.spec.meta.as_ref().map(|m| &m.package)) {
+                return Ok(Some(sm.clone()));
+            }
+        }
+        Ok(None)
+    }
+}

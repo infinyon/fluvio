@@ -107,7 +107,7 @@ mod test {
             ..Default::default()
         };
 
-        assert_ne!(pkg.store_key(),"sm2");
+        assert_ne!(pkg.store_key(), "sm2");
 
         let test_data = vec![
             SmartModuleTest::with_spec("sm1", SmartModuleSpec::default()),
