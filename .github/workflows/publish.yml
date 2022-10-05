@@ -12,7 +12,8 @@ on:
   workflow_call:
     inputs:
       installer_version:
-        required: false # Is this required if I have a default?
+        required: false
+        type: string
         description: "The version of Fluvio to download with install.sh"
         default: "stable"
 
