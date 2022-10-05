@@ -1,6 +1,5 @@
-use std::io::Error as IoError;
-
 use tracing::{debug, instrument};
+use anyhow::Result;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{
@@ -9,14 +8,17 @@ use fluvio_sc_schema::{
 use fluvio_auth::{AuthContext};
 
 use crate::services::auth::AuthServiceContext;
+use super::smartmodule::fetch_smart_modules;
 
 #[instrument(skip(request, auth_ctx))]
 pub async fn handle_list_request<AC: AuthContext>(
     request: RequestMessage<ObjectApiListRequest>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ResponseMessage<ObjectApiListResponse>, IoError> {
+) -> Result<ResponseMessage<ObjectApiListResponse>> {
     let (header, req) = request.get_header_request();
     debug!("list request: {:#?}", req);
+
+    println!("List Request {:#?}", req);
 
     let response = match req {
         ObjectApiListRequest::Topic(req) => ObjectApiListResponse::Topic(
@@ -43,9 +45,9 @@ pub async fn handle_list_request<AC: AuthContext>(
             .await?,
         ),
         ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
-            fetch::handle_fetch_request(
+            fetch_smart_modules(
                 req.name_filters,
-                auth_ctx,
+                &auth_ctx.auth,
                 auth_ctx.global_ctx.smartmodules(),
             )
             .await?,

@@ -11,18 +11,18 @@ use std::marker::PhantomData;
 use std::fmt::Debug;
 use std::io::Error as IoError;
 
-use fluvio_service::ConnectInfo;
 use tracing::debug;
 use tracing::instrument;
 use async_trait::async_trait;
+use anyhow::Result;
 
+use fluvio_service::ConnectInfo;
 use fluvio_types::event::StickyEvent;
 use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::FluvioSocket;
-use fluvio_socket::SocketError;
 use fluvio_service::FluvioService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicDecodedRequest;
@@ -55,7 +55,7 @@ where
         ctx: Self::Context,
         mut socket: FluvioSocket,
         _connection: ConnectInfo,
-    ) -> Result<(), SocketError> {
+    ) -> Result<()> {
         let auth_context = ctx
             .auth
             .create_auth_context(&mut socket)

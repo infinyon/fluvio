@@ -6,8 +6,8 @@ pub mod store;
 #[cfg(feature = "k8")]
 pub use k8_types;
 
-#[cfg(test)]
-pub(crate) mod test_fixture {
+#[cfg(feature = "fixture")]
+pub mod fixture {
 
     use crate::core::{Spec, Status, MetadataItem, MetadataContext, MetadataRevExtension};
     use crate::store::MetadataStoreObject;

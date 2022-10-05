@@ -17,6 +17,9 @@ use crate::Result;
 pub struct ListSmartModuleOpt {
     #[clap(flatten)]
     output: OutputFormat,
+
+    #[clap(long)]
+    filter: Option<String>,
 }
 
 #[async_trait]
@@ -27,7 +30,12 @@ impl ClientCmd for ListSmartModuleOpt {
         fluvio: &Fluvio,
     ) -> Result<()> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SmartModuleSpec, _>(vec![]).await?;
+        let filters = if let Some(filter) = self.filter {
+            vec![filter]
+        } else {
+            vec![]
+        };
+        let lists = admin.list::<SmartModuleSpec, _>(filters).await?;
         output::smartmodules_response_to_output(out, lists, self.output.format)
     }
 }
@@ -100,10 +108,10 @@ mod output {
                     let _spec = &r.spec;
 
                     Row::from([
-                        Cell::new(&r.name).set_alignment(CellAlignment::Left),
-                        Cell::new(&r.spec.group_label()).set_alignment(CellAlignment::Right),
-                        Cell::new(&r.spec.version_label()).set_alignment(CellAlignment::Right),
-                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
+                        Cell::new(&r.spec.logical_name(&r.name)).set_alignment(CellAlignment::Left),
+                        Cell::new(&r.spec.pkg_group()).set_alignment(CellAlignment::Left),
+                        Cell::new(&r.spec.pkg_version()).set_alignment(CellAlignment::Left),
+                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Left),
                         Cell::new(&r.spec.wasm.payload.len().to_string())
                             .set_alignment(CellAlignment::Right),
                     ])

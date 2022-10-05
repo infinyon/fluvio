@@ -10,10 +10,10 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::time::Duration;
 
-use tracing::error;
-use tracing::{debug, info, trace, instrument};
+use tracing::{debug, info, trace, instrument, error};
 use async_trait::async_trait;
 use futures_util::stream::Stream;
+use anyhow::Result;
 
 use fluvio_types::SpuId;
 use fluvio_protocol::api::RequestMessage;
@@ -54,7 +54,7 @@ impl FluvioService for ScInternalService {
         context: SharedContext,
         socket: FluvioSocket,
         _connection: ConnectInfo,
-    ) -> Result<(), SocketError> {
+    ) -> Result<()> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();
 

@@ -559,7 +559,7 @@ mod listener {
 mod test {
 
     use crate::store::actions::LSUpdate;
-    use crate::test_fixture::{TestSpec, TestStatus, DefaultTest, TestMeta};
+    use crate::fixture::{TestSpec, TestStatus, DefaultTest, TestMeta};
 
     use super::LocalStore;
 
@@ -672,7 +672,7 @@ mod test_notify {
 
     use crate::store::actions::LSUpdate;
     use crate::store::event::SimpleEvent;
-    use crate::test_fixture::{TestSpec, DefaultTest, TestMeta};
+    use crate::fixture::{TestSpec, DefaultTest, TestMeta};
 
     use super::LocalStore;
 

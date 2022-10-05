@@ -26,7 +26,7 @@ impl LoadOpt {
         let pkg_metadata = SmartModuleMetadata::from_toml("./SmartModule.toml")?;
         println!("Using SmartModule package: {}", pkg_metadata.package.name);
 
-        let sm_id = pkg_metadata.id().to_string();
+        let sm_id = pkg_metadata.id();
         let raw_bytes = self.wasm.load_raw_wasm_file()?;
         let spec = SmartModuleSpec {
             meta: Some(pkg_metadata),
@@ -43,7 +43,7 @@ impl LoadOpt {
     }
 
     async fn create(&self, config: FluvioConfig, spec: SmartModuleSpec, id: String) -> Result<()> {
-        println!("trying connectiong to fluvio...");
+        println!("trying connectiong to fluvio {}", config.endpoint);
         let fluvio = Fluvio::connect_with_config(&config).await?;
 
         let admin = fluvio.admin().await;

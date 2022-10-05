@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 //
 //  Peer Spus (all spus in the system, received from Sc)
 //      >>> define what each element of SPU is used for
@@ -5,6 +6,7 @@
 use std::sync::Arc;
 use std::fmt::Display;
 use std::fmt::Debug;
+use std::sync::RwLockReadGuard;
 
 use tracing::trace;
 use tracing::debug;
@@ -100,6 +102,10 @@ where
 
     pub fn delete(&self, id: &S::Key) -> Option<S> {
         self.0.write().remove(id)
+    }
+
+    pub fn read(&self) -> RwLockReadGuard<BTreeMap<S::Key, S>> {
+        self.0.read()
     }
 
     #[allow(dead_code)]
@@ -238,7 +244,6 @@ where
         actions
     }
 
-    #[allow(unused)]
     pub fn spec(&self, key: &S::Key) -> Option<S> {
         self.0.read().get(key).cloned()
     }
