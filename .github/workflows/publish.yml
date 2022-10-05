@@ -5,22 +5,18 @@ on:
     branches: [master]
   workflow_dispatch:
     inputs:
-      force:
-        required: false
-        description: "Set --force to force push this release"
-        default: ""
-      verbose:
-        description: "Set --verbose to get verbose build output"
-        required: false
-        default: ""
+      installer_version:
+        required: false # Is this required if I have a default?
+        description: "The version of Fluvio to download with install.sh"
+        default: "stable"
+  workflow_call:
+    inputs:
       installer_version:
         required: false # Is this required if I have a default?
         description: "The version of Fluvio to download with install.sh"
         default: "stable"
 
 env:
-  VERBOSE: ${{ github.events.input.verbose }}
-  FORCE_RELEASE: ${{ github.events.inputs.force }}
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
@@ -35,18 +31,9 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        #run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
         run: make docker-hub-login
       - name: Publish latest development Fluvio Image
         run: make docker-push-manifest-dev
-        #run: |
-        #  export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
-        #  export TAG="${VERSION}-${{ github.sha }}"
-        #  docker manifest create "docker.io/infinyon/fluvio:latest" \
-        #    "docker.io/infinyon/fluvio:${TAG}-amd64" \
-        #    "docker.io/infinyon/fluvio:${TAG}-arm64v8"
-        #  docker manifest push "docker.io/infinyon/fluvio:latest"
-
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()
@@ -66,8 +53,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v3
-      #- name: Login GH CLI
-      #  run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Install fluvio-package
         run: |
           if [ -n "${{ github.event.inputs.installer_version }}" ]; then
@@ -81,41 +66,12 @@ jobs:
           make install-fluvio-curl
           make install-fluvio-package
 
-          #curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-          #${HOME}/.fluvio/bin/fluvio install fluvio-package
-
       - name: Download dev release
         run: make download-fluvio-release-dev
-        # run: gh release download dev -R infinyon/fluvio
 
       - name: Publish artifacts
         run: |
           make publish-artifacts
-      #          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
-      #
-      #          for ZIP_FILE in ./*.zip; do
-      #            # Don't publish `fluvio-test` artifact outside of github
-      #            [ "$ZIP_FILE" = "./fluvio-test-x86_64-unknown-linux-musl.zip" ] && echo "Skipping fluvio-test" && continue
-      #
-      #            # Unzip all .zip files into directories with the same name (minus .zip)
-      #            UNZIP_DIR="${ZIP_FILE//.zip/}"
-      #            echo "Unzipping $ZIP_FILE into $UNZIP_DIR"
-      #            unzip "$ZIP_FILE" -d "$UNZIP_DIR"
-      #
-      #            TARGET="$(cat ${UNZIP_DIR}/.target)"
-      #            ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
-      #            PACKAGE="$(echo ${ARTIFACT} | sed -e "s/^\.\///" -e "s/\.exe$//")"
-      #            echo "TARGET=$TARGET"
-      #            echo "ARTIFACT=$ARTIFACT"
-      #            echo "PACKAGE=$PACKAGE"
-      #
-      #            ${HOME}/.fluvio/bin/fluvio package publish \
-      #              --package="${PACKAGE}" \
-      #              --version="${VERSION}+${{ github.sha }}" \
-      #              --target="${TARGET}" \
-      #              "${UNZIP_DIR}/${ARTIFACT}"
-      #          done
-
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()
@@ -140,15 +96,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      #- name: Install cargo-make
-      #  uses: davidB/rust-cargo-make@v1
-      #  with:
-      #    version: "0.32.9"
       - name: Bump latest version of Fluvio CLI on fluvio-packages
         env:
           CHANNEL_TAG: latest
         run: make bump-fluvio
-        #run: cargo make bump-fluvio-latest
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
