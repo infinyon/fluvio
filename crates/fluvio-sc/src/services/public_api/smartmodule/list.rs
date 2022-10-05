@@ -82,7 +82,9 @@ mod test {
     use fluvio_stream_dispatcher::store::StoreContext;
     use fluvio_stream_model::fixture::TestMeta;
     use fluvio_stream_model::store::{MetadataStoreObject, LocalStore};
-    use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+    use fluvio_controlplane_metadata::smartmodule::{
+        SmartModuleSpec, SmartModuleMetadata, SmartModulePackage, FluvioSemVersion,
+    };
 
     use crate::{
         services::auth::{RootAuthContext},
@@ -97,13 +99,46 @@ mod test {
     async fn test_sm_search() {
         let root_auth = RootAuthContext {};
 
-        let sm1 = vec![SmartModuleTest::with_spec(
-            "sm1",
-            SmartModuleSpec::default(),
-        )];
+        let pkg = SmartModulePackage {
+            name: "sm2".to_string(),
+            group: "group".to_string(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        };
+        let test_data = vec![
+            SmartModuleTest::with_spec("sm1", SmartModuleSpec::default()),
+            SmartModuleTest::with_spec(
+                pkg.store_key(),
+                SmartModuleSpec {
+                    meta: Some(SmartModuleMetadata {
+                        package: pkg,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+            ),
+        ];
+
         let local_sm_store = TestSmartModuleStore::default();
-        _ = local_sm_store.sync_all(sm1).await;
+        _ = local_sm_store.sync_all(test_data).await;
         let sm_ctx = StoreContext::new_with_store(Arc::new(local_sm_store));
-        let search = fetch_smart_modules(vec![], &root_auth, &sm_ctx).await;
+        assert_eq!(sm_ctx.store().read().await.len(), 2);
+        assert_eq!(
+            fetch_smart_modules(vec![], &root_auth, &sm_ctx)
+                .await
+                .expect("search")
+                .inner()
+                .len(),
+            2
+        );
+        assert_eq!(
+            fetch_smart_modules(vec!["test".to_owned()], &root_auth, &sm_ctx)
+                .await
+                .expect("search")
+                .inner()
+                .len(),
+            0
+        );
     }
 }
