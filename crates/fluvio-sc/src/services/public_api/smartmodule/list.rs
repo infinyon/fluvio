@@ -48,6 +48,7 @@ where
     let objects: Vec<Metadata<SmartModuleSpec>> = reader
         .values()
         .filter_map(|value| {
+            println!("value: {:#?}", value);
             if sm_keys.is_empty()
                 || sm_keys
                     .iter()
@@ -60,8 +61,7 @@ where
                     .count()
                     > 0
             {
-                let list_obj = AdminSpec::convert_from(value);
-                Some(list_obj)
+                Some(AdminSpec::convert_from(value))
             } else {
                 None
             }
@@ -106,6 +106,9 @@ mod test {
             api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
             ..Default::default()
         };
+
+        assert_ne!(pkg.store_key(),"sm2");
+
         let test_data = vec![
             SmartModuleTest::with_spec("sm1", SmartModuleSpec::default()),
             SmartModuleTest::with_spec(
@@ -139,6 +142,25 @@ mod test {
                 .inner()
                 .len(),
             0
+        );
+
+        assert_eq!(
+            fetch_smart_modules(vec!["sm1".to_owned()], &root_auth, &sm_ctx)
+                .await
+                .expect("search")
+                .inner()
+                .len(),
+            1
+        );
+
+        // no matching
+        assert_eq!(
+            fetch_smart_modules(vec!["sm2".to_owned()], &root_auth, &sm_ctx)
+                .await
+                .expect("search")
+                .inner()
+                .len(),
+            1
         );
     }
 }
