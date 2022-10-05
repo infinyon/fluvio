@@ -1,6 +1,5 @@
 # Use the binary name produced by cargo
-PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel
-#PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk
+PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk
 
 # CI has to set RELEASE=true to run commands that update public
 RELEASE?=false
@@ -73,10 +72,9 @@ clean-publish:
 	rm --verbose --force /tmp/release_notes /tmp/fluvio_image_exists
 	rm --verbose --force --recursive ./tmp-release
 
-
-fix-latest-channel:
-	# Find the last git sha from master
-	# Re-set all tags to use the version and sha from that commit
+#fix-latest-channel:
+#	# Find the last git sha from master
+#	# Re-set all tags to use the version and sha from that commit
 #### End testing
 
 
@@ -128,6 +126,15 @@ install-fluvio-package:
 download-fluvio-release:
 	$(call DOWNLOAD_FLUVIO_RELEASE_CMD)
 
+unzip-gh-release-artifacts: download-fluvio-release
+	echo "unzip stuff"
+	echo $(foreach bin, $(wildcard *.zip), \
+		$(shell \
+			export DIRNAME=$(basename $(bin)); \
+			echo Unzipping $(bin) to $$DIRNAME; \
+			unzip -u -d $$DIRNAME $(bin); \
+		) \
+	)
 
 # Publish artifacts from GH Releases to Fluvio Packages
 #
@@ -151,16 +158,6 @@ download-fluvio-release:
 #   fluvio-x86_64-unknown-linux-musl/
 #     fluvio
 #     .target
-unzip-gh-release-artifacts: download-fluvio-release
-	echo "unzip stuff"
-	echo $(foreach bin, $(wildcard *.zip), \
-		$(shell \
-			export DIRNAME=$(basename $(bin)); \
-			echo Unzipping $(bin) to $$DIRNAME; \
-			unzip -u -d $$DIRNAME $(bin); \
-		) \
-	)
-
 publish-artifacts: unzip-gh-release-artifacts
 	echo "package stuff"
 	$(foreach bin, $(wildcard *.zip), \

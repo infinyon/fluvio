@@ -76,7 +76,7 @@ jobs:
           make install-fluvio-package
 
       - name: Download dev release
-        run: make download-fluvio-release-dev
+        run: make download-fluvio-release
 
       - name: Publish artifacts
         run: make publish-artifacts
