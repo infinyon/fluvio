@@ -1,8 +1,9 @@
 # Build platform and run smoke test
 name: CI
 
-permissions:
-  contents: read
+permissions: read-all
+#permissions:
+#  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
