@@ -1,0 +1,11 @@
+---
+package_format_version: "0.1"
+name: example
+version: "0.0"
+group: infinyon
+description: Describe the module here
+license: e.g. Apache2
+manifest:
+  - tests/apackage/module.wasm
+  - doesnotexist.txt
+
