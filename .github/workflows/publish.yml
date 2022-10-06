@@ -24,8 +24,6 @@ jobs:
   # Re-tag the docker image for this commit as 'latest'
   docker:
     name: Publish Docker Image
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -48,8 +46,6 @@ jobs:
   # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
   fluvio:
     name: Publish Fluvio CLI
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

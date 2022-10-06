@@ -44,8 +44,6 @@ jobs:
         run: make latest-cd-dev-status
   setup_job:
     name: Setup workflow
-    strategy:
-      fail-fast: false
     needs: [cd_dev_check]
     runs-on: ubuntu-latest
     outputs:
@@ -93,8 +91,6 @@ jobs:
 
   release_installer:
     name: Release Fluvio Installer
-    strategy:
-      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
@@ -113,8 +109,6 @@ jobs:
   # Check for Github Release
   release_github:
     name: Release Fluvio to GitHub Release
-    strategy:
-      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     #permissions: write-all
@@ -141,6 +135,8 @@ jobs:
       # The date is expected to be UNRELEASED, which we will replace with the current date
       - name: Create GH Release with release notes
         if: ${{ steps.release_check.outcome == 'failure' }}
+        env:
+          CHANNEL_TAG: ${{ env.VERSION }}
         run: make create-gh-release
 
       - name: Slack Notification
@@ -156,8 +152,6 @@ jobs:
   ## Check for docker image
   release_docker:
     name: Release Docker Image
-    strategy:
-      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
@@ -199,8 +193,6 @@ jobs:
   # Check for Fluvio CLI
   release_fluvio:
     name: Release Fluvio CLI package
-    strategy:
-      fail-fast: false
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
@@ -249,8 +241,6 @@ jobs:
 
   bump_stable_fluvio:
     name: Bump stable Fluvio
-    strategy:
-      fail-fast: false
     needs: [setup_job, release_github, release_docker, release_fluvio]
     #permissions: write-all
     runs-on: ubuntu-latest

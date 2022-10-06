@@ -20,7 +20,8 @@ REPO_VERSION?=$(shell cat VERSION)
 DEV_VERSION_TAG?=$(REPO_VERSION)-$(GIT_COMMIT_SHA)
 CHANNEL_TAG?=stable
 
-# CHANNEL_TAG overrides VERSION
+# VERSION is used mostly by build, so here we
+# use CHANNEL_TAG to override value of VERSION for CI
 ifeq ($(CHANNEL_TAG), stable)
 VERSION:=$(STABLE_VERSION_TAG)
 #$(info Working with channel $(CHANNEL_TAG) version: $(VERSION))
@@ -31,7 +32,6 @@ else
 VERSION:=$(CHANNEL_TAG)
 endif
 #$(info Working with version: $(VERSION))
-
 
 DOCKER_USERNAME?=test-docker-user
 DOCKER_PASSWORD?=test-docker-pass
@@ -130,7 +130,6 @@ unzip-gh-release-artifacts: download-fluvio-release
 	@$(foreach bin, $(wildcard *.zip), \
 		printf "\n"; \
 		export DIRNAME=$(basename $(bin)); \
-		echo Unzipping $(bin) to $$DIRNAME; \
 		unzip -u -d $$DIRNAME $(bin); \
 	)
 
@@ -220,15 +219,15 @@ build-release-notes:
 	# Print the release notes to stdout
 	cat /tmp/release_notes
 
-
 create-gh-release: build-release-notes
+	rm --verbose --recursive --force ./tmp-release
 	# Create temporary directory to download all artifacts
 	mkdir -p tmp-release
-	#$(shell cd tmp-release; $(DRY_RUN_ECHO) gh release download -R infinyon/fluvio dev)
+	cd tmp-release; $(DRY_RUN_ECHO) gh release download -R infinyon/fluvio dev
 	cd tmp-release; $(call DOWNLOAD_FLUVIO_RELEASE_CMD)
 
-	$(DRY_RUN_ECHO) $(shell cd tmp-release; $(DRY_RUN_ECHO) gh release create -R infinyon/fluvio \
+	cd tmp-release; $(DRY_RUN_ECHO) gh release create -R infinyon/fluvio \
 		--title="v$(VERSION)" \
 		-F /tmp/release_notes \
 		"v$(VERSION)" \
-		$(wildcard tmp-release/*))
+		$(wildcard tmp-release/*)
