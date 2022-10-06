@@ -165,7 +165,7 @@ publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 		export PACKAGE=$(subst -$(shell cat $(basename $(bin))/.target), ,$(basename $(bin))); \
 		export ARTIFACT=$(abspath $$DIRNAME/$$PACKAGE); \
 		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package publish \
-			--package=$$PACKAGE \
+			--package=$(subst .exe, ,$(subst -$(shell cat $(basename $(bin))/.target), ,$(basename $(bin)))) \
 			--version=$(PUBLIC_VERSION) \
 			--target=$$TARGET \
 			$$ARTIFACT; \
