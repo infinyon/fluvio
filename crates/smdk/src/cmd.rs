@@ -21,7 +21,6 @@ pub enum SmdkCommand {
     Publish(PublishOpt),
     /// Sethubid credentials
     SetHubid(SetHubidOpt),
-
 }
 
 impl SmdkCommand {

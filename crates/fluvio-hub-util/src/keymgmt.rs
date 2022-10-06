@@ -81,14 +81,7 @@ impl Keypair {
         if pem.tag != "PRIVATE KEY" {
             return Err(HubUtilError::InvalidKeyPairFile(fname.into()));
         }
-        let skey = ed25519_dalek::SecretKey::from_bytes(&pem.contents)
-            .map_err(|_| HubUtilError::InvalidPublicKeyFile(fname.into()))?;
-        let pkey: ed25519_dalek::PublicKey = (&skey).into();
-        let ekeypair = ed25519_dalek::Keypair {
-            secret: skey,
-            public: pkey,
-        };
-        Ok(Keypair { kp: ekeypair })
+        Keypair::from_secret_bytes(&pem.contents)
     }
 
     /// writes the private key from which the public is derivable on load
@@ -109,24 +102,33 @@ impl Keypair {
         hex::encode(self.kp.secret.as_bytes())
     }
 
+    pub fn from_hex(hexstring: &str) -> Result<Keypair> {
+        let pkbytes = hex::decode(hexstring).map_err(|_| HubUtilError::KeyVerify)?;
+        Keypair::from_secret_bytes(&pkbytes)
+    }
+
     /// a pubkey from an ssh private key (id_ed25519) generated via
     ///  e.g. $ ssh-keygen -t ed25519 -C "sshkey@example.com" -f ./id_ed25519 -P ""
     /// ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACGeGHWvt/E60k/FLuDsCkArLAIa4lvwk1wg3nJIGJl sshkey@example.com
     pub fn from_ssh(env_val: &str) -> Result<Keypair> {
         let sshprivkey =
-            ssh_key::PrivateKey::from_openssh(&env_val).map_err(|_| HubUtilError::KeyVerify)?;
+            ssh_key::PrivateKey::from_openssh(&env_val).expect("reading ssh pub key file");
         let keypair = sshprivkey
             .key_data()
             .ed25519()
             .ok_or(HubUtilError::KeyVerify)?;
-        let skey = ed25519_dalek::SecretKey::from_bytes(keypair.private.as_ref())
-            .map_err(|_| HubUtilError::KeyVerify)?;
+        Keypair::from_secret_bytes(keypair.private.as_ref())
+    }
+
+    fn from_secret_bytes(sbytes: &[u8]) -> Result<Keypair> {
+        let skey =
+            ed25519_dalek::SecretKey::from_bytes(sbytes).map_err(|_| HubUtilError::KeyVerify)?;
         let pkey: ed25519_dalek::PublicKey = (&skey).into();
-        let kp = ed25519_dalek::Keypair {
+        let ekeypair = ed25519_dalek::Keypair {
             secret: skey,
             public: pkey,
         };
-        Ok(Keypair { kp })
+        Ok(Keypair { kp: ekeypair })
     }
 
     pub fn ref_dalek(&self) -> &ed25519_dalek::Keypair {

@@ -197,6 +197,11 @@ impl HubAccess {
         write_ptr_file(base_path, &hname)?;
         Ok(())
     }
+
+    /// return signing keypair
+    pub fn keypair(&self) -> Result<Keypair> {
+        Keypair::from_hex(&self.pkgkey)
+    }
 }
 
 fn write_ptr_file<P: AsRef<Path>>(base_path: P, profile: &str) -> Result<()> {

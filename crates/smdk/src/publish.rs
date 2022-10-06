@@ -21,35 +21,38 @@ pub struct PublishOpt {
 
     // given a packed file do only the push
     #[clap(long)]
-    push: bool    
+    push: bool,
 }
 impl PublishOpt {
     pub(crate) fn process(&self) -> Result<()> {
         let access = get_hubaccess()?;
-        
+
         match (self.pack, self.push) {
-            (false,false) | (true, true) => {
-                let pkgmetapath = self.package_meta
+            (false, false) | (true, true) => {
+                let pkgmetapath = self
+                    .package_meta
                     .clone()
                     .unwrap_or_else(|| hubutil::DEF_HUB_PKG_META.to_string());
-                let pkgdata = package_assemble(&pkgmetapath, &access)?;                
+                let pkgdata = package_assemble(&pkgmetapath, &access)?;
                 package_push(&pkgdata, &access)?;
-            },
+            }
 
             // --pack only
             (true, false) => {
-                let pkgmetapath = self.package_meta
-                    .clone()                
+                let pkgmetapath = self
+                    .package_meta
+                    .clone()
                     .unwrap_or_else(|| hubutil::DEF_HUB_PKG_META.to_string());
                 package_assemble(&pkgmetapath, &access)?;
-            },
+            }
 
             // --push only, needs ipkg file
             (false, true) => {
-                let pkgfile = &self.package_meta
+                let pkgfile = &self
+                    .package_meta
                     .clone()
                     .ok_or_else(|| anyhow::anyhow!("package file required for push"))?;
-                package_push(&pkgfile, &access)?;
+                package_push(pkgfile, &access)?;
             }
         }
 
@@ -57,8 +60,8 @@ impl PublishOpt {
     }
 }
 
-pub fn package_assemble(pkgmeta: &str, _access: &HubAccess) -> Result<String> {
-    let pkgname = hubutil::package_assemble(pkgmeta, None)?;
+pub fn package_assemble(pkgmeta: &str, access: &HubAccess) -> Result<String> {
+    let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None)?;
     println!("Package {} created", pkgname);
     Ok(pkgname)
 }

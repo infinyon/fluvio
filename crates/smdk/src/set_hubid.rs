@@ -1,4 +1,3 @@
-
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -8,14 +7,13 @@ use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::HubAccess;
 
-
 pub const CLI_CONFIG_PATH: &str = ".fluvio";
 pub const CLI_CONFIG_HUB: &str = "hub"; // hub area of config
 
 /// Set hubid in the SmartModule Hub
 #[derive(Debug, Parser)]
 pub struct SetHubidOpt {
-    hubid: String,   
+    hubid: String,
 }
 
 impl SetHubidOpt {
@@ -28,11 +26,9 @@ impl SetHubidOpt {
             print!("Hubid already set to {}", self.hubid);
             return Ok(());
         }
-        
+
         // if not: ask server if it exists
-        if let Err(e) = run_block_on({
-            access.create_hubid(&self.hubid)
-        }) {
+        if let Err(e) = run_block_on(access.create_hubid(&self.hubid)) {
             eprintln!("{}", e);
             std::process::exit(1);
         }
@@ -44,7 +40,7 @@ impl SetHubidOpt {
 
 /// default hub cfg data path
 fn def_hub_cfg_path() -> Result<PathBuf> {
-    let mut hub_cfg_path = dirs::home_dir().ok_or(anyhow::anyhow!("missing config dir"))?;
+    let mut hub_cfg_path = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("missing config dir"))?;
     hub_cfg_path.push(CLI_CONFIG_PATH); // .fluvio
     hub_cfg_path.push(CLI_CONFIG_HUB);
     Ok(hub_cfg_path)
