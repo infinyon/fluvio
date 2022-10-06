@@ -53,11 +53,6 @@ TARGET?=
 PACKAGE?=
 ARTIFACT?=
 
-# Requires GH_TOKEN set
-DOWNLOAD_FLUVIO_RELEASE_CMD = gh release download $(GH_RELEASE_TAG) -R infinyon/fluvio --skip-existing
-
-## TODO: Remember to remove `echo` from calls before merging
-
 #### Testing only
 
 get-version:
@@ -69,8 +64,7 @@ get-tag:
 clean-publish:
 	rm --verbose --force *.zip *.tgz *.exe
 	rm --verbose --force --recursive fluvio-* fluvio.*
-	rm --verbose --force /tmp/release_notes /tmp/fluvio_image_exists /tmp/cd_dev_latest.txt
-	rm --verbose --force --recursive ./tmp-release
+	rm --verbose --force /tmp/release_notes /tmp/cd_dev_latest.txt
 
 #fix-latest-channel:
 #	# Find the last git sha from master
@@ -122,8 +116,9 @@ install-fluvio-package: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
 install-fluvio-package:
 	$(FLUVIO_BIN) install fluvio-package
 
+# Requires GH_TOKEN set or `gh auth login`
 download-fluvio-release:
-	$(call DOWNLOAD_FLUVIO_RELEASE_CMD)
+	gh release download $(GH_RELEASE_TAG) -R infinyon/fluvio --skip-existing
 
 unzip-gh-release-artifacts: download-fluvio-release
 	@echo "unzip stuff"
@@ -226,15 +221,9 @@ build-release-notes:
 	# Print the release notes to stdout
 	cat /tmp/release_notes
 
-create-gh-release: build-release-notes
-	rm --verbose --recursive --force ./tmp-release
-	# Create temporary directory to download all artifacts
-	mkdir -p tmp-release
-	cd tmp-release; $(DRY_RUN_ECHO) gh release download -R infinyon/fluvio dev
-	cd tmp-release; $(call DOWNLOAD_FLUVIO_RELEASE_CMD)
-
-	cd tmp-release; $(DRY_RUN_ECHO) gh release create -R infinyon/fluvio \
+create-gh-release: download-fluvio-release build-release-notes
+	$(DRY_RUN_ECHO) gh release create -R infinyon/fluvio \
 		--title="v$(VERSION)" \
 		-F /tmp/release_notes \
 		"v$(VERSION)" \
-		$(wildcard tmp-release/*)
+		$(wildcard *.zip *.tgz)
