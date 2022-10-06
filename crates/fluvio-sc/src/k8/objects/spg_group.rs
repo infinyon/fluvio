@@ -311,7 +311,7 @@ mod k8_convert {
             args,
             ..Default::default()
         }];
-        
+
         containers.append(&mut spu_pod_config.extra_containers.clone());
 
         let template = TemplateSpec {

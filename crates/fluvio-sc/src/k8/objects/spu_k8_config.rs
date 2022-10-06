@@ -25,7 +25,7 @@ pub struct PodConfig {
     pub resources: Option<ResourceRequirements>,
     pub storage_class: Option<String>,
     pub base_node_port: Option<u16>,
-    pub extra_containers: Vec<ContainerSpec>
+    pub extra_containers: Vec<ContainerSpec>,
 }
 
 #[derive(Debug, Eq, PartialEq, Default, Clone)]
