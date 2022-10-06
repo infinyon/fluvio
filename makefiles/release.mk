@@ -7,14 +7,12 @@ ifneq ($(RELEASE),true)
 DRY_RUN_ECHO=echo
 #$(info Dry run mode - No public changes)
 else
-# TODO: Make this blank before merge
-DRY_RUN_ECHO=blahbreak
+# When this is blank, commands will affect the public releases
+DRY_RUN_ECHO=
 #$(info Live mode - Public changes possible)
 endif
 
-# Probably move these up to the base makefile?
 GIT_COMMIT_SHA=$(shell git rev-parse HEAD)
-#STABLE_VERSION_TAG?=$(shell cat VERSION)
 STABLE_VERSION_TAG?=stable
 REPO_VERSION?=$(shell cat VERSION)
 DEV_VERSION_TAG?=$(REPO_VERSION)-$(GIT_COMMIT_SHA)

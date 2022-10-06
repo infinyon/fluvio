@@ -35,17 +35,6 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  test_publish:
-    name: Test publish workflow
-    #uses: infinyon/fluvio/.github/workflows/publish.yml@master
-    uses: tjtelan/fluvio/.github/workflows/publish.yml@smdk-plugin-ci
-    secrets: inherit
-  test_release:
-    name: Test release workflow
-    #uses: infinyon/fluvio/.github/workflows/release.yml@master
-    uses: tjtelan/fluvio/.github/workflows/release.yml@smdk-plugin-ci
-    secrets: inherit
-
   # this job set up dynamic configuration shared among jobs
   config:
     name: Set up Config
