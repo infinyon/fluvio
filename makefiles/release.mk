@@ -105,7 +105,7 @@ docker-create-manifest-dev: DOCKER_IMAGE_TAG=latest
 docker-create-manifest-dev: docker-hub-login docker-create-manifest
 
 # Push docker manifest
-docker-push-manifest-dev: DOCKER_IMAGE_TAG=$(DEV_VERSION_TAG)
+docker-push-manifest-dev: DOCKER_IMAGE_TAG=latest
 docker-push-manifest-dev: docker-create-manifest-dev docker-push-manifest
 
 # Uses $(VERSION)
@@ -181,7 +181,7 @@ publish-artifacts-dev: publish-artifacts
 # Need to ensure that version is always a semver
 # Version convention is different here. Notice the `+`
 bump-fluvio: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
-bump-fluvio: PUBLIC_VERSION=$(subst -,+,$(VERSION))
+bump-fluvio: PUBLIC_VERSION?=$(subst -,+,$(VERSION))
 bump-fluvio: install-fluvio-package
 	$(DRY_RUN_ECHO) $(FLUVIO_BIN) package publish bump $(CHANNEL_TAG) $(PUBLIC_VERSION)
 	@$(foreach bin, $(PUBLISH_BINARIES), \
@@ -189,9 +189,11 @@ bump-fluvio: install-fluvio-package
 		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force; \
 	)
 
+bump-fluvio-stable: CHANNEL_TAG=stable
 bump-fluvio-stable: VERSION=$(REPO_VERSION)
 bump-fluvio-stable: install-fluvio-stable bump-fluvio
 
+bump-fluvio-latest: CHANNEL_TAG=latest
 bump-fluvio-latest: VERSION=$(subst -,+,$(DEV_VERSION_TAG))
 bump-fluvio-latest: install-fluvio-latest bump-fluvio
 
