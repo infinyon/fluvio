@@ -23,6 +23,10 @@ fn fluvio_base_dir() -> Result<PathBuf> {
     fluvio_base_dir_create(path)
 }
 
+pub fn fluvio_bin_dir() -> Result<PathBuf> {
+    Ok(fluvio_base_dir()?.join("bin"))
+}
+
 fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf> {
     if !path.exists() {
         // Create the base dir if it doesn't exist yet (#718)
@@ -46,6 +50,9 @@ pub fn fluvio_extensions_dir() -> Result<PathBuf> {
     }
 }
 
+// Think about adding check in bin dir for extensions.
+// Add to count by skipping anything that starts with `fluvio-`
+// I'm not sure if this is how things get added to the CLI though
 pub fn get_extensions() -> Result<Vec<PathBuf>> {
     use std::fs;
     let mut extensions = Vec::new();
