@@ -30,6 +30,7 @@ on:
 env:
   USE_COMMIT: ${{ github.event.inputs.commit }}
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RELEASE: true # Needed so `make` targets make public changes
 
 jobs:
   cd_dev_check:

@@ -19,6 +19,7 @@ on:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RELEASE: true # Needed so `make` targets make public changes
 
 jobs:
   # Re-tag the docker image for this commit as 'latest'
