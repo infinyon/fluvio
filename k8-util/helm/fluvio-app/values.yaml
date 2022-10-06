@@ -25,10 +25,7 @@ scPod:
   nodeSelector: {}
   publicPort: 9003
   nodePort: 30003
-  extraContainers:
-  - name: redis-sidecar
-    image: redis:7.0.5-alpine
-    imagePullPolicy: IfNotPresent
+  extraContainers: []
 spuPod:
   resources:
     requests:
@@ -38,10 +35,8 @@ spuPod:
   nodeSelector: {}
   storageClass: null
   baseNodePort: 30004
-  extraContainers:
-  - name: nginx-sidecar
-    image: nginx:1.23.1-alpine
-    imagePullPolicy: IfNotPresent
+  extraContainers: []
+
 rbac:
   create: true
 serviceAccount:
