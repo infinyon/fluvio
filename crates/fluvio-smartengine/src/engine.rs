@@ -136,7 +136,7 @@ impl SmartModuleChainBuilder {
         &self.instances
     }
 
-    /// Add Smart Module with a single transform and init
+    /// Add SmartModule with a single transform and init
     pub fn add_smart_module(
         &mut self,
         config: SmartModuleConfig,

@@ -27,7 +27,7 @@ mod cmd {
     pub enum SmartModuleCmd {
         Create(CreateSmartModuleOpt),
         List(ListSmartModuleOpt),
-        /// Delete one or more Smart Modules with the given name(s)
+        /// Delete one or more SmartModules with the given name(s)
         Delete(DeleteSmartModuleOpt),
     }
 

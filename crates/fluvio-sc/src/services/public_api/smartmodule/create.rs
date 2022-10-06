@@ -1,7 +1,7 @@
 //!
-//! # Create Smart Module Request
+//! # Create SmartModule Request
 //!
-//! Converts Smart Module API request into KV request and sends to KV store for processing.
+//! Converts SmartModule API request into KV request and sends to KV store for processing.
 //!
 
 use std::io::{Error, ErrorKind};

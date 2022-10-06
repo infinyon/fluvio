@@ -475,7 +475,7 @@ jobs:
           - fluvio
           - fluvio-cli
           - fluvio-channel
-          - smart-module-development-kit
+          - smartmodule-development-kit
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}

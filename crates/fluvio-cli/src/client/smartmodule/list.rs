@@ -44,7 +44,7 @@ mod output {
     //!
     //! # Fluvio SC - output processing
     //!
-    //! Format Smart Modules response based on output type
+    //! Format SmartModules response based on output type
 
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
@@ -68,7 +68,7 @@ mod output {
     // Format Output
     // -----------------------------------
 
-    /// Format Smart Modules based on output type
+    /// Format SmartModules based on output type
     pub fn smartmodules_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
         list_smartmodules: Vec<Metadata<SmartModuleSpec>>,
