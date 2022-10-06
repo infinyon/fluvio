@@ -155,22 +155,27 @@ unzip-gh-release-artifacts: download-fluvio-release
 #   fluvio-x86_64-unknown-linux-musl/
 #     fluvio
 #     .target
+publish-artifacts: PUBLIC_VERSION=$(subst -,+,$(VERSION))
 publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 	@echo "package stuff"
-	@$(foreach bin, $(wildcard *.zip), \
+	$(foreach bin, $(wildcard *.zip), \
 		printf "\n"; \
 		export DIRNAME=$(basename $(bin)); \
 		export TARGET=$(shell cat $(basename $(bin))/.target); \
-		export PACKAGE=$(subst -$$TARGET,,$$DIRNAME); \
+		export PACKAGE=$(subst -$(shell cat $(basename $(bin))/.target), ,$(basename $(bin))); \
 		export ARTIFACT=$(abspath $$DIRNAME/$$PACKAGE); \
 		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package publish \
 			--package=$$PACKAGE \
-			--version=$(GH_RELEASE_TAG) \
+			--version=$(PUBLIC_VERSION) \
 			--target=$$TARGET \
 			$$ARTIFACT; \
 	)
 
-publish-artifacts-dev: GH_RELEASE_TAG=dev
+
+publish-artifacts-stable: VERSION=$(REPO_VERSION)
+publish-artifacts-stable: publish-artifacts
+
+publish-artifacts-dev: VERSION=$(DEV_VERSION_TAG)
 publish-artifacts-dev: publish-artifacts
 
 # Need to ensure that version is always a semver

@@ -227,7 +227,7 @@ jobs:
       - name: Publish artifacts
         if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: |
-          make publish-artifacts
+          make publish-artifacts-stable
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
