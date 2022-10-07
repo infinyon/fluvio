@@ -5,22 +5,21 @@ on:
     branches: [master]
   workflow_dispatch:
     inputs:
-      force:
-        required: false
-        description: "Set --force to force push this release"
-        default: ""
-      verbose:
-        description: "Set --verbose to get verbose build output"
-        required: false
-        default: ""
+      installer_version:
+        required: false # Is this required if I have a default?
+        description: "The version of Fluvio to download with install.sh"
+        default: "stable"
+  workflow_call:
+    inputs:
       installer_version:
         required: false
+        type: string
         description: "The version of Fluvio to download with install.sh"
-        default: ""
+        default: "stable"
 
 env:
-  VERBOSE: ${{ github.events.input.verbose }}
-  FORCE_RELEASE: ${{ github.events.inputs.force }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RELEASE: true # Needed so `make` targets make public changes
 
 jobs:
   # Re-tag the docker image for this commit as 'latest'
@@ -28,28 +27,23 @@ jobs:
     name: Publish Docker Image
     runs-on: ubuntu-latest
     steps:
-      - name: Login to Docker Hub
-        run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-      - name: Publish latest development Fluvio Image
-        run: |
-          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
-          export TAG="${VERSION}-${{ github.sha }}"
-          docker manifest create "docker.io/infinyon/fluvio:latest" \
-            "docker.io/infinyon/fluvio:${TAG}-amd64" \
-            "docker.io/infinyon/fluvio:${TAG}-arm64v8" 
-          docker manifest push "docker.io/infinyon/fluvio:latest"
+      - uses: actions/checkout@v3
 
+      - name: Publish latest development Fluvio Image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: make docker-push-manifest-dev
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
-  
   # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
   fluvio:
     name: Publish Fluvio CLI
@@ -58,75 +52,32 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - uses: actions/checkout@v3
       - name: Install fluvio-package
+        env:
+          CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
         run: |
           if [ -n "${{ github.event.inputs.installer_version }}" ]; then
               export VERSION=${{ github.event.inputs.installer_version }}
-              echo "VERSION=$VERSION"
+          else
+              export VERSION=stable
           fi
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-          ${HOME}/.fluvio/bin/fluvio install fluvio-package
+
+          echo "VERSION=$VERSION"
+          make curl-install-fluvio
+          make install-fluvio-package
 
       - name: Download dev release
-        run: gh release download dev -R infinyon/fluvio
+        run: make download-fluvio-release
 
-        # Publish artifacts from GH Releases to Fluvio Packages
-        #
-        # Artifacts from GH Releases look like this:
-        #
-        # ./
-        #   ARTIFACT-TARGET.zip, such as:
-        #   fluvio-x86_64-unknown-linux-musl.zip
-        #   fluvio-aarch64-unknown-linux-musl.zip
-        #   fluvio-x86_64-apple-darwin.zip
-        #
-        # Here, we extract each zip into dirs with the same name.
-        # Then, we get the TARGET from the `.target` file inside.
-        #
-        # ./
-        #   ARTIFACT-TARGET.zip
-        #   ARTIFACT-TARGET/
-        #     ARTIFACT
-        #     .target
-        #   fluvio-x86_64-unknown-linux-musl.zip
-        #   fluvio-x86_64-unknown-linux-musl/
-        #     fluvio
-        #     .target
       - name: Publish artifacts
-        run: |
-          export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
-
-          for ZIP_FILE in ./*.zip; do
-            # Don't publish `fluvio-test` artifact outside of github
-            [ "$ZIP_FILE" = "./fluvio-test-x86_64-unknown-linux-musl.zip" ] && echo "Skipping fluvio-test" && continue
-
-            # Unzip all .zip files into directories with the same name (minus .zip)
-            UNZIP_DIR="${ZIP_FILE//.zip/}"
-            echo "Unzipping $ZIP_FILE into $UNZIP_DIR"
-            unzip "$ZIP_FILE" -d "$UNZIP_DIR"
-
-            TARGET="$(cat ${UNZIP_DIR}/.target)"
-            ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
-            PACKAGE="$(echo ${ARTIFACT} | sed -e "s/^\.\///" -e "s/\.exe$//")"
-            echo "TARGET=$TARGET"
-            echo "ARTIFACT=$ARTIFACT"
-            echo "PACKAGE=$PACKAGE"
-
-            ${HOME}/.fluvio/bin/fluvio package publish \
-              --package="${PACKAGE}" \
-              --version="${VERSION}+${{ github.sha }}" \
-              --target="${TARGET}" \
-              "${UNZIP_DIR}/${ARTIFACT}"
-          done
-
+        run: make publish-artifacts-dev
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
@@ -145,21 +96,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Install cargo-make
-        uses: davidB/rust-cargo-make@v1
-        with:
-          version: "0.32.9"
-      - name: Bump latest version of Fluvio CLI on fluvio-packages
+      - name: Install stable Fluvio CLI
         env:
-          RUST_LOG: info
-        run: cargo make bump-fluvio-latest
+          CHANNEL_TAG: stable
+        run: |
+          make curl-install-fluvio
+
+      - name: Bump latest version of Fluvio CLI with fluvio-packages
+        run: make bump-fluvio-latest
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}

@@ -1,11 +1,13 @@
 use clap::Parser;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use super::error_convert;
+use tracing::debug;
 
 use crate::Result;
 use fluvio_cli_common::error::CliError as CommonCliError;
 use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
+    fluvio_bin_dir,
 };
 use crate::install::update::{
     check_update_required, prompt_required_update, check_update_available, prompt_available_update,
@@ -114,7 +116,14 @@ impl InstallOpt {
         install_println("🔑 Downloaded and verified package file");
 
         // Install the package to the ~/.fluvio/bin/ dir
-        let fluvio_dir = fluvio_extensions_dir()?;
+        // If the plugin name doesn't start with `fluvio-`, then install it to the bin dir
+        let fluvio_dir = if id.name().to_string().starts_with("fluvio-") {
+            fluvio_extensions_dir()?
+        } else {
+            fluvio_bin_dir()?
+        };
+        debug!("{fluvio_dir:#?}");
+
         let package_filename = if target.to_string().contains("windows") {
             format!("{}.exe", id.name().as_str())
         } else {

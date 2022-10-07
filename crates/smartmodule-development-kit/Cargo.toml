@@ -1,5 +1,5 @@
 [package]
-name = "smdk"
+name = "smartmodule-development-kit"
 version = "0.0.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -8,13 +8,10 @@ repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 publish = false
 
-
-
 [[bin]]
 name = "smdk"
 path = "src/main.rs"
 doc = false
-
 
 [dependencies]
 tracing = "0.1.19"

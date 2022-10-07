@@ -9,9 +9,9 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 * * * *'
- # pull_request:
- #   branches: [master]
+    - cron: "0 * * * *"
+  # pull_request:
+  #   branches: [master]
   workflow_dispatch:
 
 env:
@@ -19,9 +19,7 @@ env:
   K3D_VERSION: v5.4.1
   FLV_CLUSTER_PROVISION_TIMEOUT: 600
 
-
 jobs:
-
   build_long_binaries:
     name: Test buiild for ${{ matrix.binary }}  on (${{ matrix.os }})
     if: ${{ false }}
@@ -74,20 +72,19 @@ jobs:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
 
-
   longevity:
-    name: Hourly Longevity test 
+    name: Hourly Longevity test
     runs-on: ${{ matrix.os }}
- #   needs:
- #    - build_long_binaries
+    #   needs:
+    #    - build_long_binaries
     timeout-minutes: 120
     strategy:
-      fail-fast: false 
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-       # run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
+        # run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
         binary: [dev]
 
         test_run_time: [30m]
@@ -97,7 +94,7 @@ jobs:
         producer_linger_ms: [10]
         consumer: [1, 25]
         topic: [1, 10]
-        topic_segment_bytes: [500000]  # 500KB
+        topic_segment_bytes: [500000] # 500KB
         topic_retention: [15s]
     env:
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
@@ -106,15 +103,15 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Login GH CLI
-  #      if: ${{ false }}
+        #      if: ${{ false }}
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-  #      if: ${{ false }}
+        #      if: ${{ false }}
         run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
       - name: Unpack fluvio-test from dev release
-  #      if: ${{ false }}
+        #      if: ${{ false }}
         run: |
           cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
@@ -194,8 +191,8 @@ jobs:
             --topic ${{ matrix.topic }} \
             --topic-segment-size ${{ matrix.topic_segment_bytes }} \
             --topic-retention ${{ matrix.topic_retention }} \
-            longevity 
-          
+            longevity
+
       ## If the test passed, then copy the data from cluster to store into artifacts
       #- name: Export data from the cluster for caching
       #  run: |
@@ -216,7 +213,7 @@ jobs:
       ## TODO: Add a shorter cache time
       #- uses: actions/upload-artifact@v3
       #  with:
-      #    name: 'longevity-data' 
+      #    name: 'longevity-data'
       #    path: longevity-data.tar
       #    retention-days: 5
       - name: Run diagnostics
@@ -235,8 +232,7 @@ jobs:
         if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
-      

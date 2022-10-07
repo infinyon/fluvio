@@ -14,14 +14,14 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 # Add at least one of each type of resource into the cluster
 setup_file() {
     # topic
-    run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)" 
+    run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)"
     # connector
     CONNECTOR_CONFIG="$TEST_HELPER_DIR/test-connector-config.yml"
     export CONNECTOR_CONFIG
-    run timeout 15s "$FLUVIO_BIN" smart-module create "$(random_string)" --wasm-file "$(mktemp)"
+    run timeout 15s "$FLUVIO_BIN" smartmodule create "$(random_string)" --wasm-file "$(mktemp)"
     run timeout 15s "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
-    # smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module create "$(random_string)" --wasm-file "$(mktemp)"
+    # smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule create "$(random_string)" --wasm-file "$(mktemp)"
     # table-format
     TABLE_FORMAT_CONFIG="$TEST_HELPER_DIR/test-table-format-config.yml"
     export TABLE_FORMAT_CONFIG
@@ -29,7 +29,7 @@ setup_file() {
     # TODO: derived-streams
 }
 
-# Delete the cluster 
+# Delete the cluster
 @test "Delete the cluster" {
     run "$FLUVIO_BIN" cluster delete
     assert_success
@@ -52,12 +52,12 @@ setup_file() {
 }
 
 @test "SPU Groups deleted" {
-    run kubectl get spugroups 
+    run kubectl get spugroups
 #    assert_failure
 }
 
 @test "Topics deleted" {
-    run kubectl get topics 
+    run kubectl get topics
 #    assert_failure
 }
 
@@ -67,17 +67,17 @@ setup_file() {
 }
 
 @test "Partitions deleted" {
-    run kubectl get partitions 
+    run kubectl get partitions
 #    assert_failure
 }
 
 @test "DerivedStreams deleted" {
-    run kubectl get derivedstreams 
+    run kubectl get derivedstreams
 #    assert_failure
 }
 
 @test "SPUs deleted" {
-    run kubectl get spus 
+    run kubectl get spus
 #    assert_failure
 }
 

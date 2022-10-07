@@ -127,7 +127,7 @@ impl CliError {
                     Ok("Connector already exists")
                 }
                 ApiError::Code(ErrorCode::TopicNotFound, _) => Ok("Topic not found"),
-                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("Smart Module not found"),
+                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("SmartModule not found"),
                 ApiError::Code(ErrorCode::ManagedConnectorNotFound, _) => {
                     Ok("Connector not found")
                 }
