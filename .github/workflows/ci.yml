@@ -132,6 +132,16 @@ jobs:
           - x86_64-apple-darwin
         rust: [stable]
         binary: [fluvio]
+        exclude:
+          # Currently unsupported by cranelift-codegen v0.88.1
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: arm-unknown-linux-gnueabihf
+            binary: smdk
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: smdk
         include:
           - os: ubuntu-latest
             rust: stable
@@ -183,15 +193,6 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
 
-          # Currently unsupported by cranelift-codegen v0.88.1
-          #- os: ubuntu-latest
-          #  rust: stable
-          #  rust-target: arm-unknown-linux-gnueabihf
-          #  binary: smdk
-          #- os: ubuntu-latest
-          #  rust: stable
-          #  rust-target: armv7-unknown-linux-gnueabihf
-          #  binary: smdk
           - os: ubuntu-latest
             rust: stable
             rust-target: x86_64-pc-windows-gnu
