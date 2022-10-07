@@ -1,0 +1,45 @@
+[package]
+name = "fluvio-hub-util"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "API for SmartModule Hub"
+authors = ["fluvio.io"]
+repository = "https://github.com/infinyon/fluvio"
+
+
+[dependencies]
+cargo_toml = "0.11"
+const_format = "0.2"
+ed25519-dalek = { version = "1.0.1", features = ["serde"] }
+flate2 = "1.0"
+hex = "0.4"
+hmac-sha256 = "1.1"
+pem = "1.1"
+rand = "0.8"
+rand_core = "0.6"
+sha2 = "0.10.6"
+serde = { version="1.0", features=["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.8"
+ssh-key = { version="0.4.3", features=[ "ed25519" ] }
+tar = "0.4"
+tempfile = "3.3.0"
+tokio = "1.20"
+toml = "0.5.9"
+tracing = "0.1.36"
+thiserror = "1.0"
+
+fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
+
+# feature control
+[dependencies.surf]
+version = "2.3.2"
+features = ["h1-client-rustls", "middleware-logger", "encoding"]
+default-features = false
+
+[dependencies.http-client]
+version = "6.5.3"
+features = ["h1_client", "rustls"]
+default-features = false
+
