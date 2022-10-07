@@ -58,7 +58,9 @@ spec:
               mountPath: /etc/fluvio/authorization
             {{ end }}
         {{ end }}
+        {{ if .Values.scPod.extraContainers }}
         {{- toYaml .Values.scPod.extraContainers | nindent 8 }}
+        {{ end }}
       volumes:
       {{ if .Values.tls }}
         - name: cacert
