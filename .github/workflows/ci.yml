@@ -250,7 +250,7 @@ jobs:
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
         run: sudo apt-get install gcc-mingw-w64-x86-64
 
-      - name: Build fluvio
+      - name: Build fluvio.exe
         timeout-minutes: 30
         if: matrix.binary == 'fluvio.exe'
         run: make build-cli-minimal
@@ -265,10 +265,20 @@ jobs:
         if: matrix.binary == 'fluvio-channel'
         run: make build-channel
 
-      - name: Build fluvio-channel
+      - name: Build fluvio-channel.exe
         timeout-minutes: 30
         if: matrix.binary == 'fluvio-channel.exe'
         run: make build-channel
+
+      - name: Build smdk
+        timeout-minutes: 30
+        if: matrix.binary == 'smdk'
+        run: make build-smdk
+
+      - name: Build smdk.exe
+        timeout-minutes: 30
+        if: matrix.binary == 'smdk.exe'
+        run: make build-smdk
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
