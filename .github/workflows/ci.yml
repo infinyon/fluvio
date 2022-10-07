@@ -138,6 +138,8 @@ jobs:
             binary: smdk
           - rust-target: armv7-unknown-linux-gnueabihf
             binary: smdk
+          - rust-target: x86_64-pc-windows-gnu
+            binary: smdk.exe
         include:
           - os: ubuntu-latest
             rust: stable
@@ -189,10 +191,6 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
 
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-pc-windows-gnu
-            binary: smdk.exe
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -483,7 +481,7 @@ jobs:
           - fluvio
           - fluvio-cli
           - fluvio-channel
-          - smartmodule-development-kit
+          #- smartmodule-development-kit
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -1142,6 +1140,8 @@ jobs:
             artifact: smdk
           - rust-target: arm-unknown-linux-gnueabihf
             artifact: smdk
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: smdk.exe
         include:
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-run
@@ -1153,8 +1153,6 @@ jobs:
             artifact: fluvio.exe
           - rust-target: x86_64-pc-windows-gnu
             artifact: fluvio-channel.exe
-          - rust-target: x86_64-pc-windows-gnu
-            artifact: smdk.exe
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-test
     permissions: write-all
