@@ -188,10 +188,10 @@ jobs:
           #  rust: stable
           #  rust-target: arm-unknown-linux-gnueabihf
           #  binary: smdk
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: armv7-unknown-linux-gnueabihf
-            binary: smdk
+          #- os: ubuntu-latest
+          #  rust: stable
+          #  rust-target: armv7-unknown-linux-gnueabihf
+          #  binary: smdk
           - os: ubuntu-latest
             rust: stable
             rust-target: x86_64-pc-windows-gnu
