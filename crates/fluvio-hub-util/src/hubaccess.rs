@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
@@ -6,10 +6,12 @@ use surf::http::mime;
 use surf::StatusCode;
 use tracing::debug;
 
+use fluvio_types::defaults::CLI_CONFIG_PATH;
+
 use crate::errors::Result;
 use crate::{HubUtilError, read_infinyon_token};
 use crate::keymgmt::Keypair;
-use crate::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE};
+use crate::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 
 // in .fluvio/hub/hcurrent
 const ACCESS_FILE_PTR: &str = "hcurrent";
@@ -34,6 +36,11 @@ impl HubAccess {
             pkgkey: String::new(),
             pubkey: String::new(),
         }
+    }
+
+    pub async fn default_load() -> Result<Self> {
+        let cfgpath = default_cfg_path()?;
+        HubAccess::load_path(&cfgpath, None)
     }
 
     pub async fn create_hubid(&self, hubid: &str) -> Result<()> {
@@ -226,4 +233,12 @@ pub struct MsgActionToken {
 pub struct MsgHubIdReq {
     pub hubid: String,
     pub pubkey: String,
+}
+
+pub fn default_cfg_path() -> Result<PathBuf> {
+    let mut hub_cfg_path =
+        dirs::home_dir().ok_or_else(|| HubUtilError::HubAccess("no home directory".into()))?;
+    hub_cfg_path.push(CLI_CONFIG_PATH); // .fluvio
+    hub_cfg_path.push(CLI_CONFIG_HUB);
+    Ok(hub_cfg_path)
 }
