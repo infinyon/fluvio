@@ -134,13 +134,9 @@ jobs:
         binary: [fluvio]
         exclude:
           # Currently unsupported by cranelift-codegen v0.88.1
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: arm-unknown-linux-gnueabihf
+          - rust-target: arm-unknown-linux-gnueabihf
             binary: smdk
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: armv7-unknown-linux-gnueabihf
+          - rust-target: armv7-unknown-linux-gnueabihf
             binary: smdk
         include:
           - os: ubuntu-latest
