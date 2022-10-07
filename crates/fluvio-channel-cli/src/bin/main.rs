@@ -2,7 +2,7 @@ use std::env;
 use std::str::FromStr;
 use color_eyre::eyre::{Result, eyre};
 use colored::Colorize;
-use clap::{Parser, AppSettings, IntoApp};
+use clap::{Parser, CommandFactory};
 
 use fluvio_future::task::run_block_on;
 use std::env::current_exe;
@@ -87,7 +87,7 @@ impl ChannelCmd {
     max_term_width = 100,
     disable_version_flag = true,
     // VersionlessSubcommands is now default behaviour. See https://github.com/clap-rs/clap/pull/2831
-    global_setting = AppSettings::DeriveDisplayOrder
+    // global_setting = AppSettings::DeriveDisplayOrder
 )]
 enum RootCmd {
     /// Prints help information

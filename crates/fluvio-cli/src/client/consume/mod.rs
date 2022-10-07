@@ -24,7 +24,7 @@ mod cmd {
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
-    use clap::{Parser, ArgEnum};
+    use clap::{Parser, ValueEnum};
     use futures::{select, FutureExt};
     use async_trait::async_trait;
     use tui::Terminal as TuiTerminal;
@@ -144,7 +144,7 @@ mod cmd {
             short = 'O',
             long = "output",
             value_name = "type",
-            arg_enum,
+            value_enum,
             ignore_case = true
         )]
         pub output: Option<ConsumeOutputType>,
@@ -177,7 +177,9 @@ mod cmd {
             short = 'e',
             requires = "smartmodule_group",
             long="params",
-            parse(try_from_str = parse_key_val),
+            value_parser=parse_key_val,
+            // value_parser,
+            // action,
             number_of_values = 1
         )]
         pub params: Option<Vec<(String, String)>>,
@@ -185,7 +187,7 @@ mod cmd {
         /// Isolation level that consumer must respect.
         /// Supported values: read_committed (ReadCommitted) - consume only committed records,
         /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
-        #[clap(long, parse(try_from_str = parse_isolation))]
+        #[clap(long, value_parser=parse_isolation)]
         pub isolation: Option<Isolation>,
     }
 
@@ -755,7 +757,7 @@ mod cmd {
 
     // Uses clap::ArgEnum to choose possible variables
 
-    #[derive(ArgEnum, Debug, Clone, Eq, PartialEq)]
+    #[derive(ValueEnum, Debug, Clone, Eq, PartialEq)]
     #[allow(non_camel_case_types)]
     pub enum ConsumeOutputType {
         dynamic,

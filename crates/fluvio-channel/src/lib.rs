@@ -6,7 +6,7 @@ use std::io::{ErrorKind, Error as IoError, Write};
 use color_eyre::Result;
 use color_eyre::eyre::eyre;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
-use clap::{Parser, ArgEnum};
+use clap::{Parser, ValueEnum};
 use dirs::home_dir;
 use serde::{Serialize, Deserialize};
 use tracing::debug;
@@ -184,7 +184,7 @@ impl ChannelConfig {
     }
 }
 
-#[derive(Debug, Parser, ArgEnum, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Parser, ValueEnum, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[clap(rename_all = "kebab-case")]
 pub enum ImageTagStrategy {
     Version,

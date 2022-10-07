@@ -1,8 +1,8 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, ffi::OsString};
 use std::convert::TryFrom;
 
 use tracing::debug;
-use clap::Parser;
+use clap::{Parser, value_parser};
 
 use fluvio::config::{TlsPolicy, TlsPaths};
 use crate::target::TargetError;
@@ -23,15 +23,15 @@ pub struct TlsClientOpt {
     pub domain: Option<String>,
 
     /// Path to TLS ca cert, required when client cert is enabled
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser=value_parser!(OsString))]
     pub ca_cert: Option<PathBuf>,
 
     /// Path to TLS client certificate
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser=value_parser!(OsString))]
     pub client_cert: Option<PathBuf>,
 
     /// Path to TLS client private key
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser=value_parser!(OsString))]
     pub client_key: Option<PathBuf>,
 }
 

@@ -1,7 +1,7 @@
 use color_eyre::Result;
 use fluvio_channel::FluvioChannelConfig;
 use std::path::PathBuf;
-use clap::{Parser, IntoApp};
+use clap::{Parser, CommandFactory};
 use tracing::debug;
 
 #[derive(Debug, Clone, Parser, Eq, PartialEq)]

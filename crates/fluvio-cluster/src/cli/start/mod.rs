@@ -1,7 +1,7 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, str::FromStr, ffi::OsString};
 use std::path::PathBuf;
 use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
-use clap::Parser;
+use clap::{Parser, value_parser};
 use semver::Version;
 
 mod local;
@@ -22,7 +22,7 @@ pub fn get_log_directory() -> &'static str {
     "/tmp"
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DefaultLogDirectory(String);
 
 impl Default for DefaultLogDirectory {
@@ -95,7 +95,7 @@ pub struct K8Install {
     pub chart_location: Option<String>,
 
     /// chart values
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser=value_parser!(OsString))]
     pub chart_values: Vec<PathBuf>,
 
     /// Uses port forwarding for connecting to SC during install
