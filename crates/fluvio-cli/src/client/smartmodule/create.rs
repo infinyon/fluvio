@@ -76,10 +76,10 @@ impl ClientCmd for CreateSmartModuleOpt {
             ..Default::default()
         };
 
-        debug!(name = self.name, "creating smart-module");
+        debug!(name = self.name, "creating smartmodule");
         let admin = fluvio.admin().await;
         admin.create(self.name.to_string(), false, spec).await?;
-        println!("smart-module \"{}\" has been created.", self.name);
+        println!("smartmodule \"{}\" has been created.", self.name);
 
         Ok(())
     }

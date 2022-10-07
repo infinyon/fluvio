@@ -79,14 +79,14 @@ smoke-test-at-most-once: TEST_ARG_EXTRA=--producer-delivery-semantic at-most-onc
 smoke-test-at-most-once: smoke-test
 
 # election test only runs on local
-election-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)	
+election-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 election-test: test-setup
 	$(TEST_BIN) election  ${TEST_ARG_COMMON}
 
 multiple-partition-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 multiple-partition-test: test-setup
 	$(TEST_BIN) multiple_partition --partition 10 \
-		
+
 
 batch-failure-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 batch-failure-test: FLV_SOCKET_WAIT=25
@@ -128,7 +128,7 @@ test-permission-user1:
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
 # smoke-test-k8: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
-smoke-test-k8: build_k8_image smoke-test 
+smoke-test-k8: build_k8_image smoke-test
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
 # smoke-test-k8-tls: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
@@ -194,13 +194,13 @@ cli-basic-test:
 
 cli-smartmodule-all-test:
 	bats  ./tests/cli/smoke_tests/e2e-smartmodule-basic.bats
-	
+
 cli-smartmodule-aggregate-test:
 	bats  -f aggregate  ./tests/cli/smoke_tests/e2e-smartmodule-basic.bats
 
 
 cli-smartmodule-basic-test:
-	bats   ./tests/cli/smoke_tests/smart-module-basic.bats
+	bats   ./tests/cli/smoke_tests/smartmodule-basic.bats
 
 stats-test:
 	$(TEST_BIN) stats -- $(VERBOSE_FLAG) --tolerance=5

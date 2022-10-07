@@ -7,6 +7,7 @@ IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and sho
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 CARGO_BUILDER=$(if $(findstring arm,$(TARGET)),cross,cargo) # If TARGET contains the substring "arm"
 FLUVIO_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
+SMDK_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/smdk,./target/$(BUILD_PROFILE)/smdk)
 RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
