@@ -2237,9 +2237,11 @@ version = "0.1.0"
 dependencies = [
  "cargo_toml",
  "const_format",
+ "dirs",
  "ed25519-dalek",
  "flate2",
  "fluvio-controlplane-metadata",
+ "fluvio-types",
  "hex",
  "hmac-sha256",
  "http-client",

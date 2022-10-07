@@ -11,6 +11,7 @@ repository = "https://github.com/infinyon/fluvio"
 [dependencies]
 cargo_toml = "0.11"
 const_format = "0.2"
+dirs = "4.0.0"
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 flate2 = "1.0"
 hex = "0.4"
@@ -31,6 +32,7 @@ tracing = "0.1.36"
 thiserror = "1.0"
 
 fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
+fluvio-types = { path = "../fluvio-types" }
 
 # feature control
 [dependencies.surf]

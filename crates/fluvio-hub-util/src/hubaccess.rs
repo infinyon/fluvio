@@ -7,7 +7,7 @@ use surf::StatusCode;
 use tracing::debug;
 
 use crate::errors::Result;
-use crate::HubUtilError;
+use crate::{HubUtilError, read_infinyon_token};
 use crate::keymgmt::Keypair;
 use crate::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE};
 
@@ -20,18 +20,16 @@ const ACTION_CREATE_HUBID: &str = "chid";
 
 #[derive(Serialize, Deserialize)]
 pub struct HubAccess {
-    pub remote: String,      // remote host url
-    pub authn_token: String, // cloud auth token
-    pub hubid: String,       // hubid associated with the signing key
-    pub pkgkey: String,      // package signing key (private)
-    pub pubkey: String,      // package signing key (public)
+    pub remote: String, // remote host url
+    pub hubid: String,  // hubid associated with the signing key
+    pub pkgkey: String, // package signing key (private)
+    pub pubkey: String, // package signing key (public)
 }
 
 impl HubAccess {
     pub fn new() -> Self {
         HubAccess {
             remote: HUB_REMOTE.to_string(),
-            authn_token: String::new(),
             hubid: String::new(),
             pkgkey: String::new(),
             pubkey: String::new(),
@@ -95,10 +93,11 @@ impl HubAccess {
         };
         let msg_action_token = serde_json::to_string(&mat)
             .map_err(|_e| HubUtilError::HubAccess("Failed access setup".to_string()))?;
+        let authn_token = read_infinyon_token()?;
         let req = surf::get(api_url)
             .content_type(mime::JSON)
             .body_bytes(msg_action_token)
-            .header("Authorization", &self.authn_token);
+            .header("Authorization", &authn_token);
         let mut res = req
             .await
             .map_err(|e| HubUtilError::HubAccess(format!("Failed to connect {e}")))?;

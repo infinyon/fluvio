@@ -1,3 +1,5 @@
+use crate::infinyon_tok::InfinyonCredentialError;
+
 #[derive(thiserror::Error, Debug)]
 pub enum HubUtilError {
     #[error(transparent)]
@@ -53,6 +55,9 @@ pub enum HubUtilError {
 
     #[error("Unable to access package-meta in: {0}")]
     UnableGetPackageMeta(String),
+
+    #[error(transparent)]
+    UnableToReadCredentials(#[from] InfinyonCredentialError),
 
     #[error("signature error")]
     SignatureError,
