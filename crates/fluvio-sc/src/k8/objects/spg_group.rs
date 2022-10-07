@@ -301,6 +301,19 @@ mod k8_convert {
 
         let spu_pod_config = &spu_k8_config.spu_pod_config;
 
+        let mut containers = vec![ContainerSpec {
+            name: SPU_DEFAULT_NAME.to_owned(),
+            image: Some(spu_k8_config.image.clone()),
+            resources: spu_pod_config.resources.clone(),
+            ports: vec![public_port, private_port],
+            volume_mounts,
+            env,
+            args,
+            ..Default::default()
+        }];
+
+        containers.append(&mut spu_pod_config.extra_containers.clone());
+
         let template = TemplateSpec {
             metadata: Some(
                 TemplateMeta::default()
@@ -308,16 +321,7 @@ mod k8_convert {
             ),
             spec: PodSpec {
                 termination_grace_period_seconds: Some(10),
-                containers: vec![ContainerSpec {
-                    name: SPU_DEFAULT_NAME.to_owned(),
-                    image: Some(spu_k8_config.image.clone()),
-                    resources: spu_pod_config.resources.clone(),
-                    ports: vec![public_port, private_port],
-                    volume_mounts,
-                    env,
-                    args,
-                    ..Default::default()
-                }],
+                containers,
                 volumes,
                 security_context: spu_k8_config.pod_security_context.clone(),
                 node_selector: Some(spu_pod_config.node_selector.clone()),
