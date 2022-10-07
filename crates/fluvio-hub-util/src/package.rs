@@ -15,6 +15,7 @@ use crate::DEF_HUB_INIT_DIR;
 use crate::HUB_MANIFEST_BLOB;
 use crate::HUB_PACKAGE_META;
 use crate::HUB_PACKAGE_META_CLEAN;
+use crate::HubAccess;
 use crate::HubUtilError;
 use crate::PackageMeta;
 
@@ -26,7 +27,32 @@ type Result<T> = std::result::Result<T, HubUtilError>;
 /// # Arguments
 /// * pkgmeta: package-meta.yaml path
 /// * outdir: optional output directory
-pub fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
+pub fn package_assemble_and_sign(
+    pkgmeta: &str,
+    access: &HubAccess,
+    outdir: Option<&str>,
+) -> Result<String> {
+    let tarname = package_assemble(pkgmeta, outdir)?;
+    let ipkgname = tar_to_ipkg(&tarname);
+    let keypair = access.keypair()?;
+    package_sign(&tarname, &keypair, &ipkgname)?;
+    Ok(ipkgname)
+}
+
+fn tar_to_ipkg(fname: &str) -> String {
+    let path = Path::new(fname);
+    path.with_extension("ipkg").display().to_string()
+}
+
+/// assemble files into an unsigned fluvio package, a file will be created named
+/// packagename-A.B.C.tar
+///
+/// # Arguments
+/// * pkgmeta: package-meta.yaml path
+/// * outdir: optional output directory
+///
+/// # Returns: staging tarfilename
+fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
     debug!(target: "package_assemble", "opening");
     let pm = PackageMeta::read_from_file(pkgmeta)?;
     let mut pm_clean = pm.clone();
