@@ -23,7 +23,7 @@ default = ["fluvio-future", "fluvio-types"]
 [dependencies]
 colored = "2"
 color-eyre = { version = "0.6.0", default-features = false }
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
+clap = { version = "4.0.10", features = ["std", "derive"], default-features = false }
 tracing = "0.1.19"
 cfg-if = "1.0"
 dirs = "4.0.0"
