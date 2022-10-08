@@ -510,7 +510,7 @@ mod tests {
         let res_fbytes = package_get_manifest_file(SIGNED_PKG_FILE, "module.wasm");
         assert!(res_fbytes.is_ok());
         let fbytes = res_fbytes.unwrap();
-        assert!(fbytes.len() > 0);
+        assert!(!fbytes.is_empty());
 
         let res_of_missing_file = package_get_manifest_file(SIGNED_PKG_FILE, "does-not-exist");
         assert!(res_of_missing_file.is_err());

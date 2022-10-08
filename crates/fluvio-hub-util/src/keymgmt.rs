@@ -92,8 +92,10 @@ impl Keypair {
         };
         let buf = pem::encode(&pubpem);
         let mut file = std::fs::File::create(fname)?;
-        let mut perms = file.metadata()?.permissions();
-        perms.set_mode(0o500); // owner read write only
+        if cfg!(unix) {
+            let mut perms = file.metadata()?.permissions();
+            perms.set_mode(0o500); // owner read write only
+        }
         file.write_all(buf.as_bytes())?;
         Ok(())
     }
