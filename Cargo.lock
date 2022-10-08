@@ -5651,6 +5651,7 @@ dependencies = [
  "include_dir",
  "tempdir",
  "thiserror",
+ "toml",
  "tracing",
 ]
 

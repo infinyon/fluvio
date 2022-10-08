@@ -3,14 +3,11 @@ use std::{path::Path};
 use anyhow::Result;
 use clap::Parser;
 
-use crate::set_hubid::get_hubaccess;
-
+use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{DEF_HUB_INIT_DIR, HubAccess, PackageMeta};
 
-use fluvio_future::task::run_block_on;
-
-// use crate::wasm::WasmOption;
+use crate::set_hubid::get_hubaccess;
 
 /// Publish SmartModule to SmartModule Hub
 #[derive(Debug, Parser)]
@@ -98,7 +95,7 @@ pub fn init_package_template() -> Result<()> {
     hubutil::packagename_validate(&pm.name)?;
 
     let wasmout = hubutil::packagename_transform(&pm.name)? + ".wasm";
-    let wasmpath = format!("target/wasm32-unknown-unknown/release/{wasmout}");
+    let wasmpath = format!("target/wasm32-unknown-unknown/release-lto/{wasmout}");
     pm.manifest.push(wasmpath);
 
     // create directoy name pkgname
@@ -119,7 +116,7 @@ fn find_smartmodule_toml() -> Result<String> {
     } else {
         return Err(anyhow::anyhow!("couldn't read in directory"));
     };
-    let cargo_toml = Path::new("Cargo.toml");
+    let cargo_toml = Path::new("./Cargo.toml");
     for ent in prjdir {
         let ent = ent?;
         let fp = ent.path();
@@ -135,4 +132,29 @@ fn find_smartmodule_toml() -> Result<String> {
         }
     }
     Err(anyhow::anyhow!("No smartmodule toml file found"))
+}
+
+#[ignore]
+#[test]
+fn build_sm_toml() {
+    use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
+
+    let fpath = "test_Smart.toml";
+    let smart_toml = SmartModuleMetadata::default();
+    let smart_toml_str = toml::to_string(&smart_toml);
+    assert!(smart_toml_str.is_ok());
+    std::fs::write(fpath, &smart_toml_str.unwrap()).expect("couldn't write testfile");
+}
+
+#[test]
+fn reference_sm_toml() {
+    use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
+
+    let fpath = "../../smartmodule/cargo_template/Smart.toml";
+    let smart_toml = SmartModuleMetadata::from_toml(fpath);
+    assert!(
+        smart_toml.is_ok(),
+        "cargo Smart.toml template incompatible {smart_toml:?}"
+    );
+    let _smart_toml = smart_toml.unwrap();
 }
