@@ -40,11 +40,11 @@ GH_TOKEN?=
 GH_RELEASE_TAG?=dev
 
 # Allow using local `gh` auth token for local testing
-ifeq ($(CI), true)
-ifndef GH_TOKEN
-$(error GH_TOKEN required in CI)
-endif
-endif
+#ifeq ($(CI), true)
+#ifndef GH_TOKEN
+#$(error GH_TOKEN required in CI)
+#endif
+#endif
 
 DIRNAME?=
 TARGET?=

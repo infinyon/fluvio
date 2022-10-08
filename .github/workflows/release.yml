@@ -227,6 +227,8 @@ jobs:
 
       - name: Publish artifacts
         if: ${{ steps.check_fluvio.outcome == 'failure' }}
+        env:
+          FLUVIO_BIN: ~/.fluvio/bin/fluvio
         run: |
           make publish-artifacts-stable
 

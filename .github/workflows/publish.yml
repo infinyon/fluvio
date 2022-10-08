@@ -71,6 +71,8 @@ jobs:
         run: make download-fluvio-release
 
       - name: Publish artifacts
+        env:
+          FLUVIO_BIN: ~/.fluvio/bin/fluvio
         run: make publish-artifacts-dev
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
@@ -103,6 +105,8 @@ jobs:
           make curl-install-fluvio
 
       - name: Bump latest version of Fluvio CLI with fluvio-packages
+        env:
+          FLUVIO_BIN: ~/.fluvio/bin/fluvio
         run: make bump-fluvio-latest
 
       - name: Slack Notification
