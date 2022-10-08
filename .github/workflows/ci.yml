@@ -399,7 +399,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Build Regex SmartModule
-        run: make -C smartmodule/sm-regex
+        run: make -C smartmodule/regex-filter
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
