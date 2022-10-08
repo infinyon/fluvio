@@ -34,6 +34,16 @@ impl SmartModuleMetadata {
         Ok(metadata)
     }
 
+    #[cfg(feature = "smartmodule")]
+    /// parse the metadata bytes and return the metadata
+    pub fn from_bytes(bytedata: &[u8]) -> std::io::Result<Self> {
+        use std::io::ErrorKind;
+        let strdata = std::str::from_utf8(bytedata)
+            .map_err(|_| IoError::new(ErrorKind::InvalidData, "Smartmodule toml"))?;
+        let metadata = toml::from_str(strdata)?;
+        Ok(metadata)
+    }
+
     /// id that can be used to identify this smartmodule
     pub fn id(&self) -> String {
         self.package.store_key()

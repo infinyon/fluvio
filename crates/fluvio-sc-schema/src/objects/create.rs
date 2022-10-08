@@ -48,6 +48,7 @@ pub enum ObjectCreateRequest {
     Topic(TopicSpec),
     CustomSpu(CustomSpuSpec),
     SmartModule(SmartModuleSpec),
+    // SmartModuleDownload(SmartModuleDownloadSpec),
     ManagedConnector(ManagedConnectorSpec),
     SpuGroup(SpuGroupSpec),
     TableFormat(TableFormatSpec),

@@ -218,7 +218,6 @@ mod sshkeys {
 
         let buf = std::fs::read_to_string(PUBFILE).expect("read in");
         let pubkey = PublicKey::from_ssh(&buf).expect("reading ssh pub key file");
-        dbg!(&pubkey);
 
         let msg = b"123";
         let sig = kp.sign(msg).expect("sign failure");

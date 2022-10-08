@@ -41,6 +41,9 @@ pub enum HubUtilError {
     #[error("Downloading package {0}")]
     PackageDownload(String),
 
+    #[error("Package missing file {0}")]
+    PackageMissingFile(String),
+
     #[error("Publishing package {0}")]
     PackagePublish(String),
 

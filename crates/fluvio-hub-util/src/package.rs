@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 
 use flate2::Compression;
 use flate2::GzBuilder;
+use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use tracing::{debug, warn};
@@ -267,6 +269,58 @@ fn package_getsigs(pkgfile: &str) -> Result<HashMap<String, PackageSignature>> {
     Ok(sigs)
 }
 
+// get a top level file
+pub(crate) fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8>> {
+    let in_pkg = std::fs::File::open(pkgfile)?;
+    let topfile_p = Path::new(topfile);
+    let mut ar = tar::Archive::new(in_pkg);
+    let entries = ar.entries()?;
+    for file in entries {
+        if file.is_err() {
+            continue;
+        }
+        let mut f = file?;
+        if let Ok(fp) = f.path() {
+            if fp != topfile_p {
+                continue;
+            }
+            let mut buf: Vec<u8> = Vec::new();
+            f.read_to_end(&mut buf)
+                .map_err(|_| HubUtilError::PackageMissingFile(pkgfile.into()))?;
+            return Ok(buf);
+        }
+    }
+    Err(HubUtilError::PackageMissingFile(pkgfile.into()))
+}
+
+/// extract files out of the package manifest
+/// pkgfile: pkg-0.0.1.ipkg
+/// filename: file in manifest
+pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8>> {
+    let manifest_buf = package_get_topfile(pkgfile, HUB_MANIFEST_BLOB)?;
+    let manifest_io = std::io::Cursor::new(&manifest_buf);
+    let gzio = GzDecoder::new(manifest_io);
+    let mut ar = tar::Archive::new(gzio);
+    let entries = ar.entries()?;
+    let manifile = Path::new(filename);
+    for file in entries {
+        if file.is_err() {
+            continue;
+        }
+        let mut f = file?;
+        if let Ok(fp) = f.path() {
+            if fp != manifile {
+                continue;
+            }
+            let mut buf: Vec<u8> = Vec::new();
+            f.read_to_end(&mut buf)
+                .map_err(|_| HubUtilError::PackageMissingFile(pkgfile.into()))?;
+            return Ok(buf);
+        }
+    }
+    Err(HubUtilError::PackageMissingFile(filename.into()))
+}
+
 /// verify package signature. the pkgsig should contain the desired
 /// public key to verify sgainst
 fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
@@ -412,7 +466,6 @@ mod tests {
     fn hubutil_package_assemble() {
         let testfile: &str = "tests/apackage/package-meta.yaml";
         let res = package_assemble(testfile, Some("tests"));
-        dbg!(&res);
         assert!(res.is_ok());
         let outpath = std::path::Path::new("tests/example-0.0.1.tar");
         assert!(outpath.exists());
@@ -433,8 +486,6 @@ mod tests {
         keypair.public().write(PKG_SIGN_PUBKEY)?;
         let _res = package_sign(UNSIGNED_PKG_FILE, &keypair, SIGNED_PKG_FILE);
 
-        dbg!(keypair.public());
-
         let outpath = std::path::Path::new(SIGNED_PKG_FILE);
         assert!(outpath.exists(), "no signed file generated");
         Ok(())
@@ -449,8 +500,19 @@ mod tests {
         assert!(signedpkg.exists());
 
         let pubkey = PublicKey::read_from_file(PKG_SIGN_PUBKEY)?;
-        dbg!(&pubkey);
         package_verify(SIGNED_PKG_FILE, &pubkey)?;
         Ok(())
+    }
+
+    #[test]
+    fn hubutil_package_get_manifest_file() {
+        const SIGNED_PKG_FILE: &str = "tests/static-example-0.0.1.ipkg";
+        let res_fbytes = package_get_manifest_file(SIGNED_PKG_FILE, "module.wasm");
+        assert!(res_fbytes.is_ok());
+        let fbytes = res_fbytes.unwrap();
+        assert!(fbytes.len() > 0);
+
+        let res_of_missing_file = package_get_manifest_file(SIGNED_PKG_FILE, "does-not-exist");
+        assert!(res_of_missing_file.is_err());
     }
 }
