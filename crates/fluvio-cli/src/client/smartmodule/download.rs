@@ -11,7 +11,6 @@ use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleMetadata, SmartModuleWasm};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
-use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 // use hubutil::PackageMeta;
 
@@ -44,22 +43,13 @@ impl ClientCmd for DownloadSmartModuleOpt {
         _out: Arc<O>,
         _fluvio: &Fluvio,
     ) -> Result<()> {
-        let pkgfile = match run_block_on(download_local(&self.pkgname)) {
-            Ok(fname) => fname,
-            Err(e) => {
-                eprintln!("{}", e);
-                std::process::exit(1);
-            }
-        };
+        let pkgfile = download_local(&self.pkgname).await?;
         if self.local {
             return Ok(());
         }
 
         let fluvio_config = self.target.load()?;
-        if let Err(e) = run_block_on(download_cluster(fluvio_config, &pkgfile)) {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
+        download_cluster(fluvio_config, &pkgfile).await?;
         Ok(())
     }
 }

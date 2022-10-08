@@ -1,4 +1,3 @@
-
 use std::{path::Path};
 
 use anyhow::Result;
@@ -69,7 +68,6 @@ impl PublishOpt {
 }
 
 pub fn package_assemble(pkgmeta: &str, access: &HubAccess) -> Result<String> {
-
     let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None)?;
     println!("Package {} created", pkgname);
     Ok(pkgname)
@@ -133,7 +131,7 @@ fn find_smartmodule_toml() -> Result<String> {
                 continue;
             }
             let fpstr = fp.to_string_lossy().to_string();
-            return Ok(fpstr)
+            return Ok(fpstr);
         }
     }
     Err(anyhow::anyhow!("No smartmodule toml file found"))
