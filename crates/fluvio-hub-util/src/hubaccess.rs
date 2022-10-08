@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use surf::http::mime;
 use surf::StatusCode;
-use tracing::debug;
+use tracing::{debug, info};
 
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
@@ -153,15 +153,18 @@ impl HubAccess {
             if let Ok(profile) = std::fs::read_to_string(&profile_ptr_path.as_path()) {
                 profile
             } else {
+                info!("Creating initial hub credentials");
                 // if the ptr file doesn't exist, then assume we need to create the default config
                 let deferr = Err(HubUtilError::HubAccess(
                     "Couldn't create default hubaccess credentials".to_string(),
                 ));
+                std::fs::create_dir(&base_path)?;
                 let mut blank_access = HubAccess::new();
                 if blank_access.gen_pkgkey().is_err() {
                     return deferr;
                 }
                 let def_path = base_path.as_ref().join(ACCESS_FILE_DEF);
+
                 blank_access.write_file(def_path)?;
                 if write_ptr_file(&base_path, ACCESS_FILE_DEF).is_err() {
                     return deferr;
@@ -170,7 +173,7 @@ impl HubAccess {
             }
         };
         let profile_path = base_path.as_ref().join(profile);
-        debug!("profile_path: {profile_path:?}");
+        info!("loading hub profile {profile_path:?}");
         let buf = std::fs::read_to_string(&profile_path)?;
         let mut ha: HubAccess = serde_yaml::from_str(&buf).map_err(|_e| {
             let spath = profile_path.display();
@@ -182,6 +185,7 @@ impl HubAccess {
             ha.gen_pkgkey()?;
             ha.write_hash(base_path)?;
         }
+
         Ok(ha)
     }
 

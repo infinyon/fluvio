@@ -14,12 +14,23 @@ pub const CLI_CONFIG_HUB: &str = "hub"; // hub area of config
 #[derive(Debug, Parser)]
 pub struct SetHubidOpt {
     hubid: String,
+
+    #[clap(long)]
+    remote: Option<String>,
 }
 
 impl SetHubidOpt {
     pub(crate) fn process(&self) -> Result<()> {
         let cfgpath = def_hub_cfg_path()?;
         let mut access = HubAccess::load_path(&cfgpath, None)?;
+
+        if let Some(remote) = self.remote.clone() {
+            if access.remote != remote {
+                println!("with remote = {remote}");
+                access.remote = remote;
+                access.write_hash(&cfgpath)?;
+            }
+        }
 
         // check if hubid is in profile, if so print it and end
         if !access.hubid.is_empty() {
@@ -33,7 +44,7 @@ impl SetHubidOpt {
             std::process::exit(1);
         }
         access.hubid = self.hubid.to_string();
-        access.write_hash(cfgpath)?;
+        access.write_hash(&cfgpath)?;
         Ok(())
     }
 }
