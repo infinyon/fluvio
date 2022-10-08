@@ -44,7 +44,7 @@ members = [
 ]
 
 exclude = [
-    "smartmodule/sm-regex"
+    "smartmodule/regex-filter"
 ]
 resolver = "2"
 

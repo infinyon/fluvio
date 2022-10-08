@@ -1,9 +1,0 @@
----
-package_format_version: "0.1"
-name: regex
-version: "0.0.1"
-group: Infinyon.com
-description: Describe the module here
-license: e.g. Apache2
-manifest:
-  - fluvio_sm_regex.wasm
