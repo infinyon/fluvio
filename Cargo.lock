@@ -1986,6 +1986,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future 0.4.2",
+ "fluvio-hub-util",
  "fluvio-package-index",
  "fluvio-protocol",
  "fluvio-sc-schema",
@@ -5650,6 +5651,7 @@ dependencies = [
  "include_dir",
  "tempdir",
  "thiserror",
+ "toml",
  "tracing",
 ]
 

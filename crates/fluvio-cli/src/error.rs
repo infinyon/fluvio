@@ -63,6 +63,9 @@ pub enum CliError {
         target: Target,
     },
 
+    #[error("Package error: {0}")]
+    PackageError(String),
+
     #[error(transparent)]
     TlsError(#[from] fluvio_future::openssl::TlsError),
 
@@ -95,6 +98,8 @@ pub enum CliError {
     #[cfg(feature = "smartengine")]
     #[error("SmartModuleEngine config: {0}")]
     SmartModuleConfigBuilder(#[from] fluvio_smartengine::SmartModuleConfigBuilderError),
+    #[error("Hub error: {0}")]
+    HubError(String),
 }
 
 impl CliError {

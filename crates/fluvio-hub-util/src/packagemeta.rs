@@ -1,9 +1,10 @@
-use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::io::Read;
 use std::path::Path;
 use std::fs;
-use tracing::{debug, info};
+
+use serde::{Deserialize, Serialize};
+use tracing::{debug, info, error};
 
 use fluvio_controlplane_metadata::smartmodule as smpkg;
 
@@ -11,6 +12,7 @@ use crate::HUB_PACKAGE_META;
 use crate::HUB_PACKAGE_VERSION;
 use crate::HUB_PACKAGE_EXT;
 use crate::HubUtilError;
+use crate::package_get_topfile;
 
 type Result<T> = std::result::Result<T, HubUtilError>;
 
@@ -44,6 +46,42 @@ impl Default for PackageMeta {
 }
 
 impl PackageMeta {
+    /// Retrives the package name from this package. Eg: `infinyon/example/0.0.1`
+    pub fn pkg_name(&self) -> String {
+        format!("{}/{}/{}", self.group, self.name, self.version)
+    }
+
+    /// Retrives the S3's object name from this package. Eg: `infinyon/example-0.0.1.tar`
+    pub fn obj_name(&self) -> String {
+        format!("{}/{}-{}.tar", self.group, self.name, self.version)
+    }
+
+    /// Builds the S3 object path from the provided package name.
+    ///
+    /// A S3 object path is structure as `{group}/{pkgname}-{pkgver}.tar`, this
+    /// can be build from the package name which holds the same data in a
+    /// the following format: `{group}/{pkgname}@{pkgver}"`
+    pub fn object_path_from_name(pkg_name: &str) -> Result<String> {
+        let parts = pkg_name.split('/').collect::<Vec<&str>>();
+
+        if parts.len() != 2 {
+            error!("The provided name is not a valid package name: {pkg_name}");
+            return Err(HubUtilError::InvalidPackageName(pkg_name.into()));
+        }
+
+        let name_version = parts.get(1).unwrap().split('@').collect::<Vec<&str>>();
+
+        if name_version.len() != 2 {
+            error!("The provided name is not a valid package name: {pkg_name}");
+            return Err(HubUtilError::InvalidPackageName(pkg_name.into()));
+        }
+
+        Ok(format!(
+            "{}/{}-{}.tar",
+            parts[0], name_version[0], name_version[1]
+        ))
+    }
+
     /// read package-meta file (not a package.tar file, just the meta file)
     pub fn read_from_file(filename: &str) -> Result<Self> {
         let pm_raw: Vec<u8> = fs::read(filename)?;
@@ -131,10 +169,19 @@ pub fn packagename_transform(pkgname: &str) -> Result<String> {
 
 /// given a package.tar file get the package-meta data
 pub fn package_get_meta(pkgfile: &str) -> Result<PackageMeta> {
-    let in_pkg = std::fs::File::open(pkgfile)?;
+    let buf = package_get_topfile(pkgfile, HUB_PACKAGE_META)?;
+    let strbuf = std::str::from_utf8(&buf)
+        .map_err(|_| HubUtilError::UnableGetPackageMeta(pkgfile.into()))?;
+    let pm: PackageMeta = serde_yaml::from_str(strbuf)?;
+    Ok(pm)
+}
+
+/// Creates an instance of `PackageMeta` from bytes representing a TAR
+/// package.
+pub fn package_meta_from_bytes(reader: &[u8]) -> Result<PackageMeta> {
+    let mut tarfile = tar::Archive::new(reader);
     let pkg_meta = Path::new(HUB_PACKAGE_META);
-    let mut ar = tar::Archive::new(in_pkg);
-    let entries = ar.entries()?;
+    let entries = tarfile.entries()?;
     for file in entries {
         if file.is_err() {
             continue;
@@ -151,7 +198,38 @@ pub fn package_get_meta(pkgfile: &str) -> Result<PackageMeta> {
         }
     }
 
-    Err(HubUtilError::UnableGetPackageMeta(pkgfile.to_string()))
+    Err(HubUtilError::UnableGetPackageMeta(
+        "Provided bytes doesn't belong to an actual TAR file".into(),
+    ))
+}
+
+#[test]
+fn builds_obj_key_from_package_name() {
+    let pkg_names = vec![
+        "infinyon/example@0.0.1",
+        "infinyon/example-sm@0.1.0",
+        "infinyon/json-sql@0.0.2",
+        "infinyon/test@0.1.0",
+        "infinyon/hub-cli@0.1.0",
+        "infinyon/test-cli@0.1.0",
+        "infinyon/regex@0.0.1",
+    ];
+    let obj_paths = vec![
+        "infinyon/example-0.0.1.tar",
+        "infinyon/example-sm-0.1.0.tar",
+        "infinyon/json-sql-0.0.2.tar",
+        "infinyon/test-0.1.0.tar",
+        "infinyon/hub-cli-0.1.0.tar",
+        "infinyon/test-cli-0.1.0.tar",
+        "infinyon/regex-0.0.1.tar",
+    ];
+
+    for (idx, name) in pkg_names.iter().enumerate() {
+        assert_eq!(
+            &PackageMeta::object_path_from_name(name).unwrap(),
+            obj_paths.get(idx).unwrap()
+        );
+    }
 }
 
 #[test]

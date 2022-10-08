@@ -16,6 +16,8 @@ pub use errors::HubUtilError;
 pub use utils::*;
 pub use infinyon_tok::read_infinyon_token;
 
+pub const CLI_CONFIG_HUB: &str = "hub";
+
 pub const HUB_PACKAGE_VERSION: &str = "0.1";
 pub const HUB_PACKAGE_META: &str = "package-meta.yaml";
 pub const HUB_REMOTE: &str = "https://hub.infinyon.cloud";

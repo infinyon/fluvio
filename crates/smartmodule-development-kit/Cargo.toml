@@ -18,6 +18,7 @@ tracing = "0.1.19"
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
 dirs = "4.0.0"
 thiserror = "1.0.20"
+toml = { version = "0.5.9" }
 anyhow = { version = "1.0.38" }
 cargo_metadata = "0.15.0"
 cargo-generate = "0.16.0"

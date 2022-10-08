@@ -4,7 +4,6 @@
 //! and ssh key representations.
 
 use std::io::Write;
-use std::os::unix::fs::PermissionsExt;
 
 use ed25519_dalek::{Signer, Verifier};
 use pem::Pem;
@@ -92,8 +91,7 @@ impl Keypair {
         };
         let buf = pem::encode(&pubpem);
         let mut file = std::fs::File::create(fname)?;
-        let mut perms = file.metadata()?.permissions();
-        perms.set_mode(0o500); // owner read write only
+        set_perms_owner_rw(&mut file)?;
         file.write_all(buf.as_bytes())?;
         Ok(())
     }
@@ -202,6 +200,19 @@ impl PublicKey {
     }
 }
 
+#[cfg(unix)]
+fn set_perms_owner_rw(file: &mut std::fs::File) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut perms = file.metadata()?.permissions();
+    perms.set_mode(0o500); // owner read write only
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn set_perms_owner_rw(_file: &mut std::fs::File) -> Result<()> {
+    Ok(())
+}
+
 #[cfg(test)]
 mod sshkeys {
 
@@ -218,7 +229,6 @@ mod sshkeys {
 
         let buf = std::fs::read_to_string(PUBFILE).expect("read in");
         let pubkey = PublicKey::from_ssh(&buf).expect("reading ssh pub key file");
-        dbg!(&pubkey);
 
         let msg = b"123";
         let sig = kp.sign(msg).expect("sign failure");
