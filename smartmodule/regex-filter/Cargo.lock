@@ -117,15 +117,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-sm-regex"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule",
- "once_cell",
- "regex",
-]
-
-[[package]]
 name = "fluvio-smartmodule"
 version = "0.3.0"
 dependencies = [
@@ -241,6 +232,15 @@ dependencies = [
  "aho-corasick",
  "memchr",
  "regex-syntax",
+]
+
+[[package]]
+name = "regex-filter"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule",
+ "once_cell",
+ "regex",
 ]
 
 [[package]]
