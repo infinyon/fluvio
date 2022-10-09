@@ -6,7 +6,7 @@
 
 use std::io::{Error, ErrorKind};
 
-use tracing::{info, trace, instrument};
+use tracing::{info, trace, debug, instrument};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{Status};
@@ -59,15 +59,24 @@ async fn process_smartmodule_request(
     name: String,
     smartmodule_spec: SmartModuleSpec,
 ) -> Status {
+    // if there is pkg associated with, we override name
+    let store_id = if let Some(meta) = &smartmodule_spec.meta {
+        meta.store_id()
+    } else {
+        name
+    };
+
+    debug!(%store_id, "creating smart module");
+
     if let Err(err) = ctx
         .smartmodules()
-        .create_spec(name.clone(), smartmodule_spec)
+        .create_spec(store_id.clone(), smartmodule_spec)
         .await
     {
         let error = Some(err.to_string());
-        Status::new(name, ErrorCode::SmartModuleError, error) // TODO: create error type
+        Status::new(store_id, ErrorCode::SmartModuleError, error) // TODO: create error type
     } else {
-        info!(%name, "smart module created");
-        Status::new_ok(name.clone())
+        info!(%store_id, "smart module created");
+        Status::new_ok(store_id.clone())
     }
 }

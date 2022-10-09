@@ -108,7 +108,7 @@ async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
         .map_err(|_| CliError::PackageError("package missing {sm_wasm_file}".into()))?;
     let sm_wasm = SmartModuleWasm::from_raw_wasm_bytes(&sm_wasm_bytes)?;
 
-    let sm_id = sm_meta.id();
+    let sm_id = sm_meta.store_id();
     let spec = SmartModuleSpec {
         meta: Some(sm_meta),
         wasm: sm_wasm,

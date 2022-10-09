@@ -4,9 +4,8 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use std::io::Error;
-
 use tracing::{instrument, trace, debug};
+use anyhow::Result;
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
@@ -21,7 +20,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_delete_request<AC: AuthContext>(
     request: RequestMessage<ObjectApiDeleteRequest>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ResponseMessage<Status>, Error> {
+) -> Result<ResponseMessage<Status>> {
     let (header, del_req) = request.get_header_request();
 
     debug!(?del_req, "del request");

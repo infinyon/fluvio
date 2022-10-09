@@ -26,7 +26,7 @@ impl LoadOpt {
         let pkg_metadata = SmartModuleMetadata::from_toml("./SmartModule.toml")?;
         println!("Using SmartModule package: {}", pkg_metadata.package.name);
 
-        let sm_id = pkg_metadata.id();
+        let sm_id = pkg_metadata.package.name.clone(); // pass anything, this should be overriden by SC
         let raw_bytes = self.wasm.load_raw_wasm_file()?;
         let spec = SmartModuleSpec {
             meta: Some(pkg_metadata),

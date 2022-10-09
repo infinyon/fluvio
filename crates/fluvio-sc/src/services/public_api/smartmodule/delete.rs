@@ -1,10 +1,11 @@
 use std::io::{Error, ErrorKind};
 
 use tracing::{debug, trace, instrument};
+use anyhow::Result;
 
 use fluvio_sc_schema::Status;
 use fluvio_auth::{AuthContext, InstanceAction};
-use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec, SmartModulePackageKey};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
@@ -14,7 +15,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_delete_smartmodule<AC: AuthContext>(
     name: String,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<Status, Error> {
+) -> Result<Status> {
     use fluvio_protocol::link::ErrorCode;
 
     debug!("delete smart modules: {}", name);
@@ -33,8 +34,10 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
             ));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error").into());
     }
+
+    let sm_fqdn = SmartModulePackageKey::from_qualified_name(&name)?;
 
     let status = if auth_ctx
         .global_ctx
@@ -47,7 +50,7 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
         if let Err(err) = auth_ctx
             .global_ctx
             .smartmodules()
-            .delete(name.clone())
+            .delete(sm_fqdn.store_id())
             .await
         {
             Status::new(

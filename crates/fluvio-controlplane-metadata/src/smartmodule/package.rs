@@ -45,8 +45,8 @@ impl SmartModuleMetadata {
     }
 
     /// id that can be used to identify this smartmodule
-    pub fn id(&self) -> String {
-        self.package.store_key()
+    pub fn store_id(&self) -> String {
+        self.package.store_id()
     }
 }
 
@@ -69,14 +69,14 @@ pub struct SmartModulePackage {
 }
 
 impl SmartModulePackage {
-    /// return key for storing SmartModule in the store
-    pub fn store_key(&self) -> String {
-        format!(
-            "{}-{}-{}",
-            self.name,
-            self.group,
-            self.version.to_string().replace('.', "-")
-        )
+    /// id that can be used to identify this smartmodule
+    pub fn store_id(&self) -> String {
+        (SmartModulePackageKey {
+            name: self.name.clone(),
+            group: Some(self.group.clone()),
+            version: Some(self.version.clone()),
+        })
+        .store_id()
     }
 }
 
@@ -155,6 +155,23 @@ impl SmartModulePackageKey {
             self.name == name
         }
     }
+
+    /// return key for storing SmartModule in the store
+    pub fn store_id(&self) -> String {
+        let group_id = if let Some(package) = &self.group {
+            format!("-{}", package)
+        } else {
+            "".to_owned()
+        };
+
+        let version_id = if let Some(version) = &self.version {
+            format!("-{}", version.to_string())
+        } else {
+            "".to_owned()
+        };
+
+        format!("{}{}{}", self.name, group_id, version_id)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -214,6 +231,9 @@ impl Decoder for FluvioSemVersion {
     }
 }
 
+/// Convert from name into something that can be used as key in the store
+/// For now, we respect
+
 #[cfg(test)]
 mod package_test {
     use crate::smartmodule::SmartModulePackageKey;
@@ -232,7 +252,7 @@ mod package_test {
             repository: None,
         };
 
-        assert_eq!(pkg.store_key(), "test-fluvio-0-1-0");
+        assert_eq!(pkg.store_id(), "test-fluvio-0.1.0");
     }
 
     #[test]
@@ -282,18 +302,18 @@ mod package_test {
             api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
             ..Default::default()
         };
-        assert!(key.is_match(&valid_pkg.store_key(), Some(&valid_pkg)));
+        assert!(key.is_match(&valid_pkg.store_id(), Some(&valid_pkg)));
         assert!(
             SmartModulePackageKey::from_qualified_name("mygroup/module1")
                 .expect("parse")
-                .is_match(&valid_pkg.store_key(), Some(&valid_pkg))
+                .is_match(&valid_pkg.store_id(), Some(&valid_pkg))
         );
         assert!(SmartModulePackageKey::from_qualified_name("module1")
             .expect("parse")
-            .is_match(&valid_pkg.store_key(), Some(&valid_pkg)));
+            .is_match(&valid_pkg.store_id(), Some(&valid_pkg)));
         assert!(!SmartModulePackageKey::from_qualified_name("module2")
             .expect("parse")
-            .is_match(&valid_pkg.store_key(), Some(&valid_pkg)));
+            .is_match(&valid_pkg.store_id(), Some(&valid_pkg)));
 
         let in_valid_pkg = SmartModulePackage {
             name: "module2".to_owned(),
@@ -302,11 +322,27 @@ mod package_test {
             api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
             ..Default::default()
         };
-        assert!(!key.is_match(&in_valid_pkg.store_key(), Some(&in_valid_pkg)));
+        assert!(!key.is_match(&in_valid_pkg.store_id(), Some(&in_valid_pkg)));
 
         assert!(SmartModulePackageKey::from_qualified_name("module1")
             .expect("parse")
             .is_match("module1", None));
+    }
+
+    #[test]
+    fn test_pk_key_store_id() {
+        assert_eq!(
+            SmartModulePackageKey::from_qualified_name("module1")
+                .expect("parse")
+                .store_id(),
+            "module1"
+        );
+        assert_eq!(
+            SmartModulePackageKey::from_qualified_name("mygroup/module1@0.1")
+                .expect("parse")
+                .store_id(),
+            "module1-mygroup-0.1.0"
+        );
     }
 }
 

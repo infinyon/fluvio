@@ -7,7 +7,7 @@ use crate::Result;
 use fluvio_cli_common::error::CliError as CommonCliError;
 use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
-    fluvio_bin_dir,
+    fluvio_base_dir,
 };
 use crate::install::update::{
     check_update_required, prompt_required_update, check_update_available, prompt_available_update,
