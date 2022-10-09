@@ -141,6 +141,7 @@ impl PackageMeta {
 
         self.name = spk.name.clone();
         self.group = spk.group.clone();
+        self.version = spk.version.to_string();
         self.description = spk.description.clone().unwrap_or_default();
 
         // needed for fluvio sm download
