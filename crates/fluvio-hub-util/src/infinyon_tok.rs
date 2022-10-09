@@ -86,9 +86,4 @@ mod infinyon_tok_tests {
         assert!(token.is_ok());
         println!("token: {}", token.unwrap());
     }
-
-    // #[test]
-    // fn load_from_env() {
-    //     std::env::set_var(INFINYON_CONFIG_PATH_ENV, value)
-    // }
 }
