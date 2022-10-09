@@ -37,22 +37,19 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error").into());
     }
 
-    let sm_fqdn = SmartModulePackageKey::from_qualified_name(&name)?;
+    let sm_fqdn = SmartModulePackageKey::from_qualified_name(&name)?.store_id();
+
+    debug!(%sm_fqdn,"delete smart modules with");
 
     let status = if auth_ctx
         .global_ctx
         .smartmodules()
         .store()
-        .value(&name)
+        .value(&sm_fqdn)
         .await
         .is_some()
     {
-        if let Err(err) = auth_ctx
-            .global_ctx
-            .smartmodules()
-            .delete(sm_fqdn.store_id())
-            .await
-        {
+        if let Err(err) = auth_ctx.global_ctx.smartmodules().delete(sm_fqdn).await {
             Status::new(
                 name.clone(),
                 ErrorCode::SmartModuleError,
