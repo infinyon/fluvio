@@ -165,7 +165,7 @@ impl SmartModulePackageKey {
         };
 
         let version_id = if let Some(version) = &self.version {
-            format!("-{}", version.to_string())
+            format!("-{}", version)
         } else {
             "".to_owned()
         };
