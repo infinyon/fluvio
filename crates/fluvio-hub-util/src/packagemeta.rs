@@ -48,7 +48,7 @@ impl Default for PackageMeta {
 impl PackageMeta {
     /// Retrives the package name from this package. Eg: `infinyon/example/0.0.1`
     pub fn pkg_name(&self) -> String {
-        format!("{}/{}/{}", self.group, self.name, self.version)
+        format!("{}/{}@{}", self.group, self.name, self.version)
     }
 
     /// Retrives the S3's object name from this package. Eg: `infinyon/example-0.0.1.tar`
@@ -141,19 +141,61 @@ impl PackageMeta {
 
         self.name = spk.name.clone();
         self.group = spk.group.clone();
+        self.version = spk.version.to_string();
         self.description = spk.description.clone().unwrap_or_default();
+
+        // needed for fluvio sm download
+        self.manifest.push(fpath.into());
         Ok(())
+    }
+
+    /// simple because it's not the crypto validation
+    pub fn naming_check(&self) -> Result<()> {
+        let mut advice = String::new();
+
+        advice.push_str(&validate_lowercase(&self.group, "group"));
+        advice.push_str(&validate_allowedchars(&self.group, "group"));
+        advice.push_str(&validate_lowercase(&self.name, "package name"));
+        advice.push_str(&validate_allowedchars(&self.name, "package name"));
+
+        if !advice.is_empty() {
+            Err(HubUtilError::PackageVerify(advice))
+        } else {
+            Ok(())
+        }
     }
 }
 
 pub fn packagename_validate(pkgname: &str) -> Result<()> {
-    let good_chars = pkgname
-        .chars()
-        .all(|ch| matches!(ch, 'A'..='Z' | 'a'..='z' | '-' | '_'));
-    if !good_chars {
-        return Err(HubUtilError::InvalidPackageName(pkgname.to_string()));
+    let mut advice = String::new();
+
+    advice.push_str(&validate_allowedchars(pkgname, "package name"));
+
+    if !advice.is_empty() {
+        Err(HubUtilError::InvalidPackageName(advice))
+    } else {
+        Ok(())
     }
-    Ok(())
+}
+
+fn validate_lowercase(val: &str, name: &str) -> String {
+    if val.to_lowercase() != val {
+        format!("{name} {val} should be lowercase\n")
+    } else {
+        String::new()
+    }
+}
+
+fn validate_allowedchars(val: &str, name: &str) -> String {
+    let good_chars = val
+        .chars()
+        .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | '-' | '_'));
+
+    if !good_chars {
+        format!("{name} {val} should be alphanumeric, '-' or '_'\n")
+    } else {
+        String::new()
+    }
 }
 
 /// certain output files are transformed in name vs their package name
@@ -188,7 +230,6 @@ pub fn package_meta_from_bytes(reader: &[u8]) -> Result<PackageMeta> {
         }
         let mut f = file?;
         if let Ok(fp) = f.path() {
-            dbg!(&fp);
             if fp == pkg_meta {
                 let mut buf = String::new();
                 f.read_to_string(&mut buf)?;
@@ -298,4 +339,56 @@ fn hub_package_meta_t_manifest_paths() {
         .collect();
     let actual = pm.manifest_paths("tmp").expect("unexpected err");
     assert_eq!(expected, actual);
+}
+
+#[test]
+fn hub_packagemeta_naming_check() {
+    let allow = vec![
+        PackageMeta {
+            group: "sleigh".into(),
+            name: "dasher".into(),
+            ..PackageMeta::default()
+        },
+        PackageMeta {
+            group: "sleigh".into(),
+            name: "rudolph-nose".into(),
+            ..PackageMeta::default()
+        },
+        PackageMeta {
+            group: "sleigh".into(),
+            name: "sack_gift1".into(),
+            ..PackageMeta::default()
+        },
+        PackageMeta {
+            group: "halloween-pumpkin".into(),
+            name: "lantern".into(),
+            ..PackageMeta::default()
+        },
+    ];
+    for pm in allow {
+        let res = pm.naming_check();
+        assert!(res.is_ok(), "Denied an allowed package meta config {pm:?}");
+    }
+
+    let deny = vec![
+        PackageMeta {
+            group: "Coal.com".into(),
+            name: "example".into(),
+            ..PackageMeta::default()
+        },
+        PackageMeta {
+            group: "halloween".into(),
+            name: "tricks@eggs".into(),
+            ..PackageMeta::default()
+        },
+        PackageMeta {
+            group: "halloween".into(),
+            name: "tricks/paper".into(),
+            ..PackageMeta::default()
+        },
+    ];
+    for pm in deny {
+        let res = pm.naming_check();
+        assert!(res.is_err(), "Denied an valid package meta config {pm:?}");
+    }
 }

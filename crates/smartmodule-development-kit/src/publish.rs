@@ -91,8 +91,8 @@ pub fn init_package_template() -> Result<()> {
     let sm_toml_file = find_smartmodule_toml()?;
     pm.update_from_smartmodule_toml(&sm_toml_file)?;
 
-    println!("Creating package {}/{}", &pm.name, &pm.version);
-    hubutil::packagename_validate(&pm.name)?;
+    println!("Creating package {}", pm.pkg_name());
+    pm.naming_check()?;
 
     let wasmout = hubutil::packagename_transform(&pm.name)? + ".wasm";
     let wasmpath = format!("target/wasm32-unknown-unknown/release-lto/{wasmout}");

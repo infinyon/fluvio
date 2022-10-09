@@ -38,6 +38,7 @@ pub fn package_assemble_and_sign(
     let ipkgname = tar_to_ipkg(&tarname);
     let keypair = access.keypair()?;
     package_sign(&tarname, &keypair, &ipkgname)?;
+    std::fs::remove_file(tarname)?;
     Ok(ipkgname)
 }
 
