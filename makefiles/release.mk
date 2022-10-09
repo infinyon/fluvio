@@ -2,7 +2,7 @@
 PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk
 
 # CI has to set RELEASE=true to run commands that update public
-RELEASE?=false
+#RELEASE?=false
 ifneq ($(RELEASE),true)
 DRY_RUN_ECHO=echo
 #$(info Dry run mode - No public changes)
