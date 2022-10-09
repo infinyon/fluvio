@@ -142,6 +142,9 @@ impl PackageMeta {
         self.name = spk.name.clone();
         self.group = spk.group.clone();
         self.description = spk.description.clone().unwrap_or_default();
+
+        // needed for fluvio sm download
+        self.manifest.push(fpath.into());
         Ok(())
     }
 
