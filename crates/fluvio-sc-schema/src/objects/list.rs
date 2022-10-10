@@ -11,6 +11,8 @@ use super::{ObjectApiEnum};
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(ListResponse);
 
+pub const MIN_API_WITH_FILTER: u16 = 10;
+
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {
     pub name_filters: Vec<S::ListFilter>,
@@ -27,7 +29,7 @@ where
 
 impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
-    const DEFAULT_API_VERSION: i16 = 9;
+    const DEFAULT_API_VERSION: i16 = 10;
     type Response = ObjectApiListResponse;
 }
 

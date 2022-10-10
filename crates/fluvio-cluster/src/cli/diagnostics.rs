@@ -240,22 +240,22 @@ impl DiagnosticsOpt {
         };
 
         println!("getting topic spec");
-        let topics = admin.list::<TopicSpec, _>([]).await?;
+        let topics = admin.list::<TopicSpec,String>(vec![]).await?;
         let topics = serde_yaml::to_string(&topics).unwrap();
         write_spec(topics, "topics")?;
 
         println!("getting partition spec");
-        let partitions = admin.list::<PartitionSpec, _>([]).await?;
+        let partitions = admin.list::<PartitionSpec, String>(vec![]).await?;
         let partitions = serde_yaml::to_string(&partitions).unwrap();
         write_spec(partitions, "partitions")?;
 
         println!("getting spu spec");
-        let spus = admin.list::<SpuSpec, _>([]).await?;
+        let spus = admin.list::<SpuSpec, String>(vec![]).await?;
         let spu_description = serde_yaml::to_string(&spus).unwrap();
         write_spec(spu_description, "spus")?;
 
         println!("getting spg spec");
-        let spgs = admin.list::<SpuGroupSpec, _>([]).await?;
+        let spgs = admin.list::<SpuGroupSpec, String>(vec![]).await?;
         let spgs = serde_yaml::to_string(&spgs).unwrap();
         write_spec(spgs, "spgs")?;
 

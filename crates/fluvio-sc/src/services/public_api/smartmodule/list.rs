@@ -9,13 +9,14 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec, SmartModulePack
 use fluvio_sc_schema::AdminSpec;
 use fluvio_stream_dispatcher::store::StoreContext;
 
-use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
+use fluvio_sc_schema::objects::{ListResponse, Metadata};
+use fluvio_sc_schema::smartmodule::SmartModuleFilter;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 #[instrument(skip(filters, auth))]
 pub(crate) async fn fetch_smart_modules<AC: AuthContext, M>(
-    filters: Vec<NameFilter>,
+    filters: Vec<SmartModuleFilter>,
     auth: &AC,
     object_ctx: &StoreContext<SmartModuleSpec, M>,
 ) -> Result<ListResponse<SmartModuleSpec>>
@@ -41,7 +42,7 @@ where
     // convert filter into key filter
     let mut sm_keys = vec![];
     for filter in filters.into_iter() {
-        sm_keys.push(SmartModulePackageKey::from_qualified_name(&filter)?);
+        sm_keys.push(SmartModulePackageKey::from_qualified_name(&filter.name)?);
     }
 
     let reader = object_ctx.store().read().await;
@@ -136,7 +137,7 @@ mod test {
             2
         );
         assert_eq!(
-            fetch_smart_modules(vec!["test".to_owned()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["test".to_owned().into()], &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -145,7 +146,7 @@ mod test {
         );
 
         assert_eq!(
-            fetch_smart_modules(vec!["sm1".to_owned()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["sm1".to_owned().into()], &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -155,7 +156,7 @@ mod test {
 
         // no matching
         assert_eq!(
-            fetch_smart_modules(vec!["sm2".to_owned()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["sm2".to_owned().into()], &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
