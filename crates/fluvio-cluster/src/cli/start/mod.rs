@@ -95,7 +95,7 @@ pub struct K8Install {
     pub chart_location: Option<String>,
 
     /// chart values
-    #[clap(long, value_parser=value_parser!(OsString))]
+    #[clap(long, value_parser)]
     pub chart_values: Vec<PathBuf>,
 
     /// Uses port forwarding for connecting to SC during install
