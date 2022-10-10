@@ -12,14 +12,11 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleMetadata, SmartModule
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_hub_util as hubutil;
-// use hubutil::PackageMeta;
+use tracing::info;
 
 use crate::Result;
 use crate::client::cmd::ClientCmd;
 use crate::CliError;
-
-// manifest names
-const SMARTMODULE_TOML_FNAME: &str = "Smartmodule.toml";
 
 /// Delete an existing SmartModule with the given name
 #[derive(Debug, Parser)]
@@ -102,11 +99,10 @@ async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
         .iter()
         .find(|&e| {
             let ext = Path::new(e).extension().unwrap_or_default();
-            ext == ".toml"
+            ext == "toml"
         })
-        .ok_or_else(|| {
-            CliError::PackageError(format!("package missing {SMARTMODULE_TOML_FNAME}"))
-        })?;
+        .ok_or_else(|| CliError::PackageError("package missing SmartModule toml".into()))?;
+    info!(sm_meta_file, "found SmartModule meta file");
     let sm_wasm_file = vman
         .iter()
         .find(|&e| {
