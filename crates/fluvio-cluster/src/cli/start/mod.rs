@@ -1,7 +1,7 @@
-use std::{fmt, str::FromStr, ffi::OsString};
+use std::{fmt, str::FromStr};
 use std::path::PathBuf;
 use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
-use clap::{Parser, value_parser};
+use clap::Parser;
 use semver::Version;
 
 mod local;

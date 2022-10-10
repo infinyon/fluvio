@@ -1,8 +1,8 @@
-use std::{path::PathBuf, ffi::OsString};
+use std::path::PathBuf;
 use std::convert::TryFrom;
 
 use tracing::debug;
-use clap::{Parser, value_parser};
+use clap::Parser;
 
 use fluvio::config::{TlsPolicy, TlsPaths};
 use crate::target::TargetError;
