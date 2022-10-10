@@ -96,7 +96,6 @@ impl Fluvio {
             ObjectApiWatchRequest::API_KEY,
             ObjectApiWatchRequest::DEFAULT_API_VERSION,
         ) {
-            debug!(platform = %versions.platform_version(),"checking platform version");
             check_platform_compatible(versions.platform_version())?;
 
             let socket = MultiplexerSocket::shared(socket);
@@ -277,9 +276,11 @@ impl Fluvio {
 /// platform version is greater than this crate's
 /// `MINIMUM_PLATFORM_VERSION`.
 fn check_platform_compatible(cluster_version: &Version) -> Result<(), FluvioError> {
+
     let client_minimum_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
         .expect("MINIMUM_PLATFORM_VERSION must be semver");
-
+    debug!(%cluster_version, %client_minimum_version, "checking platform version");
+    
     if *cluster_version < client_minimum_version {
         return Err(FluvioError::MinimumPlatformVersion {
             cluster_version: cluster_version.clone(),
