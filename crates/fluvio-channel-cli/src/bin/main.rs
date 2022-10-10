@@ -37,7 +37,7 @@ struct RootOpt {
 }
 
 #[derive(Debug, PartialEq, Parser, Default)]
-#[clap(disable_help_subcommand = true)]
+#[clap(disable_help_subcommand = true, disable_help_flag = true)]
 struct Root {
     #[clap(flatten)]
     opt: RootOpt,
