@@ -34,6 +34,10 @@ pub struct DownloadSmartModuleOpt {
     /// just download package to local filesystem
     #[clap(long)]
     local: bool,
+
+    /// given local package file, download to cluster
+    #[clap(long)]
+    ipkg: bool,
 }
 
 #[async_trait]
@@ -43,6 +47,13 @@ impl ClientCmd for DownloadSmartModuleOpt {
         _out: Arc<O>,
         _fluvio: &Fluvio,
     ) -> Result<()> {
+        if self.ipkg {
+            // pkgname is a package file
+            let fluvio_config = self.target.load()?;
+            download_cluster(fluvio_config, &self.pkgname).await?;
+            return Ok(());
+        }
+
         let pkgfile = download_local(&self.pkgname).await?;
         if self.local {
             return Ok(());
@@ -89,8 +100,13 @@ async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
     // check for file contents
     let sm_meta_file = vman
         .iter()
-        .find(|&e| e == SMARTMODULE_TOML_FNAME)
-        .ok_or_else(|| CliError::PackageError("package missing {SMARTMODULE_TOML_FNAME}".into()))?;
+        .find(|&e| {
+            let ext = Path::new(e).extension().unwrap_or_default();
+            ext == ".toml"
+        })
+        .ok_or_else(|| {
+            CliError::PackageError(format!("package missing {SMARTMODULE_TOML_FNAME}"))
+        })?;
     let sm_wasm_file = vman
         .iter()
         .find(|&e| {
