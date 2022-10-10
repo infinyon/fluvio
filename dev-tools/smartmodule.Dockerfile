@@ -1,6 +1,6 @@
 
 #
-# This dockerfile creates a container of development dependencies for Fluvio smart-modules
+# This dockerfile creates a container of development dependencies for Fluvio smartmodules
 # It configures a container, sets up an example smartmodule project, and builds the example
 #
 # to build:
@@ -57,7 +57,7 @@ RUN echo '[values]' > tmpl-in
 RUN echo 'smartmodule-type = "filter"' >> tmpl-in
 RUN echo 'smartmodule-params = "true"' >> tmpl-in
 RUN source "$HOME/.cargo/env" && \
-    cargo generate gh:infinyon/fluvio-smartmodule-template --name example-sm --template-values-file tmpl-in
+	cargo generate gh:infinyon/fluvio-smartmodule-template --name example-sm --template-values-file tmpl-in
 RUN cd example-sm && source "$HOME/.cargo/env" && cargo build --release
 
 CMD bash

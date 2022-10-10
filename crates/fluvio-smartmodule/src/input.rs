@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, fmt::Display};
 use std::fmt;
+use std::io::Cursor;
 
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::{Encoder, Decoder, record::Record};
@@ -69,7 +70,7 @@ impl SmartModuleInput {
     }
 }
 
-impl std::convert::TryFrom<Vec<Record>> for SmartModuleInput {
+impl TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
         let mut raw_bytes = Vec::new();
@@ -78,6 +79,14 @@ impl std::convert::TryFrom<Vec<Record>> for SmartModuleInput {
             raw_bytes,
             ..Default::default()
         })
+    }
+}
+
+impl TryInto<Vec<Record>> for SmartModuleInput {
+    type Error = std::io::Error;
+
+    fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
+        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
     }
 }
 
@@ -106,4 +115,33 @@ pub struct SmartModuleAggregateInput {
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleInitInput {
     pub params: SmartModuleExtraParams,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_record_to_sm_input_and_back() {
+        //given
+        let records = vec![
+            Record::new("apple"),
+            Record::new("fruit"),
+            Record::new("banana"),
+        ];
+
+        //when
+        let sm_input: SmartModuleInput = records
+            .try_into()
+            .expect("records to input conversion failed");
+
+        let records_decoded: Vec<Record> = sm_input
+            .try_into()
+            .expect("input to records conversion failed");
+
+        //then
+        assert_eq!(records_decoded[0].value.as_ref(), b"apple");
+        assert_eq!(records_decoded[1].value.as_ref(), b"fruit");
+        assert_eq!(records_decoded[2].value.as_ref(), b"banana");
+    }
 }

@@ -7,7 +7,7 @@ use serde::{Deserialize};
 
 use k8_client::{ClientError};
 
-use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
+use k8_types::core::pod::{ResourceRequirements, PodSecurityContext, ContainerSpec};
 use k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
 use k8_types::core::service::{ServicePort, ServiceSpec, TargetPort, LoadBalancerType};
 use fluvio_controlplane_metadata::core::MetadataContext;
@@ -25,6 +25,8 @@ pub struct PodConfig {
     pub resources: Option<ResourceRequirements>,
     pub storage_class: Option<String>,
     pub base_node_port: Option<u16>,
+    #[serde(default)]
+    pub extra_containers: Vec<ContainerSpec>,
 }
 
 #[derive(Debug, Eq, PartialEq, Default, Clone)]

@@ -29,7 +29,7 @@ spec:
             - name: RUST_LOG
               value: {{ .Values.scLog }}
           command: ["/fluvio-run", "sc"]
-      {{ if .Values.tls }}
+        {{ if .Values.tls }}
           args:
             - --tls
             - --enable-client-cert
@@ -57,7 +57,12 @@ spec:
             - name: authorization-config
               mountPath: /etc/fluvio/authorization
             {{ end }}
+        {{ end }}
+        {{ if .Values.scPod.extraContainers }}
+        {{- toYaml .Values.scPod.extraContainers | nindent 8 }}
+        {{ end }}
       volumes:
+      {{ if .Values.tls }}
         - name: cacert
           secret:
             secretName: {{ .Values.cert.caCert }}

@@ -11,21 +11,21 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 # disabling compiling because it has no feedback
 # this should be done before running test
 setup_file() {
-    # Compile the smart-module examples
+    # Compile the smartmodule examples
 #    pushd "$BATS_TEST_DIRNAME/../../.." && make build_smartmodules && popd
     SMARTMODULE_BUILD_DIR="$BATS_TEST_DIRNAME/../../../smartmodule/examples/target/wasm32-unknown-unknown/release"
     export SMARTMODULE_BUILD_DIR
-   
+
 }
 
-@test "smart-module map" {
-    # Load the smart-module
+@test "smartmodule map" {
+    # Load the smartmodule
     SMARTMODULE_NAME="uppercase"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm
     # Print out cmd since we need complete trace of cmd not just failing
     echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_output "smart-module \"$SMARTMODULE_NAME\" has been created."
+    assert_output "smartmodule \"$SMARTMODULE_NAME\" has been created."
 
     # Create topic
     TOPIC_NAME="$(random_string)"
@@ -48,7 +48,7 @@ setup_file() {
     assert_output "$EXPECTED_OUTPUT"
     assert_success
 
- 
+
 
 
     # Delete topic
@@ -56,18 +56,18 @@ setup_file() {
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
-    # Delete smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
 
-@test "smart-module filter" {
-    # Load the smart-module
+@test "smartmodule filter" {
+    # Load the smartmodule
     SMARTMODULE_NAME="contains-a"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter.wasm
-    echo "cmd: $BATS_RUN_COMMAND" >&2 
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter.wasm
+    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
     # Create topic
@@ -96,7 +96,7 @@ setup_file() {
     assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
     assert_line --index 1 "$TEST_MESSAGE"
 
-    # Consume from topic with smart-module and verify we don't see the $NEGATIVE_TEST_MESSAGE
+    # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
     EXPECTED_OUTPUT="${TEST_MESSAGE}"
     export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
@@ -111,17 +111,17 @@ setup_file() {
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
-    # Delete smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
 
-@test "smart-module filter w/ params" {
-    # Load the smart-module
+@test "smartmodule filter w/ params" {
+    # Load the smartmodule
     SMARTMODULE_NAME="contains-a-or-param"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_param.wasm 
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_param.wasm
     assert_success
 
     # Create topic
@@ -152,7 +152,7 @@ setup_file() {
     assert_line --index 1 "$DEFAULT_PARAM_MESSAGE"
     assert_line --index 2 "$TEST_PARAM_MESSAGE"
 
-    # Consume from topic with smart-module and verify we don't see the $NEGATIVE_TEST_MESSAGE
+    # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
     EXPECTED_OUTPUT="${DEFAULT_PARAM_MESSAGE}"
     export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
@@ -174,16 +174,16 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_success
 
-    # Delete smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     assert_success
 }
 
-@test "smart-module filter-map" {
-    # Load the smart-module
+@test "smartmodule filter-map" {
+    # Load the smartmodule
     SMARTMODULE_NAME="divide-even-by-2"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_map.wasm 
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_map.wasm
     assert_success
 
     # Create topic
@@ -208,29 +208,29 @@ setup_file() {
     assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
     assert_line --index 1 "$TEST_MESSAGE"
 
-    # Consume from topic with smart-module and verify we don't see the $NEGATIVE_TEST_MESSAGE
+    # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
     EXPECTED_OUTPUT="${TEST_MESSAGE}"
     export EXPECTED_OUTPUT
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$((EXPECTED_OUTPUT/2))"
- 
+
 
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_success
 
-    # Delete smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     assert_success
 }
 
-@test "smart-module array-map" {
-    # Load the smart-module
+@test "smartmodule array-map" {
+    # Load the smartmodule
     SMARTMODULE_NAME="json-object-flatten"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_array_map_object.wasm 
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_array_map_object.wasm
 
     assert_success
 
@@ -256,7 +256,7 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
     assert_output "$FULL_TEST_MESSAGE"
 
-    # Consume from topic with smart-module and verify we don't see the $NEGATIVE_TEST_MESSAGE
+    # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
     assert_line --index 0 "$FIRST_MESSAGE"
     assert_line --index 1 "$SECOND_MESSAGE"
@@ -267,18 +267,18 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_success
 
-    # Delete smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     assert_success
 }
 
-@test "smart-module aggregate" {
-    # Load the smart-module
+@test "smartmodule aggregate" {
+    # Load the smartmodule
     SMARTMODULE_NAME="concat-strings"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_aggregate.wasm 
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_aggregate.wasm
     echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_output "smart-module \"$SMARTMODULE_NAME\" has been created."
+    assert_output "smartmodule \"$SMARTMODULE_NAME\" has been created."
 
     # Create topic
     TOPIC_NAME="$(random_string)"
@@ -311,18 +311,18 @@ setup_file() {
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
-    # Delete smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
 
-@test "smart-module join" {
+@test "smartmodule join" {
     skip "join is deprecated"
-    # Load the smart-module
+    # Load the smartmodule
     SMARTMODULE_NAME="join-sum"
     export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smart-module create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_join.wasm 
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_join.wasm
     assert_success
 
     # Create topic
@@ -365,7 +365,7 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$JOIN_TOPIC_NAME"
     assert_success
 
-    # Delete smart-module
-    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMARTMODULE_NAME"
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     assert_success
 }

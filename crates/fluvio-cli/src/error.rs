@@ -63,6 +63,9 @@ pub enum CliError {
         target: Target,
     },
 
+    #[error("Package error: {0}")]
+    PackageError(String),
+
     #[error(transparent)]
     TlsError(#[from] fluvio_future::openssl::TlsError),
 
@@ -95,6 +98,8 @@ pub enum CliError {
     #[cfg(feature = "smartengine")]
     #[error("SmartModuleEngine config: {0}")]
     SmartModuleConfigBuilder(#[from] fluvio_smartengine::SmartModuleConfigBuilderError),
+    #[error("Hub error: {0}")]
+    HubError(String),
 }
 
 impl CliError {
@@ -127,7 +132,7 @@ impl CliError {
                     Ok("Connector already exists")
                 }
                 ApiError::Code(ErrorCode::TopicNotFound, _) => Ok("Topic not found"),
-                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("Smart Module not found"),
+                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("SmartModule not found"),
                 ApiError::Code(ErrorCode::ManagedConnectorNotFound, _) => {
                     Ok("Connector not found")
                 }

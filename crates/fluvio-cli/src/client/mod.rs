@@ -109,7 +109,13 @@ mod cmd {
         /// Create and manage SmartModules
         ///
         /// SmartModules are compiled WASM modules used to create SmartModules.
-        #[clap(subcommand, name = "smart-module", visible_alias = "sm")]
+        #[clap(
+            subcommand,
+            name = "smartmodule",
+            visible_alias = "sm",
+            // FIXME: We should remove this alias when we bump the platform version to 10.x
+            alias = "smart-module"
+        )]
         SmartModule(SmartModuleCmd),
 
         /// Create a TableFormat display specification

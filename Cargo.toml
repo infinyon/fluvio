@@ -16,6 +16,7 @@ members = [
     "crates/fluvio-compression",
     "crates/fluvio-controlplane",
     "crates/fluvio-controlplane-metadata",
+    "crates/fluvio-hub-util",
     "crates/fluvio-extension-common",
     "crates/fluvio-package-index",
     "crates/fluvio-protocol",
@@ -39,11 +40,11 @@ members = [
     "crates/fluvio-test-util",
     "crates/fluvio-types",
     "release-tools/check-crate-version",
-    "crates/smdk"
+    "crates/smartmodule-development-kit"
 ]
 
 exclude = [
-    "smartmodule/sm-regex"
+    "smartmodule/regex-filter"
 ]
 resolver = "2"
 

@@ -1,0 +1,9 @@
+---
+package_format_version: "0.1"
+name: regex-filter
+version: "0.0.1"
+group: Infinyon.com
+description: Regex SmartModule
+license: Apache-2.0
+manifest:
+  - target/wasm32-unknown-unknown/release-lto/regex_filter.wasm

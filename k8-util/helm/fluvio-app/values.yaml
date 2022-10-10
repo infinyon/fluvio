@@ -25,6 +25,7 @@ scPod:
   nodeSelector: {}
   publicPort: 9003
   nodePort: 30003
+  extraContainers: []
 spuPod:
   resources:
     requests:
@@ -34,6 +35,7 @@ spuPod:
   nodeSelector: {}
   storageClass: null
   baseNodePort: 30004
+  extraContainers: []
 
 rbac:
   create: true

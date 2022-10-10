@@ -5,9 +5,6 @@ use anyhow::{Error, Result};
 use derive_builder::Builder;
 use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
 
-use fluvio_protocol::record::Offset;
-use fluvio_smartmodule::Record;
-
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
 };
@@ -136,7 +133,7 @@ impl SmartModuleChainBuilder {
         &self.instances
     }
 
-    /// Add Smart Module with a single transform and init
+    /// Add SmartModule with a single transform and init
     pub fn add_smart_module(
         &mut self,
         config: SmartModuleConfig,
@@ -204,65 +201,29 @@ impl SmartModuleChainInstance {
     /// A single record may result in multiple records.
     /// The output of the last smart module is added to the output of the chain.
     pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
-        enum SmartModuleStepInput {
-            Raw(Vec<u8>),
-            Records(Vec<Record>),
-        }
-
-        impl From<Vec<u8>> for SmartModuleStepInput {
-            fn from(input: Vec<u8>) -> Self {
-                SmartModuleStepInput::Raw(input)
-            }
-        }
-
-        impl From<Vec<Record>> for SmartModuleStepInput {
-            fn from(input: Vec<Record>) -> Self {
-                SmartModuleStepInput::Records(input)
-            }
-        }
-
-        impl SmartModuleStepInput {
-            fn into_input(self, base_offset: Offset) -> Result<SmartModuleInput> {
-                match self {
-                    SmartModuleStepInput::Raw(input) => {
-                        Ok(SmartModuleInput::new(input, base_offset))
-                    }
-                    SmartModuleStepInput::Records(records) => {
-                        let mut input: SmartModuleInput = records.try_into()?;
-                        input.set_base_offset(base_offset);
-                        Ok(input)
-                    }
-                }
-            }
-
-            fn try_into_output(self) -> Result<SmartModuleOutput> {
-                match self {
-                    SmartModuleStepInput::Raw(_) => Err(Error::msg("Unexpected raw input")),
-                    SmartModuleStepInput::Records(records) => Ok(SmartModuleOutput::new(records)),
-                }
-            }
-        }
-
         let base_offset = input.base_offset();
 
-        let mut next_input: SmartModuleStepInput = input.into_raw_bytes().into();
+        if let Some((last, instances)) = self.instances.split_last_mut() {
+            let mut next_input = input;
 
-        for instance in self.instances.iter_mut() {
-            // pass raw inputs to transform instance
-            // each raw input may result in multiple records
-            //println!("raw records: {}", next_input.len());
-            let step_input = next_input.into_input(base_offset)?;
-            let output = instance.process(step_input, &mut self.store)?;
+            for instance in instances {
+                // pass raw inputs to transform instance
+                // each raw input may result in multiple records
+                let output = instance.process(next_input, &mut self.store)?;
 
-            if output.error.is_some() {
-                // encountered error, we stop processing and return partial output
-                return Ok(output);
-            } else {
-                next_input = output.successes.into();
+                if output.error.is_some() {
+                    // encountered error, we stop processing and return partial output
+                    return Ok(output);
+                } else {
+                    next_input = output.successes.try_into()?;
+                    next_input.set_base_offset(base_offset);
+                }
             }
-        }
 
-        next_input.try_into_output()
+            last.process(next_input, &mut self.store)
+        } else {
+            Ok(SmartModuleOutput::new(input.try_into()?))
+        }
     }
 }
 
@@ -459,5 +420,22 @@ mod chaining_test {
             output.successes[0].value().to_string(),
             "zeroapplebananaelephant"
         );
+    }
+
+    #[test]
+    fn test_empty_chain() {
+        //given
+        let engine = SmartEngine::new();
+        let chain_builder = engine.builder();
+        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let record = vec![Record::new("input")];
+        let input = SmartModuleInput::try_from(record).expect("valid input record");
+
+        //when
+        let output = chain.process(input).expect("process failed");
+
+        //then
+        assert_eq!(output.successes.len(), 1);
+        assert_eq!(output.successes[0].value().to_string(), "input");
     }
 }
