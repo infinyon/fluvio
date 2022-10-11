@@ -6,5 +6,6 @@ apiVersion = "0.1.0"
 description = "{{project-description}}"
 license = "Apache-2.0"
 
-[params]
-
+[[params]]
+name = "input"
+description = "input description"
