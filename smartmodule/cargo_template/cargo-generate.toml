@@ -1,8 +1,3 @@
-[placeholders.smartmodule-version]
-type = "string"
-default = "git = \"https://github.com/infinyon/fluvio.git\""
-prompt = "SmartModule Version"
-
 [placeholders.smartmodule-type]
 type = "string"
 prompt = "Which type of SmartModule would you like?"
