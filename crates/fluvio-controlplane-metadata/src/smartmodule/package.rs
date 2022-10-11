@@ -346,10 +346,37 @@ mod package_test {
     }
 }
 
-#[cfg(all(not(feature = "k8"), test, feature = "smartmodule"))]
+#[cfg(all(test, feature = "smartmodule"))]
 mod test {
 
-    use super::FluvioSemVersion;
+    use crate::smartmodule::params::{SmartModuleParams, SmartModuleParam};
+
+    use super::{FluvioSemVersion, SmartModulePackage};
+
+    #[test]
+    fn write_metadata_toml() {
+        let pkg = SmartModulePackage {
+            name: "test".to_owned(),
+            group: "group".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        };
+
+        let param = SmartModuleParam {
+            optional: true,
+            description: Some("fluvio".to_owned()),
+        };
+        let mut params = SmartModuleParams::default();
+        params.insert_param("param1".to_owned(), param);
+        let metadata = super::SmartModuleMetadata {
+            package: pkg,
+            params,
+        };
+
+        let toml = toml::to_string(&metadata).expect("toml");
+        println!("{}", toml);
+        assert!(toml.contains("param1"));
+    }
 
     #[test]
     fn read_metadata_toml() {
@@ -375,6 +402,6 @@ mod test {
         assert_eq!(params.len(), 2);
         let input1 = &params.get_param("multiplier").unwrap();
         assert_eq!(input1.description.as_ref().unwrap(), "multiply input");
-        assert_eq!(input1.optional, false);
+        assert!(!input1.optional);
     }
 }

@@ -8,6 +8,13 @@ license = "Apache-2.0"
 repository = "https://github.com/infinyon/fluvio"
 
 
-[params]
-multiplier = { description = "multiply input" }
-scaler = { description = "scaling factor", optional = true }
+
+[[params]]
+name = "multiplier"
+description = "multiply input"
+
+
+[[params]]
+name = "scaler"
+description = "scaling factor"
+optional = true
