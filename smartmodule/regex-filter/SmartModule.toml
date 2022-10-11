@@ -7,7 +7,8 @@ description = "Regex SmartModule"
 license = "Apache-2.0"
 repository = "https://github.com/infinyon/fluvio"
 
-[params]
-regex = { description = "Regex filter" }
+[[params]]
+name = "regex"
+description = "Regex filter"
 
 

@@ -7,7 +7,7 @@ use fluvio_protocol::{Encoder, Decoder};
 #[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleParams(
-    #[cfg_attr(feature = "k8", serde(default), serde(with = "map_init_params"))]
+    #[cfg_attr(feature = "use_serde", serde(default), serde(with = "map_init_params"))]
     BTreeMap<String, SmartModuleParam>,
 );
 
@@ -18,6 +18,10 @@ impl SmartModuleParams {
 
     pub fn get_param(&self, name: &str) -> Option<&SmartModuleParam> {
         self.0.get(name)
+    }
+
+    pub fn insert_param(&mut self, name: String, param: SmartModuleParam) {
+        self.0.insert(name, param);
     }
 }
 
@@ -31,7 +35,7 @@ pub struct SmartModuleParam {
 
 /// map parameters from list to map and vice versa
 /// this is only used for k8
-#[cfg(feature = "k8")]
+#[cfg(feature = "serde")]
 mod map_init_params {
     use std::{collections::BTreeMap};
 
