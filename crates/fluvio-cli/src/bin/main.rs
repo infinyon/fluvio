@@ -49,7 +49,7 @@ mod tests {
             "fluvio --help", // fluvio help is hacked with print_help_hack
         ];
         for s in should_not_succeed {
-            assert!(!parse_succeeds(s));
+            assert!(!parse_succeeds(s), "{s}");
         }
     }
 
@@ -62,7 +62,7 @@ mod tests {
             "fluvio consume -T -n 10 hello",
         ];
         for s in should_succeed {
-            assert!(parse_succeeds(s));
+            assert!(parse_succeeds(s), "{s}");
         }
 
         let should_not_succeed = vec![
@@ -71,9 +71,12 @@ mod tests {
             "fluvio consume -T 0 hello",
             "fluvio consume -B -n -10 hello",
             "fluvio consume -B -n hello",
+            "fluvio consume -n 10 hello",
+            "fluvio consume -B -T -n 10 hello",
+            "fluvio consume -n hello",
         ];
         for s in should_not_succeed {
-            assert!(!parse_succeeds(s));
+            assert!(!parse_succeeds(s), "{s}");
         }
     }
 
