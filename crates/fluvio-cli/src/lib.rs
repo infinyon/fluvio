@@ -363,7 +363,7 @@ mod root {
         Ok(())
     }
 }
-// Checks for an update if channel is latest or ALWAYS_CHECK is set)
+// Checks for an update if channel is latest or ALWAYS_CHECK is set
 async fn check_for_channel_update() -> Result<()> {
     if should_always_print_available_update() {
         println!("🔍 Checking for new version");
