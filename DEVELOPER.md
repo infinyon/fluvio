@@ -152,7 +152,6 @@ For example, to generate optimized binaries, run, `make build-cluster RELEASE=tr
 ### Inlining Helm chart
 
 Fluvio uses helm chart to install and manage Kubernetes components.  They are inline into Fluvio CLI binary.  If there is any issue with helm chart, run `make -C k8-util/helm clean` to clean up helm artifacts.
-You will then need to run `make helm_pkg` to rebuild artifacts.
 
 
 ### Fluvio binaries Alias
