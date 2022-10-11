@@ -61,7 +61,7 @@ mod root {
 
     impl Root {
         pub async fn process(self) -> Result<()> {
-            check_for_channel_update().await?;
+            check_for_channel_update().await;
             self.command.process(self.opts).await?;
             Ok(())
         }
@@ -347,7 +347,7 @@ mod root {
     }
 }
 // Checks for an update if channel is latest or ALWAYS_CHECK is set
-async fn check_for_channel_update() -> Result<()> {
+async fn check_for_channel_update() {
     if should_always_print_available_update() {
         println!("🔍 Checking for new version");
         let agent = HttpAgent::default();
@@ -358,7 +358,6 @@ async fn check_for_channel_update() -> Result<()> {
             println!("✅ fluvio-cli is up to date");
         }
     }
-    Ok(())
 }
 
 mod util {
