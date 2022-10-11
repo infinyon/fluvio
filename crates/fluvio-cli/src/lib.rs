@@ -15,6 +15,10 @@ pub(crate) use error::{Result, CliError};
 use fluvio_extension_common as common;
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
 
+use fluvio_index::HttpAgent;
+use install::update::{
+    should_always_print_available_update, check_update_available, prompt_available_update,
+};
 // list of public export
 pub use root::{Root, HelpOpt};
 pub use client::TableFormatConfig;
@@ -57,6 +61,7 @@ mod root {
 
     impl Root {
         pub async fn process(self) -> Result<()> {
+            check_for_channel_update().await?;
             self.command.process(self.opts).await?;
             Ok(())
         }
@@ -340,6 +345,20 @@ mod root {
 
         Ok(())
     }
+}
+// Checks for an update if channel is latest or ALWAYS_CHECK is set)
+async fn check_for_channel_update() -> Result<()> {
+    if should_always_print_available_update() {
+        println!("🔍 Checking for new version");
+        let agent = HttpAgent::default();
+        let update_result = check_update_available(&agent, false).await;
+        if let Ok(Some(latest_version)) = update_result {
+            prompt_available_update(&latest_version);
+        } else {
+            println!("✅ fluvio-cli is up to date");
+        }
+    }
+    Ok(())
 }
 
 mod util {
