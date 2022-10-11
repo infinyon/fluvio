@@ -23,7 +23,7 @@ impl ListManagedConnectorsOpt {
     /// Process list connectors cli request
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<ManagedConnectorSpec, _>(vec![]).await?;
+        let lists = admin.list::<ManagedConnectorSpec, String>(vec![]).await?;
 
         output::managed_connectors_response_to_output(out, lists, self.output.format)
     }

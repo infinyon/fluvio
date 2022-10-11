@@ -39,7 +39,7 @@ impl ListSpusOpt {
         let spus = if self.custom {
             // List custom SPUs only
             admin
-                .list::<CustomSpuSpec, _>(vec![])
+                .all::<CustomSpuSpec>()
                 .await?
                 .into_iter()
                 .map(|custom_spu| Metadata {
@@ -50,7 +50,7 @@ impl ListSpusOpt {
                 .collect()
         } else {
             // List all SPUs
-            admin.list::<SpuSpec, _>(vec![]).await?
+            admin.all::<SpuSpec>().await?
         };
 
         // format and dump to screen

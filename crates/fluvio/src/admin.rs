@@ -197,11 +197,25 @@ impl FluvioAdmin {
         Ok(())
     }
 
+    /// return all instance of this spec
+    #[instrument(skip(self))]
+    pub async fn all<S>(&self) -> Result<Vec<S::ListType>, FluvioError>
+    where
+        S: AdminSpec,
+        <S as AdminSpec>::ListFilter: From<std::string::String>,
+        ObjectApiListRequest: From<ListRequest<S>>,
+        ListResponse<S>: TryFrom<ObjectApiListResponse>,
+        <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+    {
+        self.list::<S, String>(vec![]).await
+    }
+
+    /// return all instance of this spec by filter
     #[instrument(skip(self, filters))]
     pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<S::ListType>, FluvioError>
     where
         S: AdminSpec,
-        F: Into<S::ListFilter>,
+        S::ListFilter: From<F>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,

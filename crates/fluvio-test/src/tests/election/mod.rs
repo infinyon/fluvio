@@ -36,10 +36,7 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     let admin = test_driver.client().admin().await;
 
-    let partitions = admin
-        .list::<PartitionSpec, _>(vec![])
-        .await
-        .expect("partitions");
+    let partitions = admin.all::<PartitionSpec>().await.expect("partitions");
 
     assert_eq!(partitions.len(), 1);
     let test_topic = &partitions[0];
@@ -70,10 +67,7 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     println!("checking for new leader");
 
-    let partition_status2 = admin
-        .list::<PartitionSpec, _>(vec![])
-        .await
-        .expect("partitions");
+    let partition_status2 = admin.all::<PartitionSpec>().await.expect("partitions");
 
     let status2 = &partition_status2[0];
     assert_eq!(status2.spec.leader, follower_id); // switch leader to follower
@@ -91,10 +85,7 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     sleep(Duration::from_secs(ACK_WAIT)).await;
 
     {
-        let partition_status = admin
-            .list::<PartitionSpec, _>(vec![])
-            .await
-            .expect("partitions");
+        let partition_status = admin.all::<PartitionSpec>().await.expect("partitions");
         let leader_status = &partition_status[0].status.leader;
         assert_eq!(leader_status.leo, 2);
         assert_eq!(leader_status.hw, 1);
@@ -110,10 +101,7 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     println!("checking that prev leader has fully caught up");
     {
-        let partition_status = admin
-            .list::<PartitionSpec, _>(vec![])
-            .await
-            .expect("partitions");
+        let partition_status = admin.all::<PartitionSpec>().await.expect("partitions");
         let leader_status = &partition_status[0].status.leader;
         assert_eq!(leader_status.leo, 2);
         assert_eq!(leader_status.hw, 2);
@@ -129,10 +117,7 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     println!("checking leader again");
 
     {
-        let partition_status = admin
-            .list::<PartitionSpec, _>(vec![])
-            .await
-            .expect("partitions");
+        let partition_status = admin.all::<PartitionSpec>().await.expect("partitions");
         let leader_status = &partition_status[0];
         assert_eq!(leader_status.spec.leader, leader);
     }

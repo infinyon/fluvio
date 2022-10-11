@@ -178,10 +178,7 @@ pub async fn validate_consume_message_api(
             sleep(Duration::from_secs(wait_delay_sec)).await;
 
             let admin = test_driver.client().admin().await;
-            let partitions = admin
-                .list::<PartitionSpec, _>(vec![])
-                .await
-                .expect("partitions");
+            let partitions = admin.all::<PartitionSpec>().await.expect("partitions");
 
             println!("partitions: {:#?}", partitions);
 

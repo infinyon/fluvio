@@ -31,14 +31,14 @@ mod convert {
     pub struct SmartModuleFilter {
         pub name: String,
         #[fluvio(min_version = crate::objects::MIN_API_WITH_FILTER)]
-        pub summary: bool       // if true, only return summary
+        pub summary: bool, // if true, only return summary
     }
 
     impl From<String> for SmartModuleFilter {
         fn from(name: String) -> Self {
             Self {
                 name,
-                summary: false
+                summary: false,
             }
         }
     }

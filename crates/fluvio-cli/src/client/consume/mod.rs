@@ -210,7 +210,7 @@ mod cmd {
         ) -> Result<()> {
             let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
                 let admin = fluvio.admin().await;
-                let tableformats = admin.list::<TableFormatSpec, _>(vec![]).await?;
+                let tableformats = admin.all::<TableFormatSpec>().await?;
 
                 let mut found = None;
 

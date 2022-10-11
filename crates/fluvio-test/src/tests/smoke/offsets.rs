@@ -33,7 +33,7 @@ pub async fn find_offsets(test_driver: &TestDriver, test_case: &SmokeTestCase) -
 
 async fn last_leo(admin: &mut FluvioAdmin, topic: &str) -> i64 {
     let partitions = admin
-        .list::<PartitionSpec, _>(vec![])
+        .all::<PartitionSpec>()
         .await
         .expect("get partitions status");
 

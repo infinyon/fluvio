@@ -240,7 +240,7 @@ impl DiagnosticsOpt {
         };
 
         println!("getting topic spec");
-        let topics = admin.list::<TopicSpec,String>(vec![]).await?;
+        let topics = admin.list::<TopicSpec, String>(vec![]).await?;
         let topics = serde_yaml::to_string(&topics).unwrap();
         write_spec(topics, "topics")?;
 
