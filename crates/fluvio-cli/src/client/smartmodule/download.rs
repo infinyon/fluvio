@@ -126,5 +126,7 @@ async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
         wasm: sm_wasm,
     };
     admin.create(sm_id, false, spec).await?;
+
+    std::fs::remove_file(pkgfile)?;
     Ok(())
 }
