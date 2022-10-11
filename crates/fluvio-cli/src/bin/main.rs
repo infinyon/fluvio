@@ -27,10 +27,57 @@ fn print_help_hack() -> Result<()> {
         HelpOpt {}.process()?;
         std::process::exit(0);
     } else if let Some(first_arg) = args.nth(1) {
+        // We pick help up here as a courtesy
         if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
             HelpOpt {}.process()?;
             std::process::exit(0);
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+    use fluvio_cli::Root;
+
+    #[test]
+    fn test_correct_command_parsing_help() {
+        let should_not_succeed = vec![
+            "fluvio",
+            "fluvio -h",
+            "fluvio --help", // fluvio help is hacked with print_help_hack
+        ];
+        for s in should_not_succeed {
+            assert!(!parse_succeeds(s));
+        }
+    }
+
+    #[test]
+    fn test_correct_command_parsing_consume() {
+        let should_succeed = vec![
+            "fluvio consume -B hello",
+            "fluvio consume -T hello",
+            "fluvio consume -B -n 10 hello",
+            "fluvio consume -T -n 10 hello",
+        ];
+        for s in should_succeed {
+            assert!(parse_succeeds(s));
+        }
+
+        let should_not_succeed = vec![
+            "fluvio consume",
+            "fluvio consume -B 0 hello",
+            "fluvio consume -T 0 hello",
+            "fluvio consume -B -n -10 hello",
+            "fluvio consume -B -n hello",
+        ];
+        for s in should_not_succeed {
+            assert!(!parse_succeeds(s));
+        }
+    }
+
+    fn parse_succeeds(command: &str) -> bool {
+        Root::try_parse_from(command.split_whitespace()).is_ok()
+    }
 }

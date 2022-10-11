@@ -17,7 +17,7 @@ mod cmd {
     use std::time::{UNIX_EPOCH, Duration};
     use std::{io::Error as IoError, path::PathBuf};
     use std::io::{self, ErrorKind, Read, Stdout};
-    use std::collections::{BTreeMap};
+    use std::collections::BTreeMap;
     use std::fmt::Debug;
     use std::sync::Arc;
 
@@ -116,17 +116,21 @@ mod cmd {
         #[clap(long)]
         pub table_format: Option<String>,
 
-        /// Consume records starting X from the beginning of the log (default: 0)
-        #[clap(short = 'B', value_name = "integer", conflicts_with_all = &["offset", "tail"])]
-        pub from_beginning: Option<Option<u32>>,
-
         /// The offset of the first record to begin consuming from
         #[clap(short, long, value_name = "integer", conflicts_with_all = &["tail"])]
         pub offset: Option<u32>,
 
-        /// Consume records starting X from the end of the log (default: 10)
-        #[clap(short = 'T', long, value_name = "integer", conflicts_with_all = &["offset"])]
-        pub tail: Option<Option<u32>>,
+        /// Consume records starting X from the beginning of the log (default:0, change X with -n)
+        #[clap(short = 'B', long="head", group = "can_be_offset", conflicts_with_all = &["offset", "tail"])]
+        pub from_beginning: bool,
+
+        /// Consume records starting X from the end of the log (default: 10, change X with -n)
+        #[clap(short = 'T', long,  group = "can_be_offset", conflicts_with_all = &["from-beginning", "offset"])]
+        pub tail: bool,
+
+        /// --head consume beginning X after start of log. --tail consume beginning X before end of log.
+        #[clap(short = 'n', value_name = "integer", requires("can_be_offset"))]
+        pub amount_to_offset: Option<u32>,
 
         /// Consume records until end offset
         #[clap(long, value_name= "integer", conflicts_with_all = &["tail"])]
@@ -629,27 +633,30 @@ mod cmd {
                 return;
             }
 
-            // If --from-beginning=X
-            if let Some(Some(offset)) = self.from_beginning {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records starting {} from the beginning of topic '{}'",
-                        offset, &self.topic
-                    )
-                    .bold()
-                );
-            // If --from-beginning
-            } else if let Some(None) = self.from_beginning {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records from the beginning of topic '{}'",
-                        &self.topic
-                    )
-                    .bold()
-                );
-            // If --offset=X
+            if self.from_beginning {
+                // If --from-beginning -n X
+                if let Some(offset) = self.amount_to_offset {
+                    eprintln!(
+                        "{}",
+                        format!(
+                            "Consuming records starting {} from the beginning of topic '{}'",
+                            offset, &self.topic
+                        )
+                        .bold()
+                    );
+                }
+                // If --from-beginning=X
+                else {
+                    eprintln!(
+                        "{}",
+                        format!(
+                            "Consuming records from the beginning of topic '{}'",
+                            &self.topic
+                        )
+                        .bold()
+                    );
+                }
+                // If --offset=X
             } else if let Some(offset) = self.offset {
                 eprintln!(
                     "{}",
@@ -659,9 +666,10 @@ mod cmd {
                     )
                     .bold()
                 );
-            // If --tail or --tail=X
-            } else if let Some(maybe_tail) = self.tail {
-                let tail = maybe_tail.unwrap_or(DEFAULT_TAIL);
+            // If --tail or --tail -n X
+            // Joined since default tail != 0
+            } else if self.tail {
+                let tail = self.amount_to_offset.unwrap_or(DEFAULT_TAIL);
                 eprintln!(
                     "{}",
                     format!(
@@ -712,13 +720,13 @@ mod cmd {
 
         /// Calculate the Offset to use with the consumer based on the provided offset number
         fn calculate_offset(&self) -> Result<Offset> {
-            let offset = if let Some(maybe_offset) = self.from_beginning {
-                let offset = maybe_offset.unwrap_or(0);
+            let offset = if self.from_beginning {
+                let offset = self.amount_to_offset.unwrap_or(0);
                 Offset::from_beginning(offset)
             } else if let Some(offset) = self.offset {
                 Offset::absolute(offset as i64).unwrap()
-            } else if let Some(maybe_tail) = self.tail {
-                let tail = maybe_tail.unwrap_or(DEFAULT_TAIL);
+            } else if self.tail {
+                let tail = self.amount_to_offset.unwrap_or(DEFAULT_TAIL);
                 Offset::from_end(tail)
             } else {
                 Offset::end()
