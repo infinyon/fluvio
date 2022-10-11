@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use clap::Parser;
+use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_ALWAYS_CHECK_UPDATES, FLUVIO_RELEASE_CHANNEL};
 use tracing::{debug, instrument};
 
 use semver::Version;
@@ -297,4 +298,19 @@ pub fn prompt_available_update(latest_version: &Version) {
         "💡     Run 'fluvio update' to install v{} of Fluvio",
         &latest_version
     );
+}
+
+pub fn should_always_print_available_update() -> bool {
+    if std::env::var(FLUVIO_ALWAYS_CHECK_UPDATES).is_ok() {
+        return true;
+    }
+    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+        if channel_name == LATEST_CHANNEL_NAME {
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    }
 }
