@@ -306,11 +306,7 @@ pub fn should_always_print_available_update() -> bool {
         return true;
     }
     if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
-        if channel_name == LATEST_CHANNEL_NAME {
-            true
-        } else {
-            false
-        }
+        channel_name == LATEST_CHANNEL_NAME 
     } else {
         false
     }
