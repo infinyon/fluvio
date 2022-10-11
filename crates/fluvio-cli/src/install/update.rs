@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use clap::Parser;
-use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_ALWAYS_CHECK_UPDATES, FLUVIO_RELEASE_CHANNEL};
+use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
+use fluvio_cli_common::FLUVIO_ALWAYS_CHECK_UPDATES;
 use tracing::{debug, instrument};
 
 use semver::Version;
