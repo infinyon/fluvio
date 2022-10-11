@@ -1,6 +1,6 @@
 [placeholders.smartmodule-version]
 type = "string"
-default = "git = \"https://github.com/infinyon/fluvio.git\""
+default = "0.1.0"
 prompt = "SmartModule Version"
 
 [placeholders.smartmodule-type]
