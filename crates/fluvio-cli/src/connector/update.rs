@@ -42,7 +42,7 @@ impl UpdateManagedConnectorOpt {
         let admin = fluvio.admin().await;
 
         // admin.find ?
-        let lists = admin.list::<ManagedConnectorSpec, String>(vec![]).await?;
+        let lists = admin.all::<ManagedConnectorSpec>().await?;
         let existing_config = match lists.into_iter().find(|c| c.name == config.name) {
             None => {
                 return Err(CliError::InvalidConnector(format!(

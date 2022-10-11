@@ -27,7 +27,7 @@ impl ListManagedSpuGroupsOpt {
         fluvio: &Fluvio,
     ) -> Result<(), ClusterCliError> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SpuGroupSpec, String>(vec![]).await?;
+        let lists = admin.all::<SpuGroupSpec>().await?;
 
         output::spu_group_response_to_output(out, lists, self.output.format)
     }
