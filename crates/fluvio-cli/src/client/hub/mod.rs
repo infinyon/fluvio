@@ -1,11 +1,9 @@
-mod create;
-mod list;
-mod delete;
+pub use cmd::HubCmd;
 
-pub use cmd::SmartModuleCmd;
+mod download;
+mod list;
 
 mod cmd {
-
     use std::sync::Arc;
     use std::fmt::Debug;
 
@@ -15,38 +13,32 @@ mod cmd {
     use fluvio::Fluvio;
     use fluvio_extension_common::target::ClusterTarget;
 
-    use crate::Result;
     use crate::client::cmd::ClientCmd;
     use crate::common::output::Terminal;
+    use crate::Result;
 
-    use super::create::CreateSmartModuleOpt;
-    use super::list::ListSmartModuleOpt;
-    use super::delete::DeleteSmartModuleOpt;
+    use super::download::DownloadHubOpt;
+    use super::list::ListHubOpt;
 
     #[derive(Debug, Parser)]
-    pub enum SmartModuleCmd {
-        Create(CreateSmartModuleOpt),
-        List(ListSmartModuleOpt),
-        /// Delete one or more SmartModules with the given name(s)
-        Delete(DeleteSmartModuleOpt),
+    pub enum HubCmd {
+        Download(DownloadHubOpt),
+        List(ListHubOpt),
     }
 
     #[async_trait]
-    impl ClientCmd for SmartModuleCmd {
+    impl ClientCmd for HubCmd {
         async fn process<O: Terminal + Send + Sync + Debug>(
             self,
             out: Arc<O>,
             target: ClusterTarget,
         ) -> Result<()> {
             match self {
-                Self::Create(opt) => {
+                Self::Download(opt) => {
                     opt.process(out, target).await?;
                 }
                 Self::List(opt) => {
-                    opt.process(out, target).await?;
-                }
-                Self::Delete(opt) => {
-                    opt.process(out, target).await?;
+                    opt.process().await?;
                 }
             }
             Ok(())

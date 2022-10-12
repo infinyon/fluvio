@@ -15,6 +15,7 @@ pub use packagemeta::*;
 pub use errors::HubUtilError;
 pub use utils::*;
 pub use infinyon_tok::read_infinyon_token;
+pub use surf as http;
 
 pub const CLI_CONFIG_HUB: &str = "hub";
 

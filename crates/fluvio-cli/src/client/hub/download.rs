@@ -14,13 +14,12 @@ use fluvio_extension_common::target::ClusterTarget;
 use fluvio_hub_util as hubutil;
 use tracing::info;
 
-use crate::Result;
+use crate::{CliError, Result};
 use crate::client::cmd::ClientCmd;
-use crate::CliError;
 
-/// Delete an existing SmartModule with the given name
+/// Download a SmartModule from the hub
 #[derive(Debug, Parser)]
-pub struct DownloadSmartModuleOpt {
+pub struct DownloadHubOpt {
     /// SmartModule name: e.g. infinyon/jolt@v0.0.1
     #[clap(value_name = "name", required = true)]
     pkgname: String,
@@ -38,7 +37,7 @@ pub struct DownloadSmartModuleOpt {
 }
 
 #[async_trait]
-impl ClientCmd for DownloadSmartModuleOpt {
+impl ClientCmd for DownloadHubOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
         _out: Arc<O>,
@@ -65,8 +64,11 @@ impl ClientCmd for DownloadSmartModuleOpt {
 /// download smartmodule from hub to local fs
 /// returns path of downloaded of package
 async fn download_local(pkgname: &str) -> Result<String> {
-    let fname = hubutil::cli_pkgname_to_filename(pkgname)
-        .map_err(|_| CliError::HubError(format!("error writing {pkgname}")))?;
+    let fname = hubutil::cli_pkgname_to_filename(pkgname).map_err(|_| {
+        CliError::HubError(format!(
+            "invalid package name format {pkgname}, is it the form infinyon/json-sql@0.1.0"
+        ))
+    })?;
 
     let access = hubutil::HubAccess::default_load().await.map_err(|_| {
         CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
@@ -77,7 +79,7 @@ async fn download_local(pkgname: &str) -> Result<String> {
 
     let data = hubutil::get_package(&url, &access)
         .await
-        .map_err(|_| CliError::HubError(format!("error downloading {pkgname}")))?;
+        .map_err(|err| CliError::HubError(format!("downloading {pkgname}\nServer: {err}")))?;
 
     std::fs::write(&fname, &data)?;
     println!("... downloading complete");
@@ -86,13 +88,9 @@ async fn download_local(pkgname: &str) -> Result<String> {
 
 // download smartmodule from pkg to cluster
 async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
-    println!("trying connection to fluvio {}", config.endpoint);
-    let fluvio = Fluvio::connect_with_config(&config).await?;
-
-    let admin = fluvio.admin().await;
-
+    println!("... checking package");
     let pm = hubutil::package_get_meta(pkgfile)
-        .map_err(|_| CliError::PackageError(format!("error accessing {pkgfile}")))?;
+        .map_err(|_| CliError::PackageError(format!("accessing metadata in {pkgfile}")))?;
     let vman = &pm.manifest;
     // check for file contents
     let sm_meta_file = vman
@@ -114,10 +112,10 @@ async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
 
     // extract files
     let sm_meta_bytes = hubutil::package_get_manifest_file(pkgfile, sm_meta_file)
-        .map_err(|_| CliError::PackageError("package missing {SMARTMODULE_TOML_FNAME}".into()))?;
+        .map_err(|_| CliError::PackageError("package missing Smartmodule toml".into()))?;
     let sm_meta = SmartModuleMetadata::from_bytes(&sm_meta_bytes)?;
     let sm_wasm_bytes = hubutil::package_get_manifest_file(pkgfile, sm_wasm_file)
-        .map_err(|_| CliError::PackageError("package missing {sm_wasm_file}".into()))?;
+        .map_err(|_| CliError::PackageError(format!("package missing {sm_wasm_file}")))?;
     let sm_wasm = SmartModuleWasm::from_raw_wasm_bytes(&sm_wasm_bytes)?;
 
     let sm_id = sm_meta.store_id();
@@ -125,6 +123,14 @@ async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
         meta: Some(sm_meta),
         wasm: sm_wasm,
     };
+
+    println!("trying connection to fluvio {}", config.endpoint);
+    let fluvio = Fluvio::connect_with_config(&config).await?;
+
+    let admin = fluvio.admin().await;
     admin.create(sm_id, false, spec).await?;
+    println!("... cluster smartmodule install complete");
+    std::fs::remove_file(pkgfile)
+        .map_err(|_| CliError::PackageError(format!("error deleting temporary pkg {pkgfile}")))?;
     Ok(())
 }
