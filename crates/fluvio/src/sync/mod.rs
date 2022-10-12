@@ -108,6 +108,12 @@ mod context {
             use tokio::select;
             use fluvio_future::timer::sleep;
 
+            // We can short circuit here if already present
+            let found = search(self.store().read().await);
+            if found.is_some() {
+                return Ok(found);
+            }
+
             let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
             let mut listener = self.store.change_listener();
 
