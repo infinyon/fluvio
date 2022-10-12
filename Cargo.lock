@@ -2604,6 +2604,7 @@ dependencies = [
  "comfy-table",
  "crc",
  "crossbeam-channel",
+ "fastrand",
  "fluvio",
  "fluvio-cli",
  "fluvio-cluster",
