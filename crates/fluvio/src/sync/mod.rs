@@ -122,7 +122,6 @@ mod context {
                     // this should be full sync
                     // let changes = listener.sync_changes().await;
                     // trace!("{} received changes: {:#?}",S::LABEL,changes);
-                    // println!("{} received changes: {:#?}",S::LABEL,changes);
 
                     Ok(search(self.store().read().await))
                 },
