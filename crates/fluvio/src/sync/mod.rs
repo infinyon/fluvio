@@ -115,9 +115,14 @@ mod context {
             select! {
 
                 _ = listener.listen() => {
+                    // since the listeners change count is always 0 and listener.listen() only returns when change count > 0,
+                    // calling for sync_changes() will always trigger an allocation.
+                    // Since we don't do anything with the changes and sync_changes() doesn't add new changes to the cache, it's wasteful to call
+
                     // this should be full sync
-                    let changes = listener.sync_changes().await;
-                    trace!("{} received changes: {:#?}",S::LABEL,changes);
+                    // let changes = listener.sync_changes().await;
+                    // trace!("{} received changes: {:#?}",S::LABEL,changes);
+                    // println!("{} received changes: {:#?}",S::LABEL,changes);
 
                     Ok(search(self.store().read().await))
                 },
