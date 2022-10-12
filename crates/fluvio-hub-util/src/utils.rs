@@ -65,12 +65,17 @@ pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
     let mut resp = surf::get(&pkgurl)
         .header("Authorization", actiontoken)
         .await
-        .map_err(|_| HubUtilError::PackageDownload("".into()))?;
+        .map_err(|_| HubUtilError::PackageDownload("authorization error".into()))?;
 
     match resp.status() {
         StatusCode::Ok => {}
-        _ => {
-            return Err(HubUtilError::PackageDownload("".into()));
+        code => {
+            let body_err_message = resp
+                .body_string()
+                .await
+                .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
+            let msg = format!("Status({code}) {body_err_message}");
+            return Err(HubUtilError::PackageDownload(msg));
         }
     }
 
