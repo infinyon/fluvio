@@ -10,7 +10,7 @@ mod context {
     use std::fmt::Display;
     use std::io::Error as IoError;
 
-    use tracing::{debug, trace, instrument};
+    use tracing::{debug, instrument};
     use async_rwlock::RwLockReadGuard;
     use once_cell::sync::Lazy;
 
