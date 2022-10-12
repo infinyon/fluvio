@@ -92,7 +92,19 @@ impl HubAccess {
         self.get_action_auth(ACTION_PUBLISH).await
     }
 
+    pub async fn get_action_auth_with_token(
+        &self,
+        action: &str,
+        authn_token: &str,
+    ) -> Result<String> {
+        self.make_action_token(action, authn_token.into()).await
+    }
+
     async fn get_action_auth(&self, action: &str) -> Result<String> {
+        self.make_action_token(action, read_infinyon_token()?).await
+    }
+
+    async fn make_action_token(&self, action: &str, authn_token: String) -> Result<String> {
         let host = &self.remote;
         let api_url = format!("{host}/{HUB_API_ACT}");
         let mat = MsgActionToken {
@@ -100,7 +112,6 @@ impl HubAccess {
         };
         let msg_action_token = serde_json::to_string(&mat)
             .map_err(|_e| HubUtilError::HubAccess("Failed access setup".to_string()))?;
-        let authn_token = read_infinyon_token()?;
         let req = surf::get(api_url)
             .content_type(mime::JSON)
             .body_bytes(msg_action_token)
