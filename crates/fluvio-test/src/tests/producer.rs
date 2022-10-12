@@ -90,6 +90,11 @@ async fn producer_work(
     let mut throughput_histogram = Histogram::<u64>::new(2).unwrap();
     // Eventually we'll need to store globally to calculate wrt all producers in test
 
+    // We don't do anything with the record struct so we increase the stress on the system by just sending the same data over and over again.
+    // We can only do this because we don't compress the data
+    // Otherwise, test-harness spends much of the time allocating the record
+    let record = "A".repeat(test_case.option.record_size).as_bytes().to_vec();
+
     // Loop over num_record
     for record_n in 0..workload_size {
         // This is to report the sent tag relative to the work split
@@ -100,30 +105,30 @@ async fn producer_work(
         //  Create record
         //  calculate the min latency to meet throughput requirements
         //
-        //  start time
-        //  (dynamic wait based on previous iteration)
+        //  start time=now
         //  send
-        //  end time
+        //  end time=now
         //
         //  calculate actual latency, throughput
         // }
 
-        let record = TestRecordBuilder::new()
-            .with_tag(format!("{}:{}", producer_id, record_n))
-            .with_random_data(test_case.option.record_size)
-            .build();
-        let record_json = serde_json::to_string(&record)
-            .expect("Convert record to json string failed")
-            .as_bytes()
-            .to_vec();
-        let record_size = record_json.len() as u64;
+        // This bottlenecks the system, not good for throughput test
+        // let record = TestRecordBuilder::new()
+        //     .with_tag(format!("{}:{}", producer_id, record_n))
+        //     .with_empty_data(test_case.option.record_size)
+        //     .build();
+        // let record = serde_json::to_string(&record)
+        //     .expect("Convert record to json string failed")
+        //     .as_bytes()
+        //     .to_vec();
+        let record_size = record.len() as u64;
 
         //debug!("{:?}", &record);
 
         // Record the latency
         let now = SystemTime::now();
         producer
-            .send(RecordKey::NULL, record_json)
+            .send(RecordKey::NULL, record.clone())
             .await
             .unwrap_or_else(|_| panic!("Producer {} send failed", producer_id));
 
@@ -142,11 +147,10 @@ async fn producer_work(
             let throughput_kbps = send_throughput / 1_000;
 
             println!(
-                "[producer-{}] record: {:>7} (size {:>5}) CRC: {:>10} Latency: {:>12} Throughput: {:>7?} kB/s",
+                "[producer-{}] record: {:>7} (size {:>5}) Latency: {:>12} Throughput: {:>7?} kB/s",
                 producer_id,
                 record_tag,
                 record_size,
-                record.crc,
                 format_args!("{:?}", Duration::from_nanos(send_latency)),
                 throughput_kbps,
             );
