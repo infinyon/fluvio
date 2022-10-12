@@ -8,6 +8,7 @@ use crate::{CliError, Result};
 
 const API_LIST: &str = "hub/v0/list";
 
+/// List available SmartModules in the hub
 #[derive(Debug, Parser)]
 pub struct ListHubOpt {}
 

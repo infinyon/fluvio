@@ -17,7 +17,7 @@ use tracing::info;
 use crate::{CliError, Result};
 use crate::client::cmd::ClientCmd;
 
-/// Download an existing SmartModule with the given name
+/// Download a SmartModule from the hub
 #[derive(Debug, Parser)]
 pub struct DownloadHubOpt {
     /// SmartModule name: e.g. infinyon/jolt@v0.0.1

@@ -134,7 +134,7 @@ mod cmd {
         #[clap(subcommand, name = "derived-stream", visible_alias = "ds")]
         DerivedStream(DerivedStreamCmd),
 
-        /// Work with the ub
+        /// Work with the SmartModule Hub
         #[clap(subcommand, name = "hub")]
         Hub(HubCmd),
     }
