@@ -5,7 +5,6 @@ use fluvio::{RecordKey, TopicProducer};
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use crate::tests::TestRecordBuilder;
 use fluvio_test_util::async_process;
 //use tracing::debug;
 use hdrhistogram::Histogram;
