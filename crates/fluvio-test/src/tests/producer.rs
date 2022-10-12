@@ -111,15 +111,6 @@ async fn producer_work(
         //  calculate actual latency, throughput
         // }
 
-        // This bottlenecks the system, not good for throughput test
-        // let record = TestRecordBuilder::new()
-        //     .with_tag(format!("{}:{}", producer_id, record_n))
-        //     .with_empty_data(test_case.option.record_size)
-        //     .build();
-        // let record = serde_json::to_string(&record)
-        //     .expect("Convert record to json string failed")
-        //     .as_bytes()
-        //     .to_vec();
         let record_size = record.len() as u64;
 
         //debug!("{:?}", &record);

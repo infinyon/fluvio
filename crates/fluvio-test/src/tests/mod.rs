@@ -72,11 +72,6 @@ impl TestRecordBuilder {
         self
     }
 
-    pub fn with_empty_data(mut self, data_size: usize) -> Self {
-        self.data = (0..data_size).map(|_| 'A').collect();
-        self
-    }
-
     pub fn with_random_data(mut self, data_size: usize) -> Self {
         self.data = Self::random_data(data_size);
         self
