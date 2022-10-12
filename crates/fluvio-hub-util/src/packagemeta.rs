@@ -155,8 +155,11 @@ impl PackageMeta {
 
         advice.push_str(&validate_lowercase(&self.group, "group"));
         advice.push_str(&validate_allowedchars(&self.group, "group"));
+        advice.push_str(&validate_notempty(&self.group, "group"));
+
         advice.push_str(&validate_lowercase(&self.name, "package name"));
         advice.push_str(&validate_allowedchars(&self.name, "package name"));
+        advice.push_str(&validate_notempty(&self.name, "package name"));
 
         if !advice.is_empty() {
             Err(HubUtilError::PackageVerify(advice))
@@ -175,6 +178,14 @@ pub fn packagename_validate(pkgname: &str) -> Result<()> {
         Err(HubUtilError::InvalidPackageName(advice))
     } else {
         Ok(())
+    }
+}
+
+fn validate_notempty(val: &str, name: &str) -> String {
+    if val.is_empty() {
+        format!("{name} is empty\n")
+    } else {
+        String::new()
     }
 }
 
@@ -384,6 +395,11 @@ fn hub_packagemeta_naming_check() {
         PackageMeta {
             group: "halloween".into(),
             name: "tricks/paper".into(),
+            ..PackageMeta::default()
+        },
+        PackageMeta {
+            group: "".into(),
+            name: "thevoid".into(),
             ..PackageMeta::default()
         },
     ];

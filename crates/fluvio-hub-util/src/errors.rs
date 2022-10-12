@@ -50,7 +50,7 @@ pub enum HubUtilError {
     #[error("Signing package {0}")]
     PackageSigning(String),
 
-    #[error("Package verification {0}")]
+    #[error("Package verification: {0}")]
     PackageVerify(String),
 
     #[error("Unable to package: {0}")]

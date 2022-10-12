@@ -1,5 +1,6 @@
 mod topic;
 mod consume;
+mod hub;
 mod produce;
 mod partition;
 mod tableformat;
@@ -51,6 +52,7 @@ mod cmd {
     use super::topic::TopicCmd;
     use super::partition::PartitionCmd;
     use super::tableformat::TableFormatCmd;
+    use super::hub::HubCmd;
 
     #[async_trait]
     pub trait ClientCmd: Sized {
@@ -131,6 +133,10 @@ mod cmd {
         /// to build a customized stream to consume
         #[clap(subcommand, name = "derived-stream", visible_alias = "ds")]
         DerivedStream(DerivedStreamCmd),
+
+        /// Work with the SmartModule Hub
+        #[clap(subcommand, name = "hub")]
+        Hub(HubCmd),
     }
 
     impl FluvioCmd {
@@ -161,6 +167,9 @@ mod cmd {
                 }
                 Self::DerivedStream(derivedstream) => {
                     derivedstream.process(out, target).await?;
+                }
+                Self::Hub(hub) => {
+                    hub.process(out, target).await?;
                 }
             }
 
