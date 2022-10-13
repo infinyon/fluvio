@@ -180,6 +180,7 @@ impl InnerTopicProducer {
 
     async fn push_record(self: Arc<Self>, record: Record) -> Result<PushRecord> {
         let topics = self.spu_pool.metadata.topics();
+
         let topic_spec = topics
             .lookup_by_key(&self.topic)
             .await?

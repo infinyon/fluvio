@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use tracing::trace;
 
 use crate::core::{Spec, MetadataContext, MetadataItem, MetadataRevExtension};
-use crate::store::{LocalStore};
+use crate::store::LocalStore;
 
 pub type DefaultMetadataObject<S> = MetadataStoreObject<S, u32>;
 

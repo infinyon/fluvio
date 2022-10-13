@@ -20,6 +20,8 @@ clap = { version = "3.1.8", features = [
 ], default-features = false }
 async-trait = "0.1.21"
 rand = "0.8"
+# Cryptographically secure rand is unnecessary and slow enough to affect for benchmark testing
+fastrand = "1.8.0"
 md-5 = "0.10"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -61,9 +63,7 @@ fluvio-controlplane-metadata = { features = [
 # Fluvio test framework Attribute macro
 fluvio-test-derive = { path = "../fluvio-test-derive" }
 fluvio-test-util = { path = "../fluvio-test-util" }
-fluvio-protocol = { path = "../fluvio-protocol", features = [
-    "api",
-] }
+fluvio-protocol = { path = "../fluvio-protocol", features = ["api"] }
 
 # Fluvio test framework Options derive
 fluvio-test-case-derive = { path = "../fluvio-test-case-derive" }
