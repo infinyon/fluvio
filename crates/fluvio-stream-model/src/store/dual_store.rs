@@ -174,6 +174,11 @@ where
     pub fn change_listener(self: &Arc<Self>) -> ChangeListener<S, C> {
         ChangeListener::new(self.clone())
     }
+
+    /// returns once there is at least one change recorded by the the event_publisher
+    pub async fn wait_for_first_change(self: &Arc<Self>) {
+        self.change_listener().listen().await;
+    }
 }
 
 impl<S, C> Display for LocalStore<S, C>
@@ -393,7 +398,7 @@ mod listener {
     use std::fmt;
     use std::sync::Arc;
 
-    use tracing::{trace, debug, instrument, error};
+    use tracing::{trace, debug, instrument};
 
     use crate::store::event::EventPublisher;
     use crate::store::{
@@ -471,16 +476,6 @@ mod listener {
 
         pub fn current_change(&self) -> i64 {
             self.event_publisher().current_change()
-        }
-
-        /// returns once there is at least one change recorded by the the event_publisher
-        /// can only be called once so consumes the ChangeListener
-        pub async fn listen_for_at_least_one_change(mut self) {
-            if self.last_change != 0 {
-                error!("listen_for_at_least_one_change should only be called on a newly constructed ChangeListener");
-            }
-            self.last_change = 0;
-            self.listen().await
         }
 
         pub async fn listen(&self) {
@@ -791,6 +786,14 @@ mod test_notify {
     }
 
     #[fluvio_future::test]
+    async fn test_wait_for_first_change_assumptions() {
+        let topic_store = Arc::new(DefaultTestStore::default());
+
+        // wait_for_first_change() requires that ChangeListener is initialized with current_change = 0
+        assert_eq!(0, topic_store.change_listener().current_change())
+    }
+
+    #[fluvio_future::test]
     async fn test_change_listener() {
         let topic_store = Arc::new(DefaultTestStore::default());
         let last_change = Arc::new(AtomicI64::new(0));
@@ -856,10 +859,7 @@ mod test_notify {
         S: Spec,
         C: MetadataItem,
     {
-        store
-            .change_listener()
-            .listen_for_at_least_one_change()
-            .await;
+        store.wait_for_first_change().await;
         // Make sure that we never return before we update the store
         assert!(has_been_updated.load(std::sync::atomic::Ordering::Relaxed));
     }
