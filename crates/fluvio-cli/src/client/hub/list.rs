@@ -29,6 +29,7 @@ impl ListHubOpt {
             .body_json()
             .await
             .map_err(|e| CliError::HubError(format!("list api data parse error {e}")))?;
+        println!("SMARTMODULES");
         for pkg in pl.packages {
             println!("{pkg}");
         }
