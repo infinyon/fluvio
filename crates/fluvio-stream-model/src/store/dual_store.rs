@@ -402,44 +402,6 @@ mod listener {
 
     use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
 
-    // /// thin wrapper for an event publisher. blocks until the current change in the event publisher is > 0
-    // /// useful for making sure metadata has been delivered before querying store
-    // pub struct AtLeastOneChangeListener<'a> {
-    //     event_publisher: &'a EventPublisher,
-    // }
-
-    // impl<'a> AtLeastOneChangeListener<'a> {
-    //     /// only constructed by the associated LocalStore that owns the EventPublisher
-    //     pub(crate) fn new(event_publisher: &'a EventPublisher) -> Self {
-    //         Self { event_publisher }
-    //     }
-
-    //     /// check if there should be any changes
-    //     /// this should be done before event listener
-    //     /// to ensure no events are missed
-    //     #[inline]
-    //     pub fn has_change(&'a self) -> bool {
-    //         self.event_publisher.current_change() > 0
-    //     }
-
-    //     /// returns when the event_publisher has a current_change greater than 0
-    //     pub async fn listen(&'a self) {
-    //         if self.has_change() {
-    //             return;
-    //         }
-
-    //         let listener = self.event_publisher.listen();
-
-    //         if self.has_change() {
-    //             return;
-    //         }
-
-    //         trace!("waiting for publisher");
-
-    //         listener.await;
-    //     }
-    // }
-
     /// listen for changes local store
     pub struct ChangeListener<S, C>
     where
