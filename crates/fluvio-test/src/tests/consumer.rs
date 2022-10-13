@@ -233,8 +233,7 @@ async fn get_multi_stream(
     )
 }
 
-// Default to using the producer test's topic
-#[fluvio_test(name = "consumer", topic = "producer-test")]
+#[fluvio_test(name = "consumer", topic = "consumer-test")]
 pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let test_case: ConsumerTestCase = test_case.into();
     let consumers = test_case.option.consumers;

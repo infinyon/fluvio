@@ -423,7 +423,7 @@ mod listener {
         /// returns when the event_publisher has a current_change greater than 0
         pub async fn listen(&'a self) {
             while self.event_publisher.current_change() <= 0 {
-                self.event_publisher.listen();
+                self.event_publisher.listen().await;
             }
         }
     }
@@ -691,6 +691,7 @@ mod test_notify {
     use std::sync::atomic::Ordering::SeqCst;
 
     use async_std::task::JoinHandle;
+    use tokio::select;
     use tracing::debug;
 
     use fluvio_future::task::spawn;
@@ -786,6 +787,24 @@ mod test_notify {
         sleep(Duration::from_millis(1)).await;
 
         //  assert_eq!(last_change.load(SeqCst), 4);
+    }
+    #[fluvio_future::test]
+    async fn test_at_least_one_change_listener_non_blocking() {
+        let mut timer = sleep(Duration::from_millis(5));
+        let store = Arc::new(DefaultTestStore::default());
+        let listener = store.at_least_one_change_listener();
+
+        // no events, this should timeout
+        select! {
+
+            _ = listener.listen() => {
+            panic!("test failed");
+            },
+            _ = &mut timer => {
+                // test succeeds
+            }
+
+        }
     }
 
     #[fluvio_future::test]
