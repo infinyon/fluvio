@@ -39,7 +39,7 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
 
     let sm_fqdn = SmartModulePackageKey::from_qualified_name(&name)?.store_id();
 
-    info!(%sm_fqdn,"deleting smart module");
+    info!(%sm_fqdn,"deleting smartmodule");
 
     let status = if auth_ctx
         .global_ctx
