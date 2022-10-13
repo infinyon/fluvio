@@ -785,8 +785,8 @@ mod test_notify {
         }
     }
 
-    #[fluvio_future::test]
-    async fn test_wait_for_first_change_assumptions() {
+    #[test]
+    fn test_wait_for_first_change_assumptions() {
         let topic_store = Arc::new(DefaultTestStore::default());
 
         // wait_for_first_change() requires that ChangeListener is initialized with current_change = 0
