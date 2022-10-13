@@ -1,22 +1,44 @@
-use anyhow::{Error, Result};
-use clap::Parser;
+use anyhow::{Error, Result, anyhow};
+use clap::{Parser, Args, ValueEnum, value_parser};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
 use tempdir::TempDir;
+use tempfile::NamedTempFile;
+use std::fs::File;
+use std::io::{Write, LineWriter};
 
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
+
+#[derive(ValueEnum, Clone, Debug, Parser, PartialEq, Eq)]
+enum SmartModuleType {
+    Filter,
+    Map,
+    ArrayMap,
+    Aggregate,
+    FilterMap,
+}
 
 /// Generate new SmartModule project
 #[derive(Debug, Parser)]
 pub struct GenerateOpt {
     /// SmartModule Project Name
     name: String,
+
     /// Template to generate project from.
     ///
     /// Must be a GIT repository
+    //#[clap(long, default_value = "https://github.com/infinyon/fluvio.git")]
     #[clap(long)]
-    template: Option<String>,
+    template: Option<String>, //template location
+    // Default to git repo
+    /// Select a type of SmartModule
+    #[clap(long, value_parser = value_parser!(SmartModuleType))]
+    smart_module_type: Option<SmartModuleType>,
+
+    /// Select if an init function should be generated [true/false]
+    #[clap(long, value_parser = value_parser!(bool))]
+    init: Option<bool>,
 }
 
 /// Abstraction on different of template options available for generating a
@@ -81,14 +103,89 @@ impl GenerateOpt {
     pub(crate) fn process(self) -> Result<()> {
         println!("Generating new SmartModule project: {}", self.name);
 
+        // Create temp file to pass in cargo-generate values
+
+        let mut maybe_user_input: Option<Vec<(String, String)>> = None;
+
+        let mut tmpfile = NamedTempFile::new()?;
+
+        let mut maybe_values_file: Option<String> = None;
+
+        if self.smart_module_type.is_some() || self.init.is_some() {
+            let mut user_val = Vec::new();
+
+            if let Some(init_select) = self.init {
+                user_val.push(("smartmodule-init".to_string(), init_select.to_string()));
+            }
+
+            if let Some(sm_type) = self.smart_module_type {
+                user_val.push((
+                    "smartmodule-type".to_string(),
+                    sm_type
+                        .to_possible_value()
+                        .ok_or_else(|| anyhow!("Invalid SmartModule type"))?
+                        .get_name()
+                        .to_string(),
+                ));
+            }
+
+            maybe_user_input = Some(user_val);
+        };
+
         let Template {
             template_path,
             _temp_dir,
         } = if let Some(git_uri) = self.template {
+            let git_input = ("smartmodule-version".to_string(), git_uri.clone());
+
+            if let Some(user_input) = maybe_user_input.as_mut() {
+                user_input.push(git_input);
+            } else {
+                maybe_user_input = Some(vec![git_input]);
+            };
+
             Template::git(git_uri)?
         } else {
+            let git_input = (
+                "smartmodule-version".to_string(),
+                "git = \\\"https://github.com/infinyon/fluvio.git\\\"".to_string(),
+            );
+
+            if let Some(user_input) = maybe_user_input.as_mut() {
+                user_input.push(git_input);
+            } else {
+                maybe_user_input = Some(vec![git_input]);
+            };
+
             Template::inline()?
         };
+
+        if let Some(user_input) = maybe_user_input {
+            let _ = &tmpfile.write_all("[values]\n".as_bytes());
+            tmpfile.flush()?;
+            for (key, value) in user_input {
+                let mapping = format!("{}=\"{}\"\n", key, value);
+                let _ = &tmpfile.write_all(mapping.as_bytes());
+                tmpfile.flush()?;
+            }
+
+            maybe_values_file = Some(
+                tmpfile
+                    .path()
+                    .to_path_buf()
+                    .into_os_string()
+                    .into_string()
+                    .map_err(|_| anyhow!("Error collecting temp file path"))?,
+            );
+            //maybe_values_file = Some(
+            //    tmpfile
+            //        .into_temp_path()
+            //        .to_path_buf()
+            //        .into_os_string()
+            //        .into_string()
+            //        .map_err(|_| anyhow!("Error collecting temp file path"))?,
+            //);
+        }
 
         let args = GenerateArgs {
             template_path,
@@ -96,7 +193,7 @@ impl GenerateOpt {
             list_favorites: false,
             force: false,
             verbose: true,
-            template_values_file: None,
+            template_values_file: maybe_values_file,
             silent: false,
             config: None,
             vcs: None,

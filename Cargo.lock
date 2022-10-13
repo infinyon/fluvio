@@ -5737,6 +5737,7 @@ dependencies = [
  "fluvio-smartmodule",
  "include_dir",
  "tempdir",
+ "tempfile",
  "thiserror",
  "toml",
  "tracing",
