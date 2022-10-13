@@ -76,3 +76,8 @@ codegen-units = 256
 [profile.release-lto]
 inherits = "release"
 lto = true
+
+[patch.crates-io]
+k8-types = { git="https://github.com/infinyon/k8-api.git", rev="00379be0119e383cb34a5145ed7bc7b913e54276"}
+k8-client = { git="https://github.com/infinyon/k8-api.git", rev="00379be0119e383cb34a5145ed7bc7b913e54276"}
+k8-metadata-client = { git="https://github.com/infinyon/k8-api.git", rev="00379be0119e383cb34a5145ed7bc7b913e54276"}

@@ -75,8 +75,8 @@ async-trait = "0.1.21"
 
 # Fluvio dependencies
 k8-config = { version = "2.0.0", optional = true }
-k8-client = { version = "7.0.0", optional = true }
-k8-types = { version = "0.6.0", features = ["core"] }
+k8-client = { version = "8.0.0", optional = true }
+k8-types = { version = "0.7.0", features = ["core"] }
 fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
 
 fluvio = { path = "../fluvio", default-features = false }

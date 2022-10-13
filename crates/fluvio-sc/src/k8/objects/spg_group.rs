@@ -118,21 +118,22 @@ impl SpuGroupObj {
             }
         };
 
-        let full_group_name = format!("fluvio-spg-{}", self.key());
-        let full_spu_name = format!("fluvio-spg-{}", spu_name);
+        let ns = self.ctx().item().namespace();
+        let private_svc_fqdn = format!("fluvio-spg-{}.{}.svc.cluster.local", self.key(), ns);
+        let public_svc_fqdn = format!("fluvio-spu-{}.{}.svc.cluster.local", spu_name, ns);
 
         let spu_spec = SpuSpec {
             id: spu_id,
             spu_type: SpuType::Managed,
             public_endpoint,
             private_endpoint: Endpoint {
-                host: format!("{}.{}", full_spu_name, full_group_name),
+                host: private_svc_fqdn,
                 port: spu_private_ep.port,
                 encryption: spu_private_ep.encryption,
             },
             rack: None,
             public_endpoint_local: Some(Endpoint {
-                host: format!("{}.{}", full_spu_name, full_group_name),
+                host: public_svc_fqdn,
                 port: spu_public_ep.port,
                 encryption: spu_public_ep.encryption,
             }),
