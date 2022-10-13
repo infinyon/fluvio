@@ -24,7 +24,7 @@ use crate::PackageMeta;
 type Result<T> = std::result::Result<T, HubUtilError>;
 
 /// assemble files into an unsigned fluvio package, a file will be created named
-/// packagename-A.B.C.tar
+/// packagename-A.B.C.tar after signing it's called an ipkg
 ///
 /// # Arguments
 /// * pkgmeta: package-meta.yaml path
@@ -233,9 +233,11 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
 }
 
 /// extract sigfiles out of the package
-fn package_getsigs(pkgfile: &str) -> Result<HashMap<String, PackageSignature>> {
-    let file = std::fs::File::open(pkgfile)?;
-    let mut ar = tar::Archive::new(file);
+fn package_getsigs_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    pkgfile: &str,
+) -> Result<HashMap<String, PackageSignature>> {
+    let mut ar = tar::Archive::new(readio);
     let entries = ar.entries()?;
 
     let mut sigs = HashMap::new();
@@ -270,11 +272,19 @@ fn package_getsigs(pkgfile: &str) -> Result<HashMap<String, PackageSignature>> {
     Ok(sigs)
 }
 
-// get a top level file
+// get a top level file from a package file
 pub(crate) fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8>> {
-    let in_pkg = std::fs::File::open(pkgfile)?;
+    let mut file = std::fs::File::open(pkgfile)?;
+    package_get_topfile_with_readio(&mut file, topfile)
+}
+
+// get a top level file a generic reader trait obj
+pub(crate) fn package_get_topfile_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    topfile: &str,
+) -> Result<Vec<u8>> {
     let topfile_p = Path::new(topfile);
-    let mut ar = tar::Archive::new(in_pkg);
+    let mut ar = tar::Archive::new(readio);
     let entries = ar.entries()?;
     for file in entries {
         if file.is_err() {
@@ -287,18 +297,29 @@ pub(crate) fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8
             }
             let mut buf: Vec<u8> = Vec::new();
             f.read_to_end(&mut buf)
-                .map_err(|_| HubUtilError::PackageMissingFile(pkgfile.into()))?;
+                .map_err(|_| HubUtilError::PackageMissingFile(topfile.into()))?;
             return Ok(buf);
         }
     }
-    Err(HubUtilError::PackageMissingFile(pkgfile.into()))
+    Err(HubUtilError::PackageMissingFile(topfile.into()))
 }
 
 /// extract files out of the package manifest
 /// pkgfile: pkg-0.0.1.ipkg
 /// filename: file in manifest
 pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8>> {
-    let manifest_buf = package_get_topfile(pkgfile, HUB_MANIFEST_BLOB)?;
+    let mut file = std::fs::File::open(pkgfile)?;
+    package_get_manifest_file_with_readio(&mut file, filename)
+}
+
+/// extract files out of the package manifest
+/// pkgfile: pkg-0.0.1.ipkg
+/// filename: file in manifest
+pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    filename: &str,
+) -> Result<Vec<u8>> {
+    let manifest_buf = package_get_topfile_with_readio(readio, HUB_MANIFEST_BLOB)?;
     let manifest_io = std::io::Cursor::new(&manifest_buf);
     let gzio = GzDecoder::new(manifest_io);
     let mut ar = tar::Archive::new(gzio);
@@ -315,7 +336,7 @@ pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8
             }
             let mut buf: Vec<u8> = Vec::new();
             f.read_to_end(&mut buf)
-                .map_err(|_| HubUtilError::PackageMissingFile(pkgfile.into()))?;
+                .map_err(|_| HubUtilError::PackageMissingFile(filename.into()))?;
             return Ok(buf);
         }
     }
@@ -325,8 +346,18 @@ pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8
 /// verify package signature. the pkgsig should contain the desired
 /// public key to verify sgainst
 fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
-    let file = std::fs::File::open(pkgfile)?;
-    let mut ar = tar::Archive::new(file);
+    let mut file = std::fs::File::open(pkgfile)?;
+    package_verify_sig_from_readio(&mut file, pkgfile, pkgsig)
+}
+
+/// verify package signature. the pkgsig should contain the desired
+/// public key to verify sgainst
+fn package_verify_sig_from_readio<R: std::io::Read>(
+    readio: &mut R,
+    pkgfile: &str,
+    pkgsig: &PackageSignature,
+) -> Result<()> {
+    let mut ar = tar::Archive::new(readio);
     let entries = ar.entries()?;
 
     let pubkey = PublicKey::from_hex(&pkgsig.pubkey)?;
@@ -356,8 +387,6 @@ fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
         };
         let fp = fh.path()?.to_path_buf();
         let fnamestr = fp.to_string_lossy().to_string();
-        // let file_base = fp.file_stem()
-        // 	.ok_or_else(|| HubUtilError::PackageVerify(format!("{} bad filename", pkgfile)))?;
         let file_name = fp
             .file_name()
             .ok_or_else(|| HubUtilError::PackageVerify(format!("{} bad filename", pkgfile)))?;
@@ -394,8 +423,17 @@ fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
 /// on download the code would be looking for the signature with the hub public key
 /// on upload the caller would generally be looking at owner signature
 pub fn package_verify(pkgfile: &str, pubkey: &PublicKey) -> Result<()> {
+    let mut file = std::fs::File::open(pkgfile)?;
+    package_verify_with_readio(&mut file, pkgfile, pubkey)
+}
+
+pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
+    readio: &mut R,
+    pkgfile: &str,
+    pubkey: &PublicKey,
+) -> Result<()> {
     // locate sig that matches the public key in cred
-    let sigs = package_getsigs(pkgfile)?;
+    let sigs = package_getsigs_with_readio(readio, pkgfile)?;
     let string_pubkey = hex::encode(&pubkey.to_bytes());
     let sig = sigs
         .iter()
