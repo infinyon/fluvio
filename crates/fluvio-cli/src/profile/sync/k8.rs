@@ -124,7 +124,9 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
     {
         Ok(svc) => svc,
         Err(err) => match err {
-            k8_client::ClientError::Client(status) if status == StatusCode::NOT_FOUND => {
+            k8_client::ClientError::ApiResponse(status)
+                if status.code == Some(StatusCode::NOT_FOUND.as_u16()) =>
+            {
                 return Ok(None)
             }
             _ => {
