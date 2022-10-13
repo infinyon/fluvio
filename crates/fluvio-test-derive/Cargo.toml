@@ -27,7 +27,7 @@ trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_optio
 fluvio = { path = "../fluvio" }
 tokio = { version = "1.4", features = ["macros"] }
 fluvio-future = { version = "0.4.0", features = ["task", "timer", "subscriber", "fixture"] }
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
+clap = { version = "4.0.14", features = ["std", "derive"], default-features = false }
 inventory = "0.3"
 tracing = "0.1"
 crossbeam-channel = "0.5"
