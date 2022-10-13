@@ -795,11 +795,8 @@ mod test_notify {
         let topic_store = Arc::new(DefaultTestStore::default());
         let last_change = Arc::new(AtomicI64::new(0));
         let shutdown = SimpleEvent::shared();
-        // ctx is used to provide an ordering on updates. See MetadataItem for u32
-        let initial_context = 2u32;
         let topic_name = "topic";
-        let initial_topic =
-            DefaultTest::with_spec(topic_name, TestSpec::default()).with_context(initial_context);
+        let initial_topic = DefaultTest::with_spec(topic_name, TestSpec::default());
         let has_been_updated = Arc::new(AtomicBool::default());
 
         // Start a batch of listeners before changes have been.
@@ -823,8 +820,8 @@ mod test_notify {
         }
 
         // update with apply_changes
-        let topic = DefaultTest::with_spec(topic_name, TestSpec::default())
-            .with_context(initial_context + 1);
+        let topic = DefaultTest::with_spec(topic_name, TestSpec::default());
+
         let _ = topic_store.apply_changes(vec![LSUpdate::Mod(topic)]).await;
 
         // Test batch again to make sure returns correctly after an apply_changes
