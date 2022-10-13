@@ -49,7 +49,7 @@ pub struct ProducerTestOption {
     #[clap(long, default_value = "100")]
     pub num_records: u32,
 
-    /// Size of dynamic payload portion of test record
+    /// Size of test record. This test doesn't use the TestRecord struct so this is the total size, not just the dynamic payload size
     #[clap(long, default_value = "1000")]
     pub record_size: usize,
 
@@ -233,8 +233,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         producer_wait.push(producer);
     }
 
-    let _: Vec<_> = producer_wait
-        .into_iter()
-        .map(|p| p.join().expect("Producer thread fail"))
-        .collect();
+    for p in producer_wait {
+        p.join().expect("Producer thread fail")
+    }
 }
