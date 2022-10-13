@@ -25,7 +25,7 @@ impl EventPublisher {
         Arc::new(Self::new())
     }
 
-    pub fn notify(&self) {
+    fn notify(&self) {
         self.event.notify(usize::MAX);
     }
 
@@ -41,6 +41,7 @@ impl EventPublisher {
     /// store new value
     pub fn store_change(&self, value: i64) {
         self.change.store(value, DEFAULT_EVENT_ORDERING);
+        self.notify()
     }
 
     pub fn listen(&self) -> EventListener {

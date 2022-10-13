@@ -12,10 +12,12 @@ use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
 
 use crate::core::{MetadataItem, Spec};
+use self::listener::AtLeastOneChangeListener;
+
 use super::MetadataStoreObject;
 use super::{DualEpochMap, DualEpochCounter, Epoch, EpochChanges};
 use super::actions::LSUpdate;
-use super::event::{EventPublisher};
+use super::event::EventPublisher;
 
 pub use listener::ChangeListener;
 pub type MetadataChanges<S, C> = EpochChanges<MetadataStoreObject<S, C>>;
@@ -173,6 +175,11 @@ where
     pub fn change_listener(self: &Arc<Self>) -> ChangeListener<S, C> {
         ChangeListener::new(self.clone())
     }
+
+    /// create a new AtLeastOneChangeListener(self:&Arc<Self>) -> AtLeastOneChangeListener {}
+    pub fn at_least_one_change_listener<'a>(self: &'a Arc<Self>) -> AtLeastOneChangeListener<'a> {
+        AtLeastOneChangeListener::new(self.event_publisher())
+    }
 }
 
 impl<S, C> Display for LocalStore<S, C>
@@ -282,7 +289,6 @@ where
         drop(write_guard);
 
         self.event_publisher.store_change(epoch);
-        self.event_publisher.notify();
 
         debug!(
             "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, mod_meta: {}, del:{}], ",
@@ -373,7 +379,6 @@ where
 
         debug!("notify epoch changed: {}", epoch);
         self.event_publisher.store_change(epoch);
-        self.event_publisher.notify();
 
         debug!(
             "Apply changes {} [add:{},mod_spec:{},mod_status: {},mod_update: {}, del:{},epoch: {}",
@@ -402,6 +407,21 @@ mod listener {
     };
 
     use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
+
+    pub struct AtLeastOneChangeListener<'a> {
+        event_publisher: &'a EventPublisher,
+    }
+
+    impl<'a> AtLeastOneChangeListener<'a> {
+        pub fn new(event_publisher: &'a EventPublisher) -> Self {
+            Self { event_publisher }
+        }
+        pub async fn listen_for_at_least_one_change(&'a self) {
+            while self.event_publisher.current_change() <= 0 {
+                self.event_publisher.listen();
+            }
+        }
+    }
 
     /// listen for changes local store
     pub struct ChangeListener<S, C>
@@ -703,7 +723,6 @@ mod test_notify {
 
         async fn dispatch_loop(mut self) {
             use tokio::select;
-
             debug!("entering loop");
 
             let mut spec_listener = self.store.change_listener();
