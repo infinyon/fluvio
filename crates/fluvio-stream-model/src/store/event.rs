@@ -34,11 +34,7 @@ impl EventPublisher {
         self.change.load(DEFAULT_EVENT_ORDERING)
     }
 
-    pub fn increment(&self) -> i64 {
-        self.change.fetch_add(1, DEFAULT_EVENT_ORDERING)
-    }
-
-    /// store new value
+    /// stores new value and notifies any listeners
     pub fn store_change(&self, value: i64) {
         self.change.store(value, DEFAULT_EVENT_ORDERING);
         self.notify()
