@@ -116,10 +116,10 @@ mod context {
             let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
             let listener = self.store().at_least_one_change_listener();
 
-            // wait for either changes from store or timeout
+            // No changes recieved yet, wait for first changes from store or timeout
             select! {
 
-                _ = listener.listen_for_at_least_one_change() => {
+                _ = listener.listen() => {
                     Ok(search(self.store().read().await))
                 },
                 _ = &mut timer => {

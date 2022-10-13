@@ -176,7 +176,7 @@ where
         ChangeListener::new(self.clone())
     }
 
-    /// create a new AtLeastOneChangeListener(self:&Arc<Self>) -> AtLeastOneChangeListener {}
+    /// create a new listener to watch for at least one update to the local store
     pub fn at_least_one_change_listener<'a>(self: &'a Arc<Self>) -> AtLeastOneChangeListener<'a> {
         AtLeastOneChangeListener::new(self.event_publisher())
     }
@@ -408,15 +408,20 @@ mod listener {
 
     use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
 
+    /// thin wrapper for an event publisher. blocks until the current change in the event publisher is > 0
+    /// useful for making sure metadata has been delivered before querying store
     pub struct AtLeastOneChangeListener<'a> {
         event_publisher: &'a EventPublisher,
     }
 
     impl<'a> AtLeastOneChangeListener<'a> {
-        pub fn new(event_publisher: &'a EventPublisher) -> Self {
+        /// only constructed by the associated LocalStore that owns the EventPublisher
+        pub(crate) fn new(event_publisher: &'a EventPublisher) -> Self {
             Self { event_publisher }
         }
-        pub async fn listen_for_at_least_one_change(&'a self) {
+
+        /// returns when the event_publisher has a current_change greater than 0
+        pub async fn listen(&'a self) {
             while self.event_publisher.current_change() <= 0 {
                 self.event_publisher.listen();
             }
@@ -462,7 +467,7 @@ mod listener {
         }
 
         #[inline]
-        pub fn event_publisher(&self) -> &EventPublisher {
+        fn event_publisher(&self) -> &EventPublisher {
             self.store.event_publisher()
         }
 
@@ -682,14 +687,16 @@ mod test_notify {
 
     use std::sync::Arc;
     use std::time::Duration;
-    use std::sync::atomic::AtomicI64;
+    use std::sync::atomic::{AtomicI64, AtomicBool};
     use std::sync::atomic::Ordering::SeqCst;
 
+    use async_std::task::JoinHandle;
     use tracing::debug;
 
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
+    use crate::core::{Spec, MetadataItem};
     use crate::store::actions::LSUpdate;
     use crate::store::event::SimpleEvent;
     use crate::fixture::{TestSpec, DefaultTest, TestMeta};
@@ -779,5 +786,79 @@ mod test_notify {
         sleep(Duration::from_millis(1)).await;
 
         //  assert_eq!(last_change.load(SeqCst), 4);
+    }
+
+    #[fluvio_future::test]
+    async fn test_at_least_one_change_listener() {
+        let topic_store = Arc::new(DefaultTestStore::default());
+        let last_change = Arc::new(AtomicI64::new(0));
+        let shutdown = SimpleEvent::shared();
+        // ctx is used to provide an ordering on updates. See MetadataItem for u32
+        let initial_context = 2u32;
+        let topic_name = "topic";
+        let initial_topic =
+            DefaultTest::with_spec(topic_name, TestSpec::default()).with_context(initial_context);
+        let has_been_updated = Arc::new(AtomicBool::default());
+
+        // Start a batch of listeners before changes have been.
+        let jh = start_batch_of_test_listeners(topic_store.clone(), has_been_updated.clone());
+        TestController::start(topic_store.clone(), shutdown.clone(), last_change.clone());
+
+        // set flag that we are about to update, then do the update
+        has_been_updated.store(true, std::sync::atomic::Ordering::Relaxed);
+        let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
+
+        // make sure that every listener got notified and returned
+        for j in jh {
+            j.await
+        }
+
+        // Test batch again with a store that already has updates
+        let jh = start_batch_of_test_listeners(topic_store.clone(), has_been_updated.clone());
+        // make sure that every listener got notified and returned
+        for j in jh {
+            j.await
+        }
+
+        // update with apply_changes
+        let topic = DefaultTest::with_spec(topic_name, TestSpec::default())
+            .with_context(initial_context + 1);
+        let _ = topic_store.apply_changes(vec![LSUpdate::Mod(topic)]).await;
+
+        // Test batch again to make sure returns correctly after an apply_changes
+        let jh = start_batch_of_test_listeners(topic_store, has_been_updated);
+        // make sure that every listener got notified and returned
+        for j in jh {
+            j.await
+        }
+
+        // wait for controller to sync
+        sleep(Duration::from_millis(100)).await;
+        shutdown.notify();
+        sleep(Duration::from_millis(1)).await;
+    }
+
+    fn start_batch_of_test_listeners(
+        store: Arc<LocalStore<TestSpec, TestMeta>>,
+        has_been_updated: Arc<AtomicBool>,
+    ) -> Vec<JoinHandle<()>> {
+        (0..10u32)
+            // let jh: Vec<()> = (0..10u32)
+            .map(|_| {
+                let store = store.clone();
+
+                spawn(listener_thread(store, has_been_updated.clone()))
+            })
+            .collect()
+    }
+
+    async fn listener_thread<S, C>(store: Arc<LocalStore<S, C>>, has_been_updated: Arc<AtomicBool>)
+    where
+        S: Spec,
+        C: MetadataItem,
+    {
+        store.at_least_one_change_listener().listen().await;
+        // Make sure that we never return before we update the store
+        assert!(has_been_updated.load(std::sync::atomic::Ordering::Relaxed));
     }
 }
