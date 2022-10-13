@@ -14,7 +14,7 @@ use fluvio_socket::AsyncResponse;
 use fluvio_sc_schema::objects::{
     Metadata, MetadataUpdate, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
 };
-use fluvio_sc_schema::{AdminSpec};
+use fluvio_sc_schema::AdminSpec;
 
 use crate::metadata::core::Spec;
 

@@ -14,9 +14,9 @@ use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
-use fluvio_test_util::test_runner::test_driver::{TestDriver};
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-use fluvio_test_util::{async_process};
+use fluvio_test_util::async_process;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]

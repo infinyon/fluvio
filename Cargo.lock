@@ -2559,6 +2559,7 @@ name = "fluvio-stream-model"
 version = "0.8.2"
 dependencies = [
  "async-rwlock",
+ "async-std",
  "event-listener",
  "fluvio-future",
  "fluvio-stream-model",
@@ -2581,6 +2582,7 @@ dependencies = [
  "comfy-table",
  "crc",
  "crossbeam-channel",
+ "fastrand",
  "fluvio",
  "fluvio-cli",
  "fluvio-cluster",

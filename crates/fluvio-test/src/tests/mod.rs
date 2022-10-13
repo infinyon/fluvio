@@ -87,17 +87,13 @@ impl TestRecordBuilder {
     }
 
     fn random_data(data_size: usize) -> String {
-        use rand::Rng;
-
         const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                                 abcdefghijklmnopqrstuvwxyz\
                                 0123456789)(*&^%$#@!~";
 
-        let mut rng = rand::thread_rng();
-
         let data: String = (0..data_size)
             .map(|_| {
-                let idx = rng.gen_range(0..CHARSET.len());
+                let idx = fastrand::usize(0..CHARSET.len());
                 CHARSET[idx] as char
             })
             .collect();
