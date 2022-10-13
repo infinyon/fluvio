@@ -9,7 +9,7 @@ license = "Apache-2.0"
 
 [dependencies]
 toml-diff = { path = "toml-diff" }
-clap = { version = "3.2.20", features = ["derive", "env"] }
+clap = { version = "4.0.15", features = ["derive", "env"] }
 flate2 = "1.0.24"
 reqwest = { version = "0.11.11", features = ["json"] }
 semver = "1.0.13"
