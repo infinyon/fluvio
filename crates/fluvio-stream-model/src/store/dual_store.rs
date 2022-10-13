@@ -420,11 +420,29 @@ mod listener {
             Self { event_publisher }
         }
 
+        /// check if there should be any changes
+        /// this should be done before event listener
+        /// to ensure no events are missed
+        #[inline]
+        pub fn has_change(&'a self) -> bool {
+            self.event_publisher.current_change() > 0
+        }
+
         /// returns when the event_publisher has a current_change greater than 0
         pub async fn listen(&'a self) {
-            while self.event_publisher.current_change() <= 0 {
-                self.event_publisher.listen().await;
+            if self.has_change() {
+                return;
             }
+
+            let listener = self.event_publisher.listen();
+
+            if self.has_change() {
+                return;
+            }
+
+            trace!("waiting for publisher");
+
+            listener.await;
         }
     }
 
@@ -730,7 +748,6 @@ mod test_notify {
         }
 
         async fn dispatch_loop(mut self) {
-            use tokio::select;
             debug!("entering loop");
 
             let mut spec_listener = self.store.change_listener();
