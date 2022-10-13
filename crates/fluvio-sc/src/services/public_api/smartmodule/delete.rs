@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, trace, instrument};
+use tracing::{debug, trace, instrument, info};
 use anyhow::Result;
 
 use fluvio_sc_schema::Status;
@@ -18,7 +18,7 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
 ) -> Result<Status> {
     use fluvio_protocol::link::ErrorCode;
 
-    debug!("delete smart modules: {}", name);
+    debug!(%name,"deleting smartmodule");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -39,7 +39,7 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
 
     let sm_fqdn = SmartModulePackageKey::from_qualified_name(&name)?.store_id();
 
-    debug!(%sm_fqdn,"delete smart modules with");
+    info!(%sm_fqdn,"deleting smartmodule");
 
     let status = if auth_ctx
         .global_ctx
@@ -66,7 +66,7 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
         )
     };
 
-    trace!("flv delete smart module resp {:#?}", status);
+    trace!("smartmodule deleting resp {:#?}", status);
 
     Ok(status)
 }
