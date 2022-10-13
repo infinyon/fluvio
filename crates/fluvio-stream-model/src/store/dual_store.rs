@@ -12,7 +12,6 @@ use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
 
 use crate::core::{MetadataItem, Spec};
-use self::listener::AtLeastOneChangeListener;
 
 use super::MetadataStoreObject;
 use super::{DualEpochMap, DualEpochCounter, Epoch, EpochChanges};
@@ -174,11 +173,6 @@ where
     /// create new change listener
     pub fn change_listener(self: &Arc<Self>) -> ChangeListener<S, C> {
         ChangeListener::new(self.clone())
-    }
-
-    /// create a new listener to watch for at least one update to the local store
-    pub fn at_least_one_change_listener<'a>(self: &'a Arc<Self>) -> AtLeastOneChangeListener<'a> {
-        AtLeastOneChangeListener::new(self.event_publisher())
     }
 }
 
@@ -399,7 +393,7 @@ mod listener {
     use std::fmt;
     use std::sync::Arc;
 
-    use tracing::{trace, debug, instrument};
+    use tracing::{trace, debug, instrument, error};
 
     use crate::store::event::EventPublisher;
     use crate::store::{
@@ -408,43 +402,43 @@ mod listener {
 
     use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
 
-    /// thin wrapper for an event publisher. blocks until the current change in the event publisher is > 0
-    /// useful for making sure metadata has been delivered before querying store
-    pub struct AtLeastOneChangeListener<'a> {
-        event_publisher: &'a EventPublisher,
-    }
+    // /// thin wrapper for an event publisher. blocks until the current change in the event publisher is > 0
+    // /// useful for making sure metadata has been delivered before querying store
+    // pub struct AtLeastOneChangeListener<'a> {
+    //     event_publisher: &'a EventPublisher,
+    // }
 
-    impl<'a> AtLeastOneChangeListener<'a> {
-        /// only constructed by the associated LocalStore that owns the EventPublisher
-        pub(crate) fn new(event_publisher: &'a EventPublisher) -> Self {
-            Self { event_publisher }
-        }
+    // impl<'a> AtLeastOneChangeListener<'a> {
+    //     /// only constructed by the associated LocalStore that owns the EventPublisher
+    //     pub(crate) fn new(event_publisher: &'a EventPublisher) -> Self {
+    //         Self { event_publisher }
+    //     }
 
-        /// check if there should be any changes
-        /// this should be done before event listener
-        /// to ensure no events are missed
-        #[inline]
-        pub fn has_change(&'a self) -> bool {
-            self.event_publisher.current_change() > 0
-        }
+    //     /// check if there should be any changes
+    //     /// this should be done before event listener
+    //     /// to ensure no events are missed
+    //     #[inline]
+    //     pub fn has_change(&'a self) -> bool {
+    //         self.event_publisher.current_change() > 0
+    //     }
 
-        /// returns when the event_publisher has a current_change greater than 0
-        pub async fn listen(&'a self) {
-            if self.has_change() {
-                return;
-            }
+    //     /// returns when the event_publisher has a current_change greater than 0
+    //     pub async fn listen(&'a self) {
+    //         if self.has_change() {
+    //             return;
+    //         }
 
-            let listener = self.event_publisher.listen();
+    //         let listener = self.event_publisher.listen();
 
-            if self.has_change() {
-                return;
-            }
+    //         if self.has_change() {
+    //             return;
+    //         }
 
-            trace!("waiting for publisher");
+    //         trace!("waiting for publisher");
 
-            listener.await;
-        }
-    }
+    //         listener.await;
+    //     }
+    // }
 
     /// listen for changes local store
     pub struct ChangeListener<S, C>
@@ -493,7 +487,7 @@ mod listener {
         /// this should be done before event listener
         /// to ensure no events are missed
         #[inline]
-        pub fn has_change(&mut self) -> bool {
+        pub fn has_change(&self) -> bool {
             self.event_publisher().current_change() > self.last_change
         }
 
@@ -517,7 +511,17 @@ mod listener {
             self.event_publisher().current_change()
         }
 
-        pub async fn listen(&mut self) {
+        /// returns once there is at least one change recorded by the the event_publisher
+        /// can only be called once so consumes the ChangeListener
+        pub async fn listen_for_at_least_one_change(mut self) {
+            if self.last_change != 0 {
+                error!("listen_for_at_least_one_change should only be called on a newly constructed ChangeListener");
+            }
+            self.last_change = 0;
+            self.listen().await
+        }
+
+        pub async fn listen(&self) {
             if self.has_change() {
                 trace!("before has change: {}", self.last_change());
                 return;
@@ -806,10 +810,10 @@ mod test_notify {
         //  assert_eq!(last_change.load(SeqCst), 4);
     }
     #[fluvio_future::test]
-    async fn test_at_least_one_change_listener_non_blocking() {
+    async fn test_change_listener_non_blocking() {
         let mut timer = sleep(Duration::from_millis(5));
         let store = Arc::new(DefaultTestStore::default());
-        let listener = store.at_least_one_change_listener();
+        let listener = store.change_listener();
 
         // no events, this should timeout
         select! {
@@ -825,7 +829,7 @@ mod test_notify {
     }
 
     #[fluvio_future::test]
-    async fn test_at_least_one_change_listener() {
+    async fn test_change_listener() {
         let topic_store = Arc::new(DefaultTestStore::default());
         let last_change = Arc::new(AtomicI64::new(0));
         let shutdown = SimpleEvent::shared();
@@ -893,7 +897,10 @@ mod test_notify {
         S: Spec,
         C: MetadataItem,
     {
-        store.at_least_one_change_listener().listen().await;
+        store
+            .change_listener()
+            .listen_for_at_least_one_change()
+            .await;
         // Make sure that we never return before we update the store
         assert!(has_been_updated.load(std::sync::atomic::Ordering::Relaxed));
     }
