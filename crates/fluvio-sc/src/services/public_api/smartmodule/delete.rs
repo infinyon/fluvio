@@ -18,7 +18,7 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
 ) -> Result<Status> {
     use fluvio_protocol::link::ErrorCode;
 
-    debug!("delete smart modules: {}", name);
+    debug!(%name,"deleting smartmodule");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -66,7 +66,7 @@ pub async fn handle_delete_smartmodule<AC: AuthContext>(
         )
     };
 
-    trace!("flv delete smart module resp {:#?}", status);
+    trace!("smartmodule deleting resp {:#?}", status);
 
     Ok(status)
 }
