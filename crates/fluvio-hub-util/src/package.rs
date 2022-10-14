@@ -111,16 +111,17 @@ fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-struct FileSig {
-    name: String,
-    hash: String,
-    len: u64,
-    sig: String,
+pub struct FileSig {
+    pub name: String,
+    pub hash: String,
+    pub len: u64,
+    pub sig: String,
 }
+
 #[derive(Deserialize, Serialize, Debug)]
-struct PackageSignature {
-    files: Vec<FileSig>,
-    pubkey: String,
+pub struct PackageSignature {
+    pub files: Vec<FileSig>,
+    pub pubkey: String,
 }
 
 struct PackageSignatureBulder {
@@ -233,7 +234,7 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
 }
 
 /// extract sigfiles out of the package
-fn package_getsigs_with_readio<R: std::io::Read>(
+pub fn package_getsigs_with_readio<R: std::io::Read>(
     readio: &mut R,
     pkgfile: &str,
 ) -> Result<HashMap<String, PackageSignature>> {
@@ -273,13 +274,13 @@ fn package_getsigs_with_readio<R: std::io::Read>(
 }
 
 // get a top level file from a package file
-pub(crate) fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8>> {
+pub fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8>> {
     let mut file = std::fs::File::open(pkgfile)?;
     package_get_topfile_with_readio(&mut file, topfile)
 }
 
 // get a top level file a generic reader trait obj
-pub(crate) fn package_get_topfile_with_readio<R: std::io::Read>(
+pub fn package_get_topfile_with_readio<R: std::io::Read>(
     readio: &mut R,
     topfile: &str,
 ) -> Result<Vec<u8>> {
