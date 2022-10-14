@@ -1,18 +1,66 @@
 //!
 //! # SmartModule Spec
 //!
+use std::io::Error as IoError;
 
-use fluvio_protocol::{Encoder, Decoder};
+use bytes::BufMut;
 
-use super::SmartModuleMetadata;
+use fluvio_protocol::{Encoder, Decoder, Version};
+use tracing::debug;
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
+use super::{
+    SmartModuleMetadata,
+    spec_v1::{SmartModuleSpecV1},
+};
+
+const V2_FORMAT: Version = 9;
+
+#[derive(Debug, Default, Clone, Eq, PartialEq, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub meta: Option<SmartModuleMetadata>,
     #[cfg_attr(feature = "use_serde", serde(skip))]
     pub summary: Option<SmartModuleWasmSummary>, // only passed from SC to CLI
     pub wasm: SmartModuleWasm,
+}
+
+impl Encoder for SmartModuleSpec {
+    fn write_size(&self, version: Version) -> usize {
+        debug!("write size: version: {}", version);
+        if version <= V2_FORMAT {
+            debug!("computing size for smart module spec v1");
+            let spec_v1 = SmartModuleSpecV1 {
+                wasm: self.wasm.clone(),
+                ..Default::default()
+            };
+            spec_v1.write_size(version)
+        } else {
+            let mut size = 0;
+            size += self.meta.write_size(version);
+            size += self.summary.write_size(version);
+            size += self.wasm.write_size(version);
+            size
+        }
+    }
+
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
+    where
+        T: BufMut,
+    {
+        if version <= V2_FORMAT {
+            debug!("encoding for smart module spec v1");
+            let spec_v1 = SmartModuleSpecV1 {
+                wasm: self.wasm.clone(),
+                ..Default::default()
+            };
+            spec_v1.encode(dest, version)?;
+        } else {
+            self.meta.encode(dest, version)?;
+            self.summary.encode(dest, version)?;
+            self.wasm.encode(dest, version)?;
+        }
+        Ok(())
+    }
 }
 
 impl SmartModuleSpec {

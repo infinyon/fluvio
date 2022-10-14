@@ -13,12 +13,8 @@ use fluvio_sc_schema::objects::{
 use fluvio_sc_schema::AdminPublicApiKey;
 
 // Fluvi Client version 0.14.0 corresponds to Platform version 10.0.0
-static FLUVIO_V10: Lazy<Version> = Lazy::new(|| Version::parse("0.14.0").unwrap());
-static PLATFORM_VER: Lazy<Version> = Lazy::new(|| Version::parse(crate::VERSION).unwrap());
 
-pub(crate) fn is_v10(client_version: &Version) -> bool {
-    client_version >= &FLUVIO_V10
-}
+static PLATFORM_VER: Lazy<Version> = Lazy::new(|| Version::parse(crate::VERSION).unwrap());
 
 #[instrument(skip(request))]
 pub async fn handle_api_versions_request(
@@ -76,17 +72,5 @@ fn make_version_key(key: AdminPublicApiKey, min_version: i16, max_version: i16) 
         api_key,
         min_version,
         max_version,
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use super::*;
-
-    #[test]
-    fn test_v10() {
-        assert!(is_v10(&Version::parse("0.14.1").unwrap()));
-        assert!(!is_v10(&Version::parse("0.13.3").unwrap()));
     }
 }
