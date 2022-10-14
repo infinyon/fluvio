@@ -1,5 +1,7 @@
-use std::io::Error;
-use tracing::{trace, instrument};
+use tracing::{trace, instrument, debug};
+use semver::Version;
+use once_cell::sync::Lazy;
+use anyhow::Result;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage, Request};
 use fluvio_protocol::link::versions::{
@@ -10,36 +12,56 @@ use fluvio_sc_schema::objects::{
 };
 use fluvio_sc_schema::AdminPublicApiKey;
 
+// Fluvi Client version 0.14.0 corresponds to Platform version 10.0.0
+static FLUVIO_V10: Lazy<Version> = Lazy::new(|| Version::parse("0.14.0").unwrap());
+static PLATFORM_VER: Lazy<Version> = Lazy::new(|| Version::parse(crate::VERSION).unwrap());
+
+pub(crate) fn is_v10(client_version: &Version) -> bool {
+    client_version >= &FLUVIO_V10
+}
+
 #[instrument(skip(request))]
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
-) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
+) -> Result<ResponseMessage<ApiVersionsResponse>> {
     let mut response = ApiVersionsResponse::default();
 
-    let platform_version = semver::Version::parse(crate::VERSION)
-        .expect("Platform Version (from VERSION file) must be semver");
-    response.platform_version = PlatformVersion::from(platform_version);
+    response.platform_version = PlatformVersion::new(&PLATFORM_VER);
+
+    let client_version = Version::parse(&request.request().client_version)?;
+    debug!(client_version = %client_version, "client version");
 
     // topic versions
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Create,
-        ObjectApiCreateRequest::DEFAULT_API_VERSION,
-        ObjectApiCreateRequest::DEFAULT_API_VERSION,
+        ObjectApiCreateRequest::MIN_API_VERSION,
+        ObjectApiCreateRequest::MAX_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Delete,
-        ObjectApiDeleteRequest::DEFAULT_API_VERSION,
-        ObjectApiDeleteRequest::DEFAULT_API_VERSION,
+        ObjectApiDeleteRequest::MIN_API_VERSION,
+        ObjectApiDeleteRequest::MAX_API_VERSION,
     ));
+
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::List,
-        ObjectApiListRequest::DEFAULT_API_VERSION,
-        ObjectApiListRequest::DEFAULT_API_VERSION,
+        ObjectApiListRequest::MIN_API_VERSION,
+        ObjectApiListRequest::MAX_API_VERSION,
     ));
+
+    /*
+    response.api_keys.push(make_version_key(
+        AdminPublicApiKey::List,
+        ObjectApiListRequest::MIN_API_VERSION,
+       // if is_v10(&client_version) { ObjectApiListRequest::MAX_API_VERSION } else { ObjectApiListRequest::MIN_API_VERSION },
+        ObjectApiListRequest::MIN_API_VERSION,
+    ));
+    */
+
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Watch,
-        ObjectApiWatchRequest::DEFAULT_API_VERSION,
-        ObjectApiWatchRequest::DEFAULT_API_VERSION,
+        ObjectApiWatchRequest::MIN_API_VERSION,
+        ObjectApiWatchRequest::MAX_API_VERSION,
     ));
 
     trace!("flv api versions response: {:#?}", response);
@@ -54,5 +76,17 @@ fn make_version_key(key: AdminPublicApiKey, min_version: i16, max_version: i16) 
         api_key,
         min_version,
         max_version,
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_v10() {
+        assert!(is_v10(&Version::parse("0.14.1").unwrap()));
+        assert!(!is_v10(&Version::parse("0.13.3").unwrap()));
     }
 }

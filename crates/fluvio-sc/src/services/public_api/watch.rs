@@ -33,8 +33,8 @@ pub fn handle_watch_request<AC>(
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
 ) -> Result<(), IoError> {
-    debug!("handling watch request");
     let (header, req) = request.get_header_request();
+    debug!("handling watch header: {:#?}, request: {:#?}", header, req);
 
     match req {
         ObjectApiWatchRequest::Topic(_) => WatchController::<TopicSpec>::update(

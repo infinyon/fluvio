@@ -207,7 +207,7 @@ impl FluvioAdmin {
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
     {
-        self.list::<S, String>(vec![]).await
+        self.list_with_params::<S, String>(vec![], false).await
     }
 
     /// return all instance of this spec by filter
@@ -220,10 +220,26 @@ impl FluvioAdmin {
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
     {
+        self.list_with_params(filters, false).await
+    }
+
+    #[instrument(skip(self, filters))]
+    pub async fn list_with_params<S, F>(
+        &self,
+        filters: Vec<F>,
+        summary: bool,
+    ) -> Result<Vec<S::ListType>, FluvioError>
+    where
+        S: AdminSpec,
+        S::ListFilter: From<F>,
+        ObjectApiListRequest: From<ListRequest<S>>,
+        ListResponse<S>: TryFrom<ObjectApiListResponse>,
+        <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+    {
         use std::io::Error as IoError;
         use std::io::ErrorKind;
 
-        let list_request = ListRequest::new(filters.into_iter().map(Into::into).collect());
+        let list_request = ListRequest::new(filters.into_iter().map(Into::into).collect(), summary);
 
         let list_request: ObjectApiListRequest = list_request.into();
         let response = self.send_receive(list_request).await?;

@@ -49,7 +49,7 @@ where
     let objects: Vec<Metadata<SmartModuleSpec>> = reader
         .values()
         .filter_map(|value| {
-            println!("value: {:#?}", value);
+            //println!("value: {:#?}", value);
             if sm_keys.is_empty()
                 || sm_keys
                     .iter()

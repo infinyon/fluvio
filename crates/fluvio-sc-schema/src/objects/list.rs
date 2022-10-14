@@ -16,14 +16,19 @@ pub const MIN_API_WITH_FILTER: u16 = 10;
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {
     pub name_filters: Vec<S::ListFilter>,
+    #[fluvio(min_version = 10)]
+    pub summary: bool, // if true, only return summary
 }
 
 impl<S> ListRequest<S>
 where
     S: AdminSpec,
 {
-    pub fn new(name_filters: Vec<S::ListFilter>) -> Self {
-        Self { name_filters }
+    pub fn new(name_filters: Vec<S::ListFilter>, summary: bool) -> Self {
+        Self {
+            name_filters,
+            summary,
+        }
     }
 }
 
