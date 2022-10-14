@@ -13,13 +13,17 @@ pub struct BuildOpt {
     /// Build release profile
     #[clap(long, default_value = DEFAULT_RELEASE_PROFILE)]
     release: String,
+
+    /// Extra arguments to be passed to cargo
+    #[clap(raw=true)]
+    extra_arguments: Vec<String>,
 }
 
 impl BuildOpt {
     pub(crate) fn process(&self) -> Result<()> {
         let mut cargo = BuildOpt::make_cargo_cmd()?;
-        let cwd = std::env::current_dir()?;
 
+        let cwd = std::env::current_dir()?;
         cargo
             .current_dir(&cwd)
             .arg("build")
@@ -27,6 +31,7 @@ impl BuildOpt {
             .arg(self.release.as_str())
             .arg("--lib");
         cargo.arg("--target").arg(BUILD_TARGET);
+        if !self.extra_arguments.is_empty() { cargo.args(&self.extra_arguments); }
         cargo.status().map_err(Error::from)?;
 
         Ok(())
