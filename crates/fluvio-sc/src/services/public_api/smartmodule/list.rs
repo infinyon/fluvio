@@ -17,6 +17,7 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 #[instrument(skip(filters, auth))]
 pub(crate) async fn fetch_smart_modules<AC: AuthContext, M>(
     filters: Vec<SmartModuleFilter>,
+    summary: bool,
     auth: &AC,
     object_ctx: &StoreContext<SmartModuleSpec, M>,
 ) -> Result<ListResponse<SmartModuleSpec>>
@@ -129,7 +130,7 @@ mod test {
         let sm_ctx = StoreContext::new_with_store(Arc::new(local_sm_store));
         assert_eq!(sm_ctx.store().read().await.len(), 2);
         assert_eq!(
-            fetch_smart_modules(vec![], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec![], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -137,7 +138,7 @@ mod test {
             2
         );
         assert_eq!(
-            fetch_smart_modules(vec!["test".to_owned().into()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["test".to_owned().into()], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -146,7 +147,7 @@ mod test {
         );
 
         assert_eq!(
-            fetch_smart_modules(vec!["sm1".to_owned().into()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["sm1".to_owned().into()], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -156,7 +157,7 @@ mod test {
 
         // no matching
         assert_eq!(
-            fetch_smart_modules(vec!["sm2".to_owned().into()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["sm2".to_owned().into()], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
