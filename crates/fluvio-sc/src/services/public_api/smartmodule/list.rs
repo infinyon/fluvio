@@ -63,7 +63,15 @@ where
                     .count()
                     > 0
             {
-                Some(AdminSpec::convert_from(value))
+                if summary {
+                    Some(Metadata {
+                        name: value.key().clone(),
+                        spec: value.spec().summary(),
+                        status: value.status().clone(),
+                    })
+                } else {
+                    Some(AdminSpec::convert_from(value))
+                }
             } else {
                 None
             }
