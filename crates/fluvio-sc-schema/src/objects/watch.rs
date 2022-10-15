@@ -11,7 +11,7 @@ use fluvio_controlplane_metadata::message::Message;
 use crate::{AdminPublicApiKey, AdminSpec};
 use crate::core::Spec;
 
-use super::{Metadata, ObjectApiEnum};
+use super::{Metadata, ObjectApiEnum, COMMON_VERSION};
 
 ObjectApiEnum!(WatchRequest);
 ObjectApiEnum!(WatchResponse);
@@ -21,12 +21,14 @@ ObjectApiEnum!(WatchResponse);
 #[derive(Debug, Encoder, Default, Decoder)]
 pub struct WatchRequest<S: AdminSpec> {
     epoch: Epoch,
+    #[fluvio(min_version = 10)]
+    pub summary: bool, // if true, only return summary
     data: PhantomData<S>,
 }
 
 impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
-    const DEFAULT_API_VERSION: i16 = 9;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiWatchResponse;
 }
 
