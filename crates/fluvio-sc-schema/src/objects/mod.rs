@@ -13,6 +13,8 @@ pub use crate::NameFilter;
 pub(crate) use object_macro::*;
 pub(crate) use delete_macro::*;
 
+pub(crate) const COMMON_VERSION: i16 = 10; // from now, we use a single version for all objects
+
 mod metadata {
 
     use std::convert::{TryFrom, TryInto};
@@ -519,7 +521,7 @@ mod test {
     use crate::customspu::CustomSpuSpec;
 
     fn create_req() -> ObjectApiListRequest {
-        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
+        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
         list_request.into()
     }
 

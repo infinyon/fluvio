@@ -52,14 +52,15 @@ impl VersionedSocket {
         // now get versions
         // Query for API versions
 
-        let mut req_msg = RequestMessage::new_request(ApiVersionsRequest {
+        let version = ApiVersionsRequest {
             client_version: crate::built_info::PKG_VERSION.into(),
             client_os: crate::built_info::CFG_OS.into(),
             client_arch: crate::built_info::CFG_TARGET_ARCH.into(),
-        });
+        };
+        debug!(client_version = %version.client_version, "querying versions");
+        let mut req_msg = RequestMessage::new_request(version);
         req_msg.get_mut_header().set_client_id(&config.client_id);
 
-        debug!("querying versions");
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
         let versions = Versions::new(response);
 
@@ -191,10 +192,13 @@ impl Versions {
         &self.platform_version
     }
 
-    /// Given an API key, it returns max_version. None if not found
+    /// Given an API key, it returns maximum compatible version. None if not found
     pub fn lookup_version(&self, api_key: u16, client_version: i16) -> Option<i16> {
         for version in &self.api_versions {
-            if version.api_key == api_key as i16 {
+            if version.api_key == api_key as i16
+                && version.min_version <= client_version
+                && version.max_version >= client_version
+            {
                 return Some(std::cmp::min(version.max_version, client_version));
             }
         }
@@ -323,7 +327,7 @@ mod test {
 
         response.api_keys.push(ApiVersionKey {
             api_key: 1000,
-            min_version: 0,
+            min_version: 5,
             max_version: 10,
         });
 
@@ -331,11 +335,9 @@ mod test {
 
         // None if api_key not found
         assert_eq!(versions.lookup_version(0, 10), None);
-
-        // Must use max version of the client
-        (0..10).for_each(|i| assert_eq!(versions.lookup_version(1000, i), Some(i)));
-
-        // Since max_version of the client is larger than the max_version of the server, should use the max_version of the server
-        (10..12).for_each(|i| assert_eq!(versions.lookup_version(1000, i), Some(10)));
+        assert_eq!(versions.lookup_version(1000, 4), None); // same api key but version is too low
+        assert_eq!(versions.lookup_version(1000, 5), Some(5));
+        assert_eq!(versions.lookup_version(1000, 7), Some(7));
+        assert_eq!(versions.lookup_version(1000, 11), None);
     }
 }

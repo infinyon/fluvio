@@ -19,7 +19,7 @@ pub struct ListDerivedStreamOpt {
 impl ListDerivedStreamOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<DerivedStreamSpec, _>(vec![]).await?;
+        let lists = admin.all::<DerivedStreamSpec>().await?;
         output::smart_stream_response_to_output(out, lists, self.output.format)
     }
 }

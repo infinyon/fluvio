@@ -14,6 +14,7 @@ pub type UpdateSmartModuleRequest = ControlPlaneRequest<SmartModule>;
 impl Request for UpdateSmartModuleRequest {
     const API_KEY: u16 = InternalSpuApi::UpdateSmartModule as u16;
     type Response = UpdateSmartModuleResponse;
+    const DEFAULT_API_VERSION: i16 = 10; // align with pubic api to get version encoding
 }
 
 #[derive(Decoder, Encoder, Default, Debug)]

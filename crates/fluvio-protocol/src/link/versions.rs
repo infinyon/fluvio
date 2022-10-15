@@ -7,6 +7,7 @@ use crate::api::Request;
 use super::ErrorCode;
 
 pub const VERSIONS_API_KEY: u16 = 18;
+pub const V10_PLATFORM: i16 = 2;
 
 // -----------------------------------
 // ApiVersionsRequest
@@ -24,7 +25,7 @@ pub struct ApiVersionsRequest {
 
 impl Request for ApiVersionsRequest {
     const API_KEY: u16 = VERSIONS_API_KEY;
-    const DEFAULT_API_VERSION: i16 = 1;
+    const DEFAULT_API_VERSION: i16 = V10_PLATFORM;
     type Response = ApiVersionsResponse;
 }
 
@@ -52,6 +53,10 @@ pub struct ApiVersionKey {
 pub struct PlatformVersion(String);
 
 impl PlatformVersion {
+    pub fn new(version: &semver::Version) -> Self {
+        Self(version.to_string())
+    }
+
     /// Creates a `semver::Version` object of the inner version
     pub fn to_semver(&self) -> semver::Version {
         // This is safe because of this type's invariant:

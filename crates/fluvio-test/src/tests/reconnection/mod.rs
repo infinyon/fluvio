@@ -35,10 +35,7 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
 
     let admin = test_driver.client().admin().await;
 
-    let partitions = admin
-        .list::<PartitionSpec, _>(vec![])
-        .await
-        .expect("partitions");
+    let partitions = admin.all::<PartitionSpec>().await.expect("partitions");
 
     let test_topic = &partitions[0];
     let leader = test_topic.spec.leader;
