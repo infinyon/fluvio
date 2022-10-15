@@ -6,7 +6,7 @@ use fluvio_channel::{
 use crate::install_channel_fluvio_bin;
 
 use std::path::PathBuf;
-use clap::{Parser, IntoApp};
+use clap::{Parser, CommandFactory};
 use tracing::debug;
 
 #[derive(Debug, Clone, Parser, Eq, PartialEq)]

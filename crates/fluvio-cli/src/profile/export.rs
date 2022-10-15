@@ -18,7 +18,7 @@ pub struct ExportOpt {
         short = 'O',
         long = "output",
         value_name = "type",
-        arg_enum,
+        value_enum,
         ignore_case = true
     )]
     pub output_format: OutputType,

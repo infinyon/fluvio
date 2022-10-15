@@ -48,7 +48,7 @@ fn main() {
 
 #[derive(Debug, Parser)]
 pub(crate) struct LogOpt {
-    #[clap(parse(from_os_str))]
+    #[clap(value_parser)]
     file_name: PathBuf,
 
     #[clap(long, default_value = "100")]
@@ -90,7 +90,7 @@ async fn dump_log(opt: LogOpt) -> Result<(), StorageError> {
 
 #[derive(Debug, Parser)]
 pub(crate) struct IndexOpt {
-    #[clap(parse(from_os_str))]
+    #[clap(value_parser)]
     file_name: PathBuf,
 
     #[clap(long, default_value = "100")]
@@ -132,7 +132,7 @@ async fn dump_index(opt: IndexOpt) -> Result<(), StorageError> {
 
 #[derive(Debug, Parser)]
 pub(crate) struct SegmentValidateOpt {
-    #[clap(parse(from_os_str))]
+    #[clap(value_parser)]
     file_name: PathBuf,
 
     #[clap(long, default_value = "0")]

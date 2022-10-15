@@ -7,7 +7,7 @@ use fluvio_channel::{
     ImageTagStrategy,
 };
 use std::path::PathBuf;
-use clap::{Parser, IntoApp};
+use clap::{Parser, CommandFactory};
 use tracing::debug;
 use dirs::home_dir;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
@@ -25,7 +25,7 @@ pub struct CreateOpt {
     /// Path to fluvio extensions directory for channel
     extensions_path: Option<PathBuf>,
     /// Type of Docker image tag strategy (choices: Version, VersionGit, Git)
-    #[clap(arg_enum)]
+    #[clap(value_enum)]
     image_tag_strategy: Option<ImageTagStrategy>,
     // Do I need this flag?
     //update: Option<bool>,

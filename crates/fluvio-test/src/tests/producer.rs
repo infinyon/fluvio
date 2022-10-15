@@ -43,7 +43,7 @@ pub struct ProducerTestOption {
     // max-throughput
 
     //// total time we want the producer to run, in seconds
-    //#[clap(long, parse(try_from_str = parse_seconds), default_value = "60")]
+    //#[clap(long, value_parser=parse_seconds, default_value = "60")]
     //runtime_seconds: Duration,
     /// Total number of records to producer
     #[clap(long, default_value = "100")]
