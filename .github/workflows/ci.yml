@@ -16,6 +16,10 @@ on:
       - trying
   pull_request:
     branches: [master]
+    paths:
+    - '**'
+    - '!/*.md'
+    - '!/**.md'
   workflow_dispatch:
     inputs:
       verbose:
