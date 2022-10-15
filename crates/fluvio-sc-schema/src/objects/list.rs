@@ -1,6 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
@@ -11,21 +12,46 @@ use super::{ObjectApiEnum, COMMON_VERSION, Metadata};
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(ListResponse);
 
+/// Filter for List
+#[derive(Debug, Encoder, Decoder, Default)]
+pub struct ListFilter {
+    pub name: String,
+}
+
+impl From<String> for ListFilter {
+    fn from(name: String) -> Self {
+        Self { name }
+    }
+}
+
+#[derive(Debug, Encoder, Decoder, Default)]
+pub struct ListFilters {
+    filters: Vec<ListFilter>,
+}
+
+impl From<Vec<ListFilter>> for ListFilters {
+    fn from(filters: Vec<ListFilter>) -> Self {
+        Self { filters }
+    }
+}
+
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {
-    pub name_filters: Vec<S::ListFilter>,
+    pub name_filters: ListFilters,
     #[fluvio(min_version = 10)]
     pub summary: bool, // if true, only return summary
+    data: PhantomData<S>, // satisfy generic
 }
 
 impl<S> ListRequest<S>
 where
     S: AdminSpec,
 {
-    pub fn new(name_filters: Vec<S::ListFilter>, summary: bool) -> Self {
+    pub fn new(name_filters: impl Into<ListFilters>, summary: bool) -> Self {
         Self {
-            name_filters,
+            name_filters: name_filters.into(),
             summary,
+            data: PhantomData,
         }
     }
 }

@@ -8,7 +8,7 @@ use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{
     CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
-    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata,
+    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::SocketError;
@@ -203,7 +203,6 @@ impl FluvioAdmin {
     pub async fn all<S>(&self) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
-        <S as AdminSpec>::ListFilter: From<std::string::String>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
@@ -217,7 +216,7 @@ impl FluvioAdmin {
     pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
-        S::ListFilter: From<F>,
+        ListFilter: From<F>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
@@ -234,7 +233,7 @@ impl FluvioAdmin {
     ) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
-        S::ListFilter: From<F>,
+        ListFilter: From<F>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,

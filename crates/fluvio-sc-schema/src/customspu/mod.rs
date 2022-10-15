@@ -7,13 +7,11 @@ use crate::objects::DeleteRequest;
 use crate::objects::ListRequest;
 use crate::objects::ListResponse;
 use crate::{
-    AdminSpec, NameFilter,
+    AdminSpec,
     objects::{ObjectFrom, ObjectTryFrom, WatchResponse, WatchRequest},
 };
 
-impl AdminSpec for CustomSpuSpec {
-    type ListFilter = NameFilter;
-}
+impl AdminSpec for CustomSpuSpec {}
 
 impl CreatableAdminSpec for CustomSpuSpec {
     const CREATE_TYPE: u8 = 1;

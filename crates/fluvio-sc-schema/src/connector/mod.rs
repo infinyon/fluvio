@@ -3,7 +3,7 @@ pub use fluvio_controlplane_metadata::connector::*;
 mod convert {
 
     use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
+        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
             CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
             WatchRequest, WatchResponse,
@@ -11,9 +11,7 @@ mod convert {
     };
     use super::ManagedConnectorSpec;
 
-    impl AdminSpec for ManagedConnectorSpec {
-        type ListFilter = NameFilter;
-    }
+    impl AdminSpec for ManagedConnectorSpec {}
 
     impl CreatableAdminSpec for ManagedConnectorSpec {
         const CREATE_TYPE: u8 = 3;

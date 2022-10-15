@@ -47,13 +47,8 @@ mod admin {
 
     use super::core::{Spec};
 
-    /// filter by name
-    pub type NameFilter = String;
-
     /// AdminSpec can perform list and watch
     pub trait AdminSpec: Spec + Encoder + Decoder {
-        type ListFilter: Encoder + Decoder + Sized + Debug;
-
         /// convert metadata object to list type object
         fn convert_from<C: fluvio_controlplane_metadata::core::MetadataItem>(
             obj: &fluvio_controlplane_metadata::store::MetadataStoreObject<Self, C>,

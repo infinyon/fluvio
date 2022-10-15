@@ -1,5 +1,4 @@
 pub use fluvio_controlplane_metadata::smartmodule::*;
-pub use convert::SmartModuleFilter;
 
 mod convert {
 
@@ -13,9 +12,7 @@ mod convert {
     };
     use super::SmartModuleSpec;
 
-    impl AdminSpec for SmartModuleSpec {
-        type ListFilter = SmartModuleFilter;
-    }
+    impl AdminSpec for SmartModuleSpec {}
 
     impl CreatableAdminSpec for SmartModuleSpec {
         const CREATE_TYPE: u8 = 4;
@@ -23,17 +20,6 @@ mod convert {
 
     impl DeletableAdminSpec for SmartModuleSpec {
         type DeleteKey = String;
-    }
-
-    #[derive(Debug, Encoder, Decoder, Default)]
-    pub struct SmartModuleFilter {
-        pub name: String,
-    }
-
-    impl From<String> for SmartModuleFilter {
-        fn from(name: String) -> Self {
-            Self { name }
-        }
     }
 
     CreateFrom!(SmartModuleSpec, SmartModule);

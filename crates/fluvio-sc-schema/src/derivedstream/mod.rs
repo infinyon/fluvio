@@ -5,7 +5,6 @@ mod convert {
     use crate::AdminSpec;
     use crate::CreatableAdminSpec;
     use crate::DeletableAdminSpec;
-    use crate::NameFilter;
     use crate::objects::CreateFrom;
     use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
@@ -17,9 +16,7 @@ mod convert {
 
     use super::DerivedStreamSpec;
 
-    impl AdminSpec for DerivedStreamSpec {
-        type ListFilter = NameFilter;
-    }
+    impl AdminSpec for DerivedStreamSpec {}
 
     impl CreatableAdminSpec for DerivedStreamSpec {
         const CREATE_TYPE: u8 = 10;

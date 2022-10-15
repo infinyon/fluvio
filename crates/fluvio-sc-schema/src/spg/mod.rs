@@ -3,7 +3,7 @@ pub use fluvio_controlplane_metadata::spg::*;
 mod convert {
 
     use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
+        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
             CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
             WatchRequest, WatchResponse,
@@ -11,9 +11,7 @@ mod convert {
     };
     use super::SpuGroupSpec;
 
-    impl AdminSpec for SpuGroupSpec {
-        type ListFilter = NameFilter;
-    }
+    impl AdminSpec for SpuGroupSpec {}
 
     impl CreatableAdminSpec for SpuGroupSpec {
         const CREATE_TYPE: u8 = 2;

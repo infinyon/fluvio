@@ -7,14 +7,12 @@ mod convert {
         CreateFrom, DeleteRequest, ListResponse, ObjectFrom, ObjectTryFrom, WatchRequest,
     };
     use crate::{
-        AdminSpec, NameFilter,
+        AdminSpec,
         objects::{ListRequest, WatchResponse},
     };
     use super::TableFormatSpec;
 
-    impl AdminSpec for TableFormatSpec {
-        type ListFilter = NameFilter;
-    }
+    impl AdminSpec for TableFormatSpec {}
 
     impl CreatableAdminSpec for TableFormatSpec {
         const CREATE_TYPE: u8 = 5;

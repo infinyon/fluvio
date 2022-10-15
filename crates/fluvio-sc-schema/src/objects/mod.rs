@@ -9,7 +9,6 @@ pub use list::*;
 pub use watch::*;
 pub use metadata::*;
 
-pub use crate::NameFilter;
 pub(crate) use object_macro::*;
 pub(crate) use delete_macro::*;
 
