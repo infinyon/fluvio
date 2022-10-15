@@ -67,7 +67,7 @@ where
                 if summary {
                     Some(Metadata {
                         name: value.key().clone(),
-                        spec: value.spec().summary(),
+                        spec: value.spec().clone().summary(),
                         status: value.status().clone(),
                     })
                 } else {

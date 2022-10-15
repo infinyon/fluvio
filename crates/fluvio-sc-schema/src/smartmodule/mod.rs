@@ -14,9 +14,9 @@ mod convert {
     use super::SmartModuleSpec;
 
     impl AdminSpec for SmartModuleSpec {
-        fn summary(&self) -> Self {
+        fn summary(self) -> Self {
             Self {
-                meta: self.meta.clone(),
+                meta: self.meta,
                 summary: Some(SmartModuleWasmSummary {
                     wasm_length: self.wasm.payload.len() as u32,
                 }),

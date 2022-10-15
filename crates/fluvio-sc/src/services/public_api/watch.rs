@@ -194,12 +194,21 @@ where
 
         let updates = if changes.is_sync_all() {
             let (updates, _) = changes.parts();
-            MetadataUpdate::with_all(epoch, updates.into_iter().map(|u| u.into()).collect())
+            MetadataUpdate::with_all(
+                epoch,
+                updates
+                    .into_iter()
+                    .map(|u| u.into())
+                    .map(|d: Metadata<S>| if self.summary { d.summary() } else { d })
+                    .collect(),
+            )
         } else {
             let (updates, deletes) = changes.parts();
             let mut changes: Vec<Message<Metadata<S>>> = updates
                 .into_iter()
-                .map(|v| Message::update(v.into()))
+                .map(|u| u.into())
+                .map(|d: Metadata<S>| if self.summary { d.summary() } else { d })
+                .map(|v| Message::update(v))
                 .collect();
             let mut deletes = deletes
                 .into_iter()

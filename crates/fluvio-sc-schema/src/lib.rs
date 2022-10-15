@@ -61,8 +61,8 @@ mod admin {
         }
 
         /// return summary version of myself
-        fn summary(&self) -> Self {
-            self.clone()
+        fn summary(self) -> Self {
+            self
         }
     }
 
