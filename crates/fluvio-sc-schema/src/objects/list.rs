@@ -6,12 +6,10 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec};
-use super::{ObjectApiEnum};
+use super::{ObjectApiEnum, COMMON_VERSION};
 
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(ListResponse);
-
-pub const MIN_API_WITH_FILTER: u16 = 10;
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {
@@ -34,7 +32,7 @@ where
 
 impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
-    const DEFAULT_API_VERSION: i16 = 10;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiListResponse;
 }
 

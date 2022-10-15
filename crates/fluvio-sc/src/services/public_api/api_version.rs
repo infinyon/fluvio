@@ -20,9 +20,10 @@ static PLATFORM_VER: Lazy<Version> = Lazy::new(|| Version::parse(crate::VERSION)
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>> {
-    let mut response = ApiVersionsResponse::default();
-
-    response.platform_version = PlatformVersion::new(&PLATFORM_VER);
+    let mut response = ApiVersionsResponse {
+        platform_version: PlatformVersion::new(&PLATFORM_VER),
+        ..Default::default()
+    };
 
     let client_version = Version::parse(&request.request().client_version)?;
     debug!(client_version = %client_version, "client version");
@@ -44,15 +45,6 @@ pub async fn handle_api_versions_request(
         ObjectApiListRequest::MIN_API_VERSION,
         ObjectApiListRequest::MAX_API_VERSION,
     ));
-
-    /*
-    response.api_keys.push(make_version_key(
-        AdminPublicApiKey::List,
-        ObjectApiListRequest::MIN_API_VERSION,
-       // if is_v10(&client_version) { ObjectApiListRequest::MAX_API_VERSION } else { ObjectApiListRequest::MIN_API_VERSION },
-        ObjectApiListRequest::MIN_API_VERSION,
-    ));
-    */
 
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Watch,

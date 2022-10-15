@@ -14,7 +14,7 @@ use fluvio_sc_schema::smartmodule::SmartModuleFilter;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-#[instrument(skip(filters, auth))]
+#[instrument(skip(filters, auth, object_ctx))]
 pub(crate) async fn fetch_smart_modules<AC: AuthContext, M>(
     filters: Vec<SmartModuleFilter>,
     summary: bool,
@@ -63,6 +63,7 @@ where
                     .count()
                     > 0
             {
+                debug!("found matching smart module: {:#?}", value.spec);
                 if summary {
                     Some(Metadata {
                         name: value.key().clone(),
@@ -78,7 +79,7 @@ where
         })
         .collect();
 
-    debug!(fetch_items = objects.len(),);
+    debug!(fetched_items = objects.len(),);
     trace!("fetch {:#?}", objects);
 
     Ok(ListResponse::new(objects))

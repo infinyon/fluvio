@@ -33,7 +33,8 @@ pub struct CommonCreateRequest {
 
 impl Request for ObjectApiCreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
-    const DEFAULT_API_VERSION: i16 = 9;
+    const MIN_API_VERSION: i16 = 9;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = Status;
 }
 
@@ -214,3 +215,5 @@ macro_rules! CreateFrom {
 }
 
 pub(crate) use CreateFrom;
+
+use super::COMMON_VERSION;
