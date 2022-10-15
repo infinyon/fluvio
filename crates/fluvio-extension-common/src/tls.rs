@@ -23,15 +23,15 @@ pub struct TlsClientOpt {
     pub domain: Option<String>,
 
     /// Path to TLS ca cert, required when client cert is enabled
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub ca_cert: Option<PathBuf>,
 
     /// Path to TLS client certificate
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub client_cert: Option<PathBuf>,
 
     /// Path to TLS client private key
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub client_key: Option<PathBuf>,
 }
 

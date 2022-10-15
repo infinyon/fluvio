@@ -27,7 +27,7 @@ mod root {
     use std::path::PathBuf;
     use std::process::Command;
 
-    use clap::{Parser, AppSettings, Command as ClapCommand, IntoApp};
+    use clap::{Parser, Command as ClapCommand, CommandFactory};
     use clap_complete::{generate, Shell};
     use colored::Colorize;
     use tracing::debug;
@@ -80,7 +80,7 @@ mod root {
         max_term_width = 100,
         disable_version_flag = true,
         // VersionlessSubcommands is now default behaviour. See https://github.com/clap-rs/clap/pull/2831
-        global_setting = AppSettings::DeriveDisplayOrder
+        // global_setting = AppSettings::DeriveDisplayOrder
         )]
     enum RootCmd {
         /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
@@ -224,20 +224,23 @@ mod root {
 
             // Add external command definitions to our own clap::Command definition
             let mut app: ClapCommand = Root::command();
-            for i in &external_commands {
+            for i in external_commands {
                 match i.path.file_name() {
                     Some(file_name) => {
                         app = app.subcommand(
                             ClapCommand::new(
-                                file_name.to_string_lossy().strip_prefix("fluvio-").unwrap(),
+                                file_name
+                                    .to_string_lossy()
+                                    .strip_prefix("fluvio-")
+                                    .unwrap()
+                                    .to_owned(),
                             )
-                            .about(&*i.meta.description),
+                            .about(i.meta.description),
                         );
                     }
                     None => {
-                        app = app.subcommand(
-                            ClapCommand::new(&*i.meta.title).about(&*i.meta.description),
-                        );
+                        app = app
+                            .subcommand(ClapCommand::new(i.meta.title).about(i.meta.description));
                     }
                 }
             }
