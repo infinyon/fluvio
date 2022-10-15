@@ -2,6 +2,8 @@ pub use fluvio_controlplane_metadata::smartmodule::*;
 
 mod convert {
 
+    use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmSummary, SmartModuleWasm};
+
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
@@ -11,7 +13,17 @@ mod convert {
     };
     use super::SmartModuleSpec;
 
-    impl AdminSpec for SmartModuleSpec {}
+    impl AdminSpec for SmartModuleSpec {
+        fn summary(&self) -> Self {
+            Self {
+                meta: self.meta.clone(),
+                summary: Some(SmartModuleWasmSummary {
+                    wasm_length: self.wasm.payload.len() as u32,
+                }),
+                wasm: SmartModuleWasm::default(),
+            }
+        }
+    }
 
     impl CreatableAdminSpec for SmartModuleSpec {
         const CREATE_TYPE: u8 = 4;

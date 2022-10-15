@@ -59,6 +59,11 @@ mod admin {
         {
             obj.clone().into()
         }
+
+        /// return summary version of myself
+        fn summary(&self) -> Self {
+            self.clone()
+        }
     }
 
     /// Not every Admin Object can be created directly
