@@ -85,7 +85,7 @@ impl PackageInfo {
                 ))?
                 .name
         } else {
-            return Err(format!("Could not find a default cargo package in {}. Try the `-p` option to specify a project/package.", current_project.display()).to_string());
+            return Err(format!("Could not find a default cargo package in {}. Try the `-p` option to specify a project/package.", current_project.display()));
         };
 
         let output_path = PathBuf::from(format!(
