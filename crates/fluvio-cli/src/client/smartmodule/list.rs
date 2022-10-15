@@ -114,12 +114,10 @@ mod output {
                         Cell::new(&r.spec.pkg_group()).set_alignment(CellAlignment::Left),
                         Cell::new(&r.spec.pkg_version()).set_alignment(CellAlignment::Left),
                         Cell::new(
-                            r.spec
-                                .summary
-                                .clone()
-                                .unwrap_or_default()
-                                .wasm_length
-                                .to_string(),
+                            bytesize::ByteSize::b(
+                                r.spec.summary.clone().unwrap_or_default().wasm_length as u64,
+                            )
+                            .to_string(),
                         )
                         .set_alignment(CellAlignment::Right),
                     ])
