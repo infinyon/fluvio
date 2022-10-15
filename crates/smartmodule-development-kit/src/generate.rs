@@ -2,8 +2,7 @@ use anyhow::{Error, Result};
 use clap::{Parser, ValueEnum, value_parser};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
-use tempfile::{NamedTempFile, TempDir};
-use std::io::{Write, Read};
+use tempfile::TempDir;
 use enum_display::EnumDisplay;
 use tracing::debug;
 
@@ -22,16 +21,16 @@ impl std::fmt::Display for SmdkTemplateValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &*self {
             SmdkTemplateValue::SmartmoduleInitFn(init) => {
-                write!(f, "smart-module-init=\"{}\"", init)
+                write!(f, "smart-module-init={}", init)
             }
             SmdkTemplateValue::SmartmoduleVersion(version) => {
-                write!(f, "smart-module-version=\"{}\"", version)
+                write!(f, "smart-module-version={}", version)
             }
             SmdkTemplateValue::SmartModuleType(sm_type) => {
-                write!(f, "smart-module-type=\"{}\"", sm_type)
+                write!(f, "smart-module-type={}", sm_type)
             }
             SmdkTemplateValue::SmartmoduleParameters(sm_params) => {
-                write!(f, "smart-module-params=\"{}\"", sm_params)
+                write!(f, "smart-module-params={}", sm_params)
             }
         }
     }
@@ -154,24 +153,19 @@ impl SmdkTemplate {
 }
 
 #[derive(Debug, Default, Clone)]
-struct TemplateUserValuesBuilder {
-    smart_module_crate_version: Option<SmdkTemplateValue>,
-    smart_module_type: Option<SmdkTemplateValue>,
-    generate_init_fn: Option<SmdkTemplateValue>,
-    smart_module_parameters: Option<SmdkTemplateValue>,
+struct SmdkTemplateUserValues {
+    values: Vec<SmdkTemplateValue>,
 }
 
-impl TemplateUserValuesBuilder {
+impl SmdkTemplateUserValues {
     fn new() -> Self {
-        TemplateUserValuesBuilder::default()
+        SmdkTemplateUserValues::default()
     }
 
     fn with_smart_module_crate_version(&mut self, version: Option<String>) -> &mut Self {
         if let Some(v) = version {
             debug!("User provided version: {v:#?}");
-            self.smart_module_crate_version = Some(SmdkTemplateValue::SmartmoduleVersion(v));
-        } else {
-            self.smart_module_crate_version = None;
+            self.values.push(SmdkTemplateValue::SmartmoduleVersion(v));
         }
         self
     }
@@ -179,9 +173,7 @@ impl TemplateUserValuesBuilder {
     fn with_smart_module_type(&mut self, sm_type: Option<SmartModuleType>) -> &mut Self {
         if let Some(t) = sm_type {
             debug!("User provided SmartModule type: {t:#?}");
-            self.smart_module_type = Some(SmdkTemplateValue::SmartModuleType(t));
-        } else {
-            self.smart_module_type = None;
+            self.values.push(SmdkTemplateValue::SmartModuleType(t));
         }
         self
     }
@@ -189,9 +181,7 @@ impl TemplateUserValuesBuilder {
     fn with_init_fn(&mut self, request: Option<bool>) -> &mut Self {
         if let Some(i) = request {
             debug!("User provided init fn request: {i:#?}");
-            self.generate_init_fn = Some(SmdkTemplateValue::SmartmoduleInitFn(i));
-        } else {
-            self.generate_init_fn = None;
+            self.values.push(SmdkTemplateValue::SmartmoduleInitFn(i));
         }
         self
     }
@@ -199,90 +189,13 @@ impl TemplateUserValuesBuilder {
     fn with_smart_module_params(&mut self, request: Option<bool>) -> &mut Self {
         if let Some(i) = request {
             debug!("User provided SmartModule params request: {i:#?}");
-            self.smart_module_parameters = Some(SmdkTemplateValue::SmartmoduleParameters(i));
-        } else {
-            self.smart_module_parameters = None;
+            self.values
+                .push(SmdkTemplateValue::SmartmoduleParameters(i));
         }
         self
     }
-
-    fn build(&self) -> Result<Option<TemplateUserValues>> {
-        debug!("Generating values file");
-        if self.is_user_input() {
-            let mut values_file = TemplateUserValues::new()?;
-
-            if let Some(v) = &self.smart_module_crate_version {
-                values_file.append_value(&v)?;
-            }
-
-            if let Some(v) = &self.smart_module_type {
-                values_file.append_value(&v)?;
-            }
-
-            if let Some(v) = &self.generate_init_fn {
-                values_file.append_value(&v)?;
-            }
-
-            if let Some(v) = &self.smart_module_parameters {
-                values_file.append_value(&v)?;
-            }
-
-            Ok(Some(values_file))
-        } else {
-            Ok(None)
-        }
-    }
-
-    // Did the user provide any values?
-    fn is_user_input(&self) -> bool {
-        self.smart_module_crate_version.is_some()
-            || self.smart_module_type.is_some()
-            || self.generate_init_fn.is_some()
-            || self.smart_module_parameters.is_some()
-    }
-}
-
-#[derive(Debug)]
-struct TemplateUserValues {
-    tempfile: NamedTempFile,
-}
-
-impl TemplateUserValues {
-    fn new() -> Result<Self> {
-        debug!("Creating values tempfile and writing header");
-        let mut tempfile = NamedTempFile::new()?;
-
-        writeln!(tempfile, "[values]")?;
-        tempfile.flush()?;
-
-        Ok(Self { tempfile })
-    }
-
-    fn append_value(&mut self, user_value: &SmdkTemplateValue) -> Result<()> {
-        debug!("Writing to values file: {user_value}");
-        writeln!(self.tempfile, "{}", user_value)?;
-        self.tempfile.flush()?;
-        Ok(())
-    }
-
-    fn path(&self) -> Option<String> {
-        self.tempfile
-            .path()
-            .to_path_buf()
-            .to_str()
-            .map(|v| v.to_string())
-    }
-
-    fn print_file(&self) -> Result<()> {
-        debug!("Printing the values file to stdout");
-        let mut values_file = self.tempfile.reopen()?;
-        let mut content = String::new();
-
-        values_file.read_to_string(&mut content)?;
-
-        println!("{content}");
-
-        Ok(())
+    fn to_vec(&self) -> Vec<String> {
+        self.values.iter().map(|v| v.to_string()).collect()
     }
 }
 
@@ -290,38 +203,25 @@ impl GenerateOpt {
     pub(crate) fn process(self) -> Result<()> {
         println!("Generating new SmartModule project: {}", self.name);
 
-        let maybe_user_input: Option<TemplateUserValues>;
+        let mut maybe_user_input = SmdkTemplateUserValues::new();
+        maybe_user_input
+            .with_smart_module_type(self.smart_module_type)
+            .with_init_fn(self.add_init_fn)
+            .with_smart_module_params(self.smart_module_params);
 
         let SmdkTemplate {
             template_path,
             _temp_dir,
             _template_source,
         } = if let Some(git_uri) = self.smdk_template_repo {
-            maybe_user_input = TemplateUserValuesBuilder::new()
-                .with_smart_module_crate_version(self.smart_module_crate_version)
-                .with_smart_module_type(self.smart_module_type)
-                .with_init_fn(self.add_init_fn)
-                .with_smart_module_params(self.smart_module_params)
-                .build()?;
+            maybe_user_input.with_smart_module_crate_version(self.smart_module_crate_version);
             SmdkTemplate::git(git_uri)?
         } else {
             // FIXME: This should not default to git repo
             let sm_version = "git = \\\"https://github.com/infinyon/fluvio.git\\\"".to_string();
 
-            maybe_user_input = TemplateUserValuesBuilder::new()
-                .with_smart_module_crate_version(Some(sm_version))
-                .with_smart_module_type(self.smart_module_type)
-                .with_init_fn(self.add_init_fn)
-                .with_smart_module_params(self.smart_module_params)
-                .build()?;
+            maybe_user_input.with_smart_module_crate_version(Some(sm_version));
             SmdkTemplate::default()?
-        };
-
-        let maybe_values_file: Option<String> = if let Some(input) = &maybe_user_input {
-            input.print_file()?;
-            input.path()
-        } else {
-            None
         };
 
         let args = GenerateArgs {
@@ -330,14 +230,14 @@ impl GenerateOpt {
             list_favorites: false,
             force: false,
             verbose: true,
-            template_values_file: maybe_values_file,
+            template_values_file: None,
             silent: false,
             config: None,
             vcs: None,
             lib: false,
             bin: false,
             ssh_identity: None,
-            define: Vec::default(),
+            define: maybe_user_input.to_vec(),
             init: false,
             destination: None,
             force_git_init: false,
@@ -357,6 +257,7 @@ mod test {
     use std::fs::read_dir;
 
     use super::SmdkTemplate;
+    use super::SmdkTemplateUserValues;
 
     #[test]
     fn test_default_template() {
@@ -381,4 +282,7 @@ mod test {
         );
         assert!(smart_toml.unwrap().is_ok());
     }
+
+    //#[test]
+    //fn test_values_file() {}
 }
