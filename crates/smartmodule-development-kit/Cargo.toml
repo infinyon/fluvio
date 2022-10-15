@@ -24,9 +24,8 @@ cargo_metadata = "0.15.0"
 cargo-generate = "0.16.0"
 convert_case = "0.6.0"
 include_dir = "0.7.2"
-# Maybe replace templdir with templfile?
-tempdir = "0.3.7"
 tempfile = "3.3.0"
+enum-display = "0.1.3"
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-hub-util = { path = "../fluvio-hub-util" }

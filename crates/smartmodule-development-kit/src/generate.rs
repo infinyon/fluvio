@@ -1,16 +1,44 @@
-use anyhow::{Error, Result, anyhow};
-use clap::{Parser, Args, ValueEnum, value_parser};
+use anyhow::{Error, Result};
+use clap::{Parser, ValueEnum, value_parser};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
-use tempdir::TempDir;
-use tempfile::NamedTempFile;
-use std::fs::File;
-use std::io::{Write, LineWriter};
+use tempfile::{NamedTempFile, TempDir};
+use std::io::{Write, Read};
+use enum_display::EnumDisplay;
+use tracing::debug;
 
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
 
-#[derive(ValueEnum, Clone, Debug, Parser, PartialEq, Eq)]
+#[derive(Debug, Clone)]
+enum SmdkTemplateValue {
+    SmartmoduleInitFn(bool),
+    SmartmoduleParameters(bool),
+    SmartmoduleVersion(String),
+    SmartModuleType(SmartModuleType),
+}
+
+impl std::fmt::Display for SmdkTemplateValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &*self {
+            SmdkTemplateValue::SmartmoduleInitFn(init) => {
+                write!(f, "smart-module-init=\"{}\"", init)
+            }
+            SmdkTemplateValue::SmartmoduleVersion(version) => {
+                write!(f, "smart-module-version=\"{}\"", version)
+            }
+            SmdkTemplateValue::SmartModuleType(sm_type) => {
+                write!(f, "smart-module-type=\"{}\"", sm_type)
+            }
+            SmdkTemplateValue::SmartmoduleParameters(sm_params) => {
+                write!(f, "smart-module-params=\"{}\"", sm_params)
+            }
+        }
+    }
+}
+
+#[derive(ValueEnum, Clone, Debug, Parser, PartialEq, Eq, EnumDisplay)]
+#[enum_display(case = "Kebab")]
 enum SmartModuleType {
     Filter,
     Map,
@@ -25,20 +53,35 @@ pub struct GenerateOpt {
     /// SmartModule Project Name
     name: String,
 
-    /// Template to generate project from.
-    ///
-    /// Must be a GIT repository
-    //#[clap(long, default_value = "https://github.com/infinyon/fluvio.git")]
+    /// URL to git repo containing the templates for generating SmartModule projects.
+    /// Using this option is discouraged. The default value is recommended.
     #[clap(long)]
-    template: Option<String>, //template location
-    // Default to git repo
-    /// Select a type of SmartModule
+    smdk_template_repo: Option<String>,
+    // add branch
+    // add tag
+
+    // add path
+    /// Crate version or URL to `fluvio-smartmodule` git repo generated Cargo.toml.
+    /// Using this option is discouraged. The default value is recommended.
+    #[clap(long)]
+    smart_module_crate_version: Option<String>, // maybe call this smdk_smart_module_crate
+
+    /// Type of SmartModule project to generate.
+    /// Skip prompt if value given.
     #[clap(long, value_parser = value_parser!(SmartModuleType))]
     smart_module_type: Option<SmartModuleType>,
 
-    /// Select if an init function should be generated [true/false]
+    /// Include SmartModule state initialization function in generated SmartModule project.
+    /// Skip prompt if value given.
     #[clap(long, value_parser = value_parser!(bool))]
-    init: Option<bool>,
+    add_init_fn: Option<bool>,
+
+    /// Include SmartModule input parameters in generated SmartModule project.
+    /// Skip prompt if value given.
+    #[clap(long, value_parser = value_parser!(bool))]
+    smart_module_params: Option<bool>,
+    // Add destination, for selecting another directory
+    // Add overwrite
 }
 
 /// Abstraction on different of template options available for generating a
@@ -46,22 +89,30 @@ pub struct GenerateOpt {
 ///
 /// May hold a reference to a `TempDir` which should not be dropped before
 /// accomplishing the project generation procedure.
-struct Template {
+struct SmdkTemplate {
     template_path: TemplatePath,
     _temp_dir: Option<TempDir>,
+    _template_source: SmdkTemplateType,
 }
 
-impl Template {
-    /// Extracts inlined directory contents into a temporary directory and
+enum SmdkTemplateType {
+    Default,
+    Git,
+    //Path,
+}
+
+impl SmdkTemplate {
+    /// Extracts directory contents inlined during build into a temporary directory and
     /// builds a `TemplatePath` instance with the `path` pointing to the temp
     /// directory created.
     ///
     /// Is important to hold the reference to the `_temp_dir` until generation
     /// process is completed, otherwise the temp directory will be deleted
     /// before reaching the generation process.
-    fn inline() -> Result<Self> {
-        let temp_dir = TempDir::new("smartmodule_template")?;
-        let path = temp_dir.path().to_str().unwrap().to_string();
+    fn default() -> Result<Self> {
+        debug!("Selecting default templates");
+        let temp_dir = TempDir::new()?;
+        let path = temp_dir.path().to_str().map(|s| s.to_string());
         SMART_MODULE_TEMPLATE
             .extract(&temp_dir)
             .map_err(Error::from)?;
@@ -73,16 +124,18 @@ impl Template {
                 test: false,
                 branch: None,
                 tag: None,
-                path: Some(path),
+                path: path,
                 favorite: None,
             },
             _temp_dir: Some(temp_dir),
+            _template_source: SmdkTemplateType::Default,
         };
 
         Ok(template)
     }
 
     fn git(repo_uri: String) -> Result<Self> {
+        debug!("Selecting git templates from {repo_uri}");
         Ok(Self {
             template_path: TemplatePath {
                 git: Some(repo_uri),
@@ -95,7 +148,141 @@ impl Template {
                 favorite: None,
             },
             _temp_dir: None,
+            _template_source: SmdkTemplateType::Git,
         })
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+struct TemplateUserValuesBuilder {
+    smart_module_crate_version: Option<SmdkTemplateValue>,
+    smart_module_type: Option<SmdkTemplateValue>,
+    generate_init_fn: Option<SmdkTemplateValue>,
+    smart_module_parameters: Option<SmdkTemplateValue>,
+}
+
+impl TemplateUserValuesBuilder {
+    fn new() -> Self {
+        TemplateUserValuesBuilder::default()
+    }
+
+    fn with_smart_module_crate_version(&mut self, version: Option<String>) -> &mut Self {
+        if let Some(v) = version {
+            debug!("User provided version: {v:#?}");
+            self.smart_module_crate_version = Some(SmdkTemplateValue::SmartmoduleVersion(v));
+        } else {
+            self.smart_module_crate_version = None;
+        }
+        self
+    }
+
+    fn with_smart_module_type(&mut self, sm_type: Option<SmartModuleType>) -> &mut Self {
+        if let Some(t) = sm_type {
+            debug!("User provided SmartModule type: {t:#?}");
+            self.smart_module_type = Some(SmdkTemplateValue::SmartModuleType(t));
+        } else {
+            self.smart_module_type = None;
+        }
+        self
+    }
+
+    fn with_init_fn(&mut self, request: Option<bool>) -> &mut Self {
+        if let Some(i) = request {
+            debug!("User provided init fn request: {i:#?}");
+            self.generate_init_fn = Some(SmdkTemplateValue::SmartmoduleInitFn(i));
+        } else {
+            self.generate_init_fn = None;
+        }
+        self
+    }
+
+    fn with_smart_module_params(&mut self, request: Option<bool>) -> &mut Self {
+        if let Some(i) = request {
+            debug!("User provided SmartModule params request: {i:#?}");
+            self.smart_module_parameters = Some(SmdkTemplateValue::SmartmoduleParameters(i));
+        } else {
+            self.smart_module_parameters = None;
+        }
+        self
+    }
+
+    fn build(&self) -> Result<Option<TemplateUserValues>> {
+        debug!("Generating values file");
+        if self.is_user_input() {
+            let mut values_file = TemplateUserValues::new()?;
+
+            if let Some(v) = &self.smart_module_crate_version {
+                values_file.append_value(&v)?;
+            }
+
+            if let Some(v) = &self.smart_module_type {
+                values_file.append_value(&v)?;
+            }
+
+            if let Some(v) = &self.generate_init_fn {
+                values_file.append_value(&v)?;
+            }
+
+            if let Some(v) = &self.smart_module_parameters {
+                values_file.append_value(&v)?;
+            }
+
+            Ok(Some(values_file))
+        } else {
+            Ok(None)
+        }
+    }
+
+    // Did the user provide any values?
+    fn is_user_input(&self) -> bool {
+        self.smart_module_crate_version.is_some()
+            || self.smart_module_type.is_some()
+            || self.generate_init_fn.is_some()
+            || self.smart_module_parameters.is_some()
+    }
+}
+
+#[derive(Debug)]
+struct TemplateUserValues {
+    tempfile: NamedTempFile,
+}
+
+impl TemplateUserValues {
+    fn new() -> Result<Self> {
+        debug!("Creating values tempfile and writing header");
+        let mut tempfile = NamedTempFile::new()?;
+
+        writeln!(tempfile, "[values]")?;
+        tempfile.flush()?;
+
+        Ok(Self { tempfile })
+    }
+
+    fn append_value(&mut self, user_value: &SmdkTemplateValue) -> Result<()> {
+        debug!("Writing to values file: {user_value}");
+        writeln!(self.tempfile, "{}", user_value)?;
+        self.tempfile.flush()?;
+        Ok(())
+    }
+
+    fn path(&self) -> Option<String> {
+        self.tempfile
+            .path()
+            .to_path_buf()
+            .to_str()
+            .map(|v| v.to_string())
+    }
+
+    fn print_file(&self) -> Result<()> {
+        debug!("Printing the values file to stdout");
+        let mut values_file = self.tempfile.reopen()?;
+        let mut content = String::new();
+
+        values_file.read_to_string(&mut content)?;
+
+        println!("{content}");
+
+        Ok(())
     }
 }
 
@@ -103,89 +290,39 @@ impl GenerateOpt {
     pub(crate) fn process(self) -> Result<()> {
         println!("Generating new SmartModule project: {}", self.name);
 
-        // Create temp file to pass in cargo-generate values
+        let maybe_user_input: Option<TemplateUserValues>;
 
-        let mut maybe_user_input: Option<Vec<(String, String)>> = None;
-
-        let mut tmpfile = NamedTempFile::new()?;
-
-        let mut maybe_values_file: Option<String> = None;
-
-        if self.smart_module_type.is_some() || self.init.is_some() {
-            let mut user_val = Vec::new();
-
-            if let Some(init_select) = self.init {
-                user_val.push(("smartmodule-init".to_string(), init_select.to_string()));
-            }
-
-            if let Some(sm_type) = self.smart_module_type {
-                user_val.push((
-                    "smartmodule-type".to_string(),
-                    sm_type
-                        .to_possible_value()
-                        .ok_or_else(|| anyhow!("Invalid SmartModule type"))?
-                        .get_name()
-                        .to_string(),
-                ));
-            }
-
-            maybe_user_input = Some(user_val);
-        };
-
-        let Template {
+        let SmdkTemplate {
             template_path,
             _temp_dir,
-        } = if let Some(git_uri) = self.template {
-            let git_input = ("smartmodule-version".to_string(), git_uri.clone());
-
-            if let Some(user_input) = maybe_user_input.as_mut() {
-                user_input.push(git_input);
-            } else {
-                maybe_user_input = Some(vec![git_input]);
-            };
-
-            Template::git(git_uri)?
+            _template_source,
+        } = if let Some(git_uri) = self.smdk_template_repo {
+            maybe_user_input = TemplateUserValuesBuilder::new()
+                .with_smart_module_crate_version(self.smart_module_crate_version)
+                .with_smart_module_type(self.smart_module_type)
+                .with_init_fn(self.add_init_fn)
+                .with_smart_module_params(self.smart_module_params)
+                .build()?;
+            SmdkTemplate::git(git_uri)?
         } else {
-            let git_input = (
-                "smartmodule-version".to_string(),
-                "git = \\\"https://github.com/infinyon/fluvio.git\\\"".to_string(),
-            );
+            // FIXME: This should not default to git repo
+            let sm_version = "git = \\\"https://github.com/infinyon/fluvio.git\\\"".to_string();
 
-            if let Some(user_input) = maybe_user_input.as_mut() {
-                user_input.push(git_input);
-            } else {
-                maybe_user_input = Some(vec![git_input]);
-            };
-
-            Template::inline()?
+            maybe_user_input = TemplateUserValuesBuilder::new()
+                .with_smart_module_crate_version(Some(sm_version))
+                .with_smart_module_type(self.smart_module_type)
+                .with_init_fn(self.add_init_fn)
+                .with_smart_module_params(self.smart_module_params)
+                .build()?;
+            SmdkTemplate::default()?
         };
 
-        if let Some(user_input) = maybe_user_input {
-            let _ = &tmpfile.write_all("[values]\n".as_bytes());
-            tmpfile.flush()?;
-            for (key, value) in user_input {
-                let mapping = format!("{}=\"{}\"\n", key, value);
-                let _ = &tmpfile.write_all(mapping.as_bytes());
-                tmpfile.flush()?;
-            }
-
-            maybe_values_file = Some(
-                tmpfile
-                    .path()
-                    .to_path_buf()
-                    .into_os_string()
-                    .into_string()
-                    .map_err(|_| anyhow!("Error collecting temp file path"))?,
-            );
-            //maybe_values_file = Some(
-            //    tmpfile
-            //        .into_temp_path()
-            //        .to_path_buf()
-            //        .into_os_string()
-            //        .into_string()
-            //        .map_err(|_| anyhow!("Error collecting temp file path"))?,
-            //);
-        }
+        let maybe_values_file: Option<String> = if let Some(input) = &maybe_user_input {
+            input.print_file()?;
+            input.path()
+        } else {
+            None
+        };
 
         let args = GenerateArgs {
             template_path,
@@ -219,11 +356,11 @@ impl GenerateOpt {
 mod test {
     use std::fs::read_dir;
 
-    use super::Template;
+    use super::SmdkTemplate;
 
     #[test]
-    fn test_inline_template() {
-        let template = Template::inline().unwrap();
+    fn test_default_template() {
+        let template = SmdkTemplate::default().unwrap();
 
         assert!(
             template._temp_dir.is_some(),

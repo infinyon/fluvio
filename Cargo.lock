@@ -1827,6 +1827,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-display"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96d4df33d54dd1959d177a0e2c2f4e5a8637a3054aa56861ed7e173ad2043fe2"
+dependencies = [
+ "enum-display-macro",
+]
+
+[[package]]
+name = "enum-display-macro"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0ce3a36047ede676eb0d2721d065beed8410cf4f113f489604d2971331cb378"
+dependencies = [
+ "convert_case 0.6.0",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "enum-ordinalize"
 version = "3.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5727,6 +5747,7 @@ dependencies = [
  "clap 4.0.15",
  "convert_case 0.6.0",
  "dirs",
+ "enum-display",
  "fluvio",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
@@ -5736,7 +5757,6 @@ dependencies = [
  "fluvio-smartengine",
  "fluvio-smartmodule",
  "include_dir",
- "tempdir",
  "tempfile",
  "thiserror",
  "toml",
