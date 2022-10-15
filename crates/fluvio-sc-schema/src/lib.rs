@@ -43,6 +43,8 @@ mod admin {
     use fluvio_protocol::{Encoder, Decoder};
     use fluvio_controlplane_metadata::{store::MetadataStoreObject};
 
+    use crate::objects::Metadata;
+
     use super::core::{Spec};
 
     /// filter by name
@@ -51,15 +53,14 @@ mod admin {
     /// AdminSpec can perform list and watch
     pub trait AdminSpec: Spec + Encoder + Decoder {
         type ListFilter: Encoder + Decoder + Sized + Debug;
-        type ListType: Encoder + Decoder + Debug;
-        type WatchResponseType: Spec + Encoder + Decoder;
 
         /// convert metadata object to list type object
         fn convert_from<C: fluvio_controlplane_metadata::core::MetadataItem>(
             obj: &fluvio_controlplane_metadata::store::MetadataStoreObject<Self, C>,
-        ) -> Self::ListType
+        ) -> Metadata<Self>
         where
-            <Self as AdminSpec>::ListType: From<MetadataStoreObject<Self, C>>,
+            Metadata<Self>: From<MetadataStoreObject<Self, C>>,
+            Self::Status: Encoder + Decoder + Debug,
         {
             obj.clone().into()
         }

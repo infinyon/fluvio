@@ -35,21 +35,21 @@ impl Request for ObjectApiWatchRequest {
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct WatchResponse<S: AdminSpec>
 where
-    <S::WatchResponseType as Spec>::Status: Encoder + Decoder,
+    S::Status: Encoder + Decoder,
 {
-    inner: MetadataUpdate<S::WatchResponseType>,
+    inner: MetadataUpdate<S>,
 }
 
 impl<S> WatchResponse<S>
 where
     S: AdminSpec,
-    <S::WatchResponseType as Spec>::Status: Encoder + Decoder,
+    S::Status: Encoder + Decoder,
 {
-    pub fn new(inner: MetadataUpdate<S::WatchResponseType>) -> Self {
+    pub fn new(inner: MetadataUpdate<S>) -> Self {
         Self { inner }
     }
 
-    pub fn inner(self) -> MetadataUpdate<S::WatchResponseType> {
+    pub fn inner(self) -> MetadataUpdate<S> {
         self.inner
     }
 }

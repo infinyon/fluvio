@@ -13,7 +13,6 @@ use fluvio_sc_schema::objects::{
     ObjectApiWatchRequest, WatchResponse, Metadata, MetadataUpdate, ObjectApiWatchResponse,
 };
 
-use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane_metadata::topic::TopicSpec;
@@ -42,24 +41,28 @@ pub fn handle_watch_request<AC>(
             end_event,
             auth_ctx.global_ctx.topics().clone(),
             header,
+            false,
         ),
         ObjectApiWatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
             header,
+            false,
         ),
         ObjectApiWatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spgs().clone(),
             header,
+            false,
         ),
         ObjectApiWatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
             header,
+            false,
         ),
         ObjectApiWatchRequest::ManagedConnector(_) => {
             WatchController::<ManagedConnectorSpec>::update(
@@ -67,19 +70,22 @@ pub fn handle_watch_request<AC>(
                 end_event,
                 auth_ctx.global_ctx.managed_connectors().clone(),
                 header,
+                false,
             )
         }
-        ObjectApiWatchRequest::SmartModule(_) => WatchController::<SmartModuleSpec>::update(
+        ObjectApiWatchRequest::SmartModule(sm_req) => WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.smartmodules().clone(),
             header,
+            sm_req.summary,
         ),
         ObjectApiWatchRequest::TableFormat(_) => WatchController::<TableFormatSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.tableformats().clone(),
             header,
+            false,
         ),
         _ => {
             debug!("Invalid Watch Req {:?}", req);
@@ -96,25 +102,27 @@ pub fn handle_watch_request<AC>(
 /// Watch controller for each object.  Note that return type may or not be the same as the object hence two separate spec
 struct WatchController<S: AdminSpec> {
     response_sink: ExclusiveFlvSink,
-    store: StoreContext<S::WatchResponseType>,
+    store: StoreContext<S>,
     header: RequestHeader,
+    summary: bool,
     end_event: Arc<StickyEvent>,
 }
 
 impl<S> WatchController<S>
 where
     S: AdminSpec + 'static,
-    S::WatchResponseType: Encoder + Decoder + Send + Sync,
-    <S::WatchResponseType as Spec>::Status: Encoder + Decoder + Send + Sync,
-    <S::WatchResponseType as Spec>::IndexKey: ToString + Send + Sync,
+    S: Encoder + Decoder + Send + Sync,
+    S::Status: Encoder + Decoder + Send + Sync,
+    S::IndexKey: ToString + Send + Sync,
     ObjectApiWatchResponse: From<WatchResponse<S>>,
 {
     /// start watch controller
     fn update(
         response_sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
-        store: StoreContext<S::WatchResponseType>,
+        store: StoreContext<S>,
         header: RequestHeader,
+        summary: bool,
     ) {
         use fluvio_future::task::spawn;
 
@@ -123,6 +131,7 @@ where
             store,
             header,
             end_event,
+            summary,
         };
 
         spawn(controller.dispatch_loop());
@@ -167,10 +176,7 @@ where
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
     #[instrument(skip(self, listener))]
-    async fn sync_and_send_changes(
-        &mut self,
-        listener: &mut K8ChangeListener<S::WatchResponseType>,
-    ) -> bool {
+    async fn sync_and_send_changes(&mut self, listener: &mut K8ChangeListener<S>) -> bool {
         use fluvio_controlplane_metadata::message::*;
 
         if !listener.has_change() {
@@ -191,7 +197,7 @@ where
             MetadataUpdate::with_all(epoch, updates.into_iter().map(|u| u.into()).collect())
         } else {
             let (updates, deletes) = changes.parts();
-            let mut changes: Vec<Message<Metadata<S::WatchResponseType>>> = updates
+            let mut changes: Vec<Message<Metadata<S>>> = updates
                 .into_iter()
                 .map(|v| Message::update(v.into()))
                 .collect();

@@ -6,7 +6,7 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec};
-use super::{ObjectApiEnum, COMMON_VERSION};
+use super::{ObjectApiEnum, COMMON_VERSION, Metadata};
 
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(ListResponse);
@@ -37,19 +37,23 @@ impl Request for ObjectApiListRequest {
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct ListResponse<S: AdminSpec> {
-    inner: Vec<S::ListType>,
+pub struct ListResponse<S: AdminSpec>
+where
+    S::Status: Encoder + Decoder + Debug,
+{
+    inner: Vec<Metadata<S>>,
 }
 
 impl<S> ListResponse<S>
 where
     S: AdminSpec,
+    S::Status: Encoder + Decoder + Debug,
 {
-    pub fn new(inner: Vec<S::ListType>) -> Self {
+    pub fn new(inner: Vec<Metadata<S>>) -> Self {
         Self { inner }
     }
 
-    pub fn inner(self) -> Vec<S::ListType> {
+    pub fn inner(self) -> Vec<Metadata<S>> {
         self.inner
     }
 }

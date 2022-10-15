@@ -85,7 +85,7 @@ mod fetch {
     use fluvio_stream_dispatcher::store::StoreContext;
     use tracing::{debug, trace, instrument};
 
-    use fluvio_sc_schema::objects::{ListResponse, NameFilter};
+    use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
     use fluvio_auth::{AuthContext, TypeAction};
     use fluvio_controlplane_metadata::store::{KeyFilter, MetadataStoreObject};
     use fluvio_controlplane_metadata::extended::SpecExt;
@@ -103,7 +103,7 @@ mod fetch {
         S: AdminSpec + SpecExt,
         <S as Spec>::Status: Encoder + Decoder,
         <S as Spec>::IndexKey: AsRef<str>,
-        <S as AdminSpec>::ListType: From<MetadataStoreObject<S, K8MetaItem>>,
+        Metadata<S>: From<MetadataStoreObject<S, K8MetaItem>>,
     {
         debug!(ty = %S::LABEL,"fetching");
 
@@ -122,11 +122,11 @@ mod fetch {
         }
 
         let reader = object_ctx.store().read().await;
-        let objects: Vec<<S as AdminSpec>::ListType> = reader
+        let objects: Vec<Metadata<S>> = reader
             .values()
             .filter_map(|value| {
                 if filters.filter(value.key().as_ref()) {
-                    let list_obj: <S as AdminSpec>::ListType = AdminSpec::convert_from(value);
+                    let list_obj: Metadata<S> = AdminSpec::convert_from(value);
                     Some(list_obj)
                 } else {
                     None

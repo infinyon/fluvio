@@ -8,14 +8,12 @@ mod convert {
     use crate::objects::ObjectTryFrom;
     use crate::{
         AdminSpec, NameFilter,
-        objects::{Metadata, WatchRequest, WatchResponse},
+        objects::{WatchRequest, WatchResponse},
     };
     use super::*;
 
     impl AdminSpec for PartitionSpec {
         type ListFilter = NameFilter;
-        type WatchResponseType = Self;
-        type ListType = Metadata<Self>;
     }
 
     ObjectFrom!(WatchRequest, Partition);

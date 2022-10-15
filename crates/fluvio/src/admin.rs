@@ -1,13 +1,14 @@
 use std::convert::{TryFrom, TryInto};
-use std::fmt::Display;
+use std::fmt::{Display, Debug};
 
+use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::api::{Request};
 use fluvio_future::net::DomainConnector;
 use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{
     CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
-    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest,
+    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::SocketError;
@@ -199,26 +200,28 @@ impl FluvioAdmin {
 
     /// return all instance of this spec
     #[instrument(skip(self))]
-    pub async fn all<S>(&self) -> Result<Vec<S::ListType>, FluvioError>
+    pub async fn all<S>(&self) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
         <S as AdminSpec>::ListFilter: From<std::string::String>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+        S::Status: Encoder + Decoder + Debug,
     {
         self.list_with_params::<S, String>(vec![], false).await
     }
 
     /// return all instance of this spec by filter
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<S::ListType>, FluvioError>
+    pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
         S::ListFilter: From<F>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+        S::Status: Encoder + Decoder + Debug,
     {
         self.list_with_params(filters, false).await
     }
@@ -228,13 +231,14 @@ impl FluvioAdmin {
         &self,
         filters: Vec<F>,
         summary: bool,
-    ) -> Result<Vec<S::ListType>, FluvioError>
+    ) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
         S::ListFilter: From<F>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+        S::Status: Encoder + Decoder + Debug,
     {
         use std::io::Error as IoError;
         use std::io::ErrorKind;

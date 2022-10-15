@@ -5,16 +5,14 @@ mod convert {
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
         objects::{
-            CreateFrom, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
-            ObjectTryFrom, WatchRequest, WatchResponse,
+            CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
+            WatchRequest, WatchResponse,
         },
     };
     use super::SpuGroupSpec;
 
     impl AdminSpec for SpuGroupSpec {
         type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
-        type WatchResponseType = Self;
     }
 
     impl CreatableAdminSpec for SpuGroupSpec {

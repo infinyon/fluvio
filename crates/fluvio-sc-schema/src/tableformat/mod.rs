@@ -8,14 +8,12 @@ mod convert {
     };
     use crate::{
         AdminSpec, NameFilter,
-        objects::{ListRequest, Metadata, WatchResponse},
+        objects::{ListRequest, WatchResponse},
     };
     use super::TableFormatSpec;
 
     impl AdminSpec for TableFormatSpec {
         type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
-        type WatchResponseType = Self;
     }
 
     impl CreatableAdminSpec for TableFormatSpec {

@@ -48,14 +48,12 @@ mod convert {
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
     use crate::{AdminSpec, NameFilter};
-    use crate::objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest};
+    use crate::objects::{ObjectFrom, ObjectTryFrom, WatchResponse, WatchRequest};
 
     use super::TopicSpec;
 
     impl AdminSpec for TopicSpec {
         type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
-        type WatchResponseType = Self;
     }
 
     impl CreatableAdminSpec for TopicSpec {

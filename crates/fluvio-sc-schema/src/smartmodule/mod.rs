@@ -7,16 +7,14 @@ mod convert {
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
-            CreateFrom, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
-            ObjectTryFrom, WatchRequest, WatchResponse,
+            CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
+            WatchRequest, WatchResponse,
         },
     };
     use super::SmartModuleSpec;
 
     impl AdminSpec for SmartModuleSpec {
         type ListFilter = SmartModuleFilter;
-        type WatchResponseType = Self;
-        type ListType = Metadata<Self>;
     }
 
     impl CreatableAdminSpec for SmartModuleSpec {
