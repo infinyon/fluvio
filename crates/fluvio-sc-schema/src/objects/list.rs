@@ -36,9 +36,9 @@ impl From<Vec<ListFilter>> for ListFilters {
     }
 }
 
-impl Into<Vec<ListFilter>> for ListFilters {
-    fn into(self) -> Vec<ListFilter> {
-        self.filters
+impl From<ListFilters> for Vec<ListFilter> {
+    fn from(filter: ListFilters) -> Self {
+        filter.filters
     }
 }
 

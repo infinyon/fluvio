@@ -208,7 +208,7 @@ where
                 .into_iter()
                 .map(|u| u.into())
                 .map(|d: Metadata<S>| if self.summary { d.summary() } else { d })
-                .map(|v| Message::update(v))
+                .map(Message::update)
                 .collect();
             let mut deletes = deletes
                 .into_iter()
