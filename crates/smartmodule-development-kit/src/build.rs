@@ -3,24 +3,25 @@ use std::fmt::Debug;
 
 use anyhow::{Error, Result};
 use clap::Parser;
+use crate::package::{PackageInfo, PackageOption};
 
-const DEFAULT_RELEASE_PROFILE: &str = "release-lto";
-const BUILD_TARGET: &str = "wasm32-unknown-unknown";
+pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 
 /// Builds the SmartModule in the current working directory into a WASM file
 #[derive(Debug, Parser)]
 pub struct BuildOpt {
-    /// Build release profile
-    #[clap(long, default_value = DEFAULT_RELEASE_PROFILE)]
-    release: String,
+    #[clap(flatten)]
+    package: PackageOption,
 
     /// Extra arguments to be passed to cargo
-    #[clap(raw=true)]
+    #[clap(raw = true)]
     extra_arguments: Vec<String>,
 }
 
 impl BuildOpt {
     pub(crate) fn process(&self) -> Result<()> {
+        let p = PackageInfo::from_options(&self.package).map_err(|e| anyhow::anyhow!(e))?;
+
         let mut cargo = BuildOpt::make_cargo_cmd()?;
 
         let cwd = std::env::current_dir()?;
@@ -28,10 +29,14 @@ impl BuildOpt {
             .current_dir(&cwd)
             .arg("build")
             .arg("--profile")
-            .arg(self.release.as_str())
-            .arg("--lib");
+            .arg(&self.package.release)
+            .arg("--lib")
+            .arg("-p")
+            .arg(p.package);
         cargo.arg("--target").arg(BUILD_TARGET);
-        if !self.extra_arguments.is_empty() { cargo.args(&self.extra_arguments); }
+        if !self.extra_arguments.is_empty() {
+            cargo.args(&self.extra_arguments);
+        }
         cargo.status().map_err(Error::from)?;
 
         Ok(())

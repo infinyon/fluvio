@@ -1,4 +1,5 @@
 use std::{collections::BTreeMap, path::PathBuf};
+
 use std::fmt::Debug;
 
 use clap::Parser;
@@ -10,7 +11,7 @@ use fluvio_protocol::record::{RecordData, Record};
 use fluvio_smartengine::{SmartEngine, SmartModuleConfig};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
-use crate::wasm::WasmOption;
+use crate::package::{PackageInfo, PackageOption};
 
 /// Test SmartModule
 #[derive(Debug, Parser)]
@@ -24,12 +25,15 @@ pub struct TestOpt {
     file: Option<PathBuf>,
 
     #[clap(flatten)]
-    wasm: WasmOption,
+    package: PackageOption,
+
+    /// Optional wasm file path
+    #[clap(long)]
+    wasm_file: Option<PathBuf>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
     /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
-
     #[clap(
         short = 'e',
         long= "params",
@@ -50,7 +54,12 @@ impl TestOpt {
     pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
 
-        let raw = self.wasm.load_raw_wasm_file()?;
+        let raw = match &self.wasm_file {
+            Some(wasm_file) => crate::read_bytes_from_path(wasm_file)?,
+            None => PackageInfo::from_options(&self.package)
+                .map_err(|e| anyhow::anyhow!(e))?
+                .read_bytes()?,
+        };
 
         let param: BTreeMap<String, String> = self.params.into_iter().collect();
 

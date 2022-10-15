@@ -5,8 +5,9 @@ mod test;
 mod load;
 mod publish;
 mod set_hubid;
-mod wasm;
+mod package;
 
+use std::path::{PathBuf};
 use clap::Parser;
 use anyhow::Result;
 
@@ -19,4 +20,9 @@ fn main() -> Result<()> {
     root.process()?;
 
     Ok(())
+}
+
+pub(crate) fn read_bytes_from_path(path: &PathBuf) -> Result<Vec<u8>> {
+    println!("loading module at: {}", path.display());
+    std::fs::read(path).map_err(|err| anyhow::anyhow!("error reading wasm file: {}", err))
 }
