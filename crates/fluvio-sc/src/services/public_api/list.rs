@@ -16,9 +16,7 @@ pub async fn handle_list_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<ObjectApiListResponse>> {
     let (header, req) = request.get_header_request();
-    debug!("list request: {:#?}", req);
-
-    println!("List Request {:#?}", req);
+    debug!("list header: {:#?}, request: {:#?}", header, req);
 
     let response = match req {
         ObjectApiListRequest::Topic(req) => ObjectApiListResponse::Topic(
@@ -47,6 +45,7 @@ pub async fn handle_list_request<AC: AuthContext>(
         ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
             fetch_smart_modules(
                 req.name_filters,
+                req.summary,
                 &auth_ctx.auth,
                 auth_ctx.global_ctx.smartmodules(),
             )

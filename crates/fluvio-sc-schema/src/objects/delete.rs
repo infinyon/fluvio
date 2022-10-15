@@ -11,7 +11,7 @@ use fluvio_protocol::api::Request;
 use crate::{DeletableAdminSpec};
 use crate::Status;
 use crate::AdminPublicApiKey;
-use super::{DeleteApiEnum};
+use super::{DeleteApiEnum, COMMON_VERSION};
 
 DeleteApiEnum!(DeleteRequest);
 
@@ -36,6 +36,7 @@ where
 
 impl Request for ObjectApiDeleteRequest {
     const API_KEY: u16 = AdminPublicApiKey::Delete as u16;
-    const DEFAULT_API_VERSION: i16 = 1;
+    const MIN_API_VERSION: i16 = 1; // previous version
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = Status;
 }
