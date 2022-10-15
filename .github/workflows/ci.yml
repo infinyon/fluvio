@@ -82,7 +82,6 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
-          override: true
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
