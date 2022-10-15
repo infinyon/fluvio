@@ -44,7 +44,7 @@ pub async fn handle_list_request<AC: AuthContext>(
         ),
         ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
             fetch_smart_modules(
-                req.name_filters,
+                req.name_filters.into(),
                 req.summary,
                 &auth_ctx.auth,
                 auth_ctx.global_ctx.smartmodules(),
@@ -85,16 +85,17 @@ mod fetch {
     use fluvio_stream_dispatcher::store::StoreContext;
     use tracing::{debug, trace, instrument};
 
-    use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
+    use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
     use fluvio_auth::{AuthContext, TypeAction};
-    use fluvio_controlplane_metadata::store::{KeyFilter, MetadataStoreObject};
+    use fluvio_controlplane_metadata::store::{MetadataStoreObject};
     use fluvio_controlplane_metadata::extended::SpecExt;
+    use fluvio_controlplane_metadata::store::KeyFilter;
 
     use crate::services::auth::AuthServiceContext;
 
     #[instrument(skip(filters, auth_ctx))]
     pub async fn handle_fetch_request<AC: AuthContext, S>(
-        filters: Vec<NameFilter>,
+        filters: ListFilters,
         auth_ctx: &AuthServiceContext<AC>,
         object_ctx: &StoreContext<S>,
     ) -> Result<ListResponse<S>, Error>

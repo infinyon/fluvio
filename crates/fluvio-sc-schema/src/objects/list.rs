@@ -3,6 +3,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
 
@@ -32,6 +33,25 @@ pub struct ListFilters {
 impl From<Vec<ListFilter>> for ListFilters {
     fn from(filters: Vec<ListFilter>) -> Self {
         Self { filters }
+    }
+}
+
+impl Into<Vec<ListFilter>> for ListFilters {
+    fn into(self) -> Vec<ListFilter> {
+        self.filters
+    }
+}
+
+impl KeyFilter<str> for ListFilters {
+    fn filter(&self, value: &str) -> bool {
+        if self.filters.is_empty() {
+            return true;
+        }
+        self.filters
+            .iter()
+            .filter(|key| key.name.filter(value))
+            .count()
+            > 0
     }
 }
 

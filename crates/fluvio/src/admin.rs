@@ -242,7 +242,8 @@ impl FluvioAdmin {
         use std::io::Error as IoError;
         use std::io::ErrorKind;
 
-        let list_request = ListRequest::new(filters.into_iter().map(Into::into).collect(), summary);
+        let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
+        let list_request = ListRequest::new(filter_list, summary);
 
         let list_request: ObjectApiListRequest = list_request.into();
         let response = self.send_receive(list_request).await?;

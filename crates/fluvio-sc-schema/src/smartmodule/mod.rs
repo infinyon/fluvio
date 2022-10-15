@@ -2,7 +2,6 @@ pub use fluvio_controlplane_metadata::smartmodule::*;
 
 mod convert {
 
-    use fluvio_protocol::{Encoder, Decoder};
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{

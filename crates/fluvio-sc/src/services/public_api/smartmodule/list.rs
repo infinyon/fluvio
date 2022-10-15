@@ -10,13 +10,13 @@ use fluvio_sc_schema::AdminSpec;
 use fluvio_stream_dispatcher::store::StoreContext;
 
 use fluvio_sc_schema::objects::{ListResponse, Metadata};
-use fluvio_sc_schema::smartmodule::SmartModuleFilter;
+use fluvio_sc_schema::objects::ListFilter;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 #[instrument(skip(filters, auth, object_ctx))]
 pub(crate) async fn fetch_smart_modules<AC: AuthContext, M>(
-    filters: Vec<SmartModuleFilter>,
+    filters: Vec<ListFilter>,
     summary: bool,
     auth: &AC,
     object_ctx: &StoreContext<SmartModuleSpec, M>,

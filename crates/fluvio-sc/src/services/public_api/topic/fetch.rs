@@ -2,7 +2,7 @@ use tracing::{trace, debug, instrument};
 use std::io::{Error, ErrorKind};
 
 use fluvio_controlplane_metadata::store::KeyFilter;
-use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilter, ListFilters};
+use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
 use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
