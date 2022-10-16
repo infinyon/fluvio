@@ -27,28 +27,31 @@ pub struct PackageInfo {
     pub output_path: PathBuf,
 }
 impl PackageInfo {
-    /// Finds the closes Cargo.toml in the tree, starting from the current directory
-    pub fn get_current_project_path() -> Option<PathBuf> {
-        let cwd = env::current_dir().expect("Failed to get current working directory");
+    /// Finds the closest Cargo.toml in the tree, starting from the current directory
+    pub fn get_current_project_path() -> Result<Option<PathBuf>, String> {
+        let cwd = env::current_dir()
+            .map_err(|e| format!("Failed to get current working directory: {}", e))?;
         let parents = cwd.as_path().ancestors();
 
         for path in parents {
             if let Some(filename) = read_dir(path)
-                .expect("Failed to read directory")
+                .map_err(|e| format!("Failed to read directory: {}", e))?
                 .into_iter()
                 .map(|p| p.unwrap().file_name())
                 .find(|p| p.eq(&OsString::from("Cargo.toml")))
             {
-                return Some(Path::new(path).join(filename));
+                return Ok(Some(Path::new(path).join(filename)));
             }
         }
-        None
+        Ok(None)
     }
 
+    /// From the given options, attempt to resolve a specific cargo package and output path
     pub fn from_options(options: &PackageOption) -> Result<PackageInfo, String> {
-        let current_project = Self::get_current_project_path()
+        let current_project = Self::get_current_project_path()?
             .ok_or("Could not find a Cargo.toml from the current working directory")?;
 
+        // get metadata for the current project
         let metadata = MetadataCommand::new()
             .manifest_path(&current_project)
             .features(CargoOpt::AllFeatures)
@@ -88,6 +91,7 @@ impl PackageInfo {
             return Err(format!("Could not find a default cargo package in {}. Try the `-p` option to specify a project/package.", current_project.display()));
         };
 
+        // format the expected output path
         let output_path = PathBuf::from(format!(
             "{}/{}/{}/{}.wasm",
             metadata.target_directory,
