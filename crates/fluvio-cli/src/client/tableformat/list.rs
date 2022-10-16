@@ -23,7 +23,7 @@ impl ListTableFormatsOpt {
     /// Process list connectors cli request
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<TableFormatSpec, _>(vec![]).await?;
+        let lists = admin.all::<TableFormatSpec>().await?;
 
         output::tableformats_response_to_output(out, lists, self.output.format)
     }

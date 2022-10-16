@@ -90,7 +90,7 @@ pub struct ConsumerTestOption {
 
     // This will need to be mutually exclusive w/ num_records
     //// total time we want the consumer to run, in seconds
-    //#[clap(long, parse(try_from_str = parse_seconds), default_value = "60")]
+    //#[clap(long, value_parser=parse_seconds, default_value = "60")]
     //runtime_seconds: Duration,
     /// Opt-in to detailed output printed to stdout
     #[clap(long, short)]

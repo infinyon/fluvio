@@ -99,7 +99,7 @@ mod test {
     use crate::topic::TopicSpec;
 
     fn create_req() -> ObjectApiListRequest {
-        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
+        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
         list_request.into()
     }
 

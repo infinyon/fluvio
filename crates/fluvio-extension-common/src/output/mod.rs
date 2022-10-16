@@ -73,7 +73,7 @@ mod output {
 
     use std::sync::Arc;
 
-    use clap::ArgEnum;
+    use clap::ValueEnum;
     use serde::Serialize;
 
     use comfy_table::Table;
@@ -88,7 +88,7 @@ mod output {
     use super::SerializeType;
     use super::OutputError;
 
-    #[derive(ArgEnum, Debug, Clone, Eq, PartialEq)]
+    #[derive(ValueEnum, Debug, Clone, Eq, PartialEq)]
     #[allow(non_camel_case_types)]
     pub enum OutputType {
         table,

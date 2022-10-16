@@ -30,10 +30,7 @@ pub async fn produce_batch(
 
     let leader = {
         let admin: FluvioAdmin = test_driver.client().admin().await;
-        let partitions = admin
-            .list::<PartitionSpec, _>(vec![])
-            .await
-            .expect("partitions");
+        let partitions = admin.all::<PartitionSpec>().await.expect("partitions");
         let test_topic = &partitions[0];
         test_topic.spec.leader
     };

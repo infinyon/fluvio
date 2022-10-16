@@ -58,7 +58,7 @@ mod cmd {
         pub verbose: bool,
 
         /// Sends key/value records split on the first instance of the separator.
-        #[clap(long, validator = validate_key_separator)]
+        #[clap(long, value_parser = validate_key_separator)]
         pub key_separator: Option<String>,
 
         /// Send all input as one record. Use this when producing binary files.
@@ -76,7 +76,7 @@ mod cmd {
 
         /// Time to wait before sending
         /// Ex: '150ms', '20s'
-        #[clap(long, parse(try_from_str = parse_duration))]
+        #[clap(long, value_parser=parse_duration)]
         pub linger: Option<Duration>,
 
         /// Max amount of bytes accumulated before sending
@@ -86,7 +86,7 @@ mod cmd {
         /// Isolation level that producer must respect.
         /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
         /// read_uncommitted (ReadUncommitted) - just wait for leader to accept records.
-        #[clap(long, parse(try_from_str = parse_isolation))]
+        #[clap(long, value_parser=parse_isolation)]
         pub isolation: Option<Isolation>,
 
         #[cfg(feature = "stats")]
@@ -121,13 +121,12 @@ mod cmd {
         pub delivery_semantic: DeliverySemantic,
     }
 
-    fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
+    fn validate_key_separator(separator: &str) -> std::result::Result<String, String> {
         if separator.is_empty() {
-            return Err(
-                "must be non-empty. If using '=', type it as '--key-separator \"=\"'".to_string(),
-            );
+            Err("must be non-empty. If using '=', type it as '--key-separator \"=\"'".to_string())
+        } else {
+            Ok(separator.to_owned())
         }
-        Ok(())
     }
 
     #[async_trait]

@@ -29,7 +29,7 @@ impl ListPartitionOpt {
         let output = self.output.format;
         let admin = fluvio.admin().await;
 
-        let partitions = admin.list::<PartitionSpec, _>(vec![]).await?;
+        let partitions = admin.all::<PartitionSpec>().await?;
 
         // format and dump to screen
         display::format_partition_response_output(out, partitions, output)?;

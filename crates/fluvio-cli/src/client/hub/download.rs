@@ -122,6 +122,7 @@ async fn download_cluster(config: FluvioConfig, pkgfile: &str) -> Result<()> {
     let spec = SmartModuleSpec {
         meta: Some(sm_meta),
         wasm: sm_wasm,
+        ..Default::default()
     };
 
     println!("trying connection to fluvio {}", config.endpoint);

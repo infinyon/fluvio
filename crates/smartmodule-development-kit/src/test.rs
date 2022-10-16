@@ -37,7 +37,7 @@ pub struct TestOpt {
     #[clap(
         short = 'e',
         long= "params",
-        parse(try_from_str = parse_key_val),
+        value_parser=parse_key_val,
         number_of_values = 1
     )]
     params: Vec<(String, String)>,

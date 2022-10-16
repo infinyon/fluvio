@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-use clap::ArgEnum;
+use clap::ValueEnum;
 
 use super::Terminal;
 
 use super::OutputType;
 use super::OutputError;
 
-#[derive(ArgEnum, Debug, Clone, Eq, PartialEq)]
+#[derive(ValueEnum, Debug, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum SerializeType {
     yaml,
