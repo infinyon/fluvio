@@ -108,6 +108,7 @@ setup_file() {
 ### Using crates.io dependency for `fluvio-smartmodule` with init fn
 
 @test "Generate and build filter - default with init" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init
     SM_TYPE=filter
     SM_PARAMS=false
@@ -125,6 +126,7 @@ setup_file() {
 }
 
 @test "Generate and build map - default with init" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init
     SM_TYPE=map
     SM_PARAMS=false
@@ -142,6 +144,7 @@ setup_file() {
 }
 
 @test "Generate and build array-map - default with init" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init
     SM_TYPE=array-map
     SM_PARAMS=false
@@ -159,6 +162,7 @@ setup_file() {
 }
 
 @test "Generate and build filter-map - default with init" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init
     SM_TYPE=filter-map
     SM_PARAMS=false
@@ -176,6 +180,7 @@ setup_file() {
 }
 
 @test "Generate and build aggregate - default with init" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init
     SM_TYPE=aggregate
     SM_PARAMS=false
@@ -282,6 +287,7 @@ setup_file() {
 ### Using crates.io dependency for `fluvio-smartmodule` with init fn and params
 
 @test "Generate and build filter - default with init + params" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init-params
     SM_TYPE=filter
     SM_PARAMS=true
@@ -299,6 +305,7 @@ setup_file() {
 }
 
 @test "Generate and build map - default with init + params" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init-params
     SM_TYPE=map
     SM_PARAMS=true
@@ -316,6 +323,7 @@ setup_file() {
 }
 
 @test "Generate and build array-map - default with init + params" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init-params
     SM_TYPE=array-map
     SM_PARAMS=true
@@ -333,6 +341,7 @@ setup_file() {
 }
 
 @test "Generate and build filter-map - default with init + params" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init-params
     SM_TYPE=filter-map
     SM_PARAMS=true
@@ -350,6 +359,7 @@ setup_file() {
 }
 
 @test "Generate and build aggregate - default with init + params" {
+    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
     LABEL=default-init-params
     SM_TYPE=aggregate
     SM_PARAMS=true
