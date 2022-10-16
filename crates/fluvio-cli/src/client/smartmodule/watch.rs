@@ -35,9 +35,9 @@ impl ClientCmd for WatchSmartModuleOpt {
             select! {
                 next = watch_stream.next() => {
                     if let Some(Ok(event)) = next {
-                        println!("Watch event: {:?}", event);
+                        println!("SmartModule event: {:?}", event);
                     } else {
-                        println!("watch stream ended");
+                        println!("SmartModule event stream ended");
                         break;
                     }
                 }
