@@ -258,7 +258,8 @@ impl FluvioAdmin {
             .map(|out: ListResponse<S>| out.inner())
     }
 
-    /// primitive watch stream
+    /// Watch stream of changes for metadata
+    /// There is caching, this is just pass through
     #[instrument(skip(self))]
     pub async fn watch<S>(
         &self,
@@ -270,6 +271,7 @@ impl FluvioAdmin {
         WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
         <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
     {
+        // only summary for watch
         let watch_request: WatchRequest<S> = WatchRequest::summary();
 
         let watch_req: ObjectApiWatchRequest = watch_request.into();
@@ -293,6 +295,7 @@ impl FluvioAdmin {
     }
 }
 
+/// API for streaming cached metadata
 #[cfg(feature = "unstable")]
 mod unstable {
     use super::*;
