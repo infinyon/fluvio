@@ -205,6 +205,8 @@ cli-smartmodule-basic-test:
 stats-test:
 	$(TEST_BIN) stats -- $(VERBOSE_FLAG) --tolerance=5
 
+cli-smdk-basic-test:
+	SMDK_BIN=$(shell readlink -f $(SMDK_BIN)) bats   ./tests/cli/smoke_tests/smdk-basic.bats
 
 # test rbac
 #

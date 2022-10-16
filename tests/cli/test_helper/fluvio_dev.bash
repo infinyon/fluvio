@@ -28,7 +28,7 @@ function random_string() {
     # Ensure we don't end up with a string that starts or ends with '-'
     # https://github.com/infinyon/fluvio/issues/1864
 
-    HEAD=$(shuf -zer -n1 {a..z} {0..9} | tr -d '\0')
+    HEAD=$(shuf -zer -n1 {a..z} | tr -d '\0')
     BODY=$(shuf -zer -n"$(($STRING_LEN - 2))" {a..z} {0..9} "-" | tr -d '\0')
     FOOT=$(shuf -zer -n1 {a..z} {0..9} | tr -d '\0')
 
