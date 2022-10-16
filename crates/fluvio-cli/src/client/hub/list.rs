@@ -17,9 +17,10 @@ impl ListHubOpt {
         let access = hubutil::HubAccess::default_load().await.map_err(|_| {
             CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
         })?;
-
+        let action_token = access.get_list_token().await?;
         let url = format!("{}/{API_LIST}", &access.remote);
         let mut res = http::get(&url)
+            .header("Authorization", &action_token)
             .await
             .map_err(|e| CliError::HubError(format!("list api access error {e}")))?;
         let pl: PackageList = res
