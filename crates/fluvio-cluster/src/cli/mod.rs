@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use clap::ArgEnum;
+use clap::ValueEnum;
 use clap::Parser;
 use semver::Version;
 use tracing::debug;

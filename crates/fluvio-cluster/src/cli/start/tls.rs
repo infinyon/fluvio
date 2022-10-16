@@ -19,23 +19,23 @@ pub struct TlsOpt {
     pub domain: Option<String>,
 
     /// TLS: ca cert
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub ca_cert: Option<PathBuf>,
 
     /// TLS: client cert
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub client_cert: Option<PathBuf>,
 
     /// TLS: client key
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub client_key: Option<PathBuf>,
 
     /// TLS: path to server certificate
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub server_cert: Option<PathBuf>,
 
     /// TLS: path to server private key
-    #[clap(long, parse(from_os_str))]
+    #[clap(long, value_parser)]
     pub server_key: Option<PathBuf>,
 }
 

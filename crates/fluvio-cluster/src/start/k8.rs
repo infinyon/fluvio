@@ -1160,7 +1160,7 @@ impl ClusterInstaller {
         while time.elapsed().unwrap() < timeout_duration {
             debug!("retrieving spu specs");
 
-            let spu = admin.list::<SpuSpec, _>([]).await?;
+            let spu = admin.list::<SpuSpec, String>(vec![]).await?;
 
             debug!(?spu);
 
@@ -1316,7 +1316,7 @@ impl ClusterInstaller {
         let spg_name = self.config.group_name.clone();
         pb.set_message(format!("📝 Checking for existing SPU Group: {}", spg_name));
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SpuGroupSpec, _>([]).await?;
+        let lists = admin.all::<SpuGroupSpec>().await?;
         if lists.is_empty() {
             pb.set_message(format!(
                 "🤖 Creating SPU Group: {} with replicas: {}",

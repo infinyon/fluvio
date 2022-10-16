@@ -1,9 +1,11 @@
 pub use fluvio_controlplane_metadata::smartmodule::*;
+pub use convert::SmartModuleFilter;
 
 mod convert {
 
+    use fluvio_protocol::{Encoder, Decoder};
     use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
+        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
             CreateFrom, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
             ObjectTryFrom, WatchRequest, WatchResponse,
@@ -12,7 +14,7 @@ mod convert {
     use super::SmartModuleSpec;
 
     impl AdminSpec for SmartModuleSpec {
-        type ListFilter = NameFilter;
+        type ListFilter = SmartModuleFilter;
         type WatchResponseType = Self;
         type ListType = Metadata<Self>;
     }
@@ -23,6 +25,17 @@ mod convert {
 
     impl DeletableAdminSpec for SmartModuleSpec {
         type DeleteKey = String;
+    }
+
+    #[derive(Debug, Encoder, Decoder, Default)]
+    pub struct SmartModuleFilter {
+        pub name: String,
+    }
+
+    impl From<String> for SmartModuleFilter {
+        fn from(name: String) -> Self {
+            Self { name }
+        }
     }
 
     CreateFrom!(SmartModuleSpec, SmartModule);

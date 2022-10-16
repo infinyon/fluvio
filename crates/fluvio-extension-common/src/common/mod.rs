@@ -13,7 +13,7 @@ pub struct OutputFormat {
         short = 'O',
         long = "output",
         value_name = "type",
-        arg_enum,
+        value_enum,
         ignore_case = true
     )]
     pub format: OutputType,

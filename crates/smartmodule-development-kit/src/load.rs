@@ -41,6 +41,7 @@ impl LoadOpt {
         let spec = SmartModuleSpec {
             meta: Some(pkg_metadata),
             wasm: SmartModuleWasm::from_raw_wasm_bytes(&raw_bytes)?,
+            ..Default::default()
         };
 
         let fluvio_config = self.target.clone().load()?;

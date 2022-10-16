@@ -1,16 +1,91 @@
 //!
 //! # SmartModule Spec
 //!
+use std::io::Error as IoError;
 
-use fluvio_protocol::{Encoder, Decoder};
+use bytes::BufMut;
 
-use super::SmartModuleMetadata;
+use fluvio_protocol::{Encoder, Decoder, Version};
+use tracing::debug;
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
+use super::{
+    SmartModuleMetadata,
+    spec_v1::{SmartModuleSpecV1},
+};
+
+const V2_FORMAT: Version = 10;
+
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub meta: Option<SmartModuleMetadata>,
+    #[cfg_attr(feature = "use_serde", serde(skip))]
+    pub summary: Option<SmartModuleWasmSummary>, // only passed from SC to CLI
     pub wasm: SmartModuleWasm,
+}
+
+// custom encoding to handle prev version
+impl Encoder for SmartModuleSpec {
+    fn write_size(&self, version: Version) -> usize {
+        if version < V2_FORMAT {
+            //trace!("computing size for smart module spec v1");
+            // just used for computing size
+            let spec_v1 = SmartModuleSpecV1::default();
+            let mut size = 0;
+            size += spec_v1.input_kind.write_size(version);
+            size += spec_v1.output_kind.write_size(version);
+            size += spec_v1.source_code.write_size(version);
+            size += self.wasm.write_size(version);
+            size += spec_v1.parameters.write_size(version);
+            size
+        } else {
+            let mut size = 0;
+            size += self.meta.write_size(version);
+            size += self.summary.write_size(version);
+            size += self.wasm.write_size(version);
+            size
+        }
+    }
+
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
+    where
+        T: BufMut,
+    {
+        if version < V2_FORMAT {
+            debug!("encoding for smart module spec v1");
+            let spec_v1 = SmartModuleSpecV1::default();
+            spec_v1.input_kind.encode(dest, version)?;
+            spec_v1.output_kind.encode(dest, version)?;
+            spec_v1.source_code.encode(dest, version)?;
+            self.wasm.encode(dest, version)?;
+            spec_v1.parameters.encode(dest, version)?;
+        } else {
+            self.meta.encode(dest, version)?;
+            self.summary.encode(dest, version)?;
+            self.wasm.encode(dest, version)?;
+        }
+        Ok(())
+    }
+}
+
+impl Decoder for SmartModuleSpec {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
+    where
+        T: bytes::Buf,
+    {
+        if version < V2_FORMAT {
+            debug!("decoding for smart module spec v1");
+            let mut spec_v1 = SmartModuleSpecV1::default();
+            spec_v1.decode(src, version)?;
+            self.wasm = spec_v1.wasm;
+        } else {
+            self.meta.decode(src, version)?;
+            self.summary.decode(src, version)?;
+            self.wasm.decode(src, version)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl SmartModuleSpec {
@@ -41,6 +116,22 @@ impl SmartModuleSpec {
             .map(|meta| meta.package.version.to_string())
             .unwrap_or_else(|| "".to_owned())
     }
+
+    /// get summary version
+    pub fn summary(&self) -> Self {
+        Self {
+            meta: self.meta.clone(),
+            summary: Some(SmartModuleWasmSummary {
+                wasm_length: self.wasm.payload.len() as u32,
+            }),
+            wasm: SmartModuleWasm::default(),
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
+pub struct SmartModuleWasmSummary {
+    pub wasm_length: u32,
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Encoder, Decoder)]
