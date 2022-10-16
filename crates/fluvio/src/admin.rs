@@ -1,17 +1,21 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::{Display, Debug};
+use std::io::Error as IoError;
+use std::io::ErrorKind;
 
 use fluvio_protocol::{Decoder, Encoder};
-use fluvio_protocol::api::{Request};
+use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_future::net::DomainConnector;
+use futures_util::{Stream, StreamExt};
 use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{
     CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
     ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter,
+    WatchRequest, ObjectApiWatchResponse, WatchResponse,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
-use fluvio_socket::SocketError;
+use fluvio_socket::{SocketError};
 use fluvio_socket::MultiplexerSocket;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
@@ -252,6 +256,40 @@ impl FluvioAdmin {
             .try_into()
             .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
             .map(|out: ListResponse<S>| out.inner())
+    }
+
+    /// primitive watch stream
+    #[instrument(skip(self))]
+    pub async fn watch<S>(
+        &self,
+    ) -> Result<impl Stream<Item = Result<WatchResponse<S>, IoError>>, FluvioError>
+    where
+        S: AdminSpec,
+        ObjectApiWatchRequest: From<WatchRequest<S>>,
+        S::Status: Encoder + Decoder,
+        WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
+        <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
+    {
+        let watch_request: WatchRequest<S> = WatchRequest::summary();
+
+        let watch_req: ObjectApiWatchRequest = watch_request.into();
+        let req_msg = RequestMessage::new_request(watch_req);
+        debug!(api_version = req_msg.header.api_version(), obj = %S::LABEL, "create watch stream");
+        let inner_socket = self.socket.new_socket();
+        let stream = inner_socket.create_stream(req_msg, 10).await?;
+        Ok(stream.map(|respons_result| match respons_result {
+            Ok(response) => {
+                let watch_response: Result<WatchResponse<S>, IoError> =
+                    response.try_into().map_err(|err| {
+                        IoError::new(ErrorKind::Other, format!("can't convert: {}", err))
+                    });
+                watch_response
+            }
+            Err(err) => Err(IoError::new(
+                ErrorKind::Other,
+                format!("socket error {}", err),
+            )),
+        }))
     }
 }
 

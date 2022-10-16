@@ -26,6 +26,18 @@ pub struct WatchRequest<S: AdminSpec> {
     data: PhantomData<S>,
 }
 
+impl<S> WatchRequest<S>
+where
+    S: AdminSpec,
+{
+    pub fn summary() -> Self {
+        Self {
+            summary: true,
+            ..Default::default()
+        }
+    }
+}
+
 impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;

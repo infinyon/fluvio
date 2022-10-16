@@ -237,6 +237,11 @@ impl VersionedSerialSocket {
         &self.versions
     }
 
+    /// get new socket
+    pub fn new_socket(&self) -> SharedMultiplexerSocket {
+        self.socket.clone()
+    }
+
     /// send and wait for reply serially
     #[instrument(level = "trace", skip(self, request))]
     pub async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
