@@ -9,27 +9,27 @@ use tracing::debug;
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum SmdkTemplateValue {
-    SmartmoduleInitFn(bool),
-    SmartmoduleParameters(bool),
-    SmartmoduleVersion(String),
+    SmartModuleInitFn(bool),
+    SmartModuleParameters(bool),
+    SmartModuleVersion(String),
     SmartModuleType(SmartModuleType),
 }
 
 impl std::fmt::Display for SmdkTemplateValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &*self {
-            SmdkTemplateValue::SmartmoduleInitFn(init) => {
+            SmdkTemplateValue::SmartModuleInitFn(init) => {
                 write!(f, "smart-module-init={}", init)
             }
-            SmdkTemplateValue::SmartmoduleVersion(version) => {
+            SmdkTemplateValue::SmartModuleVersion(version) => {
                 write!(f, "smart-module-version={}", version)
             }
             SmdkTemplateValue::SmartModuleType(sm_type) => {
                 write!(f, "smart-module-type={}", sm_type)
             }
-            SmdkTemplateValue::SmartmoduleParameters(sm_params) => {
+            SmdkTemplateValue::SmartModuleParameters(sm_params) => {
                 write!(f, "smart-module-params={}", sm_params)
             }
         }
@@ -37,6 +37,7 @@ impl std::fmt::Display for SmdkTemplateValue {
 }
 
 #[derive(ValueEnum, Clone, Debug, Parser, PartialEq, Eq, EnumDisplay)]
+#[clap(rename_all = "kebab-case")]
 #[enum_display(case = "Kebab")]
 enum SmartModuleType {
     Filter,
@@ -46,6 +47,7 @@ enum SmartModuleType {
     FilterMap,
 }
 
+// TODO: After clap update, use global_setting = AppSettings::DeriveDisplayOrder
 /// Generate new SmartModule project
 #[derive(Debug, Parser)]
 pub struct GenerateOpt {
@@ -54,30 +56,32 @@ pub struct GenerateOpt {
 
     /// URL to git repo containing the templates for generating SmartModule projects.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(long)]
+    #[clap(long, group("TemplateSource"))]
     smdk_template_repo: Option<String>,
     // add branch
     // add tag
 
     // add path
+    //#[clap(long, group("TemplateSource"))]
+    //smdk_template_path: Option<String>,
     /// Crate version or URL to `fluvio-smartmodule` git repo generated Cargo.toml.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(long)]
+    #[clap(long, group("TemplateValue"))]
     smart_module_crate_version: Option<String>, // maybe call this smdk_smart_module_crate
 
     /// Type of SmartModule project to generate.
     /// Skip prompt if value given.
-    #[clap(long, value_parser = value_parser!(SmartModuleType))]
+    #[clap(long, value_enum, group("TemplateValue"))]
     smart_module_type: Option<SmartModuleType>,
 
     /// Include SmartModule state initialization function in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, value_parser = value_parser!(bool))]
+    #[clap(long, value_parser = value_parser!(bool), group("TemplateValue"))]
     add_init_fn: Option<bool>,
 
     /// Include SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, value_parser = value_parser!(bool))]
+    #[clap(long, value_parser = value_parser!(bool), group("TemplateValue"))]
     smart_module_params: Option<bool>,
     // Add destination, for selecting another directory
     // Add overwrite
@@ -165,7 +169,7 @@ impl SmdkTemplateUserValues {
     fn with_smart_module_crate_version(&mut self, version: Option<String>) -> &mut Self {
         if let Some(v) = version {
             debug!("User provided version: {v:#?}");
-            self.values.push(SmdkTemplateValue::SmartmoduleVersion(v));
+            self.values.push(SmdkTemplateValue::SmartModuleVersion(v));
         }
         self
     }
@@ -181,7 +185,7 @@ impl SmdkTemplateUserValues {
     fn with_init_fn(&mut self, request: Option<bool>) -> &mut Self {
         if let Some(i) = request {
             debug!("User provided init fn request: {i:#?}");
-            self.values.push(SmdkTemplateValue::SmartmoduleInitFn(i));
+            self.values.push(SmdkTemplateValue::SmartModuleInitFn(i));
         }
         self
     }
@@ -190,12 +194,17 @@ impl SmdkTemplateUserValues {
         if let Some(i) = request {
             debug!("User provided SmartModule params request: {i:#?}");
             self.values
-                .push(SmdkTemplateValue::SmartmoduleParameters(i));
+                .push(SmdkTemplateValue::SmartModuleParameters(i));
         }
         self
     }
-    fn to_vec(&self) -> Vec<String> {
-        self.values.iter().map(|v| v.to_string()).collect()
+
+    fn to_vec(&self) -> Vec<SmdkTemplateValue> {
+        self.values.clone()
+    }
+
+    fn to_cargo_generate(&self) -> Vec<String> {
+        self.to_vec().iter().map(|v| v.to_string()).collect()
     }
 }
 
@@ -237,7 +246,7 @@ impl GenerateOpt {
             lib: false,
             bin: false,
             ssh_identity: None,
-            define: maybe_user_input.to_vec(),
+            define: maybe_user_input.to_cargo_generate(),
             init: false,
             destination: None,
             force_git_init: false,
@@ -258,6 +267,8 @@ mod test {
 
     use super::SmdkTemplate;
     use super::SmdkTemplateUserValues;
+    use super::SmartModuleType;
+    use super::SmdkTemplateValue;
 
     #[test]
     fn test_default_template() {
@@ -283,6 +294,83 @@ mod test {
         assert!(smart_toml.unwrap().is_ok());
     }
 
-    //#[test]
-    //fn test_values_file() {}
+    #[test]
+    fn test_generate_user_values() {
+        let test_template_values = vec![
+            SmdkTemplateValue::SmartModuleInitFn(true),
+            SmdkTemplateValue::SmartModuleParameters(true),
+            SmdkTemplateValue::SmartModuleVersion("version = \"0.1.0\"".to_string()),
+        ];
+
+        for value in test_template_values {
+            match value {
+                SmdkTemplateValue::SmartModuleInitFn(_) => {
+                    assert_eq!(
+                        &SmdkTemplateValue::SmartModuleInitFn(true).to_string(),
+                        "smart-module-init=true"
+                    );
+                }
+                SmdkTemplateValue::SmartModuleParameters(_) => {
+                    assert_eq!(
+                        &SmdkTemplateValue::SmartModuleParameters(true).to_string(),
+                        "smart-module-params=true"
+                    );
+                }
+
+                SmdkTemplateValue::SmartModuleVersion(_) => {
+                    assert_eq!(
+                        &SmdkTemplateValue::SmartModuleVersion("version = \"0.1.0\"".to_string())
+                            .to_string(),
+                        "smart-module-version=version = \"0.1.0\""
+                    );
+                }
+
+                SmdkTemplateValue::SmartModuleType(_) => {
+                    assert_eq!(
+                        &SmdkTemplateValue::SmartModuleType(SmartModuleType::FilterMap).to_string(),
+                        "smart-module-type=filter-map"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_template_builder() {
+        let mut values = SmdkTemplateUserValues::new();
+        let test_version_number = "test-version-value".to_string();
+        values
+            .with_smart_module_type(Some(SmartModuleType::Aggregate))
+            .with_init_fn(Some(true))
+            .with_smart_module_params(Some(true))
+            .with_smart_module_crate_version(Some(test_version_number.clone()));
+
+        let values_vec = values.to_vec();
+
+        for v in values_vec {
+            match v {
+                SmdkTemplateValue::SmartModuleInitFn(_) => {
+                    assert_eq!(v, SmdkTemplateValue::SmartModuleInitFn(true));
+                }
+
+                SmdkTemplateValue::SmartModuleParameters(_) => {
+                    assert_eq!(v, SmdkTemplateValue::SmartModuleParameters(true));
+                }
+
+                SmdkTemplateValue::SmartModuleVersion(_) => {
+                    assert_eq!(
+                        v,
+                        SmdkTemplateValue::SmartModuleVersion(test_version_number.clone())
+                    );
+                }
+
+                SmdkTemplateValue::SmartModuleType(_) => {
+                    assert_eq!(
+                        v,
+                        SmdkTemplateValue::SmartModuleType(SmartModuleType::Aggregate)
+                    );
+                }
+            }
+        }
+    }
 }
