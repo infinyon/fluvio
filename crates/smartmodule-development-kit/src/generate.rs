@@ -5,15 +5,18 @@ use include_dir::{Dir, include_dir};
 use tempfile::TempDir;
 use enum_display::EnumDisplay;
 use tracing::debug;
+use lib_cargo_crate::{Info, InfoOpts};
 
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
+const FLUVIO_SMARTMODULE_CRATE_NAME: &str = "fluvio-smartmodule";
+const FLUVIO_SMARTMODULE_REPO: &str = "https://github.com/infinyon/fluvio.git";
 
 #[derive(Debug, Clone, PartialEq)]
 enum SmdkTemplateValue {
     SmartModuleInitFn(bool),
     SmartModuleParameters(bool),
-    SmartModuleVersion(String),
+    SmartModuleCargoDependency(CargoDependencySource),
     SmartModuleType(SmartModuleType),
 }
 
@@ -23,8 +26,8 @@ impl std::fmt::Display for SmdkTemplateValue {
             SmdkTemplateValue::SmartModuleInitFn(init) => {
                 write!(f, "smart-module-init={}", init)
             }
-            SmdkTemplateValue::SmartModuleVersion(version) => {
-                write!(f, "smart-module-version={}", version)
+            SmdkTemplateValue::SmartModuleCargoDependency(dependency) => {
+                write!(f, "fluvio-smartmodule-cargo-dependency={}", dependency)
             }
             SmdkTemplateValue::SmartModuleType(sm_type) => {
                 write!(f, "smart-module-type={}", sm_type)
@@ -66,25 +69,28 @@ pub struct GenerateOpt {
     //smdk_template_path: Option<String>,
     /// Crate version or URL to `fluvio-smartmodule` git repo generated Cargo.toml.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(long, group("TemplateValue"))]
+    #[clap(long)]
     smart_module_crate_version: Option<String>, // maybe call this smdk_smart_module_crate
 
     /// Type of SmartModule project to generate.
     /// Skip prompt if value given.
-    #[clap(long, value_enum, group("TemplateValue"))]
+    #[clap(long, value_enum)]
     smart_module_type: Option<SmartModuleType>,
 
     /// Include SmartModule state initialization function in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, value_parser = value_parser!(bool), group("TemplateValue"))]
-    add_init_fn: Option<bool>,
+    #[clap(long, value_parser = value_parser!(bool))]
+    init_fn: Option<bool>,
 
     /// Include SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, value_parser = value_parser!(bool), group("TemplateValue"))]
+    #[clap(long, value_parser = value_parser!(bool))]
     smart_module_params: Option<bool>,
     // Add destination, for selecting another directory
     // Add overwrite
+    /// Using this option will choose values for developers
+    #[clap(long)]
+    develop: bool,
 }
 
 /// Abstraction on different of template options available for generating a
@@ -102,6 +108,25 @@ enum SmdkTemplateType {
     Default,
     Git,
     //Path,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum CargoDependencySource {
+    CratesIo(String),
+    Git(String),
+}
+
+impl std::fmt::Display for CargoDependencySource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &*self {
+            CargoDependencySource::CratesIo(version) => {
+                write!(f, "\"{}\"", version)
+            }
+            CargoDependencySource::Git(url) => {
+                write!(f, "{{ git = \"{}\" }}", url)
+            }
+        }
+    }
 }
 
 impl SmdkTemplate {
@@ -166,10 +191,14 @@ impl SmdkTemplateUserValues {
         SmdkTemplateUserValues::default()
     }
 
-    fn with_smart_module_crate_version(&mut self, version: Option<String>) -> &mut Self {
-        if let Some(v) = version {
-            debug!("User provided version: {v:#?}");
-            self.values.push(SmdkTemplateValue::SmartModuleVersion(v));
+    fn with_smart_module_cargo_dependency(
+        &mut self,
+        dependency: Option<CargoDependencySource>,
+    ) -> &mut Self {
+        if let Some(d) = dependency {
+            debug!("User provided fluvio-smartmodule Cargo.toml value: {d:#?}");
+            self.values
+                .push(SmdkTemplateValue::SmartModuleCargoDependency(d));
         }
         self
     }
@@ -215,7 +244,7 @@ impl GenerateOpt {
         let mut maybe_user_input = SmdkTemplateUserValues::new();
         maybe_user_input
             .with_smart_module_type(self.smart_module_type)
-            .with_init_fn(self.add_init_fn)
+            .with_init_fn(self.init_fn)
             .with_smart_module_params(self.smart_module_params);
 
         let SmdkTemplate {
@@ -223,13 +252,21 @@ impl GenerateOpt {
             _temp_dir,
             _template_source,
         } = if let Some(git_uri) = self.smdk_template_repo {
-            maybe_user_input.with_smart_module_crate_version(self.smart_module_crate_version);
+            let sm_dep = CargoDependencySource::Git(git_uri.clone());
+            maybe_user_input.with_smart_module_cargo_dependency(Some(sm_dep));
             SmdkTemplate::git(git_uri)?
         } else {
-            // FIXME: This should not default to git repo
-            let sm_version = "git = \\\"https://github.com/infinyon/fluvio.git\\\"".to_string();
+            let sm_dep = if !self.develop {
+                let latest_sm_crate_info =
+                    Info::new().fetch(vec![FLUVIO_SMARTMODULE_CRATE_NAME], &InfoOpts::default())?;
+                let version = &latest_sm_crate_info[0].krate.crate_data.max_version;
 
-            maybe_user_input.with_smart_module_crate_version(Some(sm_version));
+                CargoDependencySource::CratesIo(version.to_string())
+            } else {
+                CargoDependencySource::Git(FLUVIO_SMARTMODULE_REPO.to_string())
+            };
+
+            maybe_user_input.with_smart_module_cargo_dependency(Some(sm_dep));
             SmdkTemplate::default()?
         };
 
@@ -269,6 +306,8 @@ mod test {
     use super::SmdkTemplateUserValues;
     use super::SmartModuleType;
     use super::SmdkTemplateValue;
+    use super::CargoDependencySource;
+    use super::FLUVIO_SMARTMODULE_REPO;
 
     #[test]
     fn test_default_template() {
@@ -295,11 +334,34 @@ mod test {
     }
 
     #[test]
+    fn test_cargo_dependency_values() {
+        let test_semver = "4.5.6".to_string();
+        let test_template_values = vec![
+            CargoDependencySource::CratesIo(test_semver.clone()),
+            CargoDependencySource::Git(FLUVIO_SMARTMODULE_REPO.to_string()),
+        ];
+
+        for value in test_template_values {
+            match value {
+                CargoDependencySource::CratesIo(_) => {
+                    assert_eq!(value.to_string(), format!("\"{}\"", test_semver.clone()))
+                }
+                CargoDependencySource::Git(_) => assert_eq!(
+                    value.to_string(),
+                    format!("{{ git = \"{}\" }}", FLUVIO_SMARTMODULE_REPO.to_string())
+                ),
+            }
+        }
+    }
+
+    #[test]
     fn test_generate_user_values() {
         let test_template_values = vec![
             SmdkTemplateValue::SmartModuleInitFn(true),
             SmdkTemplateValue::SmartModuleParameters(true),
-            SmdkTemplateValue::SmartModuleVersion("version = \"0.1.0\"".to_string()),
+            SmdkTemplateValue::SmartModuleCargoDependency(CargoDependencySource::CratesIo(
+                "0.1.0".to_string(),
+            )),
         ];
 
         for value in test_template_values {
@@ -317,11 +379,13 @@ mod test {
                     );
                 }
 
-                SmdkTemplateValue::SmartModuleVersion(_) => {
+                SmdkTemplateValue::SmartModuleCargoDependency(_) => {
                     assert_eq!(
-                        &SmdkTemplateValue::SmartModuleVersion("version = \"0.1.0\"".to_string())
-                            .to_string(),
-                        "smart-module-version=version = \"0.1.0\""
+                        &SmdkTemplateValue::SmartModuleCargoDependency(
+                            CargoDependencySource::CratesIo("0.1.0".to_string())
+                        )
+                        .to_string(),
+                        "fluvio-smartmodule-cargo-dependency=\"0.1.0\""
                     );
                 }
 
@@ -343,7 +407,9 @@ mod test {
             .with_smart_module_type(Some(SmartModuleType::Aggregate))
             .with_init_fn(Some(true))
             .with_smart_module_params(Some(true))
-            .with_smart_module_crate_version(Some(test_version_number.clone()));
+            .with_smart_module_cargo_dependency(Some(CargoDependencySource::CratesIo(
+                test_version_number.clone(),
+            )));
 
         let values_vec = values.to_vec();
 
@@ -357,10 +423,12 @@ mod test {
                     assert_eq!(v, SmdkTemplateValue::SmartModuleParameters(true));
                 }
 
-                SmdkTemplateValue::SmartModuleVersion(_) => {
+                SmdkTemplateValue::SmartModuleCargoDependency(_) => {
                     assert_eq!(
                         v,
-                        SmdkTemplateValue::SmartModuleVersion(test_version_number.clone())
+                        SmdkTemplateValue::SmartModuleCargoDependency(
+                            CargoDependencySource::CratesIo(test_version_number.clone())
+                        )
                     );
                 }
 

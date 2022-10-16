@@ -26,6 +26,7 @@ convert_case = "0.6.0"
 include_dir = "0.7.2"
 tempfile = "3.3.0"
 enum-display = "0.1.3"
+lib-cargo-crate = "0.1.6"
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-hub-util = { path = "../fluvio-hub-util" }

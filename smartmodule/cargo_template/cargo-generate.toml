@@ -1,7 +1,7 @@
-[placeholders.smart-module-version]
+[placeholders.fluvio-smartmodule-cargo-dependency]
 type = "string"
-default = "git = \"https://github.com/infinyon/fluvio.git\""
-prompt = "SmartModule Version"
+default = "\"0.2.5\""
+prompt = "Value of `fluvio-smartmodule` dependency in Cargo.toml"
 
 [placeholders.smart-module-type]
 type = "string"
