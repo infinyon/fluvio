@@ -16,9 +16,12 @@ use crate::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 // in .fluvio/hub/hcurrent
 const ACCESS_FILE_PTR: &str = "hcurrent";
 const ACCESS_FILE_DEF: &str = "default"; // default profile name
-const ACTION_DOWNLOAD: &str = "dl";
-const ACTION_PUBLISH: &str = "pbl";
-const ACTION_CREATE_HUBID: &str = "chid";
+
+pub const ACTION_LIST: &str = "list";
+pub const ACTION_LIST_WITH_META: &str = "lwm";
+pub const ACTION_CREATE_HUBID: &str = "chid";
+pub const ACTION_DOWNLOAD: &str = "dl";
+pub const ACTION_PUBLISH: &str = "pbl";
 
 #[derive(Serialize, Deserialize)]
 pub struct HubAccess {
@@ -86,6 +89,14 @@ impl HubAccess {
 
     pub async fn get_download_token(&self) -> Result<String> {
         self.get_action_auth(ACTION_DOWNLOAD).await
+    }
+
+    pub async fn get_list_token(&self) -> Result<String> {
+        self.get_action_auth(ACTION_LIST).await
+    }
+
+    pub async fn get_list_with_meta_token(&self) -> Result<String> {
+        self.get_action_auth(ACTION_LIST_WITH_META).await
     }
 
     pub async fn get_publish_token(&self) -> Result<String> {
