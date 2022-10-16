@@ -14,25 +14,25 @@ const FLUVIO_SMARTMODULE_REPO: &str = "https://github.com/infinyon/fluvio.git";
 
 #[derive(Debug, Clone, PartialEq)]
 enum SmdkTemplateValue {
-    SmartModuleInitFn(bool),
-    SmartModuleParameters(bool),
-    SmartModuleCargoDependency(CargoDependencySource),
-    SmartModuleType(SmartModuleType),
+    AddInitFn(bool),
+    UseParams(bool),
+    SmCargoDependency(CargoDependencySource),
+    SmType(SmartModuleType),
 }
 
 impl std::fmt::Display for SmdkTemplateValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &*self {
-            SmdkTemplateValue::SmartModuleInitFn(init) => {
+        match self {
+            SmdkTemplateValue::AddInitFn(init) => {
                 write!(f, "smart-module-init={}", init)
             }
-            SmdkTemplateValue::SmartModuleCargoDependency(dependency) => {
+            SmdkTemplateValue::SmCargoDependency(dependency) => {
                 write!(f, "fluvio-smartmodule-cargo-dependency={}", dependency)
             }
-            SmdkTemplateValue::SmartModuleType(sm_type) => {
+            SmdkTemplateValue::SmType(sm_type) => {
                 write!(f, "smart-module-type={}", sm_type)
             }
-            SmdkTemplateValue::SmartModuleParameters(sm_params) => {
+            SmdkTemplateValue::UseParams(sm_params) => {
                 write!(f, "smart-module-params={}", sm_params)
             }
         }
@@ -118,7 +118,7 @@ enum CargoDependencySource {
 
 impl std::fmt::Display for CargoDependencySource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &*self {
+        match self {
             CargoDependencySource::CratesIo(version) => {
                 write!(f, "\"{}\"", version)
             }
@@ -152,7 +152,7 @@ impl SmdkTemplate {
                 test: false,
                 branch: None,
                 tag: None,
-                path: path,
+                path,
                 favorite: None,
             },
             _temp_dir: Some(temp_dir),
@@ -197,8 +197,7 @@ impl SmdkTemplateUserValues {
     ) -> &mut Self {
         if let Some(d) = dependency {
             debug!("User provided fluvio-smartmodule Cargo.toml value: {d:#?}");
-            self.values
-                .push(SmdkTemplateValue::SmartModuleCargoDependency(d));
+            self.values.push(SmdkTemplateValue::SmCargoDependency(d));
         }
         self
     }
@@ -206,7 +205,7 @@ impl SmdkTemplateUserValues {
     fn with_smart_module_type(&mut self, sm_type: Option<SmartModuleType>) -> &mut Self {
         if let Some(t) = sm_type {
             debug!("User provided SmartModule type: {t:#?}");
-            self.values.push(SmdkTemplateValue::SmartModuleType(t));
+            self.values.push(SmdkTemplateValue::SmType(t));
         }
         self
     }
@@ -214,7 +213,7 @@ impl SmdkTemplateUserValues {
     fn with_init_fn(&mut self, request: Option<bool>) -> &mut Self {
         if let Some(i) = request {
             debug!("User provided init fn request: {i:#?}");
-            self.values.push(SmdkTemplateValue::SmartModuleInitFn(i));
+            self.values.push(SmdkTemplateValue::AddInitFn(i));
         }
         self
     }
@@ -222,8 +221,7 @@ impl SmdkTemplateUserValues {
     fn with_smart_module_params(&mut self, request: Option<bool>) -> &mut Self {
         if let Some(i) = request {
             debug!("User provided SmartModule params request: {i:#?}");
-            self.values
-                .push(SmdkTemplateValue::SmartModuleParameters(i));
+            self.values.push(SmdkTemplateValue::UseParams(i));
         }
         self
     }
@@ -357,41 +355,42 @@ mod test {
     #[test]
     fn test_generate_user_values() {
         let test_template_values = vec![
-            SmdkTemplateValue::SmartModuleInitFn(true),
-            SmdkTemplateValue::SmartModuleParameters(true),
-            SmdkTemplateValue::SmartModuleCargoDependency(CargoDependencySource::CratesIo(
+            SmdkTemplateValue::AddInitFn(true),
+            SmdkTemplateValue::UseParams(true),
+            SmdkTemplateValue::SmCargoDependency(CargoDependencySource::CratesIo(
                 "0.1.0".to_string(),
             )),
+            SmdkTemplateValue::SmType(SmartModuleType::FilterMap),
         ];
 
         for value in test_template_values {
             match value {
-                SmdkTemplateValue::SmartModuleInitFn(_) => {
+                SmdkTemplateValue::AddInitFn(_) => {
                     assert_eq!(
-                        &SmdkTemplateValue::SmartModuleInitFn(true).to_string(),
+                        &SmdkTemplateValue::AddInitFn(true).to_string(),
                         "smart-module-init=true"
                     );
                 }
-                SmdkTemplateValue::SmartModuleParameters(_) => {
+                SmdkTemplateValue::UseParams(_) => {
                     assert_eq!(
-                        &SmdkTemplateValue::SmartModuleParameters(true).to_string(),
+                        &SmdkTemplateValue::UseParams(true).to_string(),
                         "smart-module-params=true"
                     );
                 }
 
-                SmdkTemplateValue::SmartModuleCargoDependency(_) => {
+                SmdkTemplateValue::SmCargoDependency(_) => {
                     assert_eq!(
-                        &SmdkTemplateValue::SmartModuleCargoDependency(
-                            CargoDependencySource::CratesIo("0.1.0".to_string())
-                        )
+                        &SmdkTemplateValue::SmCargoDependency(CargoDependencySource::CratesIo(
+                            "0.1.0".to_string()
+                        ))
                         .to_string(),
                         "fluvio-smartmodule-cargo-dependency=\"0.1.0\""
                     );
                 }
 
-                SmdkTemplateValue::SmartModuleType(_) => {
+                SmdkTemplateValue::SmType(_) => {
                     assert_eq!(
-                        &SmdkTemplateValue::SmartModuleType(SmartModuleType::FilterMap).to_string(),
+                        &SmdkTemplateValue::SmType(SmartModuleType::FilterMap).to_string(),
                         "smart-module-type=filter-map"
                     );
                 }
@@ -415,28 +414,25 @@ mod test {
 
         for v in values_vec {
             match v {
-                SmdkTemplateValue::SmartModuleInitFn(_) => {
-                    assert_eq!(v, SmdkTemplateValue::SmartModuleInitFn(true));
+                SmdkTemplateValue::AddInitFn(_) => {
+                    assert_eq!(v, SmdkTemplateValue::AddInitFn(true));
                 }
 
-                SmdkTemplateValue::SmartModuleParameters(_) => {
-                    assert_eq!(v, SmdkTemplateValue::SmartModuleParameters(true));
+                SmdkTemplateValue::UseParams(_) => {
+                    assert_eq!(v, SmdkTemplateValue::UseParams(true));
                 }
 
-                SmdkTemplateValue::SmartModuleCargoDependency(_) => {
+                SmdkTemplateValue::SmCargoDependency(_) => {
                     assert_eq!(
                         v,
-                        SmdkTemplateValue::SmartModuleCargoDependency(
-                            CargoDependencySource::CratesIo(test_version_number.clone())
-                        )
+                        SmdkTemplateValue::SmCargoDependency(CargoDependencySource::CratesIo(
+                            test_version_number.clone()
+                        ))
                     );
                 }
 
-                SmdkTemplateValue::SmartModuleType(_) => {
-                    assert_eq!(
-                        v,
-                        SmdkTemplateValue::SmartModuleType(SmartModuleType::Aggregate)
-                    );
+                SmdkTemplateValue::SmType(_) => {
+                    assert_eq!(v, SmdkTemplateValue::SmType(SmartModuleType::Aggregate));
                 }
             }
         }
