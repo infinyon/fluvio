@@ -60,9 +60,9 @@ get-tag:
 	echo $(DEV_VERSION_TAG)
 
 clean-publish:
-	rm --verbose --force *.zip *.tgz *.exe
-	rm --verbose --force --recursive fluvio-* fluvio.*
-	rm --verbose --force /tmp/release_notes /tmp/cd_dev_latest.txt
+	rm -vf *.zip *.tgz *.exe 
+	rm -vrf fluvio-* fluvio.* smdk-*
+	rm -vf /tmp/release_notes /tmp/cd_dev_latest.txt
 
 #fix-latest-channel:
 #	# Find the last git sha from master
@@ -148,7 +148,7 @@ unzip-gh-release-artifacts: download-fluvio-release
 #   fluvio-x86_64-unknown-linux-musl/
 #     fluvio
 #     .target
-publish-artifacts: PUBLIC_VERSION=$(subst -,+,$(VERSION))
+publish-artifacts: PUBLIC_VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
 publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 	@echo "package stuff"
 	$(foreach bin, $(wildcard *.zip), \
