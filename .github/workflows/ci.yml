@@ -17,9 +17,9 @@ on:
   pull_request:
     branches: [master]
     paths:
-    - '**'
-    - '!/*.md'
-    - '!/**.md'
+      - "**"
+      - "!/*.md"
+      - "!/**.md"
   workflow_dispatch:
     inputs:
       verbose:
@@ -902,6 +902,11 @@ jobs:
         with:
           name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
           path: /tmp
+      - name: Download artifact - smdk
+        uses: actions/download-artifact@v3
+        with:
+          name: smdk-x86_64-unknown-linux-musl
+          path: ~/bin
 
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
@@ -920,6 +925,7 @@ jobs:
       - name: Print artifacts and mark executable
         run: |
           chmod +x ~/bin/fluvio && ~/bin/fluvio version
+          chmod +x ~/bin/smdk
           echo "~/bin" >> $GITHUB_PATH
       - name: Start cluster
         timeout-minutes: 10
@@ -929,7 +935,7 @@ jobs:
           make build_smartmodules
       - name: Run CLI smoke tests
         timeout-minutes: 5
-        run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
+        run: make FLUVIO_BIN=~/bin/fluvio SMDK_BIN=~/bin/smdk cli-smoke
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
