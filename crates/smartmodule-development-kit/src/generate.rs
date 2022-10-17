@@ -163,7 +163,7 @@ pub struct GenerateOpt {
         "SmCrateSourceGit", "SmCrateSourceCratesIo", "SmCrateSourcePath"],)]
     develop: bool,
 
-    /// Show all developer options (alias for long help, `--help`)
+    /// Show all developer options (alias for `--help`)
     #[clap(long, action)]
     dev_help: bool,
 }
