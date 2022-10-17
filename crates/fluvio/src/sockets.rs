@@ -193,15 +193,20 @@ impl Versions {
     }
 
     /// Given an API key, it returns maximum compatible version. None if not found
-    pub fn lookup_version(&self, api_key: u16, client_version: i16) -> Option<i16> {
+    pub fn lookup_version<R: Request>(&self) -> Option<i16> {
         for version in &self.api_versions {
-            if version.api_key == api_key as i16
-                && version.min_version <= client_version
-                && version.max_version >= client_version
-            {
-                return Some(std::cmp::min(version.max_version, client_version));
+            if version.api_key == R::API_KEY as i16 {
+                // try to find most latest maximum version
+                for client_version in (R::MIN_API_VERSION..=R::MAX_API_VERSION).rev() {
+                    if version.min_version <= client_version
+                        && version.max_version >= client_version
+                    {
+                        return Some(client_version);
+                    }
+                }
             }
         }
+
         None
     }
 }
@@ -237,17 +242,18 @@ impl VersionedSerialSocket {
         &self.versions
     }
 
+    /// get new socket
+    pub fn new_socket(&self) -> SharedMultiplexerSocket {
+        self.socket.clone()
+    }
+
     /// send and wait for reply serially
     #[instrument(level = "trace", skip(self, request))]
     pub async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
     where
         R: Request + Send + Sync,
     {
-        let req_msg = self.new_request(
-            request,
-            self.versions
-                .lookup_version(R::API_KEY, R::DEFAULT_API_VERSION),
-        );
+        let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & save response
         self.socket.send_and_receive(req_msg).await
@@ -259,11 +265,7 @@ impl VersionedSerialSocket {
     where
         R: Request + Send + Sync,
     {
-        let req_msg = self.new_request(
-            request,
-            self.versions
-                .lookup_version(R::API_KEY, R::DEFAULT_API_VERSION),
-        );
+        let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & get a Future that resolves to response
         self.socket.send_async(req_msg).await
@@ -280,11 +282,7 @@ impl VersionedSerialSocket {
         R: Request + Send + Sync + Clone,
         I: IntoIterator<Item = Duration> + Debug + Send,
     {
-        let req_msg = self.new_request(
-            request,
-            self.versions
-                .lookup_version(R::API_KEY, R::DEFAULT_API_VERSION),
-        );
+        let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & retry it if result is Err
         retry(retries, || self.socket.send_and_receive(req_msg.clone())).await
@@ -316,10 +314,35 @@ impl SerialFrame for VersionedSerialSocket {
 
 #[cfg(test)]
 mod test {
+    use fluvio_protocol::Decoder;
+    use fluvio_protocol::Encoder;
+    use fluvio_protocol::api::Request;
     use fluvio_protocol::link::versions::ApiVersionKey;
 
     use super::ApiVersionsResponse;
     use super::Versions;
+
+    #[derive(Encoder, Decoder, Default, Debug)]
+    struct T1;
+
+    impl Request for T1 {
+        const API_KEY: u16 = 1000;
+        const MIN_API_VERSION: i16 = 6;
+        const MAX_API_VERSION: i16 = 9;
+
+        type Response = u8;
+    }
+
+    #[derive(Encoder, Decoder, Default, Debug)]
+    struct T2;
+
+    impl Request for T2 {
+        const API_KEY: u16 = 1000;
+        const MIN_API_VERSION: i16 = 2;
+        const MAX_API_VERSION: i16 = 3;
+
+        type Response = u8;
+    }
 
     #[test]
     fn test_version_lookup() {
@@ -334,10 +357,7 @@ mod test {
         let versions = Versions::new(response);
 
         // None if api_key not found
-        assert_eq!(versions.lookup_version(0, 10), None);
-        assert_eq!(versions.lookup_version(1000, 4), None); // same api key but version is too low
-        assert_eq!(versions.lookup_version(1000, 5), Some(5));
-        assert_eq!(versions.lookup_version(1000, 7), Some(7));
-        assert_eq!(versions.lookup_version(1000, 11), None);
+        assert_eq!(versions.lookup_version::<T1>(), Some(9));
+        assert_eq!(versions.lookup_version::<T2>(), None);
     }
 }

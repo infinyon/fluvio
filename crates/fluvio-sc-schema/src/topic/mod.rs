@@ -47,16 +47,12 @@ mod convert {
     use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
-    use crate::{AdminSpec, NameFilter};
-    use crate::objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest};
+    use crate::{AdminSpec};
+    use crate::objects::{ObjectFrom, ObjectTryFrom, WatchResponse, WatchRequest};
 
     use super::TopicSpec;
 
-    impl AdminSpec for TopicSpec {
-        type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
-        type WatchResponseType = Self;
-    }
+    impl AdminSpec for TopicSpec {}
 
     impl CreatableAdminSpec for TopicSpec {
         const CREATE_TYPE: u8 = 0;

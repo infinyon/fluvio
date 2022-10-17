@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug, instrument};
 
-use fluvio_sc_schema::objects::{ListResponse, Metadata};
+use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
 use fluvio_sc_schema::partition::{PartitionSpec};
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -11,7 +11,7 @@ use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(_filters, auth_ctx))]
 pub async fn handle_fetch_request<AC: AuthContext>(
-    _filters: Vec<String>,
+    _filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse<PartitionSpec>, Error> {
     debug!("fetching custom spu list");
