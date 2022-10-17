@@ -1,16 +1,21 @@
 use std::convert::{TryFrom, TryInto};
-use std::fmt::Display;
+use std::fmt::{Display, Debug};
+use std::io::Error as IoError;
+use std::io::ErrorKind;
 
-use fluvio_protocol::api::{Request};
+use fluvio_protocol::{Decoder, Encoder};
+use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_future::net::DomainConnector;
+use futures_util::{Stream, StreamExt};
 use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{
     CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
-    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest,
+    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter,
+    WatchRequest, ObjectApiWatchResponse, WatchResponse,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
-use fluvio_socket::SocketError;
+use fluvio_socket::{SocketError};
 use fluvio_socket::MultiplexerSocket;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
@@ -111,18 +116,13 @@ impl FluvioAdmin {
     /// ```
     #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        use fluvio_protocol::api::Request;
-
         let connector = DomainConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
         let inner_client = config.connect().await?;
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
-        if let Some(watch_version) = versions.lookup_version(
-            ObjectApiWatchRequest::API_KEY,
-            ObjectApiWatchRequest::DEFAULT_API_VERSION,
-        ) {
+        if let Some(watch_version) = versions.lookup_version::<ObjectApiWatchRequest>() {
             let socket = MultiplexerSocket::shared(socket);
             let metadata = MetadataStores::start(socket.clone(), watch_version).await?;
             let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
@@ -199,26 +199,27 @@ impl FluvioAdmin {
 
     /// return all instance of this spec
     #[instrument(skip(self))]
-    pub async fn all<S>(&self) -> Result<Vec<S::ListType>, FluvioError>
+    pub async fn all<S>(&self) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
-        <S as AdminSpec>::ListFilter: From<std::string::String>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+        S::Status: Encoder + Decoder + Debug,
     {
         self.list_with_params::<S, String>(vec![], false).await
     }
 
     /// return all instance of this spec by filter
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<S::ListType>, FluvioError>
+    pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
-        S::ListFilter: From<F>,
+        ListFilter: From<F>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+        S::Status: Encoder + Decoder + Debug,
     {
         self.list_with_params(filters, false).await
     }
@@ -228,18 +229,20 @@ impl FluvioAdmin {
         &self,
         filters: Vec<F>,
         summary: bool,
-    ) -> Result<Vec<S::ListType>, FluvioError>
+    ) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: AdminSpec,
-        S::ListFilter: From<F>,
+        ListFilter: From<F>,
         ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
+        S::Status: Encoder + Decoder + Debug,
     {
         use std::io::Error as IoError;
         use std::io::ErrorKind;
 
-        let list_request = ListRequest::new(filters.into_iter().map(Into::into).collect(), summary);
+        let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
+        let list_request = ListRequest::new(filter_list, summary);
 
         let list_request: ObjectApiListRequest = list_request.into();
         let response = self.send_receive(list_request).await?;
@@ -249,8 +252,45 @@ impl FluvioAdmin {
             .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
             .map(|out: ListResponse<S>| out.inner())
     }
+
+    /// Watch stream of changes for metadata
+    /// There is caching, this is just pass through
+    #[instrument(skip(self))]
+    pub async fn watch<S>(
+        &self,
+    ) -> Result<impl Stream<Item = Result<WatchResponse<S>, IoError>>, FluvioError>
+    where
+        S: AdminSpec,
+        ObjectApiWatchRequest: From<WatchRequest<S>>,
+        S::Status: Encoder + Decoder,
+        WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
+        <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
+    {
+        // only summary for watch
+        let watch_request: WatchRequest<S> = WatchRequest::summary();
+
+        let watch_req: ObjectApiWatchRequest = watch_request.into();
+        let req_msg = RequestMessage::new_request(watch_req);
+        debug!(api_version = req_msg.header.api_version(), obj = %S::LABEL, "create watch stream");
+        let inner_socket = self.socket.new_socket();
+        let stream = inner_socket.create_stream(req_msg, 10).await?;
+        Ok(stream.map(|respons_result| match respons_result {
+            Ok(response) => {
+                let watch_response: Result<WatchResponse<S>, IoError> =
+                    response.try_into().map_err(|err| {
+                        IoError::new(ErrorKind::Other, format!("can't convert: {}", err))
+                    });
+                watch_response
+            }
+            Err(err) => Err(IoError::new(
+                ErrorKind::Other,
+                format!("socket error {}", err),
+            )),
+        }))
+    }
 }
 
+/// API for streaming cached metadata
 #[cfg(feature = "unstable")]
 mod unstable {
     use super::*;

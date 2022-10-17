@@ -116,17 +116,6 @@ impl SmartModuleSpec {
             .map(|meta| meta.package.version.to_string())
             .unwrap_or_else(|| "".to_owned())
     }
-
-    /// get summary version
-    pub fn summary(&self) -> Self {
-        Self {
-            meta: self.meta.clone(),
-            summary: Some(SmartModuleWasmSummary {
-                wasm_length: self.wasm.payload.len() as u32,
-            }),
-            wasm: SmartModuleWasm::default(),
-        }
-    }
 }
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]

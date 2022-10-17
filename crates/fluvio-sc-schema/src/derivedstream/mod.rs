@@ -5,12 +5,10 @@ mod convert {
     use crate::AdminSpec;
     use crate::CreatableAdminSpec;
     use crate::DeletableAdminSpec;
-    use crate::NameFilter;
     use crate::objects::CreateFrom;
     use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
-    use crate::objects::Metadata;
     use crate::objects::ObjectFrom;
     use crate::objects::ObjectTryFrom;
     use crate::objects::WatchRequest;
@@ -18,11 +16,7 @@ mod convert {
 
     use super::DerivedStreamSpec;
 
-    impl AdminSpec for DerivedStreamSpec {
-        type ListFilter = NameFilter;
-        type WatchResponseType = Self;
-        type ListType = Metadata<Self>;
-    }
+    impl AdminSpec for DerivedStreamSpec {}
 
     impl CreatableAdminSpec for DerivedStreamSpec {
         const CREATE_TYPE: u8 = 10;

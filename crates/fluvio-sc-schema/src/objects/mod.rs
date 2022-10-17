@@ -9,7 +9,6 @@ pub use list::*;
 pub use watch::*;
 pub use metadata::*;
 
-pub use crate::NameFilter;
 pub(crate) use object_macro::*;
 pub(crate) use delete_macro::*;
 
@@ -27,6 +26,7 @@ mod metadata {
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
     use fluvio_controlplane_metadata::core::{MetadataContext, MetadataItem};
 
+    use crate::AdminSpec;
     use crate::core::Spec;
 
     #[derive(Encoder, Decoder, Default, Clone, Debug)]
@@ -57,6 +57,20 @@ mod metadata {
                 name: meta.key.to_string(),
                 spec: meta.spec,
                 status: meta.status,
+            }
+        }
+    }
+
+    impl<S> Metadata<S>
+    where
+        S: AdminSpec + Encoder + Decoder,
+        S::Status: Encoder + Decoder,
+    {
+        pub fn summary(self) -> Self {
+            Self {
+                name: self.name,
+                spec: self.spec.summary(),
+                status: self.status,
             }
         }
     }

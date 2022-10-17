@@ -284,7 +284,6 @@ where
     > {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
-        use fluvio_protocol::api::Request;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
@@ -308,10 +307,7 @@ where
         // add wasm module if SPU supports it
         let stream_fetch_version = serial_socket
             .versions()
-            .lookup_version(
-                DefaultStreamFetchRequest::API_KEY,
-                DefaultStreamFetchRequest::DEFAULT_API_VERSION,
-            )
+            .lookup_version::<DefaultStreamFetchRequest>()
             .unwrap_or((WASM_MODULE_API - 1) as i16);
         debug!(%stream_fetch_version, "stream_fetch_version");
 
