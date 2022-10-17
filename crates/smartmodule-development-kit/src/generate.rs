@@ -1,8 +1,7 @@
-use std::{path::PathBuf, path::Path, str::FromStr};
-use std::fs;
+use std::{path::PathBuf, str::FromStr};
 
 use anyhow::{Error, Result, anyhow};
-use clap::{Parser, ValueEnum, AppSettings};
+use clap::{Parser, ValueEnum};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
 use tempfile::TempDir;
@@ -17,7 +16,6 @@ const FLUVIO_SMARTMODULE_REPO: &str = "https://github.com/infinyon/fluvio.git";
 
 /// Generate new SmartModule project
 #[derive(Debug, Parser)]
-#[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 pub struct GenerateOpt {
     /// SmartModule Project Name
     name: String,
@@ -26,6 +24,10 @@ pub struct GenerateOpt {
     /// Default to directory with project name, created in current directory
     #[clap(long, env = "SMDK_DESTINATION", value_name = "PATH")]
     destination: Option<PathBuf>,
+
+    /// Disable interactive prompt. Take all values from CLI flags. Fail if a value is missing.
+    #[clap(long, action)]
+    silent: bool,
 
     /// URL to git repo containing templates for generating SmartModule projects.
     /// Using this option is discouraged. The default value is recommended.
@@ -146,7 +148,7 @@ pub struct GenerateOpt {
     no_params: bool,
 
     /// Using this option will always choose the Fluvio repo as source for templates and dependencies
-    #[clap(long, action, env, conflicts_with_all = 
+    #[clap(long, action, env, conflicts_with_all =
         &["TemplateSourceGit", "TemplateSourcePath",
         "SmCrateSourceGit", "SmCrateSourceCratesIo", "SmCrateSourcePath"],)]
     develop: bool,
@@ -240,9 +242,9 @@ impl GenerateOpt {
             name: Some(self.name.clone()),
             list_favorites: false,
             force: false,
-            verbose: true,
+            verbose: !self.silent,
             template_values_file: None,
-            silent: false,
+            silent: self.silent,
             config: None,
             vcs: None,
             lib: false,
@@ -441,6 +443,7 @@ enum SmdkTemplateSource {
     },
     LocalPath(PathBuf),
 }
+
 #[derive(Debug, Default, Clone)]
 struct SmdkTemplateUserValues {
     values: Vec<SmdkTemplateValue>,
