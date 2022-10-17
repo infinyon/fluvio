@@ -7,8 +7,7 @@ mod infinyon_tok;
 
 use const_format::concatcp;
 
-pub use hubaccess::HubAccess;
-pub use hubaccess::{MsgActionToken, MsgHubIdReq};
+pub use hubaccess::*;
 pub mod keymgmt;
 pub use package::*;
 pub use packagemeta::*;
