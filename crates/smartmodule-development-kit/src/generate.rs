@@ -26,31 +26,34 @@ pub struct GenerateOpt {
     destination: Option<PathBuf>,
 
     /// Disable interactive prompt. Take all values from CLI flags. Fail if a value is missing.
-    #[clap(long, action)]
+    #[clap(long, action, hide_short_help = true)]
     silent: bool,
 
     /// URL to git repo containing templates for generating SmartModule projects.
     /// Using this option is discouraged. The default value is recommended.
     #[clap(
         long,
+        hide_short_help = true,
         group("TemplateSourceGit"),
         conflicts_with = "TemplateSourcePath",
         value_name = "GIT_URL"
     )]
     template_repo: Option<String>,
 
-    /// An optional git branch to use with --template-repo
+    /// An optional git branch to use with `--template-repo`
     #[clap(
         long,
+        hide_short_help = true,
         group("TemplateGit"),
         requires = "TemplateSourceGit",
         value_name = "BRANCH"
     )]
     template_repo_branch: Option<String>,
 
-    /// An optional git tag to use with --template-repo
+    /// An optional git tag to use with `--template-repo`
     #[clap(
         long,
+        hide_short_help = true,
         group("TemplateGit"),
         requires = "TemplateSourceGit",
         value_name = "TAG"
@@ -61,43 +64,48 @@ pub struct GenerateOpt {
     /// Using this option is discouraged. The default value is recommended.
     #[clap(
         long,
+        hide_short_help = true,
         group("TemplateSourcePath"),
         conflicts_with = "TemplateSourceGit",
         value_name = "PATH"
     )]
     template_path: Option<String>,
 
-    /// URL of git repo to include in generated Cargo.toml. Repo used for fluvio-smartmodule dependency.
+    /// URL of git repo to include in generated Cargo.toml. Repo used for `fluvio-smartmodule` dependency.
     /// Using this option is discouraged. The default value is recommended.
     #[clap(
         long,
+        hide_short_help = true,
         group("SmCrateSourceGit"),
         conflicts_with_all = &["SmCrateSourcePath", "SmCrateSourceCratesIo"],
         value_name = "GIT_URL"
     )]
     sm_crate_repo: Option<String>,
 
-    /// An optional git branch to use with --sm-crate-repo
+    /// An optional git branch to use with `--sm-crate-repo`
     #[clap(
         long,
+        hide_short_help = true,
         group("SmGit"),
         requires = "SmCrateSourceGit",
         value_name = "BRANCH"
     )]
     sm_repo_branch: Option<String>,
 
-    /// An optional git tag to use with --sm-crate-repo
+    /// An optional git tag to use with `--sm-crate-repo`
     #[clap(
         long,
+        hide_short_help = true,
         group("SmGit"),
         requires = "SmCrateSourceGit",
         value_name = "TAG"
     )]
     sm_repo_tag: Option<String>,
 
-    /// An optional git rev to use with --sm-crate-repo
+    /// An optional git rev to use with `--sm-crate-repo`
     #[clap(
         long,
+        hide_short_help = true,
         group("SmGit"),
         requires = "SmCrateSourceGit",
         value_name = "GIT_SHA"
@@ -108,16 +116,18 @@ pub struct GenerateOpt {
     /// Using this option is discouraged. The default value is recommended.
     #[clap(
         long,
+        hide_short_help = true,
         group("SmCrateSourcePath"),
         conflicts_with_all = &["SmCrateSourceGit", "SmCrateSourceCratesIo"],
         value_name = "PATH"
     )]
     sm_crate_path: Option<String>,
 
-    /// Public version of fluvio-smartmodule from crates.io. Defaults to latest.
+    /// Public version of `fluvio-smartmodule` from crates.io. Defaults to latest.
     /// Using this option is discouraged. The default value is recommended.
     #[clap(
         long,
+        hide_short_help = true,
         group("SmCrateSourceCratesIo"),
         conflicts_with_all = &["SmCrateSourceGit", "SmCrateSourcePath"],
         value_name = "X.Y.Z"
@@ -133,29 +143,39 @@ pub struct GenerateOpt {
     /// Skip prompt if value given.
     #[clap(long, group("SmartModuleInit"), action)]
     with_init: bool,
-    /// No SmartModule state initialization function in generated SmartModule project.
-    /// Skip prompt if value given.
-    #[clap(long, group("SmartModuleInit"), action)]
-    no_init: bool,
-
     /// Include SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
     #[clap(long, group("SmartModuleParams"), action)]
     with_params: bool,
+
+    /// No SmartModule state initialization function in generated SmartModule project.
+    /// Skip prompt if value given.
+    #[clap(long, group("SmartModuleInit"), action)]
+    no_init: bool,
     /// No SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
     #[clap(long, group("SmartModuleParams"), action)]
     no_params: bool,
 
     /// Using this option will always choose the Fluvio repo as source for templates and dependencies
-    #[clap(long, action, env, conflicts_with_all =
+    #[clap(long, action, env, hide_short_help = true, conflicts_with_all =
         &["TemplateSourceGit", "TemplateSourcePath",
         "SmCrateSourceGit", "SmCrateSourceCratesIo", "SmCrateSourcePath"],)]
     develop: bool,
+
+    /// Show all developer options (alias for long help, `--help`)
+    #[clap(long, action)]
+    dev_help: bool,
 }
 
 impl GenerateOpt {
     pub(crate) fn process(self) -> Result<()> {
+        if self.dev_help {
+            use clap::CommandFactory;
+            GenerateOpt::command().print_long_help()?;
+            return Ok(());
+        }
+
         println!("Generating new SmartModule project: {}", self.name);
 
         let init_fn = match (self.with_init, self.no_init) {
