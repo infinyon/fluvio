@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use clap::Parser;
 use anyhow::Result;
 
@@ -6,8 +7,7 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio::Fluvio;
 use fluvio_future::task::run_block_on;
-
-use crate::wasm::WasmOption;
+use crate::package::{PackageInfo, PackageOption};
 
 /// Load SmartModule into Fluvio cluster
 #[derive(Debug, Parser)]
@@ -16,7 +16,11 @@ pub struct LoadOpt {
     name: Option<String>,
 
     #[clap(flatten)]
-    wasm: WasmOption,
+    package: PackageOption,
+
+    /// Optional wasm file path
+    #[clap(long)]
+    wasm_file: Option<PathBuf>,
 
     #[clap(flatten)]
     target: ClusterTarget,
@@ -27,7 +31,13 @@ impl LoadOpt {
         println!("Using SmartModule package: {}", pkg_metadata.package.name);
 
         let sm_id = pkg_metadata.package.name.clone(); // pass anything, this should be overriden by SC
-        let raw_bytes = self.wasm.load_raw_wasm_file()?;
+        let raw_bytes = match &self.wasm_file {
+            Some(wasm_file) => crate::read_bytes_from_path(wasm_file)?,
+            None => PackageInfo::from_options(&self.package)
+                .map_err(|e| anyhow::anyhow!(e))?
+                .read_bytes()?,
+        };
+
         let spec = SmartModuleSpec {
             meta: Some(pkg_metadata),
             wasm: SmartModuleWasm::from_raw_wasm_bytes(&raw_bytes)?,
