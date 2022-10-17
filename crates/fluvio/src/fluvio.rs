@@ -83,8 +83,6 @@ impl Fluvio {
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
-        use fluvio_protocol::api::Request;
-
         let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
         let inner_client = config.connect().await?;
         debug!("connected to cluster");
@@ -92,10 +90,7 @@ impl Fluvio {
         let (socket, config, versions) = inner_client.split();
 
         // get version for watch
-        if let Some(watch_version) = versions.lookup_version(
-            ObjectApiWatchRequest::API_KEY,
-            ObjectApiWatchRequest::DEFAULT_API_VERSION,
-        ) {
+        if let Some(watch_version) = versions.lookup_version::<ObjectApiWatchRequest>() {
             debug!(platform = %versions.platform_version(),"checking platform version");
             check_platform_compatible(versions.platform_version())?;
 

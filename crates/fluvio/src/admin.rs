@@ -116,18 +116,13 @@ impl FluvioAdmin {
     /// ```
     #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        use fluvio_protocol::api::Request;
-
         let connector = DomainConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
         let inner_client = config.connect().await?;
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
-        if let Some(watch_version) = versions.lookup_version(
-            ObjectApiWatchRequest::API_KEY,
-            ObjectApiWatchRequest::DEFAULT_API_VERSION,
-        ) {
+        if let Some(watch_version) = versions.lookup_version::<ObjectApiWatchRequest>() {
             let socket = MultiplexerSocket::shared(socket);
             let metadata = MetadataStores::start(socket.clone(), watch_version).await?;
             let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
