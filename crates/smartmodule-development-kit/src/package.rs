@@ -1,12 +1,13 @@
+use std::ffi::OsString;
+use std::fs::read_dir;
 use std::fmt::Debug;
-use clap::Parser;
 use std::{env};
 use std::path::{Path, PathBuf};
+
+use clap::Parser;
 use anyhow::Result;
 use cargo_metadata::{CargoOpt, MetadataCommand};
 use convert_case::{Case, Casing};
-use std::ffi::OsString;
-use std::fs::read_dir;
 
 #[derive(Debug, Parser)]
 pub struct PackageOption {
