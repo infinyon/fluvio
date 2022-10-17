@@ -1,4 +1,5 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{path::PathBuf, path::Path, str::FromStr};
+use std::fs;
 
 use anyhow::{Error, Result, anyhow};
 use clap::{Parser, ValueEnum, AppSettings};
@@ -25,10 +26,6 @@ pub struct GenerateOpt {
     /// Default to directory with project name, created in current directory
     #[clap(long, env = "SMDK_DESTINATION", value_name = "PATH")]
     destination: Option<PathBuf>,
-
-    /// Allow overwrite of existing files in the project destination.
-    #[clap(long, action, env = "SMDK_OVERWRITE")]
-    overwrite: bool,
 
     /// URL to git repo containing templates for generating SmartModule projects.
     /// Using this option is discouraged. The default value is recommended.
@@ -215,7 +212,11 @@ impl GenerateOpt {
 
         // cargo generate template source
         // Check user git, user path, develop, then default to the built-in
-        let SmdkTemplate { template_path, .. } = if let Some(git_url) = self.template_repo {
+        let SmdkTemplate {
+            template_path,
+            _temp_dir,
+            ..
+        } = if let Some(git_url) = self.template_repo {
             if let Some(branch) = self.template_repo_branch {
                 SmdkTemplate::source(SmdkTemplateSource::GitBranch {
                     url: git_url,
@@ -252,7 +253,7 @@ impl GenerateOpt {
             destination: self.destination,
             force_git_init: false,
             allow_commands: false,
-            overwrite: self.overwrite,
+            overwrite: false,
             other_args: None,
         };
 
