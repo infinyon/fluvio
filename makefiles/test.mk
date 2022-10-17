@@ -185,9 +185,12 @@ endif
 cli-platform-cross-version-test:
 	bats -t ./tests/cli/cli-platform-cross-version.bats
 
-cli-smoke:
-	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
+cli-fluvio-smoke:
+	bats $(shell ls -1 ./tests/cli/fluvio_smoke_tests/*.bats | sort -R)
 	bats ./tests/cli/smoke_tests/non-concurrent/cluster-delete.bats
+
+cli-smdk-smoke:
+	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
 
 cli-basic-test:
 	bats ./tests/cli/smoke_tests/e2e-basic.bats

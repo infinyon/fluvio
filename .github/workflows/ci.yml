@@ -874,6 +874,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
+        cli: [fluvio, smdk]
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
@@ -933,9 +934,14 @@ jobs:
       - name: Build smartmodules for E2E test
         run: |
           make build_smartmodules
-      - name: Run CLI smoke tests
+      - name: Run Fluvio CLI smoke tests
+        if: matrix.cli == "fluvio"
         timeout-minutes: 5
-        run: make FLUVIO_BIN=~/bin/fluvio SMDK_BIN=~/bin/smdk cli-smoke
+        run: make FLUVIO_BIN=~/bin/fluvio cli-fluvio-smoke
+      - name: Run SMDK smoke tests
+        timeout-minutes: 10
+        if: matrix.cli == "smdk"
+        run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
