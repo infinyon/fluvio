@@ -14,7 +14,7 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 setup_file() {
     PROJECT_NAME_PREFIX="$(random_string)"
     export PROJECT_NAME_PREFIX
-    TEST_DIR="$(mktemp -d -t smdk-test)"
+    TEST_DIR="$(mktemp -d -t smdk-test.XXXXX)"
     export TEST_DIR
 }
 
