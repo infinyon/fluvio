@@ -15,7 +15,7 @@ doc = false
 
 [dependencies]
 tracing = "0.1.19"
-clap = { version = "4.0.10", features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
+clap = { version = "4.0.10", features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 dirs = "4.0.0"
 thiserror = "1.0.20"
 toml = { version = "0.5.9" }
