@@ -24,6 +24,8 @@ pub struct PackageOption {
 pub struct PackageInfo {
     // The requested package/project name
     pub package: String,
+    /// The requested package/project root folder
+    pub package_path: PathBuf,
     // Inferred binary output path
     pub output_path: PathBuf,
 }
@@ -74,7 +76,7 @@ impl PackageInfo {
                     ));
                 }
             }
-            root_package.name.clone()
+            root_package.clone()
         } else if let Some(package_name) = &options.package_name {
             // try to find the requested package in the current workspace
             let project = metadata
@@ -87,7 +89,6 @@ impl PackageInfo {
                     package_name,
                     current_project.display()
                 ))?
-                .name
         } else {
             return Err(format!("Could not find a default cargo package in {}. Try the `-p` option to specify a project/package.", current_project.display()));
         };
@@ -98,11 +99,19 @@ impl PackageInfo {
             metadata.target_directory,
             crate::build::BUILD_TARGET,
             options.release,
-            package.to_case(Case::Snake)
+            package.name.to_case(Case::Snake)
         ));
 
+        // find the path of the parent folder for this Cargo.toml
+        let package_path: PathBuf = package
+            .manifest_path
+            .parent()
+            .ok_or(format!("Could not get parent folder for {}", package.manifest_path).to_string())?
+            .into();
+
         Ok(PackageInfo {
-            package,
+            package: package.name,
+            package_path,
             output_path,
         })
     }

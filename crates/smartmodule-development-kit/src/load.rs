@@ -27,15 +27,20 @@ pub struct LoadOpt {
 }
 impl LoadOpt {
     pub(crate) fn process(&self) -> Result<()> {
-        let pkg_metadata = SmartModuleMetadata::from_toml("./SmartModule.toml")?;
+        // resolve the current cargo project
+        let package_info = PackageInfo::from_options(&self.package)
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        // load ./SmartModule.toml relative to the project root
+        let mut sm_toml = package_info.package_path.clone();
+        sm_toml.push("./SmartModule.toml");
+        let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml)?;
         println!("Using SmartModule package: {}", pkg_metadata.package.name);
 
         let sm_id = pkg_metadata.package.name.clone(); // pass anything, this should be overriden by SC
         let raw_bytes = match &self.wasm_file {
             Some(wasm_file) => crate::read_bytes_from_path(wasm_file)?,
-            None => PackageInfo::from_options(&self.package)
-                .map_err(|e| anyhow::anyhow!(e))?
-                .read_bytes()?,
+            None => package_info.read_bytes()?,
         };
 
         let spec = SmartModuleSpec {
