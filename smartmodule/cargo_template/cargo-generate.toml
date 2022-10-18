@@ -1,6 +1,5 @@
 [placeholders.fluvio-smartmodule-cargo-dependency]
 type = "string"
-default = "\">0.3.0\""
 prompt = "Value of `fluvio-smartmodule` dependency in Cargo.toml"
 
 [placeholders.smartmodule-type]
