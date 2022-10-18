@@ -25,7 +25,6 @@ setup_file() {
     SM_TYPE=filter
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -41,7 +40,6 @@ setup_file() {
     SM_TYPE=map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -57,7 +55,6 @@ setup_file() {
     SM_TYPE=array-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -73,7 +70,6 @@ setup_file() {
     SM_TYPE=filter-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -89,94 +85,6 @@ setup_file() {
     SM_TYPE=aggregate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-### Using crates.io dependency for `fluvio-smartmodule` with init fn
-
-@test "Generate and build filter - default with init" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init
-    SM_TYPE=filter
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build map - default with init" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init
-    SM_TYPE=map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build array-map - default with init" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init
-    SM_TYPE=array-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build filter-map - default with init" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init
-    SM_TYPE=filter-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build aggregate - default with init" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init
-    SM_TYPE=aggregate
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -194,7 +102,6 @@ setup_file() {
     SM_TYPE=filter
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -210,7 +117,6 @@ setup_file() {
     SM_TYPE=map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -226,7 +132,6 @@ setup_file() {
     SM_TYPE=array-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -242,7 +147,6 @@ setup_file() {
     SM_TYPE=filter-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -258,94 +162,6 @@ setup_file() {
     SM_TYPE=aggregate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-### Using crates.io dependency for `fluvio-smartmodule` with init fn and params
-
-@test "Generate and build filter - default with init + params" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init-params
-    SM_TYPE=filter
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build map - default with init + params" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init-params
-    SM_TYPE=map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build array-map - default with init + params" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init-params
-    SM_TYPE=array-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build filter-map - default with init + params" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init-params
-    SM_TYPE=filter-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build aggregate - default with init + params" {
-    skip "Re-enable after release for Updates to init not available in fluvio-smartmodule 0.2.5"
-    LABEL=default-init-params
-    SM_TYPE=aggregate
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -364,7 +180,6 @@ setup_file() {
     SM_TYPE=filter
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -382,7 +197,6 @@ setup_file() {
     SM_TYPE=map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -400,7 +214,6 @@ setup_file() {
     SM_TYPE=array-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -418,7 +231,6 @@ setup_file() {
     SM_TYPE=filter-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -436,99 +248,6 @@ setup_file() {
     SM_TYPE=aggregate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-### Using git dependency (develop) for `fluvio-smartmodule` with init fn
-
-@test "Generate and build filter - develop with init" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init
-    SM_TYPE=filter
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build map - develop with init" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init
-    SM_TYPE=map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build array-map - develop with init" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init
-    SM_TYPE=array-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build filter-map - develop with init" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init
-    SM_TYPE=filter-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --no-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build aggregate - develop with init" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init
-    SM_TYPE=aggregate
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
         --no-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -548,7 +267,6 @@ setup_file() {
     SM_TYPE=filter
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -566,7 +284,6 @@ setup_file() {
     SM_TYPE=map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -584,7 +301,6 @@ setup_file() {
     SM_TYPE=array-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -602,7 +318,6 @@ setup_file() {
     SM_TYPE=filter-map
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \
@@ -620,99 +335,6 @@ setup_file() {
     SM_TYPE=aggregate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-### Using git dependency (develop) for `fluvio-smartmodule` with init fn and params
-
-@test "Generate and build filter - develop with init + params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init-params
-    SM_TYPE=filter
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --no-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build map - develop with init + params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init-params
-    SM_TYPE=map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build array-map - develop with init + params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init-params
-    SM_TYPE=array-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build filter-map - develop with init + params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init-params
-    SM_TYPE=filter-map
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
-        --with-params \
-        --sm-type $SM_TYPE \
-        --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-}
-
-@test "Generate and build aggregate - develop with init + params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-init-params
-    SM_TYPE=aggregate
-    cd $TEST_DIR
-    run $SMDK_BIN generate \
-        --with-init \
         --with-params \
         --sm-type $SM_TYPE \
         --silent \

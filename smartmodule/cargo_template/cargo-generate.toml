@@ -9,11 +9,6 @@ prompt = "Which type of SmartModule would you like?"
 choices = ["filter", "map", "filter-map", "array-map", "aggregate"]
 default = "filter"
 
-[placeholders.smartmodule-init]
-type = "bool"
-prompt = "Want to use SmartModule init?"
-default = false
-
 [placeholders.smartmodule-params]
 type = "bool"
 prompt = "Will your SmartModule use input parameters?"

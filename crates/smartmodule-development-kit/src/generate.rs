@@ -139,19 +139,11 @@ pub struct GenerateOpt {
     #[clap(long, value_enum, value_name = "TYPE")]
     sm_type: Option<SmartModuleType>,
 
-    /// Include SmartModule state initialization function in generated SmartModule project.
-    /// Skip prompt if value given.
-    #[clap(long, group("SmartModuleInit"), action)]
-    with_init: bool,
     /// Include SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
     #[clap(long, group("SmartModuleParams"), action)]
     with_params: bool,
 
-    /// No SmartModule state initialization function in generated SmartModule project.
-    /// Skip prompt if value given.
-    #[clap(long, group("SmartModuleInit"), action)]
-    no_init: bool,
     /// No SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
     #[clap(long, group("SmartModuleParams"), action)]
@@ -177,12 +169,6 @@ impl GenerateOpt {
         }
 
         println!("Generating new SmartModule project: {}", self.name);
-
-        let init_fn = match (self.with_init, self.no_init) {
-            (true, _) => Some(true),
-            (_, true) => Some(false),
-            _ => None,
-        };
 
         let sm_params = match (self.with_params, self.no_params) {
             (true, false) => Some(true),
@@ -228,7 +214,6 @@ impl GenerateOpt {
         let mut maybe_user_input = SmdkTemplateUserValues::new();
         maybe_user_input
             .with_smart_module_type(self.sm_type)
-            .with_init_fn(init_fn)
             .with_smart_module_params(sm_params)
             .with_smart_module_cargo_dependency(Some(sm_dep_source));
 
@@ -287,7 +272,6 @@ impl GenerateOpt {
 
 #[derive(Debug, Clone, PartialEq)]
 enum SmdkTemplateValue {
-    AddInitFn(bool),
     UseParams(bool),
     SmCargoDependency(CargoSmDependSource),
     SmType(SmartModuleType),
@@ -296,9 +280,6 @@ enum SmdkTemplateValue {
 impl std::fmt::Display for SmdkTemplateValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SmdkTemplateValue::AddInitFn(init) => {
-                write!(f, "smartmodule-init={}", init)
-            }
             SmdkTemplateValue::SmCargoDependency(dependency) => {
                 write!(f, "fluvio-smartmodule-cargo-dependency={}", dependency)
             }
@@ -493,14 +474,6 @@ impl SmdkTemplateUserValues {
         self
     }
 
-    fn with_init_fn(&mut self, request: Option<bool>) -> &mut Self {
-        if let Some(i) = request {
-            debug!("User provided init fn request: {i:#?}");
-            self.values.push(SmdkTemplateValue::AddInitFn(i));
-        }
-        self
-    }
-
     fn with_smart_module_params(&mut self, request: Option<bool>) -> &mut Self {
         if let Some(i) = request {
             debug!("User provided SmartModule params request: {i:#?}");
@@ -645,7 +618,6 @@ mod test {
     #[test]
     fn test_generate_user_values() {
         let test_template_values = vec![
-            SmdkTemplateValue::AddInitFn(true),
             SmdkTemplateValue::UseParams(true),
             SmdkTemplateValue::SmCargoDependency(CargoSmDependSource::CratesIo(
                 "0.1.0".to_string(),
@@ -655,12 +627,6 @@ mod test {
 
         for value in test_template_values {
             match value {
-                SmdkTemplateValue::AddInitFn(_) => {
-                    assert_eq!(
-                        &SmdkTemplateValue::AddInitFn(true).to_string(),
-                        "smartmodule-init=true"
-                    );
-                }
                 SmdkTemplateValue::UseParams(_) => {
                     assert_eq!(
                         &SmdkTemplateValue::UseParams(true).to_string(),
@@ -694,7 +660,6 @@ mod test {
         let test_version_number = "test-version-value".to_string();
         values
             .with_smart_module_type(Some(SmartModuleType::Aggregate))
-            .with_init_fn(Some(true))
             .with_smart_module_params(Some(true))
             .with_smart_module_cargo_dependency(Some(CargoSmDependSource::CratesIo(
                 test_version_number.clone(),
@@ -704,10 +669,6 @@ mod test {
 
         for v in values_vec {
             match v {
-                SmdkTemplateValue::AddInitFn(_) => {
-                    assert_eq!(v, SmdkTemplateValue::AddInitFn(true));
-                }
-
                 SmdkTemplateValue::UseParams(_) => {
                     assert_eq!(v, SmdkTemplateValue::UseParams(true));
                 }
