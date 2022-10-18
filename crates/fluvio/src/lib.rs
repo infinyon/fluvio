@@ -207,6 +207,35 @@ pub async fn consumer<S: Into<String>>(
     Ok(consumer)
 }
 
+#[cfg(feature = "otel-metrics")]
+pub fn init_open_telemetry() {
+    use std::time::Duration;
+    use opentelemetry::KeyValue;
+    use opentelemetry::sdk::Resource;
+    use opentelemetry::global;
+
+    let resource_attributes = [
+        KeyValue::new("service.name", "client"),
+        KeyValue::new("service.namespace", "fluvio"),
+    ];
+    let resource = Resource::new(resource_attributes);
+
+    let pusher = opentelemetry_otlp::new_pipeline()
+        .metrics(
+            opentelemetry::sdk::metrics::selectors::simple::inexpensive(),
+            opentelemetry::sdk::export::metrics::aggregation::cumulative_temporality_selector(),
+            opentelemetry::runtime::AsyncStd,
+        )
+        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
+        .with_period(Duration::from_secs(1))
+        .with_timeout(Duration::from_secs(10))
+        .with_resource(resource)
+        .build()
+        .unwrap();
+
+    global::set_meter_provider(pusher);
+}
+
 /// re-export metadata from sc-api
 pub mod metadata {
 
