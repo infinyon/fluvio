@@ -1,6 +1,6 @@
 [placeholders.fluvio-smartmodule-cargo-dependency]
 type = "string"
-default = "\"0.2.5\""
+default = "\">0.3.0\""
 prompt = "Value of `fluvio-smartmodule` dependency in Cargo.toml"
 
 [placeholders.smartmodule-type]
@@ -11,5 +11,5 @@ default = "filter"
 
 [placeholders.smartmodule-params]
 type = "bool"
-prompt = "Will your SmartModule use input parameters?"
+prompt = "Will your SmartModule use init parameters?"
 default = false

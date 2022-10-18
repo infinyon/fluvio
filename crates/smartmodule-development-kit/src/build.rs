@@ -1,5 +1,6 @@
 use std::process::{Command, Stdio};
 use std::fmt::Debug;
+use std::str;
 
 use anyhow::{Error, Result, anyhow};
 use clap::Parser;
@@ -42,7 +43,9 @@ impl BuildOpt {
         if status.success() {
             Ok(())
         } else {
-            Err(anyhow!("Build failed"))
+            let output = cargo.output()?;
+            let stderr = String::from_utf8(output.stderr)?;
+            Err(anyhow!(stderr))
         }
     }
 
