@@ -189,7 +189,7 @@ bump-fluvio-stable: VERSION=$(REPO_VERSION)
 bump-fluvio-stable: bump-fluvio
 
 bump-fluvio-latest: CHANNEL_TAG=latest
-bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
+bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(DEV_VERSION_TAG))
 bump-fluvio-latest: bump-fluvio
 
 update-public-installer-script-s3:
