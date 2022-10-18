@@ -1,23 +1,23 @@
-{% if smart-module-init %}
+{% if smartmodule-init %}
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError};
-{% if smart-module-type == "filter" %}
+{% if smartmodule-type == "filter" %}
 use once_cell::sync::OnceCell;
 use fluvio_smartmodule::eyre;
 {% endif %}
 {% endif %}
-{% if smart-module-type == "filter" %}
+{% if smartmodule-type == "filter" %}
 use fluvio_smartmodule::{smartmodule, Result, Record};
 
-#[smartmodule(filter{%if smart-module-params  %}, params{% endif %})]
-pub fn filter(record: &Record{%if smart-module-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<bool> {
+#[smartmodule(filter{%if smartmodule-params  %}, params{% endif %})]
+pub fn filter(record: &Record{%if smartmodule-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     Ok(string.contains('a'))
 }
-{% elsif smart-module-type == "map" %}
+{% elsif smartmodule-type == "map" %}
 use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
-#[smartmodule(map{%if smart-module-params  %}, params{% endif %})]
-pub fn map(record: &Record{%if smart-module-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<(Option<RecordData>, RecordData)> {
+#[smartmodule(map{%if smartmodule-params  %}, params{% endif %})]
+pub fn map(record: &Record{%if smartmodule-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<(Option<RecordData>, RecordData)> {
     let key = record.key.clone();
 
     let string = std::str::from_utf8(record.value.as_ref())?;
@@ -26,11 +26,11 @@ pub fn map(record: &Record{%if smart-module-params  %}, _params: &SmartModuleOpt
 
     Ok((key, value.into()))
 }
-{% elsif smart-module-type == "filter-map" %}
+{% elsif smartmodule-type == "filter-map" %}
 use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
 
-#[smartmodule(filter_map{% if smart-module-params  %}, params{% endif %})]
-pub fn filter_map(record: &Record{%if smart-module-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<Option<(Option<RecordData>, RecordData)>> {
+#[smartmodule(filter_map{% if smartmodule-params  %}, params{% endif %})]
+pub fn filter_map(record: &Record{%if smartmodule-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<Option<(Option<RecordData>, RecordData)>> {
     let key = record.key.clone();
     let string = String::from_utf8_lossy(record.value.as_ref()).to_string();
     let int: i32 = string.parse()?;
@@ -43,11 +43,11 @@ pub fn filter_map(record: &Record{%if smart-module-params  %}, _params: &SmartMo
     }
 }
 
-{% elsif smart-module-type == "array-map" %}
+{% elsif smartmodule-type == "array-map" %}
 use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
-#[smartmodule(array_map{% if smart-module-params  %}, params{% endif %})]
-pub fn array_map(record: &Record{% if smart-module-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<Vec<(Option<RecordData>, RecordData)>> {
+#[smartmodule(array_map{% if smartmodule-params  %}, params{% endif %})]
+pub fn array_map(record: &Record{% if smartmodule-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Deserialize a JSON array with any kind of values inside
     let array = serde_json::from_slice::<Vec<serde_json::Value>>(record.value.as_ref())?;
 
@@ -64,11 +64,11 @@ pub fn array_map(record: &Record{% if smart-module-params  %}, _params: &SmartMo
         .collect();
     Ok(kvs)
 }
-{% elsif smart-module-type == "aggregate" %}
+{% elsif smartmodule-type == "aggregate" %}
 use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
-#[smartmodule(aggregate{% if smart-module-params  %}, params{% endif %})]
-pub fn aggregate(accumulator: RecordData, current: &Record{% if smart-module-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<RecordData> {
+#[smartmodule(aggregate{% if smartmodule-params  %}, params{% endif %})]
+pub fn aggregate(accumulator: RecordData, current: &Record{% if smartmodule-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<RecordData> {
     // Parse the accumulator and current record as strings
     let accumulator_string = std::str::from_utf8(accumulator.as_ref())?;
     let current_string = std::str::from_utf8(current.value.as_ref())?;
@@ -82,12 +82,12 @@ pub fn aggregate(accumulator: RecordData, current: &Record{% if smart-module-par
     Ok(sum.to_string().into())
 }
 {% endif %}
-{% if smart-module-params  %}
+{% if smartmodule-params  %}
 #[derive(fluvio_smartmodule::SmartOpt, Default)]
 pub struct SmartModuleOpt;
 {% endif %}
-{% if smart-module-init %}
-{% if smart-module-type == "filter" %}
+{% if smartmodule-init %}
+{% if smartmodule-type == "filter" %}
 static CRITERIA: OnceCell<String> = OnceCell::new();
 
 #[smartmodule(init)]

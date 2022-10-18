@@ -3,18 +3,18 @@ type = "string"
 default = "\"0.2.5\""
 prompt = "Value of `fluvio-smartmodule` dependency in Cargo.toml"
 
-[placeholders.smart-module-type]
+[placeholders.smartmodule-type]
 type = "string"
 prompt = "Which type of SmartModule would you like?"
 choices = ["filter", "map", "filter-map", "array-map", "aggregate"]
 default = "filter"
 
-[placeholders.smart-module-init]
+[placeholders.smartmodule-init]
 type = "bool"
 prompt = "Want to use SmartModule init?"
 default = false
 
-[placeholders.smart-module-params]
+[placeholders.smartmodule-params]
 type = "bool"
 prompt = "Will your SmartModule use input parameters?"
 default = false

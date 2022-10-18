@@ -297,16 +297,16 @@ impl std::fmt::Display for SmdkTemplateValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SmdkTemplateValue::AddInitFn(init) => {
-                write!(f, "smart-module-init={}", init)
+                write!(f, "smartmodule-init={}", init)
             }
             SmdkTemplateValue::SmCargoDependency(dependency) => {
                 write!(f, "fluvio-smartmodule-cargo-dependency={}", dependency)
             }
             SmdkTemplateValue::SmType(sm_type) => {
-                write!(f, "smart-module-type={}", sm_type)
+                write!(f, "smartmodule-type={}", sm_type)
             }
             SmdkTemplateValue::UseParams(sm_params) => {
-                write!(f, "smart-module-params={}", sm_params)
+                write!(f, "smartmodule-params={}", sm_params)
             }
         }
     }
@@ -658,13 +658,13 @@ mod test {
                 SmdkTemplateValue::AddInitFn(_) => {
                     assert_eq!(
                         &SmdkTemplateValue::AddInitFn(true).to_string(),
-                        "smart-module-init=true"
+                        "smartmodule-init=true"
                     );
                 }
                 SmdkTemplateValue::UseParams(_) => {
                     assert_eq!(
                         &SmdkTemplateValue::UseParams(true).to_string(),
-                        "smart-module-params=true"
+                        "smartmodule-params=true"
                     );
                 }
 
@@ -681,7 +681,7 @@ mod test {
                 SmdkTemplateValue::SmType(_) => {
                     assert_eq!(
                         &SmdkTemplateValue::SmType(SmartModuleType::FilterMap).to_string(),
-                        "smart-module-type=filter-map"
+                        "smartmodule-type=filter-map"
                     );
                 }
             }
