@@ -16,332 +16,505 @@ setup_file() {
     export PROJECT_NAME_PREFIX
     TEST_DIR="$(mktemp -d -t smdk-test.XXXXX)"
     export TEST_DIR
+
+    SMDK_TEMPLATE_PATH_FLAG="--template-path $(pwd)/smartmodule"
+    export SMDK_TEMPLATE_PATH_FLAG
 }
 
 ### Using crates.io dependency for `fluvio-smartmodule`
 
-@test "Generate and build filter - default case" {
+@test "Generate and build filter - (stable fluvio-smartmodule / no params)" {
+    skip "Enable after next release"
     LABEL=default
-    SM_TYPE=filter
+    SMDK_SM_TYPE=filter
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build map - default case" {
+@test "Generate and build map - (stable fluvio-smartmodule / no params)" {
+    skip "Enable after next release"
     LABEL=default
-    SM_TYPE=map
+    SMDK_SM_TYPE=map
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build array-map - default case" {
+@test "Generate and build array-map - (stable fluvio-smartmodule / no params)" {
+    skip "Enable after next release"
     LABEL=default
-    SM_TYPE=array-map
+    SMDK_SM_TYPE=array-map
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build filter-map - default case" {
+@test "Generate and build filter-map - (stable fluvio-smartmodule / no params)" {
+    skip "Enable after next release"
     LABEL=default
-    SM_TYPE=filter-map
+    SMDK_SM_TYPE=filter-map
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build aggregate - default case" {
+@test "Generate and build aggregate - (stable fluvio-smartmodule / no params)" {
+    skip "Enable after next release"
     LABEL=default
-    SM_TYPE=aggregate
+    SMDK_SM_TYPE=aggregate
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
 ### Using crates.io dependency for `fluvio-smartmodule` with params
 
-@test "Generate and build filter - default with params" {
+@test "Generate and build filter - (stable fluvio-smartmodule / with params)" {
+    skip "Enable after next release"
     LABEL=default-params
-    SM_TYPE=filter
+    SMDK_SM_TYPE=filter
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build map - default with params" {
+@test "Generate and build map - (stable fluvio-smartmodule / with params)" {
+    skip "Enable after next release"
     LABEL=default-params
-    SM_TYPE=map
+    SMDK_SM_TYPE=map
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build array-map - default with params" {
+@test "Generate and build array-map - (stable fluvio-smartmodule / with params)" {
+    skip "Enable after next release"
     LABEL=default-params
-    SM_TYPE=array-map
+    SMDK_SM_TYPE=array-map
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build filter-map - default with params" {
+@test "Generate and build filter-map - (stable fluvio-smartmodule / with params)" {
+    skip "Enable after next release"
     LABEL=default-params
-    SM_TYPE=filter-map
+    SMDK_SM_TYPE=filter-map
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build aggregate - default with params" {
+@test "Generate and build aggregate - (stable fluvio-smartmodule / with params)" {
+    skip "Enable after next release"
     LABEL=default-params
-    SM_TYPE=aggregate
+    SMDK_SM_TYPE=aggregate
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-### Using git dependency (develop) for `fluvio-smartmodule`
+#### Using current repo path for `fluvio-smartmodule`
 
-@test "Generate and build filter - develop case" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop
-    SM_TYPE=filter
+@test "Generate and build filter - (current repo fluvio-smartmodule / no params)" {
+    LABEL=repo
+    SMDK_SM_TYPE=filter
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build map - develop case" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop
-    SM_TYPE=map
+@test "Generate and build map - (current repo fluvio-smartmodule / no params)" {
+    LABEL=repo
+    SMDK_SM_TYPE=map
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build array-map - develop case" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop
-    SM_TYPE=array-map
+@test "Generate and build array-map - (current repo fluvio-smartmodule / no params)" {
+    LABEL=repo
+    SMDK_SM_TYPE=array-map
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build filter-map - develop case" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop
-    SM_TYPE=filter-map
+@test "Generate and build filter-map - (current repo fluvio-smartmodule / no params)" {
+    LABEL=repo
+    SMDK_SM_TYPE=filter-map
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build aggregate - develop case" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop
-    SM_TYPE=aggregate
+@test "Generate and build aggregate - (current repo fluvio-smartmodule / no params)" {
+    LABEL=repo
+    SMDK_SM_TYPE=aggregate
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --no-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-### Using git dependency (develop) for `fluvio-smartmodule` with params
+### Using current repo path for `fluvio-smartmodule` with params
 
-@test "Generate and build filter - develop with params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-params
-    SM_TYPE=filter
+@test "Generate and build filter - (current repo fluvio-smartmodule / with params)" {
+    LABEL=repo-params
+    SMDK_SM_TYPE=filter
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build map - develop with params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-params
-    SM_TYPE=map
+@test "Generate and build map - (current repo fluvio-smartmodule / with params)" {
+    LABEL=repo-params
+    SMDK_SM_TYPE=map
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build array-map - develop with params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-params
-    SM_TYPE=array-map
+@test "Generate and build array-map - (current repo fluvio-smartmodule / with params)" {
+    LABEL=repo-params
+    SMDK_SM_TYPE=array-map
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build filter-map - develop with params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-params
-    SM_TYPE=filter-map
+@test "Generate and build filter-map - (current repo fluvio-smartmodule / with params)" {
+    LABEL=repo-params
+    SMDK_SM_TYPE=filter-map
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }
 
-@test "Generate and build aggregate - develop with params" {
-    skip "Re-enable after merge, due to rename of template variables"
-    LABEL=develop-params
-    SM_TYPE=aggregate
+@test "Generate and build aggregate - (current repo fluvio-smartmodule / with params)" {
+    LABEL=repo-params
+    SMDK_SM_TYPE=aggregate
+    PARAMS_FLAG=--with-params
+    SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Generate
     cd $TEST_DIR
     run $SMDK_BIN generate \
-        --with-params \
-        --sm-type $SM_TYPE \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        --sm-type $SMDK_SM_TYPE \
         --silent \
-        --develop \
-        $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+        $SM_PACKAGE_NAME
     assert_success
-    cd $LABEL-$SM_TYPE-$PROJECT_NAME_PREFIX
+
+    # Build
+    cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
 }

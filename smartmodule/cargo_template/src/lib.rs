@@ -1,5 +1,5 @@
 {% if smartmodule-params %}
-use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError};
+use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams{% if smartmodule-type == "filter" %}, SmartModuleInitError{% endif %}};
 {% if smartmodule-type == "filter" %}
 use once_cell::sync::OnceCell;
 use fluvio_smartmodule::eyre;
@@ -99,7 +99,7 @@ fn init(params: SmartModuleExtraParams) -> Result<()> {
 }
 {% else %}
 #[smartmodule(init)]
-fn init(params: SmartModuleExtraParams) -> Result<()> {
+fn init(_params: SmartModuleExtraParams) -> Result<()> {
     // You can refer to the example SmartModules in Fluvio's GitHub Repository
     // https://github.com/infinyon/fluvio/tree/master/smartmodule
     todo!("Provide initialization logic for your SmartModule")

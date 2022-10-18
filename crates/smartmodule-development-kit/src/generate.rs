@@ -36,7 +36,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("TemplateSourceGit"),
         conflicts_with = "TemplateSourcePath",
-        value_name = "GIT_URL"
+        value_name = "GIT_URL",
+        env = "SMDK_TEMPLATE_REPO"
     )]
     template_repo: Option<String>,
 
@@ -46,7 +47,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("TemplateGit"),
         requires = "TemplateSourceGit",
-        value_name = "BRANCH"
+        value_name = "BRANCH",
+        env = "SMDK_TEMPLATE_REPO_BRANCH"
     )]
     template_repo_branch: Option<String>,
 
@@ -56,7 +58,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("TemplateGit"),
         requires = "TemplateSourceGit",
-        value_name = "TAG"
+        value_name = "TAG",
+        env = "SMDK_TEMPLATE_REPO_TAG"
     )]
     template_repo_tag: Option<String>,
 
@@ -67,7 +70,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("TemplateSourcePath"),
         conflicts_with = "TemplateSourceGit",
-        value_name = "PATH"
+        value_name = "PATH",
+        env = "SMDK_TEMPLATE_PATH"
     )]
     template_path: Option<String>,
 
@@ -78,7 +82,9 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("SmCrateSourceGit"),
         conflicts_with_all = &["SmCrateSourcePath", "SmCrateSourceCratesIo"],
-        value_name = "GIT_URL"
+        value_name = "GIT_URL",
+        env = "SMDK_SM_CRATE_REPO",
+
     )]
     sm_crate_repo: Option<String>,
 
@@ -88,7 +94,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("SmGit"),
         requires = "SmCrateSourceGit",
-        value_name = "BRANCH"
+        value_name = "BRANCH",
+        env = "SMDK_SM_REPO_BRANCH"
     )]
     sm_repo_branch: Option<String>,
 
@@ -98,7 +105,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("SmGit"),
         requires = "SmCrateSourceGit",
-        value_name = "TAG"
+        value_name = "TAG",
+        env = "SMDK_SM_REPO_TAG"
     )]
     sm_repo_tag: Option<String>,
 
@@ -108,7 +116,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("SmGit"),
         requires = "SmCrateSourceGit",
-        value_name = "GIT_SHA"
+        value_name = "GIT_SHA",
+        env = "SMDK_SM_REPO_REV"
     )]
     sm_repo_rev: Option<String>,
 
@@ -119,7 +128,8 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("SmCrateSourcePath"),
         conflicts_with_all = &["SmCrateSourceGit", "SmCrateSourceCratesIo"],
-        value_name = "PATH"
+        value_name = "PATH",
+        env = "SMDK_SM_CRATE_PATH"
     )]
     sm_crate_path: Option<String>,
 
@@ -130,27 +140,28 @@ pub struct GenerateOpt {
         hide_short_help = true,
         group("SmCrateSourceCratesIo"),
         conflicts_with_all = &["SmCrateSourceGit", "SmCrateSourcePath"],
-        value_name = "X.Y.Z"
+        value_name = "X.Y.Z",
+        env = "SMDK_SM_CRATE_VERSION"
     )]
     sm_crate_version: Option<String>,
 
     /// Type of SmartModule project to generate.
     /// Skip prompt if value given.
-    #[clap(long, value_enum, value_name = "TYPE")]
+    #[clap(long, value_enum, value_name = "TYPE", env = "SMDK_SM_TYPE")]
     sm_type: Option<SmartModuleType>,
 
     /// Include SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, group("SmartModuleParams"), action)]
+    #[clap(long, group("SmartModuleParams"), action, env = "SMDK_WITH_PARAMS")]
     with_params: bool,
 
     /// No SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, group("SmartModuleParams"), action)]
+    #[clap(long, group("SmartModuleParams"), action, env = "SMDK_NO_PARAMS")]
     no_params: bool,
 
     /// Using this option will always choose the Fluvio repo as source for templates and dependencies
-    #[clap(long, action, env, hide_short_help = true, conflicts_with_all =
+    #[clap(long, action, env = "SMDK_DEVELOP", hide_short_help = true, conflicts_with_all =
         &["TemplateSourceGit", "TemplateSourcePath",
         "SmCrateSourceGit", "SmCrateSourceCratesIo", "SmCrateSourcePath"],)]
     develop: bool,
