@@ -9,6 +9,7 @@ echo "installing zig matrix.os=$MATRIX_OS version=$ZIG_VER"
 
 if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     echo "installing zig on ubuntu"
+    echo "LLVM is available on: $LLVM_PATH"
     wget https://ziglang.org/download/$ZIG_VER/zig-linux-$ARCH-$ZIG_VER.tar.xz && \
     tar -xf zig-linux-$ARCH-$ZIG_VER.tar.xz && \
     sudo mv zig-linux-$ARCH-$ZIG_VER /usr/local && \
@@ -16,8 +17,7 @@ if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     sudo ln -s ../zig-linux-$ARCH-$ZIG_VER/zig . && \
     popd && \
     rm zig-linux-x86_64-0.9.1.tar.* && \
-    sudo ${0%/*}/llvm.sh $LLVM_VER && \
-    echo "FLUVIO_BUILD_LLD=lld-14" | tee -a $GITHUB_ENV
+    echo "FLUVIO_BUILD_LLD=$LLVM_PATH/bin/lld" | tee -a $GITHUB_ENV
 fi
 
 # remove zig
