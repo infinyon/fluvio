@@ -174,7 +174,7 @@ publish-artifacts-dev: publish-artifacts
 # Need to ensure that version is always a semver
 # Version convention is different here. Notice the `+`
 bump-fluvio: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
-bump-fluvio: PUBLIC_VERSION?=$(subst -,+,$(VERSION))
+bump-fluvio: PUBLIC_VERSION?=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
 bump-fluvio: install-fluvio-package
 # This is gonna end up echoing twice when RELEASE != true
 	$(DRY_RUN_ECHO) $(FLUVIO_BIN) package bump $(CHANNEL_TAG) $(PUBLIC_VERSION)
@@ -189,7 +189,7 @@ bump-fluvio-stable: VERSION=$(REPO_VERSION)
 bump-fluvio-stable: bump-fluvio
 
 bump-fluvio-latest: CHANNEL_TAG=latest
-bump-fluvio-latest: VERSION=$(subst -,+,$(DEV_VERSION_TAG))
+bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(DEV_VERSION_TAG))
 bump-fluvio-latest: bump-fluvio
 
 update-public-installer-script-s3:
