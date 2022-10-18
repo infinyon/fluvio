@@ -26,6 +26,7 @@ scPod:
   publicPort: 9003
   nodePort: 30003
   extraContainers: []
+  extraEnv: []
 spuPod:
   resources:
     requests:
@@ -36,6 +37,7 @@ spuPod:
   storageClass: null
   baseNodePort: 30004
   extraContainers: []
+  extraEnv: []
 
 rbac:
   create: true
