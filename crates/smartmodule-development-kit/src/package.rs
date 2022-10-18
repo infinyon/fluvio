@@ -83,12 +83,11 @@ impl PackageInfo {
                 .packages
                 .into_iter()
                 .find(|p| &p.name == package_name);
-            project
-                .ok_or(format!(
-                    "Could not find a package '{}' in {}",
-                    package_name,
-                    current_project.display()
-                ))?
+            project.ok_or(format!(
+                "Could not find a package '{}' in {}",
+                package_name,
+                current_project.display()
+            ))?
         } else {
             return Err(format!("Could not find a default cargo package in {}. Try the `-p` option to specify a project/package.", current_project.display()));
         };
@@ -106,7 +105,10 @@ impl PackageInfo {
         let package_path: PathBuf = package
             .manifest_path
             .parent()
-            .ok_or(format!("Could not get parent folder for {}", package.manifest_path).to_string())?
+            .ok_or(format!(
+                "Could not get parent folder for {}",
+                package.manifest_path
+            ))?
             .into();
 
         Ok(PackageInfo {

@@ -28,8 +28,8 @@ pub struct LoadOpt {
 impl LoadOpt {
     pub(crate) fn process(&self) -> Result<()> {
         // resolve the current cargo project
-        let package_info = PackageInfo::from_options(&self.package)
-            .map_err(|e| anyhow::anyhow!(e))?;
+        let package_info =
+            PackageInfo::from_options(&self.package).map_err(|e| anyhow::anyhow!(e))?;
 
         // load ./SmartModule.toml relative to the project root
         let mut sm_toml = package_info.package_path.clone();
