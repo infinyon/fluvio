@@ -60,9 +60,9 @@ impl PartitionProducer {
         #[cfg(feature = "otel-metrics")]
         let meter = global::meter("producer");
         #[cfg(feature = "otel-metrics")]
-        let records_counter = meter.u64_counter("fluvio.client.records").init();
+        let records_counter = meter.u64_counter("fluvio.producer.records").init();
         #[cfg(feature = "otel-metrics")]
-        let bytes_counter = meter.u64_counter("fluvio.client.io").init();
+        let bytes_counter = meter.u64_counter("fluvio.producer.io").init();
 
         Self {
             config,
@@ -272,7 +272,11 @@ impl PartitionProducer {
             {
                 let cx = Context::current();
 
-                let counter_attributes = [KeyValue::new("direction", "produce")];
+                let counter_attributes = [
+                    KeyValue::new("direction", "transmit"),
+                    KeyValue::new("topic", self.replica.topic.clone()),
+                    KeyValue::new("partition", self.replica.partition as i64),
+                ];
 
                 self.records_counter
                     .add(&cx, raw_batch.records_len() as u64, &counter_attributes);
