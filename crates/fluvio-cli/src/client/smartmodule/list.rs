@@ -94,7 +94,7 @@ mod output {
     impl TableOutputHandler for ListSmartModules {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["NAME", "GROUP", "VERSION", "SIZE"])
+            Row::from(["SMARTMODULE", "SIZE"])
         }
 
         /// return errors in string format
@@ -110,9 +110,7 @@ mod output {
                     let _spec = &r.spec;
 
                     Row::from([
-                        Cell::new(&r.spec.logical_name(&r.name)).set_alignment(CellAlignment::Left),
-                        Cell::new(&r.spec.pkg_group()).set_alignment(CellAlignment::Left),
-                        Cell::new(&r.spec.pkg_version()).set_alignment(CellAlignment::Left),
+                        Cell::new(&r.spec.fqdn(&r.name)).set_alignment(CellAlignment::Left),
                         Cell::new(
                             bytesize::ByteSize::b(
                                 r.spec.summary.clone().unwrap_or_default().wasm_length as u64,
