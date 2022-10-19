@@ -17,6 +17,10 @@ pub struct LoadOpt {
     #[clap(long)]
     name: Option<String>,
 
+    /// Optional path to SmartModule package directory
+    #[clap(long)]
+    package_path: Option<PathBuf>,
+
     #[clap(flatten)]
     package: PackageOption,
 
@@ -26,9 +30,20 @@ pub struct LoadOpt {
 
     #[clap(flatten)]
     target: ClusterTarget,
+
+    /// Validate package config files, and connection to cluster.
+    /// Skip SmartModule load to cluster
+    #[clap(long, action)]
+    dry_run: bool,
 }
 impl LoadOpt {
     pub(crate) fn process(&self) -> Result<()> {
+        if let Some(path) = &self.package_path {
+            std::env::set_current_dir(path)?;
+        }
+
+        println!("Loading package at: {}", std::env::current_dir()?.display());
+
         // resolve the current cargo project
         let package_info =
             PackageInfo::from_options(&self.package).map_err(|e| anyhow::anyhow!(e))?;
@@ -37,10 +52,10 @@ impl LoadOpt {
         let mut sm_toml = package_info.package_path.clone();
         sm_toml.push(DEFAULT_META_LOCATION);
         let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml.clone())?;
-        println!("Using SmartModule package: {}", pkg_metadata.package.name);
+        println!("Found SmartModule package: {}", pkg_metadata.package.name);
 
         // Check for empty group
-        if pkg_metadata.package.group.len() == 0 {
+        if pkg_metadata.package.group.is_empty() {
             eprintln!("Please set a value for `group` in {}", sm_toml.display());
             std::process::exit(1);
         }
@@ -58,11 +73,11 @@ impl LoadOpt {
         };
 
         let fluvio_config = self.target.clone().load()?;
+
         if let Err(e) = run_block_on(self.create(fluvio_config, spec, sm_id)) {
             eprintln!("{}", e);
             std::process::exit(1);
         }
-
         Ok(())
     }
 
@@ -71,8 +86,13 @@ impl LoadOpt {
         let fluvio = Fluvio::connect_with_config(&config).await?;
 
         let admin = fluvio.admin().await;
-        println!("Creating SmartModule: {}", id);
-        admin.create(id, false, spec).await?;
+
+        if !self.dry_run {
+            println!("Creating SmartModule: {}", id);
+            admin.create(id, false, spec).await?;
+        } else {
+            println!("Dry run mode: Skipping SmartModule create");
+        }
 
         Ok(())
     }
