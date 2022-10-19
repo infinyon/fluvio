@@ -67,6 +67,9 @@ pub enum HubUtilError {
 
     #[error("Error processing yaml file")]
     YamlError(#[from] serde_yaml::Error),
+
+    #[error("Error parsing SemVer string. {0}")]
+    SemVerError(String),
 }
 
 pub type Result<T> = std::result::Result<T, HubUtilError>;
