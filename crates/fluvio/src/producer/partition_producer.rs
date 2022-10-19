@@ -26,6 +26,11 @@ use crate::stats::{
     ClientStats, ClientStatsUpdateBuilder, ClientStatsDataCollect, ClientStatsMetricRaw,
 };
 
+#[cfg(feature = "otel-metrics")]
+use opentelemetry::{global, Context, KeyValue};
+#[cfg(feature = "otel-metrics")]
+use opentelemetry::metrics::Counter;
+
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
     config: Arc<TopicProducerConfig>,
@@ -36,6 +41,10 @@ pub(crate) struct PartitionProducer {
     last_error: Arc<RwLock<Option<ProducerError>>>,
     #[cfg(feature = "stats")]
     client_stats: Arc<ClientStats>,
+    #[cfg(feature = "otel-metrics")]
+    records_counter: Counter<u64>,
+    #[cfg(feature = "otel-metrics")]
+    bytes_counter: Counter<u64>,
 }
 
 impl PartitionProducer {
@@ -48,6 +57,13 @@ impl PartitionProducer {
         last_error: Arc<RwLock<Option<ProducerError>>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
     ) -> Self {
+        #[cfg(feature = "otel-metrics")]
+        let meter = global::meter("producer");
+        #[cfg(feature = "otel-metrics")]
+        let records_counter = meter.u64_counter("fluvio.producer.records").init();
+        #[cfg(feature = "otel-metrics")]
+        let bytes_counter = meter.u64_counter("fluvio.producer.io").init();
+
         Self {
             config,
             replica,
@@ -57,6 +73,10 @@ impl PartitionProducer {
             last_error,
             #[cfg(feature = "stats")]
             client_stats,
+            #[cfg(feature = "otel-metrics")]
+            records_counter,
+            #[cfg(feature = "otel-metrics")]
+            bytes_counter,
         }
     }
 
@@ -246,6 +266,22 @@ impl PartitionProducer {
                 client_stats_update.push(ClientStatsMetricRaw::Bytes(raw_batch.batch_len() as u64));
                 client_stats_update
                     .push(ClientStatsMetricRaw::Records(raw_batch.records_len() as u64));
+            }
+
+            #[cfg(feature = "otel-metrics")]
+            {
+                let cx = Context::current();
+
+                let counter_attributes = [
+                    KeyValue::new("direction", "transmit"),
+                    KeyValue::new("topic", self.replica.topic.clone()),
+                    KeyValue::new("partition", self.replica.partition as i64),
+                ];
+
+                self.records_counter
+                    .add(&cx, raw_batch.records_len() as u64, &counter_attributes);
+                self.bytes_counter
+                    .add(&cx, raw_batch.batch_len() as u64, &counter_attributes);
             }
 
             partition_request.records.batches.push(raw_batch);
