@@ -46,6 +46,13 @@ impl Default for PackageMeta {
 }
 
 impl PackageMeta {
+    /// Retrieves the fully qualified name for the `PackageMeta`.
+    ///
+    /// Eg: `infinyon-example-0.0.1`
+    pub fn id(&self) -> String {
+        format!("{}-{}-{}", self.group, self.name, self.version)
+    }
+
     /// Retrives the package name from this package. Eg: `infinyon/example/0.0.1`
     pub fn pkg_name(&self) -> String {
         format!("{}/{}@{}", self.group, self.name, self.version)
@@ -282,6 +289,18 @@ fn builds_obj_key_from_package_name() {
             obj_paths.get(idx).unwrap()
         );
     }
+}
+
+#[test]
+fn hub_package_id() {
+    let pm = PackageMeta {
+        group: "infinyon".into(),
+        name: "example".into(),
+        version: "0.0.1".into(),
+        manifest: ["module.wasm".into()].to_vec(),
+        ..PackageMeta::default()
+    };
+    assert_eq!("infinyon-example-0.0.1", pm.id());
 }
 
 #[test]
