@@ -1,16 +1,16 @@
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
-use fluvio_types::defaults::SPU_PUBLIC_PORT;
-use tracing::{debug, info};
 use serde::{Deserialize};
+use tracing::{debug, info};
 
+use fluvio_controlplane_metadata::core::MetadataContext;
+use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use k8_client::{ClientError};
-
+use k8_types::Env;
 use k8_types::core::pod::{ResourceRequirements, PodSecurityContext, ContainerSpec};
 use k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
 use k8_types::core::service::{ServicePort, ServiceSpec, TargetPort, LoadBalancerType};
-use fluvio_controlplane_metadata::core::MetadataContext;
 
 use crate::dispatcher::core::{Spec, Status};
 
@@ -27,6 +27,8 @@ pub struct PodConfig {
     pub base_node_port: Option<u16>,
     #[serde(default)]
     pub extra_containers: Vec<ContainerSpec>,
+    #[serde(default)]
+    pub extra_env: Vec<Env>,
 }
 
 #[derive(Debug, Eq, PartialEq, Default, Clone)]
