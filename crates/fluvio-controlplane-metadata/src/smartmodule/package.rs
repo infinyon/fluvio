@@ -78,6 +78,10 @@ impl SmartModulePackage {
         })
         .store_id()
     }
+
+    pub fn is_valid(&self) -> bool {
+        !self.name.is_empty() && !self.group.is_empty()
+    }
 }
 
 #[derive(Debug, Error)]
@@ -241,15 +245,52 @@ mod package_test {
     use super::{SmartModulePackage, FluvioSemVersion};
 
     #[test]
+    fn test_pkg_validation() {
+        assert!(SmartModulePackage {
+            name: "a".to_owned(),
+            group: "b".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        }
+        .is_valid());
+
+        assert!(!SmartModulePackage {
+            name: "".to_owned(),
+            group: "b".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        }
+        .is_valid());
+
+        assert!(!SmartModulePackage {
+            name: "c".to_owned(),
+            group: "".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        }
+        .is_valid());
+
+        assert!(!SmartModulePackage {
+            name: "".to_owned(),
+            group: "".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        }
+        .is_valid());
+    }
+
+    #[test]
     fn test_pkg_name() {
         let pkg = SmartModulePackage {
             name: "test".to_owned(),
             group: "fluvio".to_owned(),
             version: FluvioSemVersion::parse("0.1.0").unwrap(),
             api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
-            description: None,
-            license: None,
-            repository: None,
+            ..Default::default()
         };
 
         assert_eq!(pkg.store_id(), "test-fluvio-0.1.0");
