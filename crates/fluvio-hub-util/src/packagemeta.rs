@@ -3,6 +3,8 @@ use std::io::Read;
 use std::path::Path;
 use std::fs;
 
+use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
+use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, error};
 
@@ -49,8 +51,16 @@ impl PackageMeta {
     /// Retrieves the fully qualified name for the `PackageMeta`.
     ///
     /// Eg: `infinyon-example-0.0.1`
-    pub fn id(&self) -> String {
-        format!("{}-{}-{}", self.group, self.name, self.version)
+    pub fn id(&self) -> Result<String> {
+        let fluvio_semver = FluvioSemVersion::parse(&self.version)
+            .map_err(|err| HubUtilError::SemVerError(err.to_string()))?;
+        let package_key = SmartModulePackageKey {
+            name: self.name.clone(),
+            group: Some(self.group.clone()),
+            version: Some(fluvio_semver),
+        };
+
+        Ok(package_key.store_id())
     }
 
     /// Retrives the package name from this package. Eg: `infinyon/example/0.0.1`
@@ -300,7 +310,22 @@ fn hub_package_id() {
         manifest: ["module.wasm".into()].to_vec(),
         ..PackageMeta::default()
     };
-    assert_eq!("infinyon-example-0.0.1", pm.id());
+
+    assert_eq!("example-infinyon-0.0.1", pm.id().unwrap());
+}
+
+#[test]
+#[should_panic(expected = "unexpected character 'T' while parsing major version number")]
+fn hub_package_id_complains_invalid_semver() {
+    let pm = PackageMeta {
+        group: "infinyon".into(),
+        name: "example".into(),
+        version: "ThisIsNotSemVer".into(),
+        manifest: ["module.wasm".into()].to_vec(),
+        ..PackageMeta::default()
+    };
+
+    assert_eq!("example-infinyon-0.0.1", pm.id().unwrap());
 }
 
 #[test]
