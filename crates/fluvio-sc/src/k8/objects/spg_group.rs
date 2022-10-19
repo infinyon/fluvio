@@ -232,6 +232,8 @@ mod k8_convert {
             env.push(Env::key_value("RUST_LOG", &rust_log));
         }
 
+        env.append(&mut spu_pod_config.extra_env.clone());
+
         let mut volume_mounts = vec![VolumeMount {
             name: "data".to_owned(),
             mount_path: format!("/var/lib/{}/data", PRODUCT_NAME),
