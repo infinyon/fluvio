@@ -82,6 +82,13 @@ impl SmartModulePackage {
     pub fn is_valid(&self) -> bool {
         !self.name.is_empty() && !self.group.is_empty()
     }
+
+    pub fn fqdn(&self) -> String {
+        format!(
+            "{}{}{}{}{}",
+            self.group, GROUP_SEPARATOR, self.name, VERSION_SEPARATOR, self.version
+        )
+    }
 }
 
 #[derive(Debug, Error)]
@@ -281,6 +288,19 @@ mod package_test {
             ..Default::default()
         }
         .is_valid());
+    }
+
+    #[test]
+    fn test_pkg_fqdn() {
+        let pkg = SmartModulePackage {
+            name: "test".to_owned(),
+            group: "fluvio".to_owned(),
+            version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
+            ..Default::default()
+        };
+
+        assert_eq!(pkg.fqdn(), "fluvio/test@0.1.0");
     }
 
     #[test]
