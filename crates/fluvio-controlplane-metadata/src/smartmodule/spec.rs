@@ -1,7 +1,7 @@
 //!
 //! # SmartModule Spec
 //!
-use std::io::Error as IoError;
+use std::{io::Error as IoError, borrow::Cow};
 
 use bytes::BufMut;
 
@@ -89,32 +89,13 @@ impl Decoder for SmartModuleSpec {
 }
 
 impl SmartModuleSpec {
-    /// return logical name.  if there is package then use it otherwise return it
-    pub fn logical_name(&self, object_name: &str) -> String {
-        self.meta
-            .as_ref()
-            .map(|meta| meta.package.name.to_string())
-            .unwrap_or_else(|| object_name.to_string())
-    }
-    pub fn pkg_name(&self) -> &str {
-        self.meta
-            .as_ref()
-            .map(|meta| &meta.package.name as &str)
-            .unwrap_or_else(|| "")
-    }
-
-    pub fn pkg_group(&self) -> &str {
-        self.meta
-            .as_ref()
-            .map(|meta| &meta.package.group as &str)
-            .unwrap_or_else(|| "")
-    }
-
-    pub fn pkg_version(&self) -> String {
-        self.meta
-            .as_ref()
-            .map(|meta| meta.package.version.to_string())
-            .unwrap_or_else(|| "".to_owned())
+    /// return fully qualified name given store key
+    pub fn fqdn<'a>(&self, store_id: &'a str) -> Cow<'a, str> {
+        if let Some(meta) = &self.meta {
+            meta.package.fqdn().into()
+        } else {
+            Cow::from(store_id)
+        }
     }
 }
 

@@ -219,10 +219,20 @@ mod k8_convert {
         // storage is special because defaults are explicit.
         let storage = spu_template.real_storage_config();
         let size = storage.size;
+
+        let spu_pod_config = &spu_k8_config.spu_pod_config;
+
         let mut env = vec![
             Env::key_field_ref("SPU_INDEX", "metadata.name"),
             Env::key_value("SPU_MIN", &format!("{}", spg_spec.min_id)),
         ];
+
+        // add RUST LOG, if passed
+        if let Ok(rust_log) = std::env::var("RUST_LOG") {
+            env.push(Env::key_value("RUST_LOG", &rust_log));
+        }
+
+        env.append(&mut spu_pod_config.extra_env.clone());
 
         let mut volume_mounts = vec![VolumeMount {
             name: "data".to_owned(),
@@ -292,15 +302,6 @@ mod k8_convert {
             args.push("--bind-non-tls-public".to_owned());
             args.push("0.0.0.0:9007".to_owned());
         }
-
-        // add RUST LOG, if passed
-        if let Ok(rust_log) = std::env::var("RUST_LOG") {
-            env.push(Env::key_value("RUST_LOG", &rust_log));
-        }
-
-        // env.append(&mut spu_template.env.clone());
-
-        let spu_pod_config = &spu_k8_config.spu_pod_config;
 
         let mut containers = vec![ContainerSpec {
             name: SPU_DEFAULT_NAME.to_owned(),
