@@ -1,7 +1,8 @@
 use std::process::{Command, Stdio};
 use std::fmt::Debug;
+use std::str;
 
-use anyhow::{Error, Result};
+use anyhow::{Error, Result, anyhow};
 use clap::Parser;
 use crate::package::{PackageInfo, PackageOption};
 
@@ -37,9 +38,15 @@ impl BuildOpt {
         if !self.extra_arguments.is_empty() {
             cargo.args(&self.extra_arguments);
         }
-        cargo.status().map_err(Error::from)?;
+        let status = cargo.status().map_err(Error::from)?;
 
-        Ok(())
+        if status.success() {
+            Ok(())
+        } else {
+            let output = cargo.output()?;
+            let stderr = String::from_utf8(output.stderr)?;
+            Err(anyhow!(stderr))
+        }
     }
 
     fn make_cargo_cmd() -> Result<Command> {

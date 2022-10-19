@@ -1,7 +1,6 @@
-[placeholders.smartmodule-version]
+[placeholders.fluvio-smartmodule-cargo-dependency]
 type = "string"
-default = "git = \"https://github.com/infinyon/fluvio.git\""
-prompt = "SmartModule Version"
+prompt = "Value of `fluvio-smartmodule` dependency in Cargo.toml"
 
 [placeholders.smartmodule-type]
 type = "string"
@@ -9,7 +8,7 @@ prompt = "Which type of SmartModule would you like?"
 choices = ["filter", "map", "filter-map", "array-map", "aggregate"]
 default = "filter"
 
-[placeholders.smartmodule-init]
+[placeholders.smartmodule-params]
 type = "bool"
-prompt = "Want to use SmartModule init?"
+prompt = "Will your SmartModule use init parameters?"
 default = false
