@@ -36,8 +36,14 @@ impl LoadOpt {
         // load ./SmartModule.toml relative to the project root
         let mut sm_toml = package_info.package_path.clone();
         sm_toml.push(DEFAULT_META_LOCATION);
-        let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml)?;
+        let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml.clone())?;
         println!("Using SmartModule package: {}", pkg_metadata.package.name);
+
+        // Check for empty group
+        if pkg_metadata.package.group.len() == 0 {
+            eprintln!("Please set a value for `group` in {}", sm_toml.display());
+            std::process::exit(1);
+        }
 
         let sm_id = pkg_metadata.package.name.clone(); // pass anything, this should be overriden by SC
         let raw_bytes = match &self.wasm_file {
