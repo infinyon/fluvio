@@ -38,7 +38,7 @@ mod cmd {
                     opt.process(out, target).await?;
                 }
                 Self::List(opt) => {
-                    opt.process().await?;
+                    opt.process(out).await?;
                 }
             }
             Ok(())
