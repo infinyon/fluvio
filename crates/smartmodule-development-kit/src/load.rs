@@ -9,6 +9,8 @@ use fluvio::Fluvio;
 use fluvio_future::task::run_block_on;
 use crate::package::{PackageInfo, PackageOption};
 
+const DEFAULT_META_LOCATION: &str = "SmartModule.toml";
+
 /// Load SmartModule into Fluvio cluster
 #[derive(Debug, Parser)]
 pub struct LoadOpt {
@@ -33,7 +35,7 @@ impl LoadOpt {
 
         // load ./SmartModule.toml relative to the project root
         let mut sm_toml = package_info.package_path.clone();
-        sm_toml.push("./SmartModule.toml");
+        sm_toml.push(DEFAULT_META_LOCATION);
         let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml)?;
         println!("Using SmartModule package: {}", pkg_metadata.package.name);
 
@@ -59,11 +61,11 @@ impl LoadOpt {
     }
 
     async fn create(&self, config: FluvioConfig, spec: SmartModuleSpec, id: String) -> Result<()> {
-        println!("trying connectiong to fluvio {}", config.endpoint);
+        println!("Trying connection to fluvio {}", config.endpoint);
         let fluvio = Fluvio::connect_with_config(&config).await?;
 
         let admin = fluvio.admin().await;
-        println!("creating smartmodule: {}", id);
+        println!("Creating SmartModule: {}", id);
         admin.create(id, false, spec).await?;
 
         Ok(())
