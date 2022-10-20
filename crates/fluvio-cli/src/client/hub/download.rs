@@ -34,6 +34,9 @@ pub struct DownloadHubOpt {
     /// given local package file, download to cluster
     #[clap(long)]
     ipkg: bool,
+
+    #[clap(long, hide_short_help = true)]
+    remote: Option<String>,
 }
 
 #[async_trait]
@@ -50,7 +53,7 @@ impl ClientCmd for DownloadHubOpt {
             return Ok(());
         }
 
-        let pkgfile = download_local(&self.pkgname).await?;
+        let pkgfile = download_local(&self.pkgname, &self.remote).await?;
         if self.local {
             return Ok(());
         }
@@ -63,14 +66,14 @@ impl ClientCmd for DownloadHubOpt {
 
 /// download smartmodule from hub to local fs
 /// returns path of downloaded of package
-async fn download_local(pkgname: &str) -> Result<String> {
+async fn download_local(pkgname: &str, remote: &Option<String>) -> Result<String> {
     let fname = hubutil::cli_pkgname_to_filename(pkgname).map_err(|_| {
         CliError::HubError(format!(
             "invalid package name format {pkgname}, is it the form infinyon/json-sql@0.1.0"
         ))
     })?;
 
-    let access = hubutil::HubAccess::default_load().await.map_err(|_| {
+    let access = hubutil::HubAccess::default_load(remote).map_err(|_| {
         CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
     })?;
     let url = hubutil::cli_pkgname_to_url(pkgname, &access.remote)

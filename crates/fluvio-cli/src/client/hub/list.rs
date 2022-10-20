@@ -18,11 +18,14 @@ const API_LIST: &str = "hub/v0/list";
 pub struct ListHubOpt {
     #[clap(flatten)]
     output: OutputFormat,
+
+    #[clap(long, hide_short_help = true)]
+    remote: Option<String>,
 }
 
 impl ListHubOpt {
     pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
-        let access = hubutil::HubAccess::default_load().await.map_err(|_| {
+        let access = hubutil::HubAccess::default_load(&self.remote).map_err(|_| {
             CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
         })?;
         let action_token = access.get_list_token().await.map_err(|_| {

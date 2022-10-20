@@ -4,7 +4,7 @@ mod generate;
 mod test;
 mod load;
 mod publish;
-mod set_hubid;
+mod hub;
 mod package;
 
 use std::path::{PathBuf};
