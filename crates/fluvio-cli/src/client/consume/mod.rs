@@ -138,7 +138,7 @@ mod cmd {
         )]
         pub amount_to_offset: Option<u32>,
 
-        /// Consume records until end offset
+        /// Consume records until end offset (INCLUSIVE)
         #[clap(long, value_name= "integer", conflicts_with_all = &["tail"])]
         pub end: Option<i64>,
 
@@ -648,18 +648,18 @@ mod cmd {
                     eprintln!(
                         "{}",
                         format!(
-                            "Consuming records starting {} from the beginning of topic '{}'",
+                            "Consuming records starting {} from the beginning of log for topic '{}'",
                             offset, &self.topic
                         )
                         .bold()
                     );
                 }
-                // If --from-beginning=X
+                // If --from-beginning
                 else {
                     eprintln!(
                         "{}",
                         format!(
-                            "Consuming records from the beginning of topic '{}'",
+                            "Consuming records from the beginning of log for topic '{}'",
                             &self.topic
                         )
                         .bold()
