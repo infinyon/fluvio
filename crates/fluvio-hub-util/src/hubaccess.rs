@@ -27,7 +27,7 @@ const INFINYON_HUB_REMOTE: &str = "INFINYON_HUB_REMOTE";
 
 #[derive(Serialize, Deserialize)]
 pub struct HubAccess {
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub remote: String, // remote host url (deprecated for config file)
     pub hubid: String,  // hubid associated with the signing key
     pub pkgkey: String, // package signing key (private)
@@ -136,8 +136,8 @@ impl HubAccess {
         let status_code = res.status();
         match status_code {
             StatusCode::Ok => {
-                let action_token = res.body_string().await.map_err(|_e| {
-                    debug!("err {_e} {res:?}");
+                let action_token = res.body_string().await.map_err(|e| {
+                    debug!("err {e} {res:?}");
                     HubUtilError::HubAccess("Failed to parse reply".to_string())
                 })?;
                 Ok(action_token)
@@ -145,7 +145,6 @@ impl HubAccess {
             StatusCode::Unauthorized => Err(HubUtilError::HubAccess(
                 "Unauthorized, please log in with 'fluvio cloud login'".into(),
             )),
-            // surf::http::StatusCode::Forbidden
             _ => {
                 let msg = format!("Unknown error: {}", res.status());
                 Err(HubUtilError::HubAccess(msg))
@@ -201,8 +200,9 @@ impl HubAccess {
         let profile_path = base_path.as_ref().join(profile);
         info!("loading hub profile {profile_path:?}");
         let buf = std::fs::read_to_string(&profile_path)?;
-        let mut ha: HubAccess = serde_yaml::from_str(&buf).map_err(|_e| {
+        let mut ha: HubAccess = serde_yaml::from_str(&buf).map_err(|e| {
             let spath = profile_path.display();
+            debug!("parse error {e}");
             HubUtilError::HubAccess(format!("Could not load from {spath}"))
         })?;
 
