@@ -237,14 +237,14 @@ where
 
             cfg_if::cfg_if! {
                 if #[cfg(feature = "otel-metrics")] {
-                    let meter = opentelemetry::global::meter("producer");
+                    let meter = opentelemetry::global::meter("consumer");
                     let counter_attributes = [
                         opentelemetry::KeyValue::new("direction", "receive"),
                         opentelemetry::KeyValue::new("topic", response.topic),
                         opentelemetry::KeyValue::new("partition", response.partition.partition_index as i64),
                     ];
-                    let records_counter = meter.u64_counter("fluvio.producer.records").init();
-                    let bytes_counter = meter.u64_counter("fluvio.producer.io").init();
+                    let records_counter = meter.u64_counter("fluvio.consumer.records").init();
+                    let bytes_counter = meter.u64_counter("fluvio.consumer.io").init();
                     let otel_context = opentelemetry::Context::current();
                 }
             }
