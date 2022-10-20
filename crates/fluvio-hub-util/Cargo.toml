@@ -36,7 +36,7 @@ fluvio-types = { path = "../fluvio-types" }
 # feature control
 [dependencies.surf]
 version = "2.3.2"
-features = ["h1-client-rustls", "middleware-logger", "encoding"]
+features = ["h1-client-rustls", "encoding"]
 default-features = false
 
 [dependencies.http-client]

@@ -79,7 +79,7 @@ impl HubAccess {
                 return Err(HubUtilError::HubAccess(msg));
             }
             StatusCode::Unauthorized => {
-                let msg = "hub :authorization error, try 'fluvio cloud login'".to_string();
+                let msg = "hub: authorization error, try 'fluvio cloud login'".to_string();
                 return Err(HubUtilError::HubAccess(msg));
             }
             sc => {
