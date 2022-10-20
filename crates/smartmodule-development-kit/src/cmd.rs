@@ -20,7 +20,7 @@ pub enum SmdkCommand {
     /// Publish SmartModule to Hub
     Publish(PublishOpt),
     /// Hub options
-    #[clap(subcommand)]
+    #[clap(subcommand, hide = true)]
     Hub(HubCmd),
 }
 
