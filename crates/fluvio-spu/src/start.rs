@@ -1,3 +1,4 @@
+use tracing::{error, info};
 use fluvio_storage::FileReplica;
 
 use crate::config::{SpuConfig, SpuOpt};
@@ -36,6 +37,9 @@ pub fn main_loop(opt: SpuOpt) {
     info!(total_memory = sys.total_memory(), "System");
     info!(available_memory = sys.available_memory(), "System");
     info!(uptime = sys.uptime(), "Uptime in secs");
+
+    fluvio_future::metric::init_open_telemetry("spu", VERSION);
+    debug_metrics();
 
     run_block_on(async move {
         let (_ctx, internal_server, public_server) =
@@ -88,6 +92,12 @@ pub fn create_services(
     sc_dispatcher.run();
 
     (ctx, internal_server, public_server)
+}
+
+pub fn debug_metrics() {
+    let meter = opentelemetry::global::meter("test_meter");
+    let counter = meter.u64_counter("test_counter").init();
+    counter.add(&opentelemetry::Context::current(), 1, &[]);
 }
 
 mod proxy {

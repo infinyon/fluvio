@@ -76,3 +76,6 @@ codegen-units = 256
 [profile.release-lto]
 inherits = "release"
 lto = true
+
+[patch.crates-io]
+fluvio-future = { path = "../future-aio" }
