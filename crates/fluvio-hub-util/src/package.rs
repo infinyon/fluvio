@@ -408,14 +408,19 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
             iv.verify_ok = pubkey.verify(&buf, &signature).is_ok();
         }
     }
-    let all_ok = vers.iter().fold(false, |aok, (k, v)| {
-        warn!("Package {pkgfile} file {k} failed verification");
-        aok || (v.seen && v.verify_ok)
+    // not using any or all because of a desire to generate a full log of any
+    // failed per file validation
+    let any_bad = vers.iter().fold(false, |abad, (k, v)| {
+        let pass = v.seen && v.verify_ok;
+        if !pass {
+            warn!("Package {pkgfile} file {k} failed verification");
+        }
+        abad || !pass
     });
-    if all_ok {
-        Ok(())
-    } else {
+    if any_bad {
         Err(HubUtilError::PackageVerify("failed verify".into()))
+    } else {
+        Ok(())
     }
 }
 
