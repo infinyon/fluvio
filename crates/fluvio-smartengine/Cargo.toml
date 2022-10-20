@@ -13,6 +13,7 @@ description = "The official Fluvio SmartEngine"
 
 [features]
 wasi = ["wasmtime-wasi"]
+otel-metrics = ["opentelemetry/metrics"]
 
 
 [dependencies]
@@ -30,6 +31,7 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = [
     "record",
 ] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", default-features = false }
+opentelemetry = { version = "0.18.0", optional = true }
 
 [dev-dependencies]
 fluvio-types = { path = "../fluvio-types" }

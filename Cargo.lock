@@ -2536,6 +2536,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-types",
+ "opentelemetry",
  "thiserror",
  "tracing",
  "wasmtime",
