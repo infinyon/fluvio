@@ -56,10 +56,14 @@ mod tests {
     #[test]
     fn test_correct_command_parsing_consume() {
         let should_succeed = vec![
-            "fluvio consume -B hello",
+            "fluvio consume -H hello",
             "fluvio consume -T hello",
-            "fluvio consume -B -n 10 hello",
+            "fluvio consume -H -n 10 hello",
             "fluvio consume -T -n 10 hello",
+            "fluvio consume --start -n 0 hello",
+            "fluvio consume --start hello",
+            "fluvio consume hello --start --end 5",
+            "fluvio consume --start --end 5 -n 0 hello",
         ];
         for s in should_succeed {
             assert!(parse_succeeds(s), "{s}");
@@ -67,13 +71,15 @@ mod tests {
 
         let should_not_succeed = vec![
             "fluvio consume",
-            "fluvio consume -B 0 hello",
+            "fluvio consume -H 0 hello",
             "fluvio consume -T 0 hello",
-            "fluvio consume -B -n -10 hello",
-            "fluvio consume -B -n hello",
+            "fluvio consume -H -n -10 hello",
+            "fluvio consume -H -n hello",
             "fluvio consume -n 10 hello",
-            "fluvio consume -B -T -n 10 hello",
+            "fluvio consume -H -T -n 10 hello",
             "fluvio consume -n hello",
+            "fluvio consume --start 5 hello",
+            "fluvio consume --end hello",
         ];
         for s in should_not_succeed {
             assert!(!parse_succeeds(s), "{s}");

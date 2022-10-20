@@ -21,6 +21,7 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
+    use k8_client::ClientError;
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -116,25 +117,30 @@ mod cmd {
         #[clap(long)]
         pub table_format: Option<String>,
 
-        /// The offset of the first record to begin consuming from
-        #[clap(short, long, value_name = "integer", conflicts_with_all = &["tail"])]
-        pub offset: Option<u32>,
+        /// The offset of the first record to begin consuming from (default: 0)
+        #[clap(long, group = "can_be_offset", conflicts_with_all = &["head", "tail"])]
+        pub start: bool,
 
         /// Consume records starting X from the beginning of the log (default:0, change X with -n)
-        #[clap(short = 'B', long="head", group = "can_be_offset", conflicts_with_all = &["offset", "tail"])]
-        pub from_beginning: bool,
+        #[clap(short = 'H', long, group = "can_be_offset", conflicts_with_all = &["start", "tail"])]
+        pub head: bool,
 
         /// Consume records starting X from the end of the log (default: 10, change X with -n)
-        #[clap(short = 'T', long,  group = "can_be_offset", conflicts_with_all = &["from-beginning", "offset"])]
+        #[clap(short = 'T', long,  group = "can_be_offset", conflicts_with_all = &["head", "start"])]
         pub tail: bool,
 
         /// --head consume beginning X after start of log. --tail consume beginning X before end of log.
-        #[clap(short = 'n', value_name = "integer", requires("can_be_offset"))]
+        #[clap(
+            short = 'n',
+            long = "offset",
+            value_name = "integer",
+            requires("can_be_offset")
+        )]
         pub amount_to_offset: Option<u32>,
 
         /// Consume records until end offset
         #[clap(long, value_name= "integer", conflicts_with_all = &["tail"])]
-        pub end_offset: Option<i64>,
+        pub end: Option<i64>,
 
         /// Maximum number of bytes to be retrieved
         #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
@@ -326,16 +332,19 @@ mod cmd {
                 builder.disable_continuous(true);
             }
 
-            if let Some(end_offset) = self.end_offset {
+            if let Some(end_offset) = self.end {
                 if end_offset < 0 {
                     eprintln!("Argument end-offset must be greater than or equal to zero");
+                    return Err(ClientError);
                 }
-                if let Some(offset) = self.offset {
+                if self.start {
+                    let offset = self.amount_to_offset.unwrap_or(0);
                     let o = offset as i64;
                     if end_offset < o {
                         eprintln!(
                             "Argument end-offset must be greater than or equal to specified offset"
                         );
+                        return Err(());
                     }
                 }
             }
@@ -366,7 +375,7 @@ mod cmd {
             tableformat: Option<TableFormatSpec>,
         ) -> Result<()> {
             self.print_status();
-            let maybe_potential_offset: Option<i64> = self.end_offset;
+            let maybe_potential_offset: Option<i64> = self.end;
             let mut stream = consumer.stream_with_config(offset, config).await?;
 
             let templates = match self.format.as_deref() {
@@ -633,7 +642,7 @@ mod cmd {
                 return;
             }
 
-            if self.from_beginning {
+            if self.head {
                 // If --from-beginning -n X
                 if let Some(offset) = self.amount_to_offset {
                     eprintln!(
@@ -657,7 +666,8 @@ mod cmd {
                     );
                 }
                 // If --offset=X
-            } else if let Some(offset) = self.offset {
+            } else if self.start {
+                let offset = self.amount_to_offset.unwrap_or(0);
                 eprintln!(
                     "{}",
                     format!(
@@ -679,7 +689,7 @@ mod cmd {
                     .bold()
                 );
             // If --end-offset=X
-            } else if let Some(end) = self.end_offset {
+            } else if let Some(end) = self.end {
                 eprintln!(
                     "{}",
                     format!(
@@ -720,14 +730,15 @@ mod cmd {
 
         /// Calculate the Offset to use with the consumer based on the provided offset number
         fn calculate_offset(&self) -> Result<Offset> {
-            let offset = if self.from_beginning {
-                let offset = self.amount_to_offset.unwrap_or(0);
-                Offset::from_beginning(offset)
-            } else if let Some(offset) = self.offset {
-                Offset::absolute(offset as i64).unwrap()
+            let offset = if self.head {
+                let head_offset = self.amount_to_offset.unwrap_or(0);
+                Offset::from_beginning(head_offset)
+            } else if self.start {
+                let start_offset = self.amount_to_offset.unwrap_or(0);
+                Offset::absolute(start_offset as i64).unwrap()
             } else if self.tail {
-                let tail = self.amount_to_offset.unwrap_or(DEFAULT_TAIL);
-                Offset::from_end(tail)
+                let tail_offset = self.amount_to_offset.unwrap_or(DEFAULT_TAIL);
+                Offset::from_end(tail_offset)
             } else {
                 Offset::end()
             };
