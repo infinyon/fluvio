@@ -35,6 +35,8 @@ use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::batch::BatchSmartEngine;
 use crate::smartengine::file_batch::FileBatchIterator;
 
+use super::metrics::StorageMetrics;
+
 /// Fetch records as stream
 pub struct StreamFetchHandler {
     replica: ReplicaKey,
@@ -47,6 +49,7 @@ pub struct StreamFetchHandler {
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
+    metrics: StorageMetrics,
 }
 
 impl StreamFetchHandler {
@@ -170,6 +173,8 @@ impl StreamFetchHandler {
             starting_offset,
             "stream fetch");
 
+        let metrics = StorageMetrics::new();
+
         let handler = Self {
             isolation,
             replica: replica.clone(),
@@ -181,6 +186,7 @@ impl StreamFetchHandler {
             stream_id,
             leader_state,
             max_fetch_bytes,
+            metrics,
         };
 
         if let Err(err) = handler.process(starting_offset, derivedstream_ctx).await {
@@ -394,6 +400,9 @@ impl StreamFetchHandler {
             ..Default::default()
         };
 
+        let topic_metrics = self.metrics.with_topic(self.replica.topic.as_str());
+        let partition_metrics = topic_metrics.with_partition(self.replica.partition);
+
         // Read records from the leader starting from `offset`
         // Returns with the HW/LEO of the latest records available in the leader
         // This describes the range of records that can be read in this request
@@ -405,7 +414,12 @@ impl StreamFetchHandler {
             Ok(slice) => {
                 file_partition_response.high_watermark = slice.end.hw;
                 file_partition_response.log_start_offset = slice.start;
+
+                partition_metrics.add_records_read((slice.end.hw - slice.start) as u64);
+
                 if let Some(file_slice) = slice.file_slice {
+                    partition_metrics.add_bytes_read(file_slice.len());
+
                     file_partition_response.records = file_slice.into();
                 }
                 slice.end

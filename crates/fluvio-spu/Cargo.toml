@@ -40,7 +40,8 @@ thiserror = "1"
 once_cell = "1.5"
 sysinfo = "0.26.0"
 nix = { version = "0.25"}
-
+opentelemetry = { version = "0.18.0", features = ["metrics", "rt-async-std"] }
+opentelemetry-otlp = { version = "0.11.0", default-features = false, features = ["grpc-tonic", "metrics"] }
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }
