@@ -23,9 +23,12 @@ pub const ACTION_CREATE_HUBID: &str = "chid";
 pub const ACTION_DOWNLOAD: &str = "dl";
 pub const ACTION_PUBLISH: &str = "pbl";
 
+const INFINYON_HUB_REMOTE: &str = "INFINYON_HUB_REMOTE";
+
 #[derive(Serialize, Deserialize)]
 pub struct HubAccess {
-    pub remote: String, // remote host url
+    #[serde(skip_serializing)]
+    pub remote: String, // remote host url (deprecated for config file)
     pub hubid: String,  // hubid associated with the signing key
     pub pkgkey: String, // package signing key (private)
     pub pubkey: String, // package signing key (public)
@@ -41,9 +44,9 @@ impl HubAccess {
         }
     }
 
-    pub async fn default_load() -> Result<Self> {
+    pub fn default_load(remote: &Option<String>) -> Result<Self> {
         let cfgpath = default_cfg_path()?;
-        HubAccess::load_path(&cfgpath, None)
+        HubAccess::load_path(&cfgpath, None, remote)
     }
 
     pub async fn create_hubid(&self, hubid: &str) -> Result<()> {
@@ -66,21 +69,21 @@ impl HubAccess {
         let status = res.status();
         match status {
             StatusCode::Created => {
-                println!("Hubid {hubid} created!");
+                println!("hub: hubid {hubid} created");
             }
             StatusCode::Ok => {
-                println!("Hubid {hubid} already set");
+                println!("hub: hubid {hubid} is set");
             }
             StatusCode::Forbidden => {
-                let msg = format!("Hubid {hubid} already taken");
+                let msg = format!("hub: hubid {hubid} already taken");
                 return Err(HubUtilError::HubAccess(msg));
             }
             StatusCode::Unauthorized => {
-                let msg = "Authorization error, try 'fluvio cloud login'".to_string();
+                let msg = "hub: authorization error, try 'fluvio cloud login'".to_string();
                 return Err(HubUtilError::HubAccess(msg));
             }
             sc => {
-                let msg = format!("Hubid creation error {sc}");
+                let msg = format!("hub: hubid creation error {sc}");
                 return Err(HubUtilError::HubAccess(msg));
             }
         }
@@ -167,6 +170,7 @@ impl HubAccess {
     pub fn load_path<P: AsRef<Path>>(
         base_path: P,
         profile_in: Option<String>,
+        remote_url: &Option<String>,
     ) -> Result<HubAccess> {
         let profile = if let Some(profile) = profile_in {
             profile
@@ -208,6 +212,17 @@ impl HubAccess {
             ha.write_hash(base_path)?;
         }
 
+        ha.remote = if let Some(rurl) = remote_url {
+            // remote url from flag
+            info!("using remote={rurl}");
+            rurl.to_string()
+        } else if let Ok(envurl) = std::env::var(INFINYON_HUB_REMOTE) {
+            info!("using {INFINYON_HUB_REMOTE}={envurl}");
+            envurl
+        } else {
+            HUB_REMOTE.to_string()
+        };
+
         Ok(ha)
     }
 
@@ -221,7 +236,7 @@ impl HubAccess {
     pub fn write_hash<P: AsRef<Path>>(&self, base_path: P) -> Result<()> {
         let mut hash = Sha512::new();
         hash.update(&self.hubid);
-        hash.update(&self.remote);
+        hash.update(&self.pubkey);
         let hname = hex::encode(hash.finalize());
 
         let outpath = base_path.as_ref().join(&hname);

@@ -7,8 +7,6 @@ use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{DEF_HUB_INIT_DIR, HubAccess, PackageMeta};
 
-use crate::set_hubid::get_hubaccess;
-
 /// Publish SmartModule to SmartModule Hub
 #[derive(Debug, Parser)]
 pub struct PublishOpt {
@@ -18,13 +16,16 @@ pub struct PublishOpt {
     #[clap(long)]
     pack: bool,
 
-    // given a packed file do only the push
-    #[clap(long)]
+    /// given a packed file do only the push
+    #[clap(long, hide_short_help = true)]
     push: bool,
+
+    #[clap(long, hide_short_help = true)]
+    remote: Option<String>,
 }
 impl PublishOpt {
     pub(crate) fn process(&self) -> Result<()> {
-        let access = get_hubaccess()?;
+        let access = HubAccess::default_load(&self.remote)?;
 
         let hubdir = Path::new(DEF_HUB_INIT_DIR);
         if !hubdir.exists() {
