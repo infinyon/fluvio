@@ -126,12 +126,10 @@ test-permission-user1:
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
-# smoke-test-k8: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8: build_k8_image smoke-test
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
-# smoke-test-k8-tls: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8-tls: build_k8_image smoke-test
 
@@ -140,7 +138,6 @@ smoke-test-k8-tls-policy-setup:
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization $(EXTRA_ARG)
-# smoke-test-k8-tls-policy: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls-policy: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8-tls-policy: build_k8_image smoke-test
 

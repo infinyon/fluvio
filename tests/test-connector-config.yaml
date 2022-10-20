@@ -1,6 +1,0 @@
-version: v1
-name: my-test-connector
-type: test-connector
-topic: my-test-connector-topic
-create_topic: true 
-direction: source

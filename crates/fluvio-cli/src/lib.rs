@@ -8,9 +8,6 @@ pub mod install;
 mod profile;
 mod version;
 mod metadata;
-
-mod connector;
-
 mod render;
 
 pub(crate) use error::{Result, CliError};
@@ -29,7 +26,6 @@ mod root {
 
     use clap::{Parser, Command as ClapCommand, CommandFactory};
     use clap_complete::{generate, Shell};
-    use colored::Colorize;
     use tracing::debug;
 
     #[cfg(feature = "k8s")]
@@ -37,7 +33,6 @@ mod root {
     use fluvio_cli_common::install::fluvio_extensions_dir;
     use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, LATEST_CHANNEL_NAME};
 
-    use crate::connector::ManagedConnectorCmd;
     use crate::profile::ProfileOpt;
     use crate::install::update::UpdateOpt;
     use crate::install::plugins::InstallOpt;
@@ -136,9 +131,6 @@ mod root {
         #[clap(name = "metadata", hide = true)]
         Metadata(MetadataOpt),
 
-        /// Create and work with Managed Connectors
-        #[clap(subcommand, name = "connector")]
-        ManagedConnector(ManagedConnectorCmd),
 
         #[clap(external_subcommand)]
         External(Vec<String>),
@@ -195,18 +187,7 @@ mod root {
                 Self::Metadata(metadata) => {
                     metadata.process()?;
                 }
-                Self::ManagedConnector(group) => {
-                    eprintln!(
-                        "{} {}\n{}\n{}",
-                        "DEPRECATION NOTICE:".bold().yellow(),
-                        "`fluvio connectors` and managed connector support will be removed in a future release.".yellow(),
-                        "For migration and future self-management instructions, please check out our docs (https://www.fluvio.io/connectors).".yellow(),
-                        "For questions or comments reach our to us on our Discord (https://discord.com/invite/bBG2dTz) or email (team@infinyon.com)".yellow(),
-                    );
-                    let fluvio = root.target.connect().await?;
-                    group.process(out, &fluvio).await?;
-                }
-
+                
                 Self::External(args) => {
                     process_external_subcommand(args)?;
                 }
