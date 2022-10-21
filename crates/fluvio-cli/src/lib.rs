@@ -131,7 +131,6 @@ mod root {
         #[clap(name = "metadata", hide = true)]
         Metadata(MetadataOpt),
 
-
         #[clap(external_subcommand)]
         External(Vec<String>),
     }
@@ -187,7 +186,7 @@ mod root {
                 Self::Metadata(metadata) => {
                     metadata.process()?;
                 }
-                
+
                 Self::External(args) => {
                     process_external_subcommand(args)?;
                 }
