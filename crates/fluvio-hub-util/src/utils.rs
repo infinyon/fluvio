@@ -144,7 +144,7 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
         .content_type(mime::BYTE_STREAM)
         .body_bytes(pkg_bytes)
         .header("Authorization", &actiontoken);
-    let res = req
+    let mut res = req
         .await
         .map_err(|e| HubUtilError::HubAccess(format!("Failed to connect {e}")))?;
 
@@ -158,7 +158,9 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
         )),
         _ => {
             debug!("push result: {} \n{res:?}", res.status());
-            let msg = format!("Unknown error: {}", res.status());
+            let bodymsg = res.body_string().await
+                .map_err(|_e| HubUtilError::HubAccess("Failed to download err body".into()))?;
+            let msg = format!("error status code({}) {}", res.status(), bodymsg);
             Err(HubUtilError::HubAccess(msg))
         }
     }
