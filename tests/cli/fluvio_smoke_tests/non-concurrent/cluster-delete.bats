@@ -15,11 +15,7 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 setup_file() {
     # topic
     run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)"
-    # connector
-    CONNECTOR_CONFIG="$TEST_HELPER_DIR/test-connector-config.yml"
-    export CONNECTOR_CONFIG
     run timeout 15s "$FLUVIO_BIN" smartmodule create "$(random_string)" --wasm-file "$(mktemp)"
-    run timeout 15s "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
     # smartmodule
     run timeout 15s "$FLUVIO_BIN" smartmodule create "$(random_string)" --wasm-file "$(mktemp)"
     # table-format
@@ -35,21 +31,6 @@ setup_file() {
     assert_success
 }
 
-# The rest will be validated by `kubectl`
-@test "No connector pods left in K8 cluster" {
-    # CI is kind of slow to terminate the pod, so we just care that no connector pods are running
-    run kubectl get po -l app=fluvio-connector --field-selector=status.phase==Running
-    # `kubectl` will still return pods that are in Terminating state
-    refute_output --partial 'Running'
-}
-
-# CRD Resource Deletion checks
-#
-
-@test "Connectors deleted" {
-    run kubectl get managedconnectors
-#    assert_failure
-}
 
 @test "SPU Groups deleted" {
     run kubectl get spugroups
