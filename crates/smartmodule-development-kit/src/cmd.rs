@@ -8,7 +8,7 @@ use crate::load::LoadOpt;
 use crate::publish::PublishOpt;
 use crate::hub::HubCmd;
 
-/// Manage and view Fluvio clusters
+/// SmartModule Development Kit utility
 #[derive(Debug, Parser)]
 pub enum SmdkCommand {
     /// Builds SmartModule into WASM
