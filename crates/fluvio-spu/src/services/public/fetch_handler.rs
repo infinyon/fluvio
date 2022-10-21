@@ -41,6 +41,7 @@ pub async fn handle_fetch_request(
     inner
         .encode_file_slices(&response, header.api_version())
         .await?;
+
     drop(inner);
 
     trace!("Finished sending FileFetchResponse");
@@ -100,6 +101,10 @@ async fn handle_fetch_partition(
         }
     };
 
+    let partition_metrics = ctx
+        .metrics()
+        .with_topic_partition(&replica_id.topic, partition_request.partition_index);
+
     match leader_state
         .read_records(
             fetch_offset,
@@ -112,7 +117,10 @@ async fn handle_fetch_partition(
             partition_response.high_watermark = slice.end.hw;
             partition_response.log_start_offset = slice.start;
 
+            partition_metrics.add_records_read((slice.end.hw - slice.start) as u64);
+
             if let Some(file_slice) = slice.file_slice {
+                partition_metrics.add_bytes_read(file_slice.len());
                 partition_response.records = file_slice.into();
             }
         }
