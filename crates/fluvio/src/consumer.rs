@@ -229,11 +229,25 @@ where
         FluvioError,
     > {
         let (stream, start_offset) = self.request_stream(offset, config).await?;
-        let flattened = stream.flat_map(|batch_result: Result<DefaultStreamFetchResponse, _>| {
+        let flattened = stream.flat_map(move |batch_result: Result<DefaultStreamFetchResponse, _>| {
             let response = match batch_result {
                 Ok(response) => response,
                 Err(e) => return Either::Right(once(err(e))),
             };
+
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "otel-metrics")] {
+                    let meter = opentelemetry::global::meter("consumer");
+                    let counter_attributes = [
+                        opentelemetry::KeyValue::new("direction", "receive"),
+                        opentelemetry::KeyValue::new("topic", response.topic),
+                        opentelemetry::KeyValue::new("partition", response.partition.partition_index as i64),
+                    ];
+                    let records_counter = meter.u64_counter("fluvio.consumer.records").init();
+                    let bytes_counter = meter.u64_counter("fluvio.consumer.io").init();
+                    let otel_context = opentelemetry::Context::current();
+                }
+            }
 
             // If we ever get an error_code AND batches of records, we want to first send
             // the records down the consumer stream, THEN an Err with the error inside.
@@ -244,7 +258,21 @@ where
                 .records
                 .batches
                 .into_iter()
-                .map(|raw_batch| {
+                .map(move |raw_batch| {
+                    #[cfg(feature = "otel-metrics")]
+                    {
+                        records_counter.add(
+                            &otel_context,
+                            raw_batch.records_len() as u64,
+                            &counter_attributes,
+                        );
+                        bytes_counter.add(
+                            &otel_context,
+                            raw_batch.batch_len() as u64,
+                            &counter_attributes,
+                        );
+                    }
+
                     let batch: Result<Batch, _> = raw_batch.try_into();
                     match batch {
                         Ok(batch) => Ok(batch),
