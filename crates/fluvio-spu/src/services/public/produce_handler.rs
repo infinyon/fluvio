@@ -27,8 +27,6 @@ use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
 
-use super::metrics::{StorageMetrics, StorageMetricsTopicPartition};
-
 struct TopicWriteResult {
     topic: String,
     partitions: Vec<PartitionWriteResult>,
@@ -56,11 +54,9 @@ pub async fn handle_produce_request(
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
-    let metrics = super::metrics::StorageMetrics::new();
-
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
-        let topic_result = handle_produce_topic(&ctx, topic_request, &metrics).await;
+        let topic_result = handle_produce_topic(&ctx, topic_request).await;
         topic_results.push(topic_result);
     }
     wait_for_acks(
@@ -76,13 +72,12 @@ pub async fn handle_produce_request(
 }
 
 #[instrument(
-    skip(ctx, topic_request, metrics),
+    skip(ctx, topic_request),
     fields(topic = %topic_request.name),
 )]
 async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
     topic_request: DefaultTopicRequest,
-    metrics: &StorageMetrics,
 ) -> TopicWriteResult {
     let topic = &topic_request.name;
 
@@ -93,28 +88,22 @@ async fn handle_produce_topic(
         partitions: vec![],
     };
 
-    let topic_metrics = metrics.with_topic(topic);
-
     for partition_request in topic_request.partitions.into_iter() {
-        let partition_metrics = topic_metrics.with_partition(partition_request.partition_index);
-
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
-        let partition_response =
-            handle_produce_partition(ctx, replica_id, partition_request, partition_metrics).await;
+        let partition_response = handle_produce_partition(ctx, replica_id, partition_request).await;
         topic_result.partitions.push(partition_response);
     }
     topic_result
 }
 
 #[instrument(
-    skip(ctx, replica_id, partition_request, partition_metrics),
+    skip(ctx, replica_id, partition_request),
     fields(%replica_id),
 )]
 async fn handle_produce_partition<R: BatchRecords>(
     ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
     partition_request: PartitionProduceData<RecordSet<R>>,
-    partition_metrics: StorageMetricsTopicPartition<'_>,
 ) -> PartitionWriteResult {
     trace!("Handling produce request for partition:");
 
@@ -147,6 +136,9 @@ async fn handle_produce_partition<R: BatchRecords>(
 
     match write_result {
         Ok((base_offset, leo, bytes)) => {
+            let partition_metrics = ctx
+                .metrics()
+                .with_topic_partition(&replica_id.topic, partition_request.partition_index);
             partition_metrics.add_records_written((leo - base_offset) as u64);
             partition_metrics.add_bytes_written(bytes as u64);
 

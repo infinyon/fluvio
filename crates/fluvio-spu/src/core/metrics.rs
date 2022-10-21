@@ -1,10 +1,10 @@
-pub(crate) struct StorageMetrics {
+pub(crate) struct SpuMetrics {
     context: opentelemetry::Context,
     records: opentelemetry::metrics::Counter<u64>,
     bytes: opentelemetry::metrics::Counter<u64>,
 }
 
-impl StorageMetrics {
+impl SpuMetrics {
     pub(crate) fn new() -> Self {
         let context = opentelemetry::Context::new();
         let meter = opentelemetry::global::meter("storage");
@@ -18,77 +18,75 @@ impl StorageMetrics {
         }
     }
 
-    pub(crate) fn with_topic<'a>(&'a self, topic: &'a str) -> StorageMetricsTopic {
-        StorageMetricsTopic {
+    pub(crate) fn with_topic_partition<'a>(
+        &'a self,
+        topic: &'a str,
+        partition: i32,
+    ) -> SpuMetricsTopicPartition {
+        SpuMetricsTopicPartition {
             metrics: self,
             topic,
-        }
-    }
-}
-
-pub(crate) struct StorageMetricsTopic<'a> {
-    metrics: &'a StorageMetrics,
-    topic: &'a str,
-}
-
-impl<'a> StorageMetricsTopic<'a> {
-    pub(crate) fn with_partition(&'_ self, partition: i32) -> StorageMetricsTopicPartition {
-        StorageMetricsTopicPartition {
-            topic_metrics: self,
             partition,
         }
     }
 }
 
-pub(crate) struct StorageMetricsTopicPartition<'c> {
-    topic_metrics: &'c StorageMetricsTopic<'c>,
+impl std::fmt::Debug for SpuMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SpuMetrics").finish()
+    }
+}
+
+pub(crate) struct SpuMetricsTopicPartition<'a> {
+    metrics: &'a SpuMetrics,
+    topic: &'a str,
     partition: i32,
 }
 
-impl<'c> StorageMetricsTopicPartition<'c> {
+impl<'a> SpuMetricsTopicPartition<'a> {
     pub(crate) fn add_records_read(&self, value: u64) {
-        self.topic_metrics.metrics.records.add(
-            &self.topic_metrics.metrics.context,
+        self.metrics.records.add(
+            &self.metrics.context,
             value,
             &[
                 opentelemetry::KeyValue::new("direction", "read"),
-                opentelemetry::KeyValue::new("topic", self.topic_metrics.topic.to_owned()),
+                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
                 opentelemetry::KeyValue::new("partition", self.partition as i64),
             ],
         );
     }
 
     pub(crate) fn add_bytes_read(&self, value: u64) {
-        self.topic_metrics.metrics.bytes.add(
-            &self.topic_metrics.metrics.context,
+        self.metrics.bytes.add(
+            &self.metrics.context,
             value,
             &[
                 opentelemetry::KeyValue::new("direction", "read"),
-                opentelemetry::KeyValue::new("topic", self.topic_metrics.topic.to_owned()),
+                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
                 opentelemetry::KeyValue::new("partition", self.partition as i64),
             ],
         );
     }
 
     pub(crate) fn add_records_written(&self, value: u64) {
-        self.topic_metrics.metrics.records.add(
-            &self.topic_metrics.metrics.context,
+        self.metrics.records.add(
+            &self.metrics.context,
             value,
             &[
                 opentelemetry::KeyValue::new("direction", "write"),
-                opentelemetry::KeyValue::new("topic", self.topic_metrics.topic.to_owned()),
+                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
                 opentelemetry::KeyValue::new("partition", self.partition as i64),
             ],
         );
     }
 
     pub(crate) fn add_bytes_written(&self, value: u64) {
-        self.topic_metrics.metrics.bytes.add(
-            &self.topic_metrics.metrics.context,
+        self.metrics.bytes.add(
+            &self.metrics.context,
             value,
             &[
                 opentelemetry::KeyValue::new("direction", "write"),
-                opentelemetry::KeyValue::new("topic", self.topic_metrics.topic.to_owned()),
+                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
                 opentelemetry::KeyValue::new("partition", self.partition as i64),
             ],
         );

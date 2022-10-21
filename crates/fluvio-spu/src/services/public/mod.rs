@@ -8,7 +8,6 @@ mod stream_fetch;
 #[cfg(test)]
 mod tests;
 mod conn_context;
-mod metrics;
 
 use std::sync::Arc;
 use async_trait::async_trait;

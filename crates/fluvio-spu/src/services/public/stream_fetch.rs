@@ -34,8 +34,7 @@ use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::batch::BatchSmartEngine;
 use crate::smartengine::file_batch::FileBatchIterator;
-
-use super::metrics::StorageMetrics;
+use crate::core::metrics::SpuMetrics;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -49,7 +48,7 @@ pub struct StreamFetchHandler {
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
-    metrics: StorageMetrics,
+    metrics: SpuMetrics,
 }
 
 impl StreamFetchHandler {
@@ -173,7 +172,7 @@ impl StreamFetchHandler {
             starting_offset,
             "stream fetch");
 
-        let metrics = StorageMetrics::new();
+        let metrics = SpuMetrics::new();
 
         let handler = Self {
             isolation,
@@ -400,8 +399,9 @@ impl StreamFetchHandler {
             ..Default::default()
         };
 
-        let topic_metrics = self.metrics.with_topic(self.replica.topic.as_str());
-        let partition_metrics = topic_metrics.with_partition(self.replica.partition);
+        let partition_metrics = self
+            .metrics
+            .with_topic_partition(&self.replica.topic, self.replica.partition);
 
         // Read records from the leader starting from `offset`
         // Returns with the HW/LEO of the latest records available in the leader
