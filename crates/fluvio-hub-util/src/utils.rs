@@ -158,7 +158,9 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
         )),
         _ => {
             debug!("push result: {} \n{res:?}", res.status());
-            let bodymsg = res.body_string().await
+            let bodymsg = res
+                .body_string()
+                .await
                 .map_err(|_e| HubUtilError::HubAccess("Failed to download err body".into()))?;
             let msg = format!("error status code({}) {}", res.status(), bodymsg);
             Err(HubUtilError::HubAccess(msg))
