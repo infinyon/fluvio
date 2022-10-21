@@ -11,7 +11,7 @@ pub(crate) use instance::create_transform;
 mod instance {
 
     use anyhow::{Result};
-    use wasmtime::{AsContextMut};
+    use wasmtime::AsContextMut;
 
     use crate::{
         instance::{SmartModuleInstanceContext, DowncastableTransform},

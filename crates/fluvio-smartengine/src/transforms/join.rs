@@ -7,7 +7,7 @@ use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    WasmState,
+    state::WasmState,
 };
 
 pub(crate) const JOIN_FN_NAME: &str = "join";

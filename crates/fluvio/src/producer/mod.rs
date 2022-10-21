@@ -219,121 +219,92 @@ cfg_if::cfg_if! {
         use std::collections::BTreeMap;
         use once_cell::sync::Lazy;
 
-        use fluvio_spu_schema::server::smartmodule::{LegacySmartModulePayload,SmartModuleContextData,SmartModuleKind,SmartModuleWasmCompressed};
+        use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
         use fluvio_smartengine::SmartEngine;
         use fluvio_smartengine::SmartModuleConfig;
+        use fluvio_smartengine::SmartModuleChainBuilder;
+        use fluvio_smartengine::SmartModuleInitialData;
 
         static SM_ENGINE: Lazy<SmartEngine> = Lazy::new(|| {
             fluvio_smartengine::SmartEngine::new()
         });
 
-
-
         impl TopicProducer {
-            fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
-                let mut chain = SM_ENGINE.builder();
-                chain.add_smart_module(
-                    SmartModuleConfig::builder()
-                     .params(smart_payload.params).build()?,
-                    smart_payload.wasm.get_raw()?,
-                    ).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-
-                let chain_instance = chain.initialize().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+            /// Adds a chain of SmartModules to this TopicProducer
+            pub fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self, FluvioError> {
+                let chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                 self.sm_chain = Some(Arc::new(RwLock::new(chain_instance)));
-                Ok(())
+                Ok(self)
             }
+
             /// Adds a SmartModule filter to this TopicProducer
             pub fn with_filter<T: Into<Vec<u8>>>(
-                mut self,
+                self,
                 filter: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = LegacySmartModulePayload {
-                    wasm: SmartModuleWasmCompressed::Raw(filter.into()),
-                    kind: SmartModuleKind::Filter,
-                    params: params.into(),
-                };
-                self.init_engine(smart_payload)?;
-                Ok(self)
+                let config = SmartModuleConfig::builder().params(params.into()).build()?;
+                self.with_chain(SmartModuleChainBuilder::from((config, filter)))
             }
 
             /// Adds a SmartModule FilterMap to this TopicProducer
             pub fn with_filter_map<T: Into<Vec<u8>>>(
-                mut self,
+                self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = LegacySmartModulePayload {
-                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
-                    kind: SmartModuleKind::FilterMap,
-                    params: params.into(),
-                };
-                self.init_engine(smart_payload)?;
-                Ok(self)
+                let config = SmartModuleConfig::builder().params(params.into()).build()?;
+                self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
 
             /// Adds a SmartModule map to this TopicProducer
             pub fn with_map<T: Into<Vec<u8>>>(
-                mut self,
+                self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = LegacySmartModulePayload {
-                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
-                    kind: SmartModuleKind::Map,
-                    params: params.into(),
-                };
-                self.init_engine(smart_payload)?;
-                Ok(self)
+                let config = SmartModuleConfig::builder().params(params.into()).build()?;
+                self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
 
             /// Adds a SmartModule array_map to this TopicProducer
             pub fn with_array_map<T: Into<Vec<u8>>>(
-                mut self,
+                self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = LegacySmartModulePayload {
-                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
-                    kind: SmartModuleKind::ArrayMap,
-                    params: params.into(),
-                };
-
-                self.init_engine(smart_payload)?;
-                Ok(self)
+                let config = SmartModuleConfig::builder().params(params.into()).build()?;
+                self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
 
             /// Adds a SmartModule aggregate to this TopicProducer
             pub fn with_aggregate<T: Into<Vec<u8>>>(
-                mut self,
+                self,
                 map: T,
                 params: BTreeMap<String, String>,
                 accumulator: Vec<u8>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = LegacySmartModulePayload {
-                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
-                    kind: SmartModuleKind::Aggregate { accumulator },
-                    params: params.into(),
-                };
-                self.init_engine(smart_payload)?;
-                Ok(self)
+                let config = SmartModuleConfig::builder()
+                    .initial_data(SmartModuleInitialData::Aggregate{accumulator})
+                    .params(params.into()).build()?;
+                self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
 
             /// Use generic smartmodule (the type is detected in smartengine)
             pub fn with_smartmodule<T: Into<Vec<u8>>>(
-                mut self,
+                self,
                 smartmodule: T,
                 params: BTreeMap<String, String>,
                 context: SmartModuleContextData,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = LegacySmartModulePayload {
-                    wasm: SmartModuleWasmCompressed::Raw(smartmodule.into()),
-                    kind: SmartModuleKind::Generic ( context ),
-                    params: params.into(),
+                let mut config_builder = SmartModuleConfig::builder();
+                config_builder.params(params.into());
+                if let SmartModuleContextData::Aggregate{accumulator} = context {
+                    config_builder.initial_data(SmartModuleInitialData::Aggregate{accumulator});
                 };
-                self.init_engine(smart_payload)?;
-                Ok(self)
+                self.with_chain(SmartModuleChainBuilder::from((config_builder.build()?, smartmodule)))
             }
+
         }
     }
 }
