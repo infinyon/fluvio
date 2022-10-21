@@ -346,13 +346,6 @@ pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
 
 /// verify package signature. the pkgsig should contain the desired
 /// public key to verify sgainst
-fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
-    let mut file = std::fs::File::open(pkgfile)?;
-    package_verify_sig_from_readio(&mut file, pkgfile, pkgsig)
-}
-
-/// verify package signature. the pkgsig should contain the desired
-/// public key to verify sgainst
 fn package_verify_sig_from_readio<R: std::io::Read>(
     readio: &mut R,
     pkgfile: &str,
@@ -451,7 +444,8 @@ pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
             HubUtilError::PackageVerify(format!("{pkgfile} no signature with given key"))
         })?;
 
-    package_verify_sig(pkgfile, sig)?;
+    readio.rewind()?;
+    package_verify_sig_from_readio(readio, pkgfile, sig)?;
     Ok(())
 }
 
