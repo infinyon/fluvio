@@ -1735,7 +1735,7 @@ dependencies = [
  "humantime-serde",
  "indicatif",
  "k8-client",
- "k8-config 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-config 2.0.0",
  "k8-types",
  "pretty_assertions",
  "semver 1.0.13",
@@ -1803,7 +1803,7 @@ dependencies = [
  "include_dir",
  "indicatif",
  "k8-client",
- "k8-config 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "k8-config 2.0.0",
  "k8-metadata-client",
  "k8-types",
  "once_cell",
@@ -3229,7 +3229,7 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "7.0.0"
+version = "7.0.1"
 dependencies = [
  "async-trait",
  "base64",
@@ -3239,7 +3239,7 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "k8-config 2.0.0",
+ "k8-config 2.0.1",
  "k8-diff",
  "k8-metadata-client",
  "k8-types",
@@ -3255,6 +3255,8 @@ dependencies = [
 [[package]]
 name = "k8-config"
 version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609ad86e094cea1739cd6caf462ee5d55b7d8143afc3a49962e35aaac560e7de"
 dependencies = [
  "dirs",
  "hostfile",
@@ -3267,9 +3269,7 @@ dependencies = [
 
 [[package]]
 name = "k8-config"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "609ad86e094cea1739cd6caf462ee5d55b7d8143afc3a49962e35aaac560e7de"
+version = "2.0.1"
 dependencies = [
  "dirs",
  "hostfile",
@@ -3290,7 +3290,7 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -3304,7 +3304,7 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "serde",
  "serde_json",

@@ -185,11 +185,11 @@ impl ClusterUninstaller {
 
         use fluvio_controlplane_metadata::{
             connector::ManagedConnectorSpec, derivedstream::DerivedStreamSpec, partition::PartitionSpec,
-            spg::SpuGroupSpec, spu::SpuSpec, tableformat::TableFormatSpec, topic::TopicSpec};
+            spg::SpuGroupSpec, spg::k8::spec::K8SpuGroupSpec, spu::SpuSpec, tableformat::TableFormatSpec, topic::TopicSpec};
         use k8_types::app::stateful::StatefulSetSpec;
 
         // delete objects if not removed already
-        // let _ = self.remove_custom_objects::<SpuGroupSpec>(ns, None, false).await; // XXX wrong spec type?
+        let _ = self.remove_custom_objects::<SpuGroupSpec>(ns, None, false).await;
         let _ = self.remove_custom_objects::<SpuSpec>(ns, None, false).await;
         let _ = self.remove_custom_objects::<TopicSpec>(ns, None, false).await;
         let _ = self.remove_finalizers_for_partitions(ns).await;
@@ -229,6 +229,10 @@ impl ClusterUninstaller {
         // pb.set_message(format!("Removing {} objects", object_type)); // XXX remove
         let client = k8_client::load_and_share()?;
 
+        let mut meta = InputObjectMeta {
+            namespace: namespace.to_owned(),
+            ..Default::default()
+        };
         let options = if force {
             Some(DeleteOptions {
                 // It appears this is technically stricter than `--force`.
@@ -239,7 +243,7 @@ impl ClusterUninstaller {
             None
         };
         // Ignore the 'DeleteStatus', as long as the deletion succeeds.
-        client.delete_collection::<S>(NameSpace::Named(namespace.to_owned()), selector, options).await?;
+        client.delete_collection::<S, _>(NameSpace::Named(namespace.to_owned()), selector, options).await?.map(|_|());
         Ok(())
     }
 
