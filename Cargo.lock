@@ -4712,7 +4712,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1c928609d087790fc936a1067bdc310ae702bdf3b090c3f281b713622c8bbde"
 dependencies = [
  "async-trait",
- "futures 0.3.24",
+ "futures 0.3.25",
  "futures-util",
  "http",
  "opentelemetry",
@@ -4729,7 +4729,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d61a2f56df5574508dd86aaca016c917489e589ece4141df1b5e349af8d66c28"
 dependencies = [
- "futures 0.3.24",
+ "futures 0.3.25",
  "futures-util",
  "opentelemetry",
  "prost",
