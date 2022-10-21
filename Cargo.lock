@@ -2625,6 +2625,7 @@ dependencies = [
  "futures-util",
  "nix 0.25.0",
  "once_cell",
+ "opentelemetry",
  "pin-utils",
  "portpicker",
  "regex",
@@ -4623,6 +4624,7 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ca41c4933371b61c2a2f214bf16931499af4ec90543604ec828f7a625c09113"
 dependencies = [
+ "async-std",
  "async-trait",
  "crossbeam-channel",
  "dashmap",

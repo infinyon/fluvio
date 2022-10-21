@@ -20,6 +20,7 @@ use crate::replication::leader::{
     SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
 };
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
+use crate::core::metrics::SpuMetrics;
 
 use super::leader_client::LeaderConnections;
 use super::smartmodule::SmartModuleLocalStore;
@@ -47,6 +48,7 @@ pub struct GlobalContext<S> {
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
+    metrics: SpuMetrics,
 }
 
 // -----------------------------------
@@ -64,6 +66,7 @@ where
     pub fn new(spu_config: SpuConfig) -> Self {
         let spus = SpuLocalStore::new_shared();
         let replicas = ReplicaStore::new_shared();
+        let metrics = SpuMetrics::new();
 
         GlobalContext {
             spu_localstore: spus.clone(),
@@ -77,6 +80,7 @@ where
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
+            metrics,
         }
     }
 
@@ -153,6 +157,10 @@ where
     #[allow(unused)]
     pub fn leaders(&self) -> Arc<LeaderConnections> {
         self.leaders.clone()
+    }
+
+    pub(crate) fn metrics(&self) -> &SpuMetrics {
+        &self.metrics
     }
 }
 
