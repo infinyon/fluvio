@@ -538,7 +538,6 @@ jobs:
             reconnection,
             batch-failure,
             batch,
-            stats-validation,
           ]
     steps:
       - uses: actions/checkout@v3
