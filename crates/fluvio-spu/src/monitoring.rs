@@ -4,9 +4,9 @@ use async_net::unix::UnixListener;
 use fluvio_future::task::spawn;
 use futures_util::{StreamExt};
 
-use crate::core::DefaultSharedGlobalContext;
+use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 
-const SOCKET_PATH: &str = "/tmp/fluvio-spu.sock";
+use crate::core::DefaultSharedGlobalContext;
 
 pub(crate) async fn init_monitoring(ctx: DefaultSharedGlobalContext) {
     spawn(async move {
@@ -18,17 +18,19 @@ pub(crate) async fn init_monitoring(ctx: DefaultSharedGlobalContext) {
 
 /// initialize if monitoring flag is set
 async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError> {
+    /*
     if std::env::var("FLUVIO_METRIC").is_err() {
         println!("fluvio metric is not set");
         return Ok(());
     }
+    */
 
-    println!("fluvio metric is set, using: {}", SOCKET_PATH);
+    println!(
+        "fluvio metric is set, using: {}",
+        SPU_MONITORING_UNIX_SOCKET
+    );
 
-    let listener = UnixListener::bind(SOCKET_PATH).map_err(|err| {
-        println!("error binding to socket: {}", err);
-        err
-    })?;
+    let listener = UnixListener::bind(SPU_MONITORING_UNIX_SOCKET)?;
     let mut incoming = listener.incoming();
 
     let metrics = ctx.metrics();
