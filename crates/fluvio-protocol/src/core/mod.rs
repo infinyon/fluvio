@@ -1,14 +1,14 @@
+mod bytebuf;
 mod decoder;
 mod encoder;
 mod varint;
-mod wasm_bytes;
 mod zerocopy;
 
+pub use self::bytebuf::ByteBuf;
 pub use self::decoder::Decoder;
 pub use self::decoder::DecoderVarInt;
 pub use self::encoder::Encoder;
 pub use self::encoder::EncoderVarInt;
-pub use self::wasm_bytes::WasmBytes;
 
 pub type Version = i16;
 

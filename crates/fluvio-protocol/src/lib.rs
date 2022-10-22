@@ -28,11 +28,11 @@ pub mod fixture;
 #[cfg(all(unix, feature = "store"))]
 pub mod store;
 
+pub use self::core::ByteBuf;
 pub use self::core::Decoder;
 pub use self::core::DecoderVarInt;
 pub use self::core::Encoder;
 pub use self::core::EncoderVarInt;
 pub use self::core::Version;
-pub use self::core::WasmBytes;
 
 pub use bytes;

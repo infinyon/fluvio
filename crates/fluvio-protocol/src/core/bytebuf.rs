@@ -9,19 +9,17 @@ use crate::{Encoder, Version};
 ///
 /// Provides a `Encoder` implementation optimized for WASM files used in
 /// SmartModules.
-pub struct WasmBytes(Vec<u8>);
+pub struct ByteBuf(Vec<u8>);
 
-impl From<Vec<u8>> for WasmBytes {
+impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
         Self(bytes)
     }
 }
 
-impl Encoder for WasmBytes {
-    fn write_size(&self, version: Version) -> usize {
-        self.0
-            .iter()
-            .fold(4, |sum, val| sum + val.write_size(version))
+impl Encoder for ByteBuf {
+    fn write_size(&self, _version: Version) -> usize {
+        self.0.len() + 4
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -35,7 +33,7 @@ impl Encoder for WasmBytes {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
                 format!(
-                    "Not enough capacity for WasmBytes. Expected: {}, Remaining: {}",
+                    "Not enough capacity for ByteBuf. Expected: {}, Remaining: {}",
                     expected, remaining
                 ),
             ));
@@ -55,12 +53,12 @@ impl Encoder for WasmBytes {
 #[cfg(test)]
 mod tests {
     use crate::Encoder;
-    use super::WasmBytes;
+    use super::ByteBuf;
 
     #[test]
-    fn test_encode_wasmbytes() {
+    fn test_encode_bytebuf() {
         let mut dest = Vec::default();
-        let value: WasmBytes = WasmBytes::from(vec![12, 128, 255, 78, 9]);
+        let value: ByteBuf = ByteBuf::from(vec![12, 128, 255, 78, 9]);
         let result = value.encode(&mut dest, 0);
 
         assert!(result.is_ok());
