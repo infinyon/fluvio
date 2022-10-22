@@ -18,19 +18,18 @@ pub(crate) async fn init_monitoring(ctx: DefaultSharedGlobalContext) {
 
 /// initialize if monitoring flag is set
 async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError> {
-    /*
-    if std::env::var("FLUVIO_METRIC").is_err() {
-        println!("fluvio metric is not set");
-        return Ok(());
-    }
-    */
+    let metric_out_path = match std::env::var("FLUVIO_METRIC_SPU") {
+        Ok(path) => {
+            println!("using metric path: {}", path);
+            path
+        }
+        Err(_) => {
+            println!("using default metric path: {}", SPU_MONITORING_UNIX_SOCKET);
+            SPU_MONITORING_UNIX_SOCKET.to_owned()
+        }
+    };
 
-    println!(
-        "fluvio metric is set, using: {}",
-        SPU_MONITORING_UNIX_SOCKET
-    );
-
-    let listener = UnixListener::bind(SPU_MONITORING_UNIX_SOCKET)?;
+    let listener = UnixListener::bind(metric_out_path)?;
     let mut incoming = listener.incoming();
 
     let metrics: &SpuMetrics = &ctx.metrics();
