@@ -7,7 +7,7 @@ use clap::Parser;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
 
-use crate::client::cmd::ClientCmd;
+use crate::client::cmd::AdminClient;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 use crate::Result;
@@ -23,7 +23,7 @@ pub struct ListSmartModuleOpt {
 }
 
 #[async_trait]
-impl ClientCmd for ListSmartModuleOpt {
+impl AdminClient for ListSmartModuleOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
         out: Arc<O>,

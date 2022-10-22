@@ -11,7 +11,7 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec
 use fluvio_extension_common::Terminal;
 
 use crate::Result;
-use crate::client::cmd::ClientCmd;
+use crate::client::cmd::AdminClient;
 
 /// Create a new SmartModule with a given name
 #[derive(Debug, Parser)]
@@ -27,7 +27,7 @@ pub struct CreateSmartModuleOpt {
 }
 
 #[async_trait]
-impl ClientCmd for CreateSmartModuleOpt {
+impl AdminClient for CreateSmartModuleOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
         _out: Arc<O>,

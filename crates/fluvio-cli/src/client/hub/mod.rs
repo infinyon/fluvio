@@ -13,7 +13,7 @@ mod cmd {
     use fluvio::Fluvio;
     use fluvio_extension_common::target::ClusterTarget;
 
-    use crate::client::cmd::ClientCmd;
+    use crate::client::cmd::AdminClient;
     use crate::common::output::Terminal;
     use crate::Result;
 
@@ -27,7 +27,7 @@ mod cmd {
     }
 
     #[async_trait]
-    impl ClientCmd for HubCmd {
+    impl AdminClient for HubCmd {
         async fn process<O: Terminal + Send + Sync + Debug>(
             self,
             out: Arc<O>,

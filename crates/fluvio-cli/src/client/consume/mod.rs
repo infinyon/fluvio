@@ -21,6 +21,7 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
+    use fluvio::metrics::ClientMetrics;
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -47,6 +48,7 @@ mod cmd {
     use fluvio::consumer::{PartitionSelectionStrategy, Record};
     use fluvio_spu_schema::Isolation;
 
+    use crate::client::cmd::ConsumerClient;
     use crate::render::ProgressRenderer;
     use crate::{CliError, Result};
     use crate::common::FluvioExtensionMetadata;
@@ -57,7 +59,7 @@ mod cmd {
         format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
         format_json, format_basic_table_record, format_fancy_table_record,
     };
-    use super::super::ClientCmd;
+
     use super::table_format::{TableEventResponse, TableModel};
 
     const DEFAULT_TAIL: u32 = 10;
@@ -199,7 +201,7 @@ mod cmd {
     }
 
     #[async_trait]
-    impl ClientCmd for ConsumeOpt {
+    impl ConsumerClient for ConsumeOpt {
         #[instrument(
             skip(self, fluvio),
             name = "Consume",
@@ -209,6 +211,7 @@ mod cmd {
             self,
             _out: Arc<O>,
             fluvio: &Fluvio,
+            metrics: Arc<ClientMetrics>,
         ) -> Result<()> {
             let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
                 let admin = fluvio.admin().await;

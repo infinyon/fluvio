@@ -13,7 +13,7 @@ mod cmd {
     use fluvio::Fluvio;
 
     use crate::Result;
-    use crate::client::cmd::ClientCmd;
+    use crate::client::cmd::AdminClient;
     use crate::common::output::Terminal;
     use crate::common::FluvioExtensionMetadata;
 
@@ -31,7 +31,7 @@ mod cmd {
     }
 
     #[async_trait]
-    impl ClientCmd for PartitionCmd {
+    impl AdminClient for PartitionCmd {
         async fn process_client<O: Terminal + Debug + Send + Sync>(
             self,
             out: Arc<O>,

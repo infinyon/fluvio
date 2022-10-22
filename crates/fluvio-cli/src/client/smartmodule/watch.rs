@@ -9,7 +9,7 @@ use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
 use fluvio_future::io::StreamExt;
 
-use crate::client::cmd::ClientCmd;
+use crate::client::cmd::AdminClient;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 use crate::Result;
@@ -22,7 +22,7 @@ pub struct WatchSmartModuleOpt {
 }
 
 #[async_trait]
-impl ClientCmd for WatchSmartModuleOpt {
+impl AdminClient for WatchSmartModuleOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
         _out: Arc<O>,

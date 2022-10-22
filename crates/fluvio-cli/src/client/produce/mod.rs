@@ -13,6 +13,7 @@ mod cmd {
     use std::time::Duration;
 
     use async_trait::async_trait;
+    use fluvio::metrics::ClientMetrics;
     use futures::future::join_all;
     use clap::Parser;
     use tracing::{error, warn};
@@ -26,7 +27,7 @@ mod cmd {
     use fluvio_spu_schema::Isolation;
     use fluvio_types::print_cli_ok;
 
-    use crate::client::cmd::ClientCmd;
+    use crate::client::cmd::ConsumerClient;
     use crate::common::FluvioExtensionMetadata;
     use crate::Result;
     use crate::util::parse_isolation;
@@ -89,6 +90,7 @@ mod cmd {
         #[clap(long, value_parser=parse_isolation)]
         pub isolation: Option<Isolation>,
 
+        /*
         #[cfg(feature = "stats")]
         /// Experimental: Collect basic producer session statistics and print in stats bar
         #[clap(long)]
@@ -113,7 +115,7 @@ mod cmd {
         /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
         #[clap(long)]
         pub stats_summary: bool,
-
+        */
         /// Delivery guarantees that producer must respect. Supported values:
         /// at_most_once (AtMostOnce) - send records without waiting from response,
         /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
@@ -130,11 +132,12 @@ mod cmd {
     }
 
     #[async_trait]
-    impl ClientCmd for ProduceOpt {
+    impl ConsumerClient for ProduceOpt {
         async fn process_client<O: Terminal + Debug + Send + Sync>(
             self,
             _out: Arc<O>,
             fluvio: &Fluvio,
+            metrics: Arc<ClientMetrics>,
         ) -> Result<()> {
             let config_builder = if self.interactive_mode() {
                 TopicProducerConfigBuilder::default().linger(std::time::Duration::from_millis(10))

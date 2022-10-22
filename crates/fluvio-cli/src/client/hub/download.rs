@@ -15,7 +15,7 @@ use fluvio_hub_util as hubutil;
 use tracing::info;
 
 use crate::{CliError, Result};
-use crate::client::cmd::ClientCmd;
+use crate::client::cmd::AdminClient;
 
 /// Download a SmartModule from the hub
 #[derive(Debug, Parser)]
@@ -40,7 +40,7 @@ pub struct DownloadHubOpt {
 }
 
 #[async_trait]
-impl ClientCmd for DownloadHubOpt {
+impl AdminClient for DownloadHubOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
         _out: Arc<O>,
