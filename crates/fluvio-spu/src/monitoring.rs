@@ -30,18 +30,15 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
     };
 
     // check if file exists
-    match std::fs::metadata(&metric_out_path) {
-        Ok(_) => {
-            println!("metric file already exists, deleting: {}", metric_out_path);
-            match std::fs::remove_file(&metric_out_path) {
-                Ok(_) => {}
-                Err(err) => {
-                    println!("error deleting metric file: {}", err);
-                    return Err(err);
-                }
+    if let Ok(_metadata) = std::fs::metadata(&metric_out_path) {
+        println!("metric file already exists, deleting: {}", metric_out_path);
+        match std::fs::remove_file(&metric_out_path) {
+            Ok(_) => {}
+            Err(err) => {
+                println!("error deleting metric file: {}", err);
+                return Err(err);
             }
         }
-        Err(_) => {}
     }
 
     let listener = UnixListener::bind(metric_out_path)?;
