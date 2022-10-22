@@ -29,19 +29,16 @@ cfg_if::cfg_if! {
 
         #[derive(Default, Debug, Serialize)]
         pub struct RecordCounter {
-            pub records: u64,
-            pub bytes: u64,
+
         }
 
         impl RecordCounter {
             #[inline]
-            pub(crate) fn add_records(&self, value: u64) {
-                self.records += value;
+            pub(crate) fn add_records(&self, _value: u64) {
             }
 
             #[inline]
-            pub(crate) fn add_bytes(&self, value: u64) {
-                self.bytes += value;
+            pub(crate) fn add_bytes(&self, _value: u64) {
             }
         }
 
