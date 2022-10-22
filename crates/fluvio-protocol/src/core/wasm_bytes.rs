@@ -36,6 +36,7 @@ impl Encoder for WasmBytes {
             ));
         }
 
+        dest.put_u32(self.0.len() as u32);
         dest.put_slice(self.0.as_slice());
 
         Ok(())
