@@ -50,7 +50,7 @@ pub fn main_loop(opt: SpuOpt) {
             proxy::start_proxy(spu_config, tls_config).await;
         }
 
-        init_monitoring(ctx).await;
+        init_monitoring(ctx);
 
         println!("SPU Version: {} started successfully", VERSION);
 
