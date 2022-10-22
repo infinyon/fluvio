@@ -43,6 +43,7 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
 
     let listener = UnixListener::bind(metric_out_path)?;
     let mut incoming = listener.incoming();
+    println!("monitoring started");
 
     let metrics: &SpuMetrics = &ctx.metrics();
     while let Some(stream) = incoming.next().await {
