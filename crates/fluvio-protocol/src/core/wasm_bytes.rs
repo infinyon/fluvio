@@ -1,10 +1,14 @@
-use std::io::Error as IoError;
+use std::io::Error;
 use std::io::ErrorKind;
 
 use bytes::{Bytes, BufMut};
 
 use crate::{Encoder, Version};
 
+/// Represnts a SmartModule WASM File bytes.
+///
+/// Provides a `Encoder` implementation optimized for WASM files used in
+/// SmartModules.
 pub struct WasmBytes(Vec<u8>);
 
 impl From<Vec<u8>> for WasmBytes {
@@ -20,7 +24,7 @@ impl Encoder for WasmBytes {
             .fold(4, |sum, val| sum + val.write_size(version))
     }
 
-    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
     where
         T: BufMut,
     {
@@ -28,7 +32,7 @@ impl Encoder for WasmBytes {
         let expected = self.write_size(version);
 
         if remaining < expected {
-            return Err(IoError::new(
+            return Err(Error::new(
                 ErrorKind::UnexpectedEof,
                 format!(
                     "Not enough capacity for WasmBytes. Expected: {}, Remaining: {}",
@@ -43,7 +47,7 @@ impl Encoder for WasmBytes {
         Ok(())
     }
 
-    fn as_bytes(&self, _version: Version) -> Result<Bytes, IoError> {
+    fn as_bytes(&self, _version: Version) -> Result<Bytes, Error> {
         Ok(Bytes::copy_from_slice(self.0.as_slice()))
     }
 }
