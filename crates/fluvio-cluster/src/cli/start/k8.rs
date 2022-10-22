@@ -36,7 +36,7 @@ pub async fn process_k8(
         .use_k8_port_forwarding(opt.k8_config.use_k8_port_forwarding);
 
     if cfg!(target_os = "macos") {
-        builder.proxy_addr(opt.proxy_addr.unwrap_or(String::from("localhost")));
+        builder.proxy_addr(opt.proxy_addr.unwrap_or_else(|| String::from("localhost")));
     } else {
         builder.proxy_addr(opt.proxy_addr);
     }
