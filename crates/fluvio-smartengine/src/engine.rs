@@ -11,7 +11,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 
 use crate::init::SmartModuleInit;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
-use crate::metrics::ChainMetrics;
+use crate::metrics::{SmartModuleChainMetrics};
 use crate::transforms::create_transform;
 
 const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
@@ -161,7 +161,7 @@ impl SmartModuleChainBuilder {
         Ok(SmartModuleChainInstance {
             store: self.store,
             instances: self.instances,
-            metrics: ChainMetrics::new(),
+            metrics: SmartModuleChainMetrics::new(),
         })
     }
 }
@@ -170,7 +170,7 @@ impl SmartModuleChainBuilder {
 pub struct SmartModuleChainInstance {
     store: Store<State>,
     instances: Vec<SmartModuleInstance>,
-    metrics: ChainMetrics,
+    metrics: SmartModuleChainMetrics,
 }
 
 impl Debug for SmartModuleChainInstance {
@@ -207,7 +207,6 @@ impl SmartModuleChainInstance {
         let base_offset = input.base_offset();
 
         if let Some((last, instances)) = self.instances.split_last_mut() {
-            self.metrics.inc_invocations();
             let mut next_input = input;
             self.metrics
                 .add_bytes_in(next_input.raw_bytes().len() as u64);

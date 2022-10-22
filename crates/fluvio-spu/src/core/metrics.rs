@@ -5,8 +5,8 @@ use std::sync::{
 
 #[derive(Clone, Default)]
 pub(crate) struct SpuMetrics {
-    records_read: Arc<AtomicI64>,
-    records_write: Arc<AtomicI64>,
+    records_read: Arc<AtomicU64>,
+    records_write: Arc<AtomicU64>,
     bytes_read: Arc<AtomicU64>,
     bytes_written: Arc<AtomicU64>,
 }
@@ -29,11 +29,11 @@ impl SpuMetrics {
     }
 
     pub(crate) fn records_read(&self) -> u64 {
-        self.records_read.load(Ordering::SeqCst) as u64
+        self.records_read.load(Ordering::SeqCst)
     }
 
     pub(crate) fn records_write(&self) -> u64 {
-        self.records_write.load(Ordering::SeqCst) as u64
+        self.records_write.load(Ordering::SeqCst)
     }
 
     pub(crate) fn bytes_read(&self) -> u64 {
@@ -59,9 +59,7 @@ pub(crate) struct SpuMetricsTopicPartition<'a> {
 
 impl<'a> SpuMetricsTopicPartition<'a> {
     pub(crate) fn add_records_read(&self, value: u64) {
-        self.metrics
-            .records_read
-            .fetch_add(value as i64, Ordering::SeqCst);
+        self.metrics.records_read.fetch_add(value, Ordering::SeqCst);
     }
 
     pub(crate) fn add_bytes_read(&self, value: u64) {
@@ -71,7 +69,7 @@ impl<'a> SpuMetricsTopicPartition<'a> {
     pub(crate) fn add_records_written(&self, value: u64) {
         self.metrics
             .records_write
-            .fetch_add(value as i64, Ordering::SeqCst);
+            .fetch_add(value, Ordering::SeqCst);
     }
 
     pub(crate) fn add_bytes_written(&self, value: u64) {
