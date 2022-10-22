@@ -1,9 +1,11 @@
 //!
 //! # SmartModule Spec
 //!
-use std::{io::Error as IoError, borrow::Cow};
+use std::borrow::Cow;
+use std::io::Error as IoError;
+use std::io::ErrorKind;
 
-use bytes::BufMut;
+use bytes::{Bytes, BufMut};
 use tracing::debug;
 
 use fluvio_protocol::{Encoder, Decoder, Version};
@@ -102,6 +104,40 @@ impl SmartModuleSpec {
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 pub struct SmartModuleWasmSummary {
     pub wasm_length: u32,
+}
+
+pub struct WasmBytes(Vec<u8>);
+
+impl Encoder for WasmBytes {
+    fn write_size(&self, version: Version) -> usize {
+        self.0
+            .iter()
+            .fold(4, |sum, val| sum + val.write_size(version))
+    }
+
+    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), IoError>
+    where
+        T: BufMut,
+    {
+        if dest.remaining_mut() < 4 {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                "Not enough capacity for WasmBytes",
+            ));
+        }
+
+        dest.put_u32(self.0.len() as u32);
+
+        for v in &self.0 {
+            dest.put_u8(*v);
+        }
+
+        Ok(())
+    }
+
+    fn as_bytes(&self, _version: Version) -> Result<Bytes, IoError> {
+        Ok(Bytes::copy_from_slice(self.0.as_slice()))
+    }
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Encoder, Decoder)]
