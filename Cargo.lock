@@ -2103,6 +2103,7 @@ dependencies = [
 name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
+ "async-net",
  "async-trait",
  "atty",
  "bytesize",
@@ -2135,6 +2136,7 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "futures 0.3.25",
+ "futures-util",
  "handlebars",
  "hex",
  "home",
