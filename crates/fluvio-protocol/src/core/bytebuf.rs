@@ -1,19 +1,38 @@
 use std::io::Error;
 use std::io::ErrorKind;
 
-use bytes::{Bytes, BufMut};
+use bytes::{Buf, Bytes, BufMut};
 
-use crate::{Encoder, Version};
+use crate::{Encoder, Decoder, Version};
 
 /// Represnts a SmartModule WASM File bytes.
 ///
 /// Provides a `Encoder` implementation optimized for WASM files used in
 /// SmartModules.
+#[derive(Clone, Debug, Default)]
 pub struct ByteBuf(Vec<u8>);
 
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
         Self(bytes)
+    }
+}
+
+impl Decoder for ByteBuf {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: Buf,
+    {
+        let mut len: i32 = 0;
+        len.decode(src, version)?;
+
+        if len < 1 {
+            return Ok(());
+        }
+
+        src.copy_to_slice(&mut self.0);
+
+        Ok(())
     }
 }
 
