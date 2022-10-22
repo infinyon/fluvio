@@ -14,9 +14,10 @@ impl From<Vec<u8>> for WasmBytes {
 }
 
 impl Encoder for WasmBytes {
-    #[inline]
-    fn write_size(&self, _version: Version) -> usize {
-        4
+    fn write_size(&self, version: Version) -> usize {
+        self.0
+            .iter()
+            .fold(4, |sum, val| sum + val.write_size(version))
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
@@ -59,12 +60,24 @@ mod tests {
         let result = value.encode(&mut dest, 0);
 
         assert!(result.is_ok());
-        assert_eq!(dest.len(), 5);
-        assert_eq!(dest[0], 0x0C);
-        assert_eq!(dest[1], 0x80);
-        assert_eq!(dest[2], 0xFF);
-        assert_eq!(dest[3], 0x4E);
-        assert_eq!(dest[4], 0x09);
-        assert_eq!(value.write_size(0), 1);
+
+        // Length + Contents
+        assert_eq!(dest.len(), 9);
+
+        // Length Bytes
+        assert_eq!(dest[0], 0x00);
+        assert_eq!(dest[1], 0x00);
+        assert_eq!(dest[2], 0x00);
+        assert_eq!(dest[3], 0x05);
+
+        // Actual Content
+        assert_eq!(dest[4], 0x0C);
+        assert_eq!(dest[5], 0x80);
+        assert_eq!(dest[6], 0xFF);
+        assert_eq!(dest[7], 0x4E);
+        assert_eq!(dest[8], 0x09);
+
+        // Length in 32bits (4 bytes) + Contents (5 elements)
+        assert_eq!(value.write_size(0), 9);
     }
 }
