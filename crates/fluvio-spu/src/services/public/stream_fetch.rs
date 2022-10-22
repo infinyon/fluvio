@@ -48,7 +48,7 @@ pub struct StreamFetchHandler {
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
-    metrics: SpuMetrics,
+    metrics: Arc<SpuMetrics>,
 }
 
 impl StreamFetchHandler {
@@ -172,8 +172,6 @@ impl StreamFetchHandler {
             starting_offset,
             "stream fetch");
 
-        let metrics = SpuMetrics::new();
-
         let handler = Self {
             isolation,
             replica: replica.clone(),
@@ -185,7 +183,7 @@ impl StreamFetchHandler {
             stream_id,
             leader_state,
             max_fetch_bytes,
-            metrics,
+            metrics: ctx.metrics(),
         };
 
         if let Err(err) = handler.process(starting_offset, derivedstream_ctx).await {
@@ -462,6 +460,7 @@ impl StreamFetchHandler {
                         &mut file_batch_iterator,
                         self.max_bytes as usize,
                         join_last_record.map(|s| s.inner()),
+                        self.metrics.chain_metrics(),
                     )
                     .map_err(|err| {
                         StreamFetchError::Fetch(ErrorCode::Other(format!(

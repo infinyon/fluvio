@@ -48,7 +48,7 @@ pub struct GlobalContext<S> {
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
-    metrics: SpuMetrics,
+    metrics: Arc<SpuMetrics>,
 }
 
 // -----------------------------------
@@ -66,7 +66,7 @@ where
     pub fn new(spu_config: SpuConfig) -> Self {
         let spus = SpuLocalStore::new_shared();
         let replicas = ReplicaStore::new_shared();
-        let metrics = SpuMetrics::new();
+        let metrics = Arc::new(SpuMetrics::new());
 
         GlobalContext {
             spu_localstore: spus.clone(),
@@ -159,8 +159,8 @@ where
         self.leaders.clone()
     }
 
-    pub(crate) fn metrics(&self) -> &SpuMetrics {
-        &self.metrics
+    pub(crate) fn metrics(&self) -> Arc<SpuMetrics> {
+        self.metrics.clone()
     }
 }
 

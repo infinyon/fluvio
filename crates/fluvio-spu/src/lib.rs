@@ -10,6 +10,7 @@ cfg_if::cfg_if! {
         mod control_plane;
         mod storage;
         mod smartengine;
+        mod monitoring;
         pub use start::main_loop;
     }
 }
