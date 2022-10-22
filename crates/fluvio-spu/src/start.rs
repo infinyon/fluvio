@@ -41,8 +41,7 @@ pub fn main_loop(opt: SpuOpt) {
     info!(uptime = sys.uptime(), "Uptime in secs");
 
     run_block_on(async move {
-        let (_ctx, internal_server, public_server) =
-            create_services(spu_config.clone(), true, true);
+        let (ctx, internal_server, public_server) = create_services(spu_config.clone(), true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
@@ -51,7 +50,9 @@ pub fn main_loop(opt: SpuOpt) {
             proxy::start_proxy(spu_config, tls_config).await;
         }
 
-        init_monitoring().await.expect("unable to start monitoring");
+        init_monitoring(ctx.metrics())
+            .await
+            .expect("unable to start monitoring");
 
         println!("SPU Version: {} started successfully", VERSION);
 

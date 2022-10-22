@@ -23,8 +23,8 @@ impl SpuMetrics {
     ) -> SpuMetricsTopicPartition {
         SpuMetricsTopicPartition {
             metrics: self,
-            topic,
-            partition,
+            _topic: topic,
+            _partition: partition,
         }
     }
 
@@ -53,8 +53,8 @@ impl std::fmt::Debug for SpuMetrics {
 
 pub(crate) struct SpuMetricsTopicPartition<'a> {
     metrics: &'a SpuMetrics,
-    topic: &'a str,
-    partition: i32,
+    _topic: &'a str,
+    _partition: i32,
 }
 
 impl<'a> SpuMetricsTopicPartition<'a> {

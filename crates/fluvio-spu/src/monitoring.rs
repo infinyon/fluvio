@@ -12,7 +12,7 @@ pub(crate) async fn init_monitoring(metrics: &SpuMetrics) -> Result<(), IoError>
     while let Some(stream) = incoming.next().await {
         let mut stream = stream?;
 
-        export::metrics(&mut stream, metrics).await?;
+        export::metrics(&mut stream, &metrics).await?;
     }
 
     Ok(())
@@ -40,8 +40,7 @@ mod export {
         stream: &mut UnixStream,
         metrics: &SpuMetrics,
     ) -> Result<(), IoError> {
-        let mut out_metric = Metrics::default();
-        let mut out = Metrics {
+        let out = Metrics {
             records_read: metrics.records_read(),
             records_write: metrics.records_write(),
             bytes_read: metrics.bytes_read(),
