@@ -24,6 +24,7 @@ mod memory_batch;
 pub use fluvio_protocol::record::{RecordKey, RecordData};
 
 use crate::FluvioError;
+use crate::metrics::ClientMetrics;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::PartitionerConfig;
@@ -69,6 +70,7 @@ impl ProducerPool {
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
+        client_metric: Arc<ClientMetrics>,
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
@@ -90,6 +92,7 @@ impl ProducerPool {
                 flush_event.clone(),
                 #[cfg(feature = "stats")]
                 client_stats.clone(),
+                client_metric.clone(),
             );
             errors.push(error);
             end_events.push(end_event);
@@ -108,6 +111,7 @@ impl ProducerPool {
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
+        client_metric: Arc<ClientMetrics>,
     ) -> Arc<Self> {
         Arc::new(ProducerPool::new(
             config,
@@ -116,6 +120,7 @@ impl ProducerPool {
             batches,
             #[cfg(feature = "stats")]
             client_stats,
+            client_metric,
         ))
     }
 
@@ -343,6 +348,7 @@ impl TopicProducer {
         topic: String,
         spu_pool: Arc<SpuPool>,
         config: TopicProducerConfig,
+        metrics: Arc<ClientMetrics>,
     ) -> Result<Self> {
         let config = Arc::new(config);
         let topics = spu_pool.metadata.topics();
@@ -410,6 +416,7 @@ impl TopicProducer {
             record_accumulator.batches(),
             #[cfg(feature = "stats")]
             client_stats.clone(),
+            metrics.clone(),
         );
 
         Ok(Self {

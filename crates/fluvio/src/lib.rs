@@ -93,7 +93,7 @@ mod offset;
 pub mod stats;
 mod sync;
 pub mod spu;
-
+pub mod metrics;
 pub mod config;
 
 use tracing::instrument;

@@ -2039,7 +2039,6 @@ dependencies = [
  "hdrhistogram",
  "num-traits",
  "once_cell",
- "opentelemetry",
  "pin-project-lite",
  "quantities",
  "rand 0.8.5",

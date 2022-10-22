@@ -11,6 +11,7 @@ use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
 
 use crate::error::{Result, FluvioError};
+use crate::metrics::ClientMetrics;
 use crate::producer::accumulator::ProducePartitionResponseFuture;
 use crate::producer::config::DeliverySemantic;
 use crate::sockets::VersionedSerialSocket;
@@ -26,11 +27,6 @@ use crate::stats::{
     ClientStats, ClientStatsUpdateBuilder, ClientStatsDataCollect, ClientStatsMetricRaw,
 };
 
-#[cfg(feature = "otel-metrics")]
-use opentelemetry::{global, Context, KeyValue};
-#[cfg(feature = "otel-metrics")]
-use opentelemetry::metrics::Counter;
-
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
     config: Arc<TopicProducerConfig>,
@@ -39,12 +35,9 @@ pub(crate) struct PartitionProducer {
     batches_lock: Arc<BatchesDeque>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
+    metrics: Arc<ClientMetrics>,
     #[cfg(feature = "stats")]
     client_stats: Arc<ClientStats>,
-    #[cfg(feature = "otel-metrics")]
-    records_counter: Counter<u64>,
-    #[cfg(feature = "otel-metrics")]
-    bytes_counter: Counter<u64>,
 }
 
 impl PartitionProducer {
@@ -56,14 +49,8 @@ impl PartitionProducer {
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
+        metrics: Arc<ClientMetrics>,
     ) -> Self {
-        #[cfg(feature = "otel-metrics")]
-        let meter = global::meter("producer");
-        #[cfg(feature = "otel-metrics")]
-        let records_counter = meter.u64_counter("fluvio.producer.records").init();
-        #[cfg(feature = "otel-metrics")]
-        let bytes_counter = meter.u64_counter("fluvio.producer.io").init();
-
         Self {
             config,
             replica,
@@ -73,10 +60,7 @@ impl PartitionProducer {
             last_error,
             #[cfg(feature = "stats")]
             client_stats,
-            #[cfg(feature = "otel-metrics")]
-            records_counter,
-            #[cfg(feature = "otel-metrics")]
-            bytes_counter,
+            metrics,
         }
     }
 
@@ -88,6 +72,7 @@ impl PartitionProducer {
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
+        metrics: Arc<ClientMetrics>,
     ) -> Arc<Self> {
         Arc::new(PartitionProducer::new(
             config,
@@ -98,6 +83,7 @@ impl PartitionProducer {
             error,
             #[cfg(feature = "stats")]
             client_stats,
+            metrics,
         ))
     }
 
@@ -112,6 +98,7 @@ impl PartitionProducer {
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
         #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
+        metrics: Arc<ClientMetrics>,
     ) {
         let producer = PartitionProducer::shared(
             config,
@@ -122,6 +109,7 @@ impl PartitionProducer {
             error,
             #[cfg(feature = "stats")]
             client_stats,
+            metrics,
         );
         fluvio_future::task::spawn(async move {
             producer.run(end_event, flush_event).await;
@@ -268,21 +256,9 @@ impl PartitionProducer {
                     .push(ClientStatsMetricRaw::Records(raw_batch.records_len() as u64));
             }
 
-            #[cfg(feature = "otel-metrics")]
-            {
-                let cx = Context::current();
-
-                let counter_attributes = [
-                    KeyValue::new("direction", "transmit"),
-                    KeyValue::new("topic", self.replica.topic.clone()),
-                    KeyValue::new("partition", self.replica.partition as i64),
-                ];
-
-                self.records_counter
-                    .add(&cx, raw_batch.records_len() as u64, &counter_attributes);
-                self.bytes_counter
-                    .add(&cx, raw_batch.batch_len() as u64, &counter_attributes);
-            }
+            let producer_metrics = self.metrics.producer();
+            producer_metrics.add_records(raw_batch.records_len() as u64);
+            producer_metrics.add_bytes(raw_batch.batch_len() as u64);
 
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
