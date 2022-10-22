@@ -7,7 +7,7 @@ use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{DEF_HUB_INIT_DIR, HubAccess, PackageMeta};
 
-const SMART_TOML: &str = "Smart.toml";
+const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
 /// Publish SmartModule to SmartModule Hub
 #[derive(Debug, Parser)]
@@ -114,13 +114,13 @@ pub fn init_package_template() -> Result<()> {
 }
 
 fn find_smartmodule_toml() -> Result<PathBuf> {
-    let smartmodule_toml = Path::new(SMART_TOML);
+    let smartmodule_toml = Path::new(SMARTMODULE_TOML);
 
     if smartmodule_toml.exists() {
         return Ok(smartmodule_toml.to_path_buf());
     }
 
-    Err(anyhow::anyhow!("No \"{}\" file found", SMART_TOML))
+    Err(anyhow::anyhow!("No \"{}\" file found", SMARTMODULE_TOML))
 }
 
 #[ignore]
@@ -139,7 +139,7 @@ fn build_sm_toml() {
 fn reference_sm_toml() {
     use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
 
-    let fpath = "../../smartmodule/cargo_template/Smart.toml";
+    let fpath = format!("../../smartmodule/cargo_template/{}", SMARTMODULE_TOML);
     let smart_toml = SmartModuleMetadata::from_toml(fpath);
     assert!(
         smart_toml.is_ok(),
