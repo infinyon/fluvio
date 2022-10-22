@@ -56,7 +56,7 @@ mod export {
     #[derive(Serialize, Default)]
     struct Metrics {
         records_read: u64,
-        records_write: u64,
+        records_written: u64,
         bytes_read: u64,
         bytes_written: u64,
     }
@@ -67,7 +67,7 @@ mod export {
     ) -> Result<(), IoError> {
         let out = Metrics {
             records_read: metrics.records_read(),
-            records_write: metrics.records_write(),
+            records_written: metrics.records_write(),
             bytes_read: metrics.bytes_read(),
             bytes_written: metrics.bytes_written(),
         };
