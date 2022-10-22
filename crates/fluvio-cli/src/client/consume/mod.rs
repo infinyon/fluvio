@@ -109,11 +109,11 @@ mod cmd {
         /// Would produce a printout where records might look like this:
         ///
         /// Offset 0 has key A and value Apple
-        #[clap(short = 'F', long, conflicts_with_all = &["output", "key-value"])]
+        #[clap(short = 'F', long, conflicts_with_all = &["output"])]
         pub format: Option<String>,
 
         /// Consume records using the formatting rules defined by TableFormat name
-        #[clap(long, conflicts_with_all = &["key-value", "format"])]
+        #[clap(long)]
         pub table_format: Option<String>,
 
         /// Consume records starting X from the beginning of the log (default: 0)
@@ -121,11 +121,11 @@ mod cmd {
         pub from_beginning: Option<Option<u32>>,
 
         /// The offset of the first record to begin consuming from
-        #[clap(short, long, value_name = "integer", conflicts_with_all = &["from-beginning", "tail"])]
+        #[clap(short, long, value_name = "integer", conflicts_with_all = &["tail"])]
         pub offset: Option<u32>,
 
         /// Consume records starting X from the end of the log (default: 10)
-        #[clap(short = 'T', long, value_name = "integer", conflicts_with_all = &["from-beginning", "offset"])]
+        #[clap(short = 'T', long, value_name = "integer", conflicts_with_all = &["offset"])]
         pub tail: Option<Option<u32>>,
 
         /// Consume records until end offset
