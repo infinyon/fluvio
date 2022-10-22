@@ -25,6 +25,7 @@ pub struct PublishOpt {
     #[clap(long, hide_short_help = true)]
     remote: Option<String>,
 }
+
 impl PublishOpt {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
@@ -80,6 +81,7 @@ pub fn package_push(pkgpath: &str, access: &HubAccess) -> Result<()> {
     }
     Ok(())
 }
+
 pub fn init_package_template() -> Result<()> {
     // fill out template w/ defaults
     let pmetapath = hubutil::DEF_HUB_PKG_META;
