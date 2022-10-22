@@ -134,11 +134,11 @@ async fn handle_produce_partition<R: BatchRecords>(
         .write_record_set(&mut records, ctx.follower_notifier())
         .await;
 
+    let metrics = ctx.metrics();
     match write_result {
         Ok((base_offset, leo, bytes)) => {
-            let partition_metrics = ctx
-                .metrics()
-                .with_topic_partition(&replica_id.topic, partition_request.partition_index);
+            let partition_metrics =
+                metrics.with_topic_partition(&replica_id.topic, partition_request.partition_index);
             partition_metrics.add_records_written((leo - base_offset) as u64);
             partition_metrics.add_bytes_written(bytes as u64);
 

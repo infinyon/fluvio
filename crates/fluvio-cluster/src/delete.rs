@@ -1,11 +1,12 @@
 use std::process::Command;
-use std::fs::remove_dir_all;
+use std::fs::{remove_dir_all, remove_file};
 
 use derive_builder::Builder;
 use tracing::{info, warn, debug, instrument};
 use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_command::CommandExt;
+use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 
 use crate::helm::HelmClient;
 use crate::charts::{APP_CHART_NAME, SYS_CHART_NAME};
@@ -176,6 +177,22 @@ impl ClusterUninstaller {
             },
             None => {
                 warn!("Unable to find data dir, cannot remove");
+            }
+        }
+
+        // remove monitoring socket
+        match remove_file(SPU_MONITORING_UNIX_SOCKET) {
+            Ok(_) => {
+                pb.println(format!(
+                    "Removed spu monitoring socket: {}",
+                    SPU_MONITORING_UNIX_SOCKET
+                ));
+            }
+            Err(err) => {
+                pb.println(format!(
+                    "SPU monitoring socket  {}, can't be removed: {}",
+                    SPU_MONITORING_UNIX_SOCKET, err
+                ));
             }
         }
 

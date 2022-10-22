@@ -1,21 +1,21 @@
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+};
+
+use serde::Serialize;
+
+#[derive(Default, Debug, Serialize)]
 pub(crate) struct SpuMetrics {
-    context: opentelemetry::Context,
-    records: opentelemetry::metrics::Counter<u64>,
-    bytes: opentelemetry::metrics::Counter<u64>,
+    records_read: AtomicU64,
+    records_write: AtomicU64,
+    bytes_read: AtomicU64,
+    bytes_written: AtomicU64,
+    smartmodule: SmartModuleChainMetrics,
 }
 
 impl SpuMetrics {
     pub(crate) fn new() -> Self {
-        let context = opentelemetry::Context::new();
-        let meter = opentelemetry::global::meter("storage");
-        let records = meter.u64_counter("fluvio.storage.records").init();
-        let bytes = meter.u64_counter("fluvio.storage.io").init();
-
-        Self {
-            context,
-            records,
-            bytes,
-        }
+        Self::default()
     }
 
     pub(crate) fn with_topic_partition<'a>(
@@ -25,70 +25,58 @@ impl SpuMetrics {
     ) -> SpuMetricsTopicPartition {
         SpuMetricsTopicPartition {
             metrics: self,
-            topic,
-            partition,
+            _topic: topic,
+            _partition: partition,
         }
     }
-}
 
-impl std::fmt::Debug for SpuMetrics {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SpuMetrics").finish()
+    pub(crate) fn chain_metrics(&self) -> &SmartModuleChainMetrics {
+        &self.smartmodule
     }
 }
 
 pub(crate) struct SpuMetricsTopicPartition<'a> {
     metrics: &'a SpuMetrics,
-    topic: &'a str,
-    partition: i32,
+    _topic: &'a str,
+    _partition: i32,
 }
 
 impl<'a> SpuMetricsTopicPartition<'a> {
     pub(crate) fn add_records_read(&self, value: u64) {
-        self.metrics.records.add(
-            &self.metrics.context,
-            value,
-            &[
-                opentelemetry::KeyValue::new("direction", "read"),
-                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
-                opentelemetry::KeyValue::new("partition", self.partition as i64),
-            ],
-        );
+        self.metrics.records_read.fetch_add(value, Ordering::SeqCst);
     }
 
     pub(crate) fn add_bytes_read(&self, value: u64) {
-        self.metrics.bytes.add(
-            &self.metrics.context,
-            value,
-            &[
-                opentelemetry::KeyValue::new("direction", "read"),
-                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
-                opentelemetry::KeyValue::new("partition", self.partition as i64),
-            ],
-        );
+        self.metrics.bytes_read.fetch_add(value, Ordering::SeqCst);
     }
 
     pub(crate) fn add_records_written(&self, value: u64) {
-        self.metrics.records.add(
-            &self.metrics.context,
-            value,
-            &[
-                opentelemetry::KeyValue::new("direction", "write"),
-                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
-                opentelemetry::KeyValue::new("partition", self.partition as i64),
-            ],
-        );
+        self.metrics
+            .records_write
+            .fetch_add(value, Ordering::SeqCst);
     }
 
     pub(crate) fn add_bytes_written(&self, value: u64) {
-        self.metrics.bytes.add(
-            &self.metrics.context,
-            value,
-            &[
-                opentelemetry::KeyValue::new("direction", "write"),
-                opentelemetry::KeyValue::new("topic", self.topic.to_owned()),
-                opentelemetry::KeyValue::new("partition", self.partition as i64),
-            ],
-        );
+        self.metrics
+            .bytes_written
+            .fetch_add(value, Ordering::SeqCst);
+    }
+}
+
+#[derive(Serialize, Default, Debug)]
+pub struct SmartModuleChainMetrics {
+    bytes_in: AtomicU64,
+    records_out: AtomicU64,
+    invocation_count: AtomicU64,
+}
+
+impl SmartModuleChainMetrics {
+    pub(crate) fn add_bytes_in(&self, value: u64) {
+        self.bytes_in.fetch_add(value, Ordering::SeqCst);
+        self.invocation_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    pub(crate) fn add_records_out(&self, value: u64) {
+        self.records_out.fetch_add(value, Ordering::SeqCst);
     }
 }

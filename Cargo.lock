@@ -2539,7 +2539,6 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-types",
- "opentelemetry",
  "thiserror",
  "tracing",
  "wasmtime",
@@ -2599,6 +2598,7 @@ dependencies = [
  "async-channel",
  "async-io",
  "async-lock",
+ "async-net",
  "async-rwlock",
  "async-trait",
  "bytes 1.2.1",
@@ -2625,7 +2625,6 @@ dependencies = [
  "futures-util",
  "nix 0.25.0",
  "once_cell",
- "opentelemetry",
  "pin-utils",
  "portpicker",
  "regex",
@@ -2841,7 +2840,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "event-listener",
  "fluvio-future",
@@ -4624,7 +4623,6 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ca41c4933371b61c2a2f214bf16931499af4ec90543604ec828f7a625c09113"
 dependencies = [
- "async-std",
  "async-trait",
  "crossbeam-channel",
  "dashmap",
