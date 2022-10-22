@@ -15,13 +15,11 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 use crate::error::EngineError;
 use crate::init::SmartModuleInit;
 use crate::{WasmSlice, memory, SmartModuleChainBuilder, State, WasmState};
-use crate::metrics::SmartModuleMetrics;
 
 pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,
     init: Option<SmartModuleInit>,
     transform: Box<dyn DowncastableTransform>,
-    metrics: SmartModuleMetrics,
 }
 
 impl SmartModuleInstance {
@@ -45,7 +43,6 @@ impl SmartModuleInstance {
             ctx,
             init,
             transform,
-            metrics: SmartModuleMetrics::new(),
         }
     }
 
@@ -54,13 +51,7 @@ impl SmartModuleInstance {
         input: SmartModuleInput,
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        self.metrics.inc_invocations();
-        self.metrics.add_bytes_in(input.raw_bytes().len() as u64);
-        let result = self.transform.process(input, &mut self.ctx, store);
-        if let Ok(ref output) = result {
-            self.metrics.add_records_out(output.successes.len() as u64);
-        }
-        result
+        self.transform.process(input, &mut self.ctx, store)
     }
 
     // TODO: Move this to SPU

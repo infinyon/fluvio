@@ -11,6 +11,8 @@ use fluvio_protocol::{
 use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
+use crate::core::metrics::SmartModuleChainMetrics;
+
 use super::file_batch::FileBatchIterator;
 
 pub(crate) trait BatchSmartEngine {
@@ -19,16 +21,18 @@ pub(crate) trait BatchSmartEngine {
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
+        metric: &SmartModuleChainMetrics,
     ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error>;
 }
 
 impl BatchSmartEngine for SmartModuleChainInstance {
-    #[instrument(skip(self, iter, max_bytes))]
+    #[instrument(skip(self, iter, max_bytes, metric))]
     fn process_batch(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         _join_last_record: Option<&Record>,
+        metric: &SmartModuleChainMetrics,
     ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
         let mut smartmodule_batch = Batch::<MemoryRecords>::default();
         smartmodule_batch.base_offset = -1; // indicate this is uninitialized
@@ -67,7 +71,11 @@ impl BatchSmartEngine for SmartModuleChainInstance {
             let input =
                 SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
 
+            println!("sm raw input: {:?}", input.raw_bytes().len());
+            metric.add_bytes_in(input.raw_bytes().len() as u64);
+
             let output = self.process(input)?;
+            metric.add_records_out(output.successes.len() as u64);
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;

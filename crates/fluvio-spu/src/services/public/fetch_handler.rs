@@ -101,9 +101,9 @@ async fn handle_fetch_partition(
         }
     };
 
-    let partition_metrics = ctx
-        .metrics()
-        .with_topic_partition(&replica_id.topic, partition_request.partition_index);
+    let metric = ctx.metrics();
+    let partition_metrics =
+        metric.with_topic_partition(&replica_id.topic, partition_request.partition_index);
 
     match leader_state
         .read_records(

@@ -1,14 +1,16 @@
 use std::sync::{
-    atomic::{AtomicI64, AtomicU64, Ordering},
-    Arc,
+    atomic::{AtomicU64, Ordering},
 };
 
-#[derive(Clone, Default)]
+use serde::Serialize;
+
+#[derive(Default, Debug, Serialize)]
 pub(crate) struct SpuMetrics {
-    records_read: Arc<AtomicU64>,
-    records_write: Arc<AtomicU64>,
-    bytes_read: Arc<AtomicU64>,
-    bytes_written: Arc<AtomicU64>,
+    records_read: AtomicU64,
+    records_write: AtomicU64,
+    bytes_read: AtomicU64,
+    bytes_written: AtomicU64,
+    smartmodule: SmartModuleChainMetrics,
 }
 
 impl SpuMetrics {
@@ -28,26 +30,8 @@ impl SpuMetrics {
         }
     }
 
-    pub(crate) fn records_read(&self) -> u64 {
-        self.records_read.load(Ordering::SeqCst)
-    }
-
-    pub(crate) fn records_write(&self) -> u64 {
-        self.records_write.load(Ordering::SeqCst)
-    }
-
-    pub(crate) fn bytes_read(&self) -> u64 {
-        self.bytes_read.load(Ordering::SeqCst)
-    }
-
-    pub(crate) fn bytes_written(&self) -> u64 {
-        self.bytes_written.load(Ordering::SeqCst)
-    }
-}
-
-impl std::fmt::Debug for SpuMetrics {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SpuMetrics").finish()
+    pub(crate) fn chain_metrics(&self) -> &SmartModuleChainMetrics {
+        &self.smartmodule
     }
 }
 
@@ -76,5 +60,21 @@ impl<'a> SpuMetricsTopicPartition<'a> {
         self.metrics
             .bytes_written
             .fetch_add(value, Ordering::SeqCst);
+    }
+}
+
+#[derive(Serialize, Default, Debug)]
+pub struct SmartModuleChainMetrics {
+    bytes_in: AtomicU64,
+    records_out: AtomicU64,
+}
+
+impl SmartModuleChainMetrics {
+    pub(crate) fn add_bytes_in(&self, value: u64) {
+        self.bytes_in.fetch_add(value, Ordering::SeqCst);
+    }
+
+    pub(crate) fn add_records_out(&self, value: u64) {
+        self.records_out.fetch_add(value, Ordering::SeqCst);
     }
 }

@@ -2,11 +2,11 @@ use std::io::Error as IoError;
 
 use async_net::unix::UnixListener;
 use fluvio_future::task::spawn;
-use futures_util::{StreamExt};
+use futures_util::{StreamExt, AsyncWriteExt};
 
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::{DefaultSharedGlobalContext, metrics::SpuMetrics};
 
 pub(crate) async fn init_monitoring(ctx: DefaultSharedGlobalContext) {
     spawn(async move {
@@ -33,48 +33,14 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
     let listener = UnixListener::bind(SPU_MONITORING_UNIX_SOCKET)?;
     let mut incoming = listener.incoming();
 
-    let metrics = ctx.metrics();
+    let metrics: &SpuMetrics = &ctx.metrics();
     while let Some(stream) = incoming.next().await {
         let mut stream = stream?;
 
-        export::metrics(&mut stream, metrics).await?;
+        println!("metrics: {:?}", metrics);
+        let bytes = serde_json::to_vec_pretty(metrics)?;
+        stream.write_all(&bytes).await?;
     }
 
     Ok(())
-}
-
-mod export {
-
-    use std::io::Error as IoError;
-
-    use async_net::unix::UnixStream;
-    use futures_util::AsyncWriteExt;
-    use serde::Serialize;
-
-    use crate::core::metrics::SpuMetrics;
-
-    #[derive(Serialize, Default)]
-    struct Metrics {
-        records_read: u64,
-        records_written: u64,
-        bytes_read: u64,
-        bytes_written: u64,
-    }
-
-    pub(crate) async fn metrics(
-        stream: &mut UnixStream,
-        metrics: &SpuMetrics,
-    ) -> Result<(), IoError> {
-        let out = Metrics {
-            records_read: metrics.records_read(),
-            records_written: metrics.records_write(),
-            bytes_read: metrics.bytes_read(),
-            bytes_written: metrics.bytes_written(),
-        };
-
-        let bytes = serde_json::to_vec_pretty(&out)?;
-        stream.write_all(&bytes).await?;
-
-        Ok(())
-    }
 }
