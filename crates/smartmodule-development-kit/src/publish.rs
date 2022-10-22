@@ -1,4 +1,4 @@
-use std::{path::Path};
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
@@ -6,6 +6,8 @@ use clap::Parser;
 use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{DEF_HUB_INIT_DIR, HubAccess, PackageMeta};
+
+const SMART_TOML: &str = "Smart.toml";
 
 /// Publish SmartModule to SmartModule Hub
 #[derive(Debug, Parser)]
@@ -90,7 +92,7 @@ pub fn init_package_template() -> Result<()> {
         ..PackageMeta::default()
     };
     let sm_toml_file = find_smartmodule_toml()?;
-    pm.update_from_smartmodule_toml(&sm_toml_file)?;
+    pm.update_from_smartmodule_toml(&sm_toml_file.to_string_lossy().to_string())?;
 
     println!("Creating package {}", pm.pkg_name());
     pm.naming_check()?;
@@ -111,28 +113,14 @@ pub fn init_package_template() -> Result<()> {
     Ok(())
 }
 
-fn find_smartmodule_toml() -> Result<String> {
-    let prjdir = if let Ok(d) = std::fs::read_dir("./") {
-        d
-    } else {
-        return Err(anyhow::anyhow!("couldn't read in directory"));
-    };
-    let cargo_toml = Path::new("./Cargo.toml");
-    for ent in prjdir {
-        let ent = ent?;
-        let fp = ent.path();
-        if fp == cargo_toml {
-            continue;
-        }
-        if let Some(ext) = fp.extension() {
-            if ext != "toml" {
-                continue;
-            }
-            let fpstr = fp.to_string_lossy().to_string();
-            return Ok(fpstr);
-        }
+fn find_smartmodule_toml() -> Result<PathBuf> {
+    let smartmodule_toml = Path::new(SMART_TOML);
+
+    if smartmodule_toml.exists() {
+        return Ok(smartmodule_toml.to_path_buf());
     }
-    Err(anyhow::anyhow!("No smartmodule toml file found"))
+
+    Err(anyhow::anyhow!("No \"{}\" file found", SMART_TOML))
 }
 
 #[ignore]
