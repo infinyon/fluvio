@@ -2599,6 +2599,7 @@ dependencies = [
  "async-channel",
  "async-io",
  "async-lock",
+ "async-net",
  "async-rwlock",
  "async-trait",
  "bytes 1.2.1",

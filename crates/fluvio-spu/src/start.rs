@@ -20,6 +20,9 @@ pub fn main_loop(opt: SpuOpt) {
 
     use fluvio_future::task::run_block_on;
     use fluvio_future::timer::sleep;
+
+    use crate::monitoring::init_monitoring;
+
     // parse configuration (program exits on error)
     let (spu_config, tls_acceptor_option) = opt.process_spu_cli_or_exit();
 
@@ -47,6 +50,8 @@ pub fn main_loop(opt: SpuOpt) {
         if let Some(tls_config) = tls_acceptor_option {
             proxy::start_proxy(spu_config, tls_config).await;
         }
+
+        init_monitoring().await.expect("unable to start monitoring");
 
         println!("SPU Version: {} started successfully", VERSION);
 
