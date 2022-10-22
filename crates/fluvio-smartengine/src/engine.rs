@@ -3,6 +3,7 @@ use std::fmt::{self, Debug};
 
 use anyhow::{Error, Result};
 use derive_builder::Builder;
+use tracing::debug;
 use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
@@ -11,6 +12,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 
 use crate::init::SmartModuleInit;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
+use crate::metrics::SmartModuleChainMetrics;
 use crate::transforms::create_transform;
 
 const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
@@ -200,7 +202,15 @@ impl SmartModuleChainInstance {
     /// The output of one smart module is the input of the next smart module.
     /// A single record may result in multiple records.
     /// The output of the last smart module is added to the output of the chain.
-    pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
+    pub fn process(
+        &mut self,
+        input: SmartModuleInput,
+        metric: &SmartModuleChainMetrics,
+    ) -> Result<SmartModuleOutput> {
+        let raw_len = input.raw_bytes().len();
+        debug!(raw_len, "sm raw input");
+        metric.add_bytes_in(raw_len as u64);
+
         let base_offset = input.base_offset();
 
         if let Some((last, instances)) = self.instances.split_last_mut() {
@@ -220,7 +230,11 @@ impl SmartModuleChainInstance {
                 }
             }
 
-            last.process(next_input, &mut self.store)
+            let output = last.process(next_input, &mut self.store)?;
+            let records_out = output.successes.len();
+            metric.add_records_out(records_out as u64);
+            debug!(records_out, "sm records out");
+            Ok(output)
         } else {
             Ok(SmartModuleOutput::new(input.try_into()?))
         }
@@ -308,7 +322,9 @@ mod chaining_test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
+    use crate::{
+        SmartEngine, SmartModuleConfig, SmartModuleInitialData, metrics::SmartModuleChainMetrics,
+    };
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
     const SM_MAP: &str = "fluvio_smartmodule_map";
@@ -320,6 +336,7 @@ mod chaining_test {
     fn test_chain_filter_map() {
         let engine = SmartEngine::new();
         let mut chain_builder = engine.builder();
+        let metrics = SmartModuleChainMetrics::default();
 
         chain_builder
             .add_smart_module(
@@ -343,7 +360,7 @@ mod chaining_test {
 
         let input = vec![Record::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
@@ -353,7 +370,7 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
@@ -367,6 +384,7 @@ mod chaining_test {
     fn test_chain_filter_aggregate() {
         let engine = SmartEngine::new();
         let mut chain_builder = engine.builder();
+        let metrics = SmartModuleChainMetrics::default();
 
         chain_builder
             .add_smart_module(
@@ -399,7 +417,7 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
@@ -407,13 +425,13 @@ mod chaining_test {
 
         let input = vec![Record::new("nothing")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![Record::new("elephant")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
@@ -430,9 +448,9 @@ mod chaining_test {
         let mut chain = chain_builder.initialize().expect("failed to build chain");
         let record = vec![Record::new("input")];
         let input = SmartModuleInput::try_from(record).expect("valid input record");
-
+        let metrics = SmartModuleChainMetrics::default();
         //when
-        let output = chain.process(input).expect("process failed");
+        let output = chain.process(input, &metrics).expect("process failed");
 
         //then
         assert_eq!(output.successes.len(), 1);

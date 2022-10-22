@@ -4,6 +4,7 @@ use std::fmt::Debug;
 
 use clap::Parser;
 use anyhow::Result;
+use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::debug;
 
 use fluvio::RecordKey;
@@ -89,7 +90,8 @@ impl TestOpt {
         let record_value: RecordData = raw_input.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
 
-        let output = chain.process(SmartModuleInput::try_from(entries)?)?;
+        let metrics = SmartModuleChainMetrics::default();
+        let output = chain.process(SmartModuleInput::try_from(entries)?, &metrics)?;
 
         println!("{:?} records outputed", output.successes.len());
         for output_record in output.successes {

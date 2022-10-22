@@ -70,15 +70,7 @@ impl BatchSmartEngine for SmartModuleChainInstance {
             let input =
                 SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
 
-            let raw_len = input.raw_bytes().len();
-            debug!(raw_len, "sm raw input");
-            metric.add_bytes_in(raw_len as u64);
-
-            let output = self.process(input)?;
-
-            let records_out = output.successes.len();
-            metric.add_records_out(records_out as u64);
-            debug!(records_out, "sm records out");
+            let output = self.process(input, metric)?;
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;

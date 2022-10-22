@@ -44,18 +44,6 @@ pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
 use crate::error::Result;
 
-/// An interface for producing events to a particular topic
-///
-/// A `TopicProducer` allows you to send events to the specific
-/// topic it was initialized for. Once you have a `TopicProducer`,
-/// you can send events to the topic, choosing which partition
-/// each event should be delivered to.
-pub struct TopicProducer {
-    inner: Arc<InnerTopicProducer>,
-    #[cfg(feature = "smartengine")]
-    sm_chain: Option<Arc<RwLock<fluvio_smartengine::SmartModuleChainInstance>>>,
-}
-
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
     flush_events: Vec<(Arc<EventHandler>, Arc<EventHandler>)>,
@@ -160,14 +148,27 @@ impl Drop for ProducerPool {
         self.end();
     }
 }
+
+/// An interface for producing events to a particular topic
+///
+/// A `TopicProducer` allows you to send events to the specific
+/// topic it was initialized for. Once you have a `TopicProducer`,
+/// you can send events to the topic, choosing which partition
+/// each event should be delivered to.
+pub struct TopicProducer {
+    inner: Arc<InnerTopicProducer>,
+    #[cfg(feature = "smartengine")]
+    sm_chain: Option<Arc<RwLock<fluvio_smartengine::SmartModuleChainInstance>>>,
+    #[allow(unused)]
+    metrics: Arc<ClientMetrics>,
+}
+
 struct InnerTopicProducer {
     config: Arc<TopicProducerConfig>,
     topic: String,
     spu_pool: Arc<SpuPool>,
     record_accumulator: RecordAccumulator,
     producer_pool: Arc<ProducerPool>,
-    #[cfg(feature = "stats")]
-    client_stats: Arc<ClientStats>,
 }
 
 impl InnerTopicProducer {
@@ -382,20 +383,6 @@ impl TopicProducer {
                     ))),
                 },
             };
-        #[cfg(feature = "stats")]
-        let client_stats = ClientStats::new_shared(config.stats_collect);
-        #[cfg(feature = "stats")]
-        // start the histogram
-        if config.stats_collect != ClientStatsDataCollect::None {
-            ClientStats::start_stats_histogram(client_stats.clone());
-        };
-        #[cfg(feature = "stats")]
-        // Only start background system monitoring when requested
-        if config.stats_collect == ClientStatsDataCollect::All
-            || config.stats_collect == ClientStatsDataCollect::System
-        {
-            ClientStats::start_system_monitor(client_stats.clone());
-        };
 
         let record_accumulator = RecordAccumulator::new(
             config.batch_size,
@@ -418,11 +405,10 @@ impl TopicProducer {
                 spu_pool,
                 producer_pool,
                 record_accumulator,
-                #[cfg(feature = "stats")]
-                client_stats,
             }),
             #[cfg(feature = "smartengine")]
             sm_chain: Default::default(),
+            metrics,
         })
     }
 
@@ -480,12 +466,14 @@ impl TopicProducer {
                 use std::convert::TryFrom;
                 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
+                let metrics = self.metrics.chain_metrics();
 
                 if let Some(
                     smart_chain_ref
                 ) = &self.sm_chain {
                     let mut sm_chain = smart_chain_ref.write().await;
-                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+
+                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?,metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;
                 }
             } else {
