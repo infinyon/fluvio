@@ -69,7 +69,6 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
         client_metric: Arc<ClientMetrics>,
     ) -> Self {
         let mut end_events = vec![];
@@ -90,8 +89,6 @@ impl ProducerPool {
                 error.clone(),
                 end_event.clone(),
                 flush_event.clone(),
-                #[cfg(feature = "stats")]
-                client_stats.clone(),
                 client_metric.clone(),
             );
             errors.push(error);
@@ -110,7 +107,6 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        #[cfg(feature = "stats")] client_stats: Arc<ClientStats>,
         client_metric: Arc<ClientMetrics>,
     ) -> Arc<Self> {
         Arc::new(ProducerPool::new(
@@ -118,8 +114,6 @@ impl ProducerPool {
             topic,
             spu_pool,
             batches,
-            #[cfg(feature = "stats")]
-            client_stats,
             client_metric,
         ))
     }
@@ -414,8 +408,6 @@ impl TopicProducer {
             topic.clone(),
             spu_pool.clone(),
             record_accumulator.batches(),
-            #[cfg(feature = "stats")]
-            client_stats.clone(),
             metrics.clone(),
         );
 

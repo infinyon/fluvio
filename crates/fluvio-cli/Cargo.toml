@@ -34,7 +34,6 @@ k8s = [
     "k8-config",
     "fluvio-cluster",
 ]
-stats = [ "fluvio/stats" ]
 smartengine = ["fluvio-smartengine"]
 
 [dependencies]

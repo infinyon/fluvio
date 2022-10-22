@@ -21,7 +21,7 @@ pub struct LeaderConnections {
     spus: SharedSpuLocalStore,
     replicas: SharedReplicaLocalStore,
     leaders: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
-    metrics: Arc<ClientMetrics>
+    metrics: Arc<ClientMetrics>,
 }
 
 impl LeaderConnections {
@@ -30,7 +30,7 @@ impl LeaderConnections {
             spus,
             replicas,
             leaders: Default::default(),
-            metrics: Arc::new(ClientMetrics::new())
+            metrics: Arc::new(ClientMetrics::new()),
         }
     }
     pub fn shared(spus: SharedSpuLocalStore, replicas: SharedReplicaLocalStore) -> Arc<Self> {
@@ -65,7 +65,7 @@ impl LeaderConnections {
     where
         S: Into<String> + Debug,
     {
-        PartitionConsumer::new(topic.into(), partition, self.clone(),self.metrics.clone())
+        PartitionConsumer::new(topic.into(), partition, self.clone(), self.metrics.clone())
     }
 }
 

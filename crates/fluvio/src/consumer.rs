@@ -48,12 +48,7 @@ impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
 {
-    pub fn new(
-        topic: String,
-        partition: i32,
-        pool: Arc<P>,
-        metrics: Arc<ClientMetrics>,
-    ) -> Self {
+    pub fn new(topic: String, partition: i32, pool: Arc<P>, metrics: Arc<ClientMetrics>) -> Self {
         Self {
             topic,
             partition,
@@ -237,6 +232,7 @@ where
         FluvioError,
     > {
         let (stream, start_offset) = self.request_stream(offset, config).await?;
+        let metrics = self.metrics.clone();
         let flattened =
             stream.flat_map(move |batch_result: Result<DefaultStreamFetchResponse, _>| {
                 let response = match batch_result {
@@ -248,7 +244,8 @@ where
                 // the records down the consumer stream, THEN an Err with the error inside.
                 // This way the consumer always gets to read all records that were properly
                 // processed before hitting an error, so that the error does not obscure those records.
-                // let metric = self.metrics.consumer();
+
+                let inner_metrics = metrics.clone();
                 let batches =
                     response
                         .partition
@@ -256,8 +253,12 @@ where
                         .batches
                         .into_iter()
                         .map(move |raw_batch| {
-                            //  metric.add_records(raw_batch.records_len() as u64);
-                            //  metric.add_bytes(raw_batch.batch_len() as u64);
+                            inner_metrics
+                                .consumer()
+                                .add_records(raw_batch.records_len() as u64);
+                            inner_metrics
+                                .consumer()
+                                .add_bytes(raw_batch.batch_len() as u64);
 
                             let batch: Result<Batch, _> = raw_batch.try_into();
                             match batch {
