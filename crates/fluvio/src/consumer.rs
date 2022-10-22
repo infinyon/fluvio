@@ -48,7 +48,7 @@ impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
 {
-    pub(crate) fn new(
+    pub fn new(
         topic: String,
         partition: i32,
         pool: Arc<P>,
@@ -110,7 +110,7 @@ where
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>> + '_, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -160,7 +160,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>> + '_, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
         let (stream, start_offset) = self
             .inner_stream_batches_with_config(offset, config)
             .await?;

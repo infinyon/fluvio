@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use async_lock::Mutex;
 use async_trait::async_trait;
 
+use fluvio::metrics::ClientMetrics;
 use fluvio::{FluvioError, PartitionConsumer};
 use fluvio::spu::{SpuDirectory, SpuSocket};
 use fluvio::sockets::{ClientConfig, VersionedSerialSocket};
@@ -20,6 +21,7 @@ pub struct LeaderConnections {
     spus: SharedSpuLocalStore,
     replicas: SharedReplicaLocalStore,
     leaders: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
+    metrics: Arc<ClientMetrics>
 }
 
 impl LeaderConnections {
@@ -27,7 +29,8 @@ impl LeaderConnections {
         LeaderConnections {
             spus,
             replicas,
-            ..Default::default()
+            leaders: Default::default(),
+            metrics: Arc::new(ClientMetrics::new())
         }
     }
     pub fn shared(spus: SharedSpuLocalStore, replicas: SharedReplicaLocalStore) -> Arc<Self> {
@@ -62,7 +65,7 @@ impl LeaderConnections {
     where
         S: Into<String> + Debug,
     {
-        PartitionConsumer::new(topic.into(), partition, self.clone())
+        PartitionConsumer::new(topic.into(), partition, self.clone(),self.metrics.clone())
     }
 }
 
