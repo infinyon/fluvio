@@ -92,7 +92,7 @@ pub fn init_package_template() -> Result<()> {
         ..PackageMeta::default()
     };
     let sm_toml_file = find_smartmodule_toml()?;
-    pm.update_from_smartmodule_toml(&sm_toml_file.to_string_lossy().to_string())?;
+    pm.update_from_smartmodule_toml(&sm_toml_file.to_string_lossy())?;
 
     println!("Creating package {}", pm.pkg_name());
     pm.naming_check()?;
