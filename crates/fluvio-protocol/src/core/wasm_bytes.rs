@@ -14,18 +14,25 @@ impl From<Vec<u8>> for WasmBytes {
 }
 
 impl Encoder for WasmBytes {
+    #[inline]
     fn write_size(&self, _version: Version) -> usize {
-        1
+        4
     }
 
-    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), IoError>
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), IoError>
     where
         T: BufMut,
     {
-        if dest.remaining_mut() < 1 {
+        let remaining = dest.remaining_mut();
+        let expected = self.write_size(version);
+
+        if remaining < expected {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
-                "Not enough capacity for WasmBytes",
+                format!(
+                    "Not enough capacity for WasmBytes. Expected: {}, Remaining: {}",
+                    expected, remaining
+                ),
             ));
         }
 
