@@ -2529,6 +2529,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-types",
+ "serde",
  "thiserror",
  "tracing",
  "wasmtime",

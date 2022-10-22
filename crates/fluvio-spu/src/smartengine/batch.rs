@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Error;
+use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::{instrument, debug, trace};
 
 use fluvio_protocol::{Encoder};
@@ -10,8 +11,6 @@ use fluvio_protocol::{
 };
 use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
-
-use crate::core::metrics::SmartModuleChainMetrics;
 
 use super::file_batch::FileBatchIterator;
 
