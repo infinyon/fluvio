@@ -37,7 +37,7 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
     while let Some(stream) = incoming.next().await {
         let mut stream = stream?;
 
-        export::metrics(&mut stream, &metrics).await?;
+        export::metrics(&mut stream, metrics).await?;
     }
 
     Ok(())
