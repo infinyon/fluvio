@@ -271,6 +271,10 @@ impl Fluvio {
             self.versions.clone(),
         )
     }
+
+    pub fn metrics(&self) -> Arc<ClientMetrics> {
+        self.metric.clone()
+    }
 }
 
 /// The remote cluster is compatible with this client if its

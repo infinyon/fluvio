@@ -9,7 +9,7 @@ mod profile;
 mod version;
 mod metadata;
 mod render;
-mod monitoring;
+pub(crate) mod monitoring;
 
 pub(crate) use error::{Result, CliError};
 use fluvio_extension_common as common;

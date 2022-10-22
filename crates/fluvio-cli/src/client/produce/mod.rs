@@ -13,7 +13,6 @@ mod cmd {
     use std::time::Duration;
 
     use async_trait::async_trait;
-    use fluvio::metrics::ClientMetrics;
     use futures::future::join_all;
     use clap::Parser;
     use tracing::{error, warn};
@@ -27,9 +26,10 @@ mod cmd {
     use fluvio_spu_schema::Isolation;
     use fluvio_types::print_cli_ok;
 
-    use crate::client::cmd::ConsumerClient;
+    use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
     use crate::Result;
+    use crate::monitoring::init_monitoring;
     use crate::util::parse_isolation;
 
     #[cfg(feature = "stats")]
@@ -132,13 +132,13 @@ mod cmd {
     }
 
     #[async_trait]
-    impl ConsumerClient for ProduceOpt {
+    impl ClientCmd for ProduceOpt {
         async fn process_client<O: Terminal + Debug + Send + Sync>(
             self,
             _out: Arc<O>,
             fluvio: &Fluvio,
-            metrics: Arc<ClientMetrics>,
         ) -> Result<()> {
+            init_monitoring(fluvio.metrics());
             let config_builder = if self.interactive_mode() {
                 TopicProducerConfigBuilder::default().linger(std::time::Duration::from_millis(10))
             } else {

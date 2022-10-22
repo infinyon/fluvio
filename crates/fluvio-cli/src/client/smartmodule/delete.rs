@@ -11,7 +11,7 @@ use fluvio_extension_common::Terminal;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 
 use crate::Result;
-use crate::client::cmd::AdminClient;
+use crate::client::cmd::ClientCmd;
 use crate::error::CliError;
 
 /// Delete an existing SmartModule with the given name
@@ -26,7 +26,7 @@ pub struct DeleteSmartModuleOpt {
 }
 
 #[async_trait]
-impl AdminClient for DeleteSmartModuleOpt {
+impl ClientCmd for DeleteSmartModuleOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
         _out: Arc<O>,

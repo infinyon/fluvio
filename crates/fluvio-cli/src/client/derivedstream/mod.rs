@@ -15,7 +15,7 @@ mod cmd {
     use fluvio::Fluvio;
 
     use crate::Result;
-    use crate::client::cmd::AdminClient;
+    use crate::client::cmd::ClientCmd;
     use crate::common::output::Terminal;
 
     use super::create::*;
@@ -30,7 +30,7 @@ mod cmd {
     }
 
     #[async_trait]
-    impl AdminClient for DerivedStreamCmd {
+    impl ClientCmd for DerivedStreamCmd {
         async fn process_client<O: Terminal + Debug + Send + Sync>(
             self,
             out: Arc<O>,

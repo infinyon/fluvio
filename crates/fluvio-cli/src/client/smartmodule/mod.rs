@@ -17,7 +17,7 @@ mod cmd {
     use fluvio_extension_common::target::ClusterTarget;
 
     use crate::Result;
-    use crate::client::cmd::AdminClient;
+    use crate::client::cmd::ClientCmd;
     use crate::common::output::Terminal;
 
     use super::create::CreateSmartModuleOpt;
@@ -35,7 +35,7 @@ mod cmd {
     }
 
     #[async_trait]
-    impl AdminClient for SmartModuleCmd {
+    impl ClientCmd for SmartModuleCmd {
         async fn process<O: Terminal + Send + Sync + Debug>(
             self,
             out: Arc<O>,

@@ -10,7 +10,7 @@ mod derivedstream;
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
 pub use tableformat::TableFormatConfig;
-
+use cmd::ClientCmd;
 mod metadata {
 
     use fluvio_extension_common::FluvioExtensionMetadata;
@@ -40,7 +40,6 @@ mod cmd {
     use async_trait::async_trait;
 
     use fluvio::Fluvio;
-    use fluvio::metrics::ClientMetrics;
 
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
@@ -56,35 +55,16 @@ mod cmd {
     use super::hub::HubCmd;
 
     #[async_trait]
-    pub trait AdminClient: Sized {
+    pub trait ClientCmd: Sized {
         /// handle the command based on target
         async fn process<O: Terminal + Send + Sync + Debug>(
             self,
             out: Arc<O>,
             target: ClusterTarget,
         ) -> Result<()> {
-            let fluvio = target.connect().await?;
+            let fluvio_config = target.load()?;
+            let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
             self.process_client(out, &fluvio).await?;
-            Ok(())
-        }
-
-        async fn process_client<O: Terminal + Debug + Send + Sync>(
-            self,
-            out: Arc<O>,
-            fluvio: &Fluvio,
-        ) -> Result<()>;
-    }
-
-    #[async_trait]
-    pub trait ConsumerClient: Sized {
-        async fn process<O: Terminal + Send + Sync + Debug>(
-            self,
-            out: Arc<O>,
-            target: ClusterTarget,
-            metrics: Arc<ClientMetrics>,
-        ) -> Result<()> {
-            let fluvio = target.connect().await?;
-            self.process_client(out, &fluvio, metrics).await?;
             Ok(())
         }
 
@@ -93,7 +73,6 @@ mod cmd {
             self,
             out: Arc<O>,
             fluvio: &Fluvio,
-            metrics: Arc<ClientMetrics>,
         ) -> Result<()>;
     }
 
@@ -167,14 +146,12 @@ mod cmd {
             out: Arc<O>,
             target: ClusterTarget,
         ) -> Result<()> {
-            let metrics = Arc::new(ClientMetrics::new());
-
             match self {
                 Self::Consume(consume) => {
-                    consume.process(out, target, metrics.clone()).await?;
+                    consume.process(out, target).await?;
                 }
                 Self::Produce(produce) => {
-                    produce.process(out, target, metrics.clone()).await?;
+                    produce.process(out, target).await?;
                 }
                 Self::Topic(topic) => {
                     topic.process(out, target).await?;

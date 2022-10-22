@@ -22,7 +22,7 @@ mod cmd {
     use fluvio_extension_common::COMMAND_TEMPLATE;
 
     use crate::CliError;
-    use crate::client::cmd::AdminClient;
+    use crate::client::cmd::ClientCmd;
     use crate::Result;
 
     use super::create::CreateTableFormatOpt;
@@ -54,7 +54,7 @@ mod cmd {
     }
 
     #[async_trait]
-    impl AdminClient for TableFormatCmd {
+    impl ClientCmd for TableFormatCmd {
         async fn process_client<O: Terminal + Debug + Send + Sync>(
             self,
             out: Arc<O>,
