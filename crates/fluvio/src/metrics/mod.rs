@@ -32,7 +32,7 @@ impl ClientMetrics {
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
+    if #[cfg(any(target_arch = "wasm32", target_arch = "arm"))] {
 
         #[derive(Default, Debug, Serialize)]
         pub struct RecordCounter {
