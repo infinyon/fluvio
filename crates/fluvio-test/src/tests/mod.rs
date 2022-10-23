@@ -10,7 +10,7 @@ pub mod producer_fail;
 pub mod reconnection;
 pub mod batching;
 pub mod data_generator;
-pub mod stats;
+// pub mod stats;
 
 use serde::{Serialize, Deserialize};
 use std::time::SystemTime;

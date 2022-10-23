@@ -110,7 +110,9 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
+    use crate::{
+        SmartEngine, SmartModuleConfig, SmartModuleInitialData, metrics::SmartModuleChainMetrics,
+    };
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 
@@ -140,10 +142,11 @@ mod test {
         );
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let metrics = SmartModuleChainMetrics::default();
 
         let input = vec![Record::new("a")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1);
         assert_eq!(output.successes[0].value.as_ref(), b"a");
@@ -162,7 +165,7 @@ mod test {
         // new record should accumulate
         let input = vec![Record::new("b")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records
         assert_eq!(output.successes[0].value.to_string(), "ab");
@@ -181,7 +184,7 @@ mod test {
         // sending empty records should not clear accumulator
         let input = vec![];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0);
 
@@ -198,7 +201,7 @@ mod test {
 
         let input = vec![Record::new("c")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records
         assert_eq!(output.successes[0].value.as_ref(), b"abc");
@@ -224,10 +227,11 @@ mod test {
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");
 
+        let metrics = SmartModuleChainMetrics::default();
         // new record should accumulate
         let input = vec![Record::new("b")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // generate 3 records
         assert_eq!(output.successes[0].value.as_ref(), b"ab");

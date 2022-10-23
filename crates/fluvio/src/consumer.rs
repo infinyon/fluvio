@@ -22,7 +22,8 @@ use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Batch;
 
-use crate::FluvioError;
+use crate::{FluvioError};
+use crate::metrics::ClientMetrics;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
@@ -40,17 +41,19 @@ pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
     partition: i32,
     pool: Arc<P>,
+    metrics: Arc<ClientMetrics>,
 }
 
 impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
 {
-    pub fn new(topic: String, partition: i32, pool: Arc<P>) -> Self {
+    pub fn new(topic: String, partition: i32, pool: Arc<P>, metrics: Arc<ClientMetrics>) -> Self {
         Self {
             topic,
             partition,
             pool,
+            metrics,
         }
     }
 
@@ -229,67 +232,51 @@ where
         FluvioError,
     > {
         let (stream, start_offset) = self.request_stream(offset, config).await?;
-        let flattened = stream.flat_map(move |batch_result: Result<DefaultStreamFetchResponse, _>| {
-            let response = match batch_result {
-                Ok(response) => response,
-                Err(e) => return Either::Right(once(err(e))),
-            };
+        let metrics = self.metrics.clone();
+        let flattened =
+            stream.flat_map(move |batch_result: Result<DefaultStreamFetchResponse, _>| {
+                let response = match batch_result {
+                    Ok(response) => response,
+                    Err(e) => return Either::Right(once(err(e))),
+                };
 
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "otel-metrics")] {
-                    let meter = opentelemetry::global::meter("consumer");
-                    let counter_attributes = [
-                        opentelemetry::KeyValue::new("direction", "receive"),
-                        opentelemetry::KeyValue::new("topic", response.topic),
-                        opentelemetry::KeyValue::new("partition", response.partition.partition_index as i64),
-                    ];
-                    let records_counter = meter.u64_counter("fluvio.consumer.records").init();
-                    let bytes_counter = meter.u64_counter("fluvio.consumer.io").init();
-                    let otel_context = opentelemetry::Context::current();
-                }
-            }
+                // If we ever get an error_code AND batches of records, we want to first send
+                // the records down the consumer stream, THEN an Err with the error inside.
+                // This way the consumer always gets to read all records that were properly
+                // processed before hitting an error, so that the error does not obscure those records.
 
-            // If we ever get an error_code AND batches of records, we want to first send
-            // the records down the consumer stream, THEN an Err with the error inside.
-            // This way the consumer always gets to read all records that were properly
-            // processed before hitting an error, so that the error does not obscure those records.
-            let batches = response
-                .partition
-                .records
-                .batches
-                .into_iter()
-                .map(move |raw_batch| {
-                    #[cfg(feature = "otel-metrics")]
-                    {
-                        records_counter.add(
-                            &otel_context,
-                            raw_batch.records_len() as u64,
-                            &counter_attributes,
-                        );
-                        bytes_counter.add(
-                            &otel_context,
-                            raw_batch.batch_len() as u64,
-                            &counter_attributes,
-                        );
+                let inner_metrics = metrics.clone();
+                let batches =
+                    response
+                        .partition
+                        .records
+                        .batches
+                        .into_iter()
+                        .map(move |raw_batch| {
+                            inner_metrics
+                                .consumer()
+                                .add_records(raw_batch.records_len() as u64);
+                            inner_metrics
+                                .consumer()
+                                .add_bytes(raw_batch.batch_len() as u64);
+
+                            let batch: Result<Batch, _> = raw_batch.try_into();
+                            match batch {
+                                Ok(batch) => Ok(batch),
+                                Err(err) => Err(ErrorCode::Other(err.to_string())),
+                            }
+                        });
+                let error = {
+                    let code = response.partition.error_code;
+                    match code {
+                        ErrorCode::None => None,
+                        _ => Some(Err(code)),
                     }
+                };
 
-                    let batch: Result<Batch, _> = raw_batch.try_into();
-                    match batch {
-                        Ok(batch) => Ok(batch),
-                        Err(err) => Err(ErrorCode::Other(err.to_string())),
-                    }
-                });
-            let error = {
-                let code = response.partition.error_code;
-                match code {
-                    ErrorCode::None => None,
-                    _ => Some(Err(code)),
-                }
-            };
-
-            let items = batches.chain(error.into_iter());
-            Either::Left(iter(items))
-        });
+                let items = batches.chain(error.into_iter());
+                Either::Left(iter(items))
+            });
 
         Ok((flattened, start_offset))
     }
@@ -679,11 +666,20 @@ impl PartitionSelectionStrategy {
 pub struct MultiplePartitionConsumer {
     strategy: PartitionSelectionStrategy,
     pool: Arc<SpuPool>,
+    metrics: Arc<ClientMetrics>,
 }
 
 impl MultiplePartitionConsumer {
-    pub(crate) fn new(strategy: PartitionSelectionStrategy, pool: Arc<SpuPool>) -> Self {
-        Self { strategy, pool }
+    pub(crate) fn new(
+        strategy: PartitionSelectionStrategy,
+        pool: Arc<SpuPool>,
+        metrics: Arc<ClientMetrics>,
+    ) -> Self {
+        Self {
+            strategy,
+            pool,
+            metrics,
+        }
     }
 
     /// Continuously streams events from a particular offset in the selected partitions
@@ -780,7 +776,9 @@ impl MultiplePartitionConsumer {
             .selection(self.pool.clone())
             .await?
             .into_iter()
-            .map(|(topic, partition)| PartitionConsumer::new(topic, partition, self.pool.clone()))
+            .map(|(topic, partition)| {
+                PartitionConsumer::new(topic, partition, self.pool.clone(), self.metrics.clone())
+            })
             .collect::<Vec<_>>();
 
         let streams_future = consumers

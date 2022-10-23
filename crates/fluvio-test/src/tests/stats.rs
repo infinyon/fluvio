@@ -8,7 +8,6 @@ use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 use fluvio::{TopicProducerConfigBuilder, RecordKey};
 
-use fluvio::stats::{ClientStatsDataCollect, ClientStatsMetric, ClientStatsMetricRaw};
 use crate::tests::TestRecordBuilder;
 
 use comfy_table::{Table, Row, Cell, CellAlignment};
@@ -112,7 +111,6 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
             // Configure a connector w/ stats
             let producer_config = TopicProducerConfigBuilder::default()
                 .batch_size(test_case.option.batch_size)
-                .stats_collect(ClientStatsDataCollect::All)
                 .build()
                 .unwrap();
             let producer = test_driver
@@ -167,6 +165,7 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
                 total_latency += round_elapsed;
 
                 // Validate our calculations are within tolerances to the reported values
+                /* 
                 if let Some(frame) = producer.stats() {
                     // Print out round report before failing test
                     let mut tolerance_check = false;
@@ -285,6 +284,7 @@ pub fn stats(mut test_driver: TestDriver, mut test_case: TestCase) {
                     println!("{round_table}");
                     assert!(!tolerance_check);
                 }
+                */
             }
         },
         "producer"
@@ -318,6 +318,7 @@ where
     }
 }
 
+/* 
 fn create_format_row_fn<P>(bounds_checker_fn: P) -> impl Fn(ClientStatsMetric, f64, u64) -> Row
 where
     P: Fn(f64) -> bool + Copy,
@@ -339,3 +340,4 @@ where
         metric_row
     }
 }
+*/

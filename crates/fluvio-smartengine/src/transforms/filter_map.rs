@@ -77,7 +77,7 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig};
+    use crate::{SmartEngine, SmartModuleConfig, metrics::SmartModuleChainMetrics};
 
     const SM_FILTER_MAP: &str = "fluvio_smartmodule_filter_map";
 
@@ -108,9 +108,10 @@ mod test {
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");
 
+        let metrics = SmartModuleChainMetrics::default();
         let input = vec![Record::new("10"), Record::new("11")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"5");
