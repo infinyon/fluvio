@@ -1,7 +1,10 @@
 pub(crate) use monitor_impl::init_monitoring;
 
+use fluvio::metrics::ClientMetrics;
+
 #[cfg(windows)]
 mod monitor_impl {
+
     pub(crate) fn init_monitoring(_metrics: Arc<ClientMetrics>) {}
 }
 
@@ -10,12 +13,14 @@ mod monitor_impl {
 
     use std::{io::Error as IoError, sync::Arc};
 
+    use tracing::debug;
+
     use async_net::unix::UnixListener;
     use futures_util::{StreamExt, AsyncWriteExt};
 
     use fluvio_future::task::spawn;
-    use fluvio::metrics::ClientMetrics;
-    use tracing::debug;
+
+    use super::ClientMetrics;
 
     pub(crate) fn init_monitoring(metrics: Arc<ClientMetrics>) {
         spawn(async move {
