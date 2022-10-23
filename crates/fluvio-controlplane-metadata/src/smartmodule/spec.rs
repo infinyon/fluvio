@@ -7,7 +7,7 @@ use std::io::Error as IoError;
 use bytes::{Bytes, BufMut};
 use tracing::debug;
 
-use fluvio_protocol::{Encoder, Decoder, Version};
+use fluvio_protocol::{ByteBuf, Encoder, Decoder, Version};
 
 use super::{
     SmartModuleMetadata,
@@ -109,8 +109,7 @@ pub struct SmartModuleWasmSummary {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {
     pub format: SmartModuleWasmFormat,
-    #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
-    pub payload: Vec<u8>,
+    pub payload: ByteBuf,
 }
 
 impl std::fmt::Debug for SmartModuleWasm {
@@ -126,7 +125,7 @@ impl SmartModuleWasm {
     /// Create SmartModule from compressed Gzip format
     pub fn from_compressed_gzip(payload: Vec<u8>) -> Self {
         SmartModuleWasm {
-            payload,
+            payload: ByteBuf::from(payload),
             format: SmartModuleWasmFormat::Binary,
         }
     }
@@ -157,22 +156,5 @@ pub enum SmartModuleWasmFormat {
 impl Default for SmartModuleWasmFormat {
     fn default() -> SmartModuleWasmFormat {
         SmartModuleWasmFormat::Binary
-    }
-}
-
-#[cfg(feature = "use_serde")]
-mod base64 {
-    use serde::{Serialize, Deserialize};
-    use serde::{Deserializer, Serializer};
-
-    #[allow(clippy::ptr_arg)]
-    pub fn serialize<S: Serializer>(v: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        let base64 = base64::encode(v);
-        String::serialize(&base64, s)
-    }
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        let base64 = String::deserialize(d)?;
-        base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
     }
 }

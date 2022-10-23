@@ -36,6 +36,7 @@ fluvio-types = { version = "0.3.1", path = "../fluvio-types" }
 fluvio-stream-model = { path = "../fluvio-stream-model", version = "0.8.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
     "record",
+    "use_serde",
 ] }
 
 

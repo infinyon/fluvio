@@ -8,16 +8,24 @@ use crate::core::decoder::DecoderVarInt;
 
 /// Represnts a SmartModule WASM File bytes.
 ///
-/// Provides a `Encoder` implementation optimized for WASM files used in
-/// SmartModules.
-#[derive(Clone, Debug, Default)]
+/// Provides a `Encoder` and `Decoder` implementation optimized for WASM files
+/// used in SmartModules.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "use_serde", serde(with = "base64"))]
-pub struct ByteBuf(Vec<u8>);
+pub struct ByteBuf {
+    #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
+    bytes: Vec<u8>,
+}
+
+impl ByteBuf {
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+}
 
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
-        Self(bytes)
+        ByteBuf { bytes }
     }
 }
 
@@ -33,7 +41,7 @@ impl Decoder for ByteBuf {
             return Ok(());
         }
 
-        self.0.extend_from_slice(&src.chunk());
+        self.bytes.extend_from_slice(&src.chunk());
 
         Ok(())
     }
@@ -41,7 +49,7 @@ impl Decoder for ByteBuf {
 
 impl Encoder for ByteBuf {
     fn write_size(&self, _version: Version) -> usize {
-        self.0.len() + 4
+        self.bytes.len() + 4
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -61,14 +69,14 @@ impl Encoder for ByteBuf {
             ));
         }
 
-        dest.put_u32(self.0.len() as u32);
-        dest.put_slice(self.0.as_slice());
+        dest.put_u32(self.bytes.len() as u32);
+        dest.put_slice(self.bytes.as_slice());
 
         Ok(())
     }
 
     fn as_bytes(&self, _version: Version) -> Result<Bytes, Error> {
-        Ok(Bytes::copy_from_slice(self.0.as_slice()))
+        Ok(Bytes::copy_from_slice(self.bytes.as_slice()))
     }
 }
 
@@ -78,16 +86,14 @@ mod base64 {
     use serde::{Deserializer, Serializer};
 
     #[allow(clippy::ptr_arg)]
-    pub fn serialize<S: Serializer>(v: &ByteBuf, s: S) -> Result<S::Ok, S::Error> {
-        let base64 = base64::encode(v.0);
+    pub fn serialize<S: Serializer>(v: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
+        let base64 = base64::encode(v);
         String::serialize(&base64, s)
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<ByteBuf, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
         let base64 = String::deserialize(d)?;
-        let bytes = base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)?;
-
-        Ok(ByteBuf(bytes))
+        base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
     }
 }
 
@@ -133,9 +139,9 @@ mod tests {
         let result = value.decode(&mut Cursor::new(&data), 0);
 
         assert!(result.is_ok());
-        assert_eq!(value.0.len(), 3);
-        assert_eq!(value.0[0], 0x64);
-        assert_eq!(value.0[1], 0x6f);
-        assert_eq!(value.0[2], 0x67);
+        assert_eq!(value.bytes.len(), 3);
+        assert_eq!(value.bytes[0], 0x64);
+        assert_eq!(value.bytes[1], 0x6f);
+        assert_eq!(value.bytes[2], 0x67);
     }
 }
