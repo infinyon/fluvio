@@ -131,6 +131,10 @@ impl ClientConfig {
         &self.addr
     }
 
+    pub fn client_id(&self) -> &str {
+        &self.client_id
+    }
+
     pub fn set_client_id(&mut self, id: impl Into<String>) {
         self.client_id = id.into();
     }
