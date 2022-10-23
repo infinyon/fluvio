@@ -76,7 +76,7 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig};
+    use crate::{SmartEngine, SmartModuleConfig, metrics::SmartModuleChainMetrics};
 
     const SM_ARRAY_MAP: &str = "fluvio_smartmodule_array_map_array";
 
@@ -105,11 +105,12 @@ mod test {
             super::ARRAY_MAP_FN_NAME
         );
 
+        let metrics = SmartModuleChainMetrics::default();
         let mut chain = chain_builder.initialize().expect("failed to build chain");
 
         let input = vec![Record::new("[\"Apple\",\"Banana\",\"Cranberry\"]")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 3); // generate 3 records
         assert_eq!(output.successes[0].value.as_ref(), b"\"Apple\"");

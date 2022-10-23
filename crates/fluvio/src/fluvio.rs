@@ -18,6 +18,7 @@ use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::consumer::MultiplePartitionConsumer;
 use crate::consumer::PartitionSelectionStrategy;
+use crate::metrics::ClientMetrics;
 use crate::producer::TopicProducerConfig;
 use crate::spu::SpuPool;
 use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
@@ -31,6 +32,7 @@ pub struct Fluvio {
     spu_pool: OnceCell<Arc<SpuPool>>,
     metadata: MetadataStores,
     watch_version: i16,
+    metric: Arc<ClientMetrics>,
 }
 
 impl Fluvio {
@@ -105,6 +107,7 @@ impl Fluvio {
                 spu_pool,
                 metadata,
                 watch_version,
+                metric: Arc::new(ClientMetrics::new()),
             })
         } else {
             Err(FluvioError::Other("WatchApi version not found".to_string()))
@@ -178,7 +181,7 @@ impl Fluvio {
             return Err(FluvioError::TopicNotFound(topic));
         }
 
-        TopicProducer::new(topic, spu_pool, config).await
+        TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
@@ -198,6 +201,7 @@ impl Fluvio {
             topic,
             partition,
             self.spu_pool().await?,
+            self.metric.clone(),
         ))
     }
 
@@ -228,6 +232,7 @@ impl Fluvio {
         Ok(MultiplePartitionConsumer::new(
             strategy,
             self.spu_pool().await?,
+            self.metric.clone(),
         ))
     }
 
@@ -265,6 +270,10 @@ impl Fluvio {
             self.config.clone(),
             self.versions.clone(),
         )
+    }
+
+    pub fn metrics(&self) -> Arc<ClientMetrics> {
+        self.metric.clone()
     }
 }
 

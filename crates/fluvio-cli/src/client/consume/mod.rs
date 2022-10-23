@@ -47,6 +47,7 @@ mod cmd {
     use fluvio::consumer::{PartitionSelectionStrategy, Record};
     use fluvio_spu_schema::Isolation;
 
+    use crate::monitoring::init_monitoring;
     use crate::render::ProgressRenderer;
     use crate::{CliError, Result};
     use crate::common::FluvioExtensionMetadata;
@@ -108,11 +109,11 @@ mod cmd {
         /// Would produce a printout where records might look like this:
         ///
         /// Offset 0 has key A and value Apple
-        #[clap(short = 'F', long, conflicts_with_all = &["output", "key-value"])]
+        #[clap(short = 'F', long, conflicts_with_all = &["output"])]
         pub format: Option<String>,
 
         /// Consume records using the formatting rules defined by TableFormat name
-        #[clap(long, conflicts_with_all = &["key-value", "format"])]
+        #[clap(long)]
         pub table_format: Option<String>,
 
         /// Consume records starting X from the beginning of the log (default: 0)
@@ -120,11 +121,11 @@ mod cmd {
         pub from_beginning: Option<Option<u32>>,
 
         /// The offset of the first record to begin consuming from
-        #[clap(short, long, value_name = "integer", conflicts_with_all = &["from-beginning", "tail"])]
+        #[clap(short, long, value_name = "integer", conflicts_with_all = &["tail"])]
         pub offset: Option<u32>,
 
         /// Consume records starting X from the end of the log (default: 10)
-        #[clap(short = 'T', long, value_name = "integer", conflicts_with_all = &["from-beginning", "offset"])]
+        #[clap(short = 'T', long, value_name = "integer", conflicts_with_all = &["offset"])]
         pub tail: Option<Option<u32>>,
 
         /// Consume records until end offset
@@ -210,6 +211,8 @@ mod cmd {
             _out: Arc<O>,
             fluvio: &Fluvio,
         ) -> Result<()> {
+            init_monitoring(fluvio.metrics());
+
             let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
                 let admin = fluvio.admin().await;
                 let tableformats = admin.all::<TableFormatSpec>().await?;

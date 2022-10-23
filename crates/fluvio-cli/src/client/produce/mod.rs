@@ -29,6 +29,7 @@ mod cmd {
     use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
     use crate::Result;
+    use crate::monitoring::init_monitoring;
     use crate::util::parse_isolation;
 
     #[cfg(feature = "stats")]
@@ -89,6 +90,7 @@ mod cmd {
         #[clap(long, value_parser=parse_isolation)]
         pub isolation: Option<Isolation>,
 
+        /*
         #[cfg(feature = "stats")]
         /// Experimental: Collect basic producer session statistics and print in stats bar
         #[clap(long)]
@@ -113,7 +115,7 @@ mod cmd {
         /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
         #[clap(long)]
         pub stats_summary: bool,
-
+        */
         /// Delivery guarantees that producer must respect. Supported values:
         /// at_most_once (AtMostOnce) - send records without waiting from response,
         /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
@@ -136,6 +138,7 @@ mod cmd {
             _out: Arc<O>,
             fluvio: &Fluvio,
         ) -> Result<()> {
+            init_monitoring(fluvio.metrics());
             let config_builder = if self.interactive_mode() {
                 TopicProducerConfigBuilder::default().linger(std::time::Duration::from_millis(10))
             } else {

@@ -77,7 +77,7 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig};
+    use crate::{SmartEngine, SmartModuleConfig, metrics::SmartModuleChainMetrics};
     use crate::fixture::read_wasm_module;
 
     const SM_MAP: &str = "fluvio_smartmodule_map";
@@ -106,10 +106,10 @@ mod test {
         );
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");
-
+        let metrics = SmartModuleChainMetrics::default();
         let input = vec![Record::new("apple"), Record::new("fruit")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");

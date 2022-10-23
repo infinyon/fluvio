@@ -34,7 +34,6 @@ k8s = [
     "k8-config",
     "fluvio-cluster",
 ]
-stats = [ "fluvio/stats" ]
 smartengine = ["fluvio-smartengine"]
 
 [dependencies]
@@ -67,12 +66,14 @@ flate2 = "1.0.22"
 crossterm = { version = "0.25.0", features = ['event-stream']}
 tui = { version = "0.19.0", default-features = false, features = ['crossterm'] }
 futures = "0.3"
+futures-util = { version = "0.3.5", features = ["sink"] }
 humantime = "2.1.0"
 humantime-serde = "1.1.1"
 bytesize = { version = "1.1.0", features = ['serde'] }
 indicatif = "0.17.0"
 async-trait = "0.1.21"
 tokio = { version = "1.3.0", features = ["macros"] }
+async-net = "1.7.0"
 
 # Fluvio dependencies
 k8-config = { version = "2.0.0", optional = true }

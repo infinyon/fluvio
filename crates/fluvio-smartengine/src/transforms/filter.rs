@@ -77,7 +77,7 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig};
+    use crate::{SmartEngine, SmartModuleConfig, metrics::SmartModuleChainMetrics};
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
@@ -108,16 +108,16 @@ mod test {
         );
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");
-
+        let metrics = SmartModuleChainMetrics::default();
         let input = vec![Record::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
         let input = vec![Record::new("apple"), Record::new("fruit")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"apple");
@@ -181,10 +181,11 @@ mod test {
         assert!(instance.get_init().is_some());
 
         let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let metrics = SmartModuleChainMetrics::default();
 
         let input = vec![Record::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
@@ -193,8 +194,9 @@ mod test {
             Record::new("fruit"),
             Record::new("banana"),
         ];
+
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"apple");
@@ -220,7 +222,7 @@ mod test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // only banana
         assert_eq!(output.successes[0].value.as_ref(), b"banana");

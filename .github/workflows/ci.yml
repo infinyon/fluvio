@@ -522,7 +522,7 @@ jobs:
       TEST_BIN: ~/bin/fluvio-test
       SERVER_LOG: fluvio=debug
     strategy:
-      fail-fast: false
+ #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
@@ -538,7 +538,6 @@ jobs:
             reconnection,
             batch-failure,
             batch,
-            stats-validation,
           ]
     steps:
       - uses: actions/checkout@v3
@@ -690,7 +689,7 @@ jobs:
       UNINSTALL: noclean
       SERVER_LOG: fluvio=debug
     strategy:
-      fail-fast: false
+  #    fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
@@ -700,7 +699,6 @@ jobs:
             smoke-test-k8,
             smoke-test-k8-tls,
             smoke-test-k8-tls-root-unclean,
-            stats-test,
           ]
         k8: [k3d, minikube]
         spu: [3]
@@ -807,7 +805,7 @@ jobs:
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+ #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         run: [r1]
@@ -871,7 +869,7 @@ jobs:
     #if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
+  #    fail-fast: true
       matrix:
         os: [ubuntu-latest]
         cli: [fluvio, smdk]
@@ -961,7 +959,7 @@ jobs:
     #if: false
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+  #    fail-fast: false
       matrix:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
