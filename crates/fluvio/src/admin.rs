@@ -117,8 +117,9 @@ impl FluvioAdmin {
     #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
-        let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
-        let inner_client = config.connect().await?;
+        let client_config =
+            ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
+        let inner_client = client_config.connect().await?;
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
         let (socket, config, versions) = inner_client.split();

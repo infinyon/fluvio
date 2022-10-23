@@ -223,7 +223,7 @@ impl PartitionProducer {
 
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
-            let producer_metrics = self.metrics.producer();
+            let producer_metrics = self.metrics.producer_client();
             producer_metrics.add_records(raw_batch.records_len() as u64);
             producer_metrics.add_bytes(raw_batch.batch_len() as u64);
 

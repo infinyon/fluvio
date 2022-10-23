@@ -11,6 +11,7 @@ use fluvio_spu_schema::fetch::{
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::traffic::TrafficType;
 
 /// perform log fetch request using zero copy write
 #[instrument(
@@ -29,7 +30,8 @@ pub async fn handle_fetch_request(
     let mut fetch_response = FileFetchResponse::default();
 
     for topic_request in &fetch_request.topics {
-        let topic_response = handle_fetch_topic(&ctx, &fetch_request, topic_request).await?;
+        let topic_response =
+            handle_fetch_topic(&ctx, &fetch_request, topic_request, header.is_connector()).await?;
         fetch_response.topics.push(topic_response);
     }
 
@@ -56,6 +58,7 @@ async fn handle_fetch_topic(
     ctx: &DefaultSharedGlobalContext,
     fetch_request: &FileFetchRequest,
     topic_request: &FetchableTopic,
+    is_connector: bool,
 ) -> Result<FetchableTopicResponse<FileRecordSet>, SocketError> {
     let topic = &topic_request.name;
 
@@ -66,8 +69,14 @@ async fn handle_fetch_topic(
 
     for partition_request in &topic_request.fetch_partitions {
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
-        let partition_response =
-            handle_fetch_partition(ctx, replica_id, fetch_request, partition_request).await?;
+        let partition_response = handle_fetch_partition(
+            ctx,
+            replica_id,
+            fetch_request,
+            partition_request,
+            is_connector,
+        )
+        .await?;
         topic_response.partitions.push(partition_response);
     }
 
@@ -83,6 +92,7 @@ async fn handle_fetch_partition(
     replica_id: ReplicaKey,
     fetch_request: &FileFetchRequest,
     partition_request: &FetchPartition,
+    is_connector: bool,
 ) -> Result<FetchablePartitionResponse<FileRecordSet>, SocketError> {
     trace!("Fetching partition:");
     let fetch_offset = partition_request.fetch_offset;
@@ -101,9 +111,7 @@ async fn handle_fetch_partition(
         }
     };
 
-    let metric = ctx.metrics();
-    let partition_metrics =
-        metric.with_topic_partition(&replica_id.topic, partition_request.partition_index);
+    let metrics = ctx.metrics();
 
     match leader_state
         .read_records(
@@ -117,10 +125,12 @@ async fn handle_fetch_partition(
             partition_response.high_watermark = slice.end.hw;
             partition_response.log_start_offset = slice.start;
 
-            partition_metrics.add_records_read((slice.end.hw - slice.start) as u64);
-
             if let Some(file_slice) = slice.file_slice {
-                partition_metrics.add_bytes_read(file_slice.len());
+                metrics.outbound.increase(
+                    is_connector,
+                    (slice.end.hw - slice.start) as u64,
+                    file_slice.len(),
+                );
                 partition_response.records = file_slice.into();
             }
         }

@@ -5,7 +5,8 @@ use serde::Serialize;
 #[derive(Default, Debug, Serialize)]
 pub struct ClientMetrics {
     consumer: RecordCounter,
-    producer: RecordCounter,
+    producer_connector: RecordCounter,
+    producer_client: RecordCounter,
     #[cfg(feature = "smartengine")]
     smartmodule: fluvio_smartengine::metrics::SmartModuleChainMetrics,
 }
@@ -20,9 +21,16 @@ impl ClientMetrics {
         &self.consumer
     }
 
+    /// producer counter from connector
     #[inline]
-    pub fn producer(&self) -> &RecordCounter {
-        &self.producer
+    pub fn producer_connector(&self) -> &RecordCounter {
+        &self.producer_connector
+    }
+
+    /// producer counter from non connector producer
+    #[inline]
+    pub fn producer_client(&self) -> &RecordCounter {
+        &self.producer_client
     }
 
     #[cfg(feature = "smartengine")]

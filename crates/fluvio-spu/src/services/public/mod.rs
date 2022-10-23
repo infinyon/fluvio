@@ -79,6 +79,7 @@ impl FluvioService for PublicService {
             match event {
                 Some(Ok(req_message)) => {
                     debug!(%req_message,"received");
+                    println!("req: {:#?}", req_message);
                     trace!(
                         "conn: {}, received request: {:#?}",
                         shared_sink.id(),

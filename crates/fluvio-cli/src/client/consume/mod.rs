@@ -213,6 +213,8 @@ mod cmd {
         ) -> Result<()> {
             init_monitoring(fluvio.metrics());
 
+            //println!("client id",fluvio);
+
             let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
                 let admin = fluvio.admin().await;
                 let tableformats = admin.all::<TableFormatSpec>().await?;
