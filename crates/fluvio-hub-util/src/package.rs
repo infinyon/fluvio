@@ -346,13 +346,6 @@ pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
 
 /// verify package signature. the pkgsig should contain the desired
 /// public key to verify sgainst
-fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
-    let mut file = std::fs::File::open(pkgfile)?;
-    package_verify_sig_from_readio(&mut file, pkgfile, pkgsig)
-}
-
-/// verify package signature. the pkgsig should contain the desired
-/// public key to verify sgainst
 fn package_verify_sig_from_readio<R: std::io::Read>(
     readio: &mut R,
     pkgfile: &str,
@@ -408,14 +401,19 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
             iv.verify_ok = pubkey.verify(&buf, &signature).is_ok();
         }
     }
-    let all_ok = vers.iter().fold(false, |aok, (k, v)| {
-        warn!("Package {pkgfile} file {k} failed verification");
-        aok || (v.seen && v.verify_ok)
+    // not using any or all because of a desire to generate a full log of any
+    // failed per file validation
+    let any_bad = vers.iter().fold(false, |abad, (k, v)| {
+        let pass = v.seen && v.verify_ok;
+        if !pass {
+            warn!("Package {pkgfile} file {k} failed verification");
+        }
+        abad || !pass
     });
-    if all_ok {
-        Ok(())
-    } else {
+    if any_bad {
         Err(HubUtilError::PackageVerify("failed verify".into()))
+    } else {
+        Ok(())
     }
 }
 
@@ -446,7 +444,8 @@ pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
             HubUtilError::PackageVerify(format!("{pkgfile} no signature with given key"))
         })?;
 
-    package_verify_sig(pkgfile, sig)?;
+    readio.rewind()?;
+    package_verify_sig_from_readio(readio, pkgfile, sig)?;
     Ok(())
 }
 

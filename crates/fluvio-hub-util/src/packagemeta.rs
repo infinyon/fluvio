@@ -198,7 +198,7 @@ pub fn packagename_validate(pkgname: &str) -> Result<()> {
     }
 }
 
-fn validate_notempty(val: &str, name: &str) -> String {
+pub fn validate_notempty(val: &str, name: &str) -> String {
     if val.is_empty() {
         format!("{name} is empty\n")
     } else {
@@ -206,7 +206,7 @@ fn validate_notempty(val: &str, name: &str) -> String {
     }
 }
 
-fn validate_lowercase(val: &str, name: &str) -> String {
+pub fn validate_lowercase(val: &str, name: &str) -> String {
     if val.to_lowercase() != val {
         format!("{name} {val} should be lowercase\n")
     } else {
@@ -214,7 +214,7 @@ fn validate_lowercase(val: &str, name: &str) -> String {
     }
 }
 
-fn validate_allowedchars(val: &str, name: &str) -> String {
+pub fn validate_allowedchars(val: &str, name: &str) -> String {
     let good_chars = val
         .chars()
         .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | '-' | '_'));
@@ -224,6 +224,15 @@ fn validate_allowedchars(val: &str, name: &str) -> String {
     } else {
         String::new()
     }
+}
+
+pub fn validate_noleading_punct(val: &str, name: &str) -> String {
+    if let Some(c) = val.chars().next() {
+        if matches!(c, '_' | '-') {
+            return format!("{name} {val} no leading punctuation allowed '-' or '_'\n");
+        }
+    }
+    String::new()
 }
 
 /// certain output files are transformed in name vs their package name
