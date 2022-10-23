@@ -5,7 +5,7 @@ use tokio::select;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
-use fluvio_protocol::api::RequestKind;
+use fluvio_protocol::api::{RequestKind, RequestHeader};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset};
 use fluvio::{Compression};
@@ -26,6 +26,19 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
+
+trait TrafficType {
+    // check if traffic is connector
+    fn is_connector(&self) -> bool;
+}
+
+impl TrafficType for RequestHeader {
+
+    fn is_connector(&self) -> bool {
+        self.client_id().starts_with("fluvio_connector")
+    }
+}
+
 
 struct TopicWriteResult {
     topic: String,
@@ -53,6 +66,12 @@ pub async fn handle_produce_request(
 ) -> Result<ResponseMessage<ProduceResponse>, Error> {
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
+
+    if header.is_connector() {
+        println!("connector");
+    } else {
+        println!("non connector");
+    }
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
