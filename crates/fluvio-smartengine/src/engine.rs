@@ -12,6 +12,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 
 use crate::init::SmartModuleInit;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
+
 use crate::metrics::SmartModuleChainMetrics;
 use crate::transforms::create_transform;
 

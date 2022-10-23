@@ -7,7 +7,6 @@ mod engine;
 pub use engine::*;
 pub mod instance;
 
-#[cfg(feature = "metrics")]
 pub mod metrics;
 
 pub type WasmSlice = (i32, i32, u32);
