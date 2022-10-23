@@ -14,18 +14,22 @@ use crate::core::decoder::DecoderVarInt;
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ByteBuf {
     #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
-    bytes: Vec<u8>,
+    inner: Vec<u8>,
 }
 
 impl ByteBuf {
     pub fn len(&self) -> usize {
-        self.bytes.len()
+        self.inner.len()
+    }
+
+    pub fn inner(&self) -> Vec<u8> {
+        self.inner.clone()
     }
 }
 
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
-        ByteBuf { bytes }
+        ByteBuf { inner: bytes }
     }
 }
 
@@ -41,7 +45,7 @@ impl Decoder for ByteBuf {
             return Ok(());
         }
 
-        self.bytes.extend_from_slice(&src.chunk());
+        self.inner.extend_from_slice(&src.chunk());
 
         Ok(())
     }
@@ -49,7 +53,7 @@ impl Decoder for ByteBuf {
 
 impl Encoder for ByteBuf {
     fn write_size(&self, _version: Version) -> usize {
-        self.bytes.len() + 4
+        self.inner.len() + 4
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -69,14 +73,14 @@ impl Encoder for ByteBuf {
             ));
         }
 
-        dest.put_u32(self.bytes.len() as u32);
-        dest.put_slice(self.bytes.as_slice());
+        dest.put_u32(self.inner.len() as u32);
+        dest.put_slice(self.inner.as_slice());
 
         Ok(())
     }
 
     fn as_bytes(&self, _version: Version) -> Result<Bytes, Error> {
-        Ok(Bytes::copy_from_slice(self.bytes.as_slice()))
+        Ok(Bytes::copy_from_slice(self.inner.as_slice()))
     }
 }
 
@@ -103,6 +107,13 @@ mod tests {
 
     use crate::{Decoder, Encoder};
     use super::ByteBuf;
+
+    #[test]
+    fn test_len_of_inner_vec() {
+        let bytebuf = ByteBuf::from(vec![128, 129, 130, 131]);
+
+        assert_eq!(bytebuf.len(), bytebuf.inner.len());
+    }
 
     #[test]
     fn test_encode_bytebuf() {
@@ -139,9 +150,9 @@ mod tests {
         let result = value.decode(&mut Cursor::new(&data), 0);
 
         assert!(result.is_ok());
-        assert_eq!(value.bytes.len(), 3);
-        assert_eq!(value.bytes[0], 0x64);
-        assert_eq!(value.bytes[1], 0x6f);
-        assert_eq!(value.bytes[2], 0x67);
+        assert_eq!(value.len(), 3);
+        assert_eq!(value.inner[0], 0x64);
+        assert_eq!(value.inner[1], 0x6f);
+        assert_eq!(value.inner[2], 0x67);
     }
 }
