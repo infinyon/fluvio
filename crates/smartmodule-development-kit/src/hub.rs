@@ -27,7 +27,7 @@ pub struct IdOpt {
     #[clap(long, short)]
     verbose: bool,
 
-    #[clap(long)]
+    #[clap(long, hide_short_help = true)]
     remote: Option<String>,
 }
 
