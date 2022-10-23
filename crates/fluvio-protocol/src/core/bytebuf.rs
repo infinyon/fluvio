@@ -4,12 +4,15 @@ use std::io::ErrorKind;
 use bytes::{Buf, Bytes, BufMut};
 
 use crate::{Encoder, Decoder, Version};
+use crate::core::decoder::DecoderVarInt;
 
 /// Represnts a SmartModule WASM File bytes.
 ///
 /// Provides a `Encoder` implementation optimized for WASM files used in
 /// SmartModules.
 #[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", serde(with = "base64"))]
 pub struct ByteBuf(Vec<u8>);
 
 impl From<Vec<u8>> for ByteBuf {
@@ -19,18 +22,18 @@ impl From<Vec<u8>> for ByteBuf {
 }
 
 impl Decoder for ByteBuf {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
-        let mut len: i32 = 0;
-        len.decode(src, version)?;
+        let mut len: i64 = 0;
+        len.decode_varint(src)?;
 
         if len < 1 {
             return Ok(());
         }
 
-        src.copy_to_slice(&mut self.0);
+        self.0.extend_from_slice(&src.chunk());
 
         Ok(())
     }
@@ -69,9 +72,30 @@ impl Encoder for ByteBuf {
     }
 }
 
+#[cfg(feature = "use_serde")]
+mod base64 {
+    use serde::{Serialize, Deserialize};
+    use serde::{Deserializer, Serializer};
+
+    #[allow(clippy::ptr_arg)]
+    pub fn serialize<S: Serializer>(v: &ByteBuf, s: S) -> Result<S::Ok, S::Error> {
+        let base64 = base64::encode(v.0);
+        String::serialize(&base64, s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<ByteBuf, D::Error> {
+        let base64 = String::deserialize(d)?;
+        let bytes = base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)?;
+
+        Ok(ByteBuf(bytes))
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::Encoder;
+    use std::io::Cursor;
+
+    use crate::{Decoder, Encoder};
     use super::ByteBuf;
 
     #[test]
@@ -100,5 +124,18 @@ mod tests {
 
         // Length in 32bits (4 bytes) + Contents (5 elements)
         assert_eq!(value.write_size(0), 9);
+    }
+
+    #[test]
+    fn test_decode_bytebuf() {
+        let mut value = ByteBuf::default();
+        let data: &[u8] = &[0x06, 0x64, 0x6f, 0x67];
+        let result = value.decode(&mut Cursor::new(&data), 0);
+
+        assert!(result.is_ok());
+        assert_eq!(value.0.len(), 3);
+        assert_eq!(value.0[0], 0x64);
+        assert_eq!(value.0[1], 0x6f);
+        assert_eq!(value.0[2], 0x67);
     }
 }

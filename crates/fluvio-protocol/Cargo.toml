@@ -21,6 +21,7 @@ default = ["derive"]
 derive = ["fluvio-protocol-derive"]
 api = [ ]
 codec = ["tokio-util"]
+use_serde = ["serde","semver/serde"]
 store = ["fluvio-future"]
 record = ["crc32c","content_inspector","fluvio-compression","once_cell","fluvio-types"]
 link = ["api","record","thiserror","flv-util","semver","eyre"]
@@ -36,6 +37,7 @@ tokio-util = { version = "0.7.0", features = [
     "compat",
 ], optional = true }
 semver = { version = "1.0.0", optional = true }
+serde = { version = "1.0.147", features = ['derive'], optional = true }
 content_inspector = { version = "0.2.4", optional = true }
 once_cell = { version = "1.5.2", optional = true }
 derive_builder = { version = "0.11.0", optional = true }
