@@ -45,7 +45,8 @@ impl Decoder for ByteBuf {
             return Ok(());
         }
 
-        self.inner.extend_from_slice(&src.chunk());
+        self.inner
+            .extend_from_slice(&src.copy_to_bytes(len as usize));
 
         Ok(())
     }
