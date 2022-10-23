@@ -699,7 +699,6 @@ jobs:
             smoke-test-k8,
             smoke-test-k8-tls,
             smoke-test-k8-tls-root-unclean,
-            stats-test,
           ]
         k8: [k3d, minikube]
         spu: [3]
