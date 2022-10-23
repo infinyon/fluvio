@@ -18,6 +18,10 @@ pub struct ByteBuf {
 }
 
 impl ByteBuf {
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub fn len(&self) -> usize {
         self.inner.len()
     }
@@ -110,7 +114,29 @@ mod tests {
     use super::ByteBuf;
 
     #[test]
-    fn test_len_of_inner_vec() {
+    fn test_is_empty_by_default() {
+        let bytebuf = ByteBuf::default();
+
+        assert!(bytebuf.is_empty());
+        assert!(bytebuf.inner.is_empty());
+    }
+
+    #[test]
+    fn test_is_empty_from_inner_vec() {
+        let bytebuf = ByteBuf::from(vec![128, 129, 130, 131]);
+
+        assert_eq!(bytebuf.is_empty(), bytebuf.inner.is_empty());
+    }
+
+    #[test]
+    fn test_is_empty_from_inner_empty_vec() {
+        let bytebuf = ByteBuf::from(Vec::default());
+
+        assert_eq!(bytebuf.is_empty(), bytebuf.inner.is_empty());
+    }
+
+    #[test]
+    fn test_len_from_inner_vec() {
         let bytebuf = ByteBuf::from(vec![128, 129, 130, 131]);
 
         assert_eq!(bytebuf.len(), bytebuf.inner.len());
