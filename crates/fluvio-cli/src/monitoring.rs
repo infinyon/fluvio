@@ -5,6 +5,7 @@ use fluvio::metrics::ClientMetrics;
 #[cfg(windows)]
 mod monitor_impl {
 
+    use std::sync::Arc;
     use super::ClientMetrics;
 
     pub(crate) fn init_monitoring(_metrics: Arc<ClientMetrics>) {}
