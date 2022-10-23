@@ -24,13 +24,13 @@ impl ClientMetrics {
     /// producer counter from connector
     #[inline]
     pub fn producer_connector(&self) -> &RecordCounter {
-        &&self.producer_connector
+        &self.producer_connector
     }
 
     /// producer counter from non connector producer
     #[inline]
     pub fn producer_client(&self) -> &RecordCounter {
-        &&self.producer_client
+        &self.producer_client
     }
 
     #[cfg(feature = "smartengine")]
