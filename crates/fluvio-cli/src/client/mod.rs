@@ -63,6 +63,7 @@ mod cmd {
             target: ClusterTarget,
         ) -> Result<()> {
             let fluvio_config = target.load()?;
+            println!("config: {:#?}", fluvio_config);
             let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
             self.process_client(out, &fluvio).await?;
             Ok(())

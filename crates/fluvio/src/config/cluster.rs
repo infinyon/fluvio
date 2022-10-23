@@ -7,7 +7,8 @@ use serde::{Serialize, Deserialize};
 
 use crate::config::TlsPolicy;
 
-/// Public configuration for Fluvio.
+/// Fluvio Cluster Target Configuration
+/// This is part of profile
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct FluvioConfig {
@@ -25,6 +26,11 @@ pub struct FluvioConfig {
     // use the default of NoTls
     #[serde(default)]
     pub tls: TlsPolicy,
+
+    /// This is not part of profile and doesn't persist.
+    /// It is purely to override client id when creating ClientConfig
+    #[serde(skip)]
+    pub client_id: Option<String>,
 }
 
 impl FluvioConfig {
@@ -34,6 +40,7 @@ impl FluvioConfig {
             endpoint: addr.into(),
             use_spu_local_address: false,
             tls: TlsPolicy::Disabled,
+            client_id: None,
         }
     }
 

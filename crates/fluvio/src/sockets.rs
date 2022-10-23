@@ -78,7 +78,8 @@ impl VersionedSocket {
     }
 }
 
-/// Connection Config to any client
+/// Low level configuration option to directly connect to Fluvio
+/// This can bypass higher level validation required for CLI and end user application
 pub struct ClientConfig {
     addr: String,
     client_id: String,
@@ -130,14 +131,8 @@ impl ClientConfig {
         &self.addr
     }
 
-    /// set client id
-    #[allow(unused)]
-    pub fn set_client_id<S>(mut self, id: S) -> Self
-    where
-        S: Into<String>,
-    {
+    pub fn set_client_id(&mut self, id: impl Into<String>) {
         self.client_id = id.into();
-        self
     }
 
     pub fn set_addr(&mut self, domain: String) {

@@ -85,8 +85,12 @@ impl Fluvio {
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
-        let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
-        let inner_client = config.connect().await?;
+        let mut client_config =
+            ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
+        if let Some(client_id) = &config.client_id {
+            client_config.set_client_id(client_id.to_owned());
+        }
+        let inner_client = client_config.connect().await?;
         debug!("connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
