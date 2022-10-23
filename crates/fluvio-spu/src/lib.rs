@@ -19,3 +19,18 @@ use self::error::InternalServerError;
 pub use config::SpuOpt;
 
 const VERSION: &str = include_str!("../../../VERSION");
+
+pub(crate) mod traffic {
+    use fluvio_protocol::api::RequestHeader;
+
+    pub(crate) trait TrafficType {
+        // check if traffic is connector
+        fn is_connector(&self) -> bool;
+    }
+
+    impl TrafficType for RequestHeader {
+        fn is_connector(&self) -> bool {
+            self.client_id().starts_with("fluvio_connector")
+        }
+    }
+}

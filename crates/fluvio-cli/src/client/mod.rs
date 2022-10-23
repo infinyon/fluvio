@@ -62,7 +62,12 @@ mod cmd {
             out: Arc<O>,
             target: ClusterTarget,
         ) -> Result<()> {
-            let fluvio_config = target.load()?;
+            let mut fluvio_config = target.load()?;
+            let client_id = match std::env::var("FLUVIO_CLIENT_ID") {
+                Ok(id) => id,
+                Err(_) => "FLUVIO_CLI".to_owned(),
+            };
+            fluvio_config.client_id = Some(client_id);
             let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
             self.process_client(out, &fluvio).await?;
             Ok(())

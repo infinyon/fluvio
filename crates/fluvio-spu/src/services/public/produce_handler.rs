@@ -5,7 +5,7 @@ use tokio::select;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
-use fluvio_protocol::api::RequestKind;
+use fluvio_protocol::api::{RequestKind};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset};
 use fluvio::{Compression};
@@ -26,6 +26,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
     topic: String,
@@ -56,7 +57,7 @@ pub async fn handle_produce_request(
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
-        let topic_result = handle_produce_topic(&ctx, topic_request).await;
+        let topic_result = handle_produce_topic(&ctx, topic_request, header.is_connector()).await;
         topic_results.push(topic_result);
     }
     wait_for_acks(
@@ -78,6 +79,7 @@ pub async fn handle_produce_request(
 async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
     topic_request: DefaultTopicRequest,
+    is_connector: bool,
 ) -> TopicWriteResult {
     let topic = &topic_request.name;
 
@@ -90,7 +92,8 @@ async fn handle_produce_topic(
 
     for partition_request in topic_request.partitions.into_iter() {
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
-        let partition_response = handle_produce_partition(ctx, replica_id, partition_request).await;
+        let partition_response =
+            handle_produce_partition(ctx, replica_id, partition_request, is_connector).await;
         topic_result.partitions.push(partition_response);
     }
     topic_result
@@ -104,6 +107,7 @@ async fn handle_produce_partition<R: BatchRecords>(
     ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
     partition_request: PartitionProduceData<RecordSet<R>>,
+    is_connector: bool,
 ) -> PartitionWriteResult {
     trace!("Handling produce request for partition:");
 
@@ -137,10 +141,9 @@ async fn handle_produce_partition<R: BatchRecords>(
     let metrics = ctx.metrics();
     match write_result {
         Ok((base_offset, leo, bytes)) => {
-            let partition_metrics =
-                metrics.with_topic_partition(&replica_id.topic, partition_request.partition_index);
-            partition_metrics.add_records_written((leo - base_offset) as u64);
-            partition_metrics.add_bytes_written(bytes as u64);
+            metrics
+                .inbound
+                .increase(is_connector, (leo - base_offset) as u64, bytes as u64);
 
             PartitionWriteResult::ok(replica_id, base_offset, leo)
         }
