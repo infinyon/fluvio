@@ -9,7 +9,6 @@ use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
 use fluvio_future::net::DomainConnector;
 use semver::Version;
 
-use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
 use crate::TopicProducer;
 use crate::PartitionConsumer;
@@ -52,9 +51,8 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect() -> Result<Self, FluvioError> {
-        let config_file = ConfigFile::load_default_or_new()?;
-        let cluster_config = config_file.config().current_cluster()?;
-        Self::connect_with_config(cluster_config).await
+        let cluster_config = FluvioConfig::load()?;
+        Self::connect_with_config(&cluster_config).await
     }
 
     /// Creates a new Fluvio client with the given configuration

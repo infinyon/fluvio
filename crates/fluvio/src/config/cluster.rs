@@ -5,7 +5,9 @@
 //!
 use serde::{Serialize, Deserialize};
 
-use crate::config::TlsPolicy;
+use crate::{config::TlsPolicy, FluvioError};
+
+use super::ConfigFile;
 
 /// Fluvio Cluster Target Configuration
 /// This is part of profile
@@ -34,6 +36,13 @@ pub struct FluvioConfig {
 }
 
 impl FluvioConfig {
+    /// current current cluster from default profile
+    pub fn load() -> Result<Self, FluvioError> {
+        let config_file = ConfigFile::load_default_or_new()?;
+        let cluster_config = config_file.config().current_cluster()?;
+        Ok(cluster_config.to_owned())
+    }
+
     /// Create a new cluster configuration with no TLS.
     pub fn new<S: Into<String>>(addr: S) -> Self {
         Self {
