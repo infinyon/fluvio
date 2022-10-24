@@ -311,10 +311,8 @@ impl GenerateOpt {
             let sm_toml: Value = toml::from_str(&sm_str)?;
 
             if let Value::Table(package) = &sm_toml["package"] {
-                if let Some(config_value) = package.get("group") {
-                    if let Value::String(groupname) = config_value {
-                        set_hubid(&groupname, &mut hub_config)?;
-                    }
+                if let Some(Value::String(groupname)) = package.get("group") {
+                    set_hubid(groupname, &mut hub_config)?;
                 }
             }
         }
