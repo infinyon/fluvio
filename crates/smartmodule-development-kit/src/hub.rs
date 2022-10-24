@@ -61,7 +61,7 @@ impl IdOpt {
     }
 }
 
-fn set_hubid(hubid: &str, access: &mut HubAccess) -> Result<()> {
+pub fn set_hubid(hubid: &str, access: &mut HubAccess) -> Result<()> {
     // if not: ask server if it exists
     if let Err(e) = run_block_on(access.create_hubid(hubid)) {
         eprintln!("{}", e);
