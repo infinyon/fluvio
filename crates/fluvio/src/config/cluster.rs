@@ -36,7 +36,7 @@ pub struct FluvioConfig {
 }
 
 impl FluvioConfig {
-    /// current current cluster from default profile
+    /// get current cluster config from default profile
     pub fn load() -> Result<Self, FluvioError> {
         let config_file = ConfigFile::load_default_or_new()?;
         let cluster_config = config_file.config().current_cluster()?;
