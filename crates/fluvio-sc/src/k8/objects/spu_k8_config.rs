@@ -8,7 +8,9 @@ use fluvio_controlplane_metadata::core::MetadataContext;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use k8_client::{ClientError};
 use k8_types::Env;
-use k8_types::core::pod::{ResourceRequirements, PodSecurityContext, ContainerSpec};
+use k8_types::core::pod::{
+    ResourceRequirements, PodSecurityContext, ContainerSpec, VolumeMount, VolumeSpec,
+};
 use k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
 use k8_types::core::service::{ServicePort, ServiceSpec, TargetPort, LoadBalancerType};
 
@@ -29,6 +31,10 @@ pub struct PodConfig {
     pub extra_containers: Vec<ContainerSpec>,
     #[serde(default)]
     pub extra_env: Vec<Env>,
+    #[serde(default)]
+    pub extra_volume_mounts: Vec<VolumeMount>,
+    #[serde(default)]
+    pub extra_volumes: Vec<VolumeSpec>,
 }
 
 #[derive(Debug, Eq, PartialEq, Default, Clone)]

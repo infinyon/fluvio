@@ -27,6 +27,8 @@ scPod:
   nodePort: 30003
   extraContainers: []
   extraEnv: []
+  extraVolumes: []
+  extraVolumeMounts: []
 spuPod:
   resources:
     requests:
@@ -38,6 +40,8 @@ spuPod:
   baseNodePort: 30004
   extraContainers: []
   extraEnv: []
+  extraVolumes: []
+  extraVolumeMounts: []
 
 rbac:
   create: true
