@@ -46,11 +46,11 @@ pub fn main_loop(opt: SpuOpt) {
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
 
+        init_monitoring(ctx);
+
         if let Some(tls_config) = tls_acceptor_option {
             proxy::start_proxy(spu_config, tls_config).await;
         }
-
-        init_monitoring(ctx);
 
         println!("SPU Version: {} started successfully", VERSION);
 
