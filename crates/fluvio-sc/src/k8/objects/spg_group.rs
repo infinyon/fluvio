@@ -303,6 +303,9 @@ mod k8_convert {
             args.push("0.0.0.0:9007".to_owned());
         }
 
+        volume_mounts.append(&mut spu_pod_config.extra_volume_mounts.clone());
+        volumes.append(&mut spu_pod_config.extra_volumes.clone());
+
         let mut containers = vec![ContainerSpec {
             name: SPU_DEFAULT_NAME.to_owned(),
             image: Some(spu_k8_config.image.clone()),
