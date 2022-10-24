@@ -20,7 +20,7 @@ setup_file() {
     SMDK_TEMPLATE_PATH_FLAG="--template-path $(pwd)/smartmodule"
     export SMDK_TEMPLATE_PATH_FLAG
 
-    TESTING_GROUP_NAME_FLAG="--project-name=smdk-smoke-test-group"
+    TESTING_GROUP_NAME_FLAG="--project-group=smdk-smoke-test-group"
     export TESTING_GROUP_NAME_FLAG
 }
 

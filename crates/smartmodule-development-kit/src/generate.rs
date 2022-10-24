@@ -23,7 +23,7 @@ const FLUVIO_SMARTMODULE_REPO: &str = "https://github.com/infinyon/fluvio.git";
 #[derive(Debug, Parser)]
 pub struct GenerateOpt {
     /// SmartModule Project Name
-    name: String,
+    name: Option<String>,
 
     /// SmartModule Project Group Name.
     /// Default to Hub ID, if set. Overrides Hub ID if provided.
@@ -170,30 +170,23 @@ pub struct GenerateOpt {
     #[clap(long, group("SmartModuleParams"), action, env = "SMDK_NO_PARAMS")]
     no_params: bool,
 
+    /// Set the remote URL for the hub
+    #[clap(long, env = "SMDK_HUB_REMOTE", hide_short_help = true)]
+    hub_remote: Option<String>,
+
     /// Using this option will always choose the Fluvio repo as source for templates and dependencies
     #[clap(long, action, env = "SMDK_DEVELOP", hide_short_help = true, conflicts_with_all =
         &["TemplateSourceGit", "TemplateSourcePath",
         "SmCrateSourceGit", "SmCrateSourceCratesIo", "SmCrateSourcePath"],)]
     develop: bool,
-
-    /// Set the remote URL for the hub
-    #[clap(long, hide_short_help = true)]
-    hub_remote: Option<String>,
-
-    /// Show all developer options (alias for `--help`)
-    #[clap(long, action)]
-    dev_help: bool,
 }
 
 impl GenerateOpt {
     pub(crate) fn process(self) -> Result<()> {
-        if self.dev_help {
-            use clap::CommandFactory;
-            GenerateOpt::command().print_long_help()?;
-            return Ok(());
+        // If a name isn't specified, you'll get prompted in wizard
+        if let Some(ref name) = self.name {
+            println!("Generating new SmartModule project: {}", name);
         }
-
-        println!("Generating new SmartModule project: {}", self.name);
 
         // Figure out if there's a Hub ID set
         let mut hub_config = HubAccess::default_load(&self.hub_remote)?;
@@ -289,7 +282,7 @@ impl GenerateOpt {
 
         let args = GenerateArgs {
             template_path,
-            name: Some(self.name.clone()),
+            name: self.name,
             list_favorites: false,
             force: false,
             verbose: !self.silent,
