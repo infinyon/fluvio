@@ -11,9 +11,7 @@ use crate::core::decoder::DecoderVarInt;
 /// Provides a `Encoder` and `Decoder` implementation optimized for WASM files
 /// used in SmartModules.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ByteBuf {
-    #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
     inner: Vec<u8>,
 }
 
@@ -94,15 +92,30 @@ mod base64 {
     use serde::{Serialize, Deserialize};
     use serde::{Deserializer, Serializer};
 
-    #[allow(clippy::ptr_arg)]
-    pub fn serialize<S: Serializer>(v: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        let base64 = base64::encode(v);
-        String::serialize(&base64, s)
+    use crate::ByteBuf;
+
+    impl Serialize for ByteBuf {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let base64 = base64::encode(&self.inner);
+            String::serialize(&base64, serializer)
+        }
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        let base64 = String::deserialize(d)?;
-        base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
+    impl<'de> Deserialize<'de> for ByteBuf {
+        fn deserialize<D>(d: D) -> Result<ByteBuf, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let b64 = String::deserialize(d)?;
+            let bytes: Vec<u8> =
+                base64::decode(b64.as_bytes()).map_err(serde::de::Error::custom)?;
+            let bytebuf = ByteBuf::from(bytes);
+
+            Ok(bytebuf)
+        }
     }
 }
 
