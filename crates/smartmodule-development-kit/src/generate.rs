@@ -8,6 +8,11 @@ use tempfile::TempDir;
 use enum_display::EnumDisplay;
 use tracing::debug;
 use lib_cargo_crate::{Info, InfoOpts};
+use toml::Value;
+
+use fluvio_hub_util::HubAccess;
+use crate::hub::set_hubid;
+use crate::load::DEFAULT_META_LOCATION as SMARTMODULE_META_FILENAME;
 
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
@@ -166,6 +171,10 @@ pub struct GenerateOpt {
         "SmCrateSourceGit", "SmCrateSourceCratesIo", "SmCrateSourcePath"],)]
     develop: bool,
 
+    /// Set the remote URL for the hub
+    #[clap(long, hide_short_help = true)]
+    hub_remote: Option<String>,
+
     /// Show all developer options (alias for `--help`)
     #[clap(long, action)]
     dev_help: bool,
@@ -180,6 +189,16 @@ impl GenerateOpt {
         }
 
         println!("Generating new SmartModule project: {}", self.name);
+
+        // Figure out if there's a Hub ID set
+        let mut hub_config = HubAccess::default_load(&self.hub_remote)?;
+        let group = if hub_config.hubid.is_empty() {
+            debug!("No project group value set");
+            None
+        } else {
+            debug!("Found project group: {}", hub_config.hubid.clone());
+            Some(hub_config.hubid.clone())
+        };
 
         let sm_params = match (self.with_params, self.no_params) {
             (true, false) => Some(true),
@@ -224,6 +243,7 @@ impl GenerateOpt {
 
         let mut maybe_user_input = SmdkTemplateUserValues::new();
         maybe_user_input
+            .with_project_group(group.clone())
             .with_smart_module_type(self.sm_type)
             .with_smart_module_params(sm_params)
             .with_smart_module_cargo_dependency(Some(sm_dep_source));
@@ -275,7 +295,29 @@ impl GenerateOpt {
             other_args: None,
         };
 
-        generate(args).map_err(Error::from)?;
+        let gen_dir = generate(args).map_err(Error::from)?;
+
+        // If group was empty, read it from the generated file
+        // and write it to disk
+        if group.is_none() {
+            let sm_toml_path = gen_dir.join(SMARTMODULE_META_FILENAME);
+
+            debug!("Extracting group from {}", sm_toml_path.display());
+
+            let sm_str = std::fs::read_to_string(sm_toml_path)?;
+
+            debug!("{:?}", &sm_str);
+
+            let sm_toml: Value = toml::from_str(&sm_str)?;
+
+            if let Value::Table(package) = &sm_toml["package"] {
+                if let Some(config_value) = package.get("group") {
+                    if let Value::String(groupname) = config_value {
+                        set_hubid(&groupname, &mut hub_config)?;
+                    }
+                }
+            }
+        }
 
         Ok(())
     }
@@ -286,6 +328,7 @@ enum SmdkTemplateValue {
     UseParams(bool),
     SmCargoDependency(CargoSmDependSource),
     SmType(SmartModuleType),
+    ProjectGroup(String),
 }
 
 impl std::fmt::Display for SmdkTemplateValue {
@@ -299,6 +342,9 @@ impl std::fmt::Display for SmdkTemplateValue {
             }
             SmdkTemplateValue::UseParams(sm_params) => {
                 write!(f, "smartmodule-params={}", sm_params)
+            }
+            SmdkTemplateValue::ProjectGroup(group) => {
+                write!(f, "project-group={}", group)
             }
         }
     }
@@ -493,6 +539,14 @@ impl SmdkTemplateUserValues {
         self
     }
 
+    fn with_project_group(&mut self, group: Option<String>) -> &mut Self {
+        if let Some(i) = group {
+            debug!("User default project group: {i:#?}");
+            self.values.push(SmdkTemplateValue::ProjectGroup(i));
+        }
+        self
+    }
+
     fn to_vec(&self) -> Vec<SmdkTemplateValue> {
         self.values.clone()
     }
@@ -634,6 +688,7 @@ mod test {
                 "0.1.0".to_string(),
             )),
             SmdkTemplateValue::SmType(SmartModuleType::FilterMap),
+            SmdkTemplateValue::ProjectGroup("ExampleGroupName".to_string()),
         ];
 
         for value in test_template_values {
@@ -661,6 +716,14 @@ mod test {
                         "smartmodule-type=filter-map"
                     );
                 }
+
+                SmdkTemplateValue::ProjectGroup(_) => {
+                    assert_eq!(
+                        &SmdkTemplateValue::ProjectGroup("ExampleGroupName".to_string())
+                            .to_string(),
+                        "project-group=ExampleGroupName"
+                    );
+                }
             }
         }
     }
@@ -670,6 +733,7 @@ mod test {
         let mut values = SmdkTemplateUserValues::new();
         let test_version_number = "test-version-value".to_string();
         values
+            .with_project_group(Some("ExampleGroupName".to_string()))
             .with_smart_module_type(Some(SmartModuleType::Aggregate))
             .with_smart_module_params(Some(true))
             .with_smart_module_cargo_dependency(Some(CargoSmDependSource::CratesIo(
@@ -695,6 +759,13 @@ mod test {
 
                 SmdkTemplateValue::SmType(_) => {
                     assert_eq!(v, SmdkTemplateValue::SmType(SmartModuleType::Aggregate));
+                }
+
+                SmdkTemplateValue::ProjectGroup(_) => {
+                    assert_eq!(
+                        v,
+                        SmdkTemplateValue::ProjectGroup("ExampleGroupName".to_string())
+                    );
                 }
             }
         }
