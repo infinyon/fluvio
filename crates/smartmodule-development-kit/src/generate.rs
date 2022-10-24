@@ -25,6 +25,10 @@ pub struct GenerateOpt {
     /// SmartModule Project Name
     name: String,
 
+    /// SmartModule Project Group Name.
+    /// Default to Hub ID, if set. Overrides Hub ID if provided.
+    project_group: Option<String>,
+
     /// Local path to generate the SmartModule project.
     /// Default to directory with project name, created in current directory
     #[clap(long, env = "SMDK_DESTINATION", value_name = "PATH")]
@@ -192,7 +196,11 @@ impl GenerateOpt {
 
         // Figure out if there's a Hub ID set
         let mut hub_config = HubAccess::default_load(&self.hub_remote)?;
-        let group = if hub_config.hubid.is_empty() {
+
+        let group = if let Some(user_group) = self.project_group {
+            debug!("Using user provided project group: {}", &user_group);
+            Some(user_group)
+        } else if hub_config.hubid.is_empty() {
             debug!("No project group value set");
             None
         } else {
