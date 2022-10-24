@@ -27,6 +27,7 @@ pub struct GenerateOpt {
 
     /// SmartModule Project Group Name.
     /// Default to Hub ID, if set. Overrides Hub ID if provided.
+    #[clap(long, env = "SMDK_PROJECT_GROUP", value_name = "GROUP")]
     project_group: Option<String>,
 
     /// Local path to generate the SmartModule project.
