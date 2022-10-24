@@ -19,6 +19,9 @@ setup_file() {
 
     SMDK_TEMPLATE_PATH_FLAG="--template-path $(pwd)/smartmodule"
     export SMDK_TEMPLATE_PATH_FLAG
+
+    TESTING_GROUP_NAME_FLAG="--project-group=smdk-smoke-test-group"
+    export TESTING_GROUP_NAME_FLAG
 }
 
 ### Using crates.io dependency for `fluvio-smartmodule`
@@ -37,6 +40,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -62,6 +66,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -87,6 +92,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -112,6 +118,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -137,6 +144,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -164,6 +172,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -189,6 +198,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -214,6 +224,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -239,6 +250,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -264,6 +276,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -290,6 +303,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -314,6 +328,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -338,6 +353,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -362,6 +378,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -386,6 +403,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -412,6 +430,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -436,6 +455,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -460,6 +480,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -484,6 +505,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME
@@ -508,6 +530,7 @@ setup_file() {
         $PARAMS_FLAG \
         $SMDK_TEMPLATE_PATH_FLAG \
         $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
         --silent \
         $SM_PACKAGE_NAME

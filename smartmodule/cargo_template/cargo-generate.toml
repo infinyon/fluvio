@@ -2,6 +2,10 @@
 type = "string"
 prompt = "Value of `fluvio-smartmodule` dependency in Cargo.toml"
 
+[placeholders.project-group]
+type = "string"
+prompt = "Please set a group name"
+
 [placeholders.smartmodule-type]
 type = "string"
 prompt = "Which type of SmartModule would you like?"
