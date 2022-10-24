@@ -199,8 +199,13 @@ impl GenerateOpt {
         let mut hub_config = HubAccess::default_load(&self.hub_remote)?;
 
         let group = if let Some(user_group) = self.project_group {
-            debug!("Using user provided project group: {}", &user_group);
-            Some(user_group)
+            if user_group.is_empty() {
+                debug!("User requesting to be prompted for project group");
+                None
+            } else {
+                debug!("Using user provided project group: {}", &user_group);
+                Some(user_group)
+            }
         } else if hub_config.hubid.is_empty() {
             debug!("No project group value set");
             None
