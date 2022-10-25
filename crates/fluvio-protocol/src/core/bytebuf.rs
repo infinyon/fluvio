@@ -36,7 +36,7 @@ impl From<Vec<u8>> for ByteBuf {
 }
 
 impl Decoder for ByteBuf {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
