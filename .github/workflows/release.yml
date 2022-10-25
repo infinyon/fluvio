@@ -178,7 +178,6 @@ jobs:
           DOCKER_IMAGE_TAG: ${{ env.VERSION }}
           CHANNEL_TAG: stable
         run: |
-          make docker-create-manifest
           make docker-push-manifest
 
       - name: Slack Notification
