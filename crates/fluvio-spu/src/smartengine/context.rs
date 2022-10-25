@@ -1,4 +1,6 @@
-use fluvio_smartengine::{SmartModuleConfig, SmartModuleInitialData, SmartModuleChainInstance};
+use fluvio_smartengine::{
+    SmartModuleConfig, SmartModuleInitialData, SmartModuleChainInstance, SmartModuleChainBuilder,
+};
 use tracing::{debug, error};
 
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
@@ -184,7 +186,7 @@ impl SmartModuleContext {
     ) -> Result<SmartModuleChainInstance, ErrorCode> {
         let raw = payload
             .wasm
-            .get_raw()
+            .into_raw()
             .map_err(|err| ErrorCode::SmartModuleInvalid {
                 error: err.to_string(),
                 name: None,
@@ -193,7 +195,7 @@ impl SmartModuleContext {
         debug!(len = raw.len(), "SmartModule with bytes");
 
         let sm_engine = ctx.smartengine_owned();
-        let mut chain_builder = sm_engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
         let kind = payload.kind.clone();
 
@@ -208,37 +210,19 @@ impl SmartModuleContext {
         };
 
         debug!("param: {:#?}", payload.params);
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .params(payload.params)
-                    .version(version)
-                    .initial_data(initial_data)
-                    .build()
-                    .map_err(|err| ErrorCode::SmartModuleInvalid {
-                        error: err.to_string(),
-                        name: None,
-                    })?,
-                raw,
-            )
-            .map_err(|err| {
-                error!(
-                    error = err.to_string().as_str(),
-                    "Error Instantiating SmartModule"
-                );
-                if let SmartModuleKind::Generic(_) = kind {
-                    ErrorCode::SmartModuleInvalid {
-                        error: err.to_string(),
-                        name: None,
-                    }
-                } else {
-                    ErrorCode::SmartModuleInvalidExports {
-                        kind: format!("{}", kind),
-                        error: err.to_string(),
-                    }
-                }
-            })?;
-        let chain = chain_builder.initialize().map_err(|err| {
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .params(payload.params)
+                .version(version)
+                .initial_data(initial_data)
+                .build()
+                .map_err(|err| ErrorCode::SmartModuleInvalid {
+                    error: err.to_string(),
+                    name: None,
+                })?,
+            raw,
+        );
+        let chain = chain_builder.initialize(&sm_engine).map_err(|err| {
             error!(
                 error = err.to_string().as_str(),
                 "Error Initializing SmartModule"

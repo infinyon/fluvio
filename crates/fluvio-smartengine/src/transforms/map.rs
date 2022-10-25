@@ -9,7 +9,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use crate::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    WasmState,
+    state::WasmState,
 };
 
 const MAP_FN_NAME: &str = "map";
@@ -77,7 +77,9 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig, metrics::SmartModuleChainMetrics};
+    use crate::{
+        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+    };
     use crate::fixture::read_wasm_module;
 
     const SM_MAP: &str = "fluvio_smartmodule_map";
@@ -86,26 +88,22 @@ mod test {
     #[test]
     fn test_map() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder().build().unwrap(),
-                read_wasm_module(SM_MAP),
-            )
-            .expect("failed to create map");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_MAP),
+        );
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
 
         assert_eq!(
-            chain_builder
-                .instances()
-                .first()
-                .expect("first")
-                .transform()
-                .name(),
+            chain.instances().first().expect("first").transform().name(),
             super::MAP_FN_NAME
         );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
         let metrics = SmartModuleChainMetrics::default();
         let input = vec![Record::new("apple"), Record::new("fruit")];
         let output = chain
