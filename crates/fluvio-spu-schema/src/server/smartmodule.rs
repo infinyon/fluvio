@@ -173,6 +173,14 @@ impl SmartModuleWasmCompressed {
             Self::Gzip(gzipped) => Cow::Owned(unzip(gzipped.as_ref())?),
         })
     }
+
+    /// consume and get the raw bytes of the WASM module
+    pub fn into_raw(self) -> io::Result<Vec<u8>> {
+        Ok(match self {
+            Self::Raw(raw) => raw,
+            Self::Gzip(gzipped) => unzip(gzipped.as_ref())?,
+        })
+    }
 }
 
 impl Default for SmartModuleWasmCompressed {

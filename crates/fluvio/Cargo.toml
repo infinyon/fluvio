@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.14.0"
+version = "0.15.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -65,7 +65,7 @@ fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", defaul
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "4.0.0"
 chrono = {version =  "0.4", default-features = false, features = ["clock"]}
-fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.4.0",  optional = true}
+fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.5.0",  optional = true}
 
 [target.'cfg(unix)'.dependencies]
 fluvio-spu-schema = { version = "0.10.0", path = "../fluvio-spu-schema", features = [

@@ -1046,7 +1046,7 @@ const FLUVIO_WASM_MAP_DOUBLE: &str = "fluvio_wasm_map_double";
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_map_adhoc() {
     adhoc_test(
-        "test_stream_fetch_map_error_adhoc",
+        "test_stream_fetch_map_adhoc",
         FLUVIO_WASM_MAP_DOUBLE,
         SmartModuleKind::Map,
         test_stream_fetch_map,
@@ -2310,10 +2310,8 @@ async fn test_stream_fetch_invalid_smartmodule(
         .expect("response should be Ok");
 
     match response.partition.error_code {
-        ErrorCode::SmartModuleInvalidExports { error: _, kind } => {
-            assert_eq!(kind, "filter");
-        }
-        _ => panic!("expected an InvalidSmartModule error"),
+        ErrorCode::SmartModuleChainInitError { .. } => {}
+        _ => panic!("expected an SmartModuleChainInitError error"),
     }
 
     server_end_event.notify();

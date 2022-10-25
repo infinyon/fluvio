@@ -11,7 +11,8 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use crate::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    WasmState, SmartModuleInitialData,
+    SmartModuleInitialData,
+    state::WasmState,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
@@ -111,7 +112,8 @@ mod test {
     };
 
     use crate::{
-        SmartEngine, SmartModuleConfig, SmartModuleInitialData, metrics::SmartModuleChainMetrics,
+        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
+        metrics::SmartModuleChainMetrics,
     };
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
@@ -122,26 +124,22 @@ mod test {
     #[test]
     fn test_aggregate_ok() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder().build().unwrap(),
-                read_wasm_module(SM_AGGEGRATE),
-            )
-            .expect("failed to create aggegrate");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_AGGEGRATE),
+        );
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
 
         assert_eq!(
-            chain_builder
-                .instances()
-                .first()
-                .expect("first")
-                .transform()
-                .name(),
+            chain.instances().first().expect("first").transform().name(),
             super::AGGREGATE_FN_NAME
         );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
         let metrics = SmartModuleChainMetrics::default();
 
         let input = vec![Record::new("a")];
@@ -211,21 +209,21 @@ mod test {
     #[test]
     fn test_aggregate_with_initial() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .initial_data(SmartModuleInitialData::with_aggregate(
-                        "a".to_string().as_bytes().to_vec(),
-                    ))
-                    .build()
-                    .unwrap(),
-                read_wasm_module(SM_AGGEGRATE),
-            )
-            .expect("failed to create aggegrate");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .initial_data(SmartModuleInitialData::with_aggregate(
+                    "a".to_string().as_bytes().to_vec(),
+                ))
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_AGGEGRATE),
+        );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
 
         let metrics = SmartModuleChainMetrics::default();
         // new record should accumulate

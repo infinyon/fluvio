@@ -10,7 +10,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 
 use crate::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    WasmState,
+    state::WasmState,
 };
 
 const FILTER_FN_NAME: &str = "filter";
@@ -77,7 +77,9 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig, metrics::SmartModuleChainMetrics};
+    use crate::{
+        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+    };
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
@@ -88,26 +90,22 @@ mod test {
     #[test]
     fn test_filter() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder().build().unwrap(),
-                read_wasm_module(SM_FILTER),
-            )
-            .expect("failed to create filter");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_FILTER),
+        );
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
 
         assert_eq!(
-            chain_builder
-                .instances()
-                .first()
-                .expect("first")
-                .transform()
-                .name(),
+            chain.instances().first().expect("first").transform().name(),
             super::FILTER_FN_NAME
         );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
         let metrics = SmartModuleChainMetrics::default();
         let input = vec![Record::new("hello world")];
         let output = chain
@@ -127,28 +125,16 @@ mod test {
     #[test]
     fn test_filter_with_init_invalid_param() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder().build().unwrap(),
-                read_wasm_module(SM_FILTER_INIT),
-            )
-            .expect("failed to create filter");
-
-        assert_eq!(
-            chain_builder
-                .instances()
-                .first()
-                .expect("first")
-                .transform()
-                .name(),
-            crate::transforms::filter::FILTER_FN_NAME
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_FILTER_INIT),
         );
 
         assert_eq!(
             chain_builder
-                .initialize()
+                .initialize(&engine)
                 .expect_err("should return param error")
                 .to_string(),
             "Missing param key\n\nSmartModule Init Error: \n"
@@ -159,19 +145,21 @@ mod test {
     #[test]
     fn test_filter_with_init_ok() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .param("key", "a")
-                    .build()
-                    .unwrap(),
-                read_wasm_module(SM_FILTER_INIT),
-            )
-            .expect("failed to create filter");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .param("key", "a")
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_INIT),
+        );
 
-        let instance = chain_builder.instances().first().expect("first");
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
+
+        let instance = chain.instances().first().expect("first");
 
         assert_eq!(
             instance.transform().name(),
@@ -180,7 +168,6 @@ mod test {
 
         assert!(instance.get_init().is_some());
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
         let metrics = SmartModuleChainMetrics::default();
 
         let input = vec![Record::new("hello world")];
@@ -203,18 +190,18 @@ mod test {
         assert_eq!(output.successes[1].value.as_ref(), b"banana");
 
         // build 2nd chain with different parameter
-        let mut chain_builder = engine.builder();
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .param("key", "b")
-                    .build()
-                    .unwrap(),
-                read_wasm_module(SM_FILTER_INIT),
-            )
-            .expect("failed to create filter");
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .param("key", "b")
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_INIT),
+        );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
 
         let input = vec![
             Record::new("apple"),

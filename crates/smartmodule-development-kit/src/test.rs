@@ -9,7 +9,7 @@ use tracing::debug;
 
 use fluvio::RecordKey;
 use fluvio_protocol::record::{RecordData, Record};
-use fluvio_smartengine::{SmartEngine, SmartModuleConfig};
+use fluvio_smartengine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
 use crate::package::{PackageInfo, PackageOption};
@@ -65,15 +65,15 @@ impl TestOpt {
         let param: BTreeMap<String, String> = self.params.into_iter().collect();
 
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
         chain_builder.add_smart_module(
             SmartModuleConfig::builder().params(param.into()).build()?,
             raw,
-        )?;
+        );
 
         debug!("SmartModule chain created");
 
-        let mut chain = chain_builder.initialize()?;
+        let mut chain = chain_builder.initialize(&engine)?;
 
         // get raw json in one of other ways
         let raw_input = if let Some(input) = self.text {
