@@ -4,7 +4,7 @@ use std::io::ErrorKind;
 use bytes::{Buf, Bytes, BufMut};
 
 use crate::{Encoder, Decoder, Version};
-use crate::core::decoder::DecoderVarInt;
+use crate::DecoderVarInt;
 
 /// Represnts a SmartModule WASM File bytes.
 ///
@@ -36,7 +36,7 @@ impl From<Vec<u8>> for ByteBuf {
 }
 
 impl Decoder for ByteBuf {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
@@ -47,8 +47,21 @@ impl Decoder for ByteBuf {
             return Ok(());
         }
 
+        let mut buf = src.take(len as usize);
+
         self.inner
-            .extend_from_slice(&src.copy_to_bytes(len as usize));
+            .extend_from_slice(&buf.copy_to_bytes(len as usize));
+
+        if self.len() != len as usize {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                format!(
+                    "varint: ByteBuf, expecting {} but received: {}",
+                    len,
+                    self.len()
+                ),
+            ));
+        }
 
         Ok(())
     }
@@ -185,14 +198,14 @@ mod tests {
 
     #[test]
     fn test_decode_bytebuf() {
-        let mut value = ByteBuf::default();
-        let data: &[u8] = &[0x06, 0x64, 0x6f, 0x67];
-        let result = value.decode(&mut Cursor::new(&data), 0);
+        let data = [0x06, 0x64, 0x6f, 0x67];
+        let mut bytebuf = ByteBuf::default();
+        let result = bytebuf.decode(&mut Cursor::new(&data), 0);
 
         assert!(result.is_ok());
-        assert_eq!(value.len(), 3);
-        assert_eq!(value.inner[0], 0x64);
-        assert_eq!(value.inner[1], 0x6f);
-        assert_eq!(value.inner[2], 0x67);
+        assert_eq!(bytebuf.len(), 3);
+        assert_eq!(bytebuf.inner[0], 0x64);
+        assert_eq!(bytebuf.inner[1], 0x6f);
+        assert_eq!(bytebuf.inner[2], 0x67);
     }
 }
