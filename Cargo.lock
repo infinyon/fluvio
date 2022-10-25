@@ -1999,7 +1999,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -2512,7 +2512,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -2622,7 +2622,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "bytes 1.2.1",
  "educe",
