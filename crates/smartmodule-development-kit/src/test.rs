@@ -1,6 +1,8 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
 use std::fmt::Debug;
+use std::fs::File;
+use std::io::{self, BufRead};
 
 use clap::Parser;
 use anyhow::Result;
@@ -8,7 +10,7 @@ use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::debug;
 
 use fluvio::RecordKey;
-use fluvio_protocol::record::{RecordData, Record};
+use fluvio_protocol::record::Record;
 use fluvio_smartengine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
@@ -17,13 +19,17 @@ use crate::package::{PackageInfo, PackageOption};
 /// Test SmartModule
 #[derive(Debug, Parser)]
 pub struct TestOpt {
-    // text input
-    #[clap(long)]
+    /// Provide test input with this flag
+    #[clap(long, group = "TestInput")]
     text: Option<String>,
 
-    // arbitrary file input
-    #[clap(long)]
+    /// Path to test file. Default: Read file line by line
+    #[clap(long, groups = ["TestInput", "TestFile"])]
     file: Option<PathBuf>,
+
+    /// Read the file as single record
+    #[clap(long, action, requires = "TestFile")]
+    file_single: bool,
 
     #[clap(flatten)]
     package: PackageOption,
@@ -75,20 +81,43 @@ impl TestOpt {
 
         let mut chain = chain_builder.initialize(&engine)?;
 
-        // get raw json in one of other ways
-        let raw_input = if let Some(input) = self.text {
+        let mut input_size = 0;
+        let test_record: Vec<Record> = if let Some(input) = self.text {
             debug!(input, "input string");
-            input.as_bytes().to_vec()
-        } else if let Some(json_file) = &self.file {
-            std::fs::read(json_file)?
+            input.as_bytes().to_vec();
+
+            let input_bytes = input.as_bytes().to_vec();
+
+            input_size += input_bytes.len();
+
+            vec![Record::new_key_value(RecordKey::NULL, input_bytes)]
+        } else if let Some(test_file) = &self.file {
+            if self.file_single {
+                let f: Vec<u8> = std::fs::read(test_file)?;
+                input_size += f.len();
+                vec![Record::new_key_value(RecordKey::NULL, f)]
+            } else {
+                let file = File::open(test_file)?;
+                let buf = io::BufReader::new(file).lines();
+
+                let mut records: Vec<Record> = Vec::new();
+
+                for line in buf.flatten() {
+                    let l = line.as_bytes();
+
+                    input_size += l.len();
+                    records.push(Record::new_key_value(RecordKey::NULL, line.as_bytes()));
+                }
+
+                records
+            }
         } else {
-            return Err(anyhow::anyhow!("No json provided"));
+            return Err(anyhow::anyhow!("No valid input provided"));
         };
 
-        debug!(len = raw_input.len(), "input data");
+        debug!(len = input_size, "input data");
 
-        let record_value: RecordData = raw_input.into();
-        let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
+        let entries = test_record;
 
         let metrics = SmartModuleChainMetrics::default();
         let output = chain.process(SmartModuleInput::try_from(entries)?, &metrics)?;
