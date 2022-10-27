@@ -175,6 +175,8 @@ pub enum ErrorCode {
     DerivedStreamInvalid(String),
     #[error("can't do recursive derivedstream yet: {0}->{1}")]
     DerivedStreamRecursion(String, String),
+    #[error("the derivedstream already exists")]
+    DerivedStreamAlreadyExists,
 
     // Compression errors
     #[fluvio(tag = 9000)]

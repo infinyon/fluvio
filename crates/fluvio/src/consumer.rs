@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use fluvio_spu_schema::server::smartmodule::{
-    SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
-    SmartModuleInvocation,
-};
+use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use tracing::{debug, error, trace, instrument, info};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -14,8 +11,7 @@ use futures_util::FutureExt;
 use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
 use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, DefaultStreamFetchResponse, WASM_MODULE_API, SMART_MODULE_API,
-    WASM_MODULE_V2_API, GZIP_WASM_API,
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, CHAIN_SMARTMODULE_API,
 };
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::ReplicaKey;
@@ -316,41 +312,17 @@ where
             fetch_offset: start_absolute_offset,
             isolation: config.isolation,
             max_bytes: config.max_bytes,
+            smartmodule: config.smartmodule,
             ..Default::default()
         };
 
-        // add wasm module if SPU supports it
         let stream_fetch_version = serial_socket
             .versions()
             .lookup_version::<DefaultStreamFetchRequest>()
-            .unwrap_or((WASM_MODULE_API - 1) as i16);
+            .unwrap_or((CHAIN_SMARTMODULE_API - 1) as i16);
         debug!(%stream_fetch_version, "stream_fetch_version");
 
         stream_request.derivedstream = config.derivedstream;
-
-        if let Some(smartmodule) = config.smartmodule {
-            if stream_fetch_version < SMART_MODULE_API as i16 {
-                if let SmartModuleInvocationWasm::AdHoc(wasm) = smartmodule.wasm {
-                    let legacy_module = LegacySmartModulePayload {
-                        wasm: SmartModuleWasmCompressed::Gzip(wasm),
-                        kind: smartmodule.kind,
-                        params: smartmodule.params,
-                    };
-                    legacy_set_wasm(stream_fetch_version, &mut stream_request, legacy_module)?;
-                } else {
-                    return Err(FluvioError::Other(
-                        "SPU does not support persistent WASM".to_owned(),
-                    ));
-                }
-            } else {
-                debug!("Using persistent WASM API");
-                stream_request.smartmodule = Some(smartmodule);
-            }
-        }
-
-        if let Some(module) = config.wasm_module {
-            legacy_set_wasm(stream_fetch_version, &mut stream_request, module)?;
-        }
 
         let mut stream = self
             .pool
@@ -444,33 +416,6 @@ where
 
         Ok((stream, start_absolute_offset))
     }
-}
-
-fn legacy_set_wasm(
-    stream_fetch_version: i16,
-    stream_request: &mut DefaultStreamFetchRequest,
-    mut module: LegacySmartModulePayload,
-) -> Result<(), FluvioError> {
-    if stream_fetch_version < WASM_MODULE_API as i16 {
-        return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
-    }
-
-    if stream_fetch_version < WASM_MODULE_V2_API as i16 {
-        debug!("Using WASM V1 API");
-        let wasm = module.wasm.get_raw()?;
-        stream_request.wasm_module = wasm.into_owned();
-    } else {
-        debug!("Using WASM V2 API");
-        if stream_fetch_version < GZIP_WASM_API as i16 {
-            module.wasm.to_raw()?;
-        } else {
-            debug!("Using compressed WASM API");
-            module.wasm.to_gzip()?;
-        }
-        stream_request.wasm_payload = Some(module);
-    }
-
-    Ok(())
 }
 
 /// Wrap an inner record stream and only stream until a given number of records have been fetched.
@@ -611,10 +556,8 @@ pub struct ConsumerConfig {
     pub(crate) max_bytes: i32,
     #[builder(default)]
     pub(crate) isolation: Isolation,
-    #[builder(private, default, setter(into, strip_option))]
-    pub(crate) wasm_module: Option<LegacySmartModulePayload>,
     #[builder(default)]
-    pub(crate) smartmodule: Option<SmartModuleInvocation>,
+    pub(crate) smartmodule: Vec<SmartModuleInvocation>,
     #[builder(default)]
     pub(crate) derivedstream:
         Option<fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation>,

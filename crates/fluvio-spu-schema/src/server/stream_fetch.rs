@@ -22,25 +22,10 @@ pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet<RawRecords>>
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet<RawRecords>>;
 
 use super::SpuServerApiKey;
-use super::smartmodule::{LegacySmartModulePayload, SmartModuleInvocation};
-
-// version for WASM_MODULE
-pub const WASM_MODULE_API: i16 = 11;
-pub const WASM_MODULE_V2_API: i16 = 12;
-
-// version for aggregator SmartModule
-pub const AGGREGATOR_API: i16 = 13;
-
-// version for gzipped WASM payloads
-pub const GZIP_WASM_API: i16 = 14;
-
-// version for SmartModule array map
-pub const ARRAY_MAP_WASM_API: i16 = 15;
-
-// version for persistent SmartModule
-pub const SMART_MODULE_API: i16 = 16;
+use super::smartmodule::SmartModuleInvocation;
 
 pub const GENERIC_SMARTMODULE_API: i16 = 17;
+pub const CHAIN_SMARTMODULE_API: i16 = 18;
 
 /// Fetch records continuously
 /// Output will be send back as stream
@@ -55,16 +40,8 @@ where
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,
-    /// no longer used, but keep to avoid breaking compatibility, this will not be honored
-    // TODO: remove in 0.10
-    #[educe(Debug(ignore))]
-    #[fluvio(min_version = 11)]
-    pub wasm_module: Vec<u8>,
-    // TODO: remove in 0.10
-    #[fluvio(min_version = 12)]
-    pub wasm_payload: Option<LegacySmartModulePayload>,
-    #[fluvio(min_version = 16)]
-    pub smartmodule: Option<SmartModuleInvocation>,
+    #[fluvio(min_version = 18)]
+    pub smartmodule: Vec<SmartModuleInvocation>,
     #[fluvio(min_version = 16)]
     pub derivedstream: Option<DerivedStreamInvocation>,
     pub data: PhantomData<R>,
@@ -75,7 +52,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = SMART_MODULE_API;
+    const DEFAULT_API_VERSION: i16 = CHAIN_SMARTMODULE_API;
     type Response = StreamFetchResponse<R>;
 }
 
@@ -136,7 +113,7 @@ mod file {
 #[cfg(test)]
 mod tests {
 
-    use crate::server::smartmodule::{SmartModuleKind, SmartModuleWasmCompressed};
+    use crate::server::smartmodule::{SmartModuleInvocationWasm, SmartModuleKind};
 
     use super::*;
 
@@ -146,18 +123,22 @@ mod tests {
         let value = DefaultStreamFetchRequest {
             topic: "one".to_string(),
             partition: 3,
-            wasm_payload: Some(LegacySmartModulePayload {
-                kind: SmartModuleKind::Filter,
-                wasm: SmartModuleWasmCompressed::Raw(vec![0xde, 0xad, 0xbe, 0xef]),
-                ..Default::default()
-            }),
+            smartmodule: vec![
+                (SmartModuleInvocation {
+                    wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
+                    kind: SmartModuleKind::Filter,
+                    ..Default::default()
+                }),
+            ],
             ..Default::default()
         };
-        value.encode(&mut dest, 12).expect("should encode");
+        value
+            .encode(&mut dest, CHAIN_SMARTMODULE_API)
+            .expect("should encode");
         let expected = vec![
             0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
-            0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00,
+            0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00, 0x00, 0x00, 0x00,
         ];
         assert_eq!(dest, expected);
     }
@@ -166,21 +147,23 @@ mod tests {
     fn test_decode_stream_fetch_request() {
         let bytes = vec![
             0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
-            0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00, 0x00, 0x0,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00,
+            0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00, 0x00, 0x00, 0x00,
         ];
         let mut value = DefaultStreamFetchRequest::default();
-        value.decode(&mut std::io::Cursor::new(bytes), 12).unwrap();
+        value
+            .decode(&mut std::io::Cursor::new(bytes), CHAIN_SMARTMODULE_API)
+            .unwrap();
         assert_eq!(value.topic, "one");
         assert_eq!(value.partition, 3);
-        let sm = match value.wasm_payload {
+        let sm = match value.smartmodule.first() {
             Some(wasm) => wasm,
             _ => panic!("should have smartstreeam payload"),
         };
-        let wasm = match sm.wasm {
-            SmartModuleWasmCompressed::Raw(wasm) => wasm,
+        let wasm = match &sm.wasm {
+            SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
             #[allow(unreachable_patterns)]
-            _ => panic!("should be SmartModuleWasm::Raw"),
+            _ => panic!("should be SmartModuleInvocationWasm::AdHoc"),
         };
         assert_eq!(wasm, vec![0xde, 0xad, 0xbe, 0xef]);
         assert!(matches!(sm.kind, SmartModuleKind::Filter));
@@ -189,17 +172,13 @@ mod tests {
     #[test]
     fn test_zip_unzip_works() {
         const ORIG_LEN: usize = 1024;
-        let orig = SmartModuleWasmCompressed::Raw(vec![0x01; ORIG_LEN]);
-        let mut compressed = orig.clone();
-        compressed.to_gzip().unwrap();
+        let orig = vec![0x01; ORIG_LEN];
+        let compressed = SmartModuleInvocationWasm::adhoc_from_bytes(orig.as_slice())
+            .expect("compression failed");
         assert!(
-            matches!(&compressed, &SmartModuleWasmCompressed::Gzip(ref x) if x.len() < ORIG_LEN)
+            matches!(&compressed, &SmartModuleInvocationWasm::AdHoc(ref x) if x.len() < ORIG_LEN)
         );
-        let mut uncompressed = compressed.clone();
-        uncompressed.to_raw().unwrap();
-        assert!(
-            matches!((&uncompressed, &orig), (&SmartModuleWasmCompressed::Raw(ref x), &SmartModuleWasmCompressed::Raw(ref y)) if x == y )
-        );
-        assert_eq!(orig.get_raw().unwrap(), compressed.get_raw().unwrap());
+        let uncompressed = compressed.into_raw().expect("decompression failed");
+        assert_eq!(orig, uncompressed);
     }
 }

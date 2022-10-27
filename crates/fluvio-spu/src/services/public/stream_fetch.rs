@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use fluvio_smartengine::{SmartModuleChainInstance};
-use tracing::{debug, error, instrument, trace};
+use tracing::{debug, error, instrument, trace, warn};
 use futures_util::StreamExt;
 use tokio::select;
 
@@ -137,21 +137,17 @@ impl StreamFetchHandler {
         debug!("request: {:#?}", msg);
         let version = header.api_version();
 
-        let derivedstream_ctx = match SmartModuleContext::extract(
-            msg.wasm_payload,
-            msg.smartmodule,
-            msg.derivedstream,
-            version,
-            &ctx,
-        )
-        .await
-        {
-            Ok(ctx) => ctx,
-            Err(error_code) => {
-                send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
-                return Ok(());
-            }
-        };
+        let derivedstream_ctx =
+            match SmartModuleContext::try_from(msg.smartmodule, msg.derivedstream, version, &ctx)
+                .await
+            {
+                Ok(ctx) => ctx,
+                Err(error_code) => {
+                    warn!("smartmodule context init failed: {:?}", error_code);
+                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                    return Ok(());
+                }
+            };
 
         let max_bytes = msg.max_bytes as u32;
         // compute max fetch bytes depends on smart stream
