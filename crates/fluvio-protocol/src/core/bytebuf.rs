@@ -68,8 +68,10 @@ impl Decoder for ByteBuf {
 }
 
 impl Encoder for ByteBuf {
-    fn write_size(&self, _version: Version) -> usize {
-        self.inner.len() + 4
+    fn write_size(&self, version: Version) -> usize {
+        self.inner
+            .iter()
+            .fold(4, |sum, val| sum + val.write_size(version))
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -171,29 +173,26 @@ mod tests {
     #[test]
     fn test_encode_bytebuf() {
         let mut dest = Vec::default();
-        let value: ByteBuf = ByteBuf::from(vec![12, 128, 255, 78, 9]);
+        let value: ByteBuf = ByteBuf::from(vec![0x10, 0x11]);
         let result = value.encode(&mut dest, 0);
 
         assert!(result.is_ok());
 
         // Length + Contents
-        assert_eq!(dest.len(), 9);
+        assert_eq!(dest.len(), 6);
 
         // Length Bytes
         assert_eq!(dest[0], 0x00);
         assert_eq!(dest[1], 0x00);
         assert_eq!(dest[2], 0x00);
-        assert_eq!(dest[3], 0x05);
+        assert_eq!(dest[3], 0x02);
 
         // Actual Content
-        assert_eq!(dest[4], 0x0C);
-        assert_eq!(dest[5], 0x80);
-        assert_eq!(dest[6], 0xFF);
-        assert_eq!(dest[7], 0x4E);
-        assert_eq!(dest[8], 0x09);
+        assert_eq!(dest[3], 0x02);
+        assert_eq!(dest[5], 0x11);
 
         // Length in 32bits (4 bytes) + Contents (5 elements)
-        assert_eq!(value.write_size(0), 9);
+        assert_eq!(value.write_size(0), dest.len());
     }
 
     #[test]

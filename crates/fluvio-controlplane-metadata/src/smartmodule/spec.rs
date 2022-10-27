@@ -124,13 +124,8 @@ impl std::fmt::Debug for SmartModuleWasm {
 impl SmartModuleWasm {
     /// Create SmartModule from compressed Gzip format
     pub fn from_compressed_gzip(payload: Vec<u8>) -> Self {
-        let bytes = ByteBuf::default();
-        let mut payload = payload;
-
-        bytes.encode(&mut payload, 0).unwrap();
-
         SmartModuleWasm {
-            payload: bytes,
+            payload: ByteBuf::from(payload),
             format: SmartModuleWasmFormat::Binary,
         }
     }
