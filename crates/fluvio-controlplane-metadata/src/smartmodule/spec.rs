@@ -5,6 +5,8 @@ use std::{io::Error as IoError, borrow::Cow};
 
 use bytes::BufMut;
 use tracing::debug;
+
+#[cfg(feature = "smartmodule")]
 use wasmparser::{Parser, Chunk, Payload};
 
 use fluvio_protocol::{Encoder, Decoder, Version};
@@ -16,6 +18,7 @@ use super::{
 
 const V2_FORMAT: Version = 10;
 
+#[cfg(feature = "smartmodule")]
 #[derive(thiserror::Error, Debug)]
 pub enum ValidateSmartModuleWasmError {
     #[error("The provided WASM file is not valid: {0}")]
@@ -119,34 +122,6 @@ pub struct SmartModuleWasm {
     pub payload: Vec<u8>,
 }
 
-impl SmartModuleWasm {
-    /// Validates a SmartModule's WASM payload to represent a valid WASM file
-    /// in the binary format (*.wasm).
-    pub fn validate_binary(mut data: &[u8]) -> Result<(), ValidateSmartModuleWasmError> {
-        let mut parser = Parser::default();
-
-        loop {
-            match parser
-                .parse(data, true)
-                .map_err(|err| ValidateSmartModuleWasmError::BinaryParsingError(err.to_string()))?
-            {
-                // Given that file bytes are present, its not possible to reach
-                Chunk::NeedMoreData(_) => unreachable!(),
-                Chunk::Parsed { consumed, payload } => {
-                    if matches!(&payload, Payload::End(_)) {
-                        // Reaches the EOF with success. At this point the
-                        // whole file has been read and no errors has occured.
-                        return Ok(());
-                    }
-
-                    // Keeps track of parsing offset.
-                    data = &data[consumed..];
-                }
-            };
-        }
-    }
-}
-
 impl std::fmt::Debug for SmartModuleWasm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!(
@@ -176,6 +151,34 @@ impl SmartModuleWasm {
         encoder.read_to_end(&mut buffer)?;
 
         Ok(Self::from_compressed_gzip(buffer))
+    }
+
+    #[cfg(feature = "smartmodule")]
+    /// Validates a SmartModule's WASM payload to represent a valid WASM file
+    /// in the binary format (*.wasm).
+    pub fn validate_binary(mut data: &[u8]) -> Result<(), ValidateSmartModuleWasmError> {
+        let mut parser = Parser::default();
+
+        loop {
+            match parser
+                .parse(data, true)
+                .map_err(|err| ValidateSmartModuleWasmError::BinaryParsingError(err.to_string()))?
+            {
+                // Given that file bytes are present, its not possible to meet
+                // this state.
+                Chunk::NeedMoreData(_) => unreachable!(),
+                Chunk::Parsed { consumed, payload } => {
+                    if matches!(&payload, Payload::End(_)) {
+                        // Reaches the EOF with success. At this point the
+                        // whole file has been read and no errors has occured.
+                        return Ok(());
+                    }
+
+                    // Keeps track of parsing offset.
+                    data = &data[consumed..];
+                }
+            };
+        }
     }
 }
 
