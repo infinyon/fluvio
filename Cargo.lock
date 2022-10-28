@@ -2372,6 +2372,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "wasmparser 0.93.0",
 ]
 
 [[package]]

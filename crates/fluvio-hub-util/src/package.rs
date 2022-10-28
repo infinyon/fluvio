@@ -9,6 +9,7 @@ use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use tracing::{debug, warn};
+use wasmparser::{Parser, Chunk, Payload};
 
 use crate::HUB_SIGNFILE_BASE;
 use crate::keymgmt::{Keypair, PublicKey, Signature};
@@ -344,6 +345,45 @@ pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
     Err(HubUtilError::PackageMissingFile(filename.into()))
 }
 
+/// Extracts WASM files from the package manifest ensuring these are valid
+/// WASM files by parsing until encountering a discrepancy.
+pub fn package_get_wasmfile_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    filename: &str,
+) -> Result<Vec<u8>> {
+    let wasm_bytes = package_get_manifest_file_with_readio(readio, filename)?;
+
+    validate_wasm_file(&wasm_bytes)?;
+    Ok(wasm_bytes)
+}
+
+/// Validates a SmartModule's WASM payload to represent a valid WASM file
+/// in the binary format (*.wasm).
+fn validate_wasm_file(mut data: &[u8]) -> Result<()> {
+    let mut parser = Parser::default();
+
+    loop {
+        match parser
+            .parse(data, true)
+            .map_err(|err| HubUtilError::InvalidWasmFileEncountered(err.to_string()))?
+        {
+            // Given that file bytes are present, its not possible to meet
+            // this state.
+            Chunk::NeedMoreData(_) => unreachable!(),
+            Chunk::Parsed { consumed, payload } => {
+                if matches!(&payload, Payload::End(_)) {
+                    // Reaches the EOF with success. At this point the
+                    // whole file has been read and no errors has occured.
+                    return Ok(());
+                }
+
+                // Keeps track of parsing offset.
+                data = &data[consumed..];
+            }
+        };
+    }
+}
+
 /// verify package signature. the pkgsig should contain the desired
 /// public key to verify sgainst
 fn package_verify_sig_from_readio<R: std::io::Read>(
@@ -451,6 +491,8 @@ pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
 
 #[cfg(test)]
 mod tests {
+    use std::fs::read;
+
     use super::*;
     use crate::package_get_meta;
 
@@ -553,5 +595,32 @@ mod tests {
 
         let res_of_missing_file = package_get_manifest_file(SIGNED_PKG_FILE, "does-not-exist");
         assert!(res_of_missing_file.is_err());
+    }
+
+    #[test]
+    fn validates_smartmodule_wasm_binary() {
+        let wasm_bytes =
+            read("tests/sm_ok.wasm").expect("Failed to find 'sm_ok.wasm' file for tests");
+        let result = validate_wasm_file(wasm_bytes.as_slice());
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn validate_input_to_be_wasm_file() {
+        let wasm_bytes = read("tests/hub_package_meta_rw_test.yaml")
+            .expect("Failed to find 'hub_package_meta_rw_test.yaml' file for tests");
+        let result = validate_wasm_file(wasm_bytes.as_slice());
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validates_smartmodule_wasm_binary_corrupt() {
+        let wasm_bytes = read("tests/sm_need_more_data.wasm")
+            .expect("Failed to find 'sm_need_more_data.wasm' file for tests");
+        let result = validate_wasm_file(wasm_bytes.as_slice());
+
+        assert!(result.is_err());
     }
 }
