@@ -47,11 +47,9 @@ impl Decoder for ByteBuf {
             return Ok(());
         }
 
-        for _ in 0..len {
-            let mut value = 0_u8;
-            value.decode(src, version)?;
-            self.inner.push(value);
-        }
+        let mut buf = src.take(len as usize);
+        self.inner
+            .extend_from_slice(&buf.copy_to_bytes(len as usize));
 
         Ok(())
     }
@@ -161,7 +159,7 @@ mod base64 {
 mod tests {
     use std::io::Cursor;
 
-    use crate::{Decoder, Encoder, DecoderVarInt};
+    use crate::{Decoder, Encoder};
     use super::ByteBuf;
 
     #[test]
@@ -265,11 +263,16 @@ mod tests {
         let encoded_expect: [u8; 14] = [
             0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
         ];
-        let mut encoded_data: Vec<u8> = Vec::default();
-        let encoded_res = Vec::<u8>::from(raw_data).encode(&mut encoded_data, 0);
-        let mut bytebuf_encoded = ByteBuf::default();
-        let encode_bytebuf_res = ByteBuf::from(Vec::from(raw_data)).encode(&mut bytebuf_encoded, 0);
 
+        let mut encoded_data: Vec<u8> = Vec::default();
+        let is_encode_vecu8_ok = Vec::<u8>::from(raw_data).encode(&mut encoded_data, 0);
+
+        let mut bytebuf_encoded = ByteBuf::default();
+        let is_encode_bytebuf_ok =
+            ByteBuf::from(Vec::from(raw_data)).encode(&mut bytebuf_encoded, 0);
+
+        assert!(is_encode_vecu8_ok.is_ok());
+        assert!(is_encode_bytebuf_ok.is_ok());
         assert_eq!(
             encoded_data.as_slice(),
             encoded_expect,
@@ -283,7 +286,6 @@ mod tests {
 
         let mut decoded_vecu8: Vec<u8> = Vec::default();
         let decoded_vecu8_res = decoded_vecu8.decode(&mut Cursor::new(&encoded_expect), 0);
-        println!("hello: {:?}", raw_data);
 
         assert!(decoded_vecu8_res.is_ok());
         assert_eq!(decoded_vecu8.len(), 10);
