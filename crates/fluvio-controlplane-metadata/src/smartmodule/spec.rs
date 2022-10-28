@@ -6,7 +6,7 @@ use std::{io::Error as IoError, borrow::Cow};
 use bytes::BufMut;
 use tracing::debug;
 
-#[cfg(feature = "smartmodule")]
+#[cfg(feature = "smartmodule_validation")]
 use wasmparser::{Parser, Chunk, Payload};
 
 use fluvio_protocol::{Encoder, Decoder, Version};
@@ -18,7 +18,7 @@ use super::{
 
 const V2_FORMAT: Version = 10;
 
-#[cfg(feature = "smartmodule")]
+#[cfg(feature = "smartmodule_validation")]
 #[derive(thiserror::Error, Debug)]
 pub enum ValidateSmartModuleWasmError {
     #[error("The provided WASM file is not valid: {0}")]
@@ -153,7 +153,7 @@ impl SmartModuleWasm {
         Ok(Self::from_compressed_gzip(buffer))
     }
 
-    #[cfg(feature = "smartmodule")]
+    #[cfg(feature = "smartmodule_validation")]
     /// Validates a SmartModule's WASM payload to represent a valid WASM file
     /// in the binary format (*.wasm).
     pub fn validate_binary(mut data: &[u8]) -> Result<(), ValidateSmartModuleWasmError> {
@@ -214,7 +214,7 @@ mod base64 {
     }
 }
 
-#[cfg(all(test, feature = "smartmodule"))]
+#[cfg(all(test, feature = "smartmodule_validation"))]
 mod tests {
     use std::fs::read;
 
