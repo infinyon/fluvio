@@ -22,13 +22,31 @@ pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet<RawRecords>>
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet<RawRecords>>;
 
 use super::SpuServerApiKey;
-use super::smartmodule::SmartModuleInvocation;
+#[allow(deprecated)]
+use super::smartmodule::{LegacySmartModulePayload, SmartModuleInvocation};
+
+// version for WASM_MODULE
+pub const WASM_MODULE_API: i16 = 11;
+pub const WASM_MODULE_V2_API: i16 = 12;
+
+// version for aggregator SmartModule
+pub const AGGREGATOR_API: i16 = 13;
+
+// version for gzipped WASM payloads
+pub const GZIP_WASM_API: i16 = 14;
+
+// version for SmartModule array map
+pub const ARRAY_MAP_WASM_API: i16 = 15;
+
+// version for persistent SmartModule
+pub const SMART_MODULE_API: i16 = 16;
 
 pub const GENERIC_SMARTMODULE_API: i16 = 17;
 pub const CHAIN_SMARTMODULE_API: i16 = 18;
 
 /// Fetch records continuously
 /// Output will be send back as stream
+#[allow(deprecated)]
 #[derive(Decoder, Encoder, Default, Educe)]
 #[educe(Debug)]
 pub struct StreamFetchRequest<R>
@@ -40,10 +58,22 @@ where
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,
-    #[fluvio(min_version = 18)]
-    pub smartmodule: Vec<SmartModuleInvocation>,
+    /// no longer used, but keep to avoid breaking compatibility, this will not be honored
+    // TODO: remove in 0.10
+    #[educe(Debug(ignore))]
+    #[fluvio(min_version = 11)]
+    pub wasm_module: Vec<u8>,
+    // TODO: remove in 0.10
+    #[fluvio(min_version = 12)]
+    #[fluvio(max_version = 18)]
+    pub wasm_payload: Option<LegacySmartModulePayload>,
+    #[fluvio(min_version = 16)]
+    #[fluvio(max_version = 18)]
+    pub smartmodule: Option<SmartModuleInvocation>,
     #[fluvio(min_version = 16)]
     pub derivedstream: Option<DerivedStreamInvocation>,
+    #[fluvio(min_version = 18)]
+    pub smartmodules: Vec<SmartModuleInvocation>,
     pub data: PhantomData<R>,
 }
 
@@ -123,7 +153,7 @@ mod tests {
         let value = DefaultStreamFetchRequest {
             topic: "one".to_string(),
             partition: 3,
-            smartmodule: vec![
+            smartmodules: vec![
                 (SmartModuleInvocation {
                     wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
                     kind: SmartModuleKind::Filter,
@@ -156,7 +186,7 @@ mod tests {
             .unwrap();
         assert_eq!(value.topic, "one");
         assert_eq!(value.partition, 3);
-        let sm = match value.smartmodule.first() {
+        let sm = match value.smartmodules.first() {
             Some(wasm) => wasm,
             _ => panic!("should have smartstreeam payload"),
         };

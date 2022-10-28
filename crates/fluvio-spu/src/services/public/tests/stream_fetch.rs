@@ -429,7 +429,7 @@ async fn test_stream_fetch_filter_generic() {
 async fn test_stream_fetch_filter(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
@@ -461,7 +461,7 @@ async fn test_stream_fetch_filter(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -618,7 +618,7 @@ async fn test_stream_fetch_filter_individual_generic() {
 async fn test_stream_fetch_filter_individual(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
@@ -647,7 +647,7 @@ async fn test_stream_fetch_filter_individual(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -738,7 +738,7 @@ async fn test_stream_filter_error_fetch_generic() {
 async fn test_stream_filter_error_fetch(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
@@ -770,7 +770,7 @@ async fn test_stream_filter_error_fetch(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -870,7 +870,7 @@ async fn test_stream_filter_max_generic() {
 async fn test_stream_filter_max(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
@@ -918,7 +918,7 @@ async fn test_stream_filter_max(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 250,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1014,7 +1014,7 @@ async fn test_stream_fetch_map_adhoc() {
 async fn test_stream_fetch_map(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
@@ -1046,7 +1046,7 @@ async fn test_stream_fetch_map(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 300,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1166,7 +1166,7 @@ async fn test_stream_fetch_map_predefined_chain() {
 async fn test_stream_fetch_map_chain(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
@@ -1195,7 +1195,7 @@ async fn test_stream_fetch_map_chain(
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         max_bytes: 300,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1320,7 +1320,7 @@ async fn test_stream_fetch_map_error_generic() {
 async fn test_stream_fetch_map_error(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
@@ -1352,7 +1352,7 @@ async fn test_stream_fetch_map_error(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1456,7 +1456,7 @@ async fn test_stream_aggregate_fetch_single_batch_generic() {
 async fn test_stream_aggregate_fetch_single_batch(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
@@ -1485,7 +1485,7 @@ async fn test_stream_aggregate_fetch_single_batch(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1598,7 +1598,7 @@ async fn test_stream_aggregate_fetch_multiple_batch_generic() {
 async fn test_stream_aggregate_fetch_multiple_batch(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
@@ -1663,7 +1663,7 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1730,7 +1730,7 @@ async fn test_stream_fetch_and_new_request_adhoc() {
 async fn test_stream_fetch_and_new_request(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
@@ -1760,7 +1760,7 @@ async fn test_stream_fetch_and_new_request(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1818,7 +1818,7 @@ async fn test_stream_fetch_array_map_generic() {
 async fn test_stream_fetch_array_map(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
@@ -1864,7 +1864,7 @@ async fn test_stream_fetch_array_map(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -1937,7 +1937,7 @@ async fn test_stream_fetch_filter_map_generic() {
 async fn test_stream_fetch_filter_map(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
@@ -1986,7 +1986,7 @@ async fn test_stream_fetch_filter_map(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -2058,7 +2058,7 @@ async fn test_stream_fetch_filter_with_params_generic() {
 async fn test_stream_fetch_filter_with_params(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     use std::collections::BTreeMap;
     ensure_clean_dir(&test_path);
@@ -2087,7 +2087,7 @@ async fn test_stream_fetch_filter_with_params(
     let mut params = BTreeMap::new();
     params.insert("key".to_string(), "b".to_string());
 
-    let smartmodule_with_params = smartmodule
+    let smartmodule_with_params = smartmodules
         .clone()
         .into_iter()
         .map(|mut w| {
@@ -2102,7 +2102,7 @@ async fn test_stream_fetch_filter_with_params(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule: smartmodule_with_params,
+        smartmodules: smartmodule_with_params,
         ..Default::default()
     };
 
@@ -2159,7 +2159,7 @@ async fn test_stream_fetch_filter_with_params(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -2253,7 +2253,7 @@ async fn test_stream_fetch_invalid_smartmodule_predefined() {
 async fn test_stream_fetch_invalid_smartmodule(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
@@ -2283,7 +2283,7 @@ async fn test_stream_fetch_invalid_smartmodule(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 
@@ -2310,7 +2310,7 @@ async fn test_stream_fetch_invalid_smartmodule(
 async fn test_stream_fetch_join(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    smartmodule: Vec<SmartModuleInvocation>,
+    smartmodules: Vec<SmartModuleInvocation>,
 ) {
     // disable join test now
     if true {
@@ -2401,7 +2401,7 @@ async fn test_stream_fetch_join(
         fetch_offset: 0,
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
-        smartmodule,
+        smartmodules,
         ..Default::default()
     };
 

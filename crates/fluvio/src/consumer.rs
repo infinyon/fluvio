@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
-use tracing::{debug, error, trace, instrument, info};
+use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
 use futures_util::future::{Either, err, join_all};
@@ -312,7 +312,7 @@ where
             fetch_offset: start_absolute_offset,
             isolation: config.isolation,
             max_bytes: config.max_bytes,
-            smartmodule: config.smartmodule,
+            smartmodules: config.smartmodule,
             ..Default::default()
         };
 
@@ -321,6 +321,9 @@ where
             .lookup_version::<DefaultStreamFetchRequest>()
             .unwrap_or((CHAIN_SMARTMODULE_API - 1) as i16);
         debug!(%stream_fetch_version, "stream_fetch_version");
+        if stream_fetch_version < CHAIN_SMARTMODULE_API {
+            warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
+        }
 
         stream_request.derivedstream = config.derivedstream;
 

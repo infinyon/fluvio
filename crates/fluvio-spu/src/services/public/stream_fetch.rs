@@ -138,7 +138,7 @@ impl StreamFetchHandler {
         let version = header.api_version();
 
         let derivedstream_ctx =
-            match SmartModuleContext::try_from(msg.smartmodule, msg.derivedstream, version, &ctx)
+            match SmartModuleContext::try_from(msg.smartmodules, msg.derivedstream, version, &ctx)
                 .await
             {
                 Ok(ctx) => ctx,
