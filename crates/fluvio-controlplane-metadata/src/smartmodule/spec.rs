@@ -214,7 +214,7 @@ mod base64 {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "smartmodule"))]
 mod tests {
     use std::fs::read;
 
