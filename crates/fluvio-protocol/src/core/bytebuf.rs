@@ -106,64 +106,33 @@ impl Encoder for ByteBuf {
 unsafe impl BufMut for ByteBuf {
     #[inline]
     fn remaining_mut(&self) -> usize {
-        core::isize::MAX as usize - self.inner.len()
+        self.inner.remaining_mut()
     }
 
     #[inline]
     unsafe fn advance_mut(&mut self, cnt: usize) {
-        let len = self.len();
-        let remaining = self.inner.capacity() - len;
-
-        assert!(
-            cnt <= remaining,
-            "cannot advance past `remaining_mut`: {:?} <= {:?}",
-            cnt,
-            remaining
-        );
-
-        self.inner.set_len(len + cnt);
+        self.inner.advance_mut(cnt);
     }
 
     #[inline]
     fn chunk_mut(&mut self) -> &mut UninitSlice {
-        if self.inner.capacity() == self.len() {
-            self.inner.reserve(64); // Grow the vec
-        }
-
-        let cap = self.inner.capacity();
-        let len = self.inner.len();
-
-        let ptr = self.inner.as_mut_ptr();
-        unsafe { &mut UninitSlice::from_raw_parts_mut(ptr, cap)[len..] }
+        self.inner.chunk_mut()
     }
 
-    fn put<T: Buf>(&mut self, mut src: T)
+    fn put<T: Buf>(&mut self, src: T)
     where
         Self: Sized,
     {
-        self.inner.reserve(src.remaining());
-
-        while src.has_remaining() {
-            let l;
-
-            {
-                let s = src.chunk();
-                l = s.len();
-                self.inner.extend_from_slice(s);
-            }
-
-            src.advance(l);
-        }
+        self.inner.put(src);
     }
 
     #[inline]
     fn put_slice(&mut self, src: &[u8]) {
-        self.inner.extend_from_slice(src);
+        self.inner.put_slice(src);
     }
 
     fn put_bytes(&mut self, val: u8, cnt: usize) {
-        let new_len = self.len().checked_add(cnt).unwrap();
-        self.inner.resize(new_len, val);
+        self.inner.put_bytes(val, cnt);
     }
 }
 
@@ -318,24 +287,24 @@ mod tests {
         assert_eq!(data.write_size(0), bytebuf_dest.len());
     }
 
-    // #[test]
-    // fn test_decodes_as_vec_u8() {
-    //     let data = [0x06, 0x64, 0x6f, 0x67, 0xaa];
+    #[test]
+    fn test_decodes_as_vec_u8() {
+        let data = [0x06, 0x64, 0x6f, 0x67, 0xaa];
 
-    //     let mut vecu8_val: Vec<u8> = Vec::new();
-    //     let vecu8_res = vecu8_val.decode(&mut Cursor::new(&data), 0).unwrap();
+        let mut vecu8_val: Vec<u8> = Vec::new();
+        let vecu8_res = vecu8_val.decode_varint(&mut Cursor::new(&data)).unwrap();
 
-    //     // assert!(vecu8_res.is_ok());
-    //     assert_eq!(vecu8_val.len(), 7 + 1);
-    //     assert_eq!(vecu8_val[0], 0x64);
-    //     // let mut dest = Vec::default();
-    //     // let mut bytebuf = ByteBuf::default();
-    //     // let decode_res = bytebuf.decode(&mut Cursor::new(&src), 0);
-    //     // let encode_res = bytebuf.encode(&mut dest, 0);
+        // assert!(vecu8_res.is_ok());
+        assert_eq!(vecu8_val.len(), 7 + 1);
+        assert_eq!(vecu8_val[0], 0x64);
+        // let mut dest = Vec::default();
+        // let mut bytebuf = ByteBuf::default();
+        // let decode_res = bytebuf.decode(&mut Cursor::new(&src), 0);
+        // let encode_res = bytebuf.encode(&mut dest, 0);
 
-    //     // assert!(decode_res.is_ok());
-    //     // assert!(encode_res.is_ok());
-    //     // assert_eq!(Vec::from(src), dest);
-    //     assert!(true);
-    // }
+        // assert!(decode_res.is_ok());
+        // assert!(encode_res.is_ok());
+        // assert_eq!(Vec::from(src), dest);
+        assert!(true);
+    }
 }
