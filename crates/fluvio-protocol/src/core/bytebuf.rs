@@ -57,9 +57,7 @@ impl Decoder for ByteBuf {
 
 impl Encoder for ByteBuf {
     fn write_size(&self, version: Version) -> usize {
-        self.inner
-            .iter()
-            .fold(4, |sum, val| sum + val.write_size(version))
+        0_i32.write_size(version) + self.inner.len()
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
