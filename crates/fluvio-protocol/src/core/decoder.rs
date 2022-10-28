@@ -180,7 +180,6 @@ impl Decoder for u8 {
     where
         T: Buf,
     {
-        println!("SRC: {}", src.remaining());
         if src.remaining() < 1 {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
@@ -334,7 +333,7 @@ impl DecoderVarInt for Vec<u8> {
     {
         let mut len: i64 = 0;
         len.decode_varint(src)?;
-        println!("LEN IS: {}", len);
+
         if len < 1 {
             return Ok(());
         }

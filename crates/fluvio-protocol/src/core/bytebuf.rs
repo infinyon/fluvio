@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn test_encodes_as_vec_u8() {
+    fn test_bytebuf_encodes_transparent_with_vecu8() {
         let raw_data: [u8; 10] = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A];
 
         // Data encoded for Vec<u8> will have the first 4 bytes (32 bits) for
@@ -258,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn test_decodes_as_bytebuf() {
+    fn test_bytebuf_decode_transparent_with_vecu8() {
         let raw_data: [u8; 10] = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A];
         let encoded_expect: [u8; 14] = [
             0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
