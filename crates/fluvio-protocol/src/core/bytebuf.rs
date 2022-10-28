@@ -40,7 +40,7 @@ impl Decoder for ByteBuf {
     where
         T: Buf,
     {
-        let mut len: i32 = 0;
+        let mut len: u32 = 0;
         len.decode(src, version)?;
 
         if len < 1 {
@@ -57,7 +57,7 @@ impl Decoder for ByteBuf {
 
 impl Encoder for ByteBuf {
     fn write_size(&self, version: Version) -> usize {
-        0_i32.write_size(version) + self.inner.len()
+        0_u32.write_size(version) + self.inner.len()
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
