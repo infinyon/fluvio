@@ -6,9 +6,6 @@ use std::{io::Error as IoError, borrow::Cow};
 use bytes::BufMut;
 use tracing::debug;
 
-#[cfg(feature = "smartmodule_validation")]
-use wasmparser::{Parser, Chunk, Payload};
-
 use fluvio_protocol::{Encoder, Decoder, Version};
 
 use super::{
@@ -17,13 +14,6 @@ use super::{
 };
 
 const V2_FORMAT: Version = 10;
-
-#[cfg(feature = "smartmodule_validation")]
-#[derive(thiserror::Error, Debug)]
-pub enum ValidateSmartModuleWasmError {
-    #[error("The provided WASM file is not valid: {0}")]
-    BinaryParsingError(String),
-}
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
@@ -152,34 +142,6 @@ impl SmartModuleWasm {
 
         Ok(Self::from_compressed_gzip(buffer))
     }
-
-    #[cfg(feature = "smartmodule_validation")]
-    /// Validates a SmartModule's WASM payload to represent a valid WASM file
-    /// in the binary format (*.wasm).
-    pub fn validate_binary(mut data: &[u8]) -> Result<(), ValidateSmartModuleWasmError> {
-        let mut parser = Parser::default();
-
-        loop {
-            match parser
-                .parse(data, true)
-                .map_err(|err| ValidateSmartModuleWasmError::BinaryParsingError(err.to_string()))?
-            {
-                // Given that file bytes are present, its not possible to meet
-                // this state.
-                Chunk::NeedMoreData(_) => unreachable!(),
-                Chunk::Parsed { consumed, payload } => {
-                    if matches!(&payload, Payload::End(_)) {
-                        // Reaches the EOF with success. At this point the
-                        // whole file has been read and no errors has occured.
-                        return Ok(());
-                    }
-
-                    // Keeps track of parsing offset.
-                    data = &data[consumed..];
-                }
-            };
-        }
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
@@ -211,39 +173,5 @@ mod base64 {
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
         let base64 = String::deserialize(d)?;
         base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
-    }
-}
-
-#[cfg(all(test, feature = "smartmodule_validation"))]
-mod tests {
-    use std::fs::read;
-
-    use super::SmartModuleWasm;
-
-    #[test]
-    fn validates_smartmodule_wasm_binary() {
-        let wasm_bytes =
-            read("tests/sm_ok.wasm").expect("Failed to find 'sm_ok.wasm' file for tests");
-        let result = SmartModuleWasm::validate_binary(wasm_bytes.as_slice());
-
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn validate_input_to_be_wasm_file() {
-        let wasm_bytes =
-            read("tests/sm_k8_v1.yaml").expect("Failed to find 'sm_k8_v1.yaml' file for tests");
-        let result = SmartModuleWasm::validate_binary(wasm_bytes.as_slice());
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn validates_smartmodule_wasm_binary_corrupt() {
-        let wasm_bytes = read("tests/sm_need_more_data.wasm")
-            .expect("Failed to find 'sm_need_more_data.wasm' file for tests");
-        let result = SmartModuleWasm::validate_binary(wasm_bytes.as_slice());
-
-        assert!(result.is_err());
     }
 }
