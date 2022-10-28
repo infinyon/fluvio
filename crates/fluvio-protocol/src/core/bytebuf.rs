@@ -5,7 +5,6 @@ use bytes::buf::UninitSlice;
 use bytes::{Buf, Bytes, BufMut};
 
 use crate::{Encoder, Decoder, Version};
-use crate::DecoderVarInt;
 
 /// Represnts a SmartModule WASM File bytes.
 ///
@@ -37,31 +36,21 @@ impl From<Vec<u8>> for ByteBuf {
 }
 
 impl Decoder for ByteBuf {
-    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
     {
-        let mut len: i64 = 0;
-        len.decode_varint(src)?;
+        let mut len: i32 = 0;
+        len.decode(src, version)?;
 
         if len < 1 {
             return Ok(());
         }
 
-        let mut buf = src.take(len as usize);
-
-        self.inner
-            .extend_from_slice(&buf.copy_to_bytes(len as usize));
-
-        if self.len() != len as usize {
-            return Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                format!(
-                    "varint: ByteBuf, expecting {} but received: {}",
-                    len,
-                    self.len()
-                ),
-            ));
+        for _ in 0..len {
+            let mut value = 0_u8;
+            value.decode(src, version)?;
+            self.inner.push(value);
         }
 
         Ok(())
@@ -230,81 +219,81 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_bytebuf() {
-        let data = [0x06, 0x64, 0x6f, 0x67];
-        let mut bytebuf = ByteBuf::default();
-        let result = bytebuf.decode(&mut Cursor::new(&data), 0);
-
-        assert!(result.is_ok());
-        assert_eq!(bytebuf.len(), 3);
-        assert_eq!(bytebuf.inner[0], 0x64);
-        assert_eq!(bytebuf.inner[1], 0x6f);
-        assert_eq!(bytebuf.inner[2], 0x67);
-    }
-
-    // #[test]
-    // fn test_enc_dec_is_simetric() {
-    //     // let src = [0x06, 0x64, 0x6f, 0x67, 0x11, 0x12, 0x09, 0x28];
-    //     // let mut dest = Vec::default();
-    //     // let mut bytebuf = ByteBuf::default();
-    //     // let decode_res = bytebuf.decode(&mut Cursor::new(&src), 0);
-    //     // let encode_res = bytebuf.encode(&mut dest, 0);
-
-    //     // assert!(decode_res.is_ok());
-    //     // assert!(encode_res.is_ok());
-    //     // assert_eq!(Vec::from(src), dest);
-    //     assert!(true);
-    // }
-
-    #[test]
     fn test_encodes_as_vec_u8() {
-        let data: Vec<u8> = vec![0x06, 0x64, 0x6f, 0x67, 0x11, 0x12, 0x09, 0x28];
+        let raw_data: [u8; 10] = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A];
 
-        let mut vecu8_dest = Vec::default();
-        let encode_vecu8_res = data.encode(&mut vecu8_dest, 0);
+        // Data encoded for Vec<u8> will have the first 4 bytes (32 bits) for
+        // data length, and the remaining bytes represents the actual data
+        let encoded_expect: [u8; 14] = [
+            0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
+        ];
 
-        let mut bytebuf_dest = ByteBuf::default();
-        let encode_bytebuf_res = data.encode(&mut bytebuf_dest, 0);
+        let mut encoded_data: Vec<u8> = Vec::default();
+        let encoded_res = Vec::<u8>::from(raw_data).encode(&mut encoded_data, 0);
 
-        assert!(encode_vecu8_res.is_ok());
-        assert_eq!(vecu8_dest.len(), 8 + 4);
-        assert_eq!(vecu8_dest[3], 0x08);
-        assert_eq!(vecu8_dest[4], 0x06);
-        assert_eq!(vecu8_dest[5], 0x64);
-        assert_eq!(vecu8_dest[6], 0x6f);
-        assert_eq!(vecu8_dest[7], 0x67);
-        assert_eq!(vecu8_dest[8], 0x11);
-        assert_eq!(data.write_size(0), vecu8_dest.len());
+        assert!(encoded_res.is_ok());
+        assert_eq!(
+            encoded_expect,
+            encoded_data.as_slice(),
+            "encoded version doesn't match with expected"
+        );
+        assert_eq!(encoded_data[3], 0x0A, "the length value doesnt match");
+
+        let mut bytebuf_encoded = ByteBuf::default();
+        let encode_bytebuf_res = ByteBuf::from(Vec::from(raw_data)).encode(&mut bytebuf_encoded, 0);
 
         assert!(encode_bytebuf_res.is_ok());
-        assert_eq!(bytebuf_dest.len(), 8 + 4);
-        assert_eq!(bytebuf_dest.inner[3], 0x08);
-        assert_eq!(bytebuf_dest.inner[4], 0x06);
-        assert_eq!(bytebuf_dest.inner[5], 0x64);
-        assert_eq!(bytebuf_dest.inner[6], 0x6f);
-        assert_eq!(bytebuf_dest.inner[7], 0x67);
-        assert_eq!(bytebuf_dest.inner[8], 0x11);
-        assert_eq!(data.write_size(0), bytebuf_dest.len());
+        assert_eq!(
+            bytebuf_encoded.inner,
+            encoded_expect.as_slice(),
+            "encoded version doesn't match with expected"
+        );
+        assert_eq!(
+            bytebuf_encoded.inner,
+            encoded_data.as_slice(),
+            "encoded version doesn't match with expected"
+        );
+        assert_eq!(
+            bytebuf_encoded.inner[3], 0x0A,
+            "the length value doesnt match"
+        );
     }
 
     #[test]
-    fn test_decodes_as_vec_u8() {
-        let data = [0x06, 0x64, 0x6f, 0x67, 0xaa];
+    fn test_decodes_as_bytebuf() {
+        let raw_data: [u8; 10] = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A];
+        let encoded_expect: [u8; 14] = [
+            0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
+        ];
+        let mut encoded_data: Vec<u8> = Vec::default();
+        let encoded_res = Vec::<u8>::from(raw_data).encode(&mut encoded_data, 0);
+        let mut bytebuf_encoded = ByteBuf::default();
+        let encode_bytebuf_res = ByteBuf::from(Vec::from(raw_data)).encode(&mut bytebuf_encoded, 0);
 
-        let mut vecu8_val: Vec<u8> = Vec::new();
-        let vecu8_res = vecu8_val.decode_varint(&mut Cursor::new(&data)).unwrap();
+        assert_eq!(
+            encoded_data.as_slice(),
+            encoded_expect,
+            "the encoded output doesn't match with the expected for Vec<u8>"
+        );
+        assert_eq!(
+            bytebuf_encoded.inner.as_slice(),
+            encoded_expect,
+            "the encoded output doesn't match with the expected for Vec<u8>"
+        );
 
-        // assert!(vecu8_res.is_ok());
-        assert_eq!(vecu8_val.len(), 7 + 1);
-        assert_eq!(vecu8_val[0], 0x64);
-        // let mut dest = Vec::default();
-        // let mut bytebuf = ByteBuf::default();
-        // let decode_res = bytebuf.decode(&mut Cursor::new(&src), 0);
-        // let encode_res = bytebuf.encode(&mut dest, 0);
+        let mut decoded_vecu8: Vec<u8> = Vec::default();
+        let decoded_vecu8_res = decoded_vecu8.decode(&mut Cursor::new(&encoded_expect), 0);
+        println!("hello: {:?}", raw_data);
 
-        // assert!(decode_res.is_ok());
-        // assert!(encode_res.is_ok());
-        // assert_eq!(Vec::from(src), dest);
-        assert!(true);
+        assert!(decoded_vecu8_res.is_ok());
+        assert_eq!(decoded_vecu8.len(), 10);
+
+        let mut decoded_bytebuf: ByteBuf = ByteBuf::default();
+        let decoded_bytebuf_res = decoded_bytebuf.decode(&mut Cursor::new(&encoded_expect), 0);
+
+        assert!(decoded_bytebuf_res.is_ok());
+        assert_eq!(decoded_bytebuf.inner.len(), 10);
+
+        assert_eq!(decoded_bytebuf.inner, decoded_vecu8);
     }
 }
