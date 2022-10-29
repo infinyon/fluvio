@@ -4,9 +4,9 @@
 use std::{io::Error as IoError, borrow::Cow};
 
 use bytes::BufMut;
+use tracing::debug;
 
 use fluvio_protocol::{Encoder, Decoder, Version};
-use tracing::debug;
 
 use super::{
     SmartModuleMetadata,
@@ -111,6 +111,7 @@ pub struct SmartModuleWasm {
     #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
     pub payload: Vec<u8>,
 }
+
 impl std::fmt::Debug for SmartModuleWasm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!(
