@@ -23,6 +23,9 @@ pub enum HubUtilError {
     #[error("Invalid public key file: {0}")]
     InvalidPublicKeyFile(String),
 
+    #[error("Invalid WASM file provided: {0}")]
+    InvalidWasmFileEncountered(String),
+
     #[error(transparent)]
     IoError(#[from] std::io::Error),
 
