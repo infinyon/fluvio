@@ -1,5 +1,6 @@
 use std::io::Error;
 use std::io::ErrorKind;
+use std::ops::Deref;
 
 use bytes::buf::UninitSlice;
 use bytes::{Buf, Bytes, BufMut};
@@ -16,14 +17,6 @@ pub struct ByteBuf {
 }
 
 impl ByteBuf {
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
-    pub fn len(&self) -> usize {
-        self.inner.len()
-    }
-
     pub fn inner(&self) -> Vec<u8> {
         self.inner.clone()
     }
@@ -32,6 +25,14 @@ impl ByteBuf {
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
         ByteBuf { inner: bytes }
+    }
+}
+
+impl Deref for ByteBuf {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 
