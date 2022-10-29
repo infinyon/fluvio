@@ -4,7 +4,7 @@
 use std::borrow::Cow;
 use std::io::Error as IoError;
 
-use bytes::{Bytes, BufMut};
+use bytes::BufMut;
 use tracing::debug;
 
 use fluvio_protocol::{ByteBuf, Encoder, Decoder, Version};
