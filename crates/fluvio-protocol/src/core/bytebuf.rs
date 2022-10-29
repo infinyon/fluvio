@@ -16,15 +16,15 @@ pub struct ByteBuf {
     inner: Vec<u8>,
 }
 
-impl ByteBuf {
-    pub fn inner(&self) -> Vec<u8> {
-        self.inner.clone()
-    }
-}
-
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
         ByteBuf { inner: bytes }
+    }
+}
+
+impl From<ByteBuf> for Vec<u8> {
+    fn from(bytebuf: ByteBuf) -> Self {
+        bytebuf.inner
     }
 }
 
