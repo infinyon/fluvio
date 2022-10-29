@@ -17,6 +17,7 @@ mod cmd {
     use clap::Parser;
     use tracing::{error, warn};
     use humantime::parse_duration;
+    use bytes::Bytes;
 
     use fluvio::{
         Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
@@ -25,6 +26,8 @@ mod cmd {
     use fluvio_extension_common::Terminal;
     use fluvio_spu_schema::Isolation;
     use fluvio_types::print_cli_ok;
+    use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
+    use fluvio_protocol::record::RecordData;
 
     use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
@@ -58,8 +61,12 @@ mod cmd {
         #[clap(short, long)]
         pub verbose: bool,
 
+        /// Sends key/value records with this value as key
+        #[clap(long, group = "RecordKey")]
+        pub key: Option<String>,
+
         /// Sends key/value records split on the first instance of the separator.
-        #[clap(long, value_parser = validate_key_separator)]
+        #[clap(long, value_parser = validate_key_separator, group = "RecordKey", conflicts_with = "TestFile")]
         pub key_separator: Option<String>,
 
         /// Send all input as one record. Use this when producing binary files.
@@ -71,8 +78,10 @@ mod cmd {
         #[clap(long)]
         pub compression: Option<Compression>,
 
-        /// Path to a file to produce to the topic. If absent, producer will read stdin.
-        #[clap(short, long)]
+        /// Path to a file to produce to the topic.
+        /// Default: Each line treated as single record unless `--raw` specified.
+        /// If absent, producer will read stdin.
+        #[clap(short, long, groups = ["TestFile"])]
         pub file: Option<PathBuf>,
 
         /// Time to wait before sending
@@ -226,17 +235,41 @@ mod cmd {
             };
 
             if self.raw {
+                let key = self.key.clone().map(Bytes::from);
+                //let key = if let Some(k) = self.key {
+                //    RecordKey::from(k)
+                //} else {
+                //    RecordKey::NULL
+                //};
+
                 // Read all input and send as one record
                 let buffer = match &self.file {
-                    Some(path) => std::fs::read(&path)?,
+                    Some(path) => UserInputRecords::try_from(UserInputType::File {
+                        key: key.clone(),
+                        path: path.to_path_buf(),
+                    })
+                    .unwrap_or_default(),
+
                     None => {
                         let mut buffer = Vec::new();
                         std::io::Read::read_to_end(&mut std::io::stdin(), &mut buffer)?;
-                        buffer
+                        //buffer
+                        UserInputRecords::try_from(UserInputType::Text {
+                            key: key.clone(),
+                            data: Bytes::from(buffer),
+                        })
+                        .unwrap_or_default()
                     }
                 };
 
-                let produce_output = producer.send(RecordKey::NULL, buffer).await?;
+                let data: RecordData = buffer.into();
+                let key = if let Some(key) = key {
+                    RecordKey::from(key)
+                } else {
+                    RecordKey::NULL
+                };
+
+                let produce_output = producer.send(key, data).await?;
 
                 if self.delivery_semantic != DeliverySemantic::AtMostOnce {
                     produce_output.wait().await?;

@@ -1,6 +1,7 @@
 pub mod http;
 pub mod install;
 pub mod error;
+pub mod user_input;
 
 // Environment vars for Channels
 pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";

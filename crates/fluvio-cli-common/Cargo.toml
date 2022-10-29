@@ -26,9 +26,14 @@ thiserror = "1.0.20"
 http = { version = "0.2", default-features = false}
 isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
 futures = { version = "0.3" , default-features = false, features = ["std", "io-compat"]}
+tempfile = "3.3.0"
+anyhow = { version = "1.0.38" }
+bytes = { version = "1" }
 
 fluvio-package-index = { path = "../fluvio-package-index", features = ["http_agent"] }
 fluvio-types = { path = "../fluvio-types", optional = true }
+fluvio = { path = "../fluvio", default-features = false }
+fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 
 [dev-dependencies]
 fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
