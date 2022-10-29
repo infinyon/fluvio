@@ -33,8 +33,6 @@ pub struct TestOpt {
     /// Key to use with the test record(s)
     key: Option<String>,
 
-    // TODO read in from topic, delete for PR
-    // topic
     #[clap(flatten)]
     package: PackageOption,
 
