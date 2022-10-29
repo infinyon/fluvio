@@ -165,7 +165,6 @@ mod file_tests {
 
     #[test]
     fn file_whole() -> Result<(), ()> {
-        // Create a file inside of `std::env::temp_dir()`.
         let mut file = NamedTempFile::new().unwrap();
 
         let data = vec!["123", "abc", "📼🍅🐊"];

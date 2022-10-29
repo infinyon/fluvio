@@ -236,12 +236,6 @@ mod cmd {
 
             if self.raw {
                 let key = self.key.clone().map(Bytes::from);
-                //let key = if let Some(k) = self.key {
-                //    RecordKey::from(k)
-                //} else {
-                //    RecordKey::NULL
-                //};
-
                 // Read all input and send as one record
                 let buffer = match &self.file {
                     Some(path) => UserInputRecords::try_from(UserInputType::File {
@@ -253,7 +247,6 @@ mod cmd {
                     None => {
                         let mut buffer = Vec::new();
                         std::io::Read::read_to_end(&mut std::io::stdin(), &mut buffer)?;
-                        //buffer
                         UserInputRecords::try_from(UserInputType::Text {
                             key: key.clone(),
                             data: Bytes::from(buffer),
@@ -262,12 +255,13 @@ mod cmd {
                     }
                 };
 
-                let data: RecordData = buffer.into();
-                let key = if let Some(key) = key {
+                let key = if let Some(key) = buffer.key() {
                     RecordKey::from(key)
                 } else {
                     RecordKey::NULL
                 };
+
+                let data: RecordData = buffer.into();
 
                 let produce_output = producer.send(key, data).await?;
 
