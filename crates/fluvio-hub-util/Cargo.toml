@@ -1,12 +1,12 @@
 [package]
 name = "fluvio-hub-util"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "API for SmartModule Hub"
 authors = ["fluvio.io"]
 repository = "https://github.com/infinyon/fluvio"
-
+publish = false
 
 [dependencies]
 cargo_toml = "0.11"
