@@ -2,7 +2,6 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::ops::Deref;
 
-use bytes::buf::UninitSlice;
 use bytes::{Buf, Bytes, BufMut};
 
 use crate::{Encoder, Decoder, Version};
@@ -13,23 +12,23 @@ use crate::{Encoder, Decoder, Version};
 /// used in SmartModules.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ByteBuf {
-    inner: Vec<u8>,
+    inner: Bytes,
 }
 
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
-        ByteBuf { inner: bytes }
+        ByteBuf { inner: Bytes::from_iter(bytes.into_iter()) }
     }
 }
 
 impl From<ByteBuf> for Vec<u8> {
     fn from(bytebuf: ByteBuf) -> Self {
-        bytebuf.inner
+        bytebuf.inner.to_vec()
     }
 }
 
 impl Deref for ByteBuf {
-    type Target = Vec<u8>;
+    type Target = Bytes;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -48,9 +47,7 @@ impl Decoder for ByteBuf {
             return Ok(());
         }
 
-        let mut buf = src.take(len as usize);
-        self.inner
-            .extend_from_slice(&buf.copy_to_bytes(len as usize));
+        self.inner = src.copy_to_bytes(len as usize);
 
         Ok(())
     }
@@ -79,46 +76,13 @@ impl Encoder for ByteBuf {
         }
 
         dest.put_u32(self.inner.len() as u32);
-        dest.put_slice(self.inner.as_slice());
+        dest.put(self.inner.clone());
 
         Ok(())
     }
 
     fn as_bytes(&self, _version: Version) -> Result<Bytes, Error> {
-        Ok(Bytes::copy_from_slice(self.inner.as_slice()))
-    }
-}
-
-unsafe impl BufMut for ByteBuf {
-    #[inline]
-    fn remaining_mut(&self) -> usize {
-        self.inner.remaining_mut()
-    }
-
-    #[inline]
-    unsafe fn advance_mut(&mut self, cnt: usize) {
-        self.inner.advance_mut(cnt);
-    }
-
-    #[inline]
-    fn chunk_mut(&mut self) -> &mut UninitSlice {
-        self.inner.chunk_mut()
-    }
-
-    fn put<T: Buf>(&mut self, src: T)
-    where
-        Self: Sized,
-    {
-        self.inner.put(src);
-    }
-
-    #[inline]
-    fn put_slice(&mut self, src: &[u8]) {
-        self.inner.put_slice(src);
-    }
-
-    fn put_bytes(&mut self, val: u8, cnt: usize) {
-        self.inner.put_bytes(val, cnt);
+        Ok(self.inner.clone())
     }
 }
 
