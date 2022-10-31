@@ -2098,7 +2098,6 @@ dependencies = [
  "async-net",
  "async-trait",
  "atty",
- "bytes 1.2.1",
  "bytesize",
  "clap 4.0.18",
  "clap_complete",
@@ -2159,7 +2158,6 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "bytes 1.2.1",
  "fluvio",
  "fluvio-future",
  "fluvio-package-index",

@@ -1,6 +1,8 @@
 pub mod http;
 pub mod install;
 pub mod error;
+
+#[cfg(feature = "file-records")]
 pub mod user_input;
 
 // Environment vars for Channels

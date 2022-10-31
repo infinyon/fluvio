@@ -11,6 +11,8 @@ use tracing::debug;
 use fluvio_smartengine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use fluvio_protocol::record::Record;
+
+#[cfg(feature = "test-file-io")]
 use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
 
 use crate::package::{PackageInfo, PackageOption};
@@ -22,10 +24,12 @@ pub struct TestOpt {
     #[clap(long, group = "TestInput")]
     text: Option<String>,
 
+    #[cfg(feature = "test-file-io")]
     /// Path to test file. Default: Read file line by line
     #[clap(long, groups = ["TestInput", "TestFile"])]
     file: Option<PathBuf>,
 
+    #[cfg(feature = "test-file-io")]
     /// Read the file as single record
     #[clap(long, action, requires = "TestFile")]
     raw: bool,
@@ -85,6 +89,15 @@ impl TestOpt {
 
         let key = self.key.map(Bytes::from);
 
+        #[cfg(not(feature = "test-file-io"))]
+        let test_data = if let Some(input) = self.text {
+            debug!(input, "input string");
+            input.as_bytes().to_vec()
+        } else {
+            return Err(anyhow::anyhow!("No valid input provided"));
+        };
+
+        #[cfg(feature = "test-file-io")]
         let test_data: UserInputRecords = if let Some(data) = self.text {
             UserInputRecords::try_from(UserInputType::Text {
                 key,
@@ -103,7 +116,20 @@ impl TestOpt {
         debug!(len = &test_data.len(), "input data");
 
         let metrics = SmartModuleChainMetrics::default();
+
+        #[cfg(feature = "test-file-io")]
         let test_records: Vec<Record> = test_data.into();
+
+        #[cfg(not(feature = "test-file-io"))]
+        let test_records: Vec<Record> = if let Some(k) = key {
+            vec![Record::new_key_value(
+                fluvio_protocol::record::RecordKey::from(k),
+                test_data,
+            )]
+        } else {
+            vec![Record::new(test_data)]
+        };
+
         let output = chain.process(SmartModuleInput::try_from(test_records)?, &metrics)?;
 
         println!("{:?} records outputed", output.successes.len());

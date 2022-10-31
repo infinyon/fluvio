@@ -3,9 +3,9 @@ use std::io::{self, BufRead};
 use std::path::PathBuf;
 
 use anyhow::{self, Result};
-use bytes::Bytes;
 
 use fluvio_protocol::record::{Record, RecordData};
+use fluvio_protocol::bytes::Bytes;
 
 pub enum UserInputType {
     Text { key: Option<Bytes>, data: Bytes },
