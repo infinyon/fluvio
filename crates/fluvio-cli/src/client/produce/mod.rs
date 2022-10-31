@@ -343,8 +343,6 @@ mod cmd {
             // Avoid writing duplicate data to disk
             let mut stats_dataframe_check = 0;
 
-            //match &self.file {
-
             #[cfg(feature = "producer-file-io")]
             if let Some(path) = &self.file {
                 let reader = BufReader::new(File::open(path)?);
@@ -388,49 +386,6 @@ mod cmd {
 
             #[cfg(not(feature = "producer-file-io"))]
             self.producer_stdin(&producer).await?;
-
-            //    None => {
-            //        let mut lines = BufReader::new(std::io::stdin()).lines();
-            //        if self.interactive_mode() {
-            //            eprint!("> ");
-            //        }
-
-            //        while let Some(Ok(line)) = lines.next() {
-            //            let produce_output = self.produce_line(&producer, &line).await?;
-
-            //            if let Some(produce_output) = produce_output {
-            //                if self.delivery_semantic != DeliverySemantic::AtMostOnce {
-            //                    // ensure it was properly sent
-            //                    produce_output.wait().await?;
-            //                }
-            //            }
-
-            //            #[cfg(feature = "stats")]
-            //            if self.is_stats_collect() {
-            //                if self.is_print_live_stats() {
-            //                    self.update_stats_bar(maybe_stats_bar, &producer, &line);
-            //                }
-
-            //                stats_dataframe_check = write_csv_dataframe(
-            //                    &producer,
-            //                    stats_dataframe_check,
-            //                    maybe_stats_file.as_mut(),
-            //                )
-            //                .await?;
-            //            }
-
-            //            if self.interactive_mode() {
-            //                #[cfg(feature = "stats")]
-            //                if let Some(file) = maybe_stats_file.as_mut() {
-            //                    file.flush()?;
-            //                }
-
-            //                print_cli_ok!();
-            //                eprint!("> ");
-            //            }
-            //        }
-            //    }
-            //};
 
             #[cfg(feature = "stats")]
             if let Some(file) = maybe_stats_file.as_mut() {
