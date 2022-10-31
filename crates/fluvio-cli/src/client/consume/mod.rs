@@ -301,19 +301,19 @@ mod cmd {
             };
 
             let smart_module = if let Some(smart_module_name) = &self.smartmodule {
-                Some(create_smartmodule(
+                vec![create_smartmodule(
                     smart_module_name,
                     self.smart_module_ctx(),
                     initial_param,
-                ))
+                )]
             } else if let Some(path) = &self.smartmodule_path {
-                Some(create_smartmodule_from_path(
+                vec![create_smartmodule_from_path(
                     path,
                     self.smart_module_ctx(),
                     initial_param,
-                )?)
+                )?]
             } else {
-                None
+                Vec::new()
             };
 
             builder.smartmodule(smart_module);
