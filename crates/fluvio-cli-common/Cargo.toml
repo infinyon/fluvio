@@ -14,7 +14,7 @@ path = "src/lib.rs"
 
 [features]
 default = ["fluvio-types"]
-file-records = ["fluvio-protocol"]
+file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
 
 [dependencies]
 tracing = "0.1.19"
@@ -33,7 +33,7 @@ fluvio-package-index = { path = "../fluvio-package-index", features = ["http_age
 fluvio-types = { path = "../fluvio-types", optional = true }
 
 fluvio = { path = "../fluvio", default-features = false, optional = true }
-fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"], optional = true }
+fluvio-protocol = { path = "../fluvio-protocol", optional = true }
 
 [dev-dependencies]
 fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
