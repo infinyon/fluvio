@@ -4,19 +4,69 @@ extern crate test;
 
 #[cfg(test)]
 mod bench {
-  use test::{Bencher, black_box};
+    use std::io::Cursor;
 
-  #[bench]
-  fn bench_pow(b: &mut Bencher) {
-    // Optionally include some setup
-    let x: f64 = 211.0 * 11.0;
-    let y: f64 = 301.0 * 103.0;
+    use fluvio_protocol::{Decoder, Encoder};
+    use test::{Bencher, black_box};
 
-    b.iter(|| {
-        // Inner closure, the actual test
-        for i in 1..100 {
-            black_box(x.powf(y).powf(x));
-        }
-    });
-  }
+    #[bench]
+    fn bench_decode_bool(b: &mut Bencher) {
+        b.iter(|| {
+            for i in 1..100 {
+                let data = [0x1];
+                let mut value: bool = false;
+
+                black_box(|| {
+                    value.decode(&mut Cursor::new(&data), 0);
+                });
+            }
+        });
+    }
+
+    #[bench]
+    fn bench_encode_bool(b: &mut Bencher) {
+        b.iter(|| {
+            for i in 1..100 {
+                let mut dest = vec![];
+                let value = true;
+
+                black_box(|| {
+                    value.encode(&mut dest, 0);
+                });
+            }
+        });
+    }
+
+    #[bench]
+    fn bench_encode_vecu8(b: &mut Bencher) {
+        let value: Vec<u8> = vec![0x10, 0x11, 0x12, 0x10, 0x11, 0x12, 0x10, 0x11];
+
+        b.iter(|| {
+            // Inner closure, the actual test
+            for i in 1..100 {
+                let mut dest = vec![];
+
+                black_box(|| {
+                    value.encode(&mut dest, 0);
+                });
+            }
+        });
+    }
+
+    #[bench]
+    fn bench_decode_vecu8(b: &mut Bencher) {
+        let encoded_expect: [u8; 14] = [
+            0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
+        ];
+
+        b.iter(|| {
+            for i in 1..100 {
+                let mut decoded_vecu8: Vec<u8> = vec![];
+
+                black_box(|| {
+                    decoded_vecu8.decode(&mut Cursor::new(&encoded_expect), 0);
+                });
+            }
+        });
+    }
 }
