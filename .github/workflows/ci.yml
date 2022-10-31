@@ -661,8 +661,14 @@ jobs:
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
+          # What benchmark tool the output.txt came from
           tool: 'cargo'
+          # Where the output from the benchmark tool is stored
           output-file-path: benchmarks.txt
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
 
   build_image:
     name: Build Fluvio Docker image
