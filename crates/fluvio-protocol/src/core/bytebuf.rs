@@ -17,7 +17,9 @@ pub struct ByteBuf {
 
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
-        ByteBuf { inner: Bytes::from_iter(bytes.into_iter()) }
+        ByteBuf {
+            inner: Bytes::from_iter(bytes.into_iter()),
+        }
     }
 }
 
@@ -200,24 +202,21 @@ mod tests {
         );
         assert_eq!(encoded_data[3], 0x0A, "the length value doesnt match");
 
-        let mut bytebuf_encoded = ByteBuf::default();
+        let mut bytebuf_encoded: Vec<u8> = Vec::default();
         let encode_bytebuf_res = ByteBuf::from(Vec::from(raw_data)).encode(&mut bytebuf_encoded, 0);
 
         assert!(encode_bytebuf_res.is_ok());
         assert_eq!(
-            bytebuf_encoded.inner,
+            bytebuf_encoded,
             encoded_expect.as_slice(),
             "encoded version doesn't match with expected"
         );
         assert_eq!(
-            bytebuf_encoded.inner,
+            bytebuf_encoded,
             encoded_data.as_slice(),
             "encoded version doesn't match with expected"
         );
-        assert_eq!(
-            bytebuf_encoded.inner[3], 0x0A,
-            "the length value doesnt match"
-        );
+        assert_eq!(bytebuf_encoded[3], 0x0A, "the length value doesnt match");
     }
 
     #[test]
@@ -230,7 +229,7 @@ mod tests {
         let mut encoded_data: Vec<u8> = Vec::default();
         let is_encode_vecu8_ok = Vec::<u8>::from(raw_data).encode(&mut encoded_data, 0);
 
-        let mut bytebuf_encoded = ByteBuf::default();
+        let mut bytebuf_encoded = Vec::default();
         let is_encode_bytebuf_ok =
             ByteBuf::from(Vec::from(raw_data)).encode(&mut bytebuf_encoded, 0);
 
@@ -242,8 +241,7 @@ mod tests {
             "the encoded output doesn't match with the expected for Vec<u8>"
         );
         assert_eq!(
-            bytebuf_encoded.inner.as_slice(),
-            encoded_expect,
+            bytebuf_encoded, encoded_expect,
             "the encoded output doesn't match with the expected for Vec<u8>"
         );
 
