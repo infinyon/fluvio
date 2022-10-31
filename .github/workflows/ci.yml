@@ -642,6 +642,28 @@ jobs:
           path: diagnostics*.gz
           retention-days: 1
 
+  benchmarks:
+    name: Benchmarks
+    needs: local_cluster_test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+
+      - name: Run Benchmarks
+        run: cargo +nightly bench | tee benchmarks.txt
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: benchmarks.txt
+
   build_image:
     name: Build Fluvio Docker image
     needs: build_primary_binaries
