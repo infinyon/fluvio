@@ -42,7 +42,6 @@ mod bench {
         let value: Vec<u8> = vec![0x10, 0x11, 0x12, 0x10, 0x11, 0x12, 0x10, 0x11];
 
         b.iter(|| {
-            // Inner closure, the actual test
             for i in 1..100 {
                 let mut dest = vec![];
 
