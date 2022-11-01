@@ -659,6 +659,8 @@ jobs:
       - name: Download previous benchmark data
         uses: Swatinem/rust-cache@v2
         with:
+          # Additional non workspace directories, separated by newlines
+          cache-directories: ./benches
           key: ${{ runner.os }}-benchmark
 
       - name: Run Benchmarks
@@ -675,6 +677,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Enable alert commit comment
           comment-on-alert: true
+          # Where the previous data file is stored
+           external-data-json-path: ./benches/benchmark-data.json
 
   build_image:
     name: Build Fluvio Docker image
