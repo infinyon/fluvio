@@ -10,34 +10,6 @@ mod bench {
     use test::{Bencher, black_box};
 
     #[bench]
-    fn bench_decode_bool(b: &mut Bencher) {
-        b.iter(|| {
-            for i in 1..100 {
-                let data = [0x1];
-                let mut value: bool = false;
-
-                black_box(|| {
-                    value.decode(&mut Cursor::new(&data), 0);
-                });
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_encode_bool(b: &mut Bencher) {
-        b.iter(|| {
-            for i in 1..100 {
-                let mut dest = vec![];
-                let value = true;
-
-                black_box(|| {
-                    value.encode(&mut dest, 0);
-                });
-            }
-        });
-    }
-
-    #[bench]
     fn bench_encode_vecu8(b: &mut Bencher) {
         let value: Vec<u8> = vec![0x10, 0x11, 0x12, 0x10, 0x11, 0x12, 0x10, 0x11];
 
