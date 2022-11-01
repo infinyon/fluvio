@@ -28,9 +28,24 @@ pub struct PackageMeta {
     // author: Option<String>,
     pub description: String,
     pub license: String,
+    pub visibility: Option<VisibilityOpt>, // public is default if not in file
     pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
                                // repository: optional url
                                // repository-commit: optional hash
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+pub enum VisibilityOpt {
+    /// the default
+    #[serde(rename = "public")]
+    Public,
+
+    /// owner in signature.0
+    #[serde(rename = "owner")]
+    Owner,
+    // /// group
+    // #[serde(rename="group")]
+    // Group,
 }
 
 impl Default for PackageMeta {
@@ -42,6 +57,7 @@ impl Default for PackageMeta {
             group: "NameOfContributingGroup".into(),
             description: "Describe the module here".into(),
             license: "e.g. Apache2".into(),
+            visibility: Some(VisibilityOpt::Public),
             manifest: Vec::new(),
         }
     }
@@ -459,5 +475,41 @@ fn hub_packagemeta_naming_check() {
     for pm in deny {
         let res = pm.naming_check();
         assert!(res.is_err(), "Denied an valid package meta config {pm:?}");
+    }
+}
+
+#[cfg(test)]
+mod t_packagemeta_version {
+
+    use crate::HubUtilError;
+    use crate::PackageMeta;
+
+    fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
+        let pm = PackageMeta::read_from_file(fname)?;
+        Ok(pm)
+    }
+
+    /// the current code should be able to load all old versions
+    #[test]
+    fn backward_compat() {
+        let flist = vec![
+            "tests/apackage/package-meta.yaml",
+            "tests/apackage/package-meta-v0.1.yaml",
+            "tests/apackage/package-meta-v0.2-owner.yaml",
+            "tests/apackage/package-meta-v0.2-public.yaml",
+        ];
+
+        for ver in flist {
+            let msg = format!("Failed to read {ver}");
+            let _pm = read_pkgmeta(ver).expect(&msg);
+        }
+    }
+
+    #[test]
+    fn visibility_invalid() {
+        let visbad = "tests/apackage/package-meta-v0.2-visbad.yaml";
+        let res = read_pkgmeta(visbad);
+        dbg!(&res);
+        assert!(res.is_err());
     }
 }
