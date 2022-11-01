@@ -655,6 +655,13 @@ jobs:
           path: ./cache
           key: ${{ runner.os }}-benchmark
 
+      - name: Install Nightly Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: bench
+
       - name: Run Benchmarks
         run: cargo +nightly bench | tee benchmarks.txt
 
