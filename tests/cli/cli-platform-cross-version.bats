@@ -85,7 +85,7 @@ teardown_file() {
 # Consume message and compare message
 # Warning: Adding anything extra to the `debug_msg` skews the message comparison
 @test "Consume message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
 
     assert_output --partial "$MESSAGE"
     assert_success

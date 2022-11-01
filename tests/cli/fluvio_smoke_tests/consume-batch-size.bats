@@ -33,7 +33,7 @@ teardown_file() {
 
 # Consume message and compare message
 @test "Consume message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --maxbytes 16000000
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --maxbytes 16000000
     assert_output --partial "abcdefghijklmnopqrstuvwxyz"
     assert_success
 }
