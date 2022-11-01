@@ -642,8 +642,8 @@ jobs:
           path: diagnostics*.gz
           retention-days: 1
 
-  benchmarks:
-    name: Benchmarks
+  unit-benchmark:
+    name: Unit Benchmarks
     runs-on: ubuntu-latest
     needs: check
     steps:
