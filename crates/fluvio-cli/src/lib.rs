@@ -75,6 +75,8 @@ mod root {
         help_template = COMMAND_TEMPLATE,
         max_term_width = 100,
         disable_version_flag = true,
+        // fluvio consume help would interpret help as topic name, so force -h or --help.
+        disable_help_subcommand = true,
         // VersionlessSubcommands is now default behaviour. See https://github.com/clap-rs/clap/pull/2831
         // global_setting = AppSettings::DeriveDisplayOrder
         )]

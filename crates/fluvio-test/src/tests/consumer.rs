@@ -75,7 +75,7 @@ pub struct ConsumerTestOption {
     /// Absolute topic offset
     /// use --offset-beginning or --offset-end to refer to relative offsets
     #[clap(long, default_value = "0")]
-    pub offset: i32,
+    pub offset: i64,
 
     /// Partition to consume from.
     /// If multiple consumers, they will all use same partition
@@ -265,11 +265,11 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     // We'll assume for now that clap is handling mutual exclusivity
     let offset = if test_case.option.offset_beginning {
-        Offset::from_beginning(raw_offset as u32)
+        Offset::from_beginning(raw_offset)
     } else if test_case.option.offset_end {
-        Offset::from_end(raw_offset as u32)
+        Offset::from_end(raw_offset)
     } else {
-        Offset::absolute(raw_offset.into()).expect("Couldn't create absolute offset")
+        Offset::absolute(raw_offset).expect("Couldn't create absolute offset")
     };
 
     if test_case.option.num_setup_records != 0 {

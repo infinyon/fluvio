@@ -184,9 +184,9 @@ impl Offset {
     /// // Creates an offset pointing 4 places after the oldest log entry
     /// let offset: Offset = Offset::from_beginning(4);
     /// ```
-    pub fn from_beginning(offset: u32) -> Offset {
+    pub fn from_beginning(offset: i64) -> Offset {
         Self {
-            inner: OffsetInner::FromBeginning(offset as i64),
+            inner: OffsetInner::FromBeginning(offset),
         }
     }
 
@@ -265,9 +265,9 @@ impl Offset {
     /// // Creates an offset pointing 3 places before the latest log entry
     /// let offset: Offset = Offset::from_end(3);
     /// ```
-    pub fn from_end(offset: u32) -> Offset {
+    pub fn from_end(offset: i64) -> Offset {
         Self {
-            inner: OffsetInner::FromEnd(offset as i64),
+            inner: OffsetInner::FromEnd(offset),
         }
     }
 

@@ -30,6 +30,8 @@ pub enum FluvioError {
     AdminApi(#[from] ApiError),
     #[error("Config error: {0}")]
     ClientConfig(#[from] ConfigError),
+    #[error("End offset: {1} cannot be less than starting offset: {0}")]
+    CrossingOffsets(i64, i64),
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),
     #[error("Cluster (with platform version {cluster_version}) is older than the minimum required version {client_minimum_version}

@@ -27,10 +27,85 @@ fn print_help_hack() -> Result<()> {
         HelpOpt {}.process()?;
         std::process::exit(0);
     } else if let Some(first_arg) = args.nth(1) {
+        // We pick help up here as a courtesy
         if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
             HelpOpt {}.process()?;
             std::process::exit(0);
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+    use fluvio_cli::Root;
+
+    #[test]
+    fn test_correct_command_parsing_help() {
+        let should_not_succeed = vec![
+            "fluvio",
+            "fluvio -h",
+            "fluvio --help", // fluvio help is hacked with print_help_hack
+        ];
+        for s in should_not_succeed {
+            assert!(!parse_succeeds(s), "{s}");
+        }
+    }
+
+    #[test]
+    fn test_correct_command_parsing_consume() {
+        let should_succeed = vec![
+            "fluvio consume -H hello",
+            "fluvio consume -T hello",
+            "fluvio consume -H -n 10 hello",
+            "fluvio consume -T -n 10 hello",
+            "fluvio consume --start -n 0 hello",
+            "fluvio consume --start hello",
+            "fluvio consume hello --start --end 5",
+            "fluvio consume --start --end 5 -n 0 hello",
+        ];
+        for s in should_succeed {
+            assert!(parse_succeeds(s), "{s}");
+        }
+
+        let should_not_succeed = vec![
+            "fluvio consume",
+            "fluvio consume -H 0 hello",
+            "fluvio consume -T 0 hello",
+            "fluvio consume -H -n -10 hello",
+            "fluvio consume -H -n hello",
+            "fluvio consume -n 10 hello",
+            "fluvio consume -H -T -n 10 hello",
+            "fluvio consume -n hello",
+            "fluvio consume --start 5 hello",
+            "fluvio consume --end hello",
+        ];
+        for s in should_not_succeed {
+            assert!(!parse_succeeds(s), "{s}");
+        }
+    }
+
+    #[test]
+    fn test_supply_negative_end_offset() {
+        let should_succeed = vec![
+            "fluvio consume --start --end 5 -n 0 hello",
+            "fluvio consume --end 5 hello",
+        ];
+        for s in should_succeed {
+            assert!(parse_succeeds(s), "{s}");
+        }
+
+        let should_not_succeed = vec![
+            "fluvio consume --end -5 hello",
+            "fluvio consume --start --end -5 -n 0 hello",
+        ];
+        for s in should_not_succeed {
+            assert!(!parse_succeeds(s), "{s}");
+        }
+    }
+
+    fn parse_succeeds(command: &str) -> bool {
+        Root::try_parse_from(command.split_whitespace()).is_ok()
+    }
 }
