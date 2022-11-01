@@ -43,69 +43,44 @@ mod tests {
 
     #[test]
     fn test_correct_command_parsing_help() {
-        let should_not_succeed = vec![
-            "fluvio",
-            "fluvio -h",
-            "fluvio --help", // fluvio help is hacked with print_help_hack
-        ];
-        for s in should_not_succeed {
-            assert!(!parse_succeeds(s), "{s}");
-        }
+        assert!(parse("fluvio").is_err());
+        assert!(parse("fluvio -h").is_err());
+        assert!(parse("fluvio --help").is_err());
     }
 
     #[test]
     fn test_correct_command_parsing_consume() {
-        let should_succeed = vec![
-            "fluvio consume -H hello",
-            "fluvio consume -T hello",
-            "fluvio consume -H -n 10 hello",
-            "fluvio consume -T -n 10 hello",
-            "fluvio consume --start -n 0 hello",
-            "fluvio consume --start hello",
-            "fluvio consume hello --start --end 5",
-            "fluvio consume --start --end 5 -n 0 hello",
-        ];
-        for s in should_succeed {
-            assert!(parse_succeeds(s), "{s}");
-        }
+        assert!(parse("fluvio consume -H hello").is_ok());
+        assert!(parse("fluvio consume -T hello").is_ok());
+        assert!(parse("fluvio consume -H -n 10 hello").is_ok());
+        assert!(parse("fluvio consume -T -n 10 hello").is_ok());
+        assert!(parse("fluvio consume --start -n 0 hello").is_ok());
+        assert!(parse("fluvio consume --start hello").is_ok());
+        assert!(parse("fluvio consume hello --start --end 5").is_ok());
+        assert!(parse("fluvio consume --start --end 5 -n 0 hello").is_ok());
 
-        let should_not_succeed = vec![
-            "fluvio consume",
-            "fluvio consume -H 0 hello",
-            "fluvio consume -T 0 hello",
-            "fluvio consume -H -n -10 hello",
-            "fluvio consume -H -n hello",
-            "fluvio consume -n 10 hello",
-            "fluvio consume -H -T -n 10 hello",
-            "fluvio consume -n hello",
-            "fluvio consume --start 5 hello",
-            "fluvio consume --end hello",
-        ];
-        for s in should_not_succeed {
-            assert!(!parse_succeeds(s), "{s}");
-        }
+        assert!(parse("fluvio consume").is_err());
+        assert!(parse("fluvio consume -H 0 hello").is_err());
+        assert!(parse("fluvio consume -T 0 hello").is_err());
+        assert!(parse("fluvio consume -H -n -10 hello").is_err());
+        assert!(parse("fluvio consume -H -n hello").is_err());
+        assert!(parse("fluvio consume -n 10 hello").is_err());
+        assert!(parse("fluvio consume -H -T -n 10 hello").is_err());
+        assert!(parse("fluvio consume -n hello").is_err());
+        assert!(parse("fluvio consume --start 5 hello").is_err());
+        assert!(parse("fluvio consume --end hello").is_err());
     }
 
     #[test]
     fn test_supply_negative_end_offset() {
-        let should_succeed = vec![
-            "fluvio consume --start --end 5 -n 0 hello",
-            "fluvio consume --end 5 hello",
-        ];
-        for s in should_succeed {
-            assert!(parse_succeeds(s), "{s}");
-        }
+        assert!(parse("fluvio consume --start --end 5 -n 0 hello").is_ok());
+        assert!(parse("fluvio consume --end 5 hello").is_ok());
 
-        let should_not_succeed = vec![
-            "fluvio consume --end -5 hello",
-            "fluvio consume --start --end -5 -n 0 hello",
-        ];
-        for s in should_not_succeed {
-            assert!(!parse_succeeds(s), "{s}");
-        }
+        assert!(parse("fluvio consume --end -5 hello").is_err());
+        assert!(parse("fluvio consume --start --end -5 -n 0 hello").is_err());
     }
 
-    fn parse_succeeds(command: &str) -> bool {
-        Root::try_parse_from(command.split_whitespace()).is_ok()
+    fn parse(command: &str) -> Result<Root, clap::error::Error> {
+        Root::try_parse_from(command.split_whitespace())
     }
 }
