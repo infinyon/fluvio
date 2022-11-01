@@ -645,22 +645,21 @@ jobs:
   benchmarks:
     name: Benchmarks
     runs-on: ubuntu-latest
+    needs: check
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Download previous benchmark data
-        uses: actions/cache@v1
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
-
-      - name: Install Nightly Toolchain
+      - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
-            override: true
-            components: bench
+          toolchain: nightly
+          profile: minimal
+
+      - name: Download previous benchmark data
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ runner.os }}-benchmark
 
       - name: Run Benchmarks
         run: cargo +nightly bench | tee benchmarks.txt
