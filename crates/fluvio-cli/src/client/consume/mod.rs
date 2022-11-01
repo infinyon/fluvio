@@ -769,6 +769,8 @@ mod cmd {
     mod tests {
         use fluvio::Offset;
 
+        use crate::client::consume::cmd::DEFAULT_TAIL;
+
         use super::ConsumeOpt;
 
         fn get_opt() -> ConsumeOpt {
@@ -864,11 +866,36 @@ mod cmd {
 
         #[test]
         fn test_calculate_offset() {
+            let opt = get_opt();
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::end());
+
             // from beginning of log
             let mut opt = get_opt();
             opt.head = true;
             let offset = opt.calculate_offset().unwrap();
             assert_eq!(offset, Offset::from_beginning(0));
+            opt.amount_to_offset = Some(1);
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::from_beginning(1));
+
+            // from end of log
+            let mut opt = get_opt();
+            opt.tail = true;
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::from_end(DEFAULT_TAIL));
+            opt.amount_to_offset = Some(1);
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::from_end(1));
+
+            // absolute
+            let mut opt = get_opt();
+            opt.start = true;
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::absolute(0).unwrap());
+            opt.amount_to_offset = Some(1);
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::absolute(1).unwrap());
         }
     }
 }
