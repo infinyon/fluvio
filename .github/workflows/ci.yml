@@ -655,11 +655,16 @@ jobs:
           toolchain: nightly
           profile: minimal
 
-      - name: Setup Cache for Rust and Benchmarks
+      - name: Cache Rust Cargo files
         uses: Swatinem/rust-cache@v2
         with:
           # Additional non workspace directories, separated by newlines
-          cache-directories: ./benches
+          key: ${{ runner.os }}-benchmark
+
+      - name: Cache Benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./benches_cache
           key: ${{ runner.os }}-benchmark
 
       - name: Run Benchmarks
@@ -677,7 +682,7 @@ jobs:
           # Leave a commit comment comparing the current branch with the previous
           comment-always: true
           # Where the previous data file is stored
-          external-data-json-path: ./benches/benchmark-data.json
+          external-data-json-path: ./benches_cache/benchmark-data.json
 
   build_image:
     name: Build Fluvio Docker image
