@@ -267,7 +267,7 @@ impl Offset {
     /// ```
     pub fn from_end(offset: u32) -> Offset {
         Self {
-            inner: OffsetInner::FromEnd(offset),
+            inner: OffsetInner::FromEnd(offset as i64),
         }
     }
 
