@@ -656,7 +656,7 @@ jobs:
           toolchain: nightly
           profile: minimal
 
-      - name: Download previous benchmark data
+      - name: Setup Cache for Rust and Benchmarks
         uses: Swatinem/rust-cache@v2
         with:
           # Additional non workspace directories, separated by newlines
