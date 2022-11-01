@@ -663,7 +663,7 @@ jobs:
           key: ${{ runner.os }}-benchmark
 
       - name: Run Benchmarks
-        run: cargo +nightly bench | tee benchmarks.txt
+        run: cargo +nightly bench -p fluvio-protocol | tee benchmarks.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
