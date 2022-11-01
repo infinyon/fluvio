@@ -116,10 +116,6 @@ mod cmd {
         #[clap(long)]
         pub table_format: Option<String>,
 
-        /// The offset of the first record to begin consuming from (default: 0)
-        #[clap(long, group = "can_be_offset", conflicts_with_all = &["head", "tail"])]
-        pub start: bool,
-
         /// Consume records starting X from the beginning of the log (default:0, change X with -n)
         #[clap(short = 'H', long, group = "can_be_offset", conflicts_with_all = &["start", "tail"])]
         pub head: bool,
@@ -127,6 +123,14 @@ mod cmd {
         /// Consume records starting X from the end of the log (default: 10, change X with -n)
         #[clap(short = 'T', long,  group = "can_be_offset", conflicts_with_all = &["head", "start"])]
         pub tail: bool,
+
+        /// The offset of the first record to begin consuming from (default: 0, change offset with -n)
+        #[clap(long, group = "can_be_offset", conflicts_with_all = &["head", "tail"])]
+        pub start: bool,
+
+        /// Consume records until end offset (INCLUSIVE)
+        #[clap(long, value_name = "integer")]
+        pub end: Option<i64>,
 
         /// --head consume beginning X after start of log. --tail consume beginning X before end of log.
         #[clap(
@@ -136,10 +140,6 @@ mod cmd {
             requires("can_be_offset")
         )]
         pub amount_to_offset: Option<i64>,
-
-        /// Consume records until end offset (INCLUSIVE)
-        #[clap(long, value_name = "integer")]
-        pub end: Option<i64>,
 
         /// Maximum number of bytes to be retrieved
         #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
