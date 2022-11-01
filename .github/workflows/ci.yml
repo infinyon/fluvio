@@ -645,7 +645,6 @@ jobs:
   unit-benchmark:
     name: Unit Benchmarks
     runs-on: ubuntu-latest
-    needs: check
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
