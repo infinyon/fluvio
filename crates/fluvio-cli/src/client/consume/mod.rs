@@ -61,7 +61,7 @@ mod cmd {
     use super::super::ClientCmd;
     use super::table_format::{TableEventResponse, TableModel};
 
-    const DEFAULT_TAIL: i64 = 10;
+    const DEFAULT_TAIL: u32 = 10;
     const USER_TEMPLATE: &str = "user_template";
 
     /// Read messages from a topic/partition
@@ -130,7 +130,7 @@ mod cmd {
 
         /// Consume records until end offset (INCLUSIVE)
         #[clap(long, value_name = "integer")]
-        pub end: Option<i64>,
+        pub end: Option<u32>,
 
         /// --head consume beginning X after start of log. --tail consume beginning X before end of log.
         #[clap(
@@ -139,7 +139,7 @@ mod cmd {
             value_name = "integer",
             requires("can_be_offset")
         )]
-        pub amount_to_offset: Option<i64>,
+        pub amount_to_offset: Option<u32>,
 
         /// Maximum number of bytes to be retrieved
         #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
@@ -332,12 +332,6 @@ mod cmd {
             }
 
             if let Some(end_offset) = self.end {
-                if end_offset < 0 {
-                    eprintln!("Argument end-offset must be greater than or equal to zero");
-                    return Err(CliError::from(FluvioError::NegativeOffset(
-                        end_offset as i64,
-                    )));
-                }
                 if self.start {
                     let start_offset = self.amount_to_offset.unwrap_or(0);
                     if end_offset < start_offset {
@@ -378,7 +372,7 @@ mod cmd {
             tableformat: Option<TableFormatSpec>,
         ) -> Result<()> {
             self.print_status();
-            let maybe_potential_end_offset: Option<i64> = self.end;
+            let maybe_potential_end_offset: Option<u32> = self.end;
             let mut stream = consumer.stream_with_config(offset, config).await?;
 
             let templates = match self.format.as_deref() {
@@ -466,7 +460,7 @@ mod cmd {
                                 );
 
                                 if let Some(potential_offset) = maybe_potential_end_offset {
-                                    if record.offset >= potential_offset {
+                                    if record.offset >= potential_offset as i64 {
                                         eprintln!("End-offset has been reached; exiting");
                                         break;
                                     }
@@ -519,7 +513,7 @@ mod cmd {
                     );
 
                     if let Some(potential_offset) = maybe_potential_end_offset {
-                        if record.offset >= potential_offset {
+                        if record.offset >= potential_offset as i64 {
                             eprintln!("End-offset has been reached; exiting");
                             break;
                         }

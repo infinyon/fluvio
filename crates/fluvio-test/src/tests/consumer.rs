@@ -265,9 +265,9 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     // We'll assume for now that clap is handling mutual exclusivity
     let offset = if test_case.option.offset_beginning {
-        Offset::from_beginning(raw_offset)
+        Offset::from_beginning(raw_offset as u32)
     } else if test_case.option.offset_end {
-        Offset::from_end(raw_offset)
+        Offset::from_end(raw_offset as u32)
     } else {
         Offset::absolute(raw_offset).expect("Couldn't create absolute offset")
     };
