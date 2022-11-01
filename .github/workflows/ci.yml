@@ -644,7 +644,7 @@ jobs:
 
   benchmarks:
     name: Benchmarks
-    needs: local_cluster_test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
