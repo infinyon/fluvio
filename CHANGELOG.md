@@ -1,7 +1,33 @@
 # Release Notes
 
-## Platform Version 0.9.34 - UNRELEASED
-* Added througput control to fluvio producer ([#2512](https://github.com/infinyon/fluvio/issues/2512))
+## Platform Version 0.10.1 - UNRELEASED
+
+## Platform Version 0.10.0 - 2022-10-24 
+* Add throughput control to fluvio producer ([#2512](https://github.com/infinyon/fluvio/pull/2512))
+* Added blocking on Producer if the batch queue is full ([#2562](https://github.com/infinyon/fluvio/pull/2562))
+* Initial support for SmartEngine v2 ([#2610](https://github.com/infinyon/fluvio/pull/2610))
+* SmartModule chaining ([#2618](https://github.com/infinyon/fluvio/pull/2618))
+* Add `smdk` ([#2632](https://github.com/infinyon/fluvio/pull/2632))
+* Support to build `SmartModules` using `smdk build` ([#2638](https://github.com/infinyon/fluvio/pull/2638))
+* SmartModule Load Phase 1 ([#2639](https://github.com/infinyon/fluvio/pull/2639))
+* Add fluvio sm download ([#2656](https://github.com/infinyon/fluvio/pull/2656))
+* Add instrumentation to client producer ([#2717](https://github.com/infinyon/fluvio/pull/2717))
+* Added metrics to smartengine ([#2726](https://github.com/infinyon/fluvio/pull/2726))
+* Add otel to consumer ([#2725](https://github.com/infinyon/fluvio/pull/2725))
+* Add record counters to spu ([#2731](https://github.com/infinyon/fluvio/pull/2731))
+* Metric endpoint ([#2737](https://github.com/infinyon/fluvio/pull/2737))
+* Update clap to v4 ([#2670](https://github.com/infinyon/fluvio/pull/2670))
+* `smdk` test Mode ([#2636](https://github.com/infinyon/fluvio/pull/2636))
+* Generate SmartModules using `smdk` ([#2630](https://github.com/infinyon/fluvio/pull/2630))
+* Add `smdk` publish ([#2657](https://github.com/infinyon/fluvio/pull/2657))
+* Add `smdk` install support in CLI and release ([#2648](https://github.com/infinyon/fluvio/pull/2648))
+* Rewrite `test-crate-version` in Rust ([#2595](https://github.com/infinyon/fluvio/pull/2595))
+* `smdk` generate template ([#2677](https://github.com/infinyon/fluvio/pull/2677))
+* Add non-interactive `smdk generate` flow ([#2693](https://github.com/infinyon/fluvio/pull/2693))
+* Use `localhost` as `proxy-addr` for k8s cluster on macOS ([#2740](https://github.com/infinyon/fluvio/pull/2740))
+* Add prompt for project group in `smdk generate` ([#2746](https://github.com/infinyon/fluvio/pull/2746))
+* Use dynamic local port for k8 port forwarding ([#2578](https://github.com/infinyon/fluvio/pull/2578))
+* Producer stat ([#2743](https://github.com/infinyon/fluvio/pull/2743))
 
 ## Platform Version 0.9.33 - 2022-08-10
 * Added `DeliverySemantic` to `fluvio-cli`. ([#2508](https://github.com/infinyon/fluvio/pull/2508))
