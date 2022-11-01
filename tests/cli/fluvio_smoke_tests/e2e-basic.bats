@@ -162,7 +162,7 @@ teardown_file() {
 # Consume message and compare message
 # Warning: Adding anything extra to the `debug_msg` skews the message comparison
 @test "Consume message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d
 
     assert_output --partial "$MESSAGE"
     assert_success
@@ -171,13 +171,13 @@ teardown_file() {
 # Validate that using format doesn't introduce HTML escaping
 # https://github.com/infinyon/fluvio/issues/1628
 @test "Consume message using format" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{value}}" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{value}}" -H -d
     assert_output "$MESSAGE_W_HTML_STR"
     assert_success
 }
 
 @test "Consume message display timestamp using format" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{time}}" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{time}}" -H -d
     assert_output --partial "$CURRENT_DATE"
     assert_success
 }
@@ -185,69 +185,69 @@ teardown_file() {
 
 # Validate that consume --tail 1, returns only the last record
 @test "Consume with tail" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_3" --tail 1 -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_3" --tail -n 1 -d
     assert_output "$MESSAGE_W_HTML_STR"
     assert_success
 }
 
 @test "Consume gzip message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_4" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_4" -H -d
 
     assert_output --partial "$GZIP_MESSAGE"
     assert_success
 }
 
 @test "Consume snappy message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_5" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_5" -H -d
 
     assert_output --partial "$SNAPPY_MESSAGE"
     assert_success
 }
 
 @test "Consume lz4 message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_6" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_6" -H -d
 
     assert_output --partial "$LZ4_MESSAGE"
     assert_success
 }
 
 @test "ReadCommitted Consume ReadCommitted message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_9" -B -d --isolation read_committed
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_9" -H -d --isolation read_committed
 
     assert_output --partial "$READ_COMMITTED_MESSAGE"
     assert_success
 }
 
 @test "ReadUncommitted Consume ReadCommitted message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_9" -B -d --isolation read_uncommitted
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_9" -H -d --isolation read_uncommitted
 
     assert_output --partial "$READ_COMMITTED_MESSAGE"
     assert_success
 }
 
 @test "ReadCommitted Consume ReadUncommitted message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_10" -B -d --isolation ReadCommitted
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_10" -H -d --isolation ReadCommitted
 
     assert_output --partial "$READ_UNCOMMITTED_MESSAGE"
     assert_success
 }
 
 @test "ReadUncommitted Consume ReadUncommitted message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_10" -B -d --isolation ReadUncommitted
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_10" -H -d --isolation ReadUncommitted
 
     assert_output --partial "$READ_UNCOMMITTED_MESSAGE"
     assert_success
 }
 
 @test "Consume AtMostOnce message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_11" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_11" -H -d
 
     assert_output --partial "$AT_MOST_ONCE_MESSAGE"
     assert_success
 }
 
 @test "Consume AtLeastOnce message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_12" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_12" -H -d
 
     assert_output --partial "$AT_LEAST_ONCE_MESSAGE"
     assert_success

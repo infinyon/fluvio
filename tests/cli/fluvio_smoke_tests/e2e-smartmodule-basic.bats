@@ -43,7 +43,7 @@ setup_file() {
 
     EXPECTED_OUTPUT="BANANA"
     export EXPECTED_OUTPUT
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_output "$EXPECTED_OUTPUT"
     assert_success
@@ -91,7 +91,7 @@ setup_file() {
     assert_success
 
     # Consume from topic and verify we should have 2 entries
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
     assert_line --index 1 "$TEST_MESSAGE"
@@ -99,7 +99,7 @@ setup_file() {
     # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
     EXPECTED_OUTPUT="${TEST_MESSAGE}"
     export EXPECTED_OUTPUT
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
@@ -147,7 +147,7 @@ setup_file() {
     assert_success
 
     # Consume from topic and verify we should have 3 entries
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d
     assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
     assert_line --index 1 "$DEFAULT_PARAM_MESSAGE"
     assert_line --index 2 "$TEST_PARAM_MESSAGE"
@@ -155,7 +155,7 @@ setup_file() {
     # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
     EXPECTED_OUTPUT="${DEFAULT_PARAM_MESSAGE}"
     export EXPECTED_OUTPUT
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME"
     refute_line --partial "$NEGATIVE_TEST_MESSAGE"
     refute_line --partial "$TEST_PARAM_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
@@ -163,7 +163,7 @@ setup_file() {
 
     EXPECTED_OUTPUT="${TEST_PARAM_MESSAGE}"
     export EXPECTED_OUTPUT
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME" --params key=z
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME" --params key=z
     refute_line --partial "$NEGATIVE_TEST_MESSAGE"
     refute_line --partial "$DEFAULT_PARAM_MESSAGE"
     assert_output "$EXPECTED_OUTPUT"
@@ -204,14 +204,14 @@ setup_file() {
     assert_success
 
     # Consume from topic and verify we should have 2 entries
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d
     assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
     assert_line --index 1 "$TEST_MESSAGE"
 
     # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
     EXPECTED_OUTPUT="${TEST_MESSAGE}"
     export EXPECTED_OUTPUT
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME"
     refute_line "$NEGATIVE_TEST_MESSAGE"
     assert_output "$((EXPECTED_OUTPUT/2))"
 
@@ -253,11 +253,11 @@ setup_file() {
     assert_success
 
     # Consume from topic and verify we should have the json message
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d
     assert_output "$FULL_TEST_MESSAGE"
 
     # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME"
     assert_line --index 0 "$FIRST_MESSAGE"
     assert_line --index 1 "$SECOND_MESSAGE"
     assert_line --index 2 "$THIRD_MESSAGE"
@@ -301,7 +301,7 @@ setup_file() {
     assert_success
 
 
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_line --index 0 "$TEST_MESSAGE_1"
     assert_line --index 1 "$TEST_MESSAGE_1$TEST_MESSAGE_2"
@@ -353,10 +353,10 @@ setup_file() {
     # Consume from topic
     EXPECTED_OUTPUT_0="$((R1_TEST_MESSAGE+L1_TEST_MESSAGE))"
     export EXPECTED_OUTPUT_0
-    run timeout 15s "$FLUVIO_BIN" consume "$MAIN_TOPIC_NAME" -B -d --join "$SMARTMODULE_NAME" --join-topic $JOIN_TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" consume "$MAIN_TOPIC_NAME" -H -d --join "$SMARTMODULE_NAME" --join-topic $JOIN_TOPIC_NAME
     assert_output "$EXPECTED_OUTPUT_0"
 
-    run timeout 15s "$FLUVIO_BIN" consume "$MAIN_TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME" --join-topic $JOIN_TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" consume "$MAIN_TOPIC_NAME" -H -d --smartmodule "$SMARTMODULE_NAME" --join-topic $JOIN_TOPIC_NAME
     assert_output "$EXPECTED_OUTPUT_0"
 
     # Delete topics

@@ -91,7 +91,7 @@ function validate_cluster_stable() {
     # Validate consume on topic before produce
     # https://github.com/infinyon/fluvio/issues/1819
     echo "Validate consume on \"${STABLE_TOPIC}\" before producing"
-    $STABLE_FLUVIO consume -B -d ${STABLE_TOPIC} 2>/dev/null
+    $STABLE_FLUVIO consume -H -d ${STABLE_TOPIC} 2>/dev/null
 
     echo "Producing test data to ${STABLE_TOPIC}"
     cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}
@@ -99,7 +99,7 @@ function validate_cluster_stable() {
     ci_check;
 
     echo "Validate test data w/ v${STABLE} CLI matches expected data created BEFORE upgrading cluster + CLI to v${PRERELEASE}"
-    $STABLE_FLUVIO consume -B -d ${STABLE_TOPIC} 2>/dev/null | tee output.txt.tmp
+    $STABLE_FLUVIO consume -H -d ${STABLE_TOPIC} 2>/dev/null | tee output.txt.tmp
     ci_check;
 
     if cat output.txt.tmp | shasum -c stable-cli-stable-topic.checksum; then
