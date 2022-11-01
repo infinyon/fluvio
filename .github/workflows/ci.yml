@@ -678,7 +678,7 @@ jobs:
           # Enable alert commit comment
           comment-on-alert: true
           # Where the previous data file is stored
-           external-data-json-path: ./benches/benchmark-data.json
+          external-data-json-path: ./benches/benchmark-data.json
 
   build_image:
     name: Build Fluvio Docker image
