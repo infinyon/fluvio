@@ -633,7 +633,7 @@ mod cmd {
             }
         }
 
-        pub(crate) fn format_status_string(&self) -> String {
+        fn format_status_string(&self) -> String {
             let prefix = format!("Consuming records from '{}'", self.topic);
             let starting_description = if self.head {
                 // If --from-beginning -n X
@@ -765,100 +765,110 @@ mod cmd {
             ConsumeOutputType::dynamic
         }
     }
-}
+    #[cfg(test)]
+    mod tests {
+        use fluvio::Offset;
 
-#[cfg(test)]
-mod tests {
-    use super::ConsumeOpt;
+        use super::ConsumeOpt;
 
-    fn get_opt() -> ConsumeOpt {
-        ConsumeOpt {
-            topic: "TOPIC_NAME".to_string(),
-            partition: Default::default(),
-            all_partitions: Default::default(),
-            disable_continuous: Default::default(),
-            disable_progressbar: Default::default(),
-            key_value: Default::default(),
-            format: Default::default(),
-            table_format: Default::default(),
-            start: Default::default(),
-            head: Default::default(),
-            tail: Default::default(),
-            amount_to_offset: Default::default(),
-            end: Default::default(),
-            max_bytes: Default::default(),
-            suppress_unknown: Default::default(),
-            output: Default::default(),
-            smartmodule: Default::default(),
-            smartmodule_path: Default::default(),
-            aggregate_initial: Default::default(),
-            params: Default::default(),
-            isolation: Default::default(),
+        fn get_opt() -> ConsumeOpt {
+            ConsumeOpt {
+                topic: "TOPIC_NAME".to_string(),
+                partition: Default::default(),
+                all_partitions: Default::default(),
+                disable_continuous: Default::default(),
+                disable_progressbar: Default::default(),
+                key_value: Default::default(),
+                format: Default::default(),
+                table_format: Default::default(),
+                start: Default::default(),
+                head: Default::default(),
+                tail: Default::default(),
+                amount_to_offset: Default::default(),
+                end: Default::default(),
+                max_bytes: Default::default(),
+                suppress_unknown: Default::default(),
+                output: Default::default(),
+                smartmodule: Default::default(),
+                smartmodule_path: Default::default(),
+                aggregate_initial: Default::default(),
+                params: Default::default(),
+                isolation: Default::default(),
+            }
         }
-    }
-    #[test]
-    fn test_format_status_string() {
-        // Starting from options: --head --start --tail
-        // --head
-        let mut opt = get_opt();
-        opt.head = true;
-        assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting from the beginning of log",
-        );
-        opt.amount_to_offset = Some(1);
-        assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log",
-        );
-        opt.end = Some(2);
-        assert_eq!(
+        #[test]
+        fn test_format_status_string() {
+            // Starting from options: --head --start --tail
+            // --head
+            let mut opt = get_opt();
+            opt.head = true;
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting from the beginning of log",
+            );
+            opt.amount_to_offset = Some(1);
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log",
+            );
+            opt.end = Some(2);
+            assert_eq!(
             opt.format_status_string(),
             "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log until offset 2 (inclusive)",
         );
 
-        // --start
-        let mut opt = get_opt();
-        opt.start = true;
-        assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting at offset 0",
-        );
-        opt.amount_to_offset = Some(1);
-        assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting at offset 1",
-        );
-        opt.end = Some(2);
-        assert_eq!(
+            // --start
+            let mut opt = get_opt();
+            opt.start = true;
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting at offset 0",
+            );
+            opt.amount_to_offset = Some(1);
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting at offset 1",
+            );
+            opt.end = Some(2);
+            assert_eq!(
             opt.format_status_string(),
             "Consuming records from 'TOPIC_NAME' starting at offset 1 until offset 2 (inclusive)",
         );
 
-        // --tail
-        let mut opt = get_opt();
-        opt.tail = true;
-        opt.amount_to_offset = Some(1);
-        assert_eq!(
-            opt.format_status_string(),
-            "Consuming records from 'TOPIC_NAME' starting 1 from the end of log",
-        );
-        opt.end = Some(2);
-        assert_eq!(
+            // --tail
+            let mut opt = get_opt();
+            opt.tail = true;
+            opt.amount_to_offset = Some(1);
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting 1 from the end of log",
+            );
+            opt.end = Some(2);
+            assert_eq!(
             opt.format_status_string(),
             "Consuming records from 'TOPIC_NAME' starting 1 from the end of log until offset 2 (inclusive)",
         );
 
-        // base case
-        let mut opt = get_opt();
-        assert_eq!(
-            "Consuming records from 'TOPIC_NAME'",
-            opt.format_status_string(),
-        );
-        opt.end = Some(2);
-        assert_eq!(
-            "Consuming records from 'TOPIC_NAME' until offset 2 (inclusive)",
-            opt.format_status_string(),
-        );
+            // base case
+            let mut opt = get_opt();
+            assert_eq!(
+                "Consuming records from 'TOPIC_NAME'",
+                opt.format_status_string(),
+            );
+            opt.end = Some(2);
+            assert_eq!(
+                "Consuming records from 'TOPIC_NAME' until offset 2 (inclusive)",
+                opt.format_status_string(),
+            );
+        }
+
+        #[test]
+        fn test_calculate_offset() {
+            // from beginning of log
+            let mut opt = get_opt();
+            opt.head = true;
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::from_beginning(0));
+        }
     }
 }
