@@ -19,7 +19,7 @@ path = "src/bin/main.rs"
 doc = false
 
 [features]
-default = ["consumer", "k8s"]
+default = ["consumer", "k8s", "producer-file-io"]
 consumer = [
     "atty",
     "ctrlc",
@@ -35,6 +35,7 @@ k8s = [
     "fluvio-cluster",
 ]
 smartengine = ["fluvio-smartengine"]
+producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
 tracing = "0.1.19"

@@ -2,28 +2,36 @@ use std::{collections::BTreeMap, path::PathBuf};
 
 use std::fmt::Debug;
 
+use bytes::Bytes;
 use clap::Parser;
-use anyhow::Result;
+use anyhow::{self, Result};
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::debug;
 
-use fluvio::RecordKey;
-use fluvio_protocol::record::{RecordData, Record};
 use fluvio_smartengine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
+use fluvio_protocol::record::Record;
+use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
 
 use crate::package::{PackageInfo, PackageOption};
 
 /// Test SmartModule
 #[derive(Debug, Parser)]
 pub struct TestOpt {
-    // text input
-    #[clap(long)]
+    /// Provide test input with this flag
+    #[clap(long, group = "TestInput")]
     text: Option<String>,
 
-    // arbitrary file input
-    #[clap(long)]
+    /// Path to test file. Default: Read file line by line
+    #[clap(long, groups = ["TestInput", "TestFile"])]
     file: Option<PathBuf>,
+
+    /// Read the file as single record
+    #[clap(long, action, requires = "TestFile")]
+    raw: bool,
+
+    /// Key to use with the test record(s)
+    key: Option<String>,
 
     #[clap(flatten)]
     package: PackageOption,
@@ -75,23 +83,30 @@ impl TestOpt {
 
         let mut chain = chain_builder.initialize(&engine)?;
 
-        // get raw json in one of other ways
-        let raw_input = if let Some(input) = self.text {
-            debug!(input, "input string");
-            input.as_bytes().to_vec()
-        } else if let Some(json_file) = &self.file {
-            std::fs::read(json_file)?
+        let key = self.key.map(Bytes::from);
+
+        let test_data: UserInputRecords = if let Some(data) = self.text {
+            UserInputRecords::try_from(UserInputType::Text {
+                key,
+                data: Bytes::from(data),
+            })?
+        } else if let Some(test_file_path) = &self.file {
+            let path = test_file_path.to_path_buf();
+            if self.raw {
+                UserInputRecords::try_from(UserInputType::File { key, path })?
+            } else {
+                UserInputRecords::try_from(UserInputType::FileByLine { key, path })?
+            }
         } else {
-            return Err(anyhow::anyhow!("No json provided"));
+            return Err(anyhow::anyhow!("No valid input provided"));
         };
-
-        debug!(len = raw_input.len(), "input data");
-
-        let record_value: RecordData = raw_input.into();
-        let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
+        debug!(len = &test_data.len(), "input data");
 
         let metrics = SmartModuleChainMetrics::default();
-        let output = chain.process(SmartModuleInput::try_from(entries)?, &metrics)?;
+
+        let test_records: Vec<Record> = test_data.into();
+
+        let output = chain.process(SmartModuleInput::try_from(test_records)?, &metrics)?;
 
         println!("{:?} records outputed", output.successes.len());
         for output_record in output.successes {

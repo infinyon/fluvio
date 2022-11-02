@@ -6,13 +6,16 @@ pub use cmd::ProduceOpt;
 mod cmd {
 
     use std::sync::Arc;
-    use std::fs::File;
     use std::io::{BufReader, BufRead};
     use std::fmt::Debug;
-    use std::path::PathBuf;
     use std::time::Duration;
+    #[cfg(feature = "producer-file-io")]
+    use std::fs::File;
+    #[cfg(feature = "producer-file-io")]
+    use std::path::PathBuf;
 
     use async_trait::async_trait;
+    #[cfg(feature = "producer-file-io")]
     use futures::future::join_all;
     use clap::Parser;
     use tracing::{error, warn};
@@ -25,6 +28,13 @@ mod cmd {
     use fluvio_extension_common::Terminal;
     use fluvio_spu_schema::Isolation;
     use fluvio_types::print_cli_ok;
+
+    #[cfg(feature = "producer-file-io")]
+    use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
+    #[cfg(feature = "producer-file-io")]
+    use fluvio_protocol::record::RecordData;
+    #[cfg(feature = "producer-file-io")]
+    use fluvio_protocol::bytes::Bytes;
 
     use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
@@ -58,10 +68,19 @@ mod cmd {
         #[clap(short, long)]
         pub verbose: bool,
 
+        /// Sends key/value records with this value as key
+        #[clap(long, group = "RecordKey")]
+        pub key: Option<String>,
+
         /// Sends key/value records split on the first instance of the separator.
-        #[clap(long, value_parser = validate_key_separator)]
+        #[cfg(feature = "producer-file-io")]
+        #[clap(long, value_parser = validate_key_separator, group = "RecordKey", conflicts_with = "TestFile")]
+        pub key_separator: Option<String>,
+        #[cfg(not(feature = "producer-file-io"))]
+        #[clap(long, value_parser = validate_key_separator, group = "RecordKey")]
         pub key_separator: Option<String>,
 
+        #[cfg(feature = "producer-file-io")]
         /// Send all input as one record. Use this when producing binary files.
         #[clap(long)]
         pub raw: bool,
@@ -71,8 +90,11 @@ mod cmd {
         #[clap(long)]
         pub compression: Option<Compression>,
 
-        /// Path to a file to produce to the topic. If absent, producer will read stdin.
-        #[clap(short, long)]
+        #[cfg(feature = "producer-file-io")]
+        /// Path to a file to produce to the topic.
+        /// Default: Each line treated as single record unless `--raw` specified.
+        /// If absent, producer will read stdin.
+        #[clap(short, long, groups = ["TestFile"])]
         pub file: Option<PathBuf>,
 
         /// Time to wait before sending
@@ -225,18 +247,37 @@ mod cmd {
                 None
             };
 
+            #[cfg(feature = "producer-file-io")]
             if self.raw {
+                let key = self.key.clone().map(Bytes::from);
                 // Read all input and send as one record
                 let buffer = match &self.file {
-                    Some(path) => std::fs::read(&path)?,
+                    Some(path) => UserInputRecords::try_from(UserInputType::File {
+                        key: key.clone(),
+                        path: path.to_path_buf(),
+                    })
+                    .unwrap_or_default(),
+
                     None => {
                         let mut buffer = Vec::new();
                         std::io::Read::read_to_end(&mut std::io::stdin(), &mut buffer)?;
-                        buffer
+                        UserInputRecords::try_from(UserInputType::Text {
+                            key: key.clone(),
+                            data: Bytes::from(buffer),
+                        })
+                        .unwrap_or_default()
                     }
                 };
 
-                let produce_output = producer.send(RecordKey::NULL, buffer).await?;
+                let key = if let Some(key) = buffer.key() {
+                    RecordKey::from(key)
+                } else {
+                    RecordKey::NULL
+                };
+
+                let data: RecordData = buffer.into();
+
+                let produce_output = producer.send(key, data).await?;
 
                 if self.delivery_semantic != DeliverySemantic::AtMostOnce {
                     produce_output.wait().await?;
@@ -254,6 +295,15 @@ mod cmd {
                 #[cfg(not(feature = "stats"))]
                 self.produce_lines(producer.clone()).await?;
             };
+
+            #[cfg(not(feature = "producer-file-io"))]
+            {
+                #[cfg(feature = "stats")]
+                self.produce_lines(producer.clone(), maybe_stats_bar.as_ref())
+                    .await?;
+                #[cfg(not(feature = "stats"))]
+                self.produce_lines(producer.clone()).await?;
+            }
 
             producer.flush().await?;
 
@@ -293,92 +343,98 @@ mod cmd {
             // Avoid writing duplicate data to disk
             let mut stats_dataframe_check = 0;
 
-            match &self.file {
-                Some(path) => {
-                    let reader = BufReader::new(File::open(path)?);
-                    let mut produce_outputs = vec![];
-                    for line in reader.lines().filter_map(|it| it.ok()) {
-                        let produce_output = self.produce_line(&producer, &line).await?;
+            #[cfg(feature = "producer-file-io")]
+            if let Some(path) = &self.file {
+                let reader = BufReader::new(File::open(path)?);
+                let mut produce_outputs = vec![];
+                for line in reader.lines().filter_map(|it| it.ok()) {
+                    let produce_output = self.produce_line(&producer, &line).await?;
 
-                        if let Some(produce_output) = produce_output {
-                            produce_outputs.push(produce_output);
-                        }
-
-                        #[cfg(feature = "stats")]
-                        if self.is_stats_collect() {
-                            if self.is_print_live_stats() {
-                                self.update_stats_bar(maybe_stats_bar, &producer, &line);
-                            }
-
-                            stats_dataframe_check = write_csv_dataframe(
-                                &producer,
-                                stats_dataframe_check,
-                                maybe_stats_file.as_mut(),
-                            )
-                            .await?;
-                        }
+                    if let Some(produce_output) = produce_output {
+                        produce_outputs.push(produce_output);
                     }
 
-                    if self.delivery_semantic != DeliverySemantic::AtMostOnce {
-                        // ensure all records were properly sent
-                        join_all(
-                            produce_outputs
-                                .into_iter()
-                                .map(|produce_output| produce_output.wait()),
+                    #[cfg(feature = "stats")]
+                    if self.is_stats_collect() {
+                        if self.is_print_live_stats() {
+                            self.update_stats_bar(maybe_stats_bar, &producer, &line);
+                        }
+
+                        stats_dataframe_check = write_csv_dataframe(
+                            &producer,
+                            stats_dataframe_check,
+                            maybe_stats_file.as_mut(),
                         )
-                        .await
-                        .into_iter()
-                        .collect::<Result<Vec<_>, _>>()?;
+                        .await?;
                     }
                 }
-                None => {
-                    let mut lines = BufReader::new(std::io::stdin()).lines();
-                    if self.interactive_mode() {
-                        eprint!("> ");
-                    }
 
-                    while let Some(Ok(line)) = lines.next() {
-                        let produce_output = self.produce_line(&producer, &line).await?;
-
-                        if let Some(produce_output) = produce_output {
-                            if self.delivery_semantic != DeliverySemantic::AtMostOnce {
-                                // ensure it was properly sent
-                                produce_output.wait().await?;
-                            }
-                        }
-
-                        #[cfg(feature = "stats")]
-                        if self.is_stats_collect() {
-                            if self.is_print_live_stats() {
-                                self.update_stats_bar(maybe_stats_bar, &producer, &line);
-                            }
-
-                            stats_dataframe_check = write_csv_dataframe(
-                                &producer,
-                                stats_dataframe_check,
-                                maybe_stats_file.as_mut(),
-                            )
-                            .await?;
-                        }
-
-                        if self.interactive_mode() {
-                            #[cfg(feature = "stats")]
-                            if let Some(file) = maybe_stats_file.as_mut() {
-                                file.flush()?;
-                            }
-
-                            print_cli_ok!();
-                            eprint!("> ");
-                        }
-                    }
+                if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                    // ensure all records were properly sent
+                    join_all(
+                        produce_outputs
+                            .into_iter()
+                            .map(|produce_output| produce_output.wait()),
+                    )
+                    .await
+                    .into_iter()
+                    .collect::<Result<Vec<_>, _>>()?;
                 }
-            };
+            } else {
+                self.producer_stdin(&producer).await?
+            }
+
+            #[cfg(not(feature = "producer-file-io"))]
+            self.producer_stdin(&producer).await?;
 
             #[cfg(feature = "stats")]
             if let Some(file) = maybe_stats_file.as_mut() {
                 file.flush()?;
             }
 
+            Ok(())
+        }
+
+        async fn producer_stdin(&self, producer: &Arc<TopicProducer>) -> Result<()> {
+            let mut lines = BufReader::new(std::io::stdin()).lines();
+            if self.interactive_mode() {
+                eprint!("> ");
+            }
+
+            while let Some(Ok(line)) = lines.next() {
+                let produce_output = self.produce_line(producer, &line).await?;
+
+                if let Some(produce_output) = produce_output {
+                    if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                        // ensure it was properly sent
+                        produce_output.wait().await?;
+                    }
+                }
+
+                #[cfg(feature = "stats")]
+                if self.is_stats_collect() {
+                    if self.is_print_live_stats() {
+                        self.update_stats_bar(maybe_stats_bar, &producer, &line);
+                    }
+
+                    stats_dataframe_check = write_csv_dataframe(
+                        &producer,
+                        stats_dataframe_check,
+                        maybe_stats_file.as_mut(),
+                    )
+                    .await?;
+                }
+
+                if self.interactive_mode() {
+                    #[cfg(feature = "stats")]
+                    if let Some(file) = maybe_stats_file.as_mut() {
+                        file.flush()?;
+                    }
+
+                    print_cli_ok!();
+                    eprint!("> ");
+                }
+            }
             Ok(())
         }
 
@@ -422,8 +478,14 @@ mod cmd {
             Ok(Some(producer.send(key, value).await?))
         }
 
+        #[cfg(feature = "producer-file-io")]
         fn interactive_mode(&self) -> bool {
             self.file.is_none() && atty::is(atty::Stream::Stdin)
+        }
+
+        #[cfg(not(feature = "producer-file-io"))]
+        fn interactive_mode(&self) -> bool {
+            atty::is(atty::Stream::Stdin)
         }
 
         #[cfg(feature = "stats")]

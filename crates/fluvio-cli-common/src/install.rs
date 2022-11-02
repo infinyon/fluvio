@@ -5,10 +5,14 @@ use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
 use crate::FLUVIO_EXTENSIONS_DIR;
-use fluvio_types::defaults::CLI_CONFIG_PATH;
 use crate::error::{Result, CliError};
 
 pub const FLUVIO_DIR: &str = "FLUVIO_DIR";
+
+#[cfg(feature = "default")]
+use fluvio_types::defaults::CLI_CONFIG_PATH;
+#[cfg(not(feature = "default"))]
+pub const CLI_CONFIG_PATH: &str = ".fluvio";
 
 fn fluvio_base_dir() -> Result<PathBuf> {
     if let Ok(dir) = std::env::var(FLUVIO_DIR) {

@@ -2157,8 +2157,11 @@ dependencies = [
 name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
+ "fluvio",
  "fluvio-future",
  "fluvio-package-index",
+ "fluvio-protocol",
  "fluvio-types",
  "futures 0.3.25",
  "hex",
@@ -2168,6 +2171,7 @@ dependencies = [
  "semver 1.0.14",
  "sha2 0.10.6",
  "tempdir",
+ "tempfile",
  "thiserror",
  "tracing",
 ]
@@ -5794,6 +5798,7 @@ name = "smartmodule-development-kit"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "bytes 1.2.1",
  "cargo-generate",
  "cargo_metadata",
  "clap 4.0.18",
@@ -5801,6 +5806,7 @@ dependencies = [
  "dirs",
  "enum-display",
  "fluvio",
+ "fluvio-cli-common",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
