@@ -1,0 +1,49 @@
+name: Benchmarks
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  unit_fluvio_protocol:
+    name: Fluvio Protocol - Unit Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+
+      - name: Cache Rust Cargo files
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Additional non workspace directories, separated by newlines
+          key: ${{ runner.os }}-benchmark
+
+      - name: Cache Benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./benches_cache
+          key: ${{ runner.os }}-benchmark
+
+      - name: Run Benchmarks
+        run: cargo +nightly bench -p fluvio-protocol | tee benchmarks.txt
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'cargo'
+          # Where the output from the benchmark tool is stored
+          output-file-path: benchmarks.txt
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Leave a commit comment comparing the current branch with the previous
+          comment-always: true
+          # Where the previous data file is stored
+          external-data-json-path: ./benches_cache/benchmark-data.json
