@@ -631,25 +631,18 @@ mod cmd {
             let prefix = format!("Consuming records from '{}'", self.topic);
             let starting_description = if self.beginning {
                 " starting from the beginning of log".to_string()
-            }
-            // If --from-beginning -n X
-            else if let Some(offset) = self.head {
+            } else if let Some(offset) = self.head {
                 format!(" starting {} from the beginning of log", offset)
-                // If --offset=X
             } else if let Some(offset) = self.start {
                 format!(" starting at offset {}", offset)
-            // If --tail or --tail -n X
-            // Joined since default tail != 0
             } else if let Some(offset) = self.tail {
                 format!(" starting {} from the end of log", offset)
             } else {
                 "".to_string()
             };
 
-            // If --end-offset=X
             let ending_description = if let Some(end) = self.end {
                 format!(" until offset {} (inclusive)", end)
-            // If no offset config is given, read from the end
             } else {
                 "".to_string()
             };
