@@ -26,13 +26,13 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           # Additional non workspace directories, separated by newlines
-          key: ${{ runner.os }}-benchmark
+          key: ${{ runner.os }}-${{  }}
 
       - name: Cache Benchmark data
         uses: actions/cache@v1
         with:
           path: ./benches_cache
-          key: ${{ runner.os }}-benchmark
+          key: benches-${{ runner.os }}-unit_fluvio_protocol
 
       - name: Run Benchmarks
         run: cargo +nightly bench -p fluvio-protocol | tee benchmarks.txt
