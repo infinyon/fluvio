@@ -115,19 +115,20 @@ mod cmd {
         #[clap(long)]
         pub table_format: Option<String>,
 
+        /// Consume records from the beginning of the log
         #[clap(short = 'B', long,  conflicts_with_all = &["head","start", "tail"])]
         pub beginning: bool,
 
-        /// Consume records starting X from the beginning of the log
-        #[clap(short = 'H', long,  conflicts_with_all = &["beginning", "start", "tail"])]
+        /// Consume records starting <integer> from the beginning of the log
+        #[clap(short = 'H', long, value_name = "integer", conflicts_with_all = &["beginning", "start", "tail"])]
         pub head: Option<u32>,
 
-        /// Consume records starting X from the end of the log
-        #[clap(short = 'T', long,   conflicts_with_all = &["beginning","head", "start"])]
+        /// Consume records starting <integer> from the end of the log
+        #[clap(short = 'T', long,  value_name = "integer", conflicts_with_all = &["beginning","head", "start"])]
         pub tail: Option<u32>,
 
         /// The absolute offset of the first record to begin consuming from
-        #[clap(long,  conflicts_with_all = &["beginning", "head", "tail"])]
+        #[clap(long, value_name = "integer", conflicts_with_all = &["beginning", "head", "tail"])]
         pub start: Option<u32>,
 
         /// Consume records until end offset (inclusive)
