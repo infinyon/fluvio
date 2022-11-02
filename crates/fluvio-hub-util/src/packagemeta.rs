@@ -28,24 +28,32 @@ pub struct PackageMeta {
     // author: Option<String>,
     pub description: String,
     pub license: String,
-    pub visibility: Option<VisibilityOpt>, // public is default if not in file
+
+    #[serde(default = "VisibilityOpt::private")]
+    pub visibility: VisibilityOpt, // owner is default if not in file
     pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
                                // repository: optional url
                                // repository-commit: optional hash
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
 pub enum VisibilityOpt {
     /// the default
-    #[serde(rename = "public")]
     Public,
 
     /// owner in signature.0
-    #[serde(rename = "owner")]
     Owner,
     // /// group
     // #[serde(rename="group")]
     // Group,
+}
+
+impl VisibilityOpt {
+    /// for serde default
+    fn private() -> Self {
+        VisibilityOpt::Owner
+    }
 }
 
 impl Default for PackageMeta {
@@ -57,7 +65,7 @@ impl Default for PackageMeta {
             group: "NameOfContributingGroup".into(),
             description: "Describe the module here".into(),
             license: "e.g. Apache2".into(),
-            visibility: Some(VisibilityOpt::Public),
+            visibility: VisibilityOpt::Owner,
             manifest: Vec::new(),
         }
     }
@@ -483,6 +491,7 @@ mod t_packagemeta_version {
 
     use crate::HubUtilError;
     use crate::PackageMeta;
+    use crate::VisibilityOpt;
 
     fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
         let pm = PackageMeta::read_from_file(fname)?;
@@ -511,5 +520,18 @@ mod t_packagemeta_version {
         let res = read_pkgmeta(visbad);
         dbg!(&res);
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn visibility_defaults_owner_v0_1() {
+        // if package meta is missing any visibility field, like older versions will be missing
+        // check that they default to private (Owner) visiblity
+        let visbad = "tests/apackage/package-meta-v0.1.yaml";
+        let res = read_pkgmeta(visbad);
+        dbg!(&res);
+        assert!(res.is_ok());
+        if let Ok(pm) = res {
+            assert_eq!(pm.visibility, VisibilityOpt::Owner);
+        }
     }
 }
