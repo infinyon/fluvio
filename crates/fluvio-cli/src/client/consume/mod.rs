@@ -61,7 +61,6 @@ mod cmd {
     use super::super::ClientCmd;
     use super::table_format::{TableEventResponse, TableModel};
 
-    const DEFAULT_TAIL: u32 = 10;
     const USER_TEMPLATE: &str = "user_template";
 
     /// Read messages from a topic/partition
@@ -83,11 +82,11 @@ mod cmd {
         #[clap(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
         pub all_partitions: bool,
 
-        /// disable continuous processing of messages
+        /// Disable continuous processing of messages
         #[clap(short = 'd', long)]
         pub disable_continuous: bool,
 
-        /// disable the progress bar and wait spinner
+        /// Disable the progress bar and wait spinner
         #[clap(long)]
         pub disable_progressbar: bool,
 
@@ -116,30 +115,24 @@ mod cmd {
         #[clap(long)]
         pub table_format: Option<String>,
 
-        /// Consume records starting X from the beginning of the log (default:0, change X with -n)
-        #[clap(short = 'H', long, group = "can_be_offset", conflicts_with_all = &["start", "tail"])]
-        pub head: bool,
+        #[clap(short = 'B', long,  conflicts_with_all = &["head","start", "tail"])]
+        pub beginning: bool,
 
-        /// Consume records starting X from the end of the log (default: 10, change X with -n)
-        #[clap(short = 'T', long,  group = "can_be_offset", conflicts_with_all = &["head", "start"])]
-        pub tail: bool,
+        /// Consume records starting X from the beginning of the log
+        #[clap(short = 'H', long,  conflicts_with_all = &["beginning", "start", "tail"])]
+        pub head: Option<u32>,
 
-        /// The offset of the first record to begin consuming from (default: 0, change offset with -n)
-        #[clap(long, group = "can_be_offset", conflicts_with_all = &["head", "tail"])]
-        pub start: bool,
+        /// Consume records starting X from the end of the log
+        #[clap(short = 'T', long,   conflicts_with_all = &["beginning","head", "start"])]
+        pub tail: Option<u32>,
 
-        /// Consume records until end offset (INCLUSIVE)
+        /// The absolute offset of the first record to begin consuming from
+        #[clap(long,  conflicts_with_all = &["beginning", "head", "tail"])]
+        pub start: Option<u32>,
+
+        /// Consume records until end offset (inclusive)
         #[clap(long, value_name = "integer")]
         pub end: Option<u32>,
-
-        /// --head consume beginning X after start of log. --tail consume beginning X before end of log.
-        #[clap(
-            short = 'n',
-            long = "offset",
-            value_name = "integer",
-            requires("can_be_offset")
-        )]
-        pub amount_to_offset: Option<u32>,
 
         /// Maximum number of bytes to be retrieved
         #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
@@ -159,7 +152,7 @@ mod cmd {
         )]
         pub output: Option<ConsumeOutputType>,
 
-        /// name of the smart module
+        /// Name of the smart module
         #[clap(
             long,
             group("smartmodule_group"),
@@ -168,6 +161,7 @@ mod cmd {
         )]
         pub smartmodule: Option<String>,
 
+        /// Path to the stmart module
         #[clap(
             long,
             group("smartmodule_group"),
@@ -332,8 +326,7 @@ mod cmd {
             }
 
             if let Some(end_offset) = self.end {
-                if self.start {
-                    let start_offset = self.amount_to_offset.unwrap_or(0);
+                if let Some(start_offset) = self.start {
                     if end_offset < start_offset {
                         eprintln!(
                             "Argument end-offset must be greater than or equal to specified start offset"
@@ -635,24 +628,19 @@ mod cmd {
 
         fn format_status_string(&self) -> String {
             let prefix = format!("Consuming records from '{}'", self.topic);
-            let starting_description = if self.head {
-                // If --from-beginning -n X
-                if let Some(offset) = self.amount_to_offset {
-                    format!(" starting {} from the beginning of log", offset)
-                }
-                // If --from-beginning
-                else {
-                    " starting from the beginning of log".to_string()
-                }
+            let starting_description = if self.beginning {
+                " starting from the beginning of log".to_string()
+            }
+            // If --from-beginning -n X
+            else if let Some(offset) = self.head {
+                format!(" starting {} from the beginning of log", offset)
                 // If --offset=X
-            } else if self.start {
-                let offset = self.amount_to_offset.unwrap_or(0);
+            } else if let Some(offset) = self.start {
                 format!(" starting at offset {}", offset)
             // If --tail or --tail -n X
             // Joined since default tail != 0
-            } else if self.tail {
-                let tail = self.amount_to_offset.unwrap_or(DEFAULT_TAIL);
-                format!(" starting {} from the end of log", tail,)
+            } else if let Some(offset) = self.tail {
+                format!(" starting {} from the end of log", offset)
             } else {
                 "".to_string()
             };
@@ -696,15 +684,14 @@ mod cmd {
 
         /// Calculate the Offset to use with the consumer based on the provided offset number
         fn calculate_offset(&self) -> Result<Offset> {
-            let offset = if self.head {
-                let head_offset = self.amount_to_offset.unwrap_or(0);
-                Offset::from_beginning(head_offset)
-            } else if self.start {
-                let start_offset = self.amount_to_offset.unwrap_or(0);
-                Offset::absolute(start_offset as i64).unwrap()
-            } else if self.tail {
-                let tail_offset = self.amount_to_offset.unwrap_or(DEFAULT_TAIL);
-                Offset::from_end(tail_offset)
+            let offset = if self.beginning {
+                Offset::from_beginning(0)
+            } else if let Some(offset) = self.head {
+                Offset::from_beginning(offset)
+            } else if let Some(offset) = self.start {
+                Offset::absolute(offset as i64).unwrap()
+            } else if let Some(offset) = self.tail {
+                Offset::from_end(offset)
             } else {
                 Offset::end()
             };
@@ -769,8 +756,6 @@ mod cmd {
     mod tests {
         use fluvio::Offset;
 
-        use crate::client::consume::cmd::DEFAULT_TAIL;
-
         use super::ConsumeOpt;
 
         fn get_opt() -> ConsumeOpt {
@@ -786,7 +771,6 @@ mod cmd {
                 start: Default::default(),
                 head: Default::default(),
                 tail: Default::default(),
-                amount_to_offset: Default::default(),
                 end: Default::default(),
                 max_bytes: Default::default(),
                 suppress_unknown: Default::default(),
@@ -796,19 +780,24 @@ mod cmd {
                 aggregate_initial: Default::default(),
                 params: Default::default(),
                 isolation: Default::default(),
+                beginning: Default::default(),
             }
         }
         #[test]
         fn test_format_status_string() {
-            // Starting from options: --head --start --tail
-            // --head
+            // Starting from options: --beginning --head --start --tail
+
+            // --beginning
             let mut opt = get_opt();
-            opt.head = true;
+            opt.beginning = true;
             assert_eq!(
                 opt.format_status_string(),
                 "Consuming records from 'TOPIC_NAME' starting from the beginning of log",
             );
-            opt.amount_to_offset = Some(1);
+
+            // --head
+            let mut opt = get_opt();
+            opt.head = Some(1);
             assert_eq!(
                 opt.format_status_string(),
                 "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log",
@@ -821,12 +810,7 @@ mod cmd {
 
             // --start
             let mut opt = get_opt();
-            opt.start = true;
-            assert_eq!(
-                opt.format_status_string(),
-                "Consuming records from 'TOPIC_NAME' starting at offset 0",
-            );
-            opt.amount_to_offset = Some(1);
+            opt.start = Some(1);
             assert_eq!(
                 opt.format_status_string(),
                 "Consuming records from 'TOPIC_NAME' starting at offset 1",
@@ -839,8 +823,7 @@ mod cmd {
 
             // --tail
             let mut opt = get_opt();
-            opt.tail = true;
-            opt.amount_to_offset = Some(1);
+            opt.tail = Some(1);
             assert_eq!(
                 opt.format_status_string(),
                 "Consuming records from 'TOPIC_NAME' starting 1 from the end of log",
@@ -866,34 +849,32 @@ mod cmd {
 
         #[test]
         fn test_calculate_offset() {
+            // default
             let opt = get_opt();
             let offset = opt.calculate_offset().unwrap();
             assert_eq!(offset, Offset::end());
 
-            // from beginning of log
+            // --beginning
             let mut opt = get_opt();
-            opt.head = true;
+            opt.beginning = true;
             let offset = opt.calculate_offset().unwrap();
             assert_eq!(offset, Offset::from_beginning(0));
-            opt.amount_to_offset = Some(1);
+
+            // --head
+            let mut opt = get_opt();
+            opt.head = Some(1);
             let offset = opt.calculate_offset().unwrap();
             assert_eq!(offset, Offset::from_beginning(1));
 
-            // from end of log
+            // --tail
             let mut opt = get_opt();
-            opt.tail = true;
-            let offset = opt.calculate_offset().unwrap();
-            assert_eq!(offset, Offset::from_end(DEFAULT_TAIL));
-            opt.amount_to_offset = Some(1);
+            opt.tail = Some(1);
             let offset = opt.calculate_offset().unwrap();
             assert_eq!(offset, Offset::from_end(1));
 
-            // absolute
+            // --start
             let mut opt = get_opt();
-            opt.start = true;
-            let offset = opt.calculate_offset().unwrap();
-            assert_eq!(offset, Offset::absolute(0).unwrap());
-            opt.amount_to_offset = Some(1);
+            opt.start = Some(1);
             let offset = opt.calculate_offset().unwrap();
             assert_eq!(offset, Offset::absolute(1).unwrap());
         }

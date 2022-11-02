@@ -50,30 +50,22 @@ mod tests {
 
     #[test]
     fn test_correct_command_parsing_consume() {
-        assert!(parse("fluvio consume -H hello").is_ok());
-        assert!(parse("fluvio consume -T hello").is_ok());
-        assert!(parse("fluvio consume -H -n 10 hello").is_ok());
-        assert!(parse("fluvio consume -T -n 10 hello").is_ok());
-        assert!(parse("fluvio consume --start -n 0 hello").is_ok());
-        assert!(parse("fluvio consume --start hello").is_ok());
-        assert!(parse("fluvio consume hello --start --end 5").is_ok());
-        assert!(parse("fluvio consume --start --end 5 -n 0 hello").is_ok());
+        assert!(parse("fluvio consume -B hello").is_ok());
+        assert!(parse("fluvio consume -T 10 hello").is_ok());
+        assert!(parse("fluvio consume -H 10 hello").is_ok());
+        assert!(parse("fluvio consume --end 10 hello").is_ok());
+        assert!(parse("fluvio consume --start  0 hello").is_ok());
+        assert!(parse("fluvio consume hello --start 0 --end 5").is_ok());
 
         assert!(parse("fluvio consume").is_err());
-        assert!(parse("fluvio consume -H 0 hello").is_err());
-        assert!(parse("fluvio consume -T 0 hello").is_err());
-        assert!(parse("fluvio consume -H -n -10 hello").is_err());
-        assert!(parse("fluvio consume -H -n hello").is_err());
-        assert!(parse("fluvio consume -n 10 hello").is_err());
-        assert!(parse("fluvio consume -H -T -n 10 hello").is_err());
-        assert!(parse("fluvio consume -n hello").is_err());
-        assert!(parse("fluvio consume --start 5 hello").is_err());
+        assert!(parse("fluvio consume -H 10 -T 10 hello").is_err());
+        assert!(parse("fluvio consume -B -H hello").is_err());
         assert!(parse("fluvio consume --end hello").is_err());
     }
 
     #[test]
     fn test_supply_negative_end_offset() {
-        assert!(parse("fluvio consume --start --end 5 -n 0 hello").is_ok());
+        assert!(parse("fluvio consume --start 0 --end 5  hello").is_ok());
         assert!(parse("fluvio consume --end 5 hello").is_ok());
 
         assert!(parse("fluvio consume --end -5 hello").is_err());
