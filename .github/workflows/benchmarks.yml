@@ -50,3 +50,5 @@ jobs:
           comment-always: true
           # Where the previous data file is stored
           external-data-json-path: ./benches_cache/benchmark-data.json
+          # Mention @infinyon/developers in the commit comment
+          alert-comment-cc-users: '@infinyon/developers'
