@@ -185,7 +185,7 @@ teardown_file() {
 
 # Validate that consume --tail 1, returns only the last record
 @test "Consume with tail" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_3" --tail -n 1 -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_3" --tail 1 -d
     assert_output "$MESSAGE_W_HTML_STR"
     assert_success
 }
