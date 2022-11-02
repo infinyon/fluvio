@@ -226,11 +226,16 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
     signedpkg.finish()?;
     drop(signedpkg);
     signedfile.flush()?;
-    signedfile.persist(&out_pkgfile).map_err(|e| {
-        warn!("{}", e);
-        HubUtilError::PackageSigning(format!("{in_pkgfile}: fault creating signed package"))
-    })?;
-
+    let sf_path = signedfile.path().to_path_buf();
+    if let Err(e) = signedfile.persist(&out_pkgfile) {
+        warn!("{}, falling back to copy", e);
+        std::fs::copy(sf_path, &out_pkgfile).map_err(|e| {
+            warn!("copy failure {}", e);
+            HubUtilError::PackageSigning(format!(
+                "{in_pkgfile}: fault creating signed package\n{e}"
+            ))
+        })?;
+    }
     Ok(())
 }
 
