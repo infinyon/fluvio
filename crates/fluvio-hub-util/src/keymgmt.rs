@@ -110,7 +110,7 @@ impl Keypair {
     /// ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACGeGHWvt/E60k/FLuDsCkArLAIa4lvwk1wg3nJIGJl sshkey@example.com
     pub fn from_ssh(env_val: &str) -> Result<Keypair> {
         let sshprivkey =
-            ssh_key::PrivateKey::from_openssh(&env_val).map_err(|_| HubUtilError::KeyVerify)?;
+            ssh_key::PrivateKey::from_openssh(env_val).map_err(|_| HubUtilError::KeyVerify)?;
         let keypair = sshprivkey
             .key_data()
             .ed25519()

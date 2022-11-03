@@ -20,7 +20,7 @@ impl LocalEnvDriver {
     }
 
     fn load_config(option: &EnvironmentSetup) -> LocalConfig {
-        let version = semver::Version::parse(&*crate::VERSION).unwrap();
+        let version = semver::Version::parse(&crate::VERSION).unwrap();
         let mut builder = LocalConfig::builder(version);
         builder.spu_replicas(option.spu()).hide_spinner(false);
 

@@ -129,7 +129,7 @@ impl PackageMeta {
 
     pub fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()> {
         let serialized = serde_yaml::to_string(&self)?;
-        fs::write(pmetapath, &serialized.as_bytes())?;
+        fs::write(pmetapath, serialized.as_bytes())?;
         Ok(())
     }
 
@@ -376,7 +376,7 @@ fn hub_package_meta_t_write_then_read() {
         ..PackageMeta::default()
     };
 
-    pm.write(&testfile).expect("error writing package file");
+    pm.write(testfile).expect("error writing package file");
     let pm_read = PackageMeta::read_from_file(testfile).expect("error reading package file");
     assert_eq!(pm, pm_read);
 }

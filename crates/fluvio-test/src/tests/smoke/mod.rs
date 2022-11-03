@@ -106,7 +106,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     // Add a connector CRD
                     let admin = test_driver.client().admin().await;
                     // Create a managed connector
-                    let config = ConnectorConfig::from_file(&connector_config).unwrap();
+                    let config = ConnectorConfig::from_file(connector_config).unwrap();
                     let spec: ManagedConnectorSpec = config.clone().into();
                     let name = spec.name.clone();
 

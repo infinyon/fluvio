@@ -162,7 +162,7 @@ mod inline {
                 let mut builder = DirBuilder::new();
                 builder.recursive(true);
                 builder
-                    .create(&debug_chart_path)
+                    .create(debug_chart_path)
                     .expect("FLV_INLINE_CHART_DIR not exists");
                 let mut debug_file = File::create(debug_chart_path.join(inline_file.path()))
                     .expect("chart cant' be created");

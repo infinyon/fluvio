@@ -656,7 +656,7 @@ mod tests {
 
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
         let replica_dir = &option.base_dir.join("test-1");
-        let dir_contents = fs::read_dir(&replica_dir).expect("read_dir");
+        let dir_contents = fs::read_dir(replica_dir).expect("read_dir");
         assert_eq!(dir_contents.count(), 5, "should be 5 files");
 
         let seg2_file = replica_dir.join(TEST_SE2_NAME);

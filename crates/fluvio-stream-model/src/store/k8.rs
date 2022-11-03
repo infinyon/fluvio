@@ -146,7 +146,7 @@ where
     S: K8Spec,
 {
     /// skip, this object, it is not considered valid object  
-    Skip(K8Obj<S>),
+    Skip(Box<K8Obj<S>>),
     /// Converting error
     KeyConvertionError(IoError),
     Other(IoError),

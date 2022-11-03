@@ -175,7 +175,7 @@ impl HubAccess {
             profile
         } else {
             let profile_ptr_path = base_path.as_ref().join(ACCESS_FILE_PTR);
-            if let Ok(profile) = std::fs::read_to_string(&profile_ptr_path.as_path()) {
+            if let Ok(profile) = std::fs::read_to_string(profile_ptr_path.as_path()) {
                 profile
             } else {
                 info!("Creating initial hub credentials");

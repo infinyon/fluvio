@@ -105,7 +105,7 @@ pub fn init_package_template() -> Result<()> {
         return Err(anyhow::anyhow!("package hub directory exists already"));
     }
     std::fs::create_dir(pkgdir)?;
-    pm.write(&pmetapath)?;
+    pm.write(pmetapath)?;
 
     println!(".. fill out info in {pmetapath}");
     Ok(())

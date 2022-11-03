@@ -8,7 +8,7 @@ fn main() {
 
     // Fetch current git hash to print version output
     let git_version_output = Command::new("git")
-        .args(&["rev-parse", "HEAD"])
+        .args(["rev-parse", "HEAD"])
         .output()
         .expect("should run 'git rev-parse HEAD' to get git hash");
     let git_hash = String::from_utf8(git_version_output.stdout)

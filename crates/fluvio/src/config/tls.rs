@@ -65,8 +65,8 @@ impl TlsConfig {
     /// Returns the domain which this TLS configuration is valid for
     pub fn domain(&self) -> &str {
         match self {
-            TlsConfig::Files(TlsPaths { domain, .. }) => &**domain,
-            TlsConfig::Inline(TlsCerts { domain, .. }) => &**domain,
+            TlsConfig::Files(TlsPaths { domain, .. }) => domain,
+            TlsConfig::Inline(TlsCerts { domain, .. }) => domain,
         }
     }
 }
