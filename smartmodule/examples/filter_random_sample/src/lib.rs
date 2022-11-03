@@ -32,5 +32,5 @@ fn init(params: SmartModuleExtraParams) -> Result<()> {
 fn expect_key<'a>(key: &str, params: &'a SmartModuleExtraParams) -> Result<&'a String> {
     params
         .get("sampling_frequency")
-        .ok_or(SmartModuleInitError::MissingParam(key.to_string()).into())
+        .ok_or_else(|| SmartModuleInitError::MissingParam(key.to_string()).into())
 }
