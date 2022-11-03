@@ -12,6 +12,9 @@ on:
     branches:
       - master
 
+permissions:
+  pull-requests: write
+
 jobs:
   unit_fluvio_protocol:
     name: Fluvio Protocol - Unit Benchmarks
