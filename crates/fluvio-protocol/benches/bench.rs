@@ -1,47 +1,35 @@
-#![feature(test)]
+use std::io::Cursor;
 
-extern crate test;
+use criterion::{criterion_group, criterion_main, Criterion};
 
-#[cfg(test)]
-mod bench {
-    use std::io::Cursor;
+use fluvio_protocol::{Decoder, Encoder};
 
-    use fluvio_protocol::{Decoder, Encoder};
-    use test::{Bencher, black_box};
+fn bench_encode_vecu8(c: &mut Criterion) {
+    let value: Vec<u8> = vec![0x10, 0x11, 0x12, 0x10, 0x11, 0x12, 0x10, 0x11];
+    let mut dest = vec![];
 
-    #[bench]
-    fn bench_encode_vecu8(b: &mut Bencher) {
-        let value: Vec<u8> = vec![0x10, 0x11, 0x12, 0x10, 0x11, 0x12, 0x10, 0x11];
-
-        #[allow(unused_must_use)]
+    c.bench_function("encode vecu8", |b| {
         b.iter(|| {
-            for _i in 1..100 {
-                let mut dest = vec![];
-
-                black_box(|| {
-                    value.encode(&mut dest, 0).unwrap();
-                });
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_decode_vecu8(b: &mut Bencher) {
-        let encoded_expect: [u8; 14] = [
-            0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
-        ];
-
-        #[allow(unused_must_use)]
-        b.iter(|| {
-            for _i in 1..100 {
-                let mut decoded_vecu8: Vec<u8> = vec![];
-
-                black_box(|| {
-                    decoded_vecu8
-                        .decode(&mut Cursor::new(&encoded_expect), 0)
-                        .unwrap();
-                });
-            }
-        });
-    }
+            value.encode(&mut dest, 0).unwrap();
+        })
+    });
 }
+
+fn bench_decode_vecu8(c: &mut Criterion) {
+    let encoded_expect: [u8; 14] = [
+        0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
+    ];
+
+    c.bench_function("decode vecu8", |b| {
+        b.iter(|| {
+            let mut decoded_vecu8: Vec<u8> = vec![];
+
+            decoded_vecu8
+                .decode(&mut Cursor::new(&encoded_expect), 0)
+                .unwrap();
+        })
+    });
+}
+
+criterion_group!(benches, bench_encode_vecu8, bench_decode_vecu8);
+criterion_main!(benches);
