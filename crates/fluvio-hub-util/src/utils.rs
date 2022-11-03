@@ -62,7 +62,7 @@ pub fn cli_pkgname_to_filename(pkgname: &str) -> Result<String> {
 /// returns recommended name and data
 pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
     let actiontoken = access.get_download_token().await?;
-    let mut resp = surf::get(&pkgurl)
+    let mut resp = surf::get(pkgurl)
         .header("Authorization", actiontoken)
         .await
         .map_err(|_| HubUtilError::PackageDownload("authorization error".into()))?;
@@ -92,7 +92,7 @@ pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
 // deprecated, but keep for reference for a bit
 pub async fn get_package_noauth(pkgurl: &str) -> Result<Vec<u8>> {
     //todo use auth
-    let mut resp = surf::get(&pkgurl)
+    let mut resp = surf::get(pkgurl)
         .await
         .map_err(|_| HubUtilError::PackageDownload("".into()))?;
     match resp.status() {

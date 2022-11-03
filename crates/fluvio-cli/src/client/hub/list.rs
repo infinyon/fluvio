@@ -107,7 +107,7 @@ mod output {
         fn content(&self) -> Vec<Row> {
             self.0
                 .iter()
-                .map(|e| Row::from([Cell::new(&e).set_alignment(CellAlignment::Left)]))
+                .map(|e| Row::from([Cell::new(e).set_alignment(CellAlignment::Left)]))
                 .collect()
         }
     }

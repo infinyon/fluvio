@@ -57,11 +57,11 @@ impl Credentials {
     }
 
     fn load(cred_path: &Path) -> Result<Self, InfinyonCredentialError> {
-        let file_str = fs::read_to_string(&cred_path).map_err(|_| {
+        let file_str = fs::read_to_string(cred_path).map_err(|_| {
             let strpath = cred_path.to_string_lossy().to_string();
             InfinyonCredentialError::Read(strpath)
         })?;
-        let creds: Credentials = toml::from_str(&*file_str)
+        let creds: Credentials = toml::from_str(&file_str)
             .map_err(|_| InfinyonCredentialError::UnableToParseCredentials)?;
         Ok(creds)
     }

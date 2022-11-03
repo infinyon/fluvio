@@ -92,7 +92,7 @@ mod extended {
                 trace!("converting k8 managed connector: {:#?}", k8_obj);
                 default_convert_from_k8(k8_obj, multi_namespace_context)
             } else {
-                Err(K8ConvertError::Skip(k8_obj))
+                Err(K8ConvertError::Skip(Box::new(k8_obj)))
             }
         }
     }

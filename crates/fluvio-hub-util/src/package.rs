@@ -82,7 +82,7 @@ fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
         let just_fname = fname.file_name().ok_or_else(|| {
             HubUtilError::ManifestInvalidFile(fname.to_string_lossy().to_string())
         })?;
-        tf.append_path_with_name(&fname, just_fname)?;
+        tf.append_path_with_name(fname, just_fname)?;
         let just_fname = just_fname.to_string_lossy().to_string();
         pm_clean.manifest.push(just_fname);
     }
@@ -152,7 +152,7 @@ impl PackageSignatureBulder {
 
         let fsig = FileSig {
             name: String::from(fname),
-            hash: hex::encode(&sha),
+            hash: hex::encode(sha),
             len: buf.len() as u64,
             sig: hex::encode(sig.to_bytes()),
         };
@@ -227,9 +227,9 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
     drop(signedpkg);
     signedfile.flush()?;
     let sf_path = signedfile.path().to_path_buf();
-    if let Err(e) = signedfile.persist(&out_pkgfile) {
+    if let Err(e) = signedfile.persist(out_pkgfile) {
         warn!("{}, falling back to copy", e);
-        std::fs::copy(sf_path, &out_pkgfile).map_err(|e| {
+        std::fs::copy(sf_path, out_pkgfile).map_err(|e| {
             warn!("copy failure {}", e);
             HubUtilError::PackageSigning(format!(
                 "{in_pkgfile}: fault creating signed package\n{e}"
@@ -478,7 +478,7 @@ pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
 ) -> Result<()> {
     // locate sig that matches the public key in cred
     let sigs = package_getsigs_with_readio(readio, pkgfile)?;
-    let string_pubkey = hex::encode(&pubkey.to_bytes());
+    let string_pubkey = hex::encode(pubkey.to_bytes());
     let sig = sigs
         .iter()
         .find_map(|rec| {
