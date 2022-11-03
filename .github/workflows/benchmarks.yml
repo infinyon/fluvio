@@ -35,7 +35,7 @@ jobs:
           key: benches-${{ runner.os }}-unit_fluvio_protocol
 
       - name: Run Benchmarks
-        run: cargo +nightly bench -p fluvio-protocol | tee benchmarks.txt
+        run: cargo bench -p fluvio-protocol -- --output-format bencher | tee benchmarks.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
