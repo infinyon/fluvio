@@ -1,7 +1,7 @@
 name: Benchmarks
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: benchmark-${{ github.ref }}
   cancel-in-progress: true
 
 on:
@@ -46,6 +46,7 @@ jobs:
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
+        if: github.ref == 'refs/heads/main'
         with:
           # What benchmark tool the output.txt came from
           tool: 'cargo'
