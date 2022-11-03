@@ -51,4 +51,12 @@ pub enum SmartModuleInitErrorStatus {
 pub enum SmartModuleInitError {
     #[error("Missing param {0}")]
     MissingParam(String),
+    #[error("Invalid value {value} for param {key} ({reason})")]
+    InvalidParam {
+        key: String,
+        value: String,
+        reason: String,
+    },
+    #[error("{0}")]
+    Other(String),
 }
