@@ -11,8 +11,12 @@ description = "Used by Fluvio SmartModule"
 
 
 [lib]
+bench = false
 crate-type = ['lib']
 
+[[bench]]
+name = "bench"
+harness = false
 
 [features]
 default = ["smartmodule"]
@@ -30,4 +34,5 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = [
 ] }
 
 [dev-dependencies]
+criterion = "0.4.0"
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
