@@ -2611,6 +2611,7 @@ dependencies = [
 name = "fluvio-smartmodule"
 version = "0.3.0"
 dependencies = [
+ "criterion",
  "eyre",
  "fluvio-protocol",
  "fluvio-smartmodule-derive",
