@@ -26,7 +26,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           # Additional non workspace directories, separated by newlines
-          key: ${{ runner.os }}-${{  }}
+          key: benches-${{ runner.os }}-unit_fluvio_protocol-rust
 
       - name: Cache Benchmark data
         uses: actions/cache@v1
