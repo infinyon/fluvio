@@ -2484,7 +2484,6 @@ dependencies = [
  "futures 0.3.25",
  "once_cell",
  "semver 1.0.14",
- "serde",
  "thiserror",
  "tokio-util",
  "tracing",
