@@ -25,6 +25,7 @@ pub use client::TableFormatConfig;
 
 mod root {
 
+    use crate::check_for_channel_update;
     use std::sync::Arc;
     use std::path::PathBuf;
     use std::process::Command;
