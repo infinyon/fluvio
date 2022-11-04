@@ -158,22 +158,12 @@ mod tests {
     #[test]
     fn test_bytebuf_encodes_transparent_with_vecu8() {
         let raw_data: [u8; 10] = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A];
-
-        // Data encoded for Vec<u8> will have the first 4 bytes (32 bits) for
-        // data length, and the remaining bytes represents the actual data
-        let encoded_expect: [u8; 14] = [
-            0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
-        ];
-
         let mut encoded_data: Vec<u8> = Vec::default();
-        let encoded_res = Vec::<u8>::from(raw_data).encode(&mut encoded_data, 0);
 
-        assert!(encoded_res.is_ok());
-        assert_eq!(
-            encoded_expect,
-            encoded_data.as_slice(),
-            "encoded version doesn't match with expected"
-        );
+        Vec::<u8>::from(raw_data)
+            .encode(&mut encoded_data, 0)
+            .expect("Failed to encode Vec<u8>");
+
         assert_eq!(encoded_data[3], 0x0A, "the length value doesnt match");
 
         let mut bytebuf_encoded: Vec<u8> = Vec::default();
@@ -182,7 +172,7 @@ mod tests {
         assert!(encode_bytebuf_res.is_ok());
         assert_eq!(
             bytebuf_encoded,
-            encoded_expect.as_slice(),
+            encoded_data.as_slice(),
             "encoded version doesn't match with expected"
         );
         assert_eq!(
@@ -196,41 +186,36 @@ mod tests {
     #[test]
     fn test_bytebuf_decode_transparent_with_vecu8() {
         let raw_data: [u8; 10] = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A];
-        let encoded_expect: [u8; 14] = [
-            0x00, 0x00, 0x00, 0x0A, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,
-        ];
 
         let mut encoded_data: Vec<u8> = Vec::default();
-        let is_encode_vecu8_ok = Vec::<u8>::from(raw_data).encode(&mut encoded_data, 0);
+        Vec::<u8>::from(raw_data)
+            .encode(&mut encoded_data, 0)
+            .expect("Failed to encode Vec<u8>");
 
         let mut bytebuf_encoded = Vec::default();
-        let is_encode_bytebuf_ok =
-            ByteBuf::from(Vec::from(raw_data)).encode(&mut bytebuf_encoded, 0);
+        ByteBuf::from(Vec::from(raw_data))
+            .encode(&mut bytebuf_encoded, 0)
+            .expect("Failed to encode ByteBuf");
 
-        assert!(is_encode_vecu8_ok.is_ok());
-        assert!(is_encode_bytebuf_ok.is_ok());
         assert_eq!(
+            bytebuf_encoded,
             encoded_data.as_slice(),
-            encoded_expect,
-            "the encoded output doesn't match with the expected for Vec<u8>"
-        );
-        assert_eq!(
-            bytebuf_encoded, encoded_expect,
             "the encoded output doesn't match with the expected for Vec<u8>"
         );
 
         let mut decoded_vecu8: Vec<u8> = Vec::default();
-        let decoded_vecu8_res = decoded_vecu8.decode(&mut Cursor::new(&encoded_expect), 0);
+        decoded_vecu8
+            .decode(&mut Cursor::new(&encoded_data.clone()), 0)
+            .expect("Failed to decode Vec<u8>");
 
-        assert!(decoded_vecu8_res.is_ok());
         assert_eq!(decoded_vecu8.len(), 10);
 
         let mut decoded_bytebuf: ByteBuf = ByteBuf::default();
-        let decoded_bytebuf_res = decoded_bytebuf.decode(&mut Cursor::new(&encoded_expect), 0);
+        decoded_bytebuf
+            .decode(&mut Cursor::new(&encoded_data.clone()), 0)
+            .expect("Failed to decode ByteBuf");
 
-        assert!(decoded_bytebuf_res.is_ok());
         assert_eq!(decoded_bytebuf.inner.len(), 10);
-
         assert_eq!(decoded_bytebuf.inner, decoded_vecu8);
     }
 }
