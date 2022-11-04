@@ -94,38 +94,6 @@ impl Encoder for ByteBuf {
     }
 }
 
-#[cfg(feature = "use_serde")]
-mod base64 {
-    use serde::{Serialize, Deserialize};
-    use serde::{Deserializer, Serializer};
-
-    use crate::ByteBuf;
-
-    impl Serialize for ByteBuf {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            let base64 = base64::encode(&self.inner);
-            String::serialize(&base64, serializer)
-        }
-    }
-
-    impl<'de> Deserialize<'de> for ByteBuf {
-        fn deserialize<D>(d: D) -> Result<ByteBuf, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            let b64 = String::deserialize(d)?;
-            let bytes: Vec<u8> =
-                base64::decode(b64.as_bytes()).map_err(serde::de::Error::custom)?;
-            let bytebuf = ByteBuf::from(bytes);
-
-            Ok(bytebuf)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;

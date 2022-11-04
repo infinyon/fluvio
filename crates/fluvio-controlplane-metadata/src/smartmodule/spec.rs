@@ -109,6 +109,7 @@ pub struct SmartModuleWasmSummary {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {
     pub format: SmartModuleWasmFormat,
+    #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
     pub payload: ByteBuf,
 }
 
@@ -156,5 +157,31 @@ pub enum SmartModuleWasmFormat {
 impl Default for SmartModuleWasmFormat {
     fn default() -> SmartModuleWasmFormat {
         SmartModuleWasmFormat::Binary
+    }
+}
+
+#[cfg(feature = "use_serde")]
+mod base64 {
+    use std::ops::Deref;
+
+    use serde::{Serialize, Deserialize};
+    use serde::{Deserializer, Serializer};
+
+    use fluvio_protocol::ByteBuf;
+
+    pub fn serialize<S>(bytebuf: &ByteBuf, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let base64 = base64::encode(bytebuf.deref());
+        String::serialize(&base64, serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<ByteBuf, D::Error> {
+        let b64 = String::deserialize(d)?;
+        let bytes: Vec<u8> = base64::decode(b64.as_bytes()).map_err(serde::de::Error::custom)?;
+        let bytebuf = ByteBuf::from(bytes);
+
+        Ok(bytebuf)
     }
 }

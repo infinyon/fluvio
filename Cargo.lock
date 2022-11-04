@@ -2469,7 +2469,6 @@ dependencies = [
 name = "fluvio-protocol"
 version = "0.8.0"
 dependencies = [
- "base64 0.13.1",
  "bytes 1.2.1",
  "content_inspector",
  "crc32c",
