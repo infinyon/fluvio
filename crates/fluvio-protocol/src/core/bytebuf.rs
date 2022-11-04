@@ -15,6 +15,12 @@ pub struct ByteBuf {
     inner: Bytes,
 }
 
+impl From<Bytes> for ByteBuf {
+    fn from(bytes: Bytes) -> Self {
+        ByteBuf { inner: bytes }
+    }
+}
+
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
         ByteBuf {
