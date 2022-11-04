@@ -188,8 +188,6 @@ impl SmartModuleConfigBuilder {
     }
 }
 
-impl SmartModuleConfig {}
-
 impl SmartModuleConfig {
     pub fn builder() -> SmartModuleConfigBuilder {
         SmartModuleConfigBuilder::default()
@@ -197,6 +195,22 @@ impl SmartModuleConfig {
 
     pub(crate) fn version(&self) -> i16 {
         self.version.unwrap_or(DEFAULT_SMARTENGINE_VERSION)
+    }
+}
+
+#[cfg(feature = "transformation")]
+impl From<crate::transformation::TransformationStep> for SmartModuleConfig {
+    fn from(step: crate::transformation::TransformationStep) -> Self {
+        Self {
+            initial_data: SmartModuleInitialData::None,
+            params: step
+                .with
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect::<std::collections::BTreeMap<String, String>>()
+                .into(),
+            version: None,
+        }
     }
 }
 
