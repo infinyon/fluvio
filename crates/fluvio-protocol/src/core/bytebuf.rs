@@ -6,10 +6,8 @@ use bytes::{Buf, Bytes, BufMut};
 
 use crate::{Encoder, Decoder, Version};
 
-/// Represnts a SmartModule WASM File bytes.
-///
-/// Provides a `Encoder` and `Decoder` implementation optimized for WASM files
-/// used in SmartModules.
+/// Bytes Buffer with an optimized implementation for encoding and decoding.
+/// Useful for handling an immutable set of bytes.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ByteBuf {
     inner: Bytes,
