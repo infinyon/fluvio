@@ -13,7 +13,7 @@ on:
       - master
 
 permissions:
-  pull-requests: write
+  content: write
 
 jobs:
   unit_fluvio_protocol:
