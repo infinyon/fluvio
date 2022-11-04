@@ -7,8 +7,12 @@ mod engine;
 pub use engine::*;
 pub mod instance;
 
+pub mod metrics;
+
 pub type WasmSlice = (i32, i32, u32);
 pub type Version = i16;
 
 #[cfg(test)]
 mod fixture;
+
+mod state;

@@ -126,12 +126,10 @@ test-permission-user1:
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
-# smoke-test-k8: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8: build_k8_image smoke-test
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
-# smoke-test-k8-tls: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8-tls: build_k8_image smoke-test
 
@@ -140,7 +138,6 @@ smoke-test-k8-tls-policy-setup:
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization $(EXTRA_ARG)
-# smoke-test-k8-tls-policy: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls-policy: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8-tls-policy: build_k8_image smoke-test
 
@@ -185,26 +182,31 @@ endif
 cli-platform-cross-version-test:
 	bats -t ./tests/cli/cli-platform-cross-version.bats
 
-cli-smoke:
-	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
-	bats ./tests/cli/smoke_tests/non-concurrent/cluster-delete.bats
+cli-fluvio-smoke:
+	bats $(shell ls -1 ./tests/cli/fluvio_smoke_tests/*.bats | sort -R)
+	bats ./tests/cli/fluvio_smoke_tests/non-concurrent/cluster-delete.bats
+
+cli-smdk-smoke:
+	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
 
 cli-basic-test:
-	bats ./tests/cli/smoke_tests/e2e-basic.bats
+	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 
 cli-smartmodule-all-test:
-	bats  ./tests/cli/smoke_tests/e2e-smartmodule-basic.bats
+	bats  ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
 
 cli-smartmodule-aggregate-test:
-	bats  -f aggregate  ./tests/cli/smoke_tests/e2e-smartmodule-basic.bats
+	bats  -f aggregate  ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
 
 
 cli-smartmodule-basic-test:
-	bats   ./tests/cli/smoke_tests/smartmodule-basic.bats
+	bats   ./tests/cli/fluvio_smoke_tests/smartmodule-basic.bats
 
 stats-test:
 	$(TEST_BIN) stats -- $(VERBOSE_FLAG) --tolerance=5
 
+cli-smdk-basic-test:
+	SMDK_BIN=$(shell readlink -f $(SMDK_BIN)) bats   ./tests/cli/smdk_smoke_tests/smdk-basic.bats
 
 # test rbac
 #

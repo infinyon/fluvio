@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Error;
+use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::{instrument, debug, trace};
 
 use fluvio_protocol::{Encoder};
@@ -19,16 +20,18 @@ pub(crate) trait BatchSmartEngine {
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
+        metric: &SmartModuleChainMetrics,
     ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error>;
 }
 
 impl BatchSmartEngine for SmartModuleChainInstance {
-    #[instrument(skip(self, iter, max_bytes))]
+    #[instrument(skip(self, iter, max_bytes, metric))]
     fn process_batch(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         _join_last_record: Option<&Record>,
+        metric: &SmartModuleChainMetrics,
     ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
         let mut smartmodule_batch = Batch::<MemoryRecords>::default();
         smartmodule_batch.base_offset = -1; // indicate this is uninitialized
@@ -67,7 +70,7 @@ impl BatchSmartEngine for SmartModuleChainInstance {
             let input =
                 SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
 
-            let output = self.process(input)?;
+            let output = self.process(input, metric)?;
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;

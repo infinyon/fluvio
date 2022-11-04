@@ -5,10 +5,14 @@ use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
 use crate::FLUVIO_EXTENSIONS_DIR;
-use fluvio_types::defaults::CLI_CONFIG_PATH;
 use crate::error::{Result, CliError};
 
 pub const FLUVIO_DIR: &str = "FLUVIO_DIR";
+
+#[cfg(feature = "default")]
+use fluvio_types::defaults::CLI_CONFIG_PATH;
+#[cfg(not(feature = "default"))]
+pub const CLI_CONFIG_PATH: &str = ".fluvio";
 
 fn fluvio_base_dir() -> Result<PathBuf> {
     if let Ok(dir) = std::env::var(FLUVIO_DIR) {
@@ -169,7 +173,7 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
     let parent = bin_path
         .parent()
         .ok_or_else(|| IoError::new(ErrorKind::NotFound, "parent directory not found"))?;
-    std::fs::create_dir_all(&parent)?;
+    std::fs::create_dir_all(parent)?;
 
     // Create a temporary dir to write file to
     let tmp_dir = tempdir::TempDir::new_in(parent, "fluvio-tmp")?;
@@ -183,7 +187,7 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
     make_executable(&mut tmp_file)?;
 
     // Rename (atomic move on unix) temp file to destination
-    std::fs::rename(&tmp_path, &bin_path)?;
+    std::fs::rename(&tmp_path, bin_path)?;
 
     Ok(())
 }

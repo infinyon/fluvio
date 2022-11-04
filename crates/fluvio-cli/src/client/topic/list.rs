@@ -33,7 +33,7 @@ impl ListTopicsOpt {
         debug!("list topics {:#?} ", output_type);
         let admin = fluvio.admin().await;
 
-        let topics = admin.list::<TopicSpec, _>(vec![]).await?;
+        let topics = admin.all::<TopicSpec>().await?;
         display::format_response_output(out, topics, output_type)?;
         Ok(())
     }

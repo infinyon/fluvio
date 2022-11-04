@@ -23,14 +23,14 @@ default = ["fluvio-future", "fluvio-types"]
 [dependencies]
 colored = "2"
 color-eyre = { version = "0.6.0", default-features = false }
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
+clap = { version = "4.0.9", features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 tracing = "0.1.19"
 cfg-if = "1.0"
 dirs = "4.0.0"
 
 fluvio-cli-common = { path = "../fluvio-cli-common" }
 fluvio-channel = { path = "../fluvio-channel" }
-fluvio-future = { version = "0.4.0", features = ["task", "subscriber"], optional = true }
+fluvio-future = { version = "0.4.0", features = ["task", "subscriber", "native2_tls"], optional = true }
 fluvio-types = { path = "../fluvio-types", default-features = false, optional = true }
 fluvio-package-index = { path = "../fluvio-package-index" }
 

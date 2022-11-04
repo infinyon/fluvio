@@ -12,10 +12,11 @@ use async_rwlock::RwLockReadGuard;
 use async_rwlock::RwLockWriteGuard;
 
 use crate::core::{MetadataItem, Spec};
+
 use super::MetadataStoreObject;
 use super::{DualEpochMap, DualEpochCounter, Epoch, EpochChanges};
 use super::actions::LSUpdate;
-use super::event::{EventPublisher};
+use super::event::EventPublisher;
 
 pub use listener::ChangeListener;
 pub type MetadataChanges<S, C> = EpochChanges<MetadataStoreObject<S, C>>;
@@ -84,7 +85,7 @@ where
 
     /// write guard, this is private, use sync API to make changes
     #[inline(always)]
-    pub async fn write<'a>(
+    async fn write<'a>(
         &'_ self,
     ) -> RwLockWriteGuard<'_, DualEpochMap<S::IndexKey, MetadataStoreObject<S, C>>> {
         self.store.write().await
@@ -172,6 +173,11 @@ where
     /// create new change listener
     pub fn change_listener(self: &Arc<Self>) -> ChangeListener<S, C> {
         ChangeListener::new(self.clone())
+    }
+
+    /// returns once there is at least one change recorded by the the event_publisher
+    pub async fn wait_for_first_change(self: &Arc<Self>) {
+        self.change_listener().listen().await;
     }
 }
 
@@ -282,7 +288,6 @@ where
         drop(write_guard);
 
         self.event_publisher.store_change(epoch);
-        self.event_publisher.notify();
 
         debug!(
             "Sync all: <{}:{}> [add:{}, mod_spec:{}, mod_status: {}, mod_meta: {}, del:{}], ",
@@ -373,7 +378,6 @@ where
 
         debug!("notify epoch changed: {}", epoch);
         self.event_publisher.store_change(epoch);
-        self.event_publisher.notify();
 
         debug!(
             "Apply changes {} [add:{},mod_spec:{},mod_status: {},mod_update: {}, del:{},epoch: {}",
@@ -442,7 +446,7 @@ mod listener {
         }
 
         #[inline]
-        pub fn event_publisher(&self) -> &EventPublisher {
+        fn event_publisher(&self) -> &EventPublisher {
             self.store.event_publisher()
         }
 
@@ -450,7 +454,7 @@ mod listener {
         /// this should be done before event listener
         /// to ensure no events are missed
         #[inline]
-        pub fn has_change(&mut self) -> bool {
+        pub fn has_change(&self) -> bool {
             self.event_publisher().current_change() > self.last_change
         }
 
@@ -474,7 +478,7 @@ mod listener {
             self.event_publisher().current_change()
         }
 
-        pub async fn listen(&mut self) {
+        pub async fn listen(&self) {
             if self.has_change() {
                 trace!("before has change: {}", self.last_change());
                 return;
@@ -662,14 +666,17 @@ mod test_notify {
 
     use std::sync::Arc;
     use std::time::Duration;
-    use std::sync::atomic::AtomicI64;
+    use std::sync::atomic::{AtomicI64, AtomicBool};
     use std::sync::atomic::Ordering::SeqCst;
 
+    use async_std::task::JoinHandle;
+    use tokio::select;
     use tracing::debug;
 
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
+    use crate::core::{Spec, MetadataItem};
     use crate::store::actions::LSUpdate;
     use crate::store::event::SimpleEvent;
     use crate::fixture::{TestSpec, DefaultTest, TestMeta};
@@ -702,8 +709,6 @@ mod test_notify {
         }
 
         async fn dispatch_loop(mut self) {
-            use tokio::select;
-
             debug!("entering loop");
 
             let mut spec_listener = self.store.change_listener();
@@ -760,5 +765,102 @@ mod test_notify {
         sleep(Duration::from_millis(1)).await;
 
         //  assert_eq!(last_change.load(SeqCst), 4);
+    }
+    #[fluvio_future::test]
+    async fn test_change_listener_non_blocking() {
+        let mut timer = sleep(Duration::from_millis(5));
+        let store = Arc::new(DefaultTestStore::default());
+        let listener = store.change_listener();
+
+        // no events, this should timeout
+        select! {
+
+            _ = listener.listen() => {
+            panic!("test failed");
+            },
+            _ = &mut timer => {
+                // test succeeds
+            }
+
+        }
+    }
+
+    #[test]
+    fn test_wait_for_first_change_assumptions() {
+        let topic_store = Arc::new(DefaultTestStore::default());
+
+        // wait_for_first_change() requires that ChangeListener is initialized with current_change = 0
+        assert_eq!(0, topic_store.change_listener().current_change())
+    }
+
+    #[fluvio_future::test]
+    async fn test_change_listener() {
+        let topic_store = Arc::new(DefaultTestStore::default());
+        let last_change = Arc::new(AtomicI64::new(0));
+        let shutdown = SimpleEvent::shared();
+        let topic_name = "topic";
+        let initial_topic = DefaultTest::with_spec(topic_name, TestSpec::default());
+        let has_been_updated = Arc::new(AtomicBool::default());
+
+        // Start a batch of listeners before changes have been.
+        let jh = start_batch_of_test_listeners(topic_store.clone(), has_been_updated.clone());
+        TestController::start(topic_store.clone(), shutdown.clone(), last_change.clone());
+
+        // set flag that we are about to update, then do the update
+        has_been_updated.store(true, std::sync::atomic::Ordering::Relaxed);
+        let _ = topic_store.sync_all(vec![initial_topic.clone()]).await;
+
+        // make sure that every listener got notified and returned
+        for j in jh {
+            j.await
+        }
+
+        // Test batch again with a store that already has updates
+        let jh = start_batch_of_test_listeners(topic_store.clone(), has_been_updated.clone());
+        // make sure that every listener got notified and returned
+        for j in jh {
+            j.await
+        }
+
+        // update with apply_changes
+        let topic = DefaultTest::with_spec(topic_name, TestSpec::default());
+
+        let _ = topic_store.apply_changes(vec![LSUpdate::Mod(topic)]).await;
+
+        // Test batch again to make sure returns correctly after an apply_changes
+        let jh = start_batch_of_test_listeners(topic_store, has_been_updated);
+        // make sure that every listener got notified and returned
+        for j in jh {
+            j.await
+        }
+
+        // wait for controller to sync
+        sleep(Duration::from_millis(100)).await;
+        shutdown.notify();
+        sleep(Duration::from_millis(1)).await;
+    }
+
+    fn start_batch_of_test_listeners(
+        store: Arc<LocalStore<TestSpec, TestMeta>>,
+        has_been_updated: Arc<AtomicBool>,
+    ) -> Vec<JoinHandle<()>> {
+        (0..10u32)
+            // let jh: Vec<()> = (0..10u32)
+            .map(|_| {
+                let store = store.clone();
+
+                spawn(listener_thread(store, has_been_updated.clone()))
+            })
+            .collect()
+    }
+
+    async fn listener_thread<S, C>(store: Arc<LocalStore<S, C>>, has_been_updated: Arc<AtomicBool>)
+    where
+        S: Spec,
+        C: MetadataItem,
+    {
+        store.wait_for_first_change().await;
+        // Make sure that we never return before we update the store
+        assert!(has_been_updated.load(std::sync::atomic::Ordering::Relaxed));
     }
 }

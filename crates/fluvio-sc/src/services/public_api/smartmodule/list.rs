@@ -9,13 +9,15 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec, SmartModulePack
 use fluvio_sc_schema::AdminSpec;
 use fluvio_stream_dispatcher::store::StoreContext;
 
-use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
+use fluvio_sc_schema::objects::{ListResponse, Metadata};
+use fluvio_sc_schema::objects::ListFilter;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-#[instrument(skip(filters, auth))]
+#[instrument(skip(filters, auth, object_ctx))]
 pub(crate) async fn fetch_smart_modules<AC: AuthContext, M>(
-    filters: Vec<NameFilter>,
+    filters: Vec<ListFilter>,
+    summary: bool,
     auth: &AC,
     object_ctx: &StoreContext<SmartModuleSpec, M>,
 ) -> Result<ListResponse<SmartModuleSpec>>
@@ -41,14 +43,14 @@ where
     // convert filter into key filter
     let mut sm_keys = vec![];
     for filter in filters.into_iter() {
-        sm_keys.push(SmartModulePackageKey::from_qualified_name(&filter)?);
+        sm_keys.push(SmartModulePackageKey::from_qualified_name(&filter.name)?);
     }
 
     let reader = object_ctx.store().read().await;
     let objects: Vec<Metadata<SmartModuleSpec>> = reader
         .values()
         .filter_map(|value| {
-            println!("value: {:#?}", value);
+            //println!("value: {:#?}", value);
             if sm_keys.is_empty()
                 || sm_keys
                     .iter()
@@ -61,14 +63,23 @@ where
                     .count()
                     > 0
             {
-                Some(AdminSpec::convert_from(value))
+                debug!("found matching smart module: {:#?}", value.spec);
+                if summary {
+                    Some(Metadata {
+                        name: value.key().clone(),
+                        spec: value.spec().clone().summary(),
+                        status: value.status().clone(),
+                    })
+                } else {
+                    Some(AdminSpec::convert_from(value))
+                }
             } else {
                 None
             }
         })
         .collect();
 
-    debug!(fetch_items = objects.len(),);
+    debug!(fetched_items = objects.len(),);
     trace!("fetch {:#?}", objects);
 
     Ok(ListResponse::new(objects))
@@ -128,7 +139,7 @@ mod test {
         let sm_ctx = StoreContext::new_with_store(Arc::new(local_sm_store));
         assert_eq!(sm_ctx.store().read().await.len(), 2);
         assert_eq!(
-            fetch_smart_modules(vec![], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec![], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -136,7 +147,7 @@ mod test {
             2
         );
         assert_eq!(
-            fetch_smart_modules(vec!["test".to_owned()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["test".to_owned().into()], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -145,7 +156,7 @@ mod test {
         );
 
         assert_eq!(
-            fetch_smart_modules(vec!["sm1".to_owned()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["sm1".to_owned().into()], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()
@@ -155,7 +166,7 @@ mod test {
 
         // no matching
         assert_eq!(
-            fetch_smart_modules(vec!["sm2".to_owned()], &root_auth, &sm_ctx)
+            fetch_smart_modules(vec!["sm2".to_owned().into()], false, &root_auth, &sm_ctx)
                 .await
                 .expect("search")
                 .inner()

@@ -54,8 +54,7 @@ impl NamedProp {
 
         if let Some(max) = self.attrs.max_version {
             quote! {
-                #[allow(clippy::double_comparisons)]
-                if version >= #min && version <= #max {
+                if (#min..=#max).contains(&version) {
                     #field_stream
                 } else {
                     tracing::trace!("Field: <{}> is skipped because version: {} is outside min: {}, max: {}",stringify!(#field_name),version,#min,#max);
@@ -93,8 +92,7 @@ impl UnnamedProp {
 
         if let Some(max) = self.attrs.max_version {
             quote! {
-                #[allow(clippy::double_comparisons)]
-                if version >= #min && version <= #max {
+                if (#min..=#max).contains(&version) {
                     #field_stream
                 } else {
                     tracing::trace!("Field from tuple struct:is skipped because version: {} is outside min: {}, max: {}",version,#min,#max);

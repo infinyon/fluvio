@@ -97,7 +97,7 @@ mod extended {
                 trace!(
                     name = %k8_obj.metadata.name,
                     "skipping non spg service");
-                Err(K8ConvertError::Skip(k8_obj))
+                Err(K8ConvertError::Skip(Box::new(k8_obj)))
             }
         }
     }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use fluvio_smartengine::{SmartModuleChainInstance};
-use tracing::{debug, error, instrument, trace};
+use tracing::{debug, error, instrument, trace, warn};
 use futures_util::StreamExt;
 use tokio::select;
 
@@ -34,6 +34,8 @@ use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::batch::BatchSmartEngine;
 use crate::smartengine::file_batch::FileBatchIterator;
+use crate::core::metrics::SpuMetrics;
+use crate::traffic::TrafficType;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -47,6 +49,7 @@ pub struct StreamFetchHandler {
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
+    metrics: Arc<SpuMetrics>,
 }
 
 impl StreamFetchHandler {
@@ -134,21 +137,17 @@ impl StreamFetchHandler {
         debug!("request: {:#?}", msg);
         let version = header.api_version();
 
-        let derivedstream_ctx = match SmartModuleContext::extract(
-            msg.wasm_payload,
-            msg.smartmodule,
-            msg.derivedstream,
-            version,
-            &ctx,
-        )
-        .await
-        {
-            Ok(ctx) => ctx,
-            Err(error_code) => {
-                send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
-                return Ok(());
-            }
-        };
+        let derivedstream_ctx =
+            match SmartModuleContext::try_from(msg.smartmodules, msg.derivedstream, version, &ctx)
+                .await
+            {
+                Ok(ctx) => ctx,
+                Err(error_code) => {
+                    warn!("smartmodule context init failed: {:?}", error_code);
+                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                    return Ok(());
+                }
+            };
 
         let max_bytes = msg.max_bytes as u32;
         // compute max fetch bytes depends on smart stream
@@ -181,6 +180,7 @@ impl StreamFetchHandler {
             stream_id,
             leader_state,
             max_fetch_bytes,
+            metrics: ctx.metrics(),
         };
 
         if let Err(err) = handler.process(starting_offset, derivedstream_ctx).await {
@@ -405,7 +405,14 @@ impl StreamFetchHandler {
             Ok(slice) => {
                 file_partition_response.high_watermark = slice.end.hw;
                 file_partition_response.log_start_offset = slice.start;
+
                 if let Some(file_slice) = slice.file_slice {
+                    self.metrics.outbound.increase(
+                        self.header.is_connector(),
+                        (slice.end.hw - slice.start) as u64,
+                        file_slice.len(),
+                    );
+
                     file_partition_response.records = file_slice.into();
                 }
                 slice.end
@@ -448,6 +455,7 @@ impl StreamFetchHandler {
                         &mut file_batch_iterator,
                         self.max_bytes as usize,
                         join_last_record.map(|s| s.inner()),
+                        self.metrics.chain_metrics(),
                     )
                     .map_err(|err| {
                         StreamFetchError::Fetch(ErrorCode::Other(format!(

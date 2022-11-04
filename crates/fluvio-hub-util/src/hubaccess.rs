@@ -16,13 +16,19 @@ use crate::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 // in .fluvio/hub/hcurrent
 const ACCESS_FILE_PTR: &str = "hcurrent";
 const ACCESS_FILE_DEF: &str = "default"; // default profile name
-const ACTION_DOWNLOAD: &str = "dl";
-const ACTION_PUBLISH: &str = "pbl";
-const ACTION_CREATE_HUBID: &str = "chid";
+
+pub const ACTION_LIST: &str = "list";
+pub const ACTION_LIST_WITH_META: &str = "lwm";
+pub const ACTION_CREATE_HUBID: &str = "chid";
+pub const ACTION_DOWNLOAD: &str = "dl";
+pub const ACTION_PUBLISH: &str = "pbl";
+
+const INFINYON_HUB_REMOTE: &str = "INFINYON_HUB_REMOTE";
 
 #[derive(Serialize, Deserialize)]
 pub struct HubAccess {
-    pub remote: String, // remote host url
+    #[serde(skip)]
+    pub remote: String, // remote host url (deprecated for config file)
     pub hubid: String,  // hubid associated with the signing key
     pub pkgkey: String, // package signing key (private)
     pub pubkey: String, // package signing key (public)
@@ -38,9 +44,9 @@ impl HubAccess {
         }
     }
 
-    pub async fn default_load() -> Result<Self> {
+    pub fn default_load(remote: &Option<String>) -> Result<Self> {
         let cfgpath = default_cfg_path()?;
-        HubAccess::load_path(&cfgpath, None)
+        HubAccess::load_path(&cfgpath, None, remote)
     }
 
     pub async fn create_hubid(&self, hubid: &str) -> Result<()> {
@@ -63,21 +69,21 @@ impl HubAccess {
         let status = res.status();
         match status {
             StatusCode::Created => {
-                println!("Hubid {hubid} created!");
+                println!("hub: hubid {hubid} created");
             }
             StatusCode::Ok => {
-                println!("Hubid {hubid} already set");
+                println!("hub: hubid {hubid} is set");
             }
             StatusCode::Forbidden => {
-                let msg = format!("Hubid {hubid} already taken");
+                let msg = format!("hub: hubid {hubid} already taken");
                 return Err(HubUtilError::HubAccess(msg));
             }
             StatusCode::Unauthorized => {
-                let msg = "Authorization error, try 'fluvio cloud login'".to_string();
+                let msg = "hub: authorization error, try 'fluvio cloud login'".to_string();
                 return Err(HubUtilError::HubAccess(msg));
             }
             sc => {
-                let msg = format!("Hubid creation error {sc}");
+                let msg = format!("hub: hubid creation error {sc}");
                 return Err(HubUtilError::HubAccess(msg));
             }
         }
@@ -88,11 +94,31 @@ impl HubAccess {
         self.get_action_auth(ACTION_DOWNLOAD).await
     }
 
+    pub async fn get_list_token(&self) -> Result<String> {
+        self.get_action_auth(ACTION_LIST).await
+    }
+
+    pub async fn get_list_with_meta_token(&self) -> Result<String> {
+        self.get_action_auth(ACTION_LIST_WITH_META).await
+    }
+
     pub async fn get_publish_token(&self) -> Result<String> {
         self.get_action_auth(ACTION_PUBLISH).await
     }
 
+    pub async fn get_action_auth_with_token(
+        &self,
+        action: &str,
+        authn_token: &str,
+    ) -> Result<String> {
+        self.make_action_token(action, authn_token.into()).await
+    }
+
     async fn get_action_auth(&self, action: &str) -> Result<String> {
+        self.make_action_token(action, read_infinyon_token()?).await
+    }
+
+    async fn make_action_token(&self, action: &str, authn_token: String) -> Result<String> {
         let host = &self.remote;
         let api_url = format!("{host}/{HUB_API_ACT}");
         let mat = MsgActionToken {
@@ -100,7 +126,6 @@ impl HubAccess {
         };
         let msg_action_token = serde_json::to_string(&mat)
             .map_err(|_e| HubUtilError::HubAccess("Failed access setup".to_string()))?;
-        let authn_token = read_infinyon_token()?;
         let req = surf::get(api_url)
             .content_type(mime::JSON)
             .body_bytes(msg_action_token)
@@ -111,8 +136,8 @@ impl HubAccess {
         let status_code = res.status();
         match status_code {
             StatusCode::Ok => {
-                let action_token = res.body_string().await.map_err(|_e| {
-                    debug!("err {_e} {res:?}");
+                let action_token = res.body_string().await.map_err(|e| {
+                    debug!("err {e} {res:?}");
                     HubUtilError::HubAccess("Failed to parse reply".to_string())
                 })?;
                 Ok(action_token)
@@ -120,7 +145,6 @@ impl HubAccess {
             StatusCode::Unauthorized => Err(HubUtilError::HubAccess(
                 "Unauthorized, please log in with 'fluvio cloud login'".into(),
             )),
-            // surf::http::StatusCode::Forbidden
             _ => {
                 let msg = format!("Unknown error: {}", res.status());
                 Err(HubUtilError::HubAccess(msg))
@@ -145,12 +169,13 @@ impl HubAccess {
     pub fn load_path<P: AsRef<Path>>(
         base_path: P,
         profile_in: Option<String>,
+        remote_url: &Option<String>,
     ) -> Result<HubAccess> {
         let profile = if let Some(profile) = profile_in {
             profile
         } else {
             let profile_ptr_path = base_path.as_ref().join(ACCESS_FILE_PTR);
-            if let Ok(profile) = std::fs::read_to_string(&profile_ptr_path.as_path()) {
+            if let Ok(profile) = std::fs::read_to_string(profile_ptr_path.as_path()) {
                 profile
             } else {
                 info!("Creating initial hub credentials");
@@ -175,8 +200,9 @@ impl HubAccess {
         let profile_path = base_path.as_ref().join(profile);
         info!("loading hub profile {profile_path:?}");
         let buf = std::fs::read_to_string(&profile_path)?;
-        let mut ha: HubAccess = serde_yaml::from_str(&buf).map_err(|_e| {
+        let mut ha: HubAccess = serde_yaml::from_str(&buf).map_err(|e| {
             let spath = profile_path.display();
+            debug!("parse error {e}");
             HubUtilError::HubAccess(format!("Could not load from {spath}"))
         })?;
 
@@ -185,6 +211,17 @@ impl HubAccess {
             ha.gen_pkgkey()?;
             ha.write_hash(base_path)?;
         }
+
+        ha.remote = if let Some(rurl) = remote_url {
+            // remote url from flag
+            info!("using remote={rurl}");
+            rurl.to_string()
+        } else if let Ok(envurl) = std::env::var(INFINYON_HUB_REMOTE) {
+            info!("using {INFINYON_HUB_REMOTE}={envurl}");
+            envurl
+        } else {
+            HUB_REMOTE.to_string()
+        };
 
         Ok(ha)
     }
@@ -199,7 +236,7 @@ impl HubAccess {
     pub fn write_hash<P: AsRef<Path>>(&self, base_path: P) -> Result<()> {
         let mut hash = Sha512::new();
         hash.update(&self.hubid);
-        hash.update(&self.remote);
+        hash.update(&self.pubkey);
         let hname = hex::encode(hash.finalize());
 
         let outpath = base_path.as_ref().join(&hname);

@@ -205,7 +205,7 @@ impl<T> PackageId<T> {
     pub fn registry(&self) -> &Registry {
         match self.registry.as_ref() {
             Some(registry) => registry,
-            None => &*DEFAULT_REGISTRY,
+            None => &DEFAULT_REGISTRY,
         }
     }
 
@@ -213,7 +213,7 @@ impl<T> PackageId<T> {
     pub fn group(&self) -> &GroupName {
         match self.group.as_ref() {
             Some(group) => group,
-            None => &*DEFAULT_GROUP,
+            None => &DEFAULT_GROUP,
         }
     }
 

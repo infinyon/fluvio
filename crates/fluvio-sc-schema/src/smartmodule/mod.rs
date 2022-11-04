@@ -2,19 +2,27 @@ pub use fluvio_controlplane_metadata::smartmodule::*;
 
 mod convert {
 
+    use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmSummary, SmartModuleWasm};
+
     use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
+        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
-            CreateFrom, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
-            ObjectTryFrom, WatchRequest, WatchResponse,
+            CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
+            WatchRequest, WatchResponse,
         },
     };
     use super::SmartModuleSpec;
 
     impl AdminSpec for SmartModuleSpec {
-        type ListFilter = NameFilter;
-        type WatchResponseType = Self;
-        type ListType = Metadata<Self>;
+        fn summary(self) -> Self {
+            Self {
+                meta: self.meta,
+                summary: Some(SmartModuleWasmSummary {
+                    wasm_length: self.wasm.payload.len() as u32,
+                }),
+                wasm: SmartModuleWasm::default(),
+            }
+        }
     }
 
     impl CreatableAdminSpec for SmartModuleSpec {

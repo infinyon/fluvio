@@ -368,7 +368,7 @@ impl ClusterConfigBuilder {
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
         // look at git version instead of compiling git version which may not be same as image version
         let git_version_output = Command::new("git")
-            .args(&["rev-parse", "HEAD"])
+            .args(["rev-parse", "HEAD"])
             .output()
             .expect("should run 'git rev-parse HEAD' to get git hash");
         let git_hash = String::from_utf8(git_version_output.stdout)
@@ -1160,7 +1160,7 @@ impl ClusterInstaller {
         while time.elapsed().unwrap() < timeout_duration {
             debug!("retrieving spu specs");
 
-            let spu = admin.list::<SpuSpec, _>([]).await?;
+            let spu = admin.list::<SpuSpec, String>(vec![]).await?;
 
             debug!(?spu);
 
@@ -1224,48 +1224,48 @@ impl ClusterInstaller {
 
         // Try uninstalling secrets first to prevent duplication error
         Command::new("kubectl")
-            .args(&["delete", "secret", "fluvio-ca", "--ignore-not-found=true"])
-            .args(&["--namespace", &self.config.namespace])
+            .args(["delete", "secret", "fluvio-ca", "--ignore-not-found=true"])
+            .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
 
         Command::new("kubectl")
-            .args(&["delete", "secret", "fluvio-tls", "--ignore-not-found=true"])
-            .args(&["--namespace", &self.config.namespace])
+            .args(["delete", "secret", "fluvio-tls", "--ignore-not-found=true"])
+            .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
 
         Command::new("kubectl")
-            .args(&[
+            .args([
                 "delete",
                 "secret",
                 "fluvio-client-tls",
                 "--ignore-not-found=true",
             ])
-            .args(&["--namespace", &self.config.namespace])
+            .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
 
         Command::new("kubectl")
-            .args(&["create", "secret", "generic", "fluvio-ca"])
-            .args(&["--from-file", ca_cert])
-            .args(&["--namespace", &self.config.namespace])
+            .args(["create", "secret", "generic", "fluvio-ca"])
+            .args(["--from-file", ca_cert])
+            .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
 
         Command::new("kubectl")
-            .args(&["create", "secret", "tls", "fluvio-tls"])
-            .args(&["--cert", server_cert])
-            .args(&["--key", server_key])
-            .args(&["--namespace", &self.config.namespace])
+            .args(["create", "secret", "tls", "fluvio-tls"])
+            .args(["--cert", server_cert])
+            .args(["--key", server_key])
+            .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
 
         Command::new("kubectl")
-            .args(&["create", "secret", "tls", "fluvio-client-tls"])
-            .args(&["--cert", client_cert])
-            .args(&["--key", client_key])
-            .args(&["--namespace", &self.config.namespace])
+            .args(["create", "secret", "tls", "fluvio-client-tls"])
+            .args(["--cert", client_cert])
+            .args(["--key", client_key])
+            .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
 
@@ -1316,7 +1316,7 @@ impl ClusterInstaller {
         let spg_name = self.config.group_name.clone();
         pb.set_message(format!("📝 Checking for existing SPU Group: {}", spg_name));
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SpuGroupSpec, _>([]).await?;
+        let lists = admin.all::<SpuGroupSpec>().await?;
         if lists.is_empty() {
             pb.set_message(format!(
                 "🤖 Creating SPU Group: {} with replicas: {}",

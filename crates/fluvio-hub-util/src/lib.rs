@@ -7,14 +7,14 @@ mod infinyon_tok;
 
 use const_format::concatcp;
 
-pub use hubaccess::HubAccess;
-pub use hubaccess::{MsgActionToken, MsgHubIdReq};
+pub use hubaccess::*;
 pub mod keymgmt;
 pub use package::*;
 pub use packagemeta::*;
 pub use errors::HubUtilError;
 pub use utils::*;
 pub use infinyon_tok::read_infinyon_token;
+pub use surf as http;
 
 pub const CLI_CONFIG_HUB: &str = "hub";
 

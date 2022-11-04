@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
-use fluvio_spu_schema::server::smartmodule::{
-    SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
-    SmartModuleInvocation,
-};
-use tracing::{debug, error, trace, instrument, info};
+use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
+use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
 use futures_util::future::{Either, err, join_all};
@@ -14,15 +11,15 @@ use futures_util::FutureExt;
 use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
 use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, DefaultStreamFetchResponse, WASM_MODULE_API, SMART_MODULE_API,
-    WASM_MODULE_V2_API, GZIP_WASM_API,
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, CHAIN_SMARTMODULE_API,
 };
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Batch;
 
-use crate::FluvioError;
+use crate::{FluvioError};
+use crate::metrics::ClientMetrics;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
@@ -40,17 +37,19 @@ pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
     partition: i32,
     pool: Arc<P>,
+    metrics: Arc<ClientMetrics>,
 }
 
 impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
 {
-    pub fn new(topic: String, partition: i32, pool: Arc<P>) -> Self {
+    pub fn new(topic: String, partition: i32, pool: Arc<P>, metrics: Arc<ClientMetrics>) -> Self {
         Self {
             topic,
             partition,
             pool,
+            metrics,
         }
     }
 
@@ -229,39 +228,51 @@ where
         FluvioError,
     > {
         let (stream, start_offset) = self.request_stream(offset, config).await?;
-        let flattened = stream.flat_map(|batch_result: Result<DefaultStreamFetchResponse, _>| {
-            let response = match batch_result {
-                Ok(response) => response,
-                Err(e) => return Either::Right(once(err(e))),
-            };
+        let metrics = self.metrics.clone();
+        let flattened =
+            stream.flat_map(move |batch_result: Result<DefaultStreamFetchResponse, _>| {
+                let response = match batch_result {
+                    Ok(response) => response,
+                    Err(e) => return Either::Right(once(err(e))),
+                };
 
-            // If we ever get an error_code AND batches of records, we want to first send
-            // the records down the consumer stream, THEN an Err with the error inside.
-            // This way the consumer always gets to read all records that were properly
-            // processed before hitting an error, so that the error does not obscure those records.
-            let batches = response
-                .partition
-                .records
-                .batches
-                .into_iter()
-                .map(|raw_batch| {
-                    let batch: Result<Batch, _> = raw_batch.try_into();
-                    match batch {
-                        Ok(batch) => Ok(batch),
-                        Err(err) => Err(ErrorCode::Other(err.to_string())),
+                // If we ever get an error_code AND batches of records, we want to first send
+                // the records down the consumer stream, THEN an Err with the error inside.
+                // This way the consumer always gets to read all records that were properly
+                // processed before hitting an error, so that the error does not obscure those records.
+
+                let inner_metrics = metrics.clone();
+                let batches =
+                    response
+                        .partition
+                        .records
+                        .batches
+                        .into_iter()
+                        .map(move |raw_batch| {
+                            inner_metrics
+                                .consumer()
+                                .add_records(raw_batch.records_len() as u64);
+                            inner_metrics
+                                .consumer()
+                                .add_bytes(raw_batch.batch_len() as u64);
+
+                            let batch: Result<Batch, _> = raw_batch.try_into();
+                            match batch {
+                                Ok(batch) => Ok(batch),
+                                Err(err) => Err(ErrorCode::Other(err.to_string())),
+                            }
+                        });
+                let error = {
+                    let code = response.partition.error_code;
+                    match code {
+                        ErrorCode::None => None,
+                        _ => Some(Err(code)),
                     }
-                });
-            let error = {
-                let code = response.partition.error_code;
-                match code {
-                    ErrorCode::None => None,
-                    _ => Some(Err(code)),
-                }
-            };
+                };
 
-            let items = batches.chain(error.into_iter());
-            Either::Left(iter(items))
-        });
+                let items = batches.chain(error.into_iter());
+                Either::Left(iter(items))
+            });
 
         Ok((flattened, start_offset))
     }
@@ -284,7 +295,6 @@ where
     > {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
-        use fluvio_protocol::api::Request;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
@@ -302,44 +312,20 @@ where
             fetch_offset: start_absolute_offset,
             isolation: config.isolation,
             max_bytes: config.max_bytes,
+            smartmodules: config.smartmodule,
             ..Default::default()
         };
 
-        // add wasm module if SPU supports it
         let stream_fetch_version = serial_socket
             .versions()
-            .lookup_version(
-                DefaultStreamFetchRequest::API_KEY,
-                DefaultStreamFetchRequest::DEFAULT_API_VERSION,
-            )
-            .unwrap_or((WASM_MODULE_API - 1) as i16);
+            .lookup_version::<DefaultStreamFetchRequest>()
+            .unwrap_or((CHAIN_SMARTMODULE_API - 1) as i16);
         debug!(%stream_fetch_version, "stream_fetch_version");
+        if stream_fetch_version < CHAIN_SMARTMODULE_API {
+            warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
+        }
 
         stream_request.derivedstream = config.derivedstream;
-
-        if let Some(smartmodule) = config.smartmodule {
-            if stream_fetch_version < SMART_MODULE_API as i16 {
-                if let SmartModuleInvocationWasm::AdHoc(wasm) = smartmodule.wasm {
-                    let legacy_module = LegacySmartModulePayload {
-                        wasm: SmartModuleWasmCompressed::Gzip(wasm),
-                        kind: smartmodule.kind,
-                        params: smartmodule.params,
-                    };
-                    legacy_set_wasm(stream_fetch_version, &mut stream_request, legacy_module)?;
-                } else {
-                    return Err(FluvioError::Other(
-                        "SPU does not support persistent WASM".to_owned(),
-                    ));
-                }
-            } else {
-                debug!("Using persistent WASM API");
-                stream_request.smartmodule = Some(smartmodule);
-            }
-        }
-
-        if let Some(module) = config.wasm_module {
-            legacy_set_wasm(stream_fetch_version, &mut stream_request, module)?;
-        }
 
         let mut stream = self
             .pool
@@ -433,33 +419,6 @@ where
 
         Ok((stream, start_absolute_offset))
     }
-}
-
-fn legacy_set_wasm(
-    stream_fetch_version: i16,
-    stream_request: &mut DefaultStreamFetchRequest,
-    mut module: LegacySmartModulePayload,
-) -> Result<(), FluvioError> {
-    if stream_fetch_version < WASM_MODULE_API as i16 {
-        return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
-    }
-
-    if stream_fetch_version < WASM_MODULE_V2_API as i16 {
-        debug!("Using WASM V1 API");
-        let wasm = module.wasm.get_raw()?;
-        stream_request.wasm_module = wasm.into_owned();
-    } else {
-        debug!("Using WASM V2 API");
-        if stream_fetch_version < GZIP_WASM_API as i16 {
-            module.wasm.to_raw()?;
-        } else {
-            debug!("Using compressed WASM API");
-            module.wasm.to_gzip()?;
-        }
-        stream_request.wasm_payload = Some(module);
-    }
-
-    Ok(())
 }
 
 /// Wrap an inner record stream and only stream until a given number of records have been fetched.
@@ -600,10 +559,8 @@ pub struct ConsumerConfig {
     pub(crate) max_bytes: i32,
     #[builder(default)]
     pub(crate) isolation: Isolation,
-    #[builder(private, default, setter(into, strip_option))]
-    pub(crate) wasm_module: Option<LegacySmartModulePayload>,
     #[builder(default)]
-    pub(crate) smartmodule: Option<SmartModuleInvocation>,
+    pub(crate) smartmodule: Vec<SmartModuleInvocation>,
     #[builder(default)]
     pub(crate) derivedstream:
         Option<fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation>,
@@ -655,11 +612,20 @@ impl PartitionSelectionStrategy {
 pub struct MultiplePartitionConsumer {
     strategy: PartitionSelectionStrategy,
     pool: Arc<SpuPool>,
+    metrics: Arc<ClientMetrics>,
 }
 
 impl MultiplePartitionConsumer {
-    pub(crate) fn new(strategy: PartitionSelectionStrategy, pool: Arc<SpuPool>) -> Self {
-        Self { strategy, pool }
+    pub(crate) fn new(
+        strategy: PartitionSelectionStrategy,
+        pool: Arc<SpuPool>,
+        metrics: Arc<ClientMetrics>,
+    ) -> Self {
+        Self {
+            strategy,
+            pool,
+            metrics,
+        }
     }
 
     /// Continuously streams events from a particular offset in the selected partitions
@@ -756,7 +722,9 @@ impl MultiplePartitionConsumer {
             .selection(self.pool.clone())
             .await?
             .into_iter()
-            .map(|(topic, partition)| PartitionConsumer::new(topic, partition, self.pool.clone()))
+            .map(|(topic, partition)| {
+                PartitionConsumer::new(topic, partition, self.pool.clone(), self.metrics.clone())
+            })
             .collect::<Vec<_>>();
 
         let streams_future = consumers

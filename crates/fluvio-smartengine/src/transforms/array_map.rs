@@ -9,7 +9,7 @@ use wasmtime::{AsContextMut, TypedFunc};
 
 use crate::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    WasmState,
+    state::WasmState,
 };
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
@@ -76,7 +76,9 @@ mod test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig};
+    use crate::{
+        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+    };
 
     const SM_ARRAY_MAP: &str = "fluvio_smartmodule_array_map_array";
 
@@ -86,30 +88,27 @@ mod test {
     #[test]
     fn test_array_map() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder().build().unwrap(),
-                read_wasm_module(SM_ARRAY_MAP),
-            )
-            .expect("failed to create array map");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_ARRAY_MAP),
+        );
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
 
         assert_eq!(
-            chain_builder
-                .instances()
-                .first()
-                .expect("first")
-                .transform()
-                .name(),
+            chain.instances().first().expect("first").transform().name(),
             super::ARRAY_MAP_FN_NAME
         );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let metrics = SmartModuleChainMetrics::default();
 
         let input = vec![Record::new("[\"Apple\",\"Banana\",\"Cranberry\"]")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 3); // generate 3 records
         assert_eq!(output.successes[0].value.as_ref(), b"\"Apple\"");

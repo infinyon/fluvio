@@ -13,7 +13,8 @@ name = "fluvio_cli_common"
 path = "src/lib.rs"
 
 [features]
-default = ["fluvio-future","fluvio-types"]
+default = ["fluvio-types"]
+file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
 
 [dependencies]
 tracing = "0.1.19"
@@ -26,7 +27,14 @@ thiserror = "1.0.20"
 http = { version = "0.2", default-features = false}
 isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
 futures = { version = "0.3" , default-features = false, features = ["std", "io-compat"]}
+anyhow = { version = "1.0.38" }
 
 fluvio-package-index = { path = "../fluvio-package-index", features = ["http_agent"] }
 fluvio-types = { path = "../fluvio-types", optional = true }
-fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "native2_tls", "fixture"], optional = true }
+
+fluvio = { path = "../fluvio", default-features = false, optional = true }
+fluvio-protocol = { path = "../fluvio-protocol", optional = true }
+
+[dev-dependencies]
+fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
+tempfile = "3.3.0"

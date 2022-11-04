@@ -64,6 +64,11 @@ If any steps fail in `release.yml`, try to run it a 2nd time before asking in `#
 
 This workflow has been written to be idempotent. It will only perform work if necessary. (Even if run multiple times!)
 
+### Release Connector
+
+Release the connector for the new version of Fluvio in: https://github.com/infinyon/fluvio-connectors.
+
+If there is no major changes in the connector, then only patch or minor version should be updated.
 ## Post-release workflow
 
 This is a mostly **manual** workflow 

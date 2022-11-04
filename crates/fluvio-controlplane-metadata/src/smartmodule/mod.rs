@@ -2,6 +2,7 @@ mod spec;
 mod status;
 mod package;
 mod params;
+mod spec_v1;
 
 pub use self::spec::*;
 pub use self::status::*;

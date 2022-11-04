@@ -495,7 +495,7 @@ pub mod test {
         let profile = config.current_profile().expect("profile should exists");
         assert_eq!(profile.cluster, "local");
 
-        assert!(!config.set_current_profile("dummy"));
+        assert!(!config.set_current_profile(""));
         assert!(config.set_current_profile("local2"));
         assert_eq!(config.current_profile_name().unwrap(), "local2");
 

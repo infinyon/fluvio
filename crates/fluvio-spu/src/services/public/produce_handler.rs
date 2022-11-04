@@ -5,7 +5,7 @@ use tokio::select;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
-use fluvio_protocol::api::RequestKind;
+use fluvio_protocol::api::{RequestKind};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset};
 use fluvio::{Compression};
@@ -26,6 +26,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
     topic: String,
@@ -56,7 +57,7 @@ pub async fn handle_produce_request(
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
-        let topic_result = handle_produce_topic(&ctx, topic_request).await;
+        let topic_result = handle_produce_topic(&ctx, topic_request, header.is_connector()).await;
         topic_results.push(topic_result);
     }
     wait_for_acks(
@@ -78,19 +79,21 @@ pub async fn handle_produce_request(
 async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
     topic_request: DefaultTopicRequest,
+    is_connector: bool,
 ) -> TopicWriteResult {
-    trace!("Handling produce request for topic:");
+    let topic = &topic_request.name;
+
+    trace!("Handling produce request for topic: {topic}");
 
     let mut topic_result = TopicWriteResult {
-        topic: topic_request.name,
+        topic: topic.clone(),
         partitions: vec![],
     };
+
     for partition_request in topic_request.partitions.into_iter() {
-        let replica_id = ReplicaKey::new(
-            topic_result.topic.clone(),
-            partition_request.partition_index,
-        );
-        let partition_response = handle_produce_partition(ctx, replica_id, partition_request).await;
+        let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
+        let partition_response =
+            handle_produce_partition(ctx, replica_id, partition_request, is_connector).await;
         topic_result.partitions.push(partition_response);
     }
     topic_result
@@ -104,6 +107,7 @@ async fn handle_produce_partition<R: BatchRecords>(
     ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
     partition_request: PartitionProduceData<RecordSet<R>>,
+    is_connector: bool,
 ) -> PartitionWriteResult {
     trace!("Handling produce request for partition:");
 
@@ -124,6 +128,7 @@ async fn handle_produce_partition<R: BatchRecords>(
     };
 
     let mut records = partition_request.records;
+
     if validate_records(&records, replica_metadata.compression_type).is_err() {
         error!(%replica_id, "Compression in batch not supported by this topic");
         return PartitionWriteResult::error(replica_id, ErrorCode::CompressionError);
@@ -133,8 +138,15 @@ async fn handle_produce_partition<R: BatchRecords>(
         .write_record_set(&mut records, ctx.follower_notifier())
         .await;
 
+    let metrics = ctx.metrics();
     match write_result {
-        Ok((base_offset, leo)) => PartitionWriteResult::ok(replica_id, base_offset, leo),
+        Ok((base_offset, leo, bytes)) => {
+            metrics
+                .inbound
+                .increase(is_connector, (leo - base_offset) as u64, bytes as u64);
+
+            PartitionWriteResult::ok(replica_id, base_offset, leo)
+        }
         Err(err @ StorageError::BatchTooBig(_)) => {
             error!(%replica_id, "Batch is too big: {:#?}", err);
             PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)

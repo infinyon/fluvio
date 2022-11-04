@@ -1,4 +1,4 @@
-use fluvio_smartengine::{SmartModuleConfig, SmartModuleInitialData, SmartModuleChainInstance};
+use fluvio_smartengine::SmartModuleChainInstance;
 use tracing::{debug, error};
 
 use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
@@ -6,14 +6,15 @@ use fluvio_protocol::link::ErrorCode;
 use fluvio_spu_schema::server::{
     stream_fetch::DerivedStreamInvocation,
     smartmodule::{
-        LegacySmartModulePayload, SmartModuleInvocation, SmartModuleKind, SmartModuleContextData,
-        SmartModuleInvocationWasm, SmartModuleWasmCompressed,
+        SmartModuleInvocation, SmartModuleKind, SmartModuleContextData, SmartModuleInvocationWasm,
     },
 };
 use fluvio::{ConsumerConfig};
 use futures_util::{StreamExt, stream::BoxStream};
+use fluvio_protocol::record::ConsumerRecord;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::smartengine::chain;
 
 pub struct SmartModuleContext {
     pub chain: SmartModuleChainInstance,
@@ -22,234 +23,51 @@ pub struct SmartModuleContext {
 }
 
 impl SmartModuleContext {
-    /// find wasm payload, they can be loaded from payload or from smart module
-    /// smart module has precedent over payload
-    pub async fn extract(
-        wasm_payload: Option<LegacySmartModulePayload>,
-        smartmodule: Option<SmartModuleInvocation>,
+    pub async fn try_from(
+        smartmodule: Vec<SmartModuleInvocation>,
         derivedstream: Option<DerivedStreamInvocation>,
         version: i16,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Option<Self>, ErrorCode> {
-        let derived_sm_modules = if let Some(ss_inv) = derivedstream {
-            Some(extract_derivedstream_context(ss_inv, ctx).await?)
-        } else {
-            None
-        };
-
-        // if module is come from smart stream, then we can use it
-        let module = if let Some(derive) = derived_sm_modules {
-            Some(derive)
-        } else {
-            smartmodule
-        };
-
-        match module {
-            Some(smartmodule_invocation) => Ok(Some(
-                Self::extract_smartmodule_context(smartmodule_invocation, version, ctx).await?,
-            )),
-            None => {
-                if let Some(payload) = wasm_payload {
-                    Ok(Some(Self {
-                        chain: Self::payload_to_smartmodule(payload, version, ctx)?,
-                        right_consumer_stream: None,
-                    }))
-                } else {
-                    Ok(None)
-                }
+        match derivedstream {
+            Some(ss_inv) => {
+                let derived_stream_invocation = derivedstream_to_invocation(ss_inv, ctx).await?;
+                Self::build_smartmodule_context(vec![derived_stream_invocation], version, ctx).await
             }
+            None => Self::build_smartmodule_context(smartmodule, version, ctx).await,
         }
     }
 
     /// given SmartModule invocation and context, generate execution context
-    async fn extract_smartmodule_context(
-        invocation: SmartModuleInvocation,
+    async fn build_smartmodule_context(
+        invocations: Vec<SmartModuleInvocation>,
         version: i16,
         ctx: &DefaultSharedGlobalContext,
-    ) -> Result<Self, ErrorCode> {
+    ) -> Result<Option<Self>, ErrorCode> {
+        if invocations.is_empty() {
+            return Ok(None);
+        }
         // check for right consumer stream exists, this only happens for join type
-        let right_consumer_stream = match invocation.kind {
-            // for join, create consumer stream
-            SmartModuleKind::Join(ref topic)
-            | SmartModuleKind::Generic(SmartModuleContextData::Join(ref topic)) => {
-                let consumer = ctx.leaders().partition_consumer(topic.to_owned(), 0).await;
-
-                Some(
-                    consumer
-                        .stream(fluvio::Offset::beginning())
-                        .await
-                        .map_err(|err| {
-                            error!("error fetching join data {}", err);
-                            ErrorCode::DerivedStreamJoinFetchError
-                        })?
-                        .boxed(),
-                )
+        let mut right_consumer_stream = None;
+        let mut fetched_invocations = Vec::with_capacity(invocations.len());
+        for invocation in invocations {
+            let next_right_stream = extract_right_stream(&invocation, ctx).await?;
+            match (&mut right_consumer_stream, next_right_stream) {
+                (Some(_), Some(_)) => return Err(ErrorCode::DerivedStreamAlreadyExists),
+                (Some(_), None) => {}
+                (current, next) => *current = next,
             }
-            SmartModuleKind::JoinStream {
-                topic: ref _topic,
-                derivedstream: ref derivedstream_name,
-            }
-            | SmartModuleKind::Generic(SmartModuleContextData::JoinStream {
-                topic: ref _topic,
-                derivedstream: ref derivedstream_name,
-            }) => {
-                // first ensure derivedstream exists
-                if let Some(derivedstream) = ctx.derivedstream_store().spec(derivedstream_name) {
-                    // find input which has topic
-                    match derivedstream.spec.input {
-                        DerivedStreamInputRef::Topic(topic) => {
-                            let consumer = ctx
-                                .leaders()
-                                .partition_consumer(topic.name.to_owned(), 0)
-                                .await;
-                            // need to build stream arg
-                            let mut builder = ConsumerConfig::builder();
+            fetched_invocations.push(resolve_invocation(invocation, ctx)?)
+        }
 
-                            builder.derivedstream(Some(DerivedStreamInvocation {
-                                stream: derivedstream_name.to_owned(),
-                                params: invocation.params.clone(),
-                            }));
-
-                            let consume_config = builder.build().map_err(|err| {
-                                error!("error building consumer config {}", err);
-                                ErrorCode::Other(format!("error building consumer config {}", err))
-                            })?;
-                            Some(
-                                consumer
-                                    .stream_with_config(fluvio::Offset::beginning(), consume_config)
-                                    .await
-                                    .map_err(|err| {
-                                        error!("error fetching join data {}", err);
-                                        ErrorCode::DerivedStreamJoinFetchError
-                                    })?
-                                    .boxed(),
-                            )
-                        }
-                        DerivedStreamInputRef::DerivedStream(child_smart) => {
-                            return Err(ErrorCode::DerivedStreamRecursion(
-                                derivedstream_name.to_owned(),
-                                child_smart.name,
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(ErrorCode::DerivedStreamNotFound(
-                        derivedstream_name.to_owned(),
-                    ));
-                }
-            }
-            _ => None,
-        };
-
-        // then get smartmodule context
-        let payload = match invocation.wasm {
-            SmartModuleInvocationWasm::Predefined(name) => {
-                if let Some(smartmodule) = ctx
-                    .smartmodule_localstore()
-                    .find_by_pk_key(&name)
-                    .map_err(|err| {
-                        ErrorCode::Other(format!("error parsing SmartModule name: {}", err))
-                    })?
-                {
-                    let wasm = SmartModuleWasmCompressed::Gzip(smartmodule.spec.wasm.payload);
-                    LegacySmartModulePayload {
-                        wasm,
-                        kind: invocation.kind,
-                        params: invocation.params,
-                    }
-                } else {
-                    return Err(ErrorCode::SmartModuleNotFound { name });
-                }
-            }
-            SmartModuleInvocationWasm::AdHoc(bytes) => {
-                let wasm = SmartModuleWasmCompressed::Gzip(bytes);
-                LegacySmartModulePayload {
-                    wasm,
-                    kind: invocation.kind,
-                    params: invocation.params,
-                }
-            }
-        };
-
-        Ok(Self {
-            chain: Self::payload_to_smartmodule(payload, version, ctx)?,
+        Ok(Some(Self {
+            chain: chain::build_chain(fetched_invocations, version, ctx.smartengine_owned())?,
             right_consumer_stream,
-        })
-    }
-
-    fn payload_to_smartmodule(
-        payload: LegacySmartModulePayload,
-        version: i16,
-        ctx: &DefaultSharedGlobalContext,
-    ) -> Result<SmartModuleChainInstance, ErrorCode> {
-        let raw = payload
-            .wasm
-            .get_raw()
-            .map_err(|err| ErrorCode::SmartModuleInvalid {
-                error: err.to_string(),
-                name: None,
-            })?;
-
-        debug!(len = raw.len(), "SmartModule with bytes");
-
-        let sm_engine = ctx.smartengine_owned();
-        let mut chain_builder = sm_engine.builder();
-
-        let kind = payload.kind.clone();
-
-        let initial_data = match kind {
-            SmartModuleKind::Aggregate { ref accumulator } => {
-                SmartModuleInitialData::with_aggregate(accumulator.clone())
-            }
-            SmartModuleKind::Generic(SmartModuleContextData::Aggregate { ref accumulator }) => {
-                SmartModuleInitialData::with_aggregate(accumulator.clone())
-            }
-            _ => SmartModuleInitialData::default(),
-        };
-
-        println!("param: {:#?}", payload.params);
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .params(payload.params)
-                    .version(version)
-                    .initial_data(initial_data)
-                    .build()
-                    .map_err(|err| ErrorCode::SmartModuleInvalid {
-                        error: err.to_string(),
-                        name: None,
-                    })?,
-                raw,
-            )
-            .map_err(|err| {
-                error!(
-                    error = err.to_string().as_str(),
-                    "Error Instantiating SmartModule"
-                );
-                if let SmartModuleKind::Generic(_) = kind {
-                    ErrorCode::SmartModuleInvalid {
-                        error: err.to_string(),
-                        name: None,
-                    }
-                } else {
-                    ErrorCode::SmartModuleInvalidExports {
-                        kind: format!("{}", kind),
-                        error: err.to_string(),
-                    }
-                }
-            })?;
-        let chain = chain_builder.initialize().map_err(|err| {
-            error!(
-                error = err.to_string().as_str(),
-                "Error Initializing SmartModule"
-            );
-            ErrorCode::SmartModuleChainInitError(err.to_string())
-        })?;
-        Ok(chain)
+        }))
     }
 }
 
-async fn extract_derivedstream_context(
+async fn derivedstream_to_invocation(
     invocation: DerivedStreamInvocation,
     ctx: &DefaultSharedGlobalContext,
 ) -> Result<SmartModuleInvocation, ErrorCode> {
@@ -339,5 +157,106 @@ async fn extract_derivedstream_context(
         }
     } else {
         Err(ErrorCode::DerivedStreamNotFound(name))
+    }
+}
+
+async fn extract_right_stream<'a, 'b>(
+    invocation: &'a SmartModuleInvocation,
+    ctx: &'b DefaultSharedGlobalContext,
+) -> Result<Option<BoxStream<'static, Result<ConsumerRecord, ErrorCode>>>, ErrorCode> {
+    let right_consumer_stream = match invocation.kind {
+        // for join, create consumer stream
+        SmartModuleKind::Join(ref topic)
+        | SmartModuleKind::Generic(SmartModuleContextData::Join(ref topic)) => {
+            let consumer = ctx.leaders().partition_consumer(topic.to_owned(), 0).await;
+
+            Some(
+                consumer
+                    .stream(fluvio::Offset::beginning())
+                    .await
+                    .map_err(|err| {
+                        error!("error fetching join data {}", err);
+                        ErrorCode::DerivedStreamJoinFetchError
+                    })?
+                    .boxed(),
+            )
+        }
+        SmartModuleKind::JoinStream {
+            topic: ref _topic,
+            derivedstream: ref derivedstream_name,
+        }
+        | SmartModuleKind::Generic(SmartModuleContextData::JoinStream {
+            topic: ref _topic,
+            derivedstream: ref derivedstream_name,
+        }) => {
+            // first ensure derivedstream exists
+            if let Some(derivedstream) = ctx.derivedstream_store().spec(derivedstream_name) {
+                // find input which has topic
+                match derivedstream.spec.input {
+                    DerivedStreamInputRef::Topic(topic) => {
+                        let consumer = ctx
+                            .leaders()
+                            .partition_consumer(topic.name.to_owned(), 0)
+                            .await;
+                        // need to build stream arg
+                        let mut builder = ConsumerConfig::builder();
+
+                        builder.derivedstream(Some(DerivedStreamInvocation {
+                            stream: derivedstream_name.to_owned(),
+                            params: invocation.params.clone(),
+                        }));
+
+                        let consume_config = builder.build().map_err(|err| {
+                            error!("error building consumer config {}", err);
+                            ErrorCode::Other(format!("error building consumer config {}", err))
+                        })?;
+                        Some(
+                            consumer
+                                .stream_with_config(fluvio::Offset::beginning(), consume_config)
+                                .await
+                                .map_err(|err| {
+                                    error!("error fetching join data {}", err);
+                                    ErrorCode::DerivedStreamJoinFetchError
+                                })?
+                                .boxed(),
+                        )
+                    }
+                    DerivedStreamInputRef::DerivedStream(child_smart) => {
+                        return Err(ErrorCode::DerivedStreamRecursion(
+                            derivedstream_name.to_owned(),
+                            child_smart.name,
+                        ));
+                    }
+                }
+            } else {
+                return Err(ErrorCode::DerivedStreamNotFound(
+                    derivedstream_name.to_owned(),
+                ));
+            }
+        }
+        _ => None,
+    };
+    Ok(right_consumer_stream)
+}
+
+fn resolve_invocation(
+    invocation: SmartModuleInvocation,
+    ctx: &DefaultSharedGlobalContext,
+) -> Result<SmartModuleInvocation, ErrorCode> {
+    if let SmartModuleInvocationWasm::Predefined(name) = invocation.wasm {
+        if let Some(smartmodule) = ctx
+            .smartmodule_localstore()
+            .find_by_pk_key(&name)
+            .map_err(|err| ErrorCode::Other(format!("error parsing SmartModule name: {}", err)))?
+        {
+            Ok(SmartModuleInvocation {
+                wasm: SmartModuleInvocationWasm::AdHoc(smartmodule.spec.wasm.payload),
+                ..invocation
+            })
+        } else {
+            Err(ErrorCode::SmartModuleNotFound { name })
+        }
+    } else {
+        Ok(invocation)
     }
 }

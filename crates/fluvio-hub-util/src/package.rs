@@ -9,6 +9,7 @@ use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use tracing::{debug, warn};
+use wasmparser::{Parser, Chunk, Payload};
 
 use crate::HUB_SIGNFILE_BASE;
 use crate::keymgmt::{Keypair, PublicKey, Signature};
@@ -24,7 +25,7 @@ use crate::PackageMeta;
 type Result<T> = std::result::Result<T, HubUtilError>;
 
 /// assemble files into an unsigned fluvio package, a file will be created named
-/// packagename-A.B.C.tar
+/// packagename-A.B.C.tar after signing it's called an ipkg
 ///
 /// # Arguments
 /// * pkgmeta: package-meta.yaml path
@@ -81,7 +82,7 @@ fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
         let just_fname = fname.file_name().ok_or_else(|| {
             HubUtilError::ManifestInvalidFile(fname.to_string_lossy().to_string())
         })?;
-        tf.append_path_with_name(&fname, just_fname)?;
+        tf.append_path_with_name(fname, just_fname)?;
         let just_fname = just_fname.to_string_lossy().to_string();
         pm_clean.manifest.push(just_fname);
     }
@@ -111,16 +112,17 @@ fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-struct FileSig {
-    name: String,
-    hash: String,
-    len: u64,
-    sig: String,
+pub struct FileSig {
+    pub name: String,
+    pub hash: String,
+    pub len: u64,
+    pub sig: String,
 }
+
 #[derive(Deserialize, Serialize, Debug)]
-struct PackageSignature {
-    files: Vec<FileSig>,
-    pubkey: String,
+pub struct PackageSignature {
+    pub files: Vec<FileSig>,
+    pub pubkey: String,
 }
 
 struct PackageSignatureBulder {
@@ -150,7 +152,7 @@ impl PackageSignatureBulder {
 
         let fsig = FileSig {
             name: String::from(fname),
-            hash: hex::encode(&sha),
+            hash: hex::encode(sha),
             len: buf.len() as u64,
             sig: hex::encode(sig.to_bytes()),
         };
@@ -224,18 +226,25 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
     signedpkg.finish()?;
     drop(signedpkg);
     signedfile.flush()?;
-    signedfile.persist(&out_pkgfile).map_err(|e| {
-        warn!("{}", e);
-        HubUtilError::PackageSigning(format!("{in_pkgfile}: fault creating signed package"))
-    })?;
-
+    let sf_path = signedfile.path().to_path_buf();
+    if let Err(e) = signedfile.persist(out_pkgfile) {
+        warn!("{}, falling back to copy", e);
+        std::fs::copy(sf_path, out_pkgfile).map_err(|e| {
+            warn!("copy failure {}", e);
+            HubUtilError::PackageSigning(format!(
+                "{in_pkgfile}: fault creating signed package\n{e}"
+            ))
+        })?;
+    }
     Ok(())
 }
 
 /// extract sigfiles out of the package
-fn package_getsigs(pkgfile: &str) -> Result<HashMap<String, PackageSignature>> {
-    let file = std::fs::File::open(pkgfile)?;
-    let mut ar = tar::Archive::new(file);
+pub fn package_getsigs_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    pkgfile: &str,
+) -> Result<HashMap<String, PackageSignature>> {
+    let mut ar = tar::Archive::new(readio);
     let entries = ar.entries()?;
 
     let mut sigs = HashMap::new();
@@ -270,11 +279,19 @@ fn package_getsigs(pkgfile: &str) -> Result<HashMap<String, PackageSignature>> {
     Ok(sigs)
 }
 
-// get a top level file
-pub(crate) fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8>> {
-    let in_pkg = std::fs::File::open(pkgfile)?;
+// get a top level file from a package file
+pub fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8>> {
+    let mut file = std::fs::File::open(pkgfile)?;
+    package_get_topfile_with_readio(&mut file, topfile)
+}
+
+// get a top level file a generic reader trait obj
+pub fn package_get_topfile_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    topfile: &str,
+) -> Result<Vec<u8>> {
     let topfile_p = Path::new(topfile);
-    let mut ar = tar::Archive::new(in_pkg);
+    let mut ar = tar::Archive::new(readio);
     let entries = ar.entries()?;
     for file in entries {
         if file.is_err() {
@@ -287,18 +304,29 @@ pub(crate) fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8
             }
             let mut buf: Vec<u8> = Vec::new();
             f.read_to_end(&mut buf)
-                .map_err(|_| HubUtilError::PackageMissingFile(pkgfile.into()))?;
+                .map_err(|_| HubUtilError::PackageMissingFile(topfile.into()))?;
             return Ok(buf);
         }
     }
-    Err(HubUtilError::PackageMissingFile(pkgfile.into()))
+    Err(HubUtilError::PackageMissingFile(topfile.into()))
 }
 
 /// extract files out of the package manifest
 /// pkgfile: pkg-0.0.1.ipkg
 /// filename: file in manifest
 pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8>> {
-    let manifest_buf = package_get_topfile(pkgfile, HUB_MANIFEST_BLOB)?;
+    let mut file = std::fs::File::open(pkgfile)?;
+    package_get_manifest_file_with_readio(&mut file, filename)
+}
+
+/// extract files out of the package manifest
+/// pkgfile: pkg-0.0.1.ipkg
+/// filename: file in manifest
+pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    filename: &str,
+) -> Result<Vec<u8>> {
+    let manifest_buf = package_get_topfile_with_readio(readio, HUB_MANIFEST_BLOB)?;
     let manifest_io = std::io::Cursor::new(&manifest_buf);
     let gzio = GzDecoder::new(manifest_io);
     let mut ar = tar::Archive::new(gzio);
@@ -315,18 +343,60 @@ pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8
             }
             let mut buf: Vec<u8> = Vec::new();
             f.read_to_end(&mut buf)
-                .map_err(|_| HubUtilError::PackageMissingFile(pkgfile.into()))?;
+                .map_err(|_| HubUtilError::PackageMissingFile(filename.into()))?;
             return Ok(buf);
         }
     }
     Err(HubUtilError::PackageMissingFile(filename.into()))
 }
 
+/// Extracts WASM files from the package manifest ensuring these are valid
+/// WASM files by parsing until encountering a discrepancy.
+pub fn package_get_wasmfile_with_readio<R: std::io::Read>(
+    readio: &mut R,
+    filename: &str,
+) -> Result<Vec<u8>> {
+    let wasm_bytes = package_get_manifest_file_with_readio(readio, filename)?;
+
+    validate_wasm_file(&wasm_bytes)?;
+    Ok(wasm_bytes)
+}
+
+/// Validates a SmartModule's WASM payload to represent a valid WASM file
+/// in the binary format (*.wasm).
+fn validate_wasm_file(mut data: &[u8]) -> Result<()> {
+    let mut parser = Parser::default();
+
+    loop {
+        match parser
+            .parse(data, true)
+            .map_err(|err| HubUtilError::InvalidWasmFileEncountered(err.to_string()))?
+        {
+            // Given that file bytes are present, its not possible to meet
+            // this state.
+            Chunk::NeedMoreData(_) => unreachable!(),
+            Chunk::Parsed { consumed, payload } => {
+                if matches!(&payload, Payload::End(_)) {
+                    // Reaches the EOF with success. At this point the
+                    // whole file has been read and no errors has occured.
+                    return Ok(());
+                }
+
+                // Keeps track of parsing offset.
+                data = &data[consumed..];
+            }
+        };
+    }
+}
+
 /// verify package signature. the pkgsig should contain the desired
 /// public key to verify sgainst
-fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
-    let file = std::fs::File::open(pkgfile)?;
-    let mut ar = tar::Archive::new(file);
+fn package_verify_sig_from_readio<R: std::io::Read>(
+    readio: &mut R,
+    pkgfile: &str,
+    pkgsig: &PackageSignature,
+) -> Result<()> {
+    let mut ar = tar::Archive::new(readio);
     let entries = ar.entries()?;
 
     let pubkey = PublicKey::from_hex(&pkgsig.pubkey)?;
@@ -356,8 +426,6 @@ fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
         };
         let fp = fh.path()?.to_path_buf();
         let fnamestr = fp.to_string_lossy().to_string();
-        // let file_base = fp.file_stem()
-        // 	.ok_or_else(|| HubUtilError::PackageVerify(format!("{} bad filename", pkgfile)))?;
         let file_name = fp
             .file_name()
             .ok_or_else(|| HubUtilError::PackageVerify(format!("{} bad filename", pkgfile)))?;
@@ -378,14 +446,19 @@ fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
             iv.verify_ok = pubkey.verify(&buf, &signature).is_ok();
         }
     }
-    let all_ok = vers.iter().fold(false, |aok, (k, v)| {
-        warn!("Package {pkgfile} file {k} failed verification");
-        aok || (v.seen && v.verify_ok)
+    // not using any or all because of a desire to generate a full log of any
+    // failed per file validation
+    let any_bad = vers.iter().fold(false, |abad, (k, v)| {
+        let pass = v.seen && v.verify_ok;
+        if !pass {
+            warn!("Package {pkgfile} file {k} failed verification");
+        }
+        abad || !pass
     });
-    if all_ok {
-        Ok(())
-    } else {
+    if any_bad {
         Err(HubUtilError::PackageVerify("failed verify".into()))
+    } else {
+        Ok(())
     }
 }
 
@@ -394,9 +467,18 @@ fn package_verify_sig(pkgfile: &str, pkgsig: &PackageSignature) -> Result<()> {
 /// on download the code would be looking for the signature with the hub public key
 /// on upload the caller would generally be looking at owner signature
 pub fn package_verify(pkgfile: &str, pubkey: &PublicKey) -> Result<()> {
+    let mut file = std::fs::File::open(pkgfile)?;
+    package_verify_with_readio(&mut file, pkgfile, pubkey)
+}
+
+pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
+    readio: &mut R,
+    pkgfile: &str,
+    pubkey: &PublicKey,
+) -> Result<()> {
     // locate sig that matches the public key in cred
-    let sigs = package_getsigs(pkgfile)?;
-    let string_pubkey = hex::encode(&pubkey.to_bytes());
+    let sigs = package_getsigs_with_readio(readio, pkgfile)?;
+    let string_pubkey = hex::encode(pubkey.to_bytes());
     let sig = sigs
         .iter()
         .find_map(|rec| {
@@ -407,12 +489,15 @@ pub fn package_verify(pkgfile: &str, pubkey: &PublicKey) -> Result<()> {
             HubUtilError::PackageVerify(format!("{pkgfile} no signature with given key"))
         })?;
 
-    package_verify_sig(pkgfile, sig)?;
+    readio.rewind()?;
+    package_verify_sig_from_readio(readio, pkgfile, sig)?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::fs::read;
+
     use super::*;
     use crate::package_get_meta;
 
@@ -515,5 +600,32 @@ mod tests {
 
         let res_of_missing_file = package_get_manifest_file(SIGNED_PKG_FILE, "does-not-exist");
         assert!(res_of_missing_file.is_err());
+    }
+
+    #[test]
+    fn validates_smartmodule_wasm_binary() {
+        let wasm_bytes =
+            read("tests/sm_ok.wasm").expect("Failed to find 'sm_ok.wasm' file for tests");
+        let result = validate_wasm_file(wasm_bytes.as_slice());
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn validate_input_to_be_wasm_file() {
+        let wasm_bytes = read("tests/hub_package_meta_rw_test.yaml")
+            .expect("Failed to find 'hub_package_meta_rw_test.yaml' file for tests");
+        let result = validate_wasm_file(wasm_bytes.as_slice());
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validates_smartmodule_wasm_binary_corrupt() {
+        let wasm_bytes = read("tests/sm_need_more_data.wasm")
+            .expect("Failed to find 'sm_need_more_data.wasm' file for tests");
+        let result = validate_wasm_file(wasm_bytes.as_slice());
+
+        assert!(result.is_err());
     }
 }

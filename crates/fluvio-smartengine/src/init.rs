@@ -7,10 +7,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use wasmtime::{AsContextMut, TypedFunc};
 
-use crate::{
-    instance::{SmartModuleInstanceContext},
-    WasmState,
-};
+use crate::instance::SmartModuleInstanceContext;
 
 pub(crate) const INIT_FN_NAME: &str = "init";
 type WasmInitFn = TypedFunc<(i32, i32, u32), i32>;
@@ -46,7 +43,7 @@ impl SmartModuleInit {
         &mut self,
         input: SmartModuleInitInput,
         ctx: &mut SmartModuleInstanceContext,
-        store: &mut WasmState,
+        store: &mut impl AsContextMut,
     ) -> Result<()> {
         let slice = ctx.write_input(&input, &mut *store)?;
         let init_output = self.0.call(&mut *store, slice)?;

@@ -1,7 +1,7 @@
 mod create;
 mod list;
 mod delete;
-mod download;
+mod watch;
 
 pub use cmd::SmartModuleCmd;
 
@@ -23,17 +23,15 @@ mod cmd {
     use super::create::CreateSmartModuleOpt;
     use super::list::ListSmartModuleOpt;
     use super::delete::DeleteSmartModuleOpt;
-    use super::download::DownloadSmartModuleOpt;
+    use super::watch::WatchSmartModuleOpt;
 
     #[derive(Debug, Parser)]
     pub enum SmartModuleCmd {
         Create(CreateSmartModuleOpt),
         List(ListSmartModuleOpt),
+        Watch(WatchSmartModuleOpt),
         /// Delete one or more SmartModules with the given name(s)
         Delete(DeleteSmartModuleOpt),
-
-        /// Download a hub smartmodule into the cluster
-        Download(DownloadSmartModuleOpt),
     }
 
     #[async_trait]
@@ -53,7 +51,7 @@ mod cmd {
                 Self::Delete(opt) => {
                     opt.process(out, target).await?;
                 }
-                Self::Download(opt) => {
+                Self::Watch(opt) => {
                     opt.process(out, target).await?;
                 }
             }

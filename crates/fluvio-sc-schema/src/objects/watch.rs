@@ -11,7 +11,7 @@ use fluvio_controlplane_metadata::message::Message;
 use crate::{AdminPublicApiKey, AdminSpec};
 use crate::core::Spec;
 
-use super::{Metadata, ObjectApiEnum};
+use super::{Metadata, ObjectApiEnum, COMMON_VERSION};
 
 ObjectApiEnum!(WatchRequest);
 ObjectApiEnum!(WatchResponse);
@@ -21,33 +21,47 @@ ObjectApiEnum!(WatchResponse);
 #[derive(Debug, Encoder, Default, Decoder)]
 pub struct WatchRequest<S: AdminSpec> {
     epoch: Epoch,
+    #[fluvio(min_version = 10)]
+    pub summary: bool, // if true, only return summary
     data: PhantomData<S>,
+}
+
+impl<S> WatchRequest<S>
+where
+    S: AdminSpec,
+{
+    pub fn summary() -> Self {
+        Self {
+            summary: true,
+            ..Default::default()
+        }
+    }
 }
 
 impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
-    const DEFAULT_API_VERSION: i16 = 9;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiWatchResponse;
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct WatchResponse<S: AdminSpec>
 where
-    <S::WatchResponseType as Spec>::Status: Encoder + Decoder,
+    S::Status: Encoder + Decoder,
 {
-    inner: MetadataUpdate<S::WatchResponseType>,
+    inner: MetadataUpdate<S>,
 }
 
 impl<S> WatchResponse<S>
 where
     S: AdminSpec,
-    <S::WatchResponseType as Spec>::Status: Encoder + Decoder,
+    S::Status: Encoder + Decoder,
 {
-    pub fn new(inner: MetadataUpdate<S::WatchResponseType>) -> Self {
+    pub fn new(inner: MetadataUpdate<S>) -> Self {
         Self { inner }
     }
 
-    pub fn inner(self) -> MetadataUpdate<S::WatchResponseType> {
+    pub fn inner(self) -> MetadataUpdate<S> {
         self.inner
     }
 }

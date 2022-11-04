@@ -1,0 +1,109 @@
+name: Benchmarks
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+permissions:
+  content: write
+
+jobs:
+  unit_fluvio_protocol:
+    name: Fluvio Protocol - Unit Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Cache Rust Cargo files
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Additional non workspace directories, separated by newlines
+          key: benches-${{ runner.os }}-unit_fluvio_protocol-rust
+
+      - name: Cache Benchmark data
+        uses: actions/cache@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          path: ./benches_cache
+          key: benches-${{ runner.os }}-unit_fluvio_protocol
+
+      - name: Run Benchmarks
+        run: cargo bench -p fluvio-protocol -- --output-format bencher | tee fluvio_protocol_benches.txt
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'cargo'
+          # Where the output from the benchmark tool is stored
+          output-file-path: fluvio_protocol_benches.txt
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Leave a commit comment comparing the current branch with the previous
+          comment-always: true
+          # Where the previous data file is stored
+          external-data-json-path: ./benches_cache/benchmark-data.json
+          # Mention @infinyon/developers in the commit comment
+          alert-comment-cc-users: '@infinyon/developers'
+
+  unit_fluvio_smartmodule:
+    name: Fluvio SmartModule - Unit Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+
+      - name: Cache Rust Cargo files
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Additional non workspace directories, separated by newlines
+          key: benches-${{ runner.os }}-unit_fluvio_smartmodule-rust
+
+      - name: Cache Benchmark data
+        uses: actions/cache@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          path: ./benches_cache
+          key: benches-${{ runner.os }}-unit_fluvio_smartmodule
+
+      - name: Run Benchmarks
+        run: cargo bench -p fluvio-smartmodule -- --output-format bencher | tee fluvio_smartmodule_benches.txt
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'cargo'
+          # Where the output from the benchmark tool is stored
+          output-file-path: fluvio_smartmodule_benches.txt
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Leave a commit comment comparing the current branch with the previous
+          comment-always: true
+          # Where the previous data file is stored
+          external-data-json-path: ./benches_cache/benchmark-data.json
+          # Mention @infinyon/developers in the commit comment
+          alert-comment-cc-users: '@infinyon/developers'

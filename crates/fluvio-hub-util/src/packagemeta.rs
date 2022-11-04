@@ -3,6 +3,8 @@ use std::io::Read;
 use std::path::Path;
 use std::fs;
 
+use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
+use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, error};
 
@@ -46,6 +48,21 @@ impl Default for PackageMeta {
 }
 
 impl PackageMeta {
+    /// Retrieves the fully qualified name for the `PackageMeta`.
+    ///
+    /// Eg: `infinyon-example-0.0.1`
+    pub fn id(&self) -> Result<String> {
+        let fluvio_semver = FluvioSemVersion::parse(&self.version)
+            .map_err(|err| HubUtilError::SemVerError(err.to_string()))?;
+        let package_key = SmartModulePackageKey {
+            name: self.name.clone(),
+            group: Some(self.group.clone()),
+            version: Some(fluvio_semver),
+        };
+
+        Ok(package_key.store_id())
+    }
+
     /// Retrives the package name from this package. Eg: `infinyon/example/0.0.1`
     pub fn pkg_name(&self) -> String {
         format!("{}/{}@{}", self.group, self.name, self.version)
@@ -112,7 +129,7 @@ impl PackageMeta {
 
     pub fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()> {
         let serialized = serde_yaml::to_string(&self)?;
-        fs::write(pmetapath, &serialized.as_bytes())?;
+        fs::write(pmetapath, serialized.as_bytes())?;
         Ok(())
     }
 
@@ -155,8 +172,11 @@ impl PackageMeta {
 
         advice.push_str(&validate_lowercase(&self.group, "group"));
         advice.push_str(&validate_allowedchars(&self.group, "group"));
+        advice.push_str(&validate_notempty(&self.group, "group"));
+
         advice.push_str(&validate_lowercase(&self.name, "package name"));
         advice.push_str(&validate_allowedchars(&self.name, "package name"));
+        advice.push_str(&validate_notempty(&self.name, "package name"));
 
         if !advice.is_empty() {
             Err(HubUtilError::PackageVerify(advice))
@@ -178,7 +198,15 @@ pub fn packagename_validate(pkgname: &str) -> Result<()> {
     }
 }
 
-fn validate_lowercase(val: &str, name: &str) -> String {
+pub fn validate_notempty(val: &str, name: &str) -> String {
+    if val.is_empty() {
+        format!("{name} is empty\n")
+    } else {
+        String::new()
+    }
+}
+
+pub fn validate_lowercase(val: &str, name: &str) -> String {
     if val.to_lowercase() != val {
         format!("{name} {val} should be lowercase\n")
     } else {
@@ -186,7 +214,7 @@ fn validate_lowercase(val: &str, name: &str) -> String {
     }
 }
 
-fn validate_allowedchars(val: &str, name: &str) -> String {
+pub fn validate_allowedchars(val: &str, name: &str) -> String {
     let good_chars = val
         .chars()
         .all(|ch| matches!(ch, 'a'..='z' | '0'..='9' | '-' | '_'));
@@ -196,6 +224,15 @@ fn validate_allowedchars(val: &str, name: &str) -> String {
     } else {
         String::new()
     }
+}
+
+pub fn validate_noleading_punct(val: &str, name: &str) -> String {
+    if let Some(c) = val.chars().next() {
+        if matches!(c, '_' | '-') {
+            return format!("{name} {val} no leading punctuation allowed '-' or '_'\n");
+        }
+    }
+    String::new()
 }
 
 /// certain output files are transformed in name vs their package name
@@ -274,6 +311,33 @@ fn builds_obj_key_from_package_name() {
 }
 
 #[test]
+fn hub_package_id() {
+    let pm = PackageMeta {
+        group: "infinyon".into(),
+        name: "example".into(),
+        version: "0.0.1".into(),
+        manifest: ["module.wasm".into()].to_vec(),
+        ..PackageMeta::default()
+    };
+
+    assert_eq!("example-infinyon-0.0.1", pm.id().unwrap());
+}
+
+#[test]
+#[should_panic(expected = "unexpected character 'T' while parsing major version number")]
+fn hub_package_id_complains_invalid_semver() {
+    let pm = PackageMeta {
+        group: "infinyon".into(),
+        name: "example".into(),
+        version: "ThisIsNotSemVer".into(),
+        manifest: ["module.wasm".into()].to_vec(),
+        ..PackageMeta::default()
+    };
+
+    assert_eq!("example-infinyon-0.0.1", pm.id().unwrap());
+}
+
+#[test]
 fn hub_packagefile_name() {
     let pm = PackageMeta {
         group: "infinyon".into(),
@@ -312,7 +376,7 @@ fn hub_package_meta_t_write_then_read() {
         ..PackageMeta::default()
     };
 
-    pm.write(&testfile).expect("error writing package file");
+    pm.write(testfile).expect("error writing package file");
     let pm_read = PackageMeta::read_from_file(testfile).expect("error reading package file");
     assert_eq!(pm, pm_read);
 }
@@ -384,6 +448,11 @@ fn hub_packagemeta_naming_check() {
         PackageMeta {
             group: "halloween".into(),
             name: "tricks/paper".into(),
+            ..PackageMeta::default()
+        },
+        PackageMeta {
+            group: "".into(),
+            name: "thevoid".into(),
             ..PackageMeta::default()
         },
     ];

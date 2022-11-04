@@ -1,9 +1,9 @@
-use std::ops::{Deref, DerefMut};
 use std::fmt::{self, Debug};
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 use derive_builder::Builder;
-use wasmtime::{Engine, Module, IntoFunc, Store, Instance, AsContextMut};
+use tracing::debug;
+use wasmtime::{Engine, Module};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
@@ -11,6 +11,9 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 
 use crate::init::SmartModuleInit;
 use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
+
+use crate::metrics::SmartModuleChainMetrics;
+use crate::state::WasmState;
 use crate::transforms::create_transform;
 
 const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
@@ -23,36 +26,9 @@ impl SmartEngine {
     pub fn new() -> Self {
         Self(Engine::default())
     }
-}
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "wasi")] {
-
-        pub(crate) type State = wasmtime_wasi::WasiCtx;
-        impl SmartEngine {
-            /// create new chain builder
-            pub fn builder(&self) -> SmartModuleChainBuilder {
-                let wasi = wasmtime_wasi::WasiCtxBuilder::new()
-                    .inherit_stderr()
-                    .inherit_stdout()
-                    .build();
-                SmartModuleChainBuilder {
-                    store: Store::new(&self.0, wasi),
-                    instances: vec![],
-                }
-            }
-        }
-    } else  {
-        pub(crate) type State = ();
-        impl SmartEngine {
-            /// create new chain builder
-            pub fn builder(&self) -> SmartModuleChainBuilder {
-                SmartModuleChainBuilder {
-                    store: Store::new(&self.0,()),
-                    instances: vec![],
-                }
-            }
-        }
+    pub(crate) fn new_state(&self) -> WasmState {
+        WasmState::new(&self.0)
     }
 }
 
@@ -62,131 +38,61 @@ impl Debug for SmartEngine {
     }
 }
 
-pub type WasmState = Store<State>;
-
 /// Building SmartModule
+#[derive(Default)]
 pub struct SmartModuleChainBuilder {
-    store: Store<State>,
-    instances: Vec<SmartModuleInstance>,
-}
-
-impl Deref for SmartModuleChainBuilder {
-    type Target = Store<State>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.store
-    }
-}
-
-impl DerefMut for SmartModuleChainBuilder {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.store
-    }
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "wasi")] {
-        impl SmartModuleChainBuilder {
-            pub(crate) fn instantiate<Params, Args>(
-                &mut self,
-                module: &Module,
-                host_fn: impl IntoFunc<State, Params, Args>,
-            ) -> Result<Instance, Error> {
-                let mut linker = wasmtime::Linker::new(self.store.engine());
-                wasmtime_wasi::add_to_linker(&mut linker, |c| c)?;
-                let copy_records_fn_import = module
-                    .imports()
-                    .find(|import| import.name().eq("copy_records"))
-                    .ok_or_else(|| Error::msg("At least one import is required"))?;
-                linker.func_wrap(
-                    copy_records_fn_import.module(),
-                    copy_records_fn_import.name(),
-                    host_fn,
-                )?;
-                linker.instantiate(self.as_context_mut(), module)
-            }
-        }
-    } else  {
-        impl SmartModuleChainBuilder {
-
-            pub(crate) fn instantiate<Params, Args>(
-                &mut self,
-                module: &Module,
-                host_fn: impl IntoFunc<State, Params, Args>,
-            ) -> Result<Instance, Error> {
-
-                use wasmtime::Func;
-
-                let func = Func::wrap(self.as_context_mut(), host_fn);
-                Instance::new(self.as_context_mut(), module, &[func.into()])
-            }
-
-
-
-        }
-    }
+    smart_modules: Vec<(SmartModuleConfig, Vec<u8>)>,
 }
 
 impl SmartModuleChainBuilder {
-    #[cfg(test)]
-    pub(crate) fn instances(&self) -> &Vec<SmartModuleInstance> {
-        &self.instances
-    }
-
     /// Add SmartModule with a single transform and init
-    pub fn add_smart_module(
-        &mut self,
-        config: SmartModuleConfig,
-        bytes: impl AsRef<[u8]>,
-    ) -> Result<()> {
-        let module = Module::new(self.store.engine(), bytes)?;
-
-        let version = config.version();
-        let params = config.params;
-        let initial_data = config.initial_data;
-        let ctx = SmartModuleInstanceContext::instantiate(module, self, params, version)?;
-        let init = SmartModuleInit::try_instantiate(&ctx, &mut self.as_context_mut())?;
-        let transform = create_transform(&ctx, initial_data, &mut self.as_context_mut())?;
-        self.instances
-            .push(SmartModuleInstance::new(ctx, init, transform));
-        Ok(())
+    pub fn add_smart_module(&mut self, config: SmartModuleConfig, bytes: Vec<u8>) {
+        self.smart_modules.push((config, bytes))
     }
 
     /// stop adding smart module and return SmartModuleChain that can be executed
-    pub fn initialize(mut self) -> Result<SmartModuleChainInstance> {
-        for instance in self.instances.iter_mut() {
-            instance.init(&mut self.store)?;
+    pub fn initialize(self, engine: &SmartEngine) -> Result<SmartModuleChainInstance> {
+        let mut instances = Vec::with_capacity(self.smart_modules.len());
+        let mut state = engine.new_state();
+        for (config, bytes) in self.smart_modules {
+            let module = Module::new(&engine.0, bytes)?;
+            let version = config.version();
+            let ctx = SmartModuleInstanceContext::instantiate(
+                &mut state,
+                module,
+                config.params,
+                version,
+            )?;
+            let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
+            let transform = create_transform(&ctx, config.initial_data, &mut state)?;
+            let mut instance = SmartModuleInstance::new(ctx, init, transform);
+            instance.init(&mut state)?;
+            instances.push(instance);
         }
         Ok(SmartModuleChainInstance {
-            store: self.store,
-            instances: self.instances,
+            store: state,
+            instances,
         })
+    }
+}
+
+impl<T: Into<Vec<u8>>> From<(SmartModuleConfig, T)> for SmartModuleChainBuilder {
+    fn from(pair: (SmartModuleConfig, T)) -> Self {
+        let mut result = Self::default();
+        result.add_smart_module(pair.0, pair.1.into());
+        result
     }
 }
 
 /// SmartModule Chain Instance that can be executed
 pub struct SmartModuleChainInstance {
-    store: Store<State>,
+    store: WasmState,
     instances: Vec<SmartModuleInstance>,
 }
 
 impl Debug for SmartModuleChainInstance {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SmartModuleChainInstance")
-    }
-}
-
-impl Deref for SmartModuleChainInstance {
-    type Target = Store<State>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.store
-    }
-}
-
-impl DerefMut for SmartModuleChainInstance {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.store
     }
 }
 
@@ -200,7 +106,15 @@ impl SmartModuleChainInstance {
     /// The output of one smart module is the input of the next smart module.
     /// A single record may result in multiple records.
     /// The output of the last smart module is added to the output of the chain.
-    pub fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
+    pub fn process(
+        &mut self,
+        input: SmartModuleInput,
+        metric: &SmartModuleChainMetrics,
+    ) -> Result<SmartModuleOutput> {
+        let raw_len = input.raw_bytes().len();
+        debug!(raw_len, "sm raw input");
+        metric.add_bytes_in(raw_len as u64);
+
         let base_offset = input.base_offset();
 
         if let Some((last, instances)) = self.instances.split_last_mut() {
@@ -220,7 +134,11 @@ impl SmartModuleChainInstance {
                 }
             }
 
-            last.process(next_input, &mut self.store)
+            let output = last.process(next_input, &mut self.store)?;
+            let records_out = output.successes.len();
+            metric.add_records_out(records_out as u64);
+            debug!(records_out, "sm records out");
+            Ok(output)
         } else {
             Ok(SmartModuleOutput::new(input.try_into()?))
         }
@@ -308,7 +226,10 @@ mod chaining_test {
         Record,
     };
 
-    use crate::{SmartEngine, SmartModuleConfig, SmartModuleInitialData};
+    use crate::{
+        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
+        metrics::SmartModuleChainMetrics,
+    };
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
     const SM_MAP: &str = "fluvio_smartmodule_map";
@@ -319,31 +240,30 @@ mod chaining_test {
     #[test]
     fn test_chain_filter_map() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        let metrics = SmartModuleChainMetrics::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .param("key", "a")
-                    .build()
-                    .unwrap(),
-                read_wasm_module(SM_FILTER_INIT),
-            )
-            .expect("failed to create filter");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .param("key", "a")
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_INIT),
+        );
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder().build().unwrap(),
-                read_wasm_module(SM_MAP),
-            )
-            .expect("failed to create map");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_MAP),
+        );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
         assert_eq!(chain.instances().len(), 2);
 
         let input = vec![Record::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
@@ -353,7 +273,7 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
@@ -366,31 +286,30 @@ mod chaining_test {
     #[test]
     fn test_chain_filter_aggregate() {
         let engine = SmartEngine::new();
-        let mut chain_builder = engine.builder();
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        let metrics = SmartModuleChainMetrics::default();
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .param("key", "a")
-                    .build()
-                    .unwrap(),
-                read_wasm_module(SM_FILTER_INIT),
-            )
-            .expect("failed to create filter");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .param("key", "a")
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_INIT),
+        );
 
-        chain_builder
-            .add_smart_module(
-                SmartModuleConfig::builder()
-                    .initial_data(SmartModuleInitialData::with_aggregate(
-                        "zero".to_string().as_bytes().to_vec(),
-                    ))
-                    .build()
-                    .unwrap(),
-                read_wasm_module(SM_AGGEGRATE),
-            )
-            .expect("failed to create aggegrate");
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .initial_data(SmartModuleInitialData::with_aggregate(
+                    "zero".to_string().as_bytes().to_vec(),
+                ))
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_AGGEGRATE),
+        );
 
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
         assert_eq!(chain.instances().len(), 2);
 
         let input = vec![
@@ -399,7 +318,7 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
@@ -407,13 +326,13 @@ mod chaining_test {
 
         let input = vec![Record::new("nothing")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![Record::new("elephant")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"))
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
@@ -426,13 +345,15 @@ mod chaining_test {
     fn test_empty_chain() {
         //given
         let engine = SmartEngine::new();
-        let chain_builder = engine.builder();
-        let mut chain = chain_builder.initialize().expect("failed to build chain");
+        let chain_builder = SmartModuleChainBuilder::default();
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
         let record = vec![Record::new("input")];
         let input = SmartModuleInput::try_from(record).expect("valid input record");
-
+        let metrics = SmartModuleChainMetrics::default();
         //when
-        let output = chain.process(input).expect("process failed");
+        let output = chain.process(input, &metrics).expect("process failed");
 
         //then
         assert_eq!(output.successes.len(), 1);

@@ -61,6 +61,13 @@ async fn process_smartmodule_request(
 ) -> Status {
     // if there is pkg associated with, we override name
     let store_id = if let Some(meta) = &smartmodule_spec.meta {
+        if !meta.package.is_valid() {
+            return Status::new(
+                name,
+                ErrorCode::SmartModuleError,
+                Some("invalid SmartModule package".to_owned()),
+            );
+        }
         meta.store_id()
     } else {
         name

@@ -9,7 +9,7 @@ use hdrhistogram::Histogram;
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio::consumer::Record;
-use fluvio::{ConsumerConfig, MultiplePartitionConsumer, PartitionConsumer};
+use fluvio::{ConsumerConfig, MultiplePartitionConsumer, PartitionConsumer, RecordKey};
 use fluvio::Offset;
 
 use fluvio_test_derive::fluvio_test;
@@ -18,7 +18,7 @@ use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 use fluvio_future::io::Stream;
 
-use crate::tests::TestRecord;
+use crate::tests::{TestRecord, TestRecordBuilder};
 
 #[derive(Debug, Clone)]
 pub struct ConsumerTestCase {
@@ -28,7 +28,7 @@ pub struct ConsumerTestCase {
 
 impl From<TestCase> for ConsumerTestCase {
     fn from(test_case: TestCase) -> Self {
-        let producer_stress_option = test_case
+        let consumer_stress_option = test_case
             .option
             .as_any()
             .downcast_ref::<ConsumerTestOption>()
@@ -36,7 +36,7 @@ impl From<TestCase> for ConsumerTestCase {
             .to_owned();
         ConsumerTestCase {
             environment: test_case.environment,
-            option: producer_stress_option,
+            option: consumer_stress_option,
         }
     }
 }
@@ -47,6 +47,14 @@ pub struct ConsumerTestOption {
     /// Num of consumers to create
     #[clap(long, default_value = "1")]
     pub consumers: u16,
+
+    /// Number of records to send to the topic before running the test
+    #[clap(long, default_value = "100")]
+    pub num_setup_records: u32,
+
+    /// Size of payload portion of records to send to the topic before running the test
+    #[clap(long, default_value = "1000")]
+    pub setup_record_size: usize,
 
     /// Max records to consume before stopping
     /// Default, stop when end of topic reached
@@ -82,11 +90,15 @@ pub struct ConsumerTestOption {
 
     // This will need to be mutually exclusive w/ num_records
     //// total time we want the consumer to run, in seconds
-    //#[clap(long, parse(try_from_str = parse_seconds), default_value = "60")]
+    //#[clap(long, value_parser=parse_seconds, default_value = "60")]
     //runtime_seconds: Duration,
     /// Opt-in to detailed output printed to stdout
     #[clap(long, short)]
     verbose: bool,
+
+    /// Allow the test to pass if no records are received
+    #[clap(long)]
+    allow_empty_topic: bool,
 }
 
 //fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
@@ -176,13 +188,23 @@ async fn consume_work<S: ?Sized>(
         }
     }
 
+    println!(
+        "{} && {} = {}",
+        records_recvd,
+        !test_case.option.allow_empty_topic,
+        records_recvd == 0 && !test_case.option.allow_empty_topic
+    );
+    if records_recvd == 0 && !test_case.option.allow_empty_topic {
+        panic!("Consumer test failed, received no records. If this is intentional, run with --allow-empty-topic");
+    }
+
     let consume_p99 = Duration::from_nanos(latency_histogram.value_at_percentile(0.99));
 
     // Stored as bytes per second. Convert to kilobytes per second
     let throughput_p99 = throughput_histogram.max() / 1_000;
 
     println!(
-        "[consumer-{}] Consume P99: {:?} Peak Throughput: {:?} kB/s",
+        "[consumer-{}] Consume P99: {:?} Peak Throughput: {:?} kB/s. # Records: {records_recvd}",
         consumer_id, consume_p99, throughput_p99
     );
 }
@@ -233,8 +255,7 @@ async fn get_multi_stream(
     )
 }
 
-// Default to using the producer test's topic
-#[fluvio_test(name = "consumer", topic = "producer-test")]
+#[fluvio_test(name = "consumer", topic = "consumer-test")]
 pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let test_case: ConsumerTestCase = test_case.into();
     let consumers = test_case.option.consumers;
@@ -250,6 +271,52 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     } else {
         Offset::absolute(raw_offset.into()).expect("Couldn't create absolute offset")
     };
+
+    if test_case.option.num_setup_records != 0 {
+        println!(
+            "producing {} records for topic {}",
+            test_case.option.num_setup_records,
+            test_case.environment.base_topic_name()
+        );
+        // Default producer behaviour round robins between partitions so we don't need to handle the multi-partition case differently
+        async_process!(
+            async {
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+
+                let producer = test_driver
+                    .create_producer(&test_case.environment.base_topic_name())
+                    .await;
+
+                let records: Vec<(RecordKey, Vec<u8>)> = (0..test_case.option.num_setup_records)
+                    .map(|_| {
+                        // Generate test data
+                        let record = TestRecordBuilder::new()
+                            .with_random_data(test_case.option.setup_record_size)
+                            .build();
+                        (
+                            RecordKey::NULL,
+                            serde_json::to_string(&record)
+                                .expect("Convert record to json string failed")
+                                .as_bytes()
+                                .to_vec(),
+                        )
+                    })
+                    .collect();
+
+                producer
+                    .send_all(records)
+                    .await
+                    .expect("failed to send all");
+                producer.flush().await.expect("failed to flush");
+            },
+            format!("consumer-prepopulate-topic")
+        )
+        .join()
+        .expect("Populate records for consumer test failed");
+    }
 
     println!("\nStarting Consumer test");
 
@@ -303,8 +370,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         consumer_wait.push(consumer);
     }
 
-    let _: Vec<_> = consumer_wait
-        .into_iter()
-        .map(|p| p.join().expect("Consumer thread fail"))
-        .collect();
+    for p in consumer_wait {
+        p.join().expect("Consumer thread fail")
+    }
 }

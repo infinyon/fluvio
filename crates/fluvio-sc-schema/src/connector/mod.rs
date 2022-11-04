@@ -3,19 +3,15 @@ pub use fluvio_controlplane_metadata::connector::*;
 mod convert {
 
     use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
+        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
-            CreateFrom, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
-            ObjectTryFrom, WatchRequest, WatchResponse,
+            CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
+            WatchRequest, WatchResponse,
         },
     };
     use super::ManagedConnectorSpec;
 
-    impl AdminSpec for ManagedConnectorSpec {
-        type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
-        type WatchResponseType = Self;
-    }
+    impl AdminSpec for ManagedConnectorSpec {}
 
     impl CreatableAdminSpec for ManagedConnectorSpec {
         const CREATE_TYPE: u8 = 3;

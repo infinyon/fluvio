@@ -1,5 +1,7 @@
+#![allow(deprecated)]
+
 use std::io::Read;
-use std::{io, borrow::Cow};
+use std::io;
 use std::fmt::{Debug, self};
 
 use flate2::{
@@ -14,8 +16,11 @@ use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 ///
 /// This includes the WASM content as well as the type of SmartModule being used.
 /// It also carries any data that is required for specific types of SmartModules.
-/// TODO: remove in 0.10
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
+#[deprecated(
+    since = "0.10.0",
+    note = "will be removed in the next version. Use SmartModuleInvocation instead "
+)]
 pub struct LegacySmartModulePayload {
     pub wasm: SmartModuleWasmCompressed,
     pub kind: SmartModuleKind,
@@ -44,6 +49,17 @@ pub enum SmartModuleInvocationWasm {
 impl SmartModuleInvocationWasm {
     pub fn adhoc_from_bytes(bytes: &[u8]) -> io::Result<Self> {
         Ok(Self::AdHoc(zip(bytes)?))
+    }
+
+    /// consume and get the raw bytes of the WASM module
+    pub fn into_raw(self) -> io::Result<Vec<u8>> {
+        match self {
+            Self::AdHoc(gzipped) => Ok(unzip(gzipped.as_ref())?),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "unable to represent as raw data",
+            )),
+        }
     }
 }
 
@@ -124,8 +140,11 @@ pub enum SmartModuleContextData {
 /// In a fetch request, a WASM module may be given directly in the request
 /// as raw bytes.
 ///
-// TODO: remove in 0.10
-#[derive(Clone, Encoder, Decoder)]
+#[deprecated(
+    since = "0.10.0",
+    note = "will be removed in the next version. Use SmartModuleInvocationWasm instead"
+)]
+#[derive(Clone, Encoder, Decoder, Debug)]
 pub enum SmartModuleWasmCompressed {
     Raw(Vec<u8>),
     /// compressed WASM module payload using Gzip
@@ -133,6 +152,12 @@ pub enum SmartModuleWasmCompressed {
     Gzip(Vec<u8>),
     // TODO implement named WASM modules once we have a WASM store
     // Url(String),
+}
+
+impl Default for SmartModuleWasmCompressed {
+    fn default() -> Self {
+        Self::Raw(Default::default())
+    }
 }
 
 fn zip(raw: &[u8]) -> io::Result<Vec<u8>> {
@@ -147,53 +172,6 @@ fn unzip(compressed: &[u8]) -> io::Result<Vec<u8>> {
     let mut buffer = Vec::with_capacity(compressed.len());
     decoder.read_to_end(&mut buffer)?;
     Ok(buffer)
-}
-
-impl SmartModuleWasmCompressed {
-    /// returns the gzip-compressed WASM module bytes
-    pub fn to_gzip(&mut self) -> io::Result<()> {
-        if let Self::Raw(raw) = self {
-            *self = Self::Gzip(zip(raw.as_ref())?);
-        }
-        Ok(())
-    }
-
-    /// returns the raw WASM module bytes
-    pub fn to_raw(&mut self) -> io::Result<()> {
-        if let Self::Gzip(gzipped) = self {
-            *self = Self::Raw(unzip(gzipped)?);
-        }
-        Ok(())
-    }
-
-    /// get the raw bytes of the WASM module
-    pub fn get_raw(&self) -> io::Result<Cow<[u8]>> {
-        Ok(match self {
-            Self::Raw(raw) => Cow::Borrowed(raw),
-            Self::Gzip(gzipped) => Cow::Owned(unzip(gzipped.as_ref())?),
-        })
-    }
-}
-
-impl Default for SmartModuleWasmCompressed {
-    fn default() -> Self {
-        Self::Raw(Vec::new())
-    }
-}
-
-impl Debug for SmartModuleWasmCompressed {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Raw(bytes) => f
-                .debug_tuple("Raw")
-                .field(&format!("{} bytes", bytes.len()))
-                .finish(),
-            Self::Gzip(bytes) => f
-                .debug_tuple("Gzip")
-                .field(&format!("{} bytes", bytes.len()))
-                .finish(),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -215,47 +193,9 @@ mod tests {
         let bytes = vec![0x01];
         let mut value: SmartModuleKind = Default::default();
         value
-            .decode(&mut std::io::Cursor::new(bytes), 0)
+            .decode(&mut io::Cursor::new(bytes), 0)
             .expect("should decode");
         assert!(matches!(value, SmartModuleKind::Map));
-    }
-
-    #[test]
-    fn test_encode_smartmodulewasm() {
-        let mut dest = Vec::new();
-        let value: SmartModuleWasmCompressed =
-            SmartModuleWasmCompressed::Raw(vec![0xde, 0xad, 0xbe, 0xef]);
-        value.encode(&mut dest, 0).expect("should encode");
-        println!("{:02x?}", &dest);
-        assert_eq!(dest.len(), 9);
-        assert_eq!(dest[0], 0x00);
-        assert_eq!(dest[1], 0x00);
-        assert_eq!(dest[2], 0x00);
-        assert_eq!(dest[3], 0x00);
-        assert_eq!(dest[4], 0x04);
-        assert_eq!(dest[5], 0xde);
-        assert_eq!(dest[6], 0xad);
-        assert_eq!(dest[7], 0xbe);
-        assert_eq!(dest[8], 0xef);
-    }
-
-    #[test]
-    fn test_decode_smartmodulewasm() {
-        let bytes = vec![0x00, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef];
-        let mut value: SmartModuleWasmCompressed = Default::default();
-        value
-            .decode(&mut std::io::Cursor::new(bytes), 0)
-            .expect("should decode");
-        let inner = match value {
-            SmartModuleWasmCompressed::Raw(inner) => inner,
-            #[allow(unreachable_patterns)]
-            _ => panic!("should decode to SmartModuleWasm::Raw"),
-        };
-        assert_eq!(inner.len(), 4);
-        assert_eq!(inner[0], 0xde);
-        assert_eq!(inner[1], 0xad);
-        assert_eq!(inner[2], 0xbe);
-        assert_eq!(inner[3], 0xef);
     }
 
     #[test]

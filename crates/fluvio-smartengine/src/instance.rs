@@ -4,7 +4,7 @@ use std::fmt::{self, Debug};
 
 use tracing::{debug};
 use anyhow::{Error, Result};
-use wasmtime::{Memory, Module, Caller, Extern, Trap, Instance, Func, AsContextMut};
+use wasmtime::{Memory, Module, Caller, Extern, Trap, Instance, Func, AsContextMut, AsContext};
 
 use fluvio_protocol::{Encoder, Decoder};
 
@@ -14,7 +14,8 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 
 use crate::error::EngineError;
 use crate::init::SmartModuleInit;
-use crate::{WasmSlice, memory, SmartModuleChainBuilder, State, WasmState};
+use crate::{WasmSlice, memory};
+use crate::state::WasmState;
 
 pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,
@@ -56,7 +57,7 @@ impl SmartModuleInstance {
 
     // TODO: Move this to SPU
 
-    pub fn init(&mut self, store: &mut WasmState) -> Result<(), Error> {
+    pub fn init(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
         if let Some(init) = &mut self.init {
             let input = SmartModuleInitInput {
                 params: self.ctx.params.clone(),
@@ -83,30 +84,31 @@ impl Debug for SmartModuleInstanceContext {
 
 impl SmartModuleInstanceContext {
     /// instantiate new module instance that contain context
-    #[tracing::instrument(skip(module, params, chain))]
+    #[tracing::instrument(skip(state, module, params))]
     pub(crate) fn instantiate(
+        state: &mut WasmState,
         module: Module,
-        chain: &mut SmartModuleChainBuilder,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self, EngineError> {
         debug!("creating WasmModuleInstance");
         let cb = Arc::new(RecordsCallBack::new());
         let records_cb = cb.clone();
-        let copy_records_fn = move |mut caller: Caller<'_, State>, ptr: i32, len: i32| {
-            debug!(len, "callback from wasm filter");
-            let memory = match caller.get_export("memory") {
-                Some(Extern::Memory(mem)) => mem,
-                _ => return Err(Trap::new("failed to find host memory")),
+        let copy_records_fn =
+            move |mut caller: Caller<'_, <WasmState as AsContext>::Data>, ptr: i32, len: i32| {
+                debug!(len, "callback from wasm filter");
+                let memory = match caller.get_export("memory") {
+                    Some(Extern::Memory(mem)) => mem,
+                    _ => return Err(Trap::new("failed to find host memory")),
+                };
+
+                let records = RecordsMemory { ptr, len, memory };
+                cb.set(records);
+                Ok(())
             };
 
-            let records = RecordsMemory { ptr, len, memory };
-            cb.set(records);
-            Ok(())
-        };
-
         debug!("instantiating WASMtime");
-        let instance = chain
+        let instance = state
             .instantiate(&module, copy_records_fn)
             .map_err(EngineError::Instantiate)?;
         Ok(Self {
@@ -140,10 +142,7 @@ impl SmartModuleInstanceContext {
         Ok((array_ptr as i32, length as i32, self.version as u32))
     }
 
-    pub(crate) fn read_output<D: Decoder + Default>(
-        &mut self,
-        store: impl AsContextMut,
-    ) -> Result<D> {
+    pub(crate) fn read_output<D: Decoder + Default>(&mut self, store: impl AsContext) -> Result<D> {
         let bytes = self
             .records_cb
             .get()
@@ -187,7 +186,7 @@ pub struct RecordsMemory {
 }
 
 impl RecordsMemory {
-    fn copy_memory_from(&self, store: impl AsContextMut) -> Result<Vec<u8>> {
+    fn copy_memory_from(&self, store: impl AsContext) -> Result<Vec<u8>> {
         let mut bytes = vec![0u8; self.len as u32 as usize];
         self.memory.read(store, self.ptr as usize, &mut bytes)?;
         Ok(bytes)

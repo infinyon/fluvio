@@ -314,7 +314,7 @@ where
         &self,
         records: &mut RecordSet<R>,
         notifiers: &FollowerNotifier,
-    ) -> Result<(Offset, Offset), StorageError> {
+    ) -> Result<(Offset, Offset, usize), StorageError> {
         let offsets = self
             .storage
             .write_record_set(records, self.in_sync_replica == 1)
@@ -753,12 +753,13 @@ mod test_leader {
             &mut self,
             records: &mut fluvio_protocol::record::RecordSet<R>,
             update_highwatermark: bool,
-        ) -> Result<(), fluvio_storage::StorageError> {
+        ) -> Result<usize, fluvio_storage::StorageError> {
             self.pos.leo = records.last_offset().unwrap();
             if update_highwatermark {
                 self.pos.hw = self.pos.leo;
             }
-            Ok(())
+            // assume 1 byte records
+            Ok((self.pos.hw - self.pos.leo) as usize)
         }
 
         // just return hw multiplied by 100.

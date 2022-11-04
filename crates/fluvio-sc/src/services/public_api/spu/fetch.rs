@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug, instrument};
 
-use fluvio_sc_schema::objects::{ListResponse, Metadata};
+use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::customspu::CustomSpuSpec;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -13,7 +13,7 @@ use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
-    filters: Vec<String>,
+    filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse<CustomSpuSpec>, Error> {
     debug!("fetching custom spu list");
@@ -61,7 +61,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_spus_request<AC: AuthContext>(
-    filters: Vec<String>,
+    filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse<SpuSpec>, Error> {
     debug!("fetching spu list");

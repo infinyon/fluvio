@@ -6,7 +6,6 @@ use std::sync::Arc;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 use fluvio_sc_schema::AdminSpec;
-use fluvio_sc_schema::core::Spec;
 use fluvio_sc_schema::objects::Metadata;
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use fluvio_sc_schema::objects::ObjectApiWatchResponse;
@@ -102,24 +101,19 @@ impl MetadataStores {
     }
 
     #[instrument(skip(self, store))]
-    async fn start_watch<S>(
-        &self,
-        store: StoreContext<S::WatchResponseType>,
-    ) -> Result<(), SocketError>
+    async fn start_watch<S>(&self, store: StoreContext<S>) -> Result<(), SocketError>
     // same bounds as MetadataSyncController
     where
         S: AdminSpec + 'static + Sync + Send,
         ObjectApiWatchRequest: From<WatchRequest<S>>,
         AsyncResponse<ObjectApiWatchRequest>: Send,
-        S::WatchResponseType: Encoder + Decoder + Send + Sync,
-        <S::WatchResponseType as Spec>::Status: Sync + Send + Encoder + Decoder,
-        <S::WatchResponseType as Spec>::IndexKey: Display + Sync + Send,
+        S: Encoder + Decoder + Send + Sync,
+        S::Status: Sync + Send + Encoder + Decoder,
+        S::IndexKey: Display + Sync + Send,
         <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
-        CacheMetadataStoreObject<S::WatchResponseType>: TryFrom<Metadata<S::WatchResponseType>>,
+        CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
         WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
-        <Metadata<S::WatchResponseType> as TryInto<
-            CacheMetadataStoreObject<S::WatchResponseType>,
-        >>::Error: Display,
+        <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
     {
         use fluvio_protocol::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;

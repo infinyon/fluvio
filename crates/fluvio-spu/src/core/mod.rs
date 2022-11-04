@@ -6,6 +6,7 @@ pub mod spus;
 pub mod replica;
 pub mod smartmodule;
 pub mod derivedstream;
+pub mod metrics;
 
 pub use self::global_context::{GlobalContext, ReplicaChange};
 pub use self::store::Spec;

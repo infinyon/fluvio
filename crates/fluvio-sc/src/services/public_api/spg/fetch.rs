@@ -2,9 +2,8 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{debug, trace, instrument};
 
-use fluvio_sc_schema::objects::{ListResponse, Metadata};
+use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
 use fluvio_sc_schema::spg::SpuGroupSpec;
-use fluvio_sc_schema::{NameFilter};
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_controlplane_metadata::extended::SpecExt;
@@ -13,7 +12,7 @@ use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_spu_groups_request<AC: AuthContext>(
-    filters: Vec<NameFilter>,
+    filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse<SpuGroupSpec>, Error> {
     debug!("fetching spu groups");

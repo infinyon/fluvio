@@ -45,6 +45,23 @@ impl RandomStruct {
     }
 }
 
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
+pub struct MyAddr {
+    pub value: i8,
+
+    // only works up to version 4
+    #[fluvio(max_version = 4)]
+    pub addr: i8,
+
+    // works from version 2
+    #[fluvio(min_version = 2)]
+    pub name: i8,
+
+    // only works from version 3 to version 9
+    #[fluvio(min_version = 4, max_version = 9)]
+    pub addr2: i8,
+}
+
 #[test]
 fn test_metadata() {
     let d = KfMetadataResponse::default();
@@ -123,4 +140,72 @@ fn test_decode_version() {
     assert_eq!(record.value, 8);
     assert_eq!(record.value2, 0);
     assert_eq!(record.value3, 1); // default, didn't consume
+}
+
+#[test]
+fn test_encoding() {
+    // version 0 should only encode value
+    let mut dest = vec![];
+    let addr1 = MyAddr {
+        value: 1,
+        name: 2,
+        addr: 3,
+        addr2: 4,
+    };
+    addr1.encode(&mut dest, 0).expect("encode");
+    assert_eq!(dest.len(), 2); // only 2 should survive
+}
+
+#[test]
+fn test_encoding_v3() {
+    // version 0 should only encode value
+    let mut dest = vec![];
+    let addr1 = MyAddr {
+        value: 1,
+        name: 2,
+        addr: 3,
+        addr2: 4,
+    };
+    addr1.encode(&mut dest, 3).expect("encode");
+    assert_eq!(dest.len(), 3); // only 2 should survive
+}
+
+#[test]
+fn test_encoding_v5() {
+    // version 0 should only encode value
+    let mut dest = vec![];
+    let addr1 = MyAddr {
+        value: 1,
+        name: 2,
+        addr: 3,
+        addr2: 4,
+    };
+    addr1.encode(&mut dest, 5).expect("encode");
+    assert_eq!(dest.len(), 3); // only 2 should survive
+
+    let record = MyAddr::decode_from(&mut Cursor::new(&dest), 5).expect("decode");
+    assert_eq!(record.value, 1);
+    assert_eq!(record.addr, 0); // didn't surive encoding
+    assert_eq!(record.name, 2);
+    assert_eq!(record.addr2, 4);
+}
+
+#[test]
+fn test_encoding_v10() {
+    // version 0 should only encode value
+    let mut dest = vec![];
+    let addr1 = MyAddr {
+        value: 1,
+        name: 2,
+        addr: 3,
+        addr2: 4,
+    };
+    addr1.encode(&mut dest, 10).expect("encode");
+    assert_eq!(dest.len(), 2); // only 2 should survive
+
+    let record = MyAddr::decode_from(&mut Cursor::new(&dest), 10).expect("decode");
+    assert_eq!(record.value, 1);
+    assert_eq!(record.addr, 0); // didn't surive encoding
+    assert_eq!(record.name, 2);
+    assert_eq!(record.addr2, 0);
 }

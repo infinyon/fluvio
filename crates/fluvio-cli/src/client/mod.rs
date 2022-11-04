@@ -1,5 +1,6 @@
 mod topic;
 mod consume;
+mod hub;
 mod produce;
 mod partition;
 mod tableformat;
@@ -51,6 +52,7 @@ mod cmd {
     use super::topic::TopicCmd;
     use super::partition::PartitionCmd;
     use super::tableformat::TableFormatCmd;
+    use super::hub::HubCmd;
 
     #[async_trait]
     pub trait ClientCmd: Sized {
@@ -60,7 +62,12 @@ mod cmd {
             out: Arc<O>,
             target: ClusterTarget,
         ) -> Result<()> {
-            let fluvio_config = target.load()?;
+            let mut fluvio_config = target.load()?;
+            let client_id = match std::env::var("FLUVIO_CLIENT_ID") {
+                Ok(id) => id,
+                Err(_) => "FLUVIO_CLI".to_owned(),
+            };
+            fluvio_config.client_id = Some(client_id);
             let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
             self.process_client(out, &fluvio).await?;
             Ok(())
@@ -131,6 +138,10 @@ mod cmd {
         /// to build a customized stream to consume
         #[clap(subcommand, name = "derived-stream", visible_alias = "ds")]
         DerivedStream(DerivedStreamCmd),
+
+        /// Work with the SmartModule Hub
+        #[clap(subcommand, name = "hub")]
+        Hub(HubCmd),
     }
 
     impl FluvioCmd {
@@ -161,6 +172,9 @@ mod cmd {
                 }
                 Self::DerivedStream(derivedstream) => {
                     derivedstream.process(out, target).await?;
+                }
+                Self::Hub(hub) => {
+                    hub.process(out, target).await?;
                 }
             }
 

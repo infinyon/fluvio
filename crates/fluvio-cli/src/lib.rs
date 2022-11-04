@@ -8,10 +8,8 @@ pub mod install;
 mod profile;
 mod version;
 mod metadata;
-
-mod connector;
-
 mod render;
+pub(crate) mod monitoring;
 
 pub(crate) use error::{Result, CliError};
 use fluvio_extension_common as common;
@@ -27,13 +25,13 @@ pub use client::TableFormatConfig;
 
 mod root {
 
+    use crate::check_for_channel_update;
     use std::sync::Arc;
     use std::path::PathBuf;
     use std::process::Command;
 
-    use clap::{Parser, AppSettings, Command as ClapCommand, IntoApp};
+    use clap::{Parser, Command as ClapCommand, CommandFactory};
     use clap_complete::{generate, Shell};
-    use colored::Colorize;
     use tracing::debug;
 
     #[cfg(feature = "k8s")]
@@ -41,8 +39,6 @@ mod root {
     use fluvio_cli_common::install::fluvio_extensions_dir;
     use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, LATEST_CHANNEL_NAME};
 
-    use crate::check_for_channel_update;
-    use crate::connector::ManagedConnectorCmd;
     use crate::profile::ProfileOpt;
     use crate::install::update::UpdateOpt;
     use crate::install::plugins::InstallOpt;
@@ -86,7 +82,7 @@ mod root {
         max_term_width = 100,
         disable_version_flag = true,
         // VersionlessSubcommands is now default behaviour. See https://github.com/clap-rs/clap/pull/2831
-        global_setting = AppSettings::DeriveDisplayOrder
+        // global_setting = AppSettings::DeriveDisplayOrder
         )]
     enum RootCmd {
         /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
@@ -141,10 +137,6 @@ mod root {
         /// Generate metadata for Fluvio base CLI
         #[clap(name = "metadata", hide = true)]
         Metadata(MetadataOpt),
-
-        /// Create and work with Managed Connectors
-        #[clap(subcommand, name = "connector")]
-        ManagedConnector(ManagedConnectorCmd),
 
         #[clap(external_subcommand)]
         External(Vec<String>),
@@ -201,17 +193,6 @@ mod root {
                 Self::Metadata(metadata) => {
                     metadata.process()?;
                 }
-                Self::ManagedConnector(group) => {
-                    eprintln!(
-                        "{} {}\n{}\n{}",
-                        "DEPRECATION NOTICE:".bold().yellow(),
-                        "`fluvio connectors` and managed connector support will be removed in a future release.".yellow(),
-                        "For migration and future self-management instructions, please check out our docs (https://www.fluvio.io/connectors).".yellow(),
-                        "For questions or comments reach our to us on our Discord (https://discord.com/invite/bBG2dTz) or email (team@infinyon.com)".yellow(),
-                    );
-                    let fluvio = root.target.connect().await?;
-                    group.process(out, &fluvio).await?;
-                }
 
                 Self::External(args) => {
                     process_external_subcommand(args)?;
@@ -230,20 +211,23 @@ mod root {
 
             // Add external command definitions to our own clap::Command definition
             let mut app: ClapCommand = Root::command();
-            for i in &external_commands {
+            for i in external_commands {
                 match i.path.file_name() {
                     Some(file_name) => {
                         app = app.subcommand(
                             ClapCommand::new(
-                                file_name.to_string_lossy().strip_prefix("fluvio-").unwrap(),
+                                file_name
+                                    .to_string_lossy()
+                                    .strip_prefix("fluvio-")
+                                    .unwrap()
+                                    .to_owned(),
                             )
-                            .about(&*i.meta.description),
+                            .about(i.meta.description),
                         );
                     }
                     None => {
-                        app = app.subcommand(
-                            ClapCommand::new(&*i.meta.title).about(&*i.meta.description),
-                        );
+                        app = app
+                            .subcommand(ClapCommand::new(i.meta.title).about(i.meta.description));
                     }
                 }
             }

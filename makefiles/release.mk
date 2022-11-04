@@ -60,9 +60,9 @@ get-tag:
 	echo $(DEV_VERSION_TAG)
 
 clean-publish:
-	rm --verbose --force *.zip *.tgz *.exe
-	rm --verbose --force --recursive fluvio-* fluvio.*
-	rm --verbose --force /tmp/release_notes /tmp/cd_dev_latest.txt
+	rm -vf *.zip *.tgz *.exe 
+	rm -vrf fluvio-* fluvio.* smdk-*
+	rm -vf /tmp/release_notes /tmp/cd_dev_latest.txt
 
 #fix-latest-channel:
 #	# Find the last git sha from master
@@ -148,7 +148,7 @@ unzip-gh-release-artifacts: download-fluvio-release
 #   fluvio-x86_64-unknown-linux-musl/
 #     fluvio
 #     .target
-publish-artifacts: PUBLIC_VERSION=$(subst -,+,$(VERSION))
+publish-artifacts: PUBLIC_VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
 publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 	@echo "package stuff"
 	$(foreach bin, $(wildcard *.zip), \
@@ -174,7 +174,7 @@ publish-artifacts-dev: publish-artifacts
 # Need to ensure that version is always a semver
 # Version convention is different here. Notice the `+`
 bump-fluvio: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
-bump-fluvio: PUBLIC_VERSION?=$(subst -,+,$(VERSION))
+bump-fluvio: PUBLIC_VERSION?=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
 bump-fluvio: install-fluvio-package
 # This is gonna end up echoing twice when RELEASE != true
 	$(DRY_RUN_ECHO) $(FLUVIO_BIN) package bump $(CHANNEL_TAG) $(PUBLIC_VERSION)
@@ -189,7 +189,7 @@ bump-fluvio-stable: VERSION=$(REPO_VERSION)
 bump-fluvio-stable: bump-fluvio
 
 bump-fluvio-latest: CHANNEL_TAG=latest
-bump-fluvio-latest: VERSION=$(subst -,+,$(DEV_VERSION_TAG))
+bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(DEV_VERSION_TAG))
 bump-fluvio-latest: bump-fluvio
 
 update-public-installer-script-s3:

@@ -83,6 +83,9 @@ impl SpuSocket {
     ) -> Result<AsyncResponse<R>, FluvioError> {
         let mut req_msg = RequestMessage::new_request(request);
         req_msg.header.set_api_version(version);
+        req_msg
+            .header
+            .set_client_id(self.config.client_id().to_owned());
         self.socket
             .create_stream(req_msg, DEFAULT_STREAM_QUEUE_SIZE)
             .await

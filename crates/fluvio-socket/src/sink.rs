@@ -114,7 +114,7 @@ mod file {
             &mut self,
             msg: &T,
             version: Version,
-        ) -> Result<(), SocketError>
+        ) -> Result<usize, SocketError>
         where
             T: FileWrite,
         {
@@ -129,8 +129,13 @@ mod file {
         }
 
         /// write store values to socket
-        async fn write_store_values(&mut self, values: Vec<StoreValue>) -> Result<(), SocketError> {
+        async fn write_store_values(
+            &mut self,
+            values: Vec<StoreValue>,
+        ) -> Result<usize, SocketError> {
             trace!("writing store values to socket values: {}", values.len());
+
+            let mut total_bytes_written = 0usize;
 
             for value in values {
                 match value {
@@ -143,6 +148,7 @@ mod file {
                             .get_mut()
                             .write_all(&bytes)
                             .await?;
+                        total_bytes_written += bytes.len();
                     }
                     StoreValue::FileSlice(f_slice) => {
                         if f_slice.is_empty() {
@@ -154,16 +160,21 @@ mod file {
                                 f_slice.len()
                             );
                             let writer = ZeroCopy::raw(self.fd);
-                            writer.copy_slice(&f_slice).await.map_err(|err| {
-                                IoError::new(ErrorKind::Other, format!("zero copy failed: {}", err))
-                            })?;
-                            trace!("finish writing file slice");
+                            let bytes_written =
+                                writer.copy_slice(&f_slice).await.map_err(|err| {
+                                    IoError::new(
+                                        ErrorKind::Other,
+                                        format!("zero copy failed: {}", err),
+                                    )
+                                })?;
+                            trace!("finish writing file slice with {bytes_written} bytes");
+                            total_bytes_written += bytes_written;
                         }
                     }
                 }
             }
 
-            Ok(())
+            Ok(total_bytes_written)
         }
     }
 }

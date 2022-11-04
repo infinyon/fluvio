@@ -10,7 +10,7 @@ pub mod producer_fail;
 pub mod reconnection;
 pub mod batching;
 pub mod data_generator;
-pub mod stats;
+// pub mod stats;
 
 use serde::{Serialize, Deserialize};
 use std::time::SystemTime;
@@ -87,17 +87,13 @@ impl TestRecordBuilder {
     }
 
     fn random_data(data_size: usize) -> String {
-        use rand::Rng;
-
         const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                                 abcdefghijklmnopqrstuvwxyz\
                                 0123456789)(*&^%$#@!~";
 
-        let mut rng = rand::thread_rng();
-
         let data: String = (0..data_size)
             .map(|_| {
-                let idx = rng.gen_range(0..CHARSET.len());
+                let idx = fastrand::usize(0..CHARSET.len());
                 CHARSET[idx] as char
             })
             .collect();

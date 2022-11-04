@@ -1,12 +1,12 @@
 [package]
 name = "fluvio-hub-util"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "API for SmartModule Hub"
 authors = ["fluvio.io"]
 repository = "https://github.com/infinyon/fluvio"
-
+publish = false
 
 [dependencies]
 cargo_toml = "0.11"
@@ -29,6 +29,7 @@ tokio = "1.20"
 toml = "0.5.9"
 tracing = "0.1.36"
 thiserror = "1.0"
+wasmparser = { version = "0.93.0" }
 
 fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
 fluvio-types = { path = "../fluvio-types" }
@@ -36,7 +37,7 @@ fluvio-types = { path = "../fluvio-types" }
 # feature control
 [dependencies.surf]
 version = "2.3.2"
-features = ["h1-client-rustls", "middleware-logger", "encoding"]
+features = ["h1-client-rustls", "encoding"]
 default-features = false
 
 [dependencies.http-client]

@@ -23,6 +23,9 @@ pub enum HubUtilError {
     #[error("Invalid public key file: {0}")]
     InvalidPublicKeyFile(String),
 
+    #[error("Invalid WASM file provided: {0}")]
+    InvalidWasmFileEncountered(String),
+
     #[error(transparent)]
     IoError(#[from] std::io::Error),
 
@@ -50,7 +53,7 @@ pub enum HubUtilError {
     #[error("Signing package {0}")]
     PackageSigning(String),
 
-    #[error("Package verification {0}")]
+    #[error("Package verification: {0}")]
     PackageVerify(String),
 
     #[error("Unable to package: {0}")]
@@ -67,6 +70,9 @@ pub enum HubUtilError {
 
     #[error("Error processing yaml file")]
     YamlError(#[from] serde_yaml::Error),
+
+    #[error("Error parsing SemVer string. {0}")]
+    SemVerError(String),
 }
 
 pub type Result<T> = std::result::Result<T, HubUtilError>;

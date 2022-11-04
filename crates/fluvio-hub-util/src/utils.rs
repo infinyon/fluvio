@@ -62,15 +62,20 @@ pub fn cli_pkgname_to_filename(pkgname: &str) -> Result<String> {
 /// returns recommended name and data
 pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
     let actiontoken = access.get_download_token().await?;
-    let mut resp = surf::get(&pkgurl)
+    let mut resp = surf::get(pkgurl)
         .header("Authorization", actiontoken)
         .await
-        .map_err(|_| HubUtilError::PackageDownload("".into()))?;
+        .map_err(|_| HubUtilError::PackageDownload("authorization error".into()))?;
 
     match resp.status() {
         StatusCode::Ok => {}
-        _ => {
-            return Err(HubUtilError::PackageDownload("".into()));
+        code => {
+            let body_err_message = resp
+                .body_string()
+                .await
+                .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
+            let msg = format!("Status({code}) {body_err_message}");
+            return Err(HubUtilError::PackageDownload(msg));
         }
     }
 
@@ -87,7 +92,7 @@ pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
 // deprecated, but keep for reference for a bit
 pub async fn get_package_noauth(pkgurl: &str) -> Result<Vec<u8>> {
     //todo use auth
-    let mut resp = surf::get(&pkgurl)
+    let mut resp = surf::get(pkgurl)
         .await
         .map_err(|_| HubUtilError::PackageDownload("".into()))?;
     match resp.status() {
@@ -139,7 +144,7 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
         .content_type(mime::BYTE_STREAM)
         .body_bytes(pkg_bytes)
         .header("Authorization", &actiontoken);
-    let res = req
+    let mut res = req
         .await
         .map_err(|e| HubUtilError::HubAccess(format!("Failed to connect {e}")))?;
 
@@ -153,7 +158,11 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
         )),
         _ => {
             debug!("push result: {} \n{res:?}", res.status());
-            let msg = format!("Unknown error: {}", res.status());
+            let bodymsg = res
+                .body_string()
+                .await
+                .map_err(|_e| HubUtilError::HubAccess("Failed to download err body".into()))?;
+            let msg = format!("error status code({}) {}", res.status(), bodymsg);
             Err(HubUtilError::HubAccess(msg))
         }
     }

@@ -568,7 +568,7 @@ impl LocalInstaller {
         ));
         // wait for list of spu
         while time.elapsed().unwrap() < timeout_duration {
-            let spus = admin.list::<SpuSpec, _>(vec![]).await?;
+            let spus = admin.all::<SpuSpec>().await?;
             let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
             let elapsed = time.elapsed().unwrap();
             pb.set_message(format!(

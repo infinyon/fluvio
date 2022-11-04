@@ -1,6 +1,6 @@
 use crate::setup::environment::{EnvironmentType};
 use crate::test_runner::test_meta::FluvioTestMeta;
-use clap::Parser;
+use clap::{Parser, builder::PossibleValuesParser};
 use std::fmt::Debug;
 use std::time::Duration;
 use humantime::parse_duration;
@@ -138,7 +138,7 @@ impl EnvDetail for EnvironmentSetup {
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
 pub struct EnvironmentSetup {
     /// Name of the test
-    #[clap(possible_values = FluvioTestMeta::all_test_names())]
+    #[clap(value_parser = PossibleValuesParser::new(FluvioTestMeta::all_test_names()))]
     pub test_name: String,
 
     /// Ensure that test starts with a new cluster before test.
@@ -180,7 +180,7 @@ pub struct EnvironmentSetup {
 
     /// Retention time per topic
     /// ex. 30s, 15m, 2h, 1w
-    #[clap(long, default_value = "7d", parse(try_from_str = parse_duration))]
+    #[clap(long, default_value = "7d", value_parser=parse_duration)]
     pub topic_retention: Duration,
 
     /// Number of replicas per topic
@@ -266,7 +266,7 @@ pub struct EnvironmentSetup {
 
     /// Global timeout for a test. Will report as fail when reached
     /// ex. 30s, 15m, 2h, 1w
-    #[clap(long, default_value = "1h", parse(try_from_str = parse_duration))]
+    #[clap(long, default_value = "1h", value_parser=parse_duration)]
     pub timeout: Duration,
 
     /// K8: use specific image version

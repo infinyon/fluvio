@@ -68,7 +68,7 @@ pub struct CreateTopicOpt {
     #[clap(
         short = 'i',
         long = "ignore-rack-assignment",
-        conflicts_with = "replica-assignment"
+        conflicts_with = "replica_assignment"
     )]
     ignore_rack_assignment: bool,
 
@@ -77,7 +77,7 @@ pub struct CreateTopicOpt {
         short = 'f',
         long = "replica-assignment",
         value_name = "file.json",
-        parse(from_os_str),
+        value_parser,
         conflicts_with = "partitions",
         conflicts_with = "replication"
     )]
@@ -172,7 +172,7 @@ impl CreateTopicOpt {
 pub struct TopicConfigOpt {
     /// Retention time (round to seconds)
     /// Ex: '1h', '2d 10s', '7 days' (default)
-    #[clap(long, value_name = "time",parse(try_from_str = parse_duration))]
+    #[clap(long, value_name = "time",value_parser=parse_duration)]
     retention_time: Option<Duration>,
 
     /// Segment size (by default measured in bytes)

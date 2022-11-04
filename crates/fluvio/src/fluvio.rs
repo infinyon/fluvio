@@ -9,7 +9,6 @@ use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
 use fluvio_future::net::DomainConnector;
 use semver::Version;
 
-use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
 use crate::TopicProducer;
 use crate::PartitionConsumer;
@@ -18,6 +17,7 @@ use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::consumer::MultiplePartitionConsumer;
 use crate::consumer::PartitionSelectionStrategy;
+use crate::metrics::ClientMetrics;
 use crate::producer::TopicProducerConfig;
 use crate::spu::SpuPool;
 use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
@@ -31,6 +31,7 @@ pub struct Fluvio {
     spu_pool: OnceCell<Arc<SpuPool>>,
     metadata: MetadataStores,
     watch_version: i16,
+    metric: Arc<ClientMetrics>,
 }
 
 impl Fluvio {
@@ -50,9 +51,8 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn connect() -> Result<Self, FluvioError> {
-        let config_file = ConfigFile::load_default_or_new()?;
-        let cluster_config = config_file.config().current_cluster()?;
-        Self::connect_with_config(cluster_config).await
+        let cluster_config = FluvioConfig::load()?;
+        Self::connect_with_config(&cluster_config).await
     }
 
     /// Creates a new Fluvio client with the given configuration
@@ -83,19 +83,18 @@ impl Fluvio {
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
-        use fluvio_protocol::api::Request;
-
-        let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
-        let inner_client = config.connect().await?;
+        let mut client_config =
+            ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
+        if let Some(client_id) = &config.client_id {
+            client_config.set_client_id(client_id.to_owned());
+        }
+        let inner_client = client_config.connect().await?;
         debug!("connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
 
         // get version for watch
-        if let Some(watch_version) = versions.lookup_version(
-            ObjectApiWatchRequest::API_KEY,
-            ObjectApiWatchRequest::DEFAULT_API_VERSION,
-        ) {
+        if let Some(watch_version) = versions.lookup_version::<ObjectApiWatchRequest>() {
             debug!(platform = %versions.platform_version(),"checking platform version");
             check_platform_compatible(versions.platform_version())?;
 
@@ -110,6 +109,7 @@ impl Fluvio {
                 spu_pool,
                 metadata,
                 watch_version,
+                metric: Arc::new(ClientMetrics::new()),
             })
         } else {
             Err(FluvioError::Other("WatchApi version not found".to_string()))
@@ -183,7 +183,7 @@ impl Fluvio {
             return Err(FluvioError::TopicNotFound(topic));
         }
 
-        TopicProducer::new(topic, spu_pool, config).await
+        TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
@@ -203,6 +203,7 @@ impl Fluvio {
             topic,
             partition,
             self.spu_pool().await?,
+            self.metric.clone(),
         ))
     }
 
@@ -233,6 +234,7 @@ impl Fluvio {
         Ok(MultiplePartitionConsumer::new(
             strategy,
             self.spu_pool().await?,
+            self.metric.clone(),
         ))
     }
 
@@ -270,6 +272,10 @@ impl Fluvio {
             self.config.clone(),
             self.versions.clone(),
         )
+    }
+
+    pub fn metrics(&self) -> Arc<ClientMetrics> {
+        self.metric.clone()
     }
 }
 

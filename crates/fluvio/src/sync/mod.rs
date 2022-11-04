@@ -10,7 +10,7 @@ mod context {
     use std::fmt::Display;
     use std::io::Error as IoError;
 
-    use tracing::{debug, trace, instrument};
+    use tracing::{debug, instrument};
     use async_rwlock::RwLockReadGuard;
     use once_cell::sync::Lazy;
 
@@ -108,17 +108,17 @@ mod context {
             use tokio::select;
             use fluvio_future::timer::sleep;
 
-            let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
-            let mut listener = self.store.change_listener();
+            // We can short circuit here if already present
+            if let Some(found) = search(self.store().read().await) {
+                return Ok(Some(found));
+            }
 
-            // wait for either changes from store or timeout
+            let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
+
+            // No changes recieved yet, wait for first changes from store or timeout
             select! {
 
-                _ = listener.listen() => {
-                    // this should be full sync
-                    let changes = listener.sync_changes().await;
-                    trace!("{} received changes: {:#?}",S::LABEL,changes);
-
+                _ = self.store.wait_for_first_change() => {
                     Ok(search(self.store().read().await))
                 },
                 _ = &mut timer => {

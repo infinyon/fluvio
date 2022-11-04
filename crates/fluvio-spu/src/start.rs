@@ -20,6 +20,9 @@ pub fn main_loop(opt: SpuOpt) {
 
     use fluvio_future::task::run_block_on;
     use fluvio_future::timer::sleep;
+
+    use crate::monitoring::init_monitoring;
+
     // parse configuration (program exits on error)
     let (spu_config, tls_acceptor_option) = opt.process_spu_cli_or_exit();
 
@@ -38,11 +41,12 @@ pub fn main_loop(opt: SpuOpt) {
     info!(uptime = sys.uptime(), "Uptime in secs");
 
     run_block_on(async move {
-        let (_ctx, internal_server, public_server) =
-            create_services(spu_config.clone(), true, true);
+        let (ctx, internal_server, public_server) = create_services(spu_config.clone(), true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
+
+        init_monitoring(ctx);
 
         if let Some(tls_config) = tls_acceptor_option {
             proxy::start_proxy(spu_config, tls_config).await;

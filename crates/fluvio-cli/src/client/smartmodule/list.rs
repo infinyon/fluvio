@@ -35,7 +35,9 @@ impl ClientCmd for ListSmartModuleOpt {
         } else {
             vec![]
         };
-        let lists = admin.list::<SmartModuleSpec, _>(filters).await?;
+        let lists = admin
+            .list_with_params::<SmartModuleSpec, _>(filters, true)
+            .await?;
         output::smartmodules_response_to_output(out, lists, self.output.format)
     }
 }
@@ -92,7 +94,7 @@ mod output {
     impl TableOutputHandler for ListSmartModules {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["NAME", "GROUP", "VERSION", "STATUS", "SIZE"])
+            Row::from(["SMARTMODULE", "SIZE"])
         }
 
         /// return errors in string format
@@ -108,12 +110,14 @@ mod output {
                     let _spec = &r.spec;
 
                     Row::from([
-                        Cell::new(&r.spec.logical_name(&r.name)).set_alignment(CellAlignment::Left),
-                        Cell::new(&r.spec.pkg_group()).set_alignment(CellAlignment::Left),
-                        Cell::new(&r.spec.pkg_version()).set_alignment(CellAlignment::Left),
-                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Left),
-                        Cell::new(&r.spec.wasm.payload.len().to_string())
-                            .set_alignment(CellAlignment::Right),
+                        Cell::new(&r.spec.fqdn(&r.name)).set_alignment(CellAlignment::Left),
+                        Cell::new(
+                            bytesize::ByteSize::b(
+                                r.spec.summary.clone().unwrap_or_default().wasm_length as u64,
+                            )
+                            .to_string(),
+                        )
+                        .set_alignment(CellAlignment::Right),
                     ])
                 })
                 .collect()

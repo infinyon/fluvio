@@ -22,7 +22,7 @@ use super::TableFormatConfig;
 #[derive(Debug, Parser, Default)]
 pub struct CreateTableFormatOpt {
     /// The path to the TableFormat config
-    #[clap(short, long, parse(from_os_str))]
+    #[clap(short, long, value_parser)]
     pub config: PathBuf,
 }
 

@@ -130,11 +130,14 @@ impl ReplicaStorage for FileReplica {
         &mut self,
         records: &mut RecordSet<R>,
         update_highwatermark: bool,
-    ) -> Result<(), StorageError> {
+    ) -> Result<usize, StorageError> {
         let max_batch_size = self.option.max_batch_size.get() as usize;
+        let mut total_size = 0;
         // check if any of the records's batch exceed max length
         for batch in &records.batches {
-            if batch.write_size(0) > max_batch_size {
+            let batch_size = batch.write_size(0);
+            total_size += batch_size;
+            if batch_size > max_batch_size {
                 return Err(StorageError::BatchTooBig(max_batch_size));
             }
         }
@@ -146,7 +149,7 @@ impl ReplicaStorage for FileReplica {
         if update_highwatermark {
             self.update_high_watermark_to_end().await?;
         }
-        Ok(())
+        Ok(total_size)
     }
 
     /// update committed offset (high watermark)
@@ -653,7 +656,7 @@ mod tests {
 
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
         let replica_dir = &option.base_dir.join("test-1");
-        let dir_contents = fs::read_dir(&replica_dir).expect("read_dir");
+        let dir_contents = fs::read_dir(replica_dir).expect("read_dir");
         assert_eq!(dir_contents.count(), 5, "should be 5 files");
 
         let seg2_file = replica_dir.join(TEST_SE2_NAME);
