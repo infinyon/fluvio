@@ -1,6 +1,7 @@
 use clap::Parser;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use super::error_convert;
+use super::update::should_always_print_available_update;
 use tracing::debug;
 
 use crate::Result;
@@ -63,9 +64,12 @@ impl InstallOpt {
 
         // After any "install" command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
-        let update_result = check_update_available(&agent, false).await;
-        if let Ok(Some(latest_version)) = update_result {
-            prompt_available_update(&latest_version);
+        // Sometimes this is printed at the beginning, so we don't print it again here
+        if !should_always_print_available_update() {
+            let update_result = check_update_available(&agent, false).await;
+            if let Ok(Some(latest_version)) = update_result {
+                prompt_available_update(&latest_version);
+            }
         }
         Ok(())
     }
