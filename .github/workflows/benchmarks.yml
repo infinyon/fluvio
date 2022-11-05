@@ -13,7 +13,7 @@ on:
       - master
 
 permissions:
-  pull-requests: write
+  contents: write
 
 jobs:
   unit_fluvio_protocol:
@@ -37,6 +37,7 @@ jobs:
 
       - name: Cache Benchmark data
         uses: actions/cache@v1
+        if: github.ref == 'refs/heads/master'
         with:
           path: ./benches_cache
           key: benches-${{ runner.os }}-unit_fluvio_protocol
@@ -82,6 +83,7 @@ jobs:
 
       - name: Cache Benchmark data
         uses: actions/cache@v1
+        if: github.ref == 'refs/heads/master'
         with:
           path: ./benches_cache
           key: benches-${{ runner.os }}-unit_fluvio_smartmodule

@@ -28,6 +28,7 @@ use fluvio_protocol::{
     fixture::BatchProducer,
     record::{RecordData, Record},
     link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
+    ByteBuf,
 };
 use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
 use fluvio_spu_schema::{
@@ -83,7 +84,7 @@ fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str
         spec: SmartModuleSpec {
             wasm: SmartModuleWasm {
                 format: SmartModuleWasmFormat::Binary,
-                payload: wasm,
+                payload: ByteBuf::from(wasm),
             },
             ..Default::default()
         },
@@ -2235,7 +2236,7 @@ async fn test_stream_fetch_invalid_smartmodule_predefined() {
         spec: SmartModuleSpec {
             wasm: SmartModuleWasm {
                 format: SmartModuleWasmFormat::Binary,
-                payload: wasm,
+                payload: ByteBuf::from(wasm),
             },
             ..Default::default()
         },

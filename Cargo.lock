@@ -2338,7 +2338,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.19.0"
+version = "0.19.1"
 dependencies = [
  "async-trait",
  "base64 0.13.1",
@@ -2559,7 +2559,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.15.0"
+version = "0.15.1"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-future",

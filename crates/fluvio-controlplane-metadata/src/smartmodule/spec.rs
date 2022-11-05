@@ -1,12 +1,13 @@
 //!
 //! # SmartModule Spec
 //!
-use std::{io::Error as IoError, borrow::Cow};
+use std::borrow::Cow;
+use std::io::Error as IoError;
 
 use bytes::BufMut;
 use tracing::debug;
 
-use fluvio_protocol::{Encoder, Decoder, Version};
+use fluvio_protocol::{ByteBuf, Encoder, Decoder, Version};
 
 use super::{
     SmartModuleMetadata,
@@ -109,7 +110,7 @@ pub struct SmartModuleWasmSummary {
 pub struct SmartModuleWasm {
     pub format: SmartModuleWasmFormat,
     #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
-    pub payload: Vec<u8>,
+    pub payload: ByteBuf,
 }
 
 impl std::fmt::Debug for SmartModuleWasm {
@@ -125,7 +126,7 @@ impl SmartModuleWasm {
     /// Create SmartModule from compressed Gzip format
     pub fn from_compressed_gzip(payload: Vec<u8>) -> Self {
         SmartModuleWasm {
-            payload,
+            payload: ByteBuf::from(payload),
             format: SmartModuleWasmFormat::Binary,
         }
     }
@@ -161,17 +162,26 @@ impl Default for SmartModuleWasmFormat {
 
 #[cfg(feature = "use_serde")]
 mod base64 {
+    use std::ops::Deref;
+
     use serde::{Serialize, Deserialize};
     use serde::{Deserializer, Serializer};
 
-    #[allow(clippy::ptr_arg)]
-    pub fn serialize<S: Serializer>(v: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        let base64 = base64::encode(v);
-        String::serialize(&base64, s)
+    use fluvio_protocol::ByteBuf;
+
+    pub fn serialize<S>(bytebuf: &ByteBuf, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let base64 = base64::encode(bytebuf.deref());
+        String::serialize(&base64, serializer)
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        let base64 = String::deserialize(d)?;
-        base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<ByteBuf, D::Error> {
+        let b64 = String::deserialize(d)?;
+        let bytes: Vec<u8> = base64::decode(b64.as_bytes()).map_err(serde::de::Error::custom)?;
+        let bytebuf = ByteBuf::from(bytes);
+
+        Ok(bytebuf)
     }
 }

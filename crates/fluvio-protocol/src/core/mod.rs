@@ -1,12 +1,15 @@
+mod bytebuf;
 mod decoder;
 mod encoder;
 mod varint;
 mod zerocopy;
 
+pub use self::bytebuf::ByteBuf;
 pub use self::decoder::Decoder;
 pub use self::decoder::DecoderVarInt;
 pub use self::encoder::Encoder;
 pub use self::encoder::EncoderVarInt;
+
 pub type Version = i16;
 
 #[cfg(test)]

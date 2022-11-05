@@ -250,7 +250,7 @@ fn resolve_invocation(
             .map_err(|err| ErrorCode::Other(format!("error parsing SmartModule name: {}", err)))?
         {
             Ok(SmartModuleInvocation {
-                wasm: SmartModuleInvocationWasm::AdHoc(smartmodule.spec.wasm.payload),
+                wasm: SmartModuleInvocationWasm::AdHoc(smartmodule.spec.wasm.payload.into()),
                 ..invocation
             })
         } else {
