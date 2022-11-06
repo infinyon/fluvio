@@ -17,7 +17,7 @@ mod cmd {
     use std::time::{UNIX_EPOCH, Duration};
     use std::{io::Error as IoError, path::PathBuf};
     use std::io::{self, ErrorKind, Read, Stdout};
-    use std::collections::{BTreeMap};
+    use std::collections::BTreeMap;
     use std::fmt::Debug;
     use std::sync::Arc;
 
@@ -41,9 +41,9 @@ mod cmd {
         SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
     };
     use fluvio_protocol::record::NO_TIMESTAMP;
-    use fluvio::metadata::tableformat::{TableFormatSpec};
+    use fluvio::metadata::tableformat::TableFormatSpec;
     use fluvio_future::io::StreamExt;
-    use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
+    use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset, FluvioError};
     use fluvio::consumer::{PartitionSelectionStrategy, Record};
     use fluvio_spu_schema::Isolation;
 
@@ -61,7 +61,6 @@ mod cmd {
     use super::super::ClientCmd;
     use super::table_format::{TableEventResponse, TableModel};
 
-    const DEFAULT_TAIL: u32 = 10;
     const USER_TEMPLATE: &str = "user_template";
 
     /// Read messages from a topic/partition
@@ -83,11 +82,11 @@ mod cmd {
         #[clap(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
         pub all_partitions: bool,
 
-        /// disable continuous processing of messages
+        /// Disable continuous processing of messages
         #[clap(short = 'd', long)]
         pub disable_continuous: bool,
 
-        /// disable the progress bar and wait spinner
+        /// Disable the progress bar and wait spinner
         #[clap(long)]
         pub disable_progressbar: bool,
 
@@ -116,21 +115,25 @@ mod cmd {
         #[clap(long)]
         pub table_format: Option<String>,
 
-        /// Consume records starting X from the beginning of the log (default: 0)
-        #[clap(short = 'B', value_name = "integer", conflicts_with_all = &["offset", "tail"])]
-        pub from_beginning: Option<Option<u32>>,
+        /// Consume records from the beginning of the log
+        #[clap(short = 'B', long,  conflicts_with_all = &["head","start", "tail"])]
+        pub beginning: bool,
 
-        /// The offset of the first record to begin consuming from
-        #[clap(short, long, value_name = "integer", conflicts_with_all = &["tail"])]
-        pub offset: Option<u32>,
+        /// Consume records starting <integer> from the beginning of the log
+        #[clap(short = 'H', long, value_name = "integer", conflicts_with_all = &["beginning", "start", "tail"])]
+        pub head: Option<u32>,
 
-        /// Consume records starting X from the end of the log (default: 10)
-        #[clap(short = 'T', long, value_name = "integer", conflicts_with_all = &["offset"])]
-        pub tail: Option<Option<u32>>,
+        /// Consume records starting <integer> from the end of the log
+        #[clap(short = 'T', long,  value_name = "integer", conflicts_with_all = &["beginning","head", "start"])]
+        pub tail: Option<u32>,
 
-        /// Consume records until end offset
-        #[clap(long, value_name= "integer", conflicts_with_all = &["tail"])]
-        pub end_offset: Option<i64>,
+        /// The absolute offset of the first record to begin consuming from
+        #[clap(long, value_name = "integer", conflicts_with_all = &["beginning", "head", "tail"])]
+        pub start: Option<u32>,
+
+        /// Consume records until end offset (inclusive)
+        #[clap(long, value_name = "integer")]
+        pub end: Option<u32>,
 
         /// Maximum number of bytes to be retrieved
         #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
@@ -150,7 +153,7 @@ mod cmd {
         )]
         pub output: Option<ConsumeOutputType>,
 
-        /// name of the smart module
+        /// Name of the smart module
         #[clap(
             long,
             group("smartmodule_group"),
@@ -159,6 +162,7 @@ mod cmd {
         )]
         pub smartmodule: Option<String>,
 
+        /// Path to the stmart module
         #[clap(
             long,
             group("smartmodule_group"),
@@ -322,16 +326,16 @@ mod cmd {
                 builder.disable_continuous(true);
             }
 
-            if let Some(end_offset) = self.end_offset {
-                if end_offset < 0 {
-                    eprintln!("Argument end-offset must be greater than or equal to zero");
-                }
-                if let Some(offset) = self.offset {
-                    let o = offset as i64;
-                    if end_offset < o {
+            if let Some(end_offset) = self.end {
+                if let Some(start_offset) = self.start {
+                    if end_offset < start_offset {
                         eprintln!(
-                            "Argument end-offset must be greater than or equal to specified offset"
+                            "Argument end-offset must be greater than or equal to specified start offset"
                         );
+                        return Err(CliError::from(FluvioError::CrossingOffsets(
+                            start_offset,
+                            end_offset,
+                        )));
                     }
                 }
             }
@@ -362,7 +366,7 @@ mod cmd {
             tableformat: Option<TableFormatSpec>,
         ) -> Result<()> {
             self.print_status();
-            let maybe_potential_offset: Option<i64> = self.end_offset;
+            let maybe_potential_end_offset: Option<u32> = self.end;
             let mut stream = consumer.stream_with_config(offset, config).await?;
 
             let templates = match self.format.as_deref() {
@@ -449,8 +453,8 @@ mod cmd {
                                     &pb,
                                 );
 
-                                if let Some(potential_offset) = maybe_potential_offset {
-                                    if record.offset >= potential_offset {
+                                if let Some(potential_offset) = maybe_potential_end_offset {
+                                    if record.offset >= potential_offset as i64 {
                                         eprintln!("End-offset has been reached; exiting");
                                         break;
                                     }
@@ -502,8 +506,8 @@ mod cmd {
                         &pb,
                     );
 
-                    if let Some(potential_offset) = maybe_potential_offset {
-                        if record.offset >= potential_offset {
+                    if let Some(potential_offset) = maybe_potential_end_offset {
+                        if record.offset >= potential_offset as i64 {
                             eprintln!("End-offset has been reached; exiting");
                             break;
                         }
@@ -623,74 +627,36 @@ mod cmd {
             }
         }
 
+        fn format_status_string(&self) -> String {
+            let prefix = format!("Consuming records from '{}'", self.topic);
+            let starting_description = if self.beginning {
+                " starting from the beginning of log".to_string()
+            } else if let Some(offset) = self.head {
+                format!(" starting {} from the beginning of log", offset)
+            } else if let Some(offset) = self.start {
+                format!(" starting at offset {}", offset)
+            } else if let Some(offset) = self.tail {
+                format!(" starting {} from the end of log", offset)
+            } else {
+                "".to_string()
+            };
+
+            let ending_description = if let Some(end) = self.end {
+                format!(" until offset {} (inclusive)", end)
+            } else {
+                "".to_string()
+            };
+
+            format!("{}{}{}", prefix, starting_description, ending_description)
+        }
+
         fn print_status(&self) {
             use colored::*;
             if !atty::is(atty::Stream::Stdout) {
                 return;
             }
 
-            // If --from-beginning=X
-            if let Some(Some(offset)) = self.from_beginning {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records starting {} from the beginning of topic '{}'",
-                        offset, &self.topic
-                    )
-                    .bold()
-                );
-            // If --from-beginning
-            } else if let Some(None) = self.from_beginning {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records from the beginning of topic '{}'",
-                        &self.topic
-                    )
-                    .bold()
-                );
-            // If --offset=X
-            } else if let Some(offset) = self.offset {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records from offset {} in topic '{}'",
-                        offset, &self.topic
-                    )
-                    .bold()
-                );
-            // If --tail or --tail=X
-            } else if let Some(maybe_tail) = self.tail {
-                let tail = maybe_tail.unwrap_or(DEFAULT_TAIL);
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records starting {} from the end of topic '{}'",
-                        tail, &self.topic
-                    )
-                    .bold()
-                );
-            // If --end-offset=X
-            } else if let Some(end) = self.end_offset {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records starting from the end until record {} in topic '{}'",
-                        end, &self.topic
-                    )
-                    .bold()
-                );
-            // If no offset config is given, read from the end
-            } else {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records from the end of topic '{}'. This will wait for new records",
-                        &self.topic
-                    )
-                    .bold()
-                );
-            }
+            eprintln!("{}", self.format_status_string().bold());
         }
 
         /// Initialize Ctrl-C event handler
@@ -712,14 +678,14 @@ mod cmd {
 
         /// Calculate the Offset to use with the consumer based on the provided offset number
         fn calculate_offset(&self) -> Result<Offset> {
-            let offset = if let Some(maybe_offset) = self.from_beginning {
-                let offset = maybe_offset.unwrap_or(0);
+            let offset = if self.beginning {
+                Offset::from_beginning(0)
+            } else if let Some(offset) = self.head {
                 Offset::from_beginning(offset)
-            } else if let Some(offset) = self.offset {
+            } else if let Some(offset) = self.start {
                 Offset::absolute(offset as i64).unwrap()
-            } else if let Some(maybe_tail) = self.tail {
-                let tail = maybe_tail.unwrap_or(DEFAULT_TAIL);
-                Offset::from_end(tail)
+            } else if let Some(offset) = self.tail {
+                Offset::from_end(offset)
             } else {
                 Offset::end()
             };
@@ -778,6 +744,133 @@ mod cmd {
     impl ::std::default::Default for ConsumeOutputType {
         fn default() -> Self {
             ConsumeOutputType::dynamic
+        }
+    }
+    #[cfg(test)]
+    mod tests {
+        use fluvio::Offset;
+
+        use super::ConsumeOpt;
+
+        fn get_opt() -> ConsumeOpt {
+            ConsumeOpt {
+                topic: "TOPIC_NAME".to_string(),
+                partition: Default::default(),
+                all_partitions: Default::default(),
+                disable_continuous: Default::default(),
+                disable_progressbar: Default::default(),
+                key_value: Default::default(),
+                format: Default::default(),
+                table_format: Default::default(),
+                start: Default::default(),
+                head: Default::default(),
+                tail: Default::default(),
+                end: Default::default(),
+                max_bytes: Default::default(),
+                suppress_unknown: Default::default(),
+                output: Default::default(),
+                smartmodule: Default::default(),
+                smartmodule_path: Default::default(),
+                aggregate_initial: Default::default(),
+                params: Default::default(),
+                isolation: Default::default(),
+                beginning: Default::default(),
+            }
+        }
+        #[test]
+        fn test_format_status_string() {
+            // Starting from options: --beginning --head --start --tail
+
+            // --beginning
+            let mut opt = get_opt();
+            opt.beginning = true;
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting from the beginning of log",
+            );
+
+            // --head
+            let mut opt = get_opt();
+            opt.head = Some(1);
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log",
+            );
+            opt.end = Some(2);
+            assert_eq!(
+            opt.format_status_string(),
+            "Consuming records from 'TOPIC_NAME' starting 1 from the beginning of log until offset 2 (inclusive)",
+        );
+
+            // --start
+            let mut opt = get_opt();
+            opt.start = Some(1);
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting at offset 1",
+            );
+            opt.end = Some(2);
+            assert_eq!(
+            opt.format_status_string(),
+            "Consuming records from 'TOPIC_NAME' starting at offset 1 until offset 2 (inclusive)",
+        );
+
+            // --tail
+            let mut opt = get_opt();
+            opt.tail = Some(1);
+            assert_eq!(
+                opt.format_status_string(),
+                "Consuming records from 'TOPIC_NAME' starting 1 from the end of log",
+            );
+            opt.end = Some(2);
+            assert_eq!(
+            opt.format_status_string(),
+            "Consuming records from 'TOPIC_NAME' starting 1 from the end of log until offset 2 (inclusive)",
+        );
+
+            // base case
+            let mut opt = get_opt();
+            assert_eq!(
+                "Consuming records from 'TOPIC_NAME'",
+                opt.format_status_string(),
+            );
+            opt.end = Some(2);
+            assert_eq!(
+                "Consuming records from 'TOPIC_NAME' until offset 2 (inclusive)",
+                opt.format_status_string(),
+            );
+        }
+
+        #[test]
+        fn test_calculate_offset() {
+            // default
+            let opt = get_opt();
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::end());
+
+            // --beginning
+            let mut opt = get_opt();
+            opt.beginning = true;
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::from_beginning(0));
+
+            // --head
+            let mut opt = get_opt();
+            opt.head = Some(1);
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::from_beginning(1));
+
+            // --tail
+            let mut opt = get_opt();
+            opt.tail = Some(1);
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::from_end(1));
+
+            // --start
+            let mut opt = get_opt();
+            opt.start = Some(1);
+            let offset = opt.calculate_offset().unwrap();
+            assert_eq!(offset, Offset::absolute(1).unwrap());
         }
     }
 }
