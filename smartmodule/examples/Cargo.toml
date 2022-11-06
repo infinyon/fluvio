@@ -29,3 +29,4 @@ fluvio-smartmodule = { path = "../../crates/fluvio-smartmodule" }
 # lto is need to reduce wasm binary size
 [profile.release]
 lto = true
+strip = "symbols"
