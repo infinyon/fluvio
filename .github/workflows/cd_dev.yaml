@@ -196,7 +196,7 @@ jobs:
               echo "Version reported by installer: $INSTALLER_VERSION";
               echo "Expected version: $EXPECTED_VERSION";
               echo "cat /tmp/installer.version"
-              cat /tmp/install.version
+              cat /tmp/installer.version
               exit 1;
             fi
 
