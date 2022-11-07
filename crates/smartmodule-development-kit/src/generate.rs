@@ -283,23 +283,11 @@ impl GenerateOpt {
         let args = GenerateArgs {
             template_path,
             name: self.name,
-            list_favorites: false,
-            force: false,
             verbose: !self.silent,
-            template_values_file: None,
             silent: self.silent,
-            config: None,
-            vcs: None,
-            lib: false,
-            bin: false,
-            ssh_identity: None,
             define: maybe_user_input.to_cargo_generate(),
-            init: false,
             destination: self.destination,
-            force_git_init: false,
-            allow_commands: false,
-            overwrite: false,
-            other_args: None,
+            ..Default::default()
         };
 
         let gen_dir = generate(args).map_err(Error::from)?;
@@ -394,14 +382,8 @@ impl SmdkTemplate {
             .map_err(Error::from)?;
         let template = Self {
             template_path: TemplatePath {
-                git: None,
-                auto_path: None,
-                subfolder: None,
-                test: false,
-                branch: None,
-                tag: None,
                 path,
-                favorite: None,
+                ..Default::default()
             },
             _temp_dir: Some(temp_dir),
             _template_source: SmdkTemplateSource::Default,
@@ -418,13 +400,7 @@ impl SmdkTemplate {
                 Ok(Self {
                     template_path: TemplatePath {
                         git: Some(url),
-                        auto_path: None,
-                        subfolder: None,
-                        test: false,
-                        branch: None,
-                        tag: None,
-                        path: None,
-                        favorite: None,
+                        ..Default::default()
                     },
                     _temp_dir: None,
                     _template_source: source,
@@ -435,13 +411,8 @@ impl SmdkTemplate {
                 Ok(Self {
                     template_path: TemplatePath {
                         git: Some(url),
-                        auto_path: None,
-                        subfolder: None,
-                        test: false,
-                        branch: None,
                         tag: Some(tag),
-                        path: None,
-                        favorite: None,
+                        ..Default::default()
                     },
                     _temp_dir: None,
                     _template_source: source,
@@ -452,13 +423,8 @@ impl SmdkTemplate {
                 Ok(Self {
                     template_path: TemplatePath {
                         git: Some(url),
-                        auto_path: None,
-                        subfolder: None,
-                        test: false,
                         branch: Some(branch),
-                        tag: None,
-                        path: None,
-                        favorite: None,
+                        ..Default::default()
                     },
                     _temp_dir: None,
                     _template_source: source,
@@ -473,14 +439,8 @@ impl SmdkTemplate {
                     .to_string();
                 Ok(Self {
                     template_path: TemplatePath {
-                        git: None,
-                        auto_path: None,
-                        subfolder: None,
-                        test: false,
-                        branch: None,
-                        tag: None,
                         path: Some(path_str),
-                        favorite: None,
+                        ..Default::default()
                     },
                     _temp_dir: None,
                     _template_source: source,

@@ -21,7 +21,7 @@ thiserror = "1.0.20"
 toml = { version = "0.5.9" }
 anyhow = { version = "1.0.38" }
 cargo_metadata = "0.15.0"
-cargo-generate = "0.16.0"
+cargo-generate = "0.17.0"
 convert_case = "0.6.0"
 include_dir = "0.7.2"
 tempfile = "3.3.0"
