@@ -102,13 +102,11 @@ function validate_cluster_stable() {
     $STABLE_FLUVIO consume -B -d ${STABLE_TOPIC} 2>/dev/null | tee output.txt.tmp
     ci_check;
 
-    echo "You are here"
-
     if cat output.txt.tmp | shasum -c stable-cli-stable-topic.checksum; then
         echo "${STABLE_TOPIC} topic validated with v${STABLE} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
-        echo "Expected: $(cat data1.txt.tmp | awk '{print $1}')"
+        echo "Expected: $(cat stable-cli-stable-topic.checksum | awk '{print $1}')"
         exit 1
     fi
 
@@ -203,10 +201,11 @@ function validate_upgrade_cluster_to_prerelease() {
     $FLUVIO_BIN_ABS_PATH consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
 
 
+    echo "You are here"
     if cat output.txt.tmp | shasum -c prerelease-cli-stable-topic.checksum; then
         echo "${STABLE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
     else
-        echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
+        echo "Got: $(cat output.txt.tmp)"
         echo "Expected: $(cat prerelease-cli-stable-topic.checksum | awk '{print $1}')"
         exit 1
     fi
