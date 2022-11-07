@@ -232,6 +232,10 @@ function validate_cli_version() {
       echo "❌ CLI Version check failed";
       echo "Version reported by fluvio version: $CLI_VERSION";
       echo "Expected version : $FLUVIO_SEMVER";
+      echo "Verify command run was $CUR_FLUVIO_BIN version";
+      echo "Output was"
+      $CUR_FLUVIO_BIN version
+
       exit 1;
     fi
 
@@ -252,6 +256,10 @@ function validate_platform_version() {
       echo "❌ Platform Version check failed";
       echo "Version reported by fluvio version: $PLATFORM_VERSION";
       echo "Expected version : $FLUVIO_SEMVER";
+      echo "Verify command run was $CUR_FLUVIO_BIN version";
+      echo "Output was"
+      $CUR_FLUVIO_BIN version
+
       exit 1;
     fi
 
