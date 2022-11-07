@@ -183,7 +183,7 @@ function validate_upgrade_cluster_to_prerelease() {
     if cat output.txt.tmp | shasum -c prerelease-cli-prerelease-topic.checksum; then
         echo "${PRERELEASE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
     else
-        echo "Got: $(cat output.txt.tmp)"
+        echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
         echo "Expected: $(cat prerelease-cli-prerelease-topic.checksum | awk '{print $1}')"
         exit 1
     fi
