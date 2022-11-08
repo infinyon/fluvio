@@ -454,12 +454,14 @@ impl ClusterConfigBuilder {
     ///     ca_cert: cert_path.join("ca.crt"),
     ///     cert: cert_path.join("client.crt"),
     ///     key: cert_path.join("client.key"),
+    ///     secret_name: "fluvio-client-tls".to_string(),
     /// };
     /// let server = TlsPaths {
     ///     domain: "fluvio.io".to_string(),
     ///     ca_cert: cert_path.join("ca.crt"),
     ///     cert: cert_path.join("server.crt"),
     ///     key: cert_path.join("server.key"),
+    ///     secret_name: "fluvio-tls".to_string(),
     /// };
     ///
     /// let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
@@ -1230,7 +1232,7 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(["delete", "secret", "fluvio-tls", "--ignore-not-found=true"])
+            .args(["delete", "secret", &server_paths.secret_name, "--ignore-not-found=true"])
             .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
@@ -1239,7 +1241,7 @@ impl ClusterInstaller {
             .args([
                 "delete",
                 "secret",
-                "fluvio-client-tls",
+                &client_paths.secret_name,
                 "--ignore-not-found=true",
             ])
             .args(["--namespace", &self.config.namespace])
@@ -1254,7 +1256,7 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(["create", "secret", "tls", "fluvio-tls"])
+            .args(["create", "secret", "tls", &server_paths.secret_name])
             .args(["--cert", server_cert])
             .args(["--key", server_key])
             .args(["--namespace", &self.config.namespace])
@@ -1262,7 +1264,7 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(["create", "secret", "tls", "fluvio-client-tls"])
+            .args(["create", "secret", "tls", &client_paths.secret_name])
             .args(["--cert", client_cert])
             .args(["--key", client_key])
             .args(["--namespace", &self.config.namespace])

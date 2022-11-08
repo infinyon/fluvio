@@ -7,18 +7,22 @@ pub fn cert_dir() -> PathBuf {
 
 pub fn load_tls(client_user: &str) -> (TlsPolicy, TlsPolicy) {
     const DOMAIN: &str = "fluvio.local";
+    const CLIENT_SECRET_NAME: &str = "fluvio-client-tls";
+    const SERVER_SECRET_NAME: &str = "fluvio-tls";
     let cert_dir = cert_dir();
     let client_policy = TlsPolicy::from(TlsPaths {
         domain: DOMAIN.to_string(),
         key: cert_dir.join(format!("client-{}.key", client_user)),
         cert: cert_dir.join(format!("client-{}.crt", client_user)),
         ca_cert: cert_dir.join("ca.crt"),
+        secret_name: CLIENT_SECRET_NAME.to_string(),
     });
     let server_policy = TlsPolicy::from(TlsPaths {
         domain: DOMAIN.to_string(),
         key: cert_dir.join("server.key"),
         cert: cert_dir.join("server.crt"),
         ca_cert: cert_dir.join("ca.crt"),
+        secret_name: SERVER_SECRET_NAME.to_string(),
     });
     (client_policy, server_policy)
 }
