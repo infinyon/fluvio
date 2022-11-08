@@ -116,14 +116,14 @@ fn run_test(
                 get_current_pid().unwrap(),
             );
             if parent_id == root_pid {
-                println!("test complete, signalling to parent");
+                println!("test complete, signaling to parent");
                 root_process.kill_with(Signal::User1);
             }
             if let Err(err) = status {
                 if environment.expect_fail {
-                    println!("test failed as expected, signalling parent");
+                    println!("test failed as expected, signaling parent");
                 } else {
-                    println!("test failed {:#?}, signalling parent", err);
+                    println!("test failed {:#?}, signaling parent", err);
                 }
                 // This doesn't actually kill root_process, just sends it the signal
                 root_process.kill_with(Signal::User2);
