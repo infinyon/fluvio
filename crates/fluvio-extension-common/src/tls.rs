@@ -33,6 +33,10 @@ pub struct TlsClientOpt {
     /// Path to TLS client private key
     #[clap(long, value_parser)]
     pub client_key: Option<PathBuf>,
+
+    /// Secret Name used while adding to Kubernetes.
+    #[clap(long)]
+    pub secret_name: Option<String>
 }
 
 impl TryFrom<TlsClientOpt> for TlsPolicy {
@@ -55,12 +59,14 @@ impl TryFrom<TlsClientOpt> for TlsPolicy {
             let ca_cert = opt.ca_cert?;
             let client_cert = opt.client_cert?;
             let client_key = opt.client_key?;
+            let secret_name = opt.secret_name.unwrap_or_else(|| "fluvio-client-tls".to_string());
 
             let policy = TlsPolicy::from(TlsPaths {
                 domain,
                 ca_cert,
                 cert: client_cert,
                 key: client_key,
+                secret_name,
             });
 
             Some(policy)
@@ -82,7 +88,7 @@ mod tests {
     use std::convert::TryInto;
 
     #[test]
-    fn test_from_opt() {
+    fn test_from_opt_without_secret_name() {
         let tls_opt = TlsClientOpt::parse_from(vec![
             "test", // First arg is treated as binary name
             "--tls",
@@ -105,6 +111,39 @@ mod tests {
                 assert_eq!(paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
                 assert_eq!(paths.cert, PathBuf::from("/tmp/certs/client.crt"));
                 assert_eq!(paths.key, PathBuf::from("/tmp/certs/client.key"));
+                assert_eq!(paths.secret_name, String::from("fluvio-client-tls"));
+            }
+            _ => panic!("Failed to parse TlsPolicy from TlsClientOpt"),
+        }
+    }
+
+    #[test]
+    fn test_from_opt_with_secret_name() {
+        let tls_opt = TlsClientOpt::parse_from(vec![
+            "test", // First arg is treated as binary name
+            "--tls",
+            "--enable-client-cert",
+            "--domain",
+            "fluvio.io",
+            "--ca-cert",
+            "/tmp/certs/ca.crt",
+            "--client-cert",
+            "/tmp/certs/client.crt",
+            "--client-key",
+            "/tmp/certs/client.key",
+            "--secret-name",
+            "test-tls",
+        ]);
+        let policy: TlsPolicy = tls_opt.try_into().unwrap();
+
+        use fluvio::config::{TlsPolicy::*, TlsConfig::*};
+        match policy {
+            Verified(Files(paths)) => {
+                assert_eq!(paths.domain, "fluvio.io");
+                assert_eq!(paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
+                assert_eq!(paths.cert, PathBuf::from("/tmp/certs/client.crt"));
+                assert_eq!(paths.key, PathBuf::from("/tmp/certs/client.key"));
+                assert_eq!(paths.secret_name, String::from("test-tls"));
             }
             _ => panic!("Failed to parse TlsPolicy from TlsClientOpt"),
         }
