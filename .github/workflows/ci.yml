@@ -51,7 +51,8 @@ jobs:
       runs: ${{ steps.runs.outputs.runs }}
     steps:
       - id: check
-        run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
+        # run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
+        run: echo "{name}={check::${{ env.ENABLE_CHECK }}}" >> $GITHUB_OUTPUT
       #- name: Set Staging runs
       ##  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
       #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
