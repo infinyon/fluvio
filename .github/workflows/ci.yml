@@ -530,6 +530,7 @@ jobs:
         spu: [2]
         test:
           [
+            validate-test-harness,
             smoke-test,
             smoke-test-tls,
             smoke-test-at-most-once,
@@ -582,6 +583,11 @@ jobs:
           fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
       - name: sleep
         run: sleep 15
+      - name: Validate test harness
+        if: matrix.test == 'validate-test-harness'
+        timeout-minutes: 5
+        run : |
+          make validate-test-harness
       - name: Run smoke-test
         if: matrix.test == 'smoke-test'
         timeout-minutes: 5
@@ -696,6 +702,7 @@ jobs:
         run: [r1]
         test:
           [
+            validate-test-harness,
             smoke-test-k8,
             smoke-test-k8-tls,
             smoke-test-k8-tls-root-unclean,
