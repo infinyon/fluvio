@@ -62,7 +62,9 @@ mod root {
 
     impl Root {
         pub async fn process(self) -> Result<()> {
-            check_for_channel_update().await;
+            if !matches_consume(&self.command) {
+                check_for_channel_update().await;
+            }
             self.command.process(self.opts).await?;
             Ok(())
         }
@@ -347,6 +349,29 @@ mod root {
         }
 
         Ok(())
+    }
+    #[inline]
+    fn matches_consume(cmd: &RootCmd) -> bool {
+        matches!(cmd, RootCmd::Fluvio(FluvioCmd::Consume(_)))
+    }
+    #[cfg(test)]
+    mod tests {
+        use clap::Parser;
+
+        use crate::{Root, root::matches_consume};
+
+        #[test]
+        fn test_matches_consume() {
+            assert!(matches_consume(
+                &parse("fluvio consume hello").unwrap().command
+            ));
+            assert!(!matches_consume(
+                &parse("fluvio produce hello").unwrap().command
+            ));
+        }
+        fn parse(command: &str) -> Result<Root, clap::error::Error> {
+            Root::try_parse_from(command.split_whitespace())
+        }
     }
 }
 // Checks for an update if channel is latest or ALWAYS_CHECK is set

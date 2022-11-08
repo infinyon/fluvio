@@ -89,7 +89,7 @@ jobs:
             sleep ${{ env.SLEEP }}
             date +"%Y-%m-%dT%H:%M:%S%z"
             echo foo | fluvio produce ${{ env.TOPIC }}
-            fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
+            fluvio consume ${{ env.TOPIC }} --start 0 -d | grep -F -w "foo"
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
 
