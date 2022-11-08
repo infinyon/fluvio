@@ -5,6 +5,7 @@ version = "0.1.0"
 apiVersion = "0.1.0"
 description = "{{project-description}}"
 license = "Apache-2.0"
+public = {{smartmodule-public}}
 
 [[params]]
 name = "input"
