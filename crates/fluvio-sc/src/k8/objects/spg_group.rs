@@ -293,7 +293,7 @@ mod k8_convert {
             volumes.push(VolumeSpec {
                 name: "tls".to_owned(),
                 secret: Some(SecretVolumeSpec {
-                    secret_name: tls.secret_name.clone().unwrap(), 
+                    secret_name: tls.secret_name.clone().unwrap(),
                     ..Default::default()
                 }),
                 ..Default::default()

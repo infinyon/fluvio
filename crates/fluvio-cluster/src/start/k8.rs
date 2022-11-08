@@ -1232,7 +1232,12 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(["delete", "secret", &server_paths.secret_name, "--ignore-not-found=true"])
+            .args([
+                "delete",
+                "secret",
+                &server_paths.secret_name,
+                "--ignore-not-found=true",
+            ])
             .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;

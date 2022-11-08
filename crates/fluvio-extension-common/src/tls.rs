@@ -36,7 +36,7 @@ pub struct TlsClientOpt {
 
     /// Secret Name used while adding to Kubernetes.
     #[clap(long)]
-    pub secret_name: Option<String>
+    pub secret_name: Option<String>,
 }
 
 impl TryFrom<TlsClientOpt> for TlsPolicy {
@@ -59,7 +59,9 @@ impl TryFrom<TlsClientOpt> for TlsPolicy {
             let ca_cert = opt.ca_cert?;
             let client_cert = opt.client_cert?;
             let client_key = opt.client_key?;
-            let secret_name = opt.secret_name.unwrap_or_else(|| "fluvio-client-tls".to_string());
+            let secret_name = opt
+                .secret_name
+                .unwrap_or_else(|| "fluvio-client-tls".to_string());
 
             let policy = TlsPolicy::from(TlsPaths {
                 domain,

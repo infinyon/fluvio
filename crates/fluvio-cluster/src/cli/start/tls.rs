@@ -29,8 +29,8 @@ pub struct TlsOpt {
     /// TLS: client key
     #[clap(long, value_parser)]
     pub client_key: Option<PathBuf>,
-    
-    /// TLS: Secret name used for client while adding to kubernetes 
+
+    /// TLS: Secret name used for client while adding to kubernetes
     #[clap(long)]
     pub client_secret_name: Option<String>,
 
@@ -42,7 +42,7 @@ pub struct TlsOpt {
     #[clap(long, value_parser)]
     pub server_key: Option<PathBuf>,
 
-    /// TLS: Secret name used for server while adding to kubernetes 
+    /// TLS: Secret name used for server while adding to kubernetes
     #[clap(long)]
     pub server_secret_name: Option<String>,
 }
@@ -63,10 +63,14 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             let ca_cert = opt.ca_cert?;
             let client_cert = opt.client_cert?;
             let client_key = opt.client_key?;
-            let client_secret_name = opt.client_secret_name.unwrap_or_else(|| "fluvio-client-tls".to_string());
+            let client_secret_name = opt
+                .client_secret_name
+                .unwrap_or_else(|| "fluvio-client-tls".to_string());
             let server_cert = opt.server_cert?;
             let server_key = opt.server_key?;
-            let server_client_name = opt.server_secret_name.unwrap_or_else(|| "fluvio-tls".to_string());
+            let server_client_name = opt
+                .server_secret_name
+                .unwrap_or_else(|| "fluvio-tls".to_string());
 
             let server_policy = TlsPolicy::from(TlsPaths {
                 domain: domain.clone(),

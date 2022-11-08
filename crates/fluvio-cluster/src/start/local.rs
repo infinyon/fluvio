@@ -327,7 +327,7 @@ impl LocalConfigBuilder {
 pub struct LocalInstaller {
     /// Configuration options for this process
     config: LocalConfig,
-    pb_factory: ProgressBarFactory
+    pb_factory: ProgressBarFactory,
 }
 
 impl LocalInstaller {
