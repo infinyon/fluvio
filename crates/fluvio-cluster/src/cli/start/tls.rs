@@ -142,7 +142,7 @@ mod tests {
                 assert_eq!(server_paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
                 assert_eq!(server_paths.cert, PathBuf::from("/tmp/certs/server.crt"));
                 assert_eq!(server_paths.key, PathBuf::from("/tmp/certs/server.key"));
-                assert_eq!(server_paths.secret_name, TLS_CLIENT_SECRET_NAME.to_string());
+                assert_eq!(server_paths.secret_name, TLS_SERVER_SECRET_NAME.to_string());
             }
             _ => panic!("Failed to parse TlsProfiles from TlsOpt"),
         }
