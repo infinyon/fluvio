@@ -702,7 +702,6 @@ jobs:
         run: [r1]
         test:
           [
-            validate-test-harness-k8,
             smoke-test-k8,
             smoke-test-k8-tls,
             smoke-test-k8-tls-root-unclean,

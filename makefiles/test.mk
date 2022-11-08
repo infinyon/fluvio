@@ -139,8 +139,6 @@ test-permission-user1:
 
 # Kubernetes Tests
 
-validate-test-harness-k8: build_k8_image validate-test-harness
-
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
 smoke-test-k8: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8: build_k8_image smoke-test
