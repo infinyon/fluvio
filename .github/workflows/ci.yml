@@ -522,7 +522,7 @@ jobs:
       TEST_BIN: ~/bin/fluvio-test
       SERVER_LOG: fluvio=debug
     strategy:
- #     fail-fast: false
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
@@ -695,7 +695,7 @@ jobs:
       UNINSTALL: noclean
       SERVER_LOG: fluvio=debug
     strategy:
-  #    fail-fast: false
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
