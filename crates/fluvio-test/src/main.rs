@@ -100,10 +100,7 @@ fn run_test(
     }
     let root_process = sys.process(root_pid).expect("Unable to get root process");
     let _child_pid = match fork::fork() {
-        Ok(fork::Fork::Parent(child_pid)) => {
-            println!("child_pid {child_pid}");
-            child_pid
-        }
+        Ok(fork::Fork::Parent(child_pid)) => child_pid,
         Ok(fork::Fork::Child) => {
             println!("starting test in child process");
             // put panic handler, this shows proper stack trace in the console unlike hook
