@@ -518,6 +518,7 @@ main() {
 
     # Download Fluvio to a temporary file
     local _url="${FLUVIO_PREFIX}/packages/${FLUVIO_PACKAGE}/${_version}/${_target}/fluvio"
+    say "$_url"
     say "⏳ Downloading Fluvio ${_version} for ${_target}..."
     _temp_file=$(download_fluvio_to_temp "${_url}")
     _status=$?
