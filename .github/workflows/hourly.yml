@@ -21,7 +21,7 @@ env:
 
 jobs:
   build_long_binaries:
-    name: Test buiild for ${{ matrix.binary }}  on (${{ matrix.os }})
+    name: Test build for ${{ matrix.binary }}  on (${{ matrix.os }})
     if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
