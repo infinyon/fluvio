@@ -29,32 +29,14 @@ pub struct PackageMeta {
     pub description: String,
     pub license: String,
 
-    #[serde(default = "VisibilityOpt::private")]
-    pub visibility: VisibilityOpt, // owner is default if not in file
+    #[serde(default = "PackageMeta::private_if_missing")]
+    pub private: bool, // private = true is default if missing
     pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
                                // repository: optional url
                                // repository-commit: optional hash
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum VisibilityOpt {
-    /// the default
-    Public,
 
-    /// owner in signature.0
-    Owner,
-    // /// group
-    // #[serde(rename="group")]
-    // Group,
-}
-
-impl VisibilityOpt {
-    /// for serde default
-    fn private() -> Self {
-        VisibilityOpt::Owner
-    }
-}
 
 impl Default for PackageMeta {
     fn default() -> PackageMeta {
@@ -65,7 +47,7 @@ impl Default for PackageMeta {
             group: "NameOfContributingGroup".into(),
             description: "Describe the module here".into(),
             license: "e.g. Apache2".into(),
-            visibility: VisibilityOpt::Owner,
+            private: true,
             manifest: Vec::new(),
         }
     }
@@ -149,6 +131,12 @@ impl PackageMeta {
     /// the packagefile name as defined by the package meta data
     pub fn packagefile_name_unsigned(&self) -> String {
         self.name.clone() + "-" + &self.version + ".tar"
+    }
+
+    /// used by serde to fill in private field if missing on parse
+    /// this helps support old versions of the package format
+    pub fn private_if_missing() -> bool {
+        true
     }
 
     pub fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()> {
@@ -491,7 +479,7 @@ mod t_packagemeta_version {
 
     use crate::HubUtilError;
     use crate::PackageMeta;
-    use crate::VisibilityOpt;
+
 
     fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
         let pm = PackageMeta::read_from_file(fname)?;
@@ -531,7 +519,7 @@ mod t_packagemeta_version {
         dbg!(&res);
         assert!(res.is_ok());
         if let Ok(pm) = res {
-            assert_eq!(pm.visibility, VisibilityOpt::Owner);
+            assert_eq!(pm.private, true);
         }
     }
 }
