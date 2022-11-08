@@ -1,3 +1,5 @@
+
+
 use std::sync::Arc;
 use std::fmt::Debug;
 
@@ -5,13 +7,13 @@ use clap::Parser;
 
 use fluvio_extension_common::Terminal;
 use fluvio_hub_util as hubutil;
-use hubutil::PackageList;
+use hubutil::PackageListMeta;
 use hubutil::http;
 
 use crate::{CliError, Result};
 use crate::common::OutputFormat;
 
-const API_LIST: &str = "hub/v0/list";
+const API_LIST_META: &str = "hub/v0/list_with_meta";
 
 /// List available SmartModules in the hub
 #[derive(Debug, Parser)]
@@ -29,14 +31,14 @@ impl ListHubOpt {
             CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
         })?;
         let action_token = access.get_list_token().await.map_err(|_| {
-            CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
+            CliError::HubError("rejected access credentials, try 'fluvio cloud login'".into())
         })?;
-        let url = format!("{}/{API_LIST}", &access.remote);
+        let url = format!("{}/{API_LIST_META}", &access.remote);
         let mut res = http::get(&url)
             .header("Authorization", &action_token)
             .await
             .map_err(|e| CliError::HubError(format!("list api access error {e}")))?;
-        let pl: PackageList = res
+        let pl: PackageListMeta = res
             .body_json()
             .await
             .map_err(|e| CliError::HubError(format!("list api data parse error {e}")))?;
@@ -45,13 +47,13 @@ impl ListHubOpt {
     }
 }
 
+#[allow(dead_code)]
 mod output {
 
     //!
     //! # Fluvio hub list - output processing
     //!
     //! Format SmartModules response based on output type
-
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
 
@@ -59,13 +61,14 @@ mod output {
     use serde::Serialize;
     use fluvio_extension_common::output::OutputType;
     use fluvio_extension_common::Terminal;
-
-    use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
+    use fluvio_hub_util::PackageMeta;
+
+    use crate::CliError;
 
     #[derive(Serialize)]
-    struct ListSmartModules(Vec<String>);
+    struct ListSmartModules(Vec<PackageMeta>);
 
     // -----------------------------------
     // Format Output
@@ -74,7 +77,7 @@ mod output {
     /// Format SmartModules based on output type
     pub fn smartmodules_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
-        list_smartmodules: Vec<String>,
+        list_smartmodules: Vec<PackageMeta>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
         debug!("smart modules: {:#?}", list_smartmodules);
@@ -95,7 +98,7 @@ mod output {
     impl TableOutputHandler for ListSmartModules {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["SMARTMODULE"])
+            Row::from(["SMARTMODULE", "Visibility"])
         }
 
         /// return errors in string format
@@ -103,11 +106,21 @@ mod output {
             vec![]
         }
 
-        /// table content implementation                     
+        /// table content implementation
         fn content(&self) -> Vec<Row> {
             self.0
                 .iter()
-                .map(|e| Row::from([Cell::new(e).set_alignment(CellAlignment::Left)]))
+                .map(|e| {
+                    let privlabel = if e.private {
+                        "private"
+                    } else {
+                        "public"
+                    };
+                    Row::from([
+                        Cell::new(&e.pkg_name()).set_alignment(CellAlignment::Left),
+                        Cell::new(privlabel).set_alignment(CellAlignment::Left)
+                    ])
+                })
                 .collect()
         }
     }
