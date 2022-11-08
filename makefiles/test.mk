@@ -30,6 +30,8 @@ TEST_ARG_COMMON = ${TEST_ARG_SPU} \
                 ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
+
+
 ifeq ($(UNINSTALL),noclean)
 clean_cluster:
 	echo "no clean"
@@ -40,6 +42,18 @@ clean_cluster:
 endif
 
 test-setup:	build-test-ci clean_cluster
+
+
+
+validate-test-harness: test-setup
+	$(TEST_BIN) expected_pass ${TEST_ARG_EXTRA}
+	$(TEST_BIN) expected_fail --expect-fail
+	$(TEST_BIN) expected_fail_join_fail_first --expect-fail
+	$(TEST_BIN) expected_fail_join_success_first --expect-fail
+	$(TEST_BIN) expected_timeout --timeout 5sec --expect-timeout
+
+validate-test-harness-local: TEST_ARG_EXTRA=--local  --cluster-start
+validate-test-harness-local: validate-test-harness
 
 # To run a smoke test locally: make smoke-test-local EXTRA_ARG=--cluster-start
 smoke-test: test-setup
