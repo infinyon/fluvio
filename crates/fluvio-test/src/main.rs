@@ -176,11 +176,11 @@ fn run_test(
             false
         };
         kill_child_processes(root_process);
-        return TestResult {
+        TestResult {
             success,
             duration: start.elapsed().unwrap(),
             ..std::default::Default::default()
-        };
+        }
     } else if success {
         println!("Test passed");
         TestResult {
