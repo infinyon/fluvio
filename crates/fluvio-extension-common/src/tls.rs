@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
+use fluvio_types::defaults::TLS_CLIENT_SECRET_NAME;
 use tracing::debug;
 use clap::Parser;
 
@@ -61,7 +62,7 @@ impl TryFrom<TlsClientOpt> for TlsPolicy {
             let client_key = opt.client_key?;
             let secret_name = opt
                 .secret_name
-                .unwrap_or_else(|| "fluvio-client-tls".to_string());
+                .unwrap_or_else(|| TLS_CLIENT_SECRET_NAME.to_string());
 
             let policy = TlsPolicy::from(TlsPaths {
                 domain,
@@ -113,7 +114,7 @@ mod tests {
                 assert_eq!(paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
                 assert_eq!(paths.cert, PathBuf::from("/tmp/certs/client.crt"));
                 assert_eq!(paths.key, PathBuf::from("/tmp/certs/client.key"));
-                assert_eq!(paths.secret_name, String::from("fluvio-client-tls"));
+                assert_eq!(paths.secret_name, TLS_CLIENT_SECRET_NAME.to_string());
             }
             _ => panic!("Failed to parse TlsPolicy from TlsClientOpt"),
         }

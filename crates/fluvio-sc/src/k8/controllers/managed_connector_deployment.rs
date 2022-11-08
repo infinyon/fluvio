@@ -308,7 +308,7 @@ impl ManagedConnectorDeploymentController {
                 volumes.push(VolumeSpec {
                     name: "client-tls".to_owned(),
                     secret: Some(SecretVolumeSpec {
-                        secret_name: "fluvio-client-tls".to_owned(),
+                        secret_name: tls.secret_name.to_owned().unwrap(),
                         ..Default::default()
                     }),
                     ..Default::default()

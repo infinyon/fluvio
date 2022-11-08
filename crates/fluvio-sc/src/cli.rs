@@ -13,6 +13,7 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
+use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use tracing::info;
 use tracing::debug;
 use clap::Parser;
@@ -138,7 +139,9 @@ impl ScOpt {
                     "non tls addr for public must be specified",
                 )
             })?;
-            let _ = tls.secret_name.get_or_insert("fluvio-tls".to_string());
+            let _ = tls
+                .secret_name
+                .get_or_insert(TLS_SERVER_SECRET_NAME.to_string());
 
             Ok(((config, policy), Some((proxy_addr, tls))))
         } else {

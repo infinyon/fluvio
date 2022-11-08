@@ -2068,7 +2068,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -2249,7 +2249,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2356,13 +2356,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "async-trait",
  "clap 4.0.19",
  "comfy-table",
  "fluvio",
  "fluvio-package-index",
+ "fluvio-types",
  "futures-lite",
  "semver 1.0.14",
  "serde",
@@ -2515,7 +2516,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2881,6 +2882,7 @@ dependencies = [
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-future",
+ "fluvio-types",
  "futures-lite",
  "hdrhistogram",
  "humantime",

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
+use fluvio_types::defaults::{TLS_SERVER_SECRET_NAME, TLS_CLIENT_SECRET_NAME};
 use tracing::debug;
 use clap::Parser;
 
@@ -65,12 +66,12 @@ impl TryFrom<TlsOpt> for (TlsPolicy, TlsPolicy) {
             let client_key = opt.client_key?;
             let client_secret_name = opt
                 .client_secret_name
-                .unwrap_or_else(|| "fluvio-client-tls".to_string());
+                .unwrap_or_else(|| TLS_CLIENT_SECRET_NAME.to_string());
             let server_cert = opt.server_cert?;
             let server_key = opt.server_key?;
             let server_client_name = opt
                 .server_secret_name
-                .unwrap_or_else(|| "fluvio-tls".to_string());
+                .unwrap_or_else(|| TLS_SERVER_SECRET_NAME.to_string());
 
             let server_policy = TlsPolicy::from(TlsPaths {
                 domain: domain.clone(),
@@ -134,14 +135,14 @@ mod tests {
                 assert_eq!(client_paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
                 assert_eq!(client_paths.cert, PathBuf::from("/tmp/certs/client.crt"));
                 assert_eq!(client_paths.key, PathBuf::from("/tmp/certs/client.key"));
-                assert_eq!(client_paths.secret_name, String::from("fluvio-client-tls"));
+                assert_eq!(client_paths.secret_name, TLS_CLIENT_SECRET_NAME.to_string());
 
                 // Server checks
                 assert_eq!(server_paths.domain, "fluvio.io");
                 assert_eq!(server_paths.ca_cert, PathBuf::from("/tmp/certs/ca.crt"));
                 assert_eq!(server_paths.cert, PathBuf::from("/tmp/certs/server.crt"));
                 assert_eq!(server_paths.key, PathBuf::from("/tmp/certs/server.key"));
-                assert_eq!(server_paths.secret_name, String::from("fluvio-tls"));
+                assert_eq!(server_paths.secret_name, TLS_CLIENT_SECRET_NAME.to_string());
             }
             _ => panic!("Failed to parse TlsProfiles from TlsOpt"),
         }

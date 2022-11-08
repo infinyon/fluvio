@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-sc"
 edition = "2021"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["fluvio.io"]
 description = "Fluvio Stream Controller"
 repository = "https://github.com/infinyon/fluvio"

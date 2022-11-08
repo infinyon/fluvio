@@ -55,6 +55,8 @@ pub const STORAGE_MAX_BATCH_SIZE: u32 = 33_554_432;
 pub const CLI_PROFILES_DIR: &str = "profiles";
 pub const CLI_DEFAULT_PROFILE: &str = "default";
 pub const CLI_CONFIG_PATH: &str = ".fluvio";
+pub const TLS_CLIENT_SECRET_NAME: &str = "fluvio-client-tls";
+pub const TLS_SERVER_SECRET_NAME: &str = "fluvio-tls";
 
 // Env
 pub const FLV_FLUVIO_HOME: &str = "FLUVIO_HOME";
