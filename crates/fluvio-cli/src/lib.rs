@@ -377,13 +377,13 @@ mod root {
 // Checks for an update if channel is latest or ALWAYS_CHECK is set
 async fn check_for_channel_update() {
     if should_always_print_available_update() {
-        println!("🔍 Checking for new version");
+        eprintln!("🔍 Checking for new version");
         let agent = HttpAgent::default();
         let update_result = check_update_available(&agent, false).await;
         if let Ok(Some(latest_version)) = update_result {
             prompt_available_update(&latest_version);
         } else {
-            println!("✅ fluvio-cli is up to date");
+            eprintln!("✅ fluvio-cli is up to date");
         }
     }
 }
