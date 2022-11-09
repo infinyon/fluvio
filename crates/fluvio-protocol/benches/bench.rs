@@ -36,7 +36,7 @@ fn bench_decode_vecu8(c: &mut Criterion) {
 
 fn bench_encode_bytebuf(c: &mut Criterion) {
     let bytes = read(EXAMPLE_WASM_FILE).unwrap();
-    let bytebuf: ByteBuf = ByteBuf::from(bytes.clone());
+    let bytebuf: ByteBuf = ByteBuf::from(bytes);
 
     c.bench_function("bytebuf encoding", |b| {
         b.iter(|| {
