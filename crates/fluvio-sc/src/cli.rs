@@ -139,9 +139,11 @@ impl ScOpt {
                     "non tls addr for public must be specified",
                 )
             })?;
+            info!("TLS UPDATING");
             let _ = tls
                 .secret_name
                 .get_or_insert(TLS_SERVER_SECRET_NAME.to_string());
+            info!("{:?}", tls);
 
             Ok(((config, policy), Some((proxy_addr, tls))))
         } else {
