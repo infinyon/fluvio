@@ -41,7 +41,7 @@ producer-file-io = ["fluvio-cli-common/file-records"]
 tracing = "0.1.19"
 url = "2.1.1"
 semver = "1.0.0"
-clap = { version = "4.0.9", features = ["std", "derive", "string", "help", "usage", "error-context"], default-features = false }
+clap = { version = "4.0.9", features = ["std", "derive", "string", "help", "usage", "env", "error-context"], default-features = false }
 clap_complete = "4.0.2"
 dirs = "4.0.0"
 thiserror = "1.0.20"

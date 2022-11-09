@@ -1,5 +1,3 @@
-
-
 use std::sync::Arc;
 use std::fmt::Debug;
 
@@ -11,6 +9,7 @@ use hubutil::PackageListMeta;
 use hubutil::http;
 
 use crate::{CliError, Result};
+use crate::client::hub::get_hub_access;
 use crate::common::OutputFormat;
 
 const API_LIST_META: &str = "hub/v0/list_with_meta";
@@ -27,9 +26,8 @@ pub struct ListHubOpt {
 
 impl ListHubOpt {
     pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
-        let access = hubutil::HubAccess::default_load(&self.remote).map_err(|_| {
-            CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
-        })?;
+        let access = get_hub_access(&self.remote)?;
+
         let action_token = access.get_list_token().await.map_err(|_| {
             CliError::HubError("rejected access credentials, try 'fluvio cloud login'".into())
         })?;
@@ -111,14 +109,10 @@ mod output {
             self.0
                 .iter()
                 .map(|e| {
-                    let privlabel = if e.private {
-                        "private"
-                    } else {
-                        "public"
-                    };
+                    let privlabel = if e.private { "private" } else { "public" };
                     Row::from([
                         Cell::new(&e.pkg_name()).set_alignment(CellAlignment::Left),
-                        Cell::new(privlabel).set_alignment(CellAlignment::Left)
+                        Cell::new(privlabel).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()

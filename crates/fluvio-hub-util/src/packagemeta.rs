@@ -36,8 +36,6 @@ pub struct PackageMeta {
                                // repository-commit: optional hash
 }
 
-
-
 impl Default for PackageMeta {
     fn default() -> PackageMeta {
         PackageMeta {
@@ -480,7 +478,6 @@ mod t_packagemeta_version {
     use crate::HubUtilError;
     use crate::PackageMeta;
 
-
     fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
         let pm = PackageMeta::read_from_file(fname)?;
         Ok(pm)
@@ -506,7 +503,7 @@ mod t_packagemeta_version {
     fn visibility_invalid() {
         let visbad = "tests/apackage/package-meta-v0.2-visbad.yaml";
         let res = read_pkgmeta(visbad);
-        dbg!(&res);
+        println!("{:?}", &res);
         assert!(res.is_err());
     }
 
@@ -516,7 +513,7 @@ mod t_packagemeta_version {
         // check that they default to private (Owner) visiblity
         let visbad = "tests/apackage/package-meta-v0.1.yaml";
         let res = read_pkgmeta(visbad);
-        dbg!(&res);
+        println!("{:?}", &res);
         assert!(res.is_ok());
         if let Ok(pm) = res {
             assert_eq!(pm.private, true);

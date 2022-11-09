@@ -1,4 +1,3 @@
-
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -22,7 +21,7 @@ pub struct PackageList {
 /// Used by hub server web api and cli exchange package lists
 #[derive(Serialize, Deserialize)]
 pub struct PackageListMeta {
-    pub packages: Vec<PackageMeta>
+    pub packages: Vec<PackageMeta>,
 }
 
 // returns (org, pname, ver)
