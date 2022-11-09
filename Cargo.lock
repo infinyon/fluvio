@@ -2363,7 +2363,6 @@ dependencies = [
  "comfy-table",
  "fluvio",
  "fluvio-package-index",
- "fluvio-types",
  "futures-lite",
  "semver 1.0.14",
  "serde",
