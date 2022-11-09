@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 use fluvio::config::{TlsPolicy, TlsPaths};
-use fluvio_types::defaults::{TLS_CLIENT_SECRET_NAME, TLS_SERVER_SECRET_NAME};
 
 pub fn cert_dir() -> PathBuf {
     std::env::current_dir().unwrap().join("tls").join("certs")
@@ -14,14 +13,12 @@ pub fn load_tls(client_user: &str) -> (TlsPolicy, TlsPolicy) {
         key: cert_dir.join(format!("client-{}.key", client_user)),
         cert: cert_dir.join(format!("client-{}.crt", client_user)),
         ca_cert: cert_dir.join("ca.crt"),
-        secret_name: TLS_CLIENT_SECRET_NAME.to_string(),
     });
     let server_policy = TlsPolicy::from(TlsPaths {
         domain: DOMAIN.to_string(),
         key: cert_dir.join("server.key"),
         cert: cert_dir.join("server.crt"),
         ca_cert: cert_dir.join("ca.crt"),
-        secret_name: TLS_SERVER_SECRET_NAME.to_string(),
     });
     (client_policy, server_policy)
 }

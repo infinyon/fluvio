@@ -121,8 +121,6 @@ pub struct TlsCerts {
     pub cert: String,
     /// Certificate Authority cert
     pub ca_cert: String,
-    /// Secret name while putting in kubernetes
-    pub secret_name: String,
 }
 
 impl Debug for TlsCerts {
@@ -138,7 +136,6 @@ impl TryFrom<TlsPaths> for TlsCerts {
         use std::fs::read;
         Ok(Self {
             domain: paths.domain,
-            secret_name: paths.secret_name,
             key: String::from_utf8(read(paths.key)?).map_err(|e| {
                 IoError::new(
                     ErrorKind::InvalidData,
@@ -172,8 +169,6 @@ pub struct TlsPaths {
     pub cert: PathBuf,
     /// Path to Certificate Authority certificate
     pub ca_cert: PathBuf,
-    /// Secret name while putting in kubernetes
-    pub secret_name: String,
 }
 
 cfg_if::cfg_if! {

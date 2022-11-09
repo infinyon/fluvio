@@ -132,7 +132,6 @@ mod common {
                     key: tls_key,
                     cert: tls_cert,
                     ca_cert,
-                    secret_name: certs.secret_name.clone(),
                 }
             }),
         };

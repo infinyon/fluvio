@@ -101,6 +101,14 @@ pub struct K8Install {
     /// Uses port forwarding for connecting to SC during install
     #[clap(long)]
     use_k8_port_forwarding: bool,
+
+    /// TLS: Client secret name while adding to Kubernetes
+    #[clap(long, default_value = "fluvio-client-tls")]
+    tls_client_secret_name: String,
+
+    /// TLS: Server secret name while adding to Kubernetes
+    #[clap(long, default_value = "fluvio-tls")]
+    tls_server_secret_name: String,
 }
 
 #[derive(Debug, Parser)]

@@ -525,7 +525,6 @@ pub mod test {
             cert: "JJJJ".to_owned(),
             ca_cert: "XXXXX".to_owned(),
             domain: "my_domain".to_owned(),
-            secret_name: "my-secret".to_owned(),
         });
 
         println!("temp: {:#?}", temp_dir());

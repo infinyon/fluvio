@@ -246,14 +246,12 @@ impl LocalConfigBuilder {
     ///     ca_cert: cert_path.join("ca.crt"),
     ///     cert: cert_path.join("client.crt"),
     ///     key: cert_path.join("client.key"),
-    ///     secret_name: "fluvio-client-tls".to_string(),
     /// };
     /// let server = TlsPaths {
     ///     domain: "fluvio.io".to_string(),
     ///     ca_cert: cert_path.join("ca.crt"),
     ///     cert: cert_path.join("server.crt"),
     ///     key: cert_path.join("server.key"),
-    ///     secret_name: "fluvio-tls".to_string(),
     /// };
     ///
     /// let config = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
