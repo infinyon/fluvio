@@ -30,6 +30,8 @@ TEST_ARG_COMMON = ${TEST_ARG_SPU} \
                 ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
+
+
 ifeq ($(UNINSTALL),noclean)
 clean_cluster:
 	echo "no clean"
@@ -40,6 +42,18 @@ clean_cluster:
 endif
 
 test-setup:	build-test-ci clean_cluster
+
+
+
+validate-test-harness: test-setup
+	$(TEST_BIN) expected_pass ${TEST_ARG_EXTRA}
+	$(TEST_BIN) expected_fail --expect-fail
+	$(TEST_BIN) expected_fail_join_fail_first --expect-fail
+	$(TEST_BIN) expected_fail_join_success_first --expect-fail
+	$(TEST_BIN) expected_timeout --timeout 5sec --expect-timeout
+
+validate-test-harness-local: TEST_ARG_EXTRA=--local  --cluster-start
+validate-test-harness-local: validate-test-harness
 
 # To run a smoke test locally: make smoke-test-local EXTRA_ARG=--cluster-start
 smoke-test: test-setup
@@ -172,11 +186,11 @@ validate-release-stable:
 ifeq (${CI},true)
 # In CI, we expect all artifacts to already be built and loaded for the script
 longevity-test:
-	$(TEST_BIN) longevity -- --runtime-seconds=1800 --producers 10 --consumers 10
+	$(TEST_BIN) longevity --expect-timeout -- --runtime-seconds=1800 --producers 10 --consumers 10
 else
 # When not in CI (i.e. development), load the dev k8 image before running test
 longevity-test: build-test
-	$(TEST_BIN) longevity -- $(VERBOSE_FLAG) --runtime-seconds=60
+	$(TEST_BIN) longevity --expect-timeout -- $(VERBOSE_FLAG) --runtime-seconds=60
 endif
 
 cli-platform-cross-version-test:

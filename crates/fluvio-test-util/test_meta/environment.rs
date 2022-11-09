@@ -264,7 +264,7 @@ pub struct EnvironmentSetup {
     #[clap(long)]
     pub disable_timeout: bool,
 
-    /// Global timeout for a test. Will report as fail when reached
+    /// Global timeout for a test. Will report as fail when reached (unless --expect-timeout)
     /// ex. 30s, 15m, 2h, 1w
     #[clap(long, default_value = "1h", value_parser=parse_duration)]
     pub timeout: Duration,
@@ -276,4 +276,12 @@ pub struct EnvironmentSetup {
     /// K8: use sc address
     #[clap(long)]
     pub proxy_addr: Option<String>,
+
+    /// Will report fail unless test times out
+    #[clap(long, conflicts_with = "expect_fail")]
+    pub expect_timeout: bool,
+
+    /// Expect a test to fail. (fail-> pass. pass or timeout -> fail)
+    #[clap(long, conflicts_with = "expect_timeout")]
+    pub expect_fail: bool,
 }
