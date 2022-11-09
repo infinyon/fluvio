@@ -282,9 +282,9 @@ pub async fn prompt_required_update(agent: &HttpAgent) -> Result<()> {
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, &target, false).await?;
 
-    println!("⚠️ A major update to Fluvio has been detected!");
-    println!("⚠️ You must complete this update before using any 'install' command");
-    println!(
+    eprintln!("⚠️ A major update to Fluvio has been detected!");
+    eprintln!("⚠️ You must complete this update before using any 'install' command");
+    eprintln!(
         "⚠️     Run 'fluvio update' to install v{} of Fluvio",
         &latest_version
     );
@@ -293,9 +293,9 @@ pub async fn prompt_required_update(agent: &HttpAgent) -> Result<()> {
 
 /// Prompt the user about a new available version of the Fluvio CLI
 pub fn prompt_available_update(latest_version: &Version) {
-    println!();
-    println!("💡 An update to Fluvio is available!");
-    println!(
+    eprintln!();
+    eprintln!("💡 An update to Fluvio is available!");
+    eprintln!(
         "💡     Run 'fluvio update' to install v{} of Fluvio",
         &latest_version
     );

@@ -305,13 +305,13 @@ mod root {
             None => {
                 match fluvio_extensions_dir() {
                     Ok(fluvio_dir) => {
-                        println!(
+                        eprintln!(
                             "Unable to find plugin '{}'. Make sure it is installed in {:?}.",
                             &subcommand, fluvio_dir,
                         );
                     }
                     Err(_) => {
-                        println!(
+                        eprintln!(
                             "Unable to find plugin '{}'. Make sure it is in your PATH.",
                             &subcommand,
                         );
@@ -343,7 +343,7 @@ mod root {
             // https://doc.rust-lang.org/std/os/unix/process/trait.ExitStatusExt.html
             use std::os::unix::process::ExitStatusExt;
             if let Some(signal) = status.signal() {
-                println!("Extension killed via {} signal", signal);
+                eprintln!("Extension killed via {} signal", signal);
                 std::process::exit(signal);
             }
         }
