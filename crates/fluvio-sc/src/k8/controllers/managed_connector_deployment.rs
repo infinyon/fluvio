@@ -1,5 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
+use fluvio_types::defaults::TLS_CLIENT_SECRET_NAME;
 use tracing::{debug, error, info, trace, instrument};
 use k8_client::ClientError;
 use k8_types::{
@@ -308,7 +309,10 @@ impl ManagedConnectorDeploymentController {
                 volumes.push(VolumeSpec {
                     name: "client-tls".to_owned(),
                     secret: Some(SecretVolumeSpec {
-                        secret_name: "fluvio-client-tls".to_owned(),
+                        secret_name: tls
+                            .secret_name
+                            .clone()
+                            .unwrap_or_else(|| TLS_CLIENT_SECRET_NAME.to_string()),
                         ..Default::default()
                     }),
                     ..Default::default()

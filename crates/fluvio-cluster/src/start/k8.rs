@@ -15,6 +15,8 @@ use derive_builder::Builder;
 use fluvio::FluvioAdmin;
 use fluvio_controlplane_metadata::spg::SpuConfig;
 use fluvio_sc_schema::objects::CommonCreateRequest;
+use fluvio_types::defaults::TLS_CLIENT_SECRET_NAME;
+use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use k8_metadata_client::NameSpace;
@@ -310,6 +312,12 @@ pub struct ClusterConfig {
 
     #[builder(setter(into), default)]
     connector_prefixes: Vec<String>,
+
+    #[builder(setter(into), default = "TLS_SERVER_SECRET_NAME.to_string()")]
+    tls_server_secret_name: String,
+
+    #[builder(setter(into), default = "TLS_CLIENT_SECRET_NAME.to_string()")]
+    tls_client_secret_name: String,
 }
 
 impl ClusterConfig {
@@ -1230,7 +1238,12 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(["delete", "secret", "fluvio-tls", "--ignore-not-found=true"])
+            .args([
+                "delete",
+                "secret",
+                &self.config.tls_server_secret_name,
+                "--ignore-not-found=true",
+            ])
             .args(["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
@@ -1239,7 +1252,7 @@ impl ClusterInstaller {
             .args([
                 "delete",
                 "secret",
-                "fluvio-client-tls",
+                &self.config.tls_client_secret_name,
                 "--ignore-not-found=true",
             ])
             .args(["--namespace", &self.config.namespace])
@@ -1254,7 +1267,12 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(["create", "secret", "tls", "fluvio-tls"])
+            .args([
+                "create",
+                "secret",
+                "tls",
+                &self.config.tls_server_secret_name,
+            ])
             .args(["--cert", server_cert])
             .args(["--key", server_key])
             .args(["--namespace", &self.config.namespace])
@@ -1262,7 +1280,12 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(["create", "secret", "tls", "fluvio-client-tls"])
+            .args([
+                "create",
+                "secret",
+                "tls",
+                &self.config.tls_client_secret_name,
+            ])
             .args(["--cert", client_cert])
             .args(["--key", client_key])
             .args(["--namespace", &self.config.namespace])
