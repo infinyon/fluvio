@@ -21,7 +21,7 @@ env:
 
 jobs:
   build_long_binaries:
-    name: Test buiild for ${{ matrix.binary }}  on (${{ matrix.os }})
+    name: Test build for ${{ matrix.binary }}  on (${{ matrix.os }})
     if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -191,6 +191,7 @@ jobs:
             --topic ${{ matrix.topic }} \
             --topic-segment-size ${{ matrix.topic_segment_bytes }} \
             --topic-retention ${{ matrix.topic_retention }} \
+            --expect-timeout \
             longevity
 
       ## If the test passed, then copy the data from cluster to store into artifacts
