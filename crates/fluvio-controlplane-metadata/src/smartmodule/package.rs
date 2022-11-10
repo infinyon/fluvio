@@ -65,6 +65,7 @@ pub struct SmartModulePackage {
     pub api_version: FluvioSemVersion,
     pub description: Option<String>,
     pub license: Option<String>,
+    pub visibility: SmartModuleVisibility,
     pub repository: Option<String>,
 }
 
@@ -95,6 +96,18 @@ impl SmartModulePackage {
 pub enum SmartModuleKeyError {
     #[error("SmartModule version`{version}` is not valid because {error}")]
     InvalidVersion { version: String, error: String },
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "lowercase")
+)]
+pub enum SmartModuleVisibility {
+    #[default]
+    Private,
+    Public,
 }
 
 #[derive(Default)]

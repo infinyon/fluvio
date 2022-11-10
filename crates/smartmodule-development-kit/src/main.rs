@@ -6,6 +6,7 @@ mod load;
 mod publish;
 mod hub;
 mod package;
+mod set_public;
 
 use std::path::{PathBuf};
 use clap::Parser;

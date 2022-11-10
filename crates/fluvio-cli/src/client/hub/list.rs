@@ -109,10 +109,9 @@ mod output {
             self.0
                 .iter()
                 .map(|e| {
-                    let privlabel = if e.private { "private" } else { "public" };
                     Row::from([
                         Cell::new(&e.pkg_name()).set_alignment(CellAlignment::Left),
-                        Cell::new(privlabel).set_alignment(CellAlignment::Left),
+                        Cell::new(&e.visibility).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()

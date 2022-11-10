@@ -5,6 +5,8 @@ use std::fs;
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleVisibility;
+
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, error};
 
@@ -29,11 +31,19 @@ pub struct PackageMeta {
     pub description: String,
     pub license: String,
 
-    #[serde(default = "PackageMeta::private_if_missing")]
-    pub private: bool, // private = true is default if missing
+    #[serde(default = "PackageMeta::visibility_if_missing")]
+    pub visibility: PkgVisibility, // private is default if missing
     pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
                                // repository: optional url
                                // repository-commit: optional hash
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum PkgVisibility {
+    #[default]
+    Private,
+    Public,
 }
 
 impl Default for PackageMeta {
@@ -45,7 +55,7 @@ impl Default for PackageMeta {
             group: "NameOfContributingGroup".into(),
             description: "Describe the module here".into(),
             license: "e.g. Apache2".into(),
-            private: true,
+            visibility: PkgVisibility::Private,
             manifest: Vec::new(),
         }
     }
@@ -133,8 +143,8 @@ impl PackageMeta {
 
     /// used by serde to fill in private field if missing on parse
     /// this helps support old versions of the package format
-    pub fn private_if_missing() -> bool {
-        true
+    pub fn visibility_if_missing() -> PkgVisibility {
+        PkgVisibility::Private
     }
 
     pub fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()> {
@@ -170,6 +180,7 @@ impl PackageMeta {
         self.group = spk.group.clone();
         self.version = spk.version.to_string();
         self.description = spk.description.clone().unwrap_or_default();
+        self.visibility = PkgVisibility::from(&spk.visibility);
 
         // needed for fluvio sm download
         self.manifest.push(fpath.into());
@@ -291,6 +302,16 @@ pub fn package_meta_from_bytes(reader: &[u8]) -> Result<PackageMeta> {
     ))
 }
 
+// from Smartmodule to package vaisiblity
+impl From<&SmartModuleVisibility> for PkgVisibility {
+    fn from(sm: &SmartModuleVisibility) -> Self {
+        match sm {
+            SmartModuleVisibility::Public => Self::Public,
+            SmartModuleVisibility::Private => Self::Private,
+        }
+    }
+}
+
 #[test]
 fn builds_obj_key_from_package_name() {
     let pkg_names = vec![
@@ -317,6 +338,18 @@ fn builds_obj_key_from_package_name() {
             &PackageMeta::object_path_from_name(name).unwrap(),
             obj_paths.get(idx).unwrap()
         );
+    }
+}
+
+// this end up mostly for any cli tools printing out the status
+impl std::fmt::Display for PkgVisibility {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        let lbl = match self {
+            PkgVisibility::Private => "private",
+            PkgVisibility::Public => "public",
+        };
+        write!(f, "{}", lbl)?;
+        Ok(())
     }
 }
 
@@ -477,6 +510,7 @@ mod t_packagemeta_version {
 
     use crate::HubUtilError;
     use crate::PackageMeta;
+    use crate::PkgVisibility;
 
     fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
         let pm = PackageMeta::read_from_file(fname)?;
@@ -516,7 +550,7 @@ mod t_packagemeta_version {
         println!("{:?}", &res);
         assert!(res.is_ok());
         if let Ok(pm) = res {
-            assert_eq!(pm.private, true);
+            assert_eq!(pm.visibility, PkgVisibility::Private);
         }
     }
 }
