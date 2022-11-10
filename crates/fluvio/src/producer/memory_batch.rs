@@ -213,7 +213,7 @@ mod test {
 
         assert_eq!(
             batch.get_base_offset(),
-            (memory_batch_records_len - 1) as i64
+            (memory_batch_records_len as i64) - 1
         );
 
         assert_eq!(batch.last_offset_delta(), offset as i32);

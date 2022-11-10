@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use tracing::instrument;
@@ -56,16 +55,16 @@ impl ProducerPool {
         config: Arc<TopicProducerConfig>,
         topic: String,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<HashMap<PartitionId, BatchHandler>>,
+        batches: Arc<Vec<BatchHandler>>,
         client_metric: Arc<ClientMetrics>,
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
         let mut errors = vec![];
-        for (&partition_id, (batch_events, batch_list)) in batches.iter() {
+        for (partition_id, (batch_events, batch_list)) in batches.iter().enumerate() {
             let end_event = StickyEvent::shared();
             let flush_event = (EventHandler::shared(), EventHandler::shared());
-            let replica = ReplicaKey::new(topic.clone(), partition_id);
+            let replica = ReplicaKey::new(topic.clone(), partition_id as i32);
             let error = Arc::new(RwLock::new(None));
 
             PartitionProducer::start(
@@ -94,7 +93,7 @@ impl ProducerPool {
         config: Arc<TopicProducerConfig>,
         topic: String,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<HashMap<PartitionId, BatchHandler>>,
+        batches: Arc<Vec<BatchHandler>>,
         client_metric: Arc<ClientMetrics>,
     ) -> Arc<Self> {
         Arc::new(ProducerPool::new(

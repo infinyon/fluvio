@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -55,7 +55,8 @@ impl BatchesDeque {
 pub(crate) struct RecordAccumulator {
     batch_size: usize,
     queue_size: usize,
-    batches: Arc<HashMap<PartitionId, BatchHandler>>,
+    //batches: Arc<HashMap<PartitionId, BatchHandler>>,
+    batches: Arc<Vec<BatchHandler>>,
     compression: Compression,
 }
 
@@ -66,9 +67,9 @@ impl RecordAccumulator {
         partition_n: i32,
         compression: Compression,
     ) -> Self {
-        let mut batches = HashMap::default();
-        for i in 0..partition_n {
-            batches.insert(i, (BatchEvents::shared(), BatchesDeque::shared()));
+        let mut batches = Vec::with_capacity(partition_n as usize);
+        for _ in 0..batches.capacity() {
+            batches.push((BatchEvents::shared(), BatchesDeque::shared()));
         }
         Self {
             batches: Arc::new(batches),
@@ -86,7 +87,7 @@ impl RecordAccumulator {
     ) -> Result<PushRecord, ProducerError> {
         let (batch_events, batches_lock) = self
             .batches
-            .get(&partition_id)
+            .get(partition_id as usize)
             .ok_or(ProducerError::PartitionNotFound(partition_id))?;
 
         let mut batches = batches_lock.batches.lock().await;
@@ -140,7 +141,7 @@ impl RecordAccumulator {
         }
     }
 
-    pub(crate) fn batches(&self) -> Arc<HashMap<PartitionId, BatchHandler>> {
+    pub(crate) fn batches(&self) -> Arc<Vec<BatchHandler>> {
         self.batches.clone()
     }
 }
@@ -368,7 +369,7 @@ mod test {
 
         let batches = accumulator
             .batches()
-            .get(&0)
+            .get(0)
             .expect("failed to get batch info")
             .0
             .clone();
