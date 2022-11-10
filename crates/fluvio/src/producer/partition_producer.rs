@@ -14,7 +14,7 @@ use crate::error::{Result, FluvioError};
 use crate::metrics::ClientMetrics;
 use crate::producer::accumulator::ProducePartitionResponseFuture;
 use crate::producer::config::DeliverySemantic;
-use crate::sockets::VersionedSerialSocket;
+use fluvio_socket::VersionedSerialSocket;
 use crate::spu::SpuPool;
 use crate::TopicProducerConfig;
 

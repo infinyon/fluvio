@@ -13,6 +13,7 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
+use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use tracing::info;
 use tracing::debug;
 use clap::Parser;
@@ -125,7 +126,7 @@ impl ScOpt {
             None => None,
         };
 
-        let tls = self.tls;
+        let mut tls = self.tls;
 
         // if tls is on, we need to assign public service(internal) to another port
         // because public is used by proxy which forward traffic to internal public port
@@ -138,6 +139,11 @@ impl ScOpt {
                     "non tls addr for public must be specified",
                 )
             })?;
+            info!("TLS UPDATING");
+            let _ = tls
+                .secret_name
+                .get_or_insert(TLS_SERVER_SECRET_NAME.to_string());
+            info!("{:?}", tls);
 
             Ok(((config, policy), Some((proxy_addr, tls))))
         } else {
@@ -181,6 +187,10 @@ pub struct TlsConfig {
     #[clap(long)]
     /// TLS: address of non tls public service, required
     bind_non_tls_public: Option<String>,
+
+    #[clap(long)]
+    /// Secret name used while adding to kubernetes
+    pub secret_name: Option<String>,
 }
 
 impl TlsConfig {

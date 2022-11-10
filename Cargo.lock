@@ -2076,7 +2076,6 @@ dependencies = [
  "async-std",
  "async-trait",
  "base64 0.13.1",
- "built",
  "bytes 1.2.1",
  "cfg-if",
  "chrono",
@@ -2627,12 +2626,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "async-channel",
  "async-lock",
  "async-net",
  "async-trait",
+ "built",
  "bytes 1.2.1",
  "cfg-if",
  "event-listener",
@@ -2642,6 +2642,7 @@ dependencies = [
  "once_cell",
  "pin-project",
  "portpicker",
+ "semver 1.0.14",
  "thiserror",
  "tokio",
  "tokio-util",
@@ -2899,7 +2900,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "event-listener",
  "fluvio-future",

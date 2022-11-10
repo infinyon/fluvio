@@ -27,6 +27,8 @@ pub async fn process_k8(
         .spu_replicas(opt.spu)
         .save_profile(!opt.skip_profile_creation)
         .tls(client, server)
+        .tls_client_secret_name(opt.k8_config.tls_client_secret_name)
+        .tls_server_secret_name(opt.k8_config.tls_server_secret_name)
         .chart_values(opt.k8_config.chart_values)
         .hide_spinner(false)
         .upgrade(upgrade)

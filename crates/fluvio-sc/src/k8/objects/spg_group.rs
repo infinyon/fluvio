@@ -187,6 +187,7 @@ mod k8_convert {
     };
     use fluvio_types::defaults::{
         SPU_DEFAULT_NAME, SPU_PUBLIC_PORT, SPU_PRIVATE_PORT, SC_PRIVATE_PORT, PRODUCT_NAME,
+        TLS_SERVER_SECRET_NAME,
     };
 
     use crate::stores::spg::SpuGroupSpec;
@@ -293,7 +294,10 @@ mod k8_convert {
             volumes.push(VolumeSpec {
                 name: "tls".to_owned(),
                 secret: Some(SecretVolumeSpec {
-                    secret_name: "fluvio-tls".to_owned(), // fixed
+                    secret_name: tls
+                        .secret_name
+                        .clone()
+                        .unwrap_or_else(|| TLS_SERVER_SECRET_NAME.to_string()),
                     ..Default::default()
                 }),
                 ..Default::default()

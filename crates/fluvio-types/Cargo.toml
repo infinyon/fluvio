@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-types"
-version = "0.3.9"
+version = "0.3.10"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2021"
 description = "Fluvio common types and objects"

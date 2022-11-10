@@ -5,7 +5,9 @@ use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
 
-use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
+use fluvio_socket::{
+    ClientConfig, Versions, VersionedSerialSocket, SharedMultiplexerSocket, MultiplexerSocket,
+};
 use fluvio_future::net::DomainConnector;
 use semver::Version;
 
@@ -20,7 +22,6 @@ use crate::consumer::PartitionSelectionStrategy;
 use crate::metrics::ClientMetrics;
 use crate::producer::TopicProducerConfig;
 use crate::spu::SpuPool;
-use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
 use crate::sync::MetadataStores;
 
 /// An interface for interacting with Fluvio streaming

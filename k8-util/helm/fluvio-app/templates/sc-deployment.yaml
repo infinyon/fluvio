@@ -42,6 +42,8 @@ spec:
             - /var/certs/tls/tls.crt
             - --server-key
             - /var/certs/tls/tls.key
+            - --secret-name
+            - {{ .Values.cert.tls }}
             - --bind-non-tls-public
             - 0.0.0.0:9005
             {{ if .Values.authorizationConfigMap }}

@@ -6,9 +6,8 @@ use async_trait::async_trait;
 use fluvio::metrics::ClientMetrics;
 use fluvio::{FluvioError, PartitionConsumer};
 use fluvio::spu::{SpuDirectory, SpuSocket};
-use fluvio::sockets::{ClientConfig, VersionedSerialSocket};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_socket::MultiplexerSocket;
+use fluvio_socket::{MultiplexerSocket, ClientConfig, VersionedSerialSocket};
 use fluvio_types::SpuId;
 use tracing::{debug, instrument};
 

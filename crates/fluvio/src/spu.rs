@@ -9,12 +9,12 @@ use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_types::SpuId;
-use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, SocketError, AsyncResponse};
+use fluvio_socket::{
+    Versions, VersionedSerialSocket, ClientConfig, MultiplexerSocket, SharedMultiplexerSocket,
+    SocketError, AsyncResponse,
+};
 use crate::FluvioError;
-use crate::sockets::ClientConfig;
 use crate::sync::MetadataStores;
-use crate::sockets::VersionedSerialSocket;
-use crate::sockets::Versions;
 
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
@@ -126,7 +126,7 @@ impl SpuPool {
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
 
         let spu_addr = match spu.spec.public_endpoint_local {
-            Some(local) if self.config.use_spu_local_address => {
+            Some(local) if self.config.use_spu_local_address() => {
                 let host = local.host;
                 let port = local.port;
                 format!("{}:{}", host, port)
