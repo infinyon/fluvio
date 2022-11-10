@@ -294,6 +294,7 @@ jobs:
   cargo-vet:
     name: Vet Dependencies
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     env:
       CARGO_VET_VERSION: 0.3.0
 
