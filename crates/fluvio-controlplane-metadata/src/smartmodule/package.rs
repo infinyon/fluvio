@@ -65,6 +65,10 @@ pub struct SmartModulePackage {
     pub api_version: FluvioSemVersion,
     pub description: Option<String>,
     pub license: Option<String>,
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default = "SmartModulePackage::visibility_if_missing")
+    )]
     pub visibility: SmartModuleVisibility,
     pub repository: Option<String>,
 }
@@ -89,6 +93,10 @@ impl SmartModulePackage {
             "{}{}{}{}{}",
             self.group, GROUP_SEPARATOR, self.name, VERSION_SEPARATOR, self.version
         )
+    }
+
+    pub fn visibility_if_missing() -> SmartModuleVisibility {
+        SmartModuleVisibility::Private
     }
 }
 
