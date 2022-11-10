@@ -196,12 +196,10 @@ impl Versions {
         for version in &self.api_versions {
             if version.api_key == R::API_KEY as i16 {
                 // try to find most latest maximum version
-                for client_version in (R::MIN_API_VERSION..=R::MAX_API_VERSION).rev() {
-                    if version.min_version <= client_version
-                        && version.max_version >= client_version
-                    {
-                        return Some(client_version);
-                    }
+                if version.max_version >= R::MIN_API_VERSION
+                    && version.min_version <= R::MAX_API_VERSION
+                {
+                    return Some(R::MAX_API_VERSION.min(version.max_version));
                 }
             }
         }
