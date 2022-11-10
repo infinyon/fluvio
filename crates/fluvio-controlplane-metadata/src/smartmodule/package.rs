@@ -263,6 +263,29 @@ impl Decoder for FluvioSemVersion {
     }
 }
 
+impl std::fmt::Display for SmartModuleVisibility {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        let lbl = match self {
+            Self::Private => "private",
+            Self::Public => "public",
+        };
+        write!(f, "{}", lbl)?;
+        Ok(())
+    }
+}
+
+impl std::convert::TryFrom<&str> for SmartModuleVisibility {
+    type Error = &'static str;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        match s {
+            "private" => Ok(SmartModuleVisibility::Private),
+            "public" => Ok(SmartModuleVisibility::Public),
+            _ => Err("Only private or public is allowed"),
+        }
+    }
+}
+
 /// Convert from name into something that can be used as key in the store
 /// For now, we respect
 

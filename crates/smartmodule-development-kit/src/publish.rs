@@ -7,6 +7,7 @@ use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
 use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{DEF_HUB_INIT_DIR, DEF_HUB_PKG_META, HubAccess, PackageMeta, PkgVisibility};
+use tracing::debug;
 
 pub const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
@@ -157,10 +158,12 @@ fn verify_public_or_exit() -> Result<()> {
     println!("Are you sure you want to publish this package as public? (y/N)");
     let mut ans = String::new();
     std::io::stdin().read_line(&mut ans)?;
-    let ans = ans.to_lowercase();
+    let ans = ans.trim_end().to_lowercase();
+    debug!("ans: {ans}");
     match ans.as_str() {
         "y" | "yes" => {}
         _ => {
+            println!("publish stopped");
             std::process::exit(1);
         }
     }
@@ -179,6 +182,9 @@ fn build_sm_toml() {
     std::fs::write(fpath, &smart_toml_str.unwrap()).expect("couldn't write testfile");
 }
 
+// the smartmodule has template patterns that don't parse unless we apply
+// the template...
+#[ignore]
 #[test]
 fn reference_sm_toml() {
     use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
