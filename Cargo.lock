@@ -2126,6 +2126,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-benchmark"
+version = "0.0.0"
+dependencies = [
+ "async-std",
+ "fluvio",
+]
+
+[[package]]
 name = "fluvio-channel"
 version = "0.0.0"
 dependencies = [

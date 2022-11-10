@@ -8,6 +8,7 @@ members = [
     "examples/04-admin-watch",
     "crates/fluvio",
     "crates/fluvio-auth",
+    "crates/fluvio-benchmark",
     "crates/fluvio-channel",
     "crates/fluvio-channel-cli",
     "crates/fluvio-cli",
@@ -40,12 +41,10 @@ members = [
     "crates/fluvio-test-util",
     "crates/fluvio-types",
     "release-tools/check-crate-version",
-    "crates/smartmodule-development-kit"
+    "crates/smartmodule-development-kit",
 ]
 
-exclude = [
-    "smartmodule/regex-filter"
-]
+exclude = ["smartmodule/regex-filter"]
 resolver = "2"
 
 [workspace.dependencies]
