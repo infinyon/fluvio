@@ -11,6 +11,7 @@ fluvio = { path = "../fluvio" }
 
 async-std = "1.12.0"
 criterion = { version = "0.4.0", features = ["async", "async_std"] }
+rand = "0.8.5"
 
 
 [[bench]]

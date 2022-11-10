@@ -2134,6 +2134,7 @@ dependencies = [
  "async-std",
  "criterion",
  "fluvio",
+ "rand 0.8.5",
 ]
 
 [[package]]
