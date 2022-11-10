@@ -1,6 +1,8 @@
 use std::process::Command;
 
 fn main() {
+    built::write_built_file().expect("Failed to acquire build-time information");
+
     // Copy VERSION file. Do not fail e.g. when built via `cargo publish`
     println!("cargo:rerun-if-changed=../../VERSION");
 

@@ -15,10 +15,8 @@ use fluvio_sc_schema::objects::{
     WatchRequest, ObjectApiWatchResponse, WatchResponse,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
-use fluvio_socket::{SocketError};
-use fluvio_socket::MultiplexerSocket;
+use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
 
-use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
 use crate::metadata::objects::{ListResponse, ListRequest};
 use crate::config::ConfigFile;
