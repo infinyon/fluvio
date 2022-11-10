@@ -82,9 +82,6 @@ chrono = {version =  "0.4", features = ["wasmbind", "clock"]}
 async-std = { version = "1.6.4", default-features = false }
 fluvio-future = { version = "0.4.0", features = ["io", "fixture"] }
 
-[build-dependencies]
-built = "0.5.1"
-
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.24"
 fluvio_ws_stream_wasm = "0.7.0"

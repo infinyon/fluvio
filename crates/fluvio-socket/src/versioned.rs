@@ -9,15 +9,13 @@ use tracing::{debug, instrument, info};
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::link::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
-use fluvio_socket::{AsyncResponse, SocketError};
-use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
 use fluvio_future::retry::retry;
 
-use crate::FluvioError;
+use crate::{SocketError, FluvioSocket, SharedMultiplexerSocket, AsyncResponse};
 
 /// Frame with request and response
-pub(crate) trait SerialFrame: Display {
+pub trait SerialFrame: Display {
     /// client config
     fn config(&self) -> &ClientConfig;
 }
@@ -48,7 +46,7 @@ impl VersionedSocket {
     pub async fn connect(
         mut socket: FluvioSocket,
         config: Arc<ClientConfig>,
-    ) -> Result<Self, FluvioError> {
+    ) -> Result<Self, SocketError> {
         // now get versions
         // Query for API versions
 
@@ -57,6 +55,7 @@ impl VersionedSocket {
             client_os: crate::built_info::CFG_OS.into(),
             client_arch: crate::built_info::CFG_TARGET_ARCH.into(),
         };
+
         debug!(client_version = %version.client_version, "querying versions");
         let mut req_msg = RequestMessage::new_request(version);
         req_msg.get_mut_header().set_client_id(&config.client_id);
@@ -84,7 +83,7 @@ pub struct ClientConfig {
     addr: String,
     client_id: String,
     connector: DomainConnector,
-    pub(crate) use_spu_local_address: bool,
+    use_spu_local_address: bool,
 }
 
 impl Debug for ClientConfig {
@@ -135,6 +134,10 @@ impl ClientConfig {
         &self.client_id
     }
 
+    pub fn use_spu_local_address(&self) -> bool {
+        self.use_spu_local_address
+    }
+
     pub fn set_client_id(&mut self, id: impl Into<String>) {
         self.client_id = id.into();
     }
@@ -144,7 +147,7 @@ impl ClientConfig {
     }
 
     #[instrument(skip(self))]
-    pub async fn connect(self) -> Result<VersionedSocket, FluvioError> {
+    pub async fn connect(self) -> Result<VersionedSocket, SocketError> {
         debug!(add = %self.addr, "try connection to");
         let socket =
             FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
