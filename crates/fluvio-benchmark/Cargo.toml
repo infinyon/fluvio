@@ -10,4 +10,9 @@ fluvio = { path = "../fluvio" }
 
 
 async-std = "1.12.0"
-criterion = "0.4.0"
+criterion = { version = "0.4.0", features = ["async", "async_std"] }
+
+
+[[bench]]
+name = "producer_consumer"
+harness = false

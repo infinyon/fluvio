@@ -1366,11 +1366,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7c76e09c1aae2bc52b3d2f29e13c6572553b30c4aa1b8a49fd70de6412654cb"
 dependencies = [
  "anes",
+ "async-std",
  "atty",
  "cast",
  "ciborium",
  "clap 3.2.23",
  "criterion-plot",
+ "futures 0.3.25",
  "itertools",
  "lazy_static",
  "num-traits",
