@@ -2,6 +2,7 @@ use std::{fmt, str::FromStr};
 use std::path::PathBuf;
 use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
 use clap::Parser;
+use fluvio_types::defaults::{TLS_SERVER_SECRET_NAME, TLS_CLIENT_SECRET_NAME};
 use semver::Version;
 
 mod local;
@@ -101,6 +102,14 @@ pub struct K8Install {
     /// Uses port forwarding for connecting to SC during install
     #[clap(long)]
     use_k8_port_forwarding: bool,
+
+    /// TLS: Client secret name while adding to Kubernetes
+    #[clap(long, default_value = TLS_CLIENT_SECRET_NAME)]
+    tls_client_secret_name: String,
+
+    /// TLS: Server secret name while adding to Kubernetes
+    #[clap(long, default_value = TLS_SERVER_SECRET_NAME)]
+    tls_server_secret_name: String,
 }
 
 #[derive(Debug, Parser)]

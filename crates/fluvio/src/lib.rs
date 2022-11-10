@@ -83,7 +83,6 @@
 )]
 
 mod error;
-pub mod sockets;
 mod admin;
 mod fluvio;
 pub mod consumer;
@@ -111,10 +110,6 @@ pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
 
 pub use fluvio_compression::Compression;
-
-pub(crate) mod built_info {
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
-}
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
