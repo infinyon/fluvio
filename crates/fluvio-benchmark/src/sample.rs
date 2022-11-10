@@ -1,5 +1,6 @@
 use std::time::{Instant, Duration};
 
+#[derive(Debug)]
 pub struct SampleSendHalf {
     pub record: String,
     send_start_time: Option<Instant>,
@@ -18,6 +19,7 @@ impl SampleSendHalf {
     }
 }
 
+#[derive(Debug)]
 pub struct SampleRecvHalf {
     record: String,
     recv_end_time: Instant,
@@ -42,10 +44,10 @@ impl std::cmp::PartialEq<SampleRecvHalf> for SampleSendHalf {
     }
 }
 
-impl std::ops::Sub<SampleSendHalf> for SampleRecvHalf {
+impl std::ops::Sub<&SampleSendHalf> for &SampleRecvHalf {
     type Output = Duration;
 
-    fn sub(self, rhs: SampleSendHalf) -> Self::Output {
+    fn sub(self, rhs: &SampleSendHalf) -> Self::Output {
         self.recv_end_time - rhs.send_start_time.unwrap()
     }
 }

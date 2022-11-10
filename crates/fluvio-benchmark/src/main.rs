@@ -9,7 +9,7 @@ use crate::sample::{SampleSendHalf, SampleRecvHalf};
 
 mod sample;
 
-fn main() -> Result<(), String> {
+fn main() {
     let num_batches = 2;
     let num_records_per_batch = 1000;
     let default_timeout = Duration::from_secs(30);
@@ -21,12 +21,16 @@ fn main() -> Result<(), String> {
     for _ in 0..num_batches {
         let producer_jh = spawn(timeout(default_timeout, produce_batch(producer_side)));
         let consumer_jh = spawn(timeout(default_timeout, consume_batch(consumer_side)));
-        producer_side = block_on(producer_jh).expect("Producer timed out")?;
-        consumer_side = block_on(consumer_jh).expect("Consumer timed out")?;
-    }
+        producer_side = block_on(producer_jh).expect("Producer timed out").unwrap();
+        consumer_side = block_on(consumer_jh).expect("Consumer timed out").unwrap();
 
-    println!("Hello, world!");
-    Ok(())
+        assert_eq!(producer_side.len(), num_records_per_batch);
+        assert_eq!(consumer_side.len(), num_records_per_batch);
+        for (p, c) in producer_side.iter().zip(consumer_side.iter()) {
+            assert_eq!(p, c);
+            collected_samples.push(c - p);
+        }
+    }
 }
 
 async fn produce_batch(producer_side: Vec<SampleSendHalf>) -> Result<Vec<SampleSendHalf>, String> {

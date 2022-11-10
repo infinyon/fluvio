@@ -7,4 +7,7 @@ edition = "2021"
 
 [dependencies]
 fluvio = { path = "../fluvio" }
+
+
 async-std = "1.12.0"
+criterion = "0.4.0"
