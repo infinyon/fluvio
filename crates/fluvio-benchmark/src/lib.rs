@@ -2,15 +2,19 @@ use std::{time::Duration, collections::VecDeque};
 
 use async_std::{task::block_on, future::timeout, stream::StreamExt};
 use bench_env::{FLUVIO_BENCH_RECORDS_PER_BATCH, EnvOrDefault, FLUVIO_BENCH_RECORD_NUM_BYTES};
-use fluvio::{metadata::topic::TopicSpec, FluvioAdmin, RecordKey, Offset};
-use fluvio_control::{Producer, Consumer};
+use consumer::Consumer;
+use fluvio::{
+    metadata::topic::TopicSpec, FluvioAdmin, RecordKey, Offset, TopicProducerConfigBuilder, Fluvio,
+};
+use producer::Producer;
 use rand::{distributions::Alphanumeric, Rng};
 
 pub mod bench_env;
 pub mod throughput;
-pub mod fluvio_control;
+pub mod producer;
+pub mod consumer;
 
-const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 const TOPIC_NAME: &str = "benchmarking-topic";
 
 pub type Setup = (Producer, Consumer);
@@ -20,30 +24,32 @@ pub fn setup() -> Setup {
 }
 
 pub async fn do_setup() -> Setup {
-    // println!("Setting up for new iteration");
     let new_topic = TopicSpec::new_computed(1, 1, None);
 
-    // println!("Connecting to fluvio");
-
     let admin = FluvioAdmin::connect().await.unwrap();
-    // println!("Deleting old topic if present");
     let _ = admin
         .delete::<TopicSpec, String>(TOPIC_NAME.to_string())
         .await;
-    // println!("Creating new topic {TOPIC_NAME}");
     admin
         .create(TOPIC_NAME.to_string(), false, new_topic)
         .await
         .unwrap();
 
-    // println!("Creating producer and consumers");
-    let producer = fluvio::producer(TOPIC_NAME).await.unwrap();
+    let fluvio = Fluvio::connect().await.unwrap();
+    let config = TopicProducerConfigBuilder::default()
+        //TODO ENV
+        .batch_size(1000000)
+        .build()
+        .unwrap();
+    let producer = fluvio
+        .topic_producer_with_config(TOPIC_NAME, config)
+        .await
+        .unwrap();
     let consumer = fluvio::consumer(TOPIC_NAME, 0).await.unwrap();
     let data: VecDeque<String> = (0..FLUVIO_BENCH_RECORDS_PER_BATCH.env_or_default())
         .map(|_| generate_random_string(FLUVIO_BENCH_RECORD_NUM_BYTES.env_or_default()))
         .collect();
 
-    // Make sure producer and consumer are ready to go
     producer.send(RecordKey::NULL, "setup").await.unwrap();
     producer.flush().await.unwrap();
     consumer

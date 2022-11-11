@@ -5,13 +5,13 @@ use fluvio_benchmark::{
         FLUVIO_BENCH_RECORD_NUM_BYTES, EnvOrDefault, FLUVIO_BENCH_RECORDS_PER_BATCH,
         FLUVIO_BENCH_SAMPLE_SIZE,
     },
-    throughput::run_throughput_test,
+    throughput::{run_throughput_test, run_overhead_test},
 };
 
 use criterion::async_executor::AsyncStdExecutor;
 
 fn bench_throughput(c: &mut Criterion) {
-    let mut group = c.benchmark_group("throughput-example");
+    let mut group = c.benchmark_group("throughput");
 
     group.throughput(Throughput::Bytes(
         (FLUVIO_BENCH_RECORD_NUM_BYTES.env_or_default()
@@ -26,26 +26,23 @@ fn bench_throughput(c: &mut Criterion) {
     });
     group.finish();
 }
-// fn bench_latency(c: &mut Criterion) {
-//     let mut group = c.benchmark_group("throughput-example");
+fn bench_overhead(c: &mut Criterion) {
+    let mut group = c.benchmark_group("overhead");
 
-//     group.throughput(Throughput::Bytes(
-//         FLUVIO_BENCH_RECORD_NUM_BYTES.env_or_default() as u64,
-//     ));
-//     group.bench_function("produce and consume single", |b| {
-//         b.to_async(AsyncStdExecutor).iter_batched(
-//             || setup(),
-//             |o| async move { run_latency_test(o).await },
-//             BatchSize::PerIteration,
-//         )
-//     });
-//     group.finish();
-// }
+    group.bench_function("check overhead", |b| {
+        b.to_async(AsyncStdExecutor).iter_batched(
+            || setup(),
+            |o| async move { run_overhead_test(o).await },
+            BatchSize::PerIteration,
+        )
+    });
+    group.finish();
+}
 
 criterion_group! {
     name = benches;
     // This can be any expression that returns a `Criterion` object.
     config = Criterion::default().sample_size(FLUVIO_BENCH_SAMPLE_SIZE.env_or_default());
-    targets = bench_throughput
+    targets = bench_overhead, bench_throughput
 }
 criterion_main!(benches);
