@@ -1,23 +1,19 @@
-use std::time::Duration;
+use std::{time::Duration, collections::VecDeque};
 
 use async_std::{task::block_on, future::timeout, stream::StreamExt};
 use bench_env::{FLUVIO_BENCH_RECORDS_PER_BATCH, EnvOrDefault, FLUVIO_BENCH_RECORD_NUM_BYTES};
-use fluvio::{
-    TopicProducer, PartitionConsumer, metadata::topic::TopicSpec, FluvioAdmin, RecordKey, Offset,
-};
+use fluvio::{metadata::topic::TopicSpec, FluvioAdmin, RecordKey, Offset};
+use fluvio_control::{Producer, Consumer};
 use rand::{distributions::Alphanumeric, Rng};
 
 pub mod bench_env;
 pub mod throughput;
-pub mod latency;
+pub mod fluvio_control;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 const TOPIC_NAME: &str = "benchmarking-topic";
 
-pub type Setup = (
-    (TopicProducer, std::vec::Vec<std::string::String>),
-    (PartitionConsumer, std::vec::Vec<std::string::String>),
-);
+pub type Setup = (Producer, Consumer);
 
 pub fn setup() -> Setup {
     block_on(timeout(DEFAULT_TIMEOUT, do_setup())).unwrap()
@@ -43,7 +39,7 @@ pub async fn do_setup() -> Setup {
     // println!("Creating producer and consumers");
     let producer = fluvio::producer(TOPIC_NAME).await.unwrap();
     let consumer = fluvio::consumer(TOPIC_NAME, 0).await.unwrap();
-    let data: Vec<String> = (0..FLUVIO_BENCH_RECORDS_PER_BATCH.env_or_default())
+    let data: VecDeque<String> = (0..FLUVIO_BENCH_RECORDS_PER_BATCH.env_or_default())
         .map(|_| generate_random_string(FLUVIO_BENCH_RECORD_NUM_BYTES.env_or_default()))
         .collect();
 
@@ -59,7 +55,20 @@ pub async fn do_setup() -> Setup {
         .unwrap()
         .unwrap();
 
-    ((producer, data.clone()), (consumer, data))
+    (
+        Producer {
+            producer,
+            data: data.clone(),
+            records_per_batch: FLUVIO_BENCH_RECORDS_PER_BATCH.env_or_default(),
+        },
+        Consumer {
+            consumer,
+            data,
+            // one becaseu we already sent and consumed one as part of setup
+            offset: 1,
+            records_per_batch: FLUVIO_BENCH_RECORDS_PER_BATCH.env_or_default(),
+        },
+    )
 }
 
 fn generate_random_string(size: usize) -> String {
