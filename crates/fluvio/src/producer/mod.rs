@@ -221,9 +221,8 @@ cfg_if::cfg_if! {
 
         use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
         use fluvio_smartengine::SmartEngine;
-        use fluvio_smartengine::SmartModuleConfig;
-        use fluvio_smartengine::SmartModuleChainBuilder;
-        use fluvio_smartengine::SmartModuleInitialData;
+
+        pub use fluvio_smartengine::{SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData};
 
         static SM_ENGINE: Lazy<SmartEngine> = Lazy::new(|| {
             fluvio_smartengine::SmartEngine::new()

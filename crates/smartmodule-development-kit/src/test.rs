@@ -1,11 +1,16 @@
+use std::convert::TryInto;
 use std::{collections::BTreeMap, path::PathBuf};
 
 use std::fmt::Debug;
 
 use bytes::Bytes;
 use clap::Parser;
-use anyhow::{self, Result};
+use anyhow::{Result, Context, anyhow};
+use fluvio::FluvioConfig;
+use fluvio_future::task::run_block_on;
+use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
+use fluvio_smartengine::transformation::TransformationConfig;
 use tracing::debug;
 
 use fluvio_smartengine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
@@ -37,7 +42,7 @@ pub struct TestOpt {
     package: PackageOption,
 
     /// Optional wasm file path
-    #[clap(long)]
+    #[clap(long, group = "TestSmartModule")]
     wasm_file: Option<PathBuf>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
@@ -47,9 +52,19 @@ pub struct TestOpt {
         short = 'e',
         long= "params",
         value_parser=parse_key_val,
-        number_of_values = 1
+        number_of_values = 1,
+        conflicts_with_all = ["transforms_file", "transform"]
     )]
     params: Vec<(String, String)>,
+
+    /// (Optional) File path to transformation speciafication.
+    #[clap(long, group = "TestSmartModule")]
+    transforms_file: Option<PathBuf>,
+
+    /// (Optional) Pass transformation specification as JSON formatted string.
+    /// E.g. smdk test --text '{}' --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
+    #[clap(long, short, group = "TestSmartModule")]
+    transform: Vec<String>,
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String)> {
@@ -63,22 +78,26 @@ impl TestOpt {
     pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
 
-        let raw = match &self.wasm_file {
-            Some(wasm_file) => crate::read_bytes_from_path(wasm_file)?,
-            None => PackageInfo::from_options(&self.package)
-                .map_err(|e| anyhow::anyhow!(e))?
-                .read_bytes()?,
+        let chain_builder = if let Some(transforms_file) = self.transforms_file {
+            let config = TransformationConfig::from_file(transforms_file)
+                .context("unable to read transformation config")?;
+            run_block_on(build_chain(config))?
+        } else if !self.transform.is_empty() {
+            let config = TransformationConfig::try_from(self.transform)
+                .context("unable to parse transform")?;
+            run_block_on(build_chain(config))?
+        } else if let Some(wasm_file) = self.wasm_file {
+            build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, self.params)?
+        } else {
+            build_chain_ad_hoc(
+                PackageInfo::from_options(&self.package)
+                    .map_err(|e| anyhow::anyhow!(e))?
+                    .read_bytes()?,
+                self.params,
+            )?
         };
 
-        let param: BTreeMap<String, String> = self.params.into_iter().collect();
-
         let engine = SmartEngine::new();
-        let mut chain_builder = SmartModuleChainBuilder::default();
-        chain_builder.add_smart_module(
-            SmartModuleConfig::builder().params(param.into()).build()?,
-            raw,
-        );
-
         debug!("SmartModule chain created");
 
         let mut chain = chain_builder.initialize(&engine)?;
@@ -116,4 +135,33 @@ impl TestOpt {
 
         Ok(())
     }
+}
+
+async fn build_chain(config: TransformationConfig) -> Result<SmartModuleChainBuilder> {
+    let client_config = FluvioConfig::load()?.try_into()?;
+    let api_client = SmartModuleApiClient::connect_with_config(client_config).await?;
+    let mut chain_builder = SmartModuleChainBuilder::default();
+    for transform in config.transforms {
+        debug!(?transform, "fetching");
+        let wasm = api_client
+            .get(transform.uses.clone())
+            .await?
+            .ok_or_else(|| anyhow!("smartmodule {} not found", &transform.uses))?
+            .wasm
+            .as_raw_wasm()?;
+        let config = SmartModuleConfig::from(transform);
+        chain_builder.add_smart_module(config, wasm);
+    }
+    Ok(chain_builder)
+}
+
+fn build_chain_ad_hoc(
+    wasm: Vec<u8>,
+    params: Vec<(String, String)>,
+) -> Result<SmartModuleChainBuilder> {
+    let params: BTreeMap<String, String> = params.into_iter().collect();
+    Ok(SmartModuleChainBuilder::from((
+        SmartModuleConfig::builder().params(params.into()).build()?,
+        wasm,
+    )))
 }

@@ -130,8 +130,10 @@ impl SmartModuleWasm {
             format: SmartModuleWasmFormat::Binary,
         }
     }
+}
 
-    #[cfg(feature = "smartmodule")]
+#[cfg(feature = "smartmodule")]
+impl SmartModuleWasm {
     /// Create SmartModule from uncompressed Wasm format
     pub fn from_raw_wasm_bytes(raw_payload: &[u8]) -> std::io::Result<Self> {
         use std::io::Read;
@@ -142,6 +144,16 @@ impl SmartModuleWasm {
         encoder.read_to_end(&mut buffer)?;
 
         Ok(Self::from_compressed_gzip(buffer))
+    }
+
+    pub fn as_raw_wasm(&self) -> Result<Vec<u8>, IoError> {
+        use std::io::Read;
+        use flate2::bufread::GzDecoder;
+
+        let mut wasm = Vec::with_capacity(self.payload.len());
+        let mut decoder = GzDecoder::new(&**self.payload);
+        decoder.read_to_end(&mut wasm)?;
+        Ok(wasm)
     }
 }
 
@@ -183,5 +195,24 @@ mod base64 {
         let bytebuf = ByteBuf::from(bytes);
 
         Ok(bytebuf)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(feature = "smartmodule")]
+    #[test]
+    fn test_wasm_zip_unzip() {
+        //given
+        let payload = b"test wasm";
+
+        //when
+        let wasm = SmartModuleWasm::from_raw_wasm_bytes(payload).expect("created wasm");
+        let unzipped = wasm.as_raw_wasm().expect("unzipped wasm");
+
+        //then
+        assert_eq!(payload, unzipped.as_slice());
     }
 }
