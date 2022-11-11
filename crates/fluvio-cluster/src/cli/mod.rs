@@ -13,6 +13,7 @@ mod util;
 mod check;
 mod error;
 mod diagnostics;
+mod status;
 
 use start::StartOpt;
 use start::UpgradeOpt;
@@ -21,6 +22,7 @@ use check::CheckOpt;
 use group::SpuGroupCmd;
 use spu::SpuCmd;
 use diagnostics::DiagnosticsOpt;
+use status::StatusOpt;
 
 pub use self::error::ClusterCliError;
 
@@ -73,6 +75,10 @@ pub enum ClusterCmd {
     /// Collect anonymous diagnostic information to help with debugging
     #[clap(name = "diagnostics")]
     Diagnostics(DiagnosticsOpt),
+
+    /// Check the status of a Fluvio cluster
+    #[clap(name = "status")]
+    Status(StatusOpt),
 }
 
 impl ClusterCmd {
@@ -138,6 +144,9 @@ impl ClusterCmd {
             }
             Self::Diagnostics(opt) => {
                 opt.process().await?;
+            }
+            Self::Status(status) => {
+                status.process(target).await?;
             }
         }
 
