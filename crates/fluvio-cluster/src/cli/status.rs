@@ -39,18 +39,19 @@ impl StatusOpt {
             Err(_) => (false, false),
         };
 
+        let is_local = fluvio_config.endpoint.contains("localhost") || fluvio_config.endpoint.contains("127.0.0.1");
         match (sc_running, spus_running, cluster_has_data) {
-            (true, true, true) => {
-                println!("Fluvio cluster is up and running");
-            }
-            (true, true, false) => {
-                println!("Fluvio cluster is up and running, but has no data");
+            (true, true, _) => {
+                println!("running {}", if is_local { "locally" } else { "on k8s" });
             }
             (true, false, _) => {
                 println!("Fluvio cluster is up, but has no spus");
             }
-            (false, _, _) => {
-                println!("Fluvio cluster is not running");
+            (false, _, true) => {
+                println!("stopped");
+            }
+            (false, _, false) => {
+                println!("none");
             }
         }
 
@@ -74,6 +75,7 @@ impl StatusOpt {
         false
     }
 
+    /// All the topics served by the cluster
     async fn topics(admin: &FluvioAdmin) -> Vec<String> {
         let filters: Vec<String> = vec![];
         let topics = admin.list::<TopicSpec, _>(filters).await;
@@ -93,6 +95,7 @@ impl StatusOpt {
         partitions.unwrap().len() as i32
     }
 
+    /// Get the last record in a given partition of a given topic
     async fn last_record(
         fluvio_config: &FluvioConfig,
         topic: &str,
