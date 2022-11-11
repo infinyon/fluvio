@@ -1,11 +1,6 @@
 use std::time::Duration;
 
-use async_std::{
-    task::{block_on, spawn},
-    future::timeout,
-    prelude::FutureExt,
-    stream::StreamExt,
-};
+use async_std::{task::block_on, future::timeout, stream::StreamExt};
 use bench_env::{FLUVIO_BENCH_RECORDS_PER_BATCH, EnvOrDefault, FLUVIO_BENCH_RECORD_NUM_BYTES};
 use fluvio::{
     TopicProducer, PartitionConsumer, metadata::topic::TopicSpec, FluvioAdmin, RecordKey, Offset,
@@ -13,6 +8,8 @@ use fluvio::{
 use rand::{distributions::Alphanumeric, Rng};
 
 pub mod bench_env;
+pub mod throughput;
+pub mod latency;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 const TOPIC_NAME: &str = "benchmarking-topic";
@@ -21,23 +18,6 @@ pub type Setup = (
     (TopicProducer, std::vec::Vec<std::string::String>),
     (PartitionConsumer, std::vec::Vec<std::string::String>),
 );
-
-pub async fn produce(producer: TopicProducer, producer_data: Vec<String>) {
-    for record_data in producer_data {
-        producer.send(RecordKey::NULL, record_data).await.unwrap();
-    }
-    producer.flush().await.unwrap();
-}
-
-pub async fn consume(consumer: PartitionConsumer, consumer_data: Vec<String>) {
-    let mut stream = consumer.stream(Offset::absolute(0).unwrap()).await.unwrap();
-
-    for expected in consumer_data {
-        let record = stream.next().await.unwrap().unwrap();
-        let value = String::from_utf8_lossy(record.value());
-        assert_eq!(value, expected);
-    }
-}
 
 pub fn setup() -> Setup {
     block_on(timeout(DEFAULT_TIMEOUT, do_setup())).unwrap()
@@ -67,16 +47,19 @@ pub async fn do_setup() -> Setup {
         .map(|_| generate_random_string(FLUVIO_BENCH_RECORD_NUM_BYTES.env_or_default()))
         .collect();
 
-    ((producer, data.clone()), (consumer, data))
-}
+    // Make sure producer and consumer are ready to go
+    producer.send(RecordKey::NULL, "setup").await.unwrap();
+    producer.flush().await.unwrap();
+    consumer
+        .stream(Offset::absolute(0).unwrap())
+        .await
+        .unwrap()
+        .next()
+        .await
+        .unwrap()
+        .unwrap();
 
-pub async fn run_test(setup: Setup) {
-    let ((producer, producer_data), (consumer, consumer_data)) = setup;
-    let producer_jh = spawn(timeout(DEFAULT_TIMEOUT, produce(producer, producer_data)));
-    let consumer_jh = spawn(timeout(DEFAULT_TIMEOUT, consume(consumer, consumer_data)));
-    let (producer_result, consumer_result) = producer_jh.join(consumer_jh).await;
-    producer_result.unwrap();
-    consumer_result.unwrap();
+    ((producer, data.clone()), (consumer, data))
 }
 
 fn generate_random_string(size: usize) -> String {
