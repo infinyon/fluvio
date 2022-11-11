@@ -10,6 +10,24 @@ use fluvio::{Fluvio, FluvioConfig, FluvioAdmin};
 pub struct StatusOpt {}
 
 impl StatusOpt {
+    /// Testing this method
+    ///
+    /// get address of sc:
+    ///
+    /// uncomment this before running `flvd cluster status`
+    /// ```
+    /// println!("sc addr: {}", fluvio_config.endpoint);
+    /// ```
+    ///
+    /// get address of spus:
+    /// ```
+    /// $ flvd cluster spu list
+    /// ```
+    ///
+    ///
+    ///
+    ///
+    ///
     pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
         let fluvio_config = target.load().unwrap();
         let fluvio = Fluvio::connect_with_config(&fluvio_config).await;
@@ -23,23 +41,19 @@ impl StatusOpt {
 
         let (spus_running, cluster_has_data) = match admin {
             Ok(admin) => {
-                let filters: Vec<String> = vec![];
-                let spus = admin.list::<SpuSpec, _>(filters).await;
-                let spus_running = match spus {
-                    Ok(spus) => spus.len() > 0,
-                    Err(_) => false,
-                };
-
-                if spus_running {
+                if Self::spus_running(&admin).await {
                     (true, Self::cluster_has_data(&fluvio_config, &admin).await)
                 } else {
                     (false, false)
                 }
-            }
+            },
             Err(_) => (false, false),
         };
 
-        let is_local = fluvio_config.endpoint.contains("localhost") || fluvio_config.endpoint.contains("127.0.0.1");
+        let is_local = fluvio_config.endpoint.contains("localhost")
+            || fluvio_config.endpoint.contains("127.0.0.1");
+        // println!("sc addr: {}", fluvio_config.endpoint);
+
         match (sc_running, spus_running, cluster_has_data) {
             (true, true, _) => {
                 println!("running {}", if is_local { "locally" } else { "on k8s" });
@@ -47,15 +61,28 @@ impl StatusOpt {
             (true, false, _) => {
                 println!("Fluvio cluster is up, but has no spus");
             }
-            (false, _, true) => {
+            (false, true, true) => {
                 println!("stopped");
             }
-            (false, _, false) => {
+            (false, false, _) => {
                 println!("none");
+            }
+            (false, true, false) => {
+                println!("sc not running, spu(s) running but empty");
             }
         }
 
         Ok(())
+    }
+
+    async fn spus_running(admin: &FluvioAdmin) -> bool {
+        let filters: Vec<String> = vec![];
+        let spus = admin.list::<SpuSpec, _>(filters).await;
+
+        match spus {
+            Ok(spus) => spus.iter().any(|spu| spu.status.is_online()),
+            Err(_) => false,
+        }
     }
 
     /// Check if any topic in the cluster has data in any partitions.
