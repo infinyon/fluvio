@@ -1,6 +1,6 @@
 use std::{
     cmp::min,
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashSet, BinaryHeap},
     ops::{Deref, DerefMut},
     sync::Arc,
 };
@@ -388,51 +388,21 @@ fn compute_hw(
 ) -> Option<Offset> {
     // assert!(min_replica > 0);
     //  assert!((min_replica - 1) <= followers.len() as u16);
-    let min_lrs = min(min_replica - 1, followers.len() as u16);
+    let min_lrs = min((min_replica - 1) as usize, followers.len());
 
     // compute unique offsets that is greater than min leader's HW
     let qualified_leos: Vec<Offset> = followers
         .values()
-        .filter_map(|follower_info| {
-            let leo = follower_info.leo;
-            if leo > leader.hw {
-                Some(leo)
-            } else {
-                None
-            }
-        })
+        .map(|follower_info| follower_info.leo)
+        .filter(|leo| *leo > leader.hw)
         .collect();
 
-    if qualified_leos.is_empty() {
-        return None;
+    // Sort with O(n*log(n)) time without extra memory
+    let qualified_leos = BinaryHeap::from(qualified_leos);
+    if min_lrs == 0 {
+        return qualified_leos.peek().copied();
     }
-
-    //println!("qualified: {:#?}", qualified_leos);
-
-    let mut unique_leos = qualified_leos.clone();
-    unique_leos.dedup();
-
-    // debug!("unique_leos: {:#?}", unique_leos);
-
-    let mut hw_list: Vec<Offset> = unique_leos
-        .iter()
-        .filter_map(|unique_offset| {
-            // leo must have at least must have replicated min_lrs
-            if (qualified_leos
-                .iter()
-                .filter(|leo| unique_offset <= leo)
-                .count() as u16)
-                >= min_lrs
-            {
-                Some(*unique_offset)
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    hw_list.sort_unstable();
-    hw_list.pop()
+    qualified_leos.into_iter().nth(min_lrs - 1)
 }
 
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
