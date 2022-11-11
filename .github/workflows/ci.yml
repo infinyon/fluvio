@@ -294,7 +294,7 @@ jobs:
   cargo-vet:
     name: Vet Dependencies
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     env:
       CARGO_VET_VERSION: 0.3.0
 
@@ -305,7 +305,7 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
+          toolchain: stable
           override: true
 
       - name: Cache Cargo Vet
