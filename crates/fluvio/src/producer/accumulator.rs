@@ -63,10 +63,10 @@ impl RecordAccumulator {
     pub(crate) fn new(
         batch_size: usize,
         queue_size: usize,
-        partition_n: i32,
+        partition_n: usize,
         compression: Compression,
     ) -> Self {
-        let mut batches = Vec::with_capacity(partition_n as usize);
+        let mut batches = Vec::with_capacity(partition_n);
         for _ in 0..batches.capacity() {
             batches.push((BatchEvents::shared(), BatchesDeque::shared()));
         }
