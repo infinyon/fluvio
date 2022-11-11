@@ -1,7 +1,10 @@
 use std::{time::Duration, collections::VecDeque};
 
 use async_std::{task::block_on, future::timeout, stream::StreamExt};
-use bench_env::{FLUVIO_BENCH_RECORDS_PER_BATCH, EnvOrDefault, FLUVIO_BENCH_RECORD_NUM_BYTES};
+use bench_env::{
+    FLUVIO_BENCH_RECORDS_PER_BATCH, EnvOrDefault, FLUVIO_BENCH_RECORD_NUM_BYTES,
+    FLUVIO_BENCH_MAX_BYTES_PER_BATCH,
+};
 use consumer::Consumer;
 use fluvio::{
     metadata::topic::TopicSpec, FluvioAdmin, RecordKey, Offset, TopicProducerConfigBuilder, Fluvio,
@@ -10,7 +13,7 @@ use producer::Producer;
 use rand::{distributions::Alphanumeric, Rng};
 
 pub mod bench_env;
-pub mod throughput;
+pub mod benches;
 pub mod producer;
 pub mod consumer;
 
@@ -37,8 +40,7 @@ pub async fn do_setup() -> Setup {
 
     let fluvio = Fluvio::connect().await.unwrap();
     let config = TopicProducerConfigBuilder::default()
-        //TODO ENV
-        .batch_size(1000000)
+        .batch_size(FLUVIO_BENCH_MAX_BYTES_PER_BATCH.env_or_default())
         .build()
         .unwrap();
     let producer = fluvio
@@ -50,6 +52,7 @@ pub async fn do_setup() -> Setup {
         .map(|_| generate_random_string(FLUVIO_BENCH_RECORD_NUM_BYTES.env_or_default()))
         .collect();
 
+    // Send and Retrieve
     producer.send(RecordKey::NULL, "setup").await.unwrap();
     producer.flush().await.unwrap();
     consumer
@@ -70,7 +73,7 @@ pub async fn do_setup() -> Setup {
         Consumer {
             consumer,
             data,
-            // one becaseu we already sent and consumed one as part of setup
+            // one because we already sent and consumed one as part of setup
             offset: 1,
             records_per_batch: FLUVIO_BENCH_RECORDS_PER_BATCH.env_or_default(),
         },

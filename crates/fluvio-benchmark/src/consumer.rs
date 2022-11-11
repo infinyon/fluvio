@@ -23,4 +23,15 @@ impl Consumer {
             assert_eq!(value, expected);
         }
     }
+
+    pub async fn consume_no_check(self) {
+        let mut stream = self
+            .consumer
+            .stream(Offset::absolute(self.offset).unwrap())
+            .await
+            .unwrap();
+        for _ in 0..self.records_per_batch {
+            let _ = stream.next().await.unwrap().unwrap();
+        }
+    }
 }
