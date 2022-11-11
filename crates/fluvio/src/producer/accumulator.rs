@@ -55,7 +55,6 @@ impl BatchesDeque {
 pub(crate) struct RecordAccumulator {
     batch_size: usize,
     queue_size: usize,
-    //batches: Arc<HashMap<PartitionId, BatchHandler>>,
     batches: Arc<Vec<BatchHandler>>,
     compression: Compression,
 }
