@@ -291,6 +291,38 @@ jobs:
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
           retention-days: 1
 
+  cargo-vet:
+    name: Vet Dependencies
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    env:
+      CARGO_VET_VERSION: 0.3.0
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          override: true
+
+      - name: Cache Cargo Vet
+        uses: actions/cache@v2
+        with:
+          path: ${{ runner.tool_cache }}/cargo-vet
+          key: cargo-vet-bin-${{ env.CARGO_VET_VERSION }}
+
+      - name: Add "cargo vet" from cache to PATH
+        run: echo "${{ runner.tool_cache }}/cargo-vet/bin" >> $GITHUB_PATH
+
+      - name: Ensure "cargo vet" is present
+        run: cargo install --root ${{ runner.tool_cache }}/cargo-vet --version ${{ env.CARGO_VET_VERSION }} cargo-vet
+
+      - name: Invoke cargo-vet
+        run: cargo vet --locked
+
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
