@@ -387,17 +387,21 @@ fn compute_hw(
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
     // assert!(min_replica > 0);
-    //  assert!((min_replica - 1) <= followers.len() as u16);
+    // assert!((min_replica - 1) <= followers.len() as u16);
     let min_lrs = min((min_replica - 1) as usize, followers.len());
 
-    // compute unique offsets that is greater than min leader's HW
+    // compute offsets that is greater than min leader's HW
     let qualified_leos: Vec<Offset> = followers
         .values()
         .map(|follower_info| follower_info.leo)
         .filter(|leo| *leo > leader.hw)
         .collect();
 
-    // Sort with O(n*log(n)) time without extra memory
+    if min_lrs > qualified_leos.len() {
+        return None;
+    }
+
+    // sort with O(n*log(n)) time without extra memory
     let qualified_leos = BinaryHeap::from(qualified_leos);
     if min_lrs == 0 {
         return qualified_leos.peek().copied();
