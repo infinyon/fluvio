@@ -1,9 +1,11 @@
+use std::time::Instant;
 use async_std::{stream::StreamExt, future::timeout};
 use fluvio::{RecordKey, Offset};
 
 use crate::{Setup, DEFAULT_TIMEOUT};
 
 pub async fn run_latency_test(setup: Setup) {
+    let now = Instant::now();
     timeout(DEFAULT_TIMEOUT, async {
         let ((producer, producer_data), (consumer, consumer_data)) = setup;
         producer
@@ -24,4 +26,5 @@ pub async fn run_latency_test(setup: Setup) {
     })
     .await
     .unwrap();
+    println!("{:?}", now.elapsed());
 }

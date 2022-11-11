@@ -47,6 +47,6 @@ criterion_group! {
     name = benches;
     // This can be any expression that returns a `Criterion` object.
     config = Criterion::default().sample_size(FLUVIO_BENCH_SAMPLE_SIZE.env_or_default());
-    targets = bench_throughput, bench_latency
+    targets = bench_latency, bench_throughput
 }
 criterion_main!(benches);
