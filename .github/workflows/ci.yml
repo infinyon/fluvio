@@ -310,7 +310,7 @@ jobs:
           override: true
 
       - name: Cache Cargo Vet
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ runner.tool_cache }}/cargo-vet
           key: cargo-vet-bin-${{ env.CARGO_VET_VERSION }}
