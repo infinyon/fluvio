@@ -1,6 +1,6 @@
 use std::{
-    cmp::min,
-    collections::{BTreeMap, HashSet},
+    cmp::{min, Reverse},
+    collections::{BTreeMap, HashSet, BinaryHeap},
     ops::{Deref, DerefMut},
     sync::Arc,
 };
@@ -387,52 +387,40 @@ fn compute_hw(
     followers: &BTreeMap<SpuId, OffsetInfo>,
 ) -> Option<Offset> {
     // assert!(min_replica > 0);
-    //  assert!((min_replica - 1) <= followers.len() as u16);
-    let min_lrs = min(min_replica - 1, followers.len() as u16);
+    // assert!((min_replica - 1) <= followers.len() as u16);
+    let min_lrs = min((min_replica - 1) as usize, followers.len());
 
-    // compute unique offsets that is greater than min leader's HW
-    let qualified_leos: Vec<Offset> = followers
+    // compute offsets that is greater than min leader's HW
+    let mut qualified_leos_iter = followers
         .values()
-        .filter_map(|follower_info| {
-            let leo = follower_info.leo;
-            if leo > leader.hw {
-                Some(leo)
-            } else {
-                None
-            }
-        })
-        .collect();
+        .map(|follower_info| follower_info.leo)
+        .filter(|leo| *leo > leader.hw);
 
-    if qualified_leos.is_empty() {
-        return None;
+    if min_lrs == 0 {
+        return qualified_leos_iter.max();
     }
 
-    //println!("qualified: {:#?}", qualified_leos);
+    let mut qualified_leos: Vec<Reverse<Offset>> = Vec::new();
+    for _ in 0..min_lrs {
+        match qualified_leos_iter.next() {
+            Some(leo) => qualified_leos.push(Reverse(leo)),
+            None => return None,
+        };
+    }
 
-    let mut unique_leos = qualified_leos.clone();
-    unique_leos.dedup();
+    // sort with O(min_lrs*log(min_lrs)) time without extra memory
+    let mut sorted_leos = BinaryHeap::from(qualified_leos);
 
-    // debug!("unique_leos: {:#?}", unique_leos);
-
-    let mut hw_list: Vec<Offset> = unique_leos
-        .iter()
-        .filter_map(|unique_offset| {
-            // leo must have at least must have replicated min_lrs
-            if (qualified_leos
-                .iter()
-                .filter(|leo| unique_offset <= leo)
-                .count() as u16)
-                >= min_lrs
-            {
-                Some(*unique_offset)
-            } else {
-                None
+    // insert and sort with O((n - min_lrs)*log(min_lrs)) in the worst case
+    // without allocating memory
+    for leo in qualified_leos_iter {
+        if let Some(mut min) = sorted_leos.peek_mut() {
+            if min.0 < leo {
+                min.0 = leo;
             }
-        })
-        .collect();
-
-    hw_list.sort_unstable();
-    hw_list.pop()
+        }
+    }
+    sorted_leos.peek().map(|r| r.0)
 }
 
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
