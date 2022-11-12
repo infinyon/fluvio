@@ -399,14 +399,13 @@ fn compute_hw(
 
     if min_lrs > qualified_leos.len() {
         return None;
+    } else if min_lrs == 0 {
+        return qualified_leos.into_iter().max();
     }
 
     // sort with O(n*log(n)) time without extra memory
-    let qualified_leos = BinaryHeap::from(qualified_leos);
-    if min_lrs == 0 {
-        return qualified_leos.peek().copied();
-    }
-    qualified_leos.into_iter().nth(min_lrs - 1)
+    let sorted_leos = BinaryHeap::from(qualified_leos);
+    sorted_leos.into_iter().nth(min_lrs - 1)
 }
 
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
