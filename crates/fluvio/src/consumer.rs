@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -25,6 +24,11 @@ use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
 
 pub use fluvio_protocol::record::ConsumerRecord as Record;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocationWasm;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleKind;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
+pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 /// An interface for consuming events from a particular partition
 ///

@@ -100,9 +100,13 @@ pub use producer::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, RecordKey, ProduceOutput,
     FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy, RetryStrategy,
 };
+#[cfg(feature = "smartengine")]
+pub use producer::{SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData};
 
 pub use consumer::{
     PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartModuleContextData,
+    SmartModuleExtraParams,
 };
 pub use offset::Offset;
 

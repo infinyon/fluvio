@@ -36,7 +36,7 @@ jobs:
           key: benches-${{ runner.os }}-unit_fluvio_protocol-rust
 
       - name: Cache Benchmark data
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         if: github.ref == 'refs/heads/master'
         with:
           path: ./benches_cache
@@ -82,7 +82,7 @@ jobs:
           key: benches-${{ runner.os }}-unit_fluvio_smartmodule-rust
 
       - name: Cache Benchmark data
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         if: github.ref == 'refs/heads/master'
         with:
           path: ./benches_cache
