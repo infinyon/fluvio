@@ -33,8 +33,9 @@ fluvio = { path = "../fluvio", default-features = false }
 fluvio-hub-util = { path = "../fluvio-hub-util" }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-future = { version = "0.4.0", features = ["subscriber"]}
-fluvio-smartengine = { path = "../fluvio-smartengine" }
+fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation"] }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
+fluvio-sc-schema = { path = "../fluvio-sc-schema" }
 fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records"]}

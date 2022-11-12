@@ -59,3 +59,15 @@ impl FluvioConfig {
         self
     }
 }
+
+impl TryFrom<FluvioConfig> for fluvio_socket::ClientConfig {
+    type Error = std::io::Error;
+    fn try_from(config: FluvioConfig) -> Result<Self, Self::Error> {
+        let connector = fluvio_future::net::DomainConnector::try_from(config.tls.clone())?;
+        Ok(Self::new(
+            &config.endpoint,
+            connector,
+            config.use_spu_local_address,
+        ))
+    }
+}

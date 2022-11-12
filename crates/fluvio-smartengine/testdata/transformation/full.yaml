@@ -1,0 +1,28 @@
+transforms:
+  - uses: infinyon/jolt@0.1.0
+    with:
+      spec:
+        - operation: shift
+          spec:
+            payload:
+              device: "device"
+        - operation: default
+          spec:
+            device:
+              type: "mobile"
+  - uses: infinyon/json-sql@0.1.0
+    with:
+      mapping:
+        table: "topic_message_demo"
+        map-columns:
+          "device_id":
+            json-key: "device.device_id"
+            value:
+              type: "int"
+              default: "0"
+              required: true
+          "record":
+            json-key: "$"
+            value:
+              type: "jsonb"
+              required: true
