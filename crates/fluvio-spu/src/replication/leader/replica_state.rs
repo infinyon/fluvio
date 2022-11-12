@@ -1,5 +1,5 @@
 use std::{
-    cmp::min,
+    cmp::{min, Reverse},
     collections::{BTreeMap, HashSet, BinaryHeap},
     ops::{Deref, DerefMut},
     sync::Arc,
@@ -391,21 +391,36 @@ fn compute_hw(
     let min_lrs = min((min_replica - 1) as usize, followers.len());
 
     // compute offsets that is greater than min leader's HW
-    let qualified_leos: Vec<Offset> = followers
+    let mut qualified_leos_iter = followers
         .values()
         .map(|follower_info| follower_info.leo)
-        .filter(|leo| *leo > leader.hw)
-        .collect();
+        .filter(|leo| *leo > leader.hw);
 
-    if min_lrs > qualified_leos.len() {
-        return None;
-    } else if min_lrs == 0 {
-        return qualified_leos.into_iter().max();
+    if min_lrs == 0 {
+        return qualified_leos_iter.max();
     }
 
-    // sort with O(n*log(n)) time without extra memory
-    let sorted_leos = BinaryHeap::from(qualified_leos);
-    sorted_leos.into_iter().nth(min_lrs - 1)
+    let mut qualified_leos: Vec<Reverse<Offset>> = Vec::new();
+    for _ in 0..min_lrs {
+        match qualified_leos_iter.next() {
+            Some(leo) => qualified_leos.push(Reverse(leo)),
+            None => return None,
+        };
+    }
+
+    // sort with O(min_lrs*log(min_lrs)) time without extra memory
+    let mut sorted_leos = BinaryHeap::from(qualified_leos);
+
+    // insert and sort with O((n - min_lrs)*log(min_lrs)) in the worst case
+    // without allocating memory
+    for leo in qualified_leos_iter {
+        if let Some(mut min) = sorted_leos.peek_mut() {
+            if min.0 < leo {
+                min.0 = leo;
+            }
+        }
+    }
+    sorted_leos.peek().map(|r| r.0)
 }
 
 impl<S> LeaderReplicaState<S> where S: ReplicaStorage {}
