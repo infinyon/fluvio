@@ -990,7 +990,7 @@ pub mod test {
             vec![(0, vec![0, 1, 3]), (1, vec![0, 2, 3]), (2, vec![1, 3, 4])].into();
 
         let p1_result = p1.unique_spus_in_partition_map();
-        let expected_p1_result: Vec<i32> = vec![0, 1, 3, 2, 4];
+        let expected_p1_result: Vec<SpuId> = vec![0, 1, 3, 2, 4];
         assert_eq!(p1_result, expected_p1_result);
     }
 

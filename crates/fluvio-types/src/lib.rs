@@ -12,7 +12,7 @@ pub use partition::PartitionError;
 //
 // Types
 //
-pub type ReplicaMap = BTreeMap<i32, Vec<i32>>;
+pub type ReplicaMap = BTreeMap<SpuId, Vec<SpuId>>;
 pub type Reason = String;
 pub type Name = String;
 
