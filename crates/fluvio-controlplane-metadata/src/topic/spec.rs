@@ -511,8 +511,8 @@ impl From<Vec<PartitionMap>> for PartitionMaps {
     }
 }
 
-impl From<Vec<(PartitionId, Vec<i32>)>> for PartitionMaps {
-    fn from(partition_vec: Vec<(PartitionId, Vec<i32>)>) -> Self {
+impl From<Vec<(PartitionId, Vec<SpuId>)>> for PartitionMaps {
+    fn from(partition_vec: Vec<(PartitionId, Vec<SpuId>)>) -> Self {
         let maps: Vec<PartitionMap> = partition_vec
             .into_iter()
             .map(|(id, replicas)| PartitionMap { id, replicas })

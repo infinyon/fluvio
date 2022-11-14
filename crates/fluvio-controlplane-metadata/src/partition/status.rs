@@ -128,7 +128,7 @@ impl PartitionStatus {
         self.replicas.iter()
     }
 
-    pub fn live_replicas(&self) -> Vec<i32> {
+    pub fn live_replicas(&self) -> Vec<SpuId> {
         self.replicas.iter().map(|lrs| lrs.spu).collect()
     }
 

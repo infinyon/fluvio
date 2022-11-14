@@ -48,8 +48,8 @@ pub async fn generate_replica_map(
     spus: &SpuAdminStore,
     param: &TopicReplicaParam,
 ) -> TopicNextState {
-    let spu_count = spus.count().await as u32;
-    if (spu_count as ReplicationFactor) < param.replication_factor {
+    let spu_count = spus.count().await as ReplicationFactor;
+    if spu_count < param.replication_factor {
         trace!(
             "R-MAP needs {:?} online spus, found {:?}",
             param.replication_factor,
