@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 use siphasher::sip::SipHasher;
 use fluvio_types::{PartitionId, PartitionCount};
 
@@ -31,13 +31,13 @@ pub struct PartitionerConfig {
 /// - Records with keys get their keys hashed with siphash
 /// - Records without keys get assigned to partitions using round-robin
 pub(crate) struct SiphashRoundRobinPartitioner {
-    index: AtomicI32,
+    index: AtomicU32,
 }
 
 impl SiphashRoundRobinPartitioner {
     pub fn new() -> Self {
         Self {
-            index: AtomicI32::new(0),
+            index: AtomicU32::new(0),
         }
     }
 }

@@ -93,6 +93,7 @@ pub mod spu;
 pub mod metrics;
 pub mod config;
 
+use fluvio_types::PartitionId;
 use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
@@ -197,7 +198,7 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 #[instrument(skip(topic, partition))]
 pub async fn consumer<S: Into<String>>(
     topic: S,
-    partition: i32,
+    partition: PartitionId,
 ) -> Result<PartitionConsumer, FluvioError> {
     let fluvio = Fluvio::connect().await?;
     let consumer = fluvio.partition_consumer(topic, partition).await?;

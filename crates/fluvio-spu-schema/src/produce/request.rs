@@ -73,7 +73,7 @@ where
     R: Encoder + Decoder + Default + Debug,
 {
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: u32,
 
     /// The record data to be produced.
     pub records: R,

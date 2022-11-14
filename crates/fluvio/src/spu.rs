@@ -169,7 +169,7 @@ impl SpuPool {
     }
 
     pub async fn topic_exists<S: Into<String>>(&self, topic: S) -> Result<bool, FluvioError> {
-        let replica = ReplicaKey::new(topic, 0);
+        let replica = ReplicaKey::new(topic, 0u32);
         Ok(self
             .metadata
             .partitions()

@@ -246,7 +246,7 @@ impl Default for PartitionResolution {
     serde(rename_all = "camelCase")
 )]
 pub struct ReplicaStatus {
-    pub spu: i32,
+    pub spu: SpuId,
     pub hw: i64,
     pub leo: i64,
 }

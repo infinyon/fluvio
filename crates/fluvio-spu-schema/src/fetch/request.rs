@@ -82,7 +82,7 @@ pub struct ForgottenTopic {
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchPartition {
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: u32,
 
     /// The current leader epoch of the partition.
     #[fluvio(min_version = 9, ignorable)]

@@ -7,6 +7,7 @@ use std::io::Error as IoError;
 use std::marker::PhantomData;
 
 use bytes::BytesMut;
+use fluvio_types::PartitionId;
 use tracing::trace;
 
 use fluvio_protocol::store::StoreValue;
@@ -105,7 +106,7 @@ pub struct PeerFetchablePartitionResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
 {
-    pub partition: i32,
+    pub partition: PartitionId,
     pub error: ErrorCode,
     pub hw: i64,
     pub leo: i64,

@@ -81,7 +81,7 @@ pub struct ConsumerTestOption {
     /// If multiple consumers, they will all use same partition
     // TODO: Support specifying multiple partitions
     #[clap(long, default_value = "0")]
-    pub partition: i32,
+    pub partition: u32,
 
     // TODO: This option needs to be mutually exclusive w/ partition
     /// Test should use multi-partition consumer, default all partitions

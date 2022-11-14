@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use fluvio_types::PartitionId;
 use tracing::debug;
 use async_trait::async_trait;
 
@@ -25,7 +26,7 @@ pub type DefaultPartitionStore = PartitionLocalStore<u32>;
 pub trait PartitionMd<C: MetadataItem> {
     fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self;
 
-    fn quick<S: Into<String>>(partition: ((S, i32), Vec<i32>)) -> Self;
+    fn quick<S: Into<String>>(partition: ((S, PartitionId), Vec<i32>)) -> Self;
 }
 
 impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
@@ -36,7 +37,7 @@ impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
         Self::new(key, spec, PartitionStatus::default())
     }
 
-    fn quick<S: Into<String>>(partition: ((S, i32), Vec<i32>)) -> Self {
+    fn quick<S: Into<String>>(partition: ((S, PartitionId), Vec<i32>)) -> Self {
         let (replica_key, replicas) = partition;
         Self::with_replicas(replica_key.into(), replicas)
     }
@@ -66,7 +67,7 @@ where
 
     async fn leaders(&self) -> Vec<ReplicaLeader>;
 
-    fn bulk_load<S: Into<String>>(partitions: Vec<((S, i32), Vec<i32>)>) -> Self;
+    fn bulk_load<S: Into<String>>(partitions: Vec<((S, PartitionId), Vec<i32>)>) -> Self;
 }
 
 #[async_trait]
@@ -180,7 +181,7 @@ where
             .collect()
     }
 
-    fn bulk_load<S: Into<String>>(partitions: Vec<((S, i32), Vec<i32>)>) -> Self {
+    fn bulk_load<S: Into<String>>(partitions: Vec<((S, PartitionId), Vec<i32>)>) -> Self {
         let elements = partitions
             .into_iter()
             .map(|(replica_key, replicas)| PartitionMetadata::quick((replica_key, replicas)))

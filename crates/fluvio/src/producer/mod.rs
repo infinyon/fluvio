@@ -64,7 +64,7 @@ impl ProducerPool {
         for (partition_id, (batch_events, batch_list)) in batches.iter().enumerate() {
             let end_event = StickyEvent::shared();
             let flush_event = (EventHandler::shared(), EventHandler::shared());
-            let replica = ReplicaKey::new(topic.clone(), partition_id as i32);
+            let replica = ReplicaKey::new(topic.clone(), partition_id as PartitionId);
             let error = Arc::new(RwLock::new(None));
 
             PartitionProducer::start(

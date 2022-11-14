@@ -40,7 +40,7 @@ pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 /// [`Fluvio`]: struct.Fluvio.html
 pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
-    partition: i32,
+    partition: PartitionId,
     pool: Arc<P>,
     metrics: Arc<ClientMetrics>,
 }
@@ -49,7 +49,12 @@ impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
 {
-    pub fn new(topic: String, partition: i32, pool: Arc<P>, metrics: Arc<ClientMetrics>) -> Self {
+    pub fn new(
+        topic: String,
+        partition: PartitionId,
+        pool: Arc<P>,
+        metrics: Arc<ClientMetrics>,
+    ) -> Self {
         Self {
             topic,
             partition,
@@ -64,7 +69,7 @@ where
     }
 
     /// Returns the ID of the partition that this consumer reads from
-    pub fn partition(&self) -> i32 {
+    pub fn partition(&self) -> PartitionId {
         self.partition
     }
 

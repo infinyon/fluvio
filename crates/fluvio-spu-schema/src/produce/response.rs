@@ -19,7 +19,7 @@ impl ProduceResponse {
     pub fn find_partition_response(
         &self,
         topic: &str,
-        partition: i32,
+        partition: u32,
     ) -> Option<&PartitionProduceResponse> {
         if let Some(response) = self
             .responses
@@ -48,7 +48,7 @@ pub struct TopicProduceResponse {
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct PartitionProduceResponse {
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: u32,
 
     /// The error code, or 0 if there was no error.
     pub error_code: ErrorCode,

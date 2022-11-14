@@ -271,7 +271,7 @@ async fn generate_partitions_with_rack_assignment(
             let spu_idx = ((s_idx + p_idx + r_idx) % spu_cnt) as usize;
             replicas.push(spu_list[spu_idx]);
         }
-        partition_map.insert(p_idx as SpuId, replicas);
+        partition_map.insert(p_idx as PartitionId, replicas);
     }
 
     partition_map

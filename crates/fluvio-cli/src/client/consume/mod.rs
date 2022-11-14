@@ -21,6 +21,7 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
+    use fluvio_types::PartitionId;
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -76,7 +77,7 @@ mod cmd {
 
         /// Partition id
         #[clap(short = 'p', long, default_value = "0", value_name = "integer")]
-        pub partition: i32,
+        pub partition: PartitionId,
 
         /// Consume records from all partitions
         #[clap(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]

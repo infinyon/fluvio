@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
+use fluvio_types::PartitionId;
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
 
@@ -196,7 +197,7 @@ impl Fluvio {
     pub async fn partition_consumer<S: Into<String>>(
         &self,
         topic: S,
-        partition: i32,
+        partition: PartitionId,
     ) -> Result<PartitionConsumer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");

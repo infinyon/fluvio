@@ -128,7 +128,7 @@ impl TestDriver {
         Ok(())
     }
 
-    pub async fn get_consumer(&self, topic: &str, partition: i32) -> PartitionConsumer {
+    pub async fn get_consumer(&self, topic: &str, partition: u32) -> PartitionConsumer {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client
             .partition_consumer(topic.to_string(), partition)

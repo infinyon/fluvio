@@ -118,8 +118,11 @@ mod display {
                         let parse_key: Result<ReplicaKey, PartitionError> =
                             metadata.name.clone().try_into();
                         match parse_key {
-                            Ok(key) => key.split(),
-                            Err(err) => (err.to_string(), -1),
+                            Ok(key) => {
+                                let (topic, partition) = key.split();
+                                (topic, partition.to_string())
+                            }
+                            Err(err) => (err.to_string(), "-1".to_owned()),
                         }
                     };
 
@@ -131,7 +134,7 @@ mod display {
 
                     Row::from([
                         Cell::new(topic),
-                        Cell::new(partition.to_string()),
+                        Cell::new(partition),
                         Cell::new(spec.leader.to_string()),
                         Cell::new(format!("{:?}", spec.followers())),
                         Cell::new(format!("{:?}", status.resolution)),

@@ -12,7 +12,7 @@ pub use partition::PartitionError;
 //
 // Types
 //
-pub type ReplicaMap = BTreeMap<SpuId, Vec<SpuId>>;
+pub type ReplicaMap = BTreeMap<PartitionId, Vec<SpuId>>;
 pub type Reason = String;
 pub type Name = String;
 
@@ -26,7 +26,7 @@ pub type IsOk = bool;
 
 // Topic
 pub type TopicName = String;
-pub type PartitionId = i32;
+pub type PartitionId = u32;
 pub type PartitionCount = u32;
 pub type ReplicationFactor = u32;
 pub type IgnoreRackAssignment = bool;

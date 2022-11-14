@@ -511,8 +511,8 @@ impl From<Vec<PartitionMap>> for PartitionMaps {
     }
 }
 
-impl From<Vec<(i32, Vec<i32>)>> for PartitionMaps {
-    fn from(partition_vec: Vec<(i32, Vec<i32>)>) -> Self {
+impl From<Vec<(PartitionId, Vec<i32>)>> for PartitionMaps {
+    fn from(partition_vec: Vec<(PartitionId, Vec<i32>)>) -> Self {
         let maps: Vec<PartitionMap> = partition_vec
             .into_iter()
             .map(|(id, replicas)| PartitionMap { id, replicas })
@@ -585,7 +585,7 @@ impl PartitionMaps {
         let mut replica_map: ReplicaMap = BTreeMap::new();
 
         for partition in &self.maps {
-            replica_map.insert(partition.id, partition.replicas.clone());
+            replica_map.insert(partition.id as PartitionId, partition.replicas.clone());
         }
 
         replica_map

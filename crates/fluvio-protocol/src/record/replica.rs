@@ -1,14 +1,14 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use fluvio_types::SpuId;
+use fluvio_types::PartitionId;
 
 use crate::derive::{Encoder, Decoder};
 
 #[derive(Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
 pub struct ReplicaKey {
     pub topic: String,
-    pub partition: SpuId,
+    pub partition: PartitionId,
 }
 
 impl fmt::Debug for ReplicaKey {
@@ -25,7 +25,7 @@ impl ReplicaKey {
     pub fn new<S, P>(topic: S, partition: P) -> Self
     where
         S: Into<String>,
-        P: Into<SpuId>,
+        P: Into<PartitionId>,
     {
         ReplicaKey {
             topic: topic.into(),
@@ -33,7 +33,7 @@ impl ReplicaKey {
         }
     }
 
-    pub fn split(self) -> (String, SpuId) {
+    pub fn split(self) -> (String, PartitionId) {
         (self.topic, self.partition)
     }
 }
@@ -44,11 +44,11 @@ impl std::fmt::Display for ReplicaKey {
     }
 }
 
-impl<S> From<(S, SpuId)> for ReplicaKey
+impl<S> From<(S, PartitionId)> for ReplicaKey
 where
     S: Into<String>,
 {
-    fn from(key: (S, SpuId)) -> ReplicaKey {
+    fn from(key: (S, PartitionId)) -> ReplicaKey {
         ReplicaKey::new(key.0.into(), key.1)
     }
 }
@@ -85,7 +85,9 @@ pub trait PartitionOffset {
 }
 
 // returns a tuple (topic_name, idx)
-pub fn decompose_partition_name(partition_name: &str) -> Result<(String, SpuId), PartitionError> {
+pub fn decompose_partition_name(
+    partition_name: &str,
+) -> Result<(String, PartitionId), PartitionError> {
     let dash_pos = partition_name.rfind('-');
     if dash_pos.is_none() {
         return Err(PartitionError::InvalidSyntax(partition_name.to_owned()));
@@ -98,7 +100,7 @@ pub fn decompose_partition_name(partition_name: &str) -> Result<(String, SpuId),
 
     let topic_name = &partition_name[..pos];
     let idx_string = &partition_name[(pos + 1)..];
-    let idx = match idx_string.parse::<SpuId>() {
+    let idx = match idx_string.parse::<PartitionId>() {
         Ok(n) => n,
         Err(_) => {
             return Err(PartitionError::InvalidSyntax(partition_name.to_owned()));

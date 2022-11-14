@@ -31,7 +31,7 @@ impl Request for FetchOffsetsRequest {
 
 impl FetchOffsetsRequest {
     /// create request with a single topic and partition
-    pub fn new(topic: String, partition: i32) -> Self {
+    pub fn new(topic: String, partition: u32) -> Self {
         Self {
             topics: vec![FetchOffsetTopic {
                 name: topic,
@@ -55,7 +55,7 @@ pub struct FetchOffsetTopic {
 #[derive(Decoder, Encoder, Default, Debug)]
 pub struct FetchOffsetPartition {
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: u32,
 }
 
 // -----------------------------------
@@ -99,7 +99,7 @@ pub struct FetchOffsetPartitionResponse {
     pub error_code: ErrorCode,
 
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: u32,
 
     /// First readable offset.
     pub start_offset: i64,

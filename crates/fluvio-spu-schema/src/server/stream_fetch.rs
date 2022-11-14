@@ -54,7 +54,7 @@ where
     R: Encoder + Decoder + Default + Debug,
 {
     pub topic: String,
-    pub partition: i32,
+    pub partition: u32,
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,

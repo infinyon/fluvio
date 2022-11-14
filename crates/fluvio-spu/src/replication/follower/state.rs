@@ -290,7 +290,7 @@ mod follower_tests {
 
     const LEADER: SpuId = 5001;
     const TOPIC: &str = "test";
-    const TEST_REPLICA: (&str, i32) = (TOPIC, 0);
+    const TEST_REPLICA: (&str, u32) = (TOPIC, 0);
 
     #[fluvio_future::test]
     async fn test_follower_creation() {
