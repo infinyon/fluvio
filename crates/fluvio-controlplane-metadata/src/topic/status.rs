@@ -23,7 +23,7 @@ use fluvio_types::{ReplicaMap, SpuId, PartitionId};
 )]
 pub struct TopicStatus {
     pub resolution: TopicResolution,
-    pub replica_map: BTreeMap<PartitionId, Vec<SpuId>>,
+    pub replica_map: ReplicaMap,
     pub reason: String,
 }
 
@@ -121,8 +121,8 @@ impl ::std::default::Default for TopicResolution {
 // Implementation
 // -----------------------------------
 
-fn create_replica_map(rows: Vec<Vec<SpuId>>) -> BTreeMap<PartitionId, Vec<SpuId>> {
-    let mut map: BTreeMap<PartitionId, Vec<SpuId>> = BTreeMap::new();
+fn create_replica_map(rows: Vec<Vec<SpuId>>) -> ReplicaMap {
+    let mut map: ReplicaMap = BTreeMap::new();
     for (idx, row) in rows.iter().enumerate() {
         map.insert(idx as PartitionId, row.clone());
     }
