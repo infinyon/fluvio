@@ -201,7 +201,7 @@ impl TestDriver {
         let admin = self.client().admin().await;
 
         let mut topic_spec =
-            TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
+            TopicSpec::new_computed(option.partition as u32, option.replication() as u32, None);
 
         // Topic Retention time
         topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {

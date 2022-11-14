@@ -27,8 +27,8 @@ pub type IsOk = bool;
 // Topic
 pub type TopicName = String;
 pub type PartitionId = i32;
-pub type PartitionCount = i32;
-pub type ReplicationFactor = i32;
+pub type PartitionCount = u32;
+pub type ReplicationFactor = u32;
 pub type IgnoreRackAssignment = bool;
 
 // AuthToken

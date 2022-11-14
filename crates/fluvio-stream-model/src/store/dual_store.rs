@@ -146,8 +146,8 @@ where
         self.read().await.contains_key(key)
     }
 
-    pub async fn count(&self) -> i32 {
-        self.read().await.len() as i32
+    pub async fn count(&self) -> usize {
+        self.read().await.len()
     }
 
     pub async fn clone_specs(&self) -> Vec<S> {

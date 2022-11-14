@@ -56,9 +56,9 @@ where
 {
     async fn online_status(&self) -> HashSet<SpuId>;
 
-    async fn online_spu_count(&self) -> i32;
+    async fn online_spu_count(&self) -> u32;
 
-    async fn spu_used_for_replica(&self) -> i32;
+    async fn spu_used_for_replica(&self) -> usize;
 
     async fn online_spu_ids(&self) -> Vec<i32>;
 
@@ -76,7 +76,7 @@ where
 
     async fn table_fmt(&self) -> String;
 
-    async fn spus_in_rack_count(&self) -> i32;
+    async fn spus_in_rack_count(&self) -> u32;
 
     async fn live_spu_rack_map_sorted(&self) -> Vec<(String, Vec<i32>)>;
 
@@ -106,7 +106,7 @@ where
     }
 
     /// count online SPUs
-    async fn online_spu_count(&self) -> i32 {
+    async fn online_spu_count(&self) -> u32 {
         self.read()
             .await
             .values()
@@ -121,7 +121,7 @@ where
     }
 
     /// count spus that can be used for replica
-    async fn spu_used_for_replica(&self) -> i32 {
+    async fn spu_used_for_replica(&self) -> usize {
         self.count().await
     }
 
@@ -244,18 +244,12 @@ where
     }
 
     /// number of spus in rack count
-    async fn spus_in_rack_count(&self) -> i32 {
+    async fn spus_in_rack_count(&self) -> u32 {
         self.read()
             .await
             .values()
-            .filter_map(|spu| {
-                if spu.spec.rack.is_some() {
-                    Some(1)
-                } else {
-                    None
-                }
-            })
-            .sum()
+            .filter(|spu| spu.spec.rack.is_some())
+            .count() as u32
     }
 
     // Returns array of touples [("r1", [0,1,2]), ("r2", [3,4]), ("r3", [5])]

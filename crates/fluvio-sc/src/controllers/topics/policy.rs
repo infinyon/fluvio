@@ -48,8 +48,8 @@ pub async fn generate_replica_map(
     spus: &SpuAdminStore,
     param: &TopicReplicaParam,
 ) -> TopicNextState {
-    let spu_count = spus.count().await;
-    if spu_count < param.replication_factor {
+    let spu_count = spus.count().await as u32;
+    if (spu_count as ReplicationFactor) < param.replication_factor {
         trace!(
             "R-MAP needs {:?} online spus, found {:?}",
             param.replication_factor,
@@ -238,17 +238,15 @@ impl TopicNextState {
 pub async fn generate_replica_map_for_topic(
     spus: &SpuAdminStore,
     param: &TopicReplicaParam,
-    from_index: Option<i32>,
+    from_index: Option<u32>,
 ) -> ReplicaMap {
     let in_rack_count = spus.spus_in_rack_count().await;
 
-    let start_index = from_index.unwrap_or(-1);
-
     // generate partition map (with our without rack assignment)
     if param.ignore_rack_assignment || in_rack_count == 0 {
-        generate_partitions_without_rack(spus, param, start_index).await
+        generate_partitions_without_rack(spus, param, from_index).await
     } else {
-        generate_partitions_with_rack_assignment(spus, param, start_index).await
+        generate_partitions_with_rack_assignment(spus, param, from_index).await
     }
 }
 
@@ -258,18 +256,14 @@ pub async fn generate_replica_map_for_topic(
 async fn generate_partitions_with_rack_assignment(
     spus: &SpuAdminStore,
     param: &TopicReplicaParam,
-    start_index: i32,
+    start_index: Option<u32>,
 ) -> ReplicaMap {
-    let mut partition_map = BTreeMap::new();
+    let mut partition_map: ReplicaMap = BTreeMap::new();
     let rack_map = SpuAdminStore::live_spu_rack_map_sorted(spus).await;
     let spu_list = SpuAdminStore::online_spus_in_rack(&rack_map);
     let spu_cnt = spus.online_spu_count().await;
 
-    let s_idx = if start_index >= 0 {
-        start_index
-    } else {
-        thread_rng().gen_range(0..spu_cnt)
-    };
+    let s_idx = start_index.unwrap_or_else(|| thread_rng().gen_range(0..spu_cnt));
 
     for p_idx in 0..param.partitions {
         let mut replicas: Vec<i32> = vec![];
@@ -277,7 +271,7 @@ async fn generate_partitions_with_rack_assignment(
             let spu_idx = ((s_idx + p_idx + r_idx) % spu_cnt) as usize;
             replicas.push(spu_list[spu_idx]);
         }
-        partition_map.insert(p_idx, replicas);
+        partition_map.insert(p_idx as SpuId, replicas);
     }
 
     partition_map
@@ -289,17 +283,13 @@ async fn generate_partitions_with_rack_assignment(
 async fn generate_partitions_without_rack(
     spus: &SpuAdminStore,
     param: &TopicReplicaParam,
-    start_index: i32,
+    start_index: Option<u32>,
 ) -> ReplicaMap {
-    let mut partition_map = BTreeMap::new();
-    let spu_cnt = spus.spu_used_for_replica().await;
+    let mut partition_map: ReplicaMap = BTreeMap::new();
+    let spu_cnt = spus.spu_used_for_replica().await as u32;
     let spu_ids = spus.spu_ids().await;
 
-    let s_idx = if start_index >= 0 {
-        start_index
-    } else {
-        thread_rng().gen_range(0..spu_cnt)
-    };
+    let s_idx: u32 = start_index.unwrap_or_else(|| thread_rng().gen_range(0..spu_cnt));
 
     let gap_max = spu_cnt - param.replication_factor + 1;
     for p_idx in 0..param.partitions {
@@ -310,7 +300,7 @@ async fn generate_partitions_without_rack(
             let spu_idx = ((s_idx + p_idx + r_idx + gap) % spu_cnt) as usize;
             replicas.push(spu_ids[spu_idx]);
         }
-        partition_map.insert(p_idx, replicas);
+        partition_map.insert(p_idx as PartitionId, replicas);
     }
 
     partition_map

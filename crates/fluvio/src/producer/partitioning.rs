@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicI32, Ordering};
 use siphasher::sip::SipHasher;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, PartitionCount};
 
 /// A trait for defining a partitioning strategy for key/value records.
 ///
@@ -23,7 +23,7 @@ pub trait Partitioner {
 }
 
 pub struct PartitionerConfig {
-    pub(crate) partition_count: i32,
+    pub(crate) partition_count: PartitionCount,
 }
 
 /// A [`Partitioner`] which combines hashing and round-robin partition assignment
@@ -48,28 +48,27 @@ impl Partitioner for SiphashRoundRobinPartitioner {
         config: &PartitionerConfig,
         maybe_key: Option<&[u8]>,
         _value: &[u8],
-    ) -> i32 {
+    ) -> PartitionId {
         match maybe_key {
             Some(key) => partition_siphash(key, config.partition_count),
             None => {
                 // Atomic increment. This will wrap on overflow, which is fine
                 // because we are only interested in the modulus anyway
                 let partition = self.index.fetch_add(1, Ordering::Relaxed);
-                partition % config.partition_count
+                partition % (config.partition_count as PartitionId)
             }
         }
     }
 }
 
-fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
+fn partition_siphash(key: &[u8], partition_count: PartitionCount) -> PartitionId {
     use std::hash::{Hash, Hasher};
 
-    assert!(partition_count >= 0, "Partition must not be less than zero");
     let mut hasher = SipHasher::new();
     key.hash(&mut hasher);
     let hashed = hasher.finish();
 
-    i32::try_from(hashed % partition_count as u64).unwrap()
+    PartitionId::try_from(hashed % partition_count as u64).unwrap()
 }
 
 #[cfg(test)]
