@@ -227,7 +227,7 @@ impl Iterator for RetryPolicyIter {
 }
 
 impl RetryPolicy {
-    pub(crate) fn iter(&self) -> impl Iterator<Item = Duration> + Debug + Send {
+    pub fn iter(&self) -> impl Iterator<Item = Duration> + Debug + Send {
         match self.strategy {
             RetryStrategy::FixedDelay => {
                 RetryPolicyIter::FixedDelay(FixedDelay::new(self.initial_delay))

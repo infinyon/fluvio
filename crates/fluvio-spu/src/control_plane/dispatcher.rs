@@ -1,6 +1,7 @@
 use std::{time::Duration};
 use std::io::Error as IoError;
 
+use fluvio::RetryPolicy;
 use tracing::{info, trace, error, debug, warn, instrument};
 use flv_util::print_cli_err;
 
@@ -38,6 +39,7 @@ pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
     status_update: SharedStatusUpdate,
     counter: DispatcherCounter,
+    retry_policy: RetryPolicy,
 }
 
 impl ScDispatcher<FileReplica> {
@@ -46,6 +48,7 @@ impl ScDispatcher<FileReplica> {
             status_update: ctx.status_update_owned(),
             ctx,
             counter: DispatcherCounter::default(),
+            retry_policy: RetryPolicy::default(),
         }
     }
 
@@ -102,7 +105,9 @@ impl ScDispatcher<FileReplica> {
                         );
                         // We are  connection to sc.  Retry again
                         // Currently we use 3 seconds to retry but this should be using backoff algorithm
-                        sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
+                        for duration in self.retry_policy.iter() {
+                            sleep(duration).await;
+                        }
                     }
                 }
             }
