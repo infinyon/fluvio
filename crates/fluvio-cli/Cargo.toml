@@ -34,7 +34,7 @@ k8s = [
     "k8-config",
     "fluvio-cluster",
 ]
-smartengine = ["fluvio-smartengine"]
+smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
@@ -89,7 +89,7 @@ fluvio-extension-common = { path = "../fluvio-extension-common", features = ["ta
 fluvio-channel = { path = "../fluvio-channel" }
 fluvio-cli-common = { path = "../fluvio-cli-common" }
 fluvio-hub-util = { path = "../fluvio-hub-util" }
-fluvio-smartengine = { path = "../fluvio-smartengine",  optional = true }
+fluvio-smartengine = { path = "../fluvio-smartengine",  features = ["transformation"], default-features = false}
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
