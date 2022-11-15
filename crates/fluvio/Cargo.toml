@@ -50,7 +50,7 @@ fluvio-future = { version = "0.4.2", features = [
     "retry",
     "sync"
 ] }
-fluvio-types = { version = "0.3.7", features = [
+fluvio-types = { version = "0.4.0", features = [
     "events",
 ], path = "../fluvio-types" }
 fluvio-sc-schema = { version = "0.15.0", path = "../fluvio-sc-schema", default-features = false }
