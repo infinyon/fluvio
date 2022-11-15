@@ -9,6 +9,8 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::PartitionOffset;
 use fluvio_protocol::record::ReplicaKey;
 
+use fluvio_types::PartitionId;
+
 use crate::errors::ErrorCode;
 use super::SpuServerApiKey;
 
@@ -55,7 +57,7 @@ pub struct FetchOffsetTopic {
 #[derive(Decoder, Encoder, Default, Debug)]
 pub struct FetchOffsetPartition {
     /// The partition index.
-    pub partition_index: u32,
+    pub partition_index: PartitionId,
 }
 
 // -----------------------------------
@@ -99,7 +101,7 @@ pub struct FetchOffsetPartitionResponse {
     pub error_code: ErrorCode,
 
     /// The partition index.
-    pub partition_index: u32,
+    pub partition_index: PartitionId,
 
     /// First readable offset.
     pub start_offset: i64,

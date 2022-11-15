@@ -2,6 +2,7 @@ use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::link::ErrorCode;
+use fluvio_types::PartitionId;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ProduceResponse {
@@ -48,7 +49,7 @@ pub struct TopicProduceResponse {
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct PartitionProduceResponse {
     /// The partition index.
-    pub partition_index: u32,
+    pub partition_index: PartitionId,
 
     /// The error code, or 0 if there was no error.
     pub error_code: ErrorCode,

@@ -2749,6 +2749,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-socket",
+ "fluvio-types",
  "flv-util",
  "futures-util",
  "log",
