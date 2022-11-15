@@ -19,7 +19,7 @@ use fluvio_protocol::link::ErrorCode;
 use fluvio_spu_schema::produce::ProduceResponse;
 use fluvio_protocol::record::Record;
 use fluvio_socket::SocketError;
-use fluvio_types::{PartitionId, Timestamp};
+use fluvio_types::{PartitionId, Timestamp, PartitionCount};
 
 use crate::producer::record::{BatchMetadata, FutureRecordMetadata, PartialFutureRecordMetadata};
 use crate::producer::ProducerError;
@@ -63,10 +63,10 @@ impl RecordAccumulator {
     pub(crate) fn new(
         batch_size: usize,
         queue_size: usize,
-        partition_n: usize,
+        partition_n: PartitionCount,
         compression: Compression,
     ) -> Self {
-        let mut batches = Vec::with_capacity(partition_n);
+        let mut batches = Vec::with_capacity(partition_n as usize);
         for _ in 0..batches.capacity() {
             batches.push((BatchEvents::shared(), BatchesDeque::shared()));
         }

@@ -356,7 +356,7 @@ impl TopicProducer {
         let record_accumulator = RecordAccumulator::new(
             config.batch_size,
             config.batch_queue_size,
-            partition_count as usize,
+            partition_count,
             compression,
         );
         let producer_pool = ProducerPool::shared(
