@@ -57,7 +57,7 @@ pub struct TestOpt {
     )]
     params: Vec<(String, String)>,
 
-    /// (Optional) File path to transformation speciafication.
+    /// (Optional) File path to transformation specification.
     #[clap(long, group = "TestSmartModule")]
     transforms_file: Option<PathBuf>,
 
