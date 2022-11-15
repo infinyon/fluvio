@@ -121,7 +121,19 @@ impl SpuPool {
     /// create new spu socket
     #[instrument(skip(self))]
     async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
-        let spu = self.metadata.spus().look_up_by_id(leader).await?;
+        let spu = self
+            .metadata
+            .spus()
+            .lookup_and_wait(|g| {
+                for spu in g.values() {
+                    if spu.spec.id == leader {
+                        return Some(spu.inner().clone());
+                    }
+                }
+                None
+            })
+            .await?
+            .ok_or(FluvioError::SPUNotFound(leader))?;
 
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
 

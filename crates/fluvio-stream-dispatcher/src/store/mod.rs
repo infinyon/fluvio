@@ -12,11 +12,14 @@ mod context {
     use std::fmt::{Display, Debug};
     use std::time::Duration;
 
+    use async_rwlock::RwLockReadGuard;
     use fluvio_stream_model::core::MetadataItem;
+    use fluvio_stream_model::store::DualEpochMap;
     use tracing::error;
     use async_channel::{Sender, Receiver, bounded, SendError};
     use once_cell::sync::Lazy;
     use tokio::select;
+    use tracing::instrument;
     use tracing::{debug, trace};
 
     use fluvio_future::timer::sleep;
@@ -57,6 +60,70 @@ mod context {
         S: Spec,
         MetaContext: MetadataItem,
     {
+        /// L by key if doesn't exist return None
+        /// This will generate timeout if metadata has not been filled
+        #[instrument(
+            skip(self),
+            fields(
+                Store = %S::LABEL            )
+        )]
+        pub async fn lookup_by_key(
+            &self,
+            key: &S::IndexKey,
+        ) -> Result<Option<MetadataStoreObject<S, MetaContext>>, IoError>
+        where
+            S: 'static,
+            S::IndexKey: Display,
+        {
+            self.lookup_and_wait(|g| g.get(key).map(|v| v.inner().clone()))
+                .await
+        }
+
+        #[instrument(skip(self, search))]
+        pub async fn lookup_and_wait<'a, F>(
+            &'a self,
+            search: F,
+        ) -> Result<Option<MetadataStoreObject<S, MetaContext>>, IoError>
+        where
+            S: 'static,
+            S::IndexKey: Display,
+            F: Fn(
+                RwLockReadGuard<'a, DualEpochMap<S::IndexKey, MetadataStoreObject<S, MetaContext>>>,
+            ) -> Option<MetadataStoreObject<S, MetaContext>>,
+        {
+            use std::time::Duration;
+            use std::io::ErrorKind;
+
+            use tokio::select;
+            use fluvio_future::timer::sleep;
+
+            // We can short circuit here if already present
+            if let Some(found) = search(self.store().read().await) {
+                return Ok(Some(found));
+            }
+
+            let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
+
+            // No changes recieved yet, wait for first changes from store or timeout
+            select! {
+
+                _ = self.store.wait_for_first_change() => {
+                    Ok(search(self.store().read().await))
+                },
+                _ = &mut timer => {
+                    debug!(
+                        SPEC = S::LABEL,
+                        Timeout = *MAX_WAIT_TIME,
+                        "store look up timeout expired");
+                    Err(IoError::new(
+                        ErrorKind::TimedOut,
+                        format!("timed out searching metadata {} failed due to timeout: {} ms",S::LABEL,*MAX_WAIT_TIME),
+                    ))
+                }
+
+            }
+        }
+
         /// create new store context
         pub fn new() -> Self {
             Self::new_with_store(LocalStore::new_shared())
@@ -297,6 +364,39 @@ mod context {
         pub async fn send_action(&self, action: WSAction<S, MetaContext>) {
             if let Err(err) = self.sender.send(action).await {
                 error!("{}, error sending action to store: {}", S::LABEL, err);
+            }
+        }
+    }
+
+    #[cfg(feature = "unstable")]
+    mod unstable {
+        use futures_lite::Stream;
+
+        use super::*;
+
+        impl<S, MetaContext> StoreContext<S, MetaContext>
+        where
+            S: Spec + Send + Sync + 'static,
+            <S as Spec>::Status: Send + Sync,
+            S::IndexKey: Send + Sync,
+            MetaContext: MetadataItem + Send + Sync + 'static,
+        {
+            pub fn watch(&self) -> impl Stream<Item = MetadataChanges<S, MetaContext>> {
+                let mut listener = self.store.change_listener();
+                let (sender, receiver) = async_channel::unbounded();
+
+                fluvio_future::task::spawn_local(async move {
+                    loop {
+                        listener.listen().await;
+                        let changes = listener.sync_changes().await;
+                        if let Err(e) = sender.send(changes).await {
+                            tracing::error!("Failed to send Metadata update: {:?}", e);
+                            break;
+                        }
+                    }
+                });
+
+                receiver
             }
         }
     }

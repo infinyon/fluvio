@@ -17,7 +17,7 @@ path = "src/lib.rs"
 default = []
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
-unstable = []
+unstable = ["fluvio-stream-dispatcher/unstable"]
 
 [dependencies]
 tracing = "0.1.19"
@@ -43,6 +43,7 @@ async-trait = "0.1.51"
 
 
 # Fluvio dependencies
+fluvio-stream-dispatcher = { version = "0.9.2", path = "../fluvio-stream-dispatcher" }
 fluvio-future = { version = "0.4.2", features = [
     "task",
     "openssl_tls",
