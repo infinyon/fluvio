@@ -2924,6 +2924,7 @@ dependencies = [
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-future",
+ "fluvio-types",
  "futures-lite",
  "hdrhistogram",
  "humantime",

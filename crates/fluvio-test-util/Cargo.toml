@@ -31,6 +31,7 @@ hdrhistogram = "7.3.0"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 
 fluvio = { path = "../fluvio" }
+fluvio-types = { path = "../fluvio-types" }
 fluvio-future = { version = "0.4.0", features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-command = { version = "0.2.0" }

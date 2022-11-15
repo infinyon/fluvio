@@ -10,6 +10,7 @@ use fluvio::TopicProducerConfig;
 use fluvio::metadata::topic::CleanupPolicy;
 use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
+use fluvio_types::PartitionId;
 
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
@@ -128,7 +129,7 @@ impl TestDriver {
         Ok(())
     }
 
-    pub async fn get_consumer(&self, topic: &str, partition: u32) -> PartitionConsumer {
+    pub async fn get_consumer(&self, topic: &str, partition: PartitionId) -> PartitionConsumer {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client
             .partition_consumer(topic.to_string(), partition)
