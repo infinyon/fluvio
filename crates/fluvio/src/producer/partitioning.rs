@@ -55,7 +55,7 @@ impl Partitioner for SiphashRoundRobinPartitioner {
                 // Atomic increment. This will wrap on overflow, which is fine
                 // because we are only interested in the modulus anyway
                 let partition = self.index.fetch_add(1, Ordering::Relaxed);
-                partition % (config.partition_count as PartitionId)
+                partition % config.partition_count
             }
         }
     }
