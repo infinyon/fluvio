@@ -68,7 +68,11 @@ fn partition_siphash(key: &[u8], partition_count: PartitionCount) -> PartitionId
     key.hash(&mut hasher);
     let hashed = hasher.finish();
 
-    PartitionId::try_from(hashed % partition_count as u64).unwrap()
+    let partition_id = hashed % partition_count as u64;
+    match PartitionId::try_from(partition_id) {
+        Ok(partition_id) => partition_id,
+        Err(_) => panic!("partition_siphash failed for partition_count={partition_count} "),
+    }
 }
 
 #[cfg(test)]
