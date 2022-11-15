@@ -29,5 +29,5 @@ mod context {
     }
 
     pub(crate) type CacheMetadataStoreObject<S> = MetadataStoreObject<S, AlwaysNewContext>;
-    pub(crate) type StoreContext<S> = DispatcherStoreContext<S, AlwaysNewContext>;
+    pub(crate) type StoreContext<S> = DispatcherStoreContext<S, AlwaysNewContext, 60>;
 }

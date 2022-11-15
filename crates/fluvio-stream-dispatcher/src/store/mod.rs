@@ -35,16 +35,16 @@ mod context {
 
     pub type StoreChanges<S, MetaContext = K8MetaItem> = MetadataChanges<S, MetaContext>;
 
-    static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
+    static MAX_WAIT_TIME: Lazy<Option<u64>> = Lazy::new(|| {
         use std::env;
 
         let var_value = env::var("FLV_DISPATCHER_WAIT").unwrap_or_default();
-        let wait_time: u64 = var_value.parse().unwrap_or(10);
+        let wait_time: Option<u64> = var_value.parse().ok();
         wait_time
     });
 
     #[derive(Debug, Clone)]
-    pub struct StoreContext<S, MetaContext = K8MetaItem>
+    pub struct StoreContext<S, MetaContext = K8MetaItem, const DEFAULT_WAIT_TIME: u64 = 10>
     where
         S: Spec,
         MetaContext: MetadataItem + Debug,
@@ -55,7 +55,7 @@ mod context {
         wait_time: u64,
     }
 
-    impl<S, MetaContext> StoreContext<S, MetaContext>
+    impl<S, MetaContext, const T: u64> StoreContext<S, MetaContext, T>
     where
         S: Spec,
         MetaContext: MetadataItem,
@@ -102,7 +102,7 @@ mod context {
                 return Ok(Some(found));
             }
 
-            let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
+            let mut timer = sleep(Duration::from_secs(self.wait_time));
 
             // No changes recieved yet, wait for first changes from store or timeout
             select! {
@@ -113,11 +113,11 @@ mod context {
                 _ = &mut timer => {
                     debug!(
                         SPEC = S::LABEL,
-                        Timeout = *MAX_WAIT_TIME,
+                        Timeout = self.wait_time,
                         "store look up timeout expired");
                     Err(IoError::new(
                         ErrorKind::TimedOut,
-                        format!("timed out searching metadata {} failed due to timeout: {} ms",S::LABEL,*MAX_WAIT_TIME),
+                        format!("timed out searching metadata {} failed due to timeout: {} ms",S::LABEL,self.wait_time),
                     ))
                 }
 
@@ -136,7 +136,7 @@ mod context {
                 store,
                 sender,
                 receiver,
-                wait_time: *MAX_WAIT_TIME,
+                wait_time: MAX_WAIT_TIME.unwrap_or(T),
             }
         }
 
@@ -374,7 +374,7 @@ mod context {
 
         use super::*;
 
-        impl<S, MetaContext> StoreContext<S, MetaContext>
+        impl<S, MetaContext, const T: u64> StoreContext<S, MetaContext, T>
         where
             S: Spec + Send + Sync + 'static,
             <S as Spec>::Status: Send + Sync,
