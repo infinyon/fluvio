@@ -1,12 +1,14 @@
 use std::convert::TryFrom;
 use std::fmt;
 
+use fluvio_types::PartitionId;
+
 use crate::derive::{Encoder, Decoder};
 
 #[derive(Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
 pub struct ReplicaKey {
     pub topic: String,
-    pub partition: i32,
+    pub partition: PartitionId,
 }
 
 impl fmt::Debug for ReplicaKey {
@@ -23,7 +25,7 @@ impl ReplicaKey {
     pub fn new<S, P>(topic: S, partition: P) -> Self
     where
         S: Into<String>,
-        P: Into<i32>,
+        P: Into<PartitionId>,
     {
         ReplicaKey {
             topic: topic.into(),
@@ -31,7 +33,7 @@ impl ReplicaKey {
         }
     }
 
-    pub fn split(self) -> (String, i32) {
+    pub fn split(self) -> (String, PartitionId) {
         (self.topic, self.partition)
     }
 }
@@ -42,11 +44,11 @@ impl std::fmt::Display for ReplicaKey {
     }
 }
 
-impl<S> From<(S, i32)> for ReplicaKey
+impl<S> From<(S, PartitionId)> for ReplicaKey
 where
     S: Into<String>,
 {
-    fn from(key: (S, i32)) -> ReplicaKey {
+    fn from(key: (S, PartitionId)) -> ReplicaKey {
         ReplicaKey::new(key.0.into(), key.1)
     }
 }
@@ -83,7 +85,9 @@ pub trait PartitionOffset {
 }
 
 // returns a tuple (topic_name, idx)
-pub fn decompose_partition_name(partition_name: &str) -> Result<(String, i32), PartitionError> {
+pub fn decompose_partition_name(
+    partition_name: &str,
+) -> Result<(String, PartitionId), PartitionError> {
     let dash_pos = partition_name.rfind('-');
     if dash_pos.is_none() {
         return Err(PartitionError::InvalidSyntax(partition_name.to_owned()));
@@ -96,7 +100,7 @@ pub fn decompose_partition_name(partition_name: &str) -> Result<(String, i32), P
 
     let topic_name = &partition_name[..pos];
     let idx_string = &partition_name[(pos + 1)..];
-    let idx = match idx_string.parse::<i32>() {
+    let idx = match idx_string.parse::<PartitionId>() {
         Ok(n) => n,
         Err(_) => {
             return Err(PartitionError::InvalidSyntax(partition_name.to_owned()));

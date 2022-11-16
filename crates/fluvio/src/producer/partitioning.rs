@@ -1,6 +1,6 @@
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 use siphasher::sip::SipHasher;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, PartitionCount};
 
 /// A trait for defining a partitioning strategy for key/value records.
 ///
@@ -23,7 +23,7 @@ pub trait Partitioner {
 }
 
 pub struct PartitionerConfig {
-    pub(crate) partition_count: i32,
+    pub(crate) partition_count: PartitionCount,
 }
 
 /// A [`Partitioner`] which combines hashing and round-robin partition assignment
@@ -31,13 +31,13 @@ pub struct PartitionerConfig {
 /// - Records with keys get their keys hashed with siphash
 /// - Records without keys get assigned to partitions using round-robin
 pub(crate) struct SiphashRoundRobinPartitioner {
-    index: AtomicI32,
+    index: AtomicU32,
 }
 
 impl SiphashRoundRobinPartitioner {
     pub fn new() -> Self {
         Self {
-            index: AtomicI32::new(0),
+            index: AtomicU32::new(0),
         }
     }
 }
@@ -48,7 +48,7 @@ impl Partitioner for SiphashRoundRobinPartitioner {
         config: &PartitionerConfig,
         maybe_key: Option<&[u8]>,
         _value: &[u8],
-    ) -> i32 {
+    ) -> PartitionId {
         match maybe_key {
             Some(key) => partition_siphash(key, config.partition_count),
             None => {
@@ -61,15 +61,18 @@ impl Partitioner for SiphashRoundRobinPartitioner {
     }
 }
 
-fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
+fn partition_siphash(key: &[u8], partition_count: PartitionCount) -> PartitionId {
     use std::hash::{Hash, Hasher};
 
-    assert!(partition_count >= 0, "Partition must not be less than zero");
     let mut hasher = SipHasher::new();
     key.hash(&mut hasher);
     let hashed = hasher.finish();
 
-    i32::try_from(hashed % partition_count as u64).unwrap()
+    let partition_id = hashed % partition_count as u64;
+    match PartitionId::try_from(partition_id) {
+        Ok(partition_id) => partition_id,
+        Err(_) => panic!("partition_siphash failed for partition_count={partition_count} "),
+    }
 }
 
 #[cfg(test)]

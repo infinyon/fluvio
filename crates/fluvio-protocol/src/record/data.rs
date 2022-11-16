@@ -8,6 +8,7 @@ use std::str::Utf8Error;
 use bytes::Bytes;
 use bytes::BytesMut;
 use content_inspector::{inspect, ContentType};
+use fluvio_types::PartitionId;
 use tracing::{trace, warn};
 use once_cell::sync::Lazy;
 
@@ -549,7 +550,7 @@ pub struct ConsumerRecord<B = DefaultRecord> {
     /// The offset of this Record into its partition
     pub offset: i64,
     /// The partition where this Record is stored
-    pub partition: i32,
+    pub partition: PartitionId,
     /// The Record contents
     pub record: B,
     /// Timestamp base of batch in which the records is present
@@ -563,7 +564,7 @@ impl<B> ConsumerRecord<B> {
     }
 
     /// The partition where this Record is stored.
-    pub fn partition(&self) -> i32 {
+    pub fn partition(&self) -> PartitionId {
         self.partition
     }
 

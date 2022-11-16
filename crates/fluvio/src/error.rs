@@ -1,5 +1,7 @@
 use std::io::Error as IoError;
 
+use fluvio_types::PartitionId;
+use fluvio_types::SpuId;
 use semver::Version;
 
 use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
@@ -21,9 +23,9 @@ pub enum FluvioError {
     #[error("Topic not found: {0}")]
     TopicNotFound(String),
     #[error("Partition not found: {0}-{1}")]
-    PartitionNotFound(String, i32),
+    PartitionNotFound(String, PartitionId),
     #[error("Spu not found: {0}")]
-    SPUNotFound(i32),
+    SPUNotFound(SpuId),
     #[error("Socket error: {0}")]
     Socket(#[from] SocketError),
     #[error("Controlplane error: {0}")]

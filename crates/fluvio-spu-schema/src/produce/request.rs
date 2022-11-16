@@ -11,6 +11,7 @@ use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::Version;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::record::RecordSet;
+use fluvio_types::PartitionId;
 
 use crate::isolation::Isolation;
 
@@ -73,7 +74,7 @@ where
     R: Encoder + Decoder + Default + Debug,
 {
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: PartitionId,
 
     /// The record data to be produced.
     pub records: R,

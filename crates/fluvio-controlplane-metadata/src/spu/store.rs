@@ -24,13 +24,13 @@ pub type SpuMetadata<C> = MetadataStoreObject<SpuSpec, C>;
 pub type DefaultSpuMd = SpuMetadata<u32>;
 
 pub trait SpuMd<C: MetadataItem> {
-    fn quick<J>(spu: (J, i32, bool, Option<String>)) -> SpuMetadata<C>
+    fn quick<J>(spu: (J, SpuId, bool, Option<String>)) -> SpuMetadata<C>
     where
         J: Into<String>;
 }
 
 impl<C: MetadataItem> SpuMd<C> for SpuMetadata<C> {
-    fn quick<J>(spu: (J, i32, bool, Option<String>)) -> SpuMetadata<C>
+    fn quick<J>(spu: (J, SpuId, bool, Option<String>)) -> SpuMetadata<C>
     where
         J: Into<String>,
     {
@@ -56,19 +56,19 @@ where
 {
     async fn online_status(&self) -> HashSet<SpuId>;
 
-    async fn online_spu_count(&self) -> i32;
+    async fn online_spu_count(&self) -> u32;
 
-    async fn spu_used_for_replica(&self) -> i32;
+    async fn spu_used_for_replica(&self) -> usize;
 
-    async fn online_spu_ids(&self) -> Vec<i32>;
+    async fn online_spu_ids(&self) -> Vec<SpuId>;
 
-    async fn spu_ids(&self) -> Vec<i32>;
+    async fn spu_ids(&self) -> Vec<SpuId>;
 
     async fn online_spus(&self) -> Vec<SpuMetadata<C>>;
 
     async fn custom_spus(&self) -> Vec<SpuMetadata<C>>;
 
-    async fn get_by_id(&self, id: i32) -> Option<SpuMetadata<C>>;
+    async fn get_by_id(&self, id: SpuId) -> Option<SpuMetadata<C>>;
 
     async fn validate_spu_for_registered(&self, id: SpuId) -> bool;
 
@@ -76,17 +76,17 @@ where
 
     async fn table_fmt(&self) -> String;
 
-    async fn spus_in_rack_count(&self) -> i32;
+    async fn spus_in_rack_count(&self) -> u32;
 
-    async fn live_spu_rack_map_sorted(&self) -> Vec<(String, Vec<i32>)>;
+    async fn live_spu_rack_map_sorted(&self) -> Vec<(String, Vec<SpuId>)>;
 
-    async fn online_spu_rack_map(&self) -> BTreeMap<String, Vec<i32>>;
+    async fn online_spu_rack_map(&self) -> BTreeMap<String, Vec<SpuId>>;
 
-    fn online_spus_in_rack(rack_map: &[(String, Vec<i32>)]) -> Vec<i32>;
+    fn online_spus_in_rack(rack_map: &[(String, Vec<SpuId>)]) -> Vec<SpuId>;
 
     async fn all_spus_to_spu_msgs(&self) -> Vec<SpuMsg>;
 
-    fn quick(spus: Vec<(i32, bool, Option<String>)>) -> Self;
+    fn quick(spus: Vec<(SpuId, bool, Option<String>)>) -> Self;
 }
 
 #[async_trait]
@@ -106,7 +106,7 @@ where
     }
 
     /// count online SPUs
-    async fn online_spu_count(&self) -> i32 {
+    async fn online_spu_count(&self) -> u32 {
         self.read()
             .await
             .values()
@@ -121,27 +121,22 @@ where
     }
 
     /// count spus that can be used for replica
-    async fn spu_used_for_replica(&self) -> i32 {
+    async fn spu_used_for_replica(&self) -> usize {
         self.count().await
     }
 
     // retrieve SPU ids.
-    async fn online_spu_ids(&self) -> Vec<i32> {
+    async fn online_spu_ids(&self) -> Vec<SpuId> {
         self.read()
             .await
             .values()
-            .filter_map(|spu| {
-                if spu.status.is_online() {
-                    Some(spu.spec.id)
-                } else {
-                    None
-                }
-            })
+            .filter(|spu| spu.status.is_online())
+            .map(|spu| spu.spec.id)
             .collect()
     }
 
-    async fn spu_ids(&self) -> Vec<i32> {
-        let mut ids: Vec<i32> = self.read().await.values().map(|spu| spu.spec.id).collect();
+    async fn spu_ids(&self) -> Vec<SpuId> {
+        let mut ids: Vec<SpuId> = self.read().await.values().map(|spu| spu.spec.id).collect();
         ids.sort_unstable();
         ids
     }
@@ -150,13 +145,8 @@ where
         self.read()
             .await
             .values()
-            .filter_map(|spu| {
-                if spu.status.is_online() {
-                    Some(spu.inner().clone())
-                } else {
-                    None
-                }
-            })
+            .filter(|spu| spu.status.is_online())
+            .map(|spu| spu.inner().clone())
             .collect()
     }
 
@@ -184,7 +174,7 @@ where
     }
     */
 
-    async fn get_by_id(&self, id: i32) -> Option<SpuMetadata<C>> {
+    async fn get_by_id(&self, id: SpuId) -> Option<SpuMetadata<C>> {
         for (_, spu) in self.read().await.iter() {
             if spu.spec.id == id {
                 return Some(spu.inner().clone());
@@ -244,22 +234,16 @@ where
     }
 
     /// number of spus in rack count
-    async fn spus_in_rack_count(&self) -> i32 {
+    async fn spus_in_rack_count(&self) -> u32 {
         self.read()
             .await
             .values()
-            .filter_map(|spu| {
-                if spu.spec.rack.is_some() {
-                    Some(1)
-                } else {
-                    None
-                }
-            })
-            .sum()
+            .filter(|spu| spu.spec.rack.is_some())
+            .count() as u32
     }
 
     // Returns array of touples [("r1", [0,1,2]), ("r2", [3,4]), ("r3", [5])]
-    async fn live_spu_rack_map_sorted(&self) -> Vec<(String, Vec<i32>)> {
+    async fn live_spu_rack_map_sorted(&self) -> Vec<(String, Vec<SpuId>)> {
         let rack_map = self.online_spu_rack_map().await;
         let mut racked_vector = Vec::from_iter(rack_map);
         racked_vector.sort_by(|a, b| b.1.len().cmp(&a.1.len()));
@@ -267,12 +251,12 @@ where
     }
 
     // Return a list of spu ids sorted by rack ["r1":[0,1,2], "r2":[3,4], "r3":[5]]
-    async fn online_spu_rack_map(&self) -> BTreeMap<String, Vec<i32>> {
-        let mut rack_spus: BTreeMap<String, Vec<i32>> = BTreeMap::new();
+    async fn online_spu_rack_map(&self) -> BTreeMap<String, Vec<SpuId>> {
+        let mut rack_spus: BTreeMap<String, Vec<SpuId>> = BTreeMap::new();
 
         for spu in self.read().await.values() {
             if let Some(rack) = &spu.spec.rack {
-                let mut ids: Vec<i32>;
+                let mut ids: Vec<SpuId>;
                 let mut ids_in_map = rack_spus.remove(rack);
                 if ids_in_map.is_some() {
                     ids = ids_in_map.as_mut().unwrap().to_vec();
@@ -289,7 +273,7 @@ where
     }
 
     // Returns a list of rack inter-leaved spus [0, 4, 5, 1, 3, 2]
-    fn online_spus_in_rack(rack_map: &[(String, Vec<i32>)]) -> Vec<i32> {
+    fn online_spus_in_rack(rack_map: &[(String, Vec<SpuId>)]) -> Vec<SpuId> {
         let mut spus = vec![];
         let row_max = rack_map.len();
         let col_max = rack_map.iter().map(|(_, list)| list.len()).max().unwrap();
@@ -297,7 +281,7 @@ where
         let mut col_idx = 0;
 
         for idx in 0..(row_max * col_max) {
-            let row_list: &Vec<i32> = rack_map.get(row_idx).unwrap().1.as_ref();
+            let row_list: &Vec<SpuId> = rack_map.get(row_idx).unwrap().1.as_ref();
             let spu_id = row_list[col_idx % row_list.len()];
             let duplicate = spus.iter().find(|&&id| id == spu_id).map(|_| true);
             if duplicate.is_none() {
@@ -318,7 +302,7 @@ where
             .collect()
     }
 
-    fn quick(spus: Vec<(i32, bool, Option<String>)>) -> Self {
+    fn quick(spus: Vec<(SpuId, bool, Option<String>)>) -> Self {
         let elements = spus
             .into_iter()
             .map(|(spu_id, online, rack)| {
@@ -336,6 +320,8 @@ where
 
 #[cfg(test)]
 pub mod test {
+    use fluvio_types::SpuId;
+
     use crate::spu::{SpuSpec, SpuStatus};
 
     use crate::store::actions::*;
@@ -493,12 +479,12 @@ pub mod test {
         let spu_list = DefaultSpuStore::online_spus_in_rack(&rack_map);
 
         // validate result
-        let expected_map: Vec<(String, Vec<i32>)> = vec![
+        let expected_map: Vec<(String, Vec<SpuId>)> = vec![
             (r1.clone(), vec![0, 1, 2]),
             (r2.clone(), vec![3, 4]),
             (r3.clone(), vec![5]),
         ];
-        let expected_list = vec![0, 4, 5, 1, 3, 2];
+        let expected_list: Vec<SpuId> = vec![0, 4, 5, 1, 3, 2];
 
         assert_eq!(6, spus.count().await);
         assert_eq!(6, spus.online_spu_count().await);
@@ -532,14 +518,14 @@ pub mod test {
         let spu_list = DefaultSpuStore::online_spus_in_rack(&rack_map);
 
         // validate result
-        let expected_map: Vec<(String, Vec<i32>)> = vec![
+        let expected_map: Vec<(String, Vec<SpuId>)> = vec![
             (r1.clone(), vec![0, 1, 2, 3]),
             (r2.clone(), vec![4, 5]),
             (r3.clone(), vec![6, 7]),
             (r4.clone(), vec![8]),
             (r5.clone(), vec![9]),
         ];
-        let expected_list = vec![0, 5, 6, 8, 9, 1, 4, 7, 2, 3];
+        let expected_list: Vec<SpuId> = vec![0, 5, 6, 8, 9, 1, 4, 7, 2, 3];
 
         assert_eq!(rack_map, expected_map);
         assert_eq!(spu_list, expected_list);
@@ -570,13 +556,13 @@ pub mod test {
         let spu_list = DefaultSpuStore::online_spus_in_rack(&rack_map);
 
         // validate result
-        let expected_map: Vec<(String, Vec<i32>)> = vec![
+        let expected_map: Vec<(String, Vec<SpuId>)> = vec![
             (String::from("r1"), vec![0, 1, 2]),
             (String::from("r2"), vec![3, 4, 5]),
             (String::from("r3"), vec![6, 7]),
             (String::from("r4"), vec![8, 9]),
         ];
-        let expected_list = vec![0, 4, 6, 8, 1, 5, 9, 2, 3, 7];
+        let expected_list: Vec<SpuId> = vec![0, 4, 6, 8, 1, 5, 9, 2, 3, 7];
 
         assert_eq!(rack_map, expected_map);
         assert_eq!(spu_list, expected_list);
@@ -609,13 +595,13 @@ pub mod test {
         let spu_list = DefaultSpuStore::online_spus_in_rack(&rack_map);
 
         // validate result
-        let expected_map: Vec<(String, Vec<i32>)> = vec![
+        let expected_map: Vec<(String, Vec<SpuId>)> = vec![
             (String::from("r1"), vec![0, 1, 2]),
             (String::from("r2"), vec![3, 4, 5]),
             (String::from("r3"), vec![6, 7, 8]),
             (String::from("r4"), vec![9, 10, 11]),
         ];
-        let expected_list = vec![0, 4, 8, 9, 1, 5, 6, 10, 2, 3, 7, 11];
+        let expected_list: Vec<SpuId> = vec![0, 4, 8, 9, 1, 5, 6, 10, 2, 3, 7, 11];
 
         assert_eq!(rack_map, expected_map);
         assert_eq!(spu_list, expected_list);

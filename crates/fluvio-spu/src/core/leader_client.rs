@@ -8,7 +8,7 @@ use fluvio::{FluvioError, PartitionConsumer};
 use fluvio::spu::{SpuDirectory, SpuSocket};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_socket::{MultiplexerSocket, ClientConfig, VersionedSerialSocket};
-use fluvio_types::SpuId;
+use fluvio_types::{SpuId, PartitionId};
 use tracing::{debug, instrument};
 
 use super::SharedReplicaLocalStore;
@@ -59,7 +59,7 @@ impl LeaderConnections {
     pub async fn partition_consumer<S>(
         self: Arc<Self>,
         topic: S,
-        partition: i32,
+        partition: PartitionId,
     ) -> PartitionConsumer<LeaderConnections>
     where
         S: Into<String> + Debug,

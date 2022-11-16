@@ -5,6 +5,7 @@ use fluvio_protocol::api::Request;
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::record::RecordSet;
+use fluvio_types::PartitionId;
 
 use crate::isolation::Isolation;
 
@@ -82,7 +83,7 @@ pub struct ForgottenTopic {
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchPartition {
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: PartitionId,
 
     /// The current leader epoch of the partition.
     #[fluvio(min_version = 9, ignorable)]

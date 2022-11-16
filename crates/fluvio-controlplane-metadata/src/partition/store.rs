@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use fluvio_types::PartitionId;
 use tracing::debug;
 use async_trait::async_trait;
 
@@ -25,7 +26,7 @@ pub type DefaultPartitionStore = PartitionLocalStore<u32>;
 pub trait PartitionMd<C: MetadataItem> {
     fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self;
 
-    fn quick<S: Into<String>>(partition: ((S, i32), Vec<i32>)) -> Self;
+    fn quick<S: Into<String>>(partition: ((S, PartitionId), Vec<SpuId>)) -> Self;
 }
 
 impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
@@ -36,7 +37,7 @@ impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
         Self::new(key, spec, PartitionStatus::default())
     }
 
-    fn quick<S: Into<String>>(partition: ((S, i32), Vec<i32>)) -> Self {
+    fn quick<S: Into<String>>(partition: ((S, PartitionId), Vec<SpuId>)) -> Self {
         let (replica_key, replicas) = partition;
         Self::with_replicas(replica_key.into(), replicas)
     }
@@ -52,7 +53,7 @@ where
     async fn topic_partitions(&self, topic: &str) -> Vec<PartitionMetadata<C>>;
 
     /// find all partitions that has spu in the replicas
-    async fn partition_spec_for_spu(&self, target_spu: i32) -> Vec<(ReplicaKey, PartitionSpec)>;
+    async fn partition_spec_for_spu(&self, target_spu: SpuId) -> Vec<(ReplicaKey, PartitionSpec)>;
 
     async fn count_topic_partitions(&self, topic: &str) -> i32;
 
@@ -66,7 +67,7 @@ where
 
     async fn leaders(&self) -> Vec<ReplicaLeader>;
 
-    fn bulk_load<S: Into<String>>(partitions: Vec<((S, i32), Vec<i32>)>) -> Self;
+    fn bulk_load<S: Into<String>>(partitions: Vec<((S, PartitionId), Vec<SpuId>)>) -> Self;
 }
 
 #[async_trait]
@@ -89,7 +90,7 @@ where
     }
 
     /// find all partitions that has spu in the replicas
-    async fn partition_spec_for_spu(&self, target_spu: i32) -> Vec<(ReplicaKey, PartitionSpec)> {
+    async fn partition_spec_for_spu(&self, target_spu: SpuId) -> Vec<(ReplicaKey, PartitionSpec)> {
         let mut res = vec![];
         for (name, partition) in self.read().await.iter() {
             if partition.spec.replicas.contains(&target_spu) {
@@ -180,7 +181,7 @@ where
             .collect()
     }
 
-    fn bulk_load<S: Into<String>>(partitions: Vec<((S, i32), Vec<i32>)>) -> Self {
+    fn bulk_load<S: Into<String>>(partitions: Vec<((S, PartitionId), Vec<SpuId>)>) -> Self {
         let elements = partitions
             .into_iter()
             .map(|(replica_key, replicas)| PartitionMetadata::quick((replica_key, replicas)))

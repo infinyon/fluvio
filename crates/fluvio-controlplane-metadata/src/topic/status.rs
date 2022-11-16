@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use fluvio_protocol::{Encoder, Decoder};
-use fluvio_types::{ReplicaMap, SpuId};
+use fluvio_types::{ReplicaMap, SpuId, PartitionId};
 
 // -----------------------------------
 // Data Structures
@@ -23,7 +23,7 @@ use fluvio_types::{ReplicaMap, SpuId};
 )]
 pub struct TopicStatus {
     pub resolution: TopicResolution,
-    pub replica_map: BTreeMap<i32, Vec<i32>>,
+    pub replica_map: ReplicaMap,
     pub reason: String,
 }
 
@@ -121,16 +121,16 @@ impl ::std::default::Default for TopicResolution {
 // Implementation
 // -----------------------------------
 
-fn create_replica_map(rows: Vec<Vec<i32>>) -> BTreeMap<i32, Vec<i32>> {
-    let mut map = BTreeMap::new();
+fn create_replica_map(rows: Vec<Vec<SpuId>>) -> ReplicaMap {
+    let mut map: ReplicaMap = BTreeMap::new();
     for (idx, row) in rows.iter().enumerate() {
-        map.insert(idx as i32, row.clone());
+        map.insert(idx as PartitionId, row.clone());
     }
     map
 }
 
 impl TopicStatus {
-    pub fn new<S>(resolution: TopicResolution, replica_map: Vec<Vec<i32>>, reason: S) -> Self
+    pub fn new<S>(resolution: TopicResolution, replica_map: Vec<Vec<SpuId>>, reason: S) -> Self
     where
         S: Into<String>,
     {
