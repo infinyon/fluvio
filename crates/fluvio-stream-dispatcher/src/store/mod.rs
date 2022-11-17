@@ -12,17 +12,13 @@ mod context {
     use std::fmt::{Display, Debug};
     use std::time::Duration;
 
-    use async_rwlock::RwLockReadGuard;
-    use fluvio_stream_model::core::MetadataItem;
-    use fluvio_stream_model::store::DualEpochMap;
-    use tracing::error;
     use async_channel::{Sender, Receiver, bounded, SendError};
+    use async_rwlock::RwLockReadGuard;
+    use fluvio_future::timer::sleep;
+    use fluvio_stream_model::{core::MetadataItem, store::DualEpochMap};
     use once_cell::sync::Lazy;
     use tokio::select;
-    use tracing::instrument;
-    use tracing::{debug, trace};
-
-    use fluvio_future::timer::sleep;
+    use tracing::{debug, error, instrument, trace};
 
     use crate::actions::WSAction;
     use crate::store::k8::K8MetaItem;
