@@ -1,6 +1,34 @@
 # Release Notes
 
-## Platform Version 0.10.1 - UNRELEASED
+## Platform Version 0.10.2 - UNRELEASED
+
+## Platform Version 0.10.1 - 2022-11-18
+
+* Improve performance for `RecordAccumulator` in `batches` ([#2799](https://github.com/infinyon/fluvio/pull/2799))
+* Replace `PartitionId`, `PartitionCount` and `ReplicationFactor` aliased types to use `u32` over `i32` ([#2799](https://github.com/infinyon/fluvio/pull/2799))
+* Standardize reading records from CLI input ([#2756](https://github.com/infinyon/fluvio/pull/2756))
+* Smdk publish signing error w/ cross-fs tmp file ([#2767](https://github.com/infinyon/fluvio/pull/2767))
+* Smkd template dir includes default gitignore ([#2768](https://github.com/infinyon/fluvio/pull/2768))
+* Clap-command updates ([#2766](https://github.com/infinyon/fluvio/pull/2766))
+* Reduce wasm size by stripping symbols ([#2774](https://github.com/infinyon/fluvio/pull/2774))
+* Remove old comment from src ([#2778](https://github.com/infinyon/fluvio/pull/2778))
+* Ci-dev workflow fix ([#2783](https://github.com/infinyon/fluvio/pull/2783))
+* Fluvio-test harness bug ([#2790](https://github.com/infinyon/fluvio/pull/2790))
+* Added chain support to producer ([#2753](https://github.com/infinyon/fluvio/pull/2753))
+* Capability to validate WASM files ([#2760](https://github.com/infinyon/fluvio/pull/2760))
+* Added smartmodule chain support for consumer ([#2759](https://github.com/infinyon/fluvio/pull/2759))
+* Benches with criterion and dedicated workflow ([#2770](https://github.com/infinyon/fluvio/pull/2770))
+* Benches for SmartModuleInput encoding ([#2773](https://github.com/infinyon/fluvio/pull/2773))
+* Use `content: write` permission for benchmarks ([#2775](https://github.com/infinyon/fluvio/pull/2775))
+* Check for `Smart.toml` file to be present in cwd ([#2739](https://github.com/infinyon/fluvio/pull/2739))
+* Introduce `ByteBuf` for `SmartModuleSpec` ([#2738](https://github.com/infinyon/fluvio/pull/2738))
+* Fluvio cli update check ([#2679](https://github.com/infinyon/fluvio/pull/2679))
+* Update cargo generate to use `Default` ([#2786](https://github.com/infinyon/fluvio/pull/2786))
+* Moved versioned socket to fluvio-socket crate ([#2797](https://github.com/infinyon/fluvio/pull/2797))
+* Added chaining support to smdk test ([#2784](https://github.com/infinyon/fluvio/pull/2784))
+* Added chaining support to fluvio-cli ([#2812](https://github.com/infinyon/fluvio/pull/2812))
+* Add additional test for encoding/decoding version ([#2761](https://github.com/infinyon/fluvio/pull/2761))
+* Update dev version ([#2817](https://github.com/infinyon/fluvio/pull/2817))
 
 ## Platform Version 0.10.0 - 2022-10-24 
 * Add throughput control to fluvio producer ([#2512](https://github.com/infinyon/fluvio/pull/2512))
