@@ -12,13 +12,13 @@ use super::benchmark_settings::BenchmarkSettings;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkMatrix {
     /// Each sample is a collection of batches that all run on the same topic.
-    pub num_samples: usize,
-    pub num_batches_per_sample: usize,
+    pub num_samples: u64,
+    pub num_batches_per_sample: u64,
     pub duration_between_batches: Duration,
     pub worker_timeout: Duration,
-    pub num_records_per_producer_worker_per_batch: Vec<usize>,
-    pub producer_batch_size: Vec<usize>,
-    pub producer_queue_size: Vec<usize>,
+    pub num_records_per_producer_worker_per_batch: Vec<u64>,
+    pub producer_batch_size: Vec<u64>,
+    pub producer_queue_size: Vec<u64>,
     pub producer_linger: Vec<Duration>,
     pub producer_server_timeout: Vec<Duration>,
     pub producer_compression: Vec<Compression>,
@@ -27,13 +27,13 @@ pub struct BenchmarkMatrix {
     // pub producer_isolation:...,
     // TODO
     // pub producer_delivery_semantic,
-    pub consumer_max_bytes: Vec<usize>,
+    pub consumer_max_bytes: Vec<u64>,
     // TODO
     // pub consumer_isolation:...,
-    pub num_concurrent_producer_workers: Vec<usize>,
+    pub num_concurrent_producer_workers: Vec<u64>,
     /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
-    pub num_concurrent_consumers_per_partition: Vec<usize>,
-    pub num_partitions: Vec<usize>,
+    pub num_concurrent_consumers_per_partition: Vec<u64>,
+    pub num_partitions: Vec<u64>,
     pub record_size_strategy: Vec<RecordSizeStrategy>,
     // TODO
     // pub use_smart_module: Vec<bool>,
@@ -120,7 +120,7 @@ impl BenchmarkMatrix {
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub enum RecordSizeStrategy {
-    Fixed(usize),
+    Fixed(u64),
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
@@ -134,7 +134,7 @@ pub enum RecordKeyAllocationStrategy {
     ProducerWorkerUniqueKey,
 
     /// Each producer will round robin from 0..N for each record produced
-    RoundRobinKey(usize),
+    RoundRobinKey(u64),
 
     /// Each producer will generate a random key for each record producer
     RandomKey,

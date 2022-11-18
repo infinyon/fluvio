@@ -10,6 +10,7 @@ use std::collections::hash_map::DefaultHasher;
 pub mod consumer;
 pub mod benchmark_config;
 pub mod producer_worker;
+pub mod stats_collector;
 
 pub struct BenchmarkRecord {
     pub key: RecordKey,
@@ -31,8 +32,9 @@ pub fn hash_record(key: &RecordKey, data: &str) -> u64 {
     hasher_state.finish()
 }
 
+#[derive(Debug, Clone)]
 pub enum BenchmarkError {
-    ErrorWithExplanation(&'static str),
+    ErrorWithExplanation(String),
     WrappedErr(Arc<dyn std::fmt::Debug + Sync + Send>),
 }
 impl BenchmarkError {

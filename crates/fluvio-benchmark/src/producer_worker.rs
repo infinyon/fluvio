@@ -1,3 +1,6 @@
+use std::time::Instant;
+
+use async_std::channel::Sender;
 use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
 
 use crate::{
@@ -6,6 +9,7 @@ use crate::{
         benchmark_matrix::{RecordKeyAllocationStrategy, RecordSizeStrategy, SHARED_KEY},
     },
     BenchmarkRecord, generate_random_string, BenchmarkError,
+    stats_collector::StatsCollectorMessage,
 };
 
 pub struct ProducerWorker {
@@ -13,14 +17,18 @@ pub struct ProducerWorker {
     records_to_send: Option<Vec<BenchmarkRecord>>,
     settings: BenchmarkSettings,
     producer_id: String,
+    tx_to_stats_collector: Sender<StatsCollectorMessage>,
 }
 impl ProducerWorker {
-    pub async fn new(settings: BenchmarkSettings) -> Self {
+    pub async fn new(
+        settings: BenchmarkSettings,
+        tx_to_stats_collector: Sender<StatsCollectorMessage>,
+    ) -> Self {
         let fluvio = Fluvio::connect().await.unwrap();
 
         let config = TopicProducerConfigBuilder::default()
-            .batch_size(settings.producer_batch_size)
-            .batch_queue_size(settings.producer_queue_size)
+            .batch_size(settings.producer_batch_size as usize)
+            .batch_queue_size(settings.producer_queue_size as usize)
             .linger(settings.producer_linger)
             // todo allow alternate partitioner
             .compression(settings.producer_compression)
@@ -38,6 +46,7 @@ impl ProducerWorker {
             records_to_send: None,
             settings,
             producer_id: format!("producer-{}", generate_random_string(10)),
+            tx_to_stats_collector,
         }
     }
     pub async fn prepare_for_batch(&mut self) {
@@ -57,7 +66,7 @@ impl ProducerWorker {
                     }
                 };
                 let data = match self.settings.record_size_strategy {
-                    RecordSizeStrategy::Fixed(size) => generate_random_string(size),
+                    RecordSizeStrategy::Fixed(size) => generate_random_string(size as usize),
                 };
                 BenchmarkRecord::new(key, data)
             })
@@ -71,10 +80,20 @@ impl ProducerWorker {
                 self.records_to_send
                     .take()
                     .ok_or(BenchmarkError::ErrorWithExplanation(
-                        "prepare_for_batch() not called on PrdoucerWorker",
+                        "prepare_for_batch() not called on PrdoucerWorker".to_string(),
                     ))?
             {
-                // TODO notify stats / controller
+                self.tx_to_stats_collector
+                    .send(StatsCollectorMessage::MessageSent(
+                        record.hash,
+                        Instant::now(),
+                    ))
+                    .await
+                    .map_err(|_| {
+                        BenchmarkError::ErrorWithExplanation(
+                            "Tx to stats_collector closed".to_string(),
+                        )
+                    })?;
 
                 self.fluvio_producer
                     .send(record.key, record.data)
