@@ -1,4 +1,8 @@
-use std::{time::Duration, collections::VecDeque};
+use std::{
+    time::Duration,
+    collections::VecDeque,
+    hash::{SipHasher, Hasher, Hash},
+};
 
 use async_std::{task::block_on, future::timeout, stream::StreamExt};
 use bench_env::{
@@ -9,18 +13,54 @@ use consumer::Consumer;
 use fluvio::{
     metadata::topic::TopicSpec, FluvioAdmin, RecordKey, Offset, TopicProducerConfigBuilder, Fluvio,
 };
-use producer::Producer;
+use producer_worker::Producer;
 use rand::{distributions::Alphanumeric, Rng};
+use std::collections::hash_map::DefaultHasher;
 
 pub mod bench_env;
 pub mod benches;
-pub mod producer;
+pub mod producer_worker;
 pub mod consumer;
 
 pub mod benchmark_config;
 
+pub struct BenchmarkRecord {
+    pub key: RecordKey,
+    pub data: String,
+    pub hash: u64,
+}
+
+impl BenchmarkRecord {
+    pub fn new(key: RecordKey, data: String) -> Self {
+        Self {
+            key,
+            data,
+            hash: hash_record(key, data),
+        }
+    }
+}
+
+pub fn hash_record(key: RecordKey, data: String) -> u64 {
+    let mut hasher_state = DefaultHasher::new();
+    key.hash(&mut hasher_state);
+    data.hash(&mut hasher_state);
+    hasher_state.finish()
+}
+
+pub enum BenchmarkError {
+    ErrorWithExplanation(&'static str),
+    WrappedErr(Box<dyn std::fmt::Debug + Sync + Send>),
+}
+impl BenchmarkError {
+    pub fn wrap_err(e: impl std::fmt::Debug + Sync + Send) -> BenchmarkError {
+        BenchmarkError::WrappedErr(Box::new(e))
+    }
+}
+const SHARED_KEY: &'static str = "SHARED_KEY";
+
+// TODO DELETE BELOW
+
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
-const TOPIC_NAME: &str = "benchmarking-topic";
 
 pub type Setup = (Producer, Consumer);
 

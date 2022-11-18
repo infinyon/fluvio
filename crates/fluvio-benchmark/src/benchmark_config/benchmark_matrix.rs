@@ -1,6 +1,9 @@
 use std::time::Duration;
 use fluvio::Compression;
 use serde::{Deserialize, Serialize};
+use tracing::info;
+
+use crate::benchmark_config::benchmark_settings::generate_new_topic_name;
 
 use super::benchmark_settings::BenchmarkSettings;
 
@@ -12,11 +15,14 @@ pub struct BenchmarkMatrix {
     pub num_samples: usize,
     pub num_batches_per_sample: usize,
     pub duration_between_batches: Duration,
+    pub worker_timeout: Duration,
     pub num_records_per_producer_worker_per_batch: Vec<usize>,
+    pub producer_batch_size: Vec<usize>,
     pub producer_queue_size: Vec<usize>,
     pub producer_linger: Vec<Duration>,
     pub producer_server_timeout: Vec<Duration>,
     pub producer_compression: Vec<Compression>,
+    pub record_key_allocation_strategy: Vec<RecordKeyAllocationStrategy>,
     // TODO
     // pub producer_isolation:...,
     // TODO
@@ -51,34 +57,42 @@ impl BenchmarkMatrix {
         for num_records_per_producer_worker_per_batch in
             self.num_records_per_producer_worker_per_batch.iter()
         {
-            for producer_queue_size in self.producer_queue_size.iter() {
-                for producer_linger in self.producer_linger.iter() {
-                    for producer_server_timeout in self.producer_server_timeout.iter() {
-                        for producer_compression in self.producer_compression.iter() {
-                            for consumer_max_bytes in self.consumer_max_bytes.iter() {
-                                for num_concurrent_producer_workers in
-                                    self.num_concurrent_producer_workers.iter()
+            for producer_batch_size in self.producer_batch_size.iter() {
+                for producer_queue_size in self.producer_queue_size.iter() {
+                    for producer_linger in self.producer_linger.iter() {
+                        for producer_server_timeout in self.producer_server_timeout.iter() {
+                            for producer_compression in self.producer_compression.iter() {
+                                for record_key_allocation_strategy in
+                                    self.record_key_allocation_strategy.iter()
                                 {
-                                    for num_concurrent_consumers_per_partition in
-                                        self.num_concurrent_consumers_per_partition.iter()
-                                    {
-                                        for num_partitions in self.num_partitions.iter() {
-                                            for record_size_strategy in
-                                                self.record_size_strategy.iter()
+                                    for consumer_max_bytes in self.consumer_max_bytes.iter() {
+                                        for num_concurrent_producer_workers in
+                                            self.num_concurrent_producer_workers.iter()
+                                        {
+                                            for num_concurrent_consumers_per_partition in
+                                                self.num_concurrent_consumers_per_partition.iter()
                                             {
-                                                settings.push(BenchmarkSettings {
+                                                for num_partitions in self.num_partitions.iter() {
+                                                    for record_size_strategy in
+                                                        self.record_size_strategy.iter()
+                                                    {
+                                                        settings.push(BenchmarkSettings {
+                                                    topic_name:generate_new_topic_name(),
                                                     num_samples: self.num_samples,
                                                     num_batches_per_sample: self
                                                         .num_batches_per_sample,
                                                     duration_between_batches: self
                                                         .duration_between_batches,
+                                                    worker_timeout: self.worker_timeout,
                                                     num_records_per_producer_worker_per_batch:
                                                         *num_records_per_producer_worker_per_batch,
+                                                    producer_batch_size: *producer_batch_size,
                                                     producer_queue_size: *producer_queue_size,
                                                     producer_linger: *producer_linger,
                                                     producer_server_timeout:
                                                         *producer_server_timeout,
                                                     producer_compression: *producer_compression,
+                                                    record_key_allocation_strategy: *record_key_allocation_strategy,
                                                     consumer_max_bytes: *consumer_max_bytes,
                                                     num_concurrent_producer_workers:
                                                         *num_concurrent_producer_workers,
@@ -87,6 +101,8 @@ impl BenchmarkMatrix {
                                                     num_partitions: *num_partitions,
                                                     record_size_strategy: *record_size_strategy,
                                                 })
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -97,6 +113,7 @@ impl BenchmarkMatrix {
                 }
             }
         }
+        info!("Iterating over {} test settings", settings.len());
         settings
     }
 }
@@ -104,4 +121,21 @@ impl BenchmarkMatrix {
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub enum RecordSizeStrategy {
     Fixed(usize),
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+pub enum RecordKeyAllocationStrategy {
+    /// RecordKey::NULL
+    NoKey,
+    /// All producer workers will use the same key
+    AllShareSameKey,
+
+    /// Each producer will use the same key for each of their records
+    ProducerWorkerUniqueKey,
+
+    /// Each producer will round robin from 0..N for each record produced
+    RoundRobinKey(usize),
+
+    /// Each producer will generate a random key for each record producer
+    RandomKey,
 }
