@@ -1,6 +1,7 @@
 use clap::Parser;
 use crate::{cli::ClusterCliError};
 use crate::cli::ClusterTarget;
+use fluvio::config::ConfigFile;
 use fluvio_future::io::StreamExt;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::PartitionSpec};
 
@@ -50,13 +51,9 @@ impl StatusOpt {
             Err(_) => (false, false),
         };
 
-        let is_local = fluvio_config.endpoint.contains("localhost")
-            || fluvio_config.endpoint.contains("127.0.0.1");
-        // println!("sc addr: {}", fluvio_config.endpoint);
-
         match (sc_running, spus_running, cluster_has_data) {
             (true, true, _) => {
-                println!("running {}", if is_local { "locally" } else { "on k8s" });
+                println!("Running {}", Self::cluster_location_description());
             }
             (true, false, _) => {
                 println!("Fluvio cluster is up, but has no spus");
@@ -93,7 +90,7 @@ impl StatusOpt {
             let partitions = Self::num_partitions(admin, &topic).await;
 
             for partition in 0..partitions {
-                if let Some(_record) = Self::last_record(config, &topic, partition).await {
+                if let Some(_record) = Self::last_record(config, &topic, partition as u32).await {
                     return true;
                 }
             }
@@ -114,19 +111,19 @@ impl StatusOpt {
     }
 
     /// Get the number of partiitions for a given topic
-    async fn num_partitions(admin: &FluvioAdmin, topic: &str) -> i32 {
+    async fn num_partitions(admin: &FluvioAdmin, topic: &str) -> usize {
         let partitions = admin
             .list::<PartitionSpec, _>(vec![topic.to_string()])
             .await;
 
-        partitions.unwrap().len() as i32
+        partitions.unwrap().len()
     }
 
     /// Get the last record in a given partition of a given topic
     async fn last_record(
         fluvio_config: &FluvioConfig,
         topic: &str,
-        partition: i32,
+        partition: u32,
     ) -> Option<String> {
         let fluvio = Fluvio::connect_with_config(fluvio_config).await.unwrap();
         let consumer = fluvio.partition_consumer(topic, partition).await.unwrap();
@@ -139,5 +136,16 @@ impl StatusOpt {
         }
 
         None
+    }
+
+    fn cluster_location_description() -> String {
+        let config = ConfigFile::load_default_or_new().unwrap();
+
+        match config.config().current_profile_name() {
+            Some("local") => "locally".to_string(),
+            // Cloud cluster
+            Some(other) if other.contains("cloud") => "on cloud based k8s".to_string(),
+            _ => "on local k8s".to_string(),
+        }
     }
 }
