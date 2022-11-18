@@ -11,35 +11,21 @@ use fluvio::{Fluvio, FluvioConfig, FluvioAdmin};
 pub struct StatusOpt {}
 
 impl StatusOpt {
-    /// Testing this method
-    ///
-    /// get address of sc:
-    ///
-    /// uncomment this before running `flvd cluster status`
-    /// ```
-    /// println!("sc addr: {}", fluvio_config.endpoint);
-    /// ```
-    ///
-    /// get address of spus:
-    /// ```
-    /// $ flvd cluster spu list
-    /// ```
-    ///
-    ///
-    ///
-    ///
-    ///
     pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
         let fluvio_config = target.load().unwrap();
         let fluvio = Fluvio::connect_with_config(&fluvio_config).await;
 
-        let sc_running = match fluvio {
-            Ok(_fluvio) => true,
-            Err(_) => false,
-        };
+        match fluvio {
+            Ok(_fluvio) => {
+                println!("SC Running {}", Self::cluster_location_description());
+            },
+            Err(err) => {
+                println!("none");
+                return Err(ClusterCliError::from(err));
+            }
+        }
 
         let admin = FluvioAdmin::connect_with_config(&fluvio_config).await;
-
         let (spus_running, cluster_has_data) = match admin {
             Ok(admin) => {
                 if Self::spus_running(&admin).await {
@@ -47,25 +33,17 @@ impl StatusOpt {
                 } else {
                     (false, false)
                 }
-            },
+            }
             Err(_) => (false, false),
         };
 
-        match (sc_running, spus_running, cluster_has_data) {
-            (true, true, _) => {
-                println!("Running {}", Self::cluster_location_description());
+        match (spus_running, cluster_has_data) {
+            (true, true) => (),
+            (true, false) => {
+                println!("spus are empty")
             }
-            (true, false, _) => {
-                println!("Fluvio cluster is up, but has no spus");
-            }
-            (false, true, true) => {
-                println!("stopped");
-            }
-            (false, false, _) => {
-                println!("none");
-            }
-            (false, true, false) => {
-                println!("sc not running, spu(s) running but empty");
+            (false, _) => {
+                println!("no spus running");
             }
         }
 
