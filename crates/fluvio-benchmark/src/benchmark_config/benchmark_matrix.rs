@@ -139,3 +139,5 @@ pub enum RecordKeyAllocationStrategy {
     /// Each producer will generate a random key for each record producer
     RandomKey,
 }
+/// Key used by AllShareSameKey
+pub const SHARED_KEY: &'static str = "SHARED_KEY";

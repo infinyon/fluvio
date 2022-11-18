@@ -14,8 +14,3 @@ rand = "0.8.5"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_yaml = "0.8"
 tracing = "0.1.19"
-
-
-[[bench]]
-name = "producer_consumer"
-harness = false

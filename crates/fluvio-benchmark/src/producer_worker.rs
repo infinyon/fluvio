@@ -1,34 +1,12 @@
-use std::collections::VecDeque;
-
 use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
 
 use crate::{
     benchmark_config::{
         benchmark_settings::BenchmarkSettings,
-        benchmark_matrix::{RecordKeyAllocationStrategy, RecordSizeStrategy},
+        benchmark_matrix::{RecordKeyAllocationStrategy, RecordSizeStrategy, SHARED_KEY},
     },
-    BenchmarkRecord, generate_random_string, BenchmarkError, SHARED_KEY,
+    BenchmarkRecord, generate_random_string, BenchmarkError,
 };
-
-#[deprecated]
-pub struct Producer {
-    pub producer: TopicProducer,
-    pub data: VecDeque<String>,
-    pub records_per_batch: usize,
-}
-
-impl Producer {
-    pub async fn produce(mut self) {
-        for _ in 0..self.records_per_batch {
-            self.producer
-                .send(RecordKey::NULL, self.data.pop_front().unwrap())
-                .await
-                .unwrap();
-            self.producer.flush().await.unwrap();
-        }
-        // self.producer.flush().await.unwrap();
-    }
-}
 
 pub struct ProducerWorker {
     fluvio_producer: TopicProducer,
