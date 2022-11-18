@@ -72,6 +72,7 @@ async fn main() {
         let status = status.await.unwrap();
         crate_status.insert(crate_name, status);
     }
+    let mut version_needs_bump = false;
     for (crate_name, status) in crate_status.into_iter() {
         match status {
             CrateStatus::VersionBumped(manifest_diff) => {
@@ -88,13 +89,18 @@ async fn main() {
                 if let Some(manifest_diff) = manifest_diff {
                     println!("{manifest_diff}");
                 }
+                version_needs_bump = true;
             },
             CrateStatus::ManifestChanged(manifest_diff) => {
                 println!("⛔ {crate_name:-padding$} Manifest (Cargo.toml) changed but version number did not:");
                 print!("{manifest_diff}");
+                version_needs_bump = true;
             },
             CrateStatus::NotPublished => println!("🟡 {crate_name:-padding$} Crate not found in crates.io (Possible cause: Not published yet?)"),
         }
+    }
+    if version_needs_bump {
+        panic!("Some of the crates need version bump");
     }
 }
 
