@@ -93,6 +93,7 @@ pub mod spu;
 pub mod metrics;
 pub mod config;
 
+use fluvio_types::PartitionId;
 use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
@@ -100,9 +101,13 @@ pub use producer::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, RecordKey, ProduceOutput,
     FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy, RetryStrategy,
 };
+#[cfg(feature = "smartengine")]
+pub use producer::{SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData};
 
 pub use consumer::{
     PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartModuleContextData,
+    SmartModuleExtraParams,
 };
 pub use offset::Offset;
 
@@ -193,7 +198,7 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 #[instrument(skip(topic, partition))]
 pub async fn consumer<S: Into<String>>(
     topic: S,
-    partition: i32,
+    partition: PartitionId,
 ) -> Result<PartitionConsumer, FluvioError> {
     let fluvio = Fluvio::connect().await?;
     let consumer = fluvio.partition_consumer(topic, partition).await?;

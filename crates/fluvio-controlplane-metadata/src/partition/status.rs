@@ -128,7 +128,7 @@ impl PartitionStatus {
         self.replicas.iter()
     }
 
-    pub fn live_replicas(&self) -> Vec<i32> {
+    pub fn live_replicas(&self) -> Vec<SpuId> {
         self.replicas.iter().map(|lrs| lrs.spu).collect()
     }
 
@@ -246,7 +246,7 @@ impl Default for PartitionResolution {
     serde(rename_all = "camelCase")
 )]
 pub struct ReplicaStatus {
-    pub spu: i32,
+    pub spu: SpuId,
     pub hw: i64,
     pub leo: i64,
 }

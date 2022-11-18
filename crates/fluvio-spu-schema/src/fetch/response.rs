@@ -32,7 +32,7 @@ where
     pub fn find_partition(
         self,
         topic: &str,
-        partition: i32,
+        partition: u32,
     ) -> Option<FetchablePartitionResponse<R>> {
         for topic_res in self.topics {
             if topic_res.name == topic {
@@ -67,7 +67,7 @@ where
     R: Encoder + Decoder + Default + Debug,
 {
     /// The partition index.
-    pub partition_index: i32,
+    pub partition_index: PartitionId,
 
     /// The error code, or 0 if there was no fetch error
     pub error_code: ErrorCode,
@@ -127,6 +127,7 @@ where
 
 #[cfg(feature = "file")]
 pub use file::*;
+use fluvio_types::PartitionId;
 
 #[cfg(feature = "file")]
 mod file {

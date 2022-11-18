@@ -9,6 +9,8 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use fluvio_types::PartitionCount;
+use fluvio_types::ReplicationFactor;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
@@ -44,7 +46,7 @@ pub struct CreateTopicOpt {
         value_name = "partitions",
         default_value = "1"
     )]
-    partitions: i32,
+    partitions: PartitionCount,
 
     /// The number of full replicas of the Topic to keep
     ///
@@ -125,7 +127,7 @@ impl CreateTopicOpt {
         } else {
             ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
-                replication_factor: self.replication as i32,
+                replication_factor: self.replication as ReplicationFactor,
                 ignore_rack_assignment: self.ignore_rack_assignment,
             })
         };

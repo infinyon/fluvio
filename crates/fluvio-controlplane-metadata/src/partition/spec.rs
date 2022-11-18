@@ -40,7 +40,7 @@ impl PartitionSpec {
     }
 
     /// Create new partition spec from replica mapping with topic spec. This assume first replica is leader
-    pub fn from_replicas(replicas: Vec<i32>, topic: &TopicSpec) -> Self {
+    pub fn from_replicas(replicas: Vec<SpuId>, topic: &TopicSpec) -> Self {
         let leader = if replicas.is_empty() { 0 } else { replicas[0] };
 
         Self {
@@ -65,8 +65,8 @@ impl PartitionSpec {
     }
 }
 
-impl From<Vec<i32>> for PartitionSpec {
-    fn from(replicas: Vec<i32>) -> Self {
+impl From<Vec<SpuId>> for PartitionSpec {
+    fn from(replicas: Vec<SpuId>) -> Self {
         if !replicas.is_empty() {
             Self::new(replicas[0], replicas)
         } else {

@@ -336,13 +336,6 @@ impl ReplicaSpec {
 
     /// Validate partitions
     pub fn valid_partition(partitions: &PartitionCount) -> Result<(), Error> {
-        if *partitions < 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "partition is mandatory for computed topics",
-            ));
-        }
-
         if *partitions == 0 {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -355,13 +348,6 @@ impl ReplicaSpec {
 
     /// Validate replication factor
     pub fn valid_replication_factor(replication: &ReplicationFactor) -> Result<(), Error> {
-        if *replication < 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "replication factor is mandatory for computed topics",
-            ));
-        }
-
         if *replication == 0 {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -477,7 +463,7 @@ pub struct TopicReplicaParam {
 }
 
 #[allow(dead_code)]
-fn default_count() -> i32 {
+fn default_count() -> u32 {
     1
 }
 
@@ -525,8 +511,8 @@ impl From<Vec<PartitionMap>> for PartitionMaps {
     }
 }
 
-impl From<Vec<(i32, Vec<i32>)>> for PartitionMaps {
-    fn from(partition_vec: Vec<(i32, Vec<i32>)>) -> Self {
+impl From<Vec<(PartitionId, Vec<SpuId>)>> for PartitionMaps {
+    fn from(partition_vec: Vec<(PartitionId, Vec<SpuId>)>) -> Self {
         let maps: Vec<PartitionMap> = partition_vec
             .into_iter()
             .map(|(id, replicas)| PartitionMap { id, replicas })
@@ -556,11 +542,9 @@ impl PartitionMaps {
 
     fn replication_factor(&self) -> Option<ReplicationFactor> {
         // compute replication form replica map
-        if !self.maps.is_empty() {
-            Some(self.maps[0].replicas.len() as i32)
-        } else {
-            None
-        }
+        self.maps
+            .first()
+            .map(|partition| partition.replicas.len() as ReplicationFactor)
     }
 
     fn partition_map_string(&self) -> String {
@@ -601,7 +585,7 @@ impl PartitionMaps {
         let mut replica_map: ReplicaMap = BTreeMap::new();
 
         for partition in &self.maps {
-            replica_map.insert(partition.id, partition.replicas.clone());
+            replica_map.insert(partition.id as PartitionId, partition.replicas.clone());
         }
 
         replica_map
@@ -841,14 +825,6 @@ pub mod test {
 
     #[test]
     fn test_valid_computed_replica_params() {
-        // -1 indicates an unassigned partition
-        let t1_result = ReplicaSpec::valid_partition(&-1);
-        assert!(t1_result.is_err());
-        assert_eq!(
-            format!("{}", t1_result.unwrap_err()),
-            "partition is mandatory for computed topics"
-        );
-
         // 0 is not a valid partition
         let t2_result = ReplicaSpec::valid_partition(&0);
         assert!(t2_result.is_err());
@@ -859,14 +835,6 @@ pub mod test {
 
         let t3_result = ReplicaSpec::valid_partition(&1);
         assert!(t3_result.is_ok());
-
-        // -1 indicates an unassigned replication factor
-        let t4_result = ReplicaSpec::valid_replication_factor(&-1);
-        assert!(t4_result.is_err());
-        assert_eq!(
-            format!("{}", t4_result.unwrap_err()),
-            "replication factor is mandatory for computed topics"
-        );
 
         // 0 is not a valid replication factor
         let t5_result = ReplicaSpec::valid_replication_factor(&0);
@@ -990,7 +958,7 @@ pub mod test {
             vec![(0, vec![0, 1, 3]), (1, vec![0, 2, 3]), (2, vec![1, 3, 4])].into();
 
         let p1_result = p1.unique_spus_in_partition_map();
-        let expected_p1_result: Vec<i32> = vec![0, 1, 3, 2, 4];
+        let expected_p1_result: Vec<SpuId> = vec![0, 1, 3, 2, 4];
         assert_eq!(p1_result, expected_p1_result);
     }
 

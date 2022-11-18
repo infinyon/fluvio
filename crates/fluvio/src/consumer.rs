@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
+use fluvio_types::PartitionId;
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -25,6 +25,11 @@ use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
 
 pub use fluvio_protocol::record::ConsumerRecord as Record;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleInvocationWasm;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleKind;
+pub use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
+pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 /// An interface for consuming events from a particular partition
 ///
@@ -35,7 +40,7 @@ pub use fluvio_protocol::record::ConsumerRecord as Record;
 /// [`Fluvio`]: struct.Fluvio.html
 pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
-    partition: i32,
+    partition: PartitionId,
     pool: Arc<P>,
     metrics: Arc<ClientMetrics>,
 }
@@ -44,7 +49,12 @@ impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
 {
-    pub fn new(topic: String, partition: i32, pool: Arc<P>, metrics: Arc<ClientMetrics>) -> Self {
+    pub fn new(
+        topic: String,
+        partition: PartitionId,
+        pool: Arc<P>,
+        metrics: Arc<ClientMetrics>,
+    ) -> Self {
         Self {
             topic,
             partition,
@@ -59,7 +69,7 @@ where
     }
 
     /// Returns the ID of the partition that this consumer reads from
-    pub fn partition(&self) -> i32 {
+    pub fn partition(&self) -> PartitionId {
         self.partition
     }
 
@@ -586,11 +596,14 @@ pub enum PartitionSelectionStrategy {
     /// Consume from all the partitions of a given topic
     All(String),
     /// Consume from a given list of topics and partitions
-    Multiple(Vec<(String, i32)>),
+    Multiple(Vec<(String, PartitionId)>),
 }
 
 impl PartitionSelectionStrategy {
-    async fn selection(&self, spu_pool: Arc<SpuPool>) -> Result<Vec<(String, i32)>, FluvioError> {
+    async fn selection(
+        &self,
+        spu_pool: Arc<SpuPool>,
+    ) -> Result<Vec<(String, PartitionId)>, FluvioError> {
         let pairs = match self {
             PartitionSelectionStrategy::All(topic) => {
                 let topics = spu_pool.metadata.topics();
@@ -600,7 +613,7 @@ impl PartitionSelectionStrategy {
                     .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
                     .spec;
                 let partition_count = topic_spec.partitions();
-                (0..partition_count)
+                (0..(partition_count as PartitionId))
                     .map(|partition| (topic.clone(), partition))
                     .collect::<Vec<_>>()
             }
@@ -723,7 +736,12 @@ impl MultiplePartitionConsumer {
             .await?
             .into_iter()
             .map(|(topic, partition)| {
-                PartitionConsumer::new(topic, partition, self.pool.clone(), self.metrics.clone())
+                PartitionConsumer::new(
+                    topic,
+                    partition as PartitionId,
+                    self.pool.clone(),
+                    self.metrics.clone(),
+                )
             })
             .collect::<Vec<_>>();
 

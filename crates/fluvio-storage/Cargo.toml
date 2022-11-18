@@ -39,7 +39,7 @@ nix = "0.25.0"
 # Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", features = [
     "events",
-], version = "0.3.1" }
+], version = "0.4.0" }
 fluvio-future = { version = "0.4.0", features = ["fs", "mmap", "zero_copy"] }
 fluvio-protocol = { path = "../fluvio-protocol" }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }

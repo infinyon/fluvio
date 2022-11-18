@@ -21,6 +21,7 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
+    use fluvio_types::PartitionId;
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -60,6 +61,7 @@ mod cmd {
     };
     use super::super::ClientCmd;
     use super::table_format::{TableEventResponse, TableModel};
+    use fluvio_smartengine::transformation::TransformationConfig;
 
     const USER_TEMPLATE: &str = "user_template";
 
@@ -76,7 +78,7 @@ mod cmd {
 
         /// Partition id
         #[clap(short = 'p', long, default_value = "0", value_name = "integer")]
-        pub partition: i32,
+        pub partition: PartitionId,
 
         /// Consume records from all partitions
         #[clap(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
@@ -194,6 +196,15 @@ mod cmd {
         /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
         #[clap(long, value_parser=parse_isolation)]
         pub isolation: Option<Isolation>,
+
+        /// (Optional) Path to a file with transformation specification.
+        #[clap(long, conflicts_with = "smartmodule_group")]
+        pub transforms_file: Option<PathBuf>,
+
+        /// (Optional) Transformation specification as JSON formatted string.
+        /// E.g. fluvio consume topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
+        #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
+        pub transform: Vec<String>,
     }
 
     fn parse_key_val(s: &str) -> Result<(String, String)> {
@@ -316,6 +327,23 @@ mod cmd {
                     self.smart_module_ctx(),
                     initial_param,
                 )?]
+            } else if !self.transform.is_empty() {
+                let config =
+                    TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
+                        CliError::InvalidArg(format!(
+                            "unable to parse `transform` argument: {}",
+                            err
+                        ))
+                    })?;
+                create_smartmodule_list(config)?
+            } else if let Some(transforms_file) = &self.transforms_file {
+                let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
+                    CliError::InvalidArg(format!(
+                        "unable to process `transforms_file` argument: {}",
+                        err
+                    ))
+                })?;
+                create_smartmodule_list(config)?
             } else {
                 Vec::new()
             };
@@ -726,6 +754,24 @@ mod cmd {
         })
     }
 
+    /// create list of smartmodules from a list of transformations
+    fn create_smartmodule_list(config: TransformationConfig) -> Result<Vec<SmartModuleInvocation>> {
+        Ok(config
+            .transforms
+            .into_iter()
+            .map(|t| SmartModuleInvocation {
+                wasm: SmartModuleInvocationWasm::Predefined(t.uses),
+                kind: SmartModuleKind::Generic(Default::default()),
+                params: t
+                    .with
+                    .into_iter()
+                    .map(|(k, v)| (k, v.into()))
+                    .collect::<std::collections::BTreeMap<String, String>>()
+                    .into(),
+            })
+            .collect())
+    }
+
     // Uses clap::ArgEnum to choose possible variables
 
     #[derive(ValueEnum, Debug, Clone, Eq, PartialEq)]
@@ -775,6 +821,8 @@ mod cmd {
                 params: Default::default(),
                 isolation: Default::default(),
                 beginning: Default::default(),
+                transforms_file: Default::default(),
+                transform: Default::default(),
             }
         }
         #[test]

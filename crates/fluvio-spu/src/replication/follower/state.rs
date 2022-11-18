@@ -283,14 +283,14 @@ mod follower_tests {
     use std::path::PathBuf;
 
     use flv_util::fixture::ensure_clean_dir;
-    use fluvio_types::SpuId;
+    use fluvio_types::{SpuId, PartitionId};
     use fluvio_storage::config::ReplicaConfig;
 
     use super::*;
 
     const LEADER: SpuId = 5001;
     const TOPIC: &str = "test";
-    const TEST_REPLICA: (&str, i32) = (TOPIC, 0);
+    const TEST_REPLICA: (&str, PartitionId) = (TOPIC, 0);
 
     #[fluvio_future::test]
     async fn test_follower_creation() {

@@ -14,6 +14,7 @@ use fluvio_protocol::api::Request;
 use fluvio_protocol::record::RecordSet;
 
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
+use fluvio_types::PartitionId;
 
 use crate::fetch::FetchablePartitionResponse;
 use crate::isolation::Isolation;
@@ -54,7 +55,7 @@ where
     R: Encoder + Decoder + Default + Debug,
 {
     pub topic: String,
-    pub partition: i32,
+    pub partition: PartitionId,
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,

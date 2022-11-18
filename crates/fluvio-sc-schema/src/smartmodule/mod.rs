@@ -1,4 +1,6 @@
+mod client;
 pub use fluvio_controlplane_metadata::smartmodule::*;
+pub use client::*;
 
 mod convert {
 

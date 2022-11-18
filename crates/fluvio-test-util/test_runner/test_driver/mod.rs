@@ -10,6 +10,7 @@ use fluvio::TopicProducerConfig;
 use fluvio::metadata::topic::CleanupPolicy;
 use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
+use fluvio_types::PartitionId;
 
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
@@ -128,7 +129,7 @@ impl TestDriver {
         Ok(())
     }
 
-    pub async fn get_consumer(&self, topic: &str, partition: i32) -> PartitionConsumer {
+    pub async fn get_consumer(&self, topic: &str, partition: PartitionId) -> PartitionConsumer {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client
             .partition_consumer(topic.to_string(), partition)
@@ -201,7 +202,7 @@ impl TestDriver {
         let admin = self.client().admin().await;
 
         let mut topic_spec =
-            TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
+            TopicSpec::new_computed(option.partition as u32, option.replication() as u32, None);
 
         // Topic Retention time
         topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
