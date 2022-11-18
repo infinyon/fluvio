@@ -5,9 +5,7 @@ use async_std::channel::Receiver;
 use async_std::prelude::FutureExt;
 use async_std::stream::StreamExt;
 use async_std::{channel::Sender, stream::Stream};
-use fluvio::{
-    PartitionConsumer, consumer::ConsumerConfigBuilder, Fluvio, Offset, dataplane::link::ErrorCode,
-};
+use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode};
 use fluvio::dataplane::record::ConsumerRecord;
 
 use crate::{BenchmarkError, hash_record};
@@ -16,14 +14,10 @@ use crate::{
 };
 
 pub struct ConsumerWorker {
-    fluvio_consumer: PartitionConsumer,
     consumer_id: u64,
-    settings: BenchmarkSettings,
     tx_to_stats_collector: Sender<StatsCollectorMessage>,
-    assigned_partition: u64,
     stream: Pin<Box<dyn Stream<Item = Result<ConsumerRecord, ErrorCode>>>>,
     received: Vec<(ConsumerRecord, Instant)>,
-    preallocation_hint: u64,
 }
 
 impl ConsumerWorker {
@@ -34,7 +28,6 @@ impl ConsumerWorker {
         assigned_partition: u64,
         preallocation_hint: u64,
     ) -> Self {
-        let fluvio = Fluvio::connect().await.unwrap();
         let mut config_builder = ConsumerConfigBuilder::default();
         config_builder.max_bytes(settings.consumer_max_bytes as i32);
 
@@ -50,14 +43,10 @@ impl ConsumerWorker {
             .unwrap();
 
         Self {
-            fluvio_consumer,
             consumer_id,
-            settings,
             tx_to_stats_collector,
-            assigned_partition,
             stream: Box::pin(stream),
             received: Vec::with_capacity(preallocation_hint as usize),
-            preallocation_hint,
         }
     }
 
@@ -92,7 +81,9 @@ impl ConsumerWorker {
                     hash: hash_record(&data),
                     recv_time: *recv_time,
                     consumer_id: self.consumer_id,
-                });
+                })
+                .await
+                .unwrap();
         }
     }
 }
