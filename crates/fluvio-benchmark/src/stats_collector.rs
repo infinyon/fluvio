@@ -42,10 +42,14 @@ impl StatsCollector {
         for _ in 0..total_expected_messages {
             match self.receiver.recv().await {
                 Ok(message) => match message {
-                    StatsCollectorMessage::MessageSent(hash, send_time) => {
+                    StatsCollectorMessage::MessageSent { hash, send_time } => {
                         self.current_batch.record_sent(hash, send_time)?;
                     }
-                    StatsCollectorMessage::MessageReceived(hash, recv_time, consumer_id) => {
+                    StatsCollectorMessage::MessageReceived {
+                        hash,
+                        recv_time,
+                        consumer_id,
+                    } => {
                         self.current_batch
                             .record_recv(hash, recv_time, consumer_id)?;
                     }
@@ -73,8 +77,16 @@ impl StatsCollector {
 }
 
 pub enum StatsCollectorMessage {
-    MessageSent(u64, Instant),
-    MessageReceived(u64, Instant, u64),
+    MessageSent {
+        hash: u64,
+        send_time: Instant,
+    },
+
+    MessageReceived {
+        hash: u64,
+        recv_time: Instant,
+        consumer_id: u64,
+    },
 }
 
 #[derive(Default)]

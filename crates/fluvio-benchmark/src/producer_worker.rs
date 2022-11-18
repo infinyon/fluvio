@@ -16,11 +16,12 @@ pub struct ProducerWorker {
     fluvio_producer: TopicProducer,
     records_to_send: Option<Vec<BenchmarkRecord>>,
     settings: BenchmarkSettings,
-    producer_id: String,
+    producer_id: u64,
     tx_to_stats_collector: Sender<StatsCollectorMessage>,
 }
 impl ProducerWorker {
     pub async fn new(
+        producer_id: u64,
         settings: BenchmarkSettings,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
     ) -> Self {
@@ -45,7 +46,7 @@ impl ProducerWorker {
             fluvio_producer,
             records_to_send: None,
             settings,
-            producer_id: format!("producer-{}", generate_random_string(10)),
+            producer_id,
             tx_to_stats_collector,
         }
     }
@@ -56,7 +57,7 @@ impl ProducerWorker {
                     RecordKeyAllocationStrategy::NoKey => RecordKey::NULL,
                     RecordKeyAllocationStrategy::AllShareSameKey => RecordKey::from(SHARED_KEY),
                     RecordKeyAllocationStrategy::ProducerWorkerUniqueKey => {
-                        RecordKey::from(self.producer_id.clone())
+                        RecordKey::from(format!("producer-{}", self.producer_id.clone()))
                     }
                     RecordKeyAllocationStrategy::RoundRobinKey(x) => {
                         RecordKey::from(format!("rr-{}", i % x))
@@ -84,10 +85,10 @@ impl ProducerWorker {
                     ))?
             {
                 self.tx_to_stats_collector
-                    .send(StatsCollectorMessage::MessageSent(
-                        record.hash,
-                        Instant::now(),
-                    ))
+                    .send(StatsCollectorMessage::MessageSent {
+                        hash: record.hash,
+                        send_time: Instant::now(),
+                    })
                     .await
                     .map_err(|_| {
                         BenchmarkError::ErrorWithExplanation(

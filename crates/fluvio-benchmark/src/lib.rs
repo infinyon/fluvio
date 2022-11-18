@@ -8,6 +8,7 @@ use rand::{distributions::Alphanumeric, Rng};
 use std::collections::hash_map::DefaultHasher;
 
 pub mod consumer;
+pub mod consumer_worker;
 pub mod benchmark_config;
 pub mod producer_worker;
 pub mod stats_collector;
@@ -20,14 +21,13 @@ pub struct BenchmarkRecord {
 
 impl BenchmarkRecord {
     pub fn new(key: RecordKey, data: String) -> Self {
-        let hash = hash_record(&key, &data);
+        let hash = hash_record(&data);
         Self { key, data, hash }
     }
 }
 
-pub fn hash_record(key: &RecordKey, data: &str) -> u64 {
+pub fn hash_record(data: &str) -> u64 {
     let mut hasher_state = DefaultHasher::new();
-    key.hash(&mut hasher_state);
     data.hash(&mut hasher_state);
     hasher_state.finish()
 }

@@ -136,7 +136,6 @@ pub enum RecordKeyAllocationStrategy {
     /// Each producer will round robin from 0..N for each record produced
     RoundRobinKey(u64),
 
-    /// Each producer will generate a random key for each record producer
     RandomKey,
 }
 /// Key used by AllShareSameKey
