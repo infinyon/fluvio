@@ -17,6 +17,8 @@ pub mod benches;
 pub mod producer;
 pub mod consumer;
 
+pub mod benchmark_config;
+
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 const TOPIC_NAME: &str = "benchmarking-topic";
 
