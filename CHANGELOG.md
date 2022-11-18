@@ -4,7 +4,8 @@
 
 ## Platform Version 0.10.1 - 2022-11-18
 
-* Record accumulator batches ([#2799](https://github.com/infinyon/fluvio/pull/2799))
+* Improve performance for `RecordAccumulator` in `batches` ([#2799](https://github.com/infinyon/fluvio/pull/2799))
+* Replace `PartitionId`, `PartitionCount` and `ReplicationFactor` aliased types to use `u32` over `i32` ([#2799](https://github.com/infinyon/fluvio/pull/2799))
 * Standardize reading records from CLI input ([#2756](https://github.com/infinyon/fluvio/pull/2756))
 * Smdk publish signing error w/ cross-fs tmp file ([#2767](https://github.com/infinyon/fluvio/pull/2767))
 * Smkd template dir includes default gitignore ([#2768](https://github.com/infinyon/fluvio/pull/2768))
