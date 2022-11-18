@@ -36,6 +36,11 @@ pub async fn run_overhead_test(_: Setup) {
     consumer_result.unwrap();
 }
 
+pub async fn run_producer_test(setup: Setup) {
+    let (producer, _) = setup;
+    producer.produce().await;
+}
+
 async fn nop() {
     black_box(())
 }

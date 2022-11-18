@@ -15,7 +15,8 @@ impl Producer {
                 .send(RecordKey::NULL, self.data.pop_front().unwrap())
                 .await
                 .unwrap();
+            self.producer.flush().await.unwrap();
         }
-        self.producer.flush().await.unwrap();
+        // self.producer.flush().await.unwrap();
     }
 }

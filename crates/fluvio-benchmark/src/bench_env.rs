@@ -1,10 +1,11 @@
 use std::{str::FromStr, env};
 
-pub const FLUVIO_BENCH_RECORDS_PER_BATCH: (&str, usize) = ("FLUVIO_BENCH_RECORDS_PER_BATCH", 1000);
-pub const FLUVIO_BENCH_RECORD_NUM_BYTES: (&str, usize) = ("FLUVIO_BENCH_RECORD_NUM_BYTES", 1000);
-pub const FLUVIO_BENCH_SAMPLE_SIZE: (&str, usize) = ("FLUVIO_BENCH_NUM_ITERATIONS", 10);
+// TODO better way of doing this
+pub const FLUVIO_BENCH_RECORDS_PER_BATCH: (&str, usize) = ("FLUVIO_BENCH_RECORDS_PER_BATCH", 100);
+pub const FLUVIO_BENCH_RECORD_NUM_BYTES: (&str, usize) = ("FLUVIO_BENCH_RECORD_NUM_BYTES", 10);
+pub const FLUVIO_BENCH_SAMPLE_SIZE: (&str, usize) = ("FLUVIO_BENCH_SAMPLE_SIZE", 10);
 pub const FLUVIO_BENCH_MAX_BYTES_PER_BATCH: (&str, usize) =
-    ("FLUVIO_BENCH_MAX_BYTES_PER_BATCH", 1000000);
+    ("FLUVIO_BENCH_MAX_BYTES_PER_BATCH", 120);
 
 pub trait EnvOrDefault<T> {
     fn env_or_default(self) -> T
