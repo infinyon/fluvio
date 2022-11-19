@@ -1,8 +1,11 @@
 use clap::{arg, Parser};
 use fluvio::Compression;
-use fluvio_benchmark::benchmark_config::benchmark_matrix::{
-    BenchmarkMatrix, RecordKeyAllocationStrategy, RecordSizeStrategy, get_config_from_file,
-    get_default_config,
+use fluvio_benchmark::{
+    benchmark_config::benchmark_matrix::{
+        BenchmarkMatrix, RecordKeyAllocationStrategy, RecordSizeStrategy, get_config_from_file,
+        get_default_config,
+    },
+    benchmark_driver::BenchmarkDriver,
 };
 use pad::PadStr;
 
@@ -25,11 +28,12 @@ fn main() {
         print_divider();
 
         for settings in matrix.into_iter() {
-            println!("Settings for this bench:\n{:#?}", settings);
+            println!("Beginning a new benchmark");
+            println!("Settings for this Benchmark:\n{:#?}", settings);
+            async_std::task::block_on(BenchmarkDriver::run_benchmark(settings));
+            print_divider();
+            println!()
         }
-
-        print_divider();
-        println!()
     }
 }
 

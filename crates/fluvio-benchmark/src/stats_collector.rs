@@ -7,6 +7,7 @@ pub struct SampleStats {}
 
 // We expect every message produced to be read number_of_consumers_per_partition times.
 // We also expect a total of num_producers_per_batch * num_records_per_batch unique messages.
+#[derive(Default)]
 pub struct BatchStats {
     collected_records: HashMap<u64, RecordMetadata>,
 }
@@ -34,6 +35,14 @@ pub struct StatsCollector {
 }
 
 impl StatsCollector {
+    pub fn new(receiver: Receiver<StatsCollectorMessage>, settings: BenchmarkSettings) -> Self {
+        Self {
+            receiver,
+            current_batch: BatchStats::default(),
+            settings,
+        }
+    }
+
     pub async fn collect_stats(&mut self) -> Result<(), BenchmarkError> {
         let total_expected_messages = self.settings.total_number_of_messages_produced_per_batch()
             * (1 + self // Plus one is for the produce message
@@ -73,6 +82,11 @@ impl StatsCollector {
             value.validate(expected_num_times_consumed as usize)?;
         }
         Ok(())
+    }
+
+    pub fn new_batch(&mut self) {
+        // TODO compute stats
+        self.current_batch = BatchStats::default();
     }
 }
 

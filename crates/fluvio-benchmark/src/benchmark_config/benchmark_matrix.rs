@@ -41,9 +41,13 @@ pub struct BenchmarkMatrix {
     /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
     pub num_concurrent_consumers_per_partition: Vec<u64>,
     pub num_partitions: Vec<u64>,
+    // TODO
+    // pub num_replicas: Vec<u64>,
     pub record_size_strategy: Vec<RecordSizeStrategy>,
     // TODO
     // pub use_smart_module: Vec<bool>,
+    // TODO
+    // IgnoreRac
 }
 
 impl IntoIterator for BenchmarkMatrix {

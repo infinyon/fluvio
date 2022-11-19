@@ -4,8 +4,7 @@ use fluvio::Compression;
 use serde::{Serialize, Deserialize};
 
 use super::benchmark_matrix::{RecordSizeStrategy, RecordKeyAllocationStrategy};
-use rand::{Rng, thread_rng};
-use rand::distributions::Alphanumeric;
+use rand::{Rng, thread_rng, distributions::Uniform};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkSettings {
@@ -51,6 +50,8 @@ impl BenchmarkSettings {
 
 pub fn generate_new_topic_name() -> String {
     let mut rng = thread_rng();
-    let chars: String = (0..10).map(|_| rng.sample(Alphanumeric) as char).collect();
+    let chars: String = (0..15)
+        .map(|_| rng.sample(Uniform::new(b'a', b'z')) as char)
+        .collect();
     format!("benchmarking-{}", chars)
 }

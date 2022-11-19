@@ -12,6 +12,7 @@ pub mod consumer_worker;
 pub mod benchmark_config;
 pub mod producer_worker;
 pub mod stats_collector;
+pub mod benchmark_driver;
 
 pub struct BenchmarkRecord {
     pub key: RecordKey,
@@ -50,3 +51,6 @@ fn generate_random_string(size: usize) -> String {
         .map(char::from)
         .collect()
 }
+
+
+
