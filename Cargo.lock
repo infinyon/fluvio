@@ -2173,6 +2173,7 @@ dependencies = [
  "clap 4.0.22",
  "criterion",
  "fluvio",
+ "pad",
  "rand 0.8.5",
  "serde",
  "serde_yaml 0.8.26",
@@ -4760,6 +4761,15 @@ name = "owo-colors"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
+
+[[package]]
+name = "pad"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2ad9b889f1b12e0b9ee24db044b5129150d5eada288edc800f789928dc8c0e3"
+dependencies = [
+ "unicode-width",
+]
 
 [[package]]
 name = "parking"

@@ -2,6 +2,7 @@ use std::time::Duration;
 use fluvio::Compression;
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use std::fs::File;
 
 use crate::benchmark_config::benchmark_settings::generate_new_topic_name;
 
@@ -9,11 +10,15 @@ use super::benchmark_settings::BenchmarkSettings;
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &'static str = "SHARED_KEY";
 
+/// DEFAULT CONFIG DIR
+pub const DEFAULT_CONFIG_DIR: &'static str = "crates/fluvio-benchmark/benches";
+
 /// A BenchmarkMatrix contains a collection of settings and dimensions.
 /// Iterating over a BenchmarkMatrix produces a BenchmarkSettings for every possible combination of values in the matrix.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkMatrix {
     /// Each sample is a collection of batches that all run on the same topic.
+    pub matrix_name: String,
     pub num_samples: u64,
     pub num_batches_per_sample: u64,
     pub seconds_between_batches: u64,
@@ -146,8 +151,32 @@ pub enum RecordKeyAllocationStrategy {
     RandomKey,
 }
 
+pub fn get_default_config() -> Vec<BenchmarkMatrix> {
+    walkdir::WalkDir::new(DEFAULT_CONFIG_DIR)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter_map(|e| {
+            if e.path().extension().is_some() {
+                Some(e)
+            } else {
+                None
+            }
+        })
+        .map(|e| {
+            let file = File::open(e.path()).unwrap();
+            serde_yaml::from_reader::<_, BenchmarkMatrix>(file).unwrap()
+        })
+        .collect()
+}
+
+pub fn get_config_from_file(path: &str) -> Vec<BenchmarkMatrix> {
+    let file = File::open(path).unwrap();
+    vec![serde_yaml::from_reader::<_, BenchmarkMatrix>(file).unwrap()]
+}
+
 #[cfg(test)]
 mod tests {
+
     use std::{path::Path, fs::File};
 
     use super::BenchmarkMatrix;

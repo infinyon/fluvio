@@ -1,8 +1,10 @@
 use clap::{arg, Parser};
 use fluvio::Compression;
 use fluvio_benchmark::benchmark_config::benchmark_matrix::{
-    BenchmarkMatrix, RecordKeyAllocationStrategy, RecordSizeStrategy,
+    BenchmarkMatrix, RecordKeyAllocationStrategy, RecordSizeStrategy, get_config_from_file,
+    get_default_config,
 };
+use pad::PadStr;
 
 fn main() {
     let args = Args::parse();
@@ -10,6 +12,24 @@ fn main() {
     if args.example_config {
         print_example_config();
         return;
+    }
+
+    let matrices = match Args::parse().config {
+        Some(path) => get_config_from_file(&path),
+        None => get_default_config(),
+    };
+
+    for matrix in matrices {
+        print_divider();
+        println!("# Beginning Matrix for: {}", matrix.matrix_name);
+        print_divider();
+
+        for settings in matrix.into_iter() {
+            println!("Settings for this bench:\n{:#?}", settings);
+        }
+
+        print_divider();
+        println!()
     }
 }
 
@@ -31,8 +51,13 @@ fn print_example_config() {
         num_concurrent_consumers_per_partition: vec![1],
         num_partitions: vec![1],
         record_size_strategy: vec![RecordSizeStrategy::Fixed(1000)],
+        matrix_name: "ExampleMatrix".to_string(),
     };
     println!("{}", serde_yaml::to_string(&example_config).unwrap());
+}
+
+fn print_divider() {
+    println!("{}", "".pad_to_width_with_char(50, '#'));
 }
 
 #[derive(Parser, Debug)]
