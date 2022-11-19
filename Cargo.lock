@@ -2170,12 +2170,14 @@ name = "fluvio-benchmark"
 version = "0.0.0"
 dependencies = [
  "async-std",
+ "clap 4.0.22",
  "criterion",
  "fluvio",
  "rand 0.8.5",
  "serde",
  "serde_yaml 0.8.26",
  "tracing",
+ "walkdir",
 ]
 
 [[package]]

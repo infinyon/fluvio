@@ -1,0 +1,33 @@
+---
+num_samples: 5
+num_batches_per_sample: 10
+seconds_between_batches: 5
+worker_timeout_seconds: 10
+num_records_per_producer_worker_per_batch:
+  - 1000
+producer_batch_size:
+  - 16000
+  - 32000
+producer_queue_size:
+  - 100
+producer_linger_millis:
+  - 0
+  - 10
+producer_server_timeout_millis:
+  - 5000
+producer_compression:
+  - none
+  - gzip
+record_key_allocation_strategy:
+  - NoKey
+consumer_max_bytes:
+  - 64000
+num_concurrent_producer_workers:
+  - 1
+num_concurrent_consumers_per_partition:
+  - 1
+num_partitions:
+  - 1
+record_size_strategy:
+  - Fixed: 1000
+

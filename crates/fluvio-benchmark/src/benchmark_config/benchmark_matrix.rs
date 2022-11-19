@@ -6,6 +6,8 @@ use tracing::info;
 use crate::benchmark_config::benchmark_settings::generate_new_topic_name;
 
 use super::benchmark_settings::BenchmarkSettings;
+/// Key used by AllShareSameKey
+pub const SHARED_KEY: &'static str = "SHARED_KEY";
 
 /// A BenchmarkMatrix contains a collection of settings and dimensions.
 /// Iterating over a BenchmarkMatrix produces a BenchmarkSettings for every possible combination of values in the matrix.
@@ -14,13 +16,13 @@ pub struct BenchmarkMatrix {
     /// Each sample is a collection of batches that all run on the same topic.
     pub num_samples: u64,
     pub num_batches_per_sample: u64,
-    pub duration_between_batches: Duration,
-    pub worker_timeout: Duration,
+    pub seconds_between_batches: u64,
+    pub worker_timeout_seconds: u64,
     pub num_records_per_producer_worker_per_batch: Vec<u64>,
     pub producer_batch_size: Vec<u64>,
     pub producer_queue_size: Vec<u64>,
-    pub producer_linger: Vec<Duration>,
-    pub producer_server_timeout: Vec<Duration>,
+    pub producer_linger_millis: Vec<u64>,
+    pub producer_server_timeout_millis: Vec<u64>,
     pub producer_compression: Vec<Compression>,
     pub record_key_allocation_strategy: Vec<RecordKeyAllocationStrategy>,
     // TODO
@@ -59,8 +61,16 @@ impl BenchmarkMatrix {
         {
             for producer_batch_size in self.producer_batch_size.iter() {
                 for producer_queue_size in self.producer_queue_size.iter() {
-                    for producer_linger in self.producer_linger.iter() {
-                        for producer_server_timeout in self.producer_server_timeout.iter() {
+                    for producer_linger in self
+                        .producer_linger_millis
+                        .iter()
+                        .map(|i| Duration::from_millis(*i))
+                    {
+                        for producer_server_timeout in self
+                            .producer_server_timeout_millis
+                            .iter()
+                            .map(|i| Duration::from_millis(*i))
+                        {
                             for producer_compression in self.producer_compression.iter() {
                                 for record_key_allocation_strategy in
                                     self.record_key_allocation_strategy.iter()
@@ -79,18 +89,15 @@ impl BenchmarkMatrix {
                                                         settings.push(BenchmarkSettings {
                                                     topic_name:generate_new_topic_name(),
                                                     num_samples: self.num_samples,
-                                                    num_batches_per_sample: self
-                                                        .num_batches_per_sample,
-                                                    duration_between_batches: self
-                                                        .duration_between_batches,
-                                                    worker_timeout: self.worker_timeout,
+                                                    num_batches_per_sample: self.num_batches_per_sample,
+                                                    duration_between_batches: Duration::from_secs(self.seconds_between_batches),
+                                                    worker_timeout: Duration::from_secs(self.worker_timeout_seconds),
                                                     num_records_per_producer_worker_per_batch:
                                                         *num_records_per_producer_worker_per_batch,
                                                     producer_batch_size: *producer_batch_size,
                                                     producer_queue_size: *producer_queue_size,
-                                                    producer_linger: *producer_linger,
-                                                    producer_server_timeout:
-                                                        *producer_server_timeout,
+                                                    producer_linger,
+                                                    producer_server_timeout,
                                                     producer_compression: *producer_compression,
                                                     record_key_allocation_strategy: *record_key_allocation_strategy,
                                                     consumer_max_bytes: *consumer_max_bytes,
@@ -138,5 +145,41 @@ pub enum RecordKeyAllocationStrategy {
 
     RandomKey,
 }
-/// Key used by AllShareSameKey
-pub const SHARED_KEY: &'static str = "SHARED_KEY";
+
+#[cfg(test)]
+mod tests {
+    use std::{path::Path, fs::File};
+
+    use super::BenchmarkMatrix;
+
+    fn test_config(path: &Path) -> bool {
+        let file = File::open(path).expect("Unable to open file");
+        match serde_yaml::from_reader::<_, BenchmarkMatrix>(file) {
+            Ok(_) => true,
+            Err(e) => {
+                println!("failed to parse configuration at {}: {}", path.display(), e);
+                false
+            }
+        }
+    }
+
+    #[test]
+    fn load_configs() {
+        // make sure all the configs in benches can be parsed correctly
+        let mut success = true;
+        for file in walkdir::WalkDir::new("benches")
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter_map(|e| {
+                if e.path().extension().is_some() {
+                    Some(e)
+                } else {
+                    None
+                }
+            })
+        {
+            success = success && test_config(file.path());
+        }
+        assert!(success, "one or more configuration files failed to parse");
+    }
+}

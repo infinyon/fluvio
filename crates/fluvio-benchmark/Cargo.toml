@@ -9,8 +9,10 @@ edition = "2021"
 fluvio = { path = "../fluvio" }
 
 async-std = "1.12.0"
+clap = { version = "4.0.9", features = ["derive"] }
 criterion = { version = "0.4.0", features = ["async", "async_std"] }
 rand = "0.8.5"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_yaml = "0.8"
 tracing = "0.1.19"
+walkdir = "2.3.2"
