@@ -21,7 +21,7 @@ pub struct BenchmarkMatrix {
     pub matrix_name: String,
     pub num_samples: u64,
     pub num_batches_per_sample: u64,
-    pub seconds_between_batches: u64,
+    pub millis_between_batches: u64,
     pub worker_timeout_seconds: u64,
     pub num_records_per_producer_worker_per_batch: Vec<u64>,
     pub producer_batch_size: Vec<u64>,
@@ -100,7 +100,7 @@ impl BenchmarkMatrix {
                                                     topic_name:generate_new_topic_name(),
                                                     num_samples: self.num_samples,
                                                     num_batches_per_sample: self.num_batches_per_sample,
-                                                    duration_between_batches: Duration::from_secs(self.seconds_between_batches),
+                                                    duration_between_batches: Duration::from_millis(self.millis_between_batches),
                                                     worker_timeout: Duration::from_secs(self.worker_timeout_seconds),
                                                     num_records_per_producer_worker_per_batch:
                                                         *num_records_per_producer_worker_per_batch,

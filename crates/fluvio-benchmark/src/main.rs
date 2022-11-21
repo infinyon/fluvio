@@ -44,7 +44,7 @@ fn print_example_config() {
     let example_config = BenchmarkMatrix {
         num_samples: 5,
         num_batches_per_sample: 10,
-        seconds_between_batches: 5,
+        millis_between_batches: 5,
         worker_timeout_seconds: 10,
         num_records_per_producer_worker_per_batch: vec![1000],
         producer_batch_size: vec![16000, 32000],

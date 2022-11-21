@@ -95,6 +95,13 @@ impl BenchmarkDriver {
             debug!("Cleaning up batch");
             send_control_message(&mut tx_controls, ControlMessage::CleanupBatch).await?;
             expect_success(&mut rx_success, &settings, num_expected_messages).await?;
+
+            // Wait between batches
+            debug!(
+                "Waiting {:?} between batches",
+                settings.duration_between_batches
+            );
+            async_std::task::sleep(settings.duration_between_batches).await;
         }
         // Close all worker tasks.
         send_control_message(&mut tx_controls, ControlMessage::Exit).await?;
