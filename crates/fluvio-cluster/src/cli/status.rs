@@ -1,9 +1,9 @@
 use clap::Parser;
-
 use fluvio::{Fluvio, FluvioAdmin, ConsumerConfig};
 use fluvio::config::ConfigFile;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::PartitionSpec};
 use fluvio_future::io::StreamExt;
+use tracing::debug;
 
 use crate::{cli::ClusterCliError, cli::ClusterTarget};
 
@@ -16,11 +16,13 @@ impl StatusOpt {
 
         let fluvio = match Fluvio::connect_with_config(&fluvio_config).await {
             Ok(fluvio) => {
-                println!("Cluster Running {}", Self::cluster_location_description()?);
+                println!("Cluster Running {}", Self::cluster_location_descriptor()?);
 
                 fluvio
             }
-            Err(_err) => {
+            Err(err) => {
+                debug!("Error when trying to reach cluster: {}", err);
+
                 println!("none");
 
                 return Ok(());
@@ -37,11 +39,24 @@ impl StatusOpt {
                 }
             }
             Err(e) => {
+                debug!("unable to connect to admin: {}", e);
+
                 return Err(e.into());
             }
         };
 
         Ok(())
+    }
+
+    fn cluster_location_descriptor() -> Result<String, ClusterCliError> {
+        let config = ConfigFile::load_default_or_new()?;
+
+        match config.config().current_profile_name() {
+            Some("local") => Ok("locally".to_string()),
+            // Cloud cluster
+            Some(other) if other.contains("cloud") => Ok("on cloud based k8s".to_string()),
+            _ => Ok("on local k8s".to_string()),
+        }
     }
 
     async fn spus_running(admin: &FluvioAdmin) -> bool {
@@ -56,7 +71,7 @@ impl StatusOpt {
 
     async fn check_spus_for_data(fluvio: &Fluvio, admin: &FluvioAdmin) {
         if !Self::cluster_has_data(fluvio, admin).await {
-            println!("no spus running");
+            println!("spus have no data");
         }
     }
 
@@ -121,16 +136,5 @@ impl StatusOpt {
         }
 
         Ok(None)
-    }
-
-    fn cluster_location_description() -> Result<String, ClusterCliError> {
-        let config = ConfigFile::load_default_or_new()?;
-
-        match config.config().current_profile_name() {
-            Some("local") => Ok("locally".to_string()),
-            // Cloud cluster
-            Some(other) if other.contains("cloud") => Ok("on cloud based k8s".to_string()),
-            _ => Ok("on local k8s".to_string()),
-        }
     }
 }
