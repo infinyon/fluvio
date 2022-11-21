@@ -63,6 +63,7 @@ impl IntoIterator for BenchmarkMatrix {
 impl BenchmarkMatrix {
     // Impl note: This does allocate for all of the benchmark settings at once, however it made for simpler code
     // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it alloates.
+    // TODO split into smaller chunks
     fn generate_settings(&self) -> Vec<BenchmarkSettings> {
         let mut settings = Vec::new();
         for num_records_per_producer_worker_per_batch in

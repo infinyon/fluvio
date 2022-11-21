@@ -51,24 +51,22 @@ impl StatsWorker {
     }
 
     pub async fn collect_send_recv_messages(&mut self) -> Result<(), BenchmarkError> {
-        let number_of_consumed_messages =
-            self.settings.total_number_of_messages_produced_per_batch()
-                * self
-                    .settings
-                    .number_of_expected_times_each_message_consumed();
-        let total_expected_messages = self.settings.total_number_of_messages_produced_per_batch()
-            + number_of_consumed_messages;
-        debug!("Stats listening for {total_expected_messages} messages");
+        let num_produced = self.settings.total_number_of_messages_produced_per_batch();
+        let num_consumed = self.settings.total_number_of_messages_produced_per_batch()
+            * self
+                .settings
+                .number_of_expected_times_each_message_consumed();
+        let total_expected_messages = num_produced + num_consumed;
+        debug!(
+            "Stats listening for {num_produced} sent messages and {num_consumed} received messages"
+        );
         for _ in 0..total_expected_messages {
             match self.receiver.recv().await {
                 Ok(message) => match message {
                     StatsCollectorMessage::MessageSent { hash, send_time } => {
-                        debug!("Record sent");
                         self.current_batch.record_sent(hash, send_time)?;
                     }
-                    StatsCollectorMessage::MessageReceived => {
-                        debug!("Record received");
-                    }
+                    StatsCollectorMessage::MessageReceived => {}
                     StatsCollectorMessage::MessageHash { .. } => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message hash".to_string(),
@@ -82,11 +80,9 @@ impl StatsWorker {
                 }
             }
         }
-        self.tx_stop_consume.send(()).await.or_else(|_| {
-            Err(BenchmarkError::ErrorWithExplanation(
-                "Failed to send".to_string(),
-            ))
-        })
+        debug!("All expected messages sent and received");
+        self.tx_stop_consume.send(()).await?;
+        Ok(())
     }
 
     pub async fn validate(&mut self) -> Result<(), BenchmarkError> {
@@ -113,7 +109,6 @@ impl StatsWorker {
                         recv_time,
                         consumer_id,
                     } => {
-                        debug!("Record received");
                         self.current_batch
                             .record_recv(hash, recv_time, consumer_id)?;
                     }
@@ -132,6 +127,7 @@ impl StatsWorker {
         for value in self.current_batch.collected_records.values() {
             value.validate(expected_num_times_consumed as usize)?;
         }
+        debug!("Batch validated");
         Ok(())
     }
 

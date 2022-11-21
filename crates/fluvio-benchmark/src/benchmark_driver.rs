@@ -25,7 +25,8 @@ impl BenchmarkDriver {
         // Set up producers
         for producer_id in 0..settings.num_concurrent_producer_workers {
             let (tx_control, rx_control) = channel::unbounded();
-            let worker = ProducerWorker::new(producer_id, settings.clone(), tx_stats.clone()).await;
+            let worker =
+                ProducerWorker::new(producer_id, settings.clone(), tx_stats.clone()).await?;
             let jh = async_std::task::spawn(timeout(
                 settings.worker_timeout,
                 ProducerDriver::main_loop(rx_control, tx_success.clone(), worker),
@@ -53,7 +54,7 @@ impl BenchmarkDriver {
                     partition,
                     allocation_hint,
                 )
-                .await;
+                .await?;
                 let jh = async_std::task::spawn(timeout(
                     settings.worker_timeout,
                     ConsumerDriver::main_loop(rx_control, tx_success.clone(), worker),
@@ -95,6 +96,11 @@ impl BenchmarkDriver {
             send_control_message(&mut tx_controls, ControlMessage::CleanupBatch).await?;
             expect_success(&mut rx_success, &settings, num_expected_messages).await?;
         }
+        // Close all worker tasks.
+        send_control_message(&mut tx_controls, ControlMessage::Exit).await?;
+        for jh in workers_jh {
+            timeout(settings.worker_timeout, jh).await???;
+        }
 
         Ok(())
     }
@@ -103,27 +109,16 @@ impl BenchmarkDriver {
             info!("Beginning sample {i}");
             // Create topic for this run
             let new_topic = TopicSpec::new_computed(settings.num_partitions as u32, 1, None);
-            let admin = FluvioAdmin::connect().await.unwrap();
+            let admin = FluvioAdmin::connect().await?;
             admin
                 .create(settings.topic_name.clone(), false, new_topic)
-                .await
-                .or_else(|e| {
-                    Err(BenchmarkError::ErrorWithExplanation(format!(
-                        "Failed to create topic: {:?}",
-                        e
-                    )))
-                })?;
+                .await?;
             debug!("Topic created successfully {}", settings.topic_name);
             let result = BenchmarkDriver::run_sample(settings.clone()).await;
             // Clean up topic
             let _ = admin
                 .delete::<TopicSpec, String>(settings.topic_name.clone())
-                .await
-                .or_else(|_| {
-                    Err(BenchmarkError::ErrorWithExplanation(
-                        "Failed to delete topic".to_string(),
-                    ))
-                })?;
+                .await?;
             debug!("Topic deleted successfully {}", settings.topic_name);
 
             result?;
@@ -137,11 +132,7 @@ async fn send_control_message(
     message: ControlMessage,
 ) -> Result<(), BenchmarkError> {
     for tx_control in tx_control.iter_mut() {
-        tx_control.send(message).await.or_else(|_| {
-            Err(BenchmarkError::ErrorWithExplanation(
-                "Failed to send control message".to_string(),
-            ))
-        })?;
+        tx_control.send(message).await?;
     }
     Ok(())
 }
@@ -152,15 +143,7 @@ async fn expect_success(
     num_expected_messages: usize,
 ) -> Result<(), BenchmarkError> {
     for _ in 0..num_expected_messages {
-        timeout(settings.worker_timeout, rx_success.recv())
-            .await
-            .or_else(|_| Err(BenchmarkError::Timeout))?
-            .or_else(|_| {
-                Err(BenchmarkError::ErrorWithExplanation(
-                    "Failed to recv".to_string(),
-                ))
-            })??;
-        info!("Received success message");
+        timeout(settings.worker_timeout, rx_success.recv()).await???;
     }
     Ok(())
 }
@@ -172,19 +155,16 @@ impl ProducerDriver {
         rx: Receiver<ControlMessage>,
         tx: Sender<Result<(), BenchmarkError>>,
         mut worker: ProducerWorker,
-    ) {
+    ) -> Result<(), BenchmarkError> {
         loop {
-            match rx.recv().await {
-                Ok(control_message) => match control_message {
-                    ControlMessage::PrepareForBatch => {
-                        worker.prepare_for_batch().await;
-                        tx.send(Ok(())).await.unwrap();
-                        debug!("Producer sent success message");
-                    }
-                    ControlMessage::SendBatch => tx.send(worker.send_batch().await).await.unwrap(),
-                    ControlMessage::CleanupBatch => tx.send(Ok(())).await.unwrap(),
-                },
-                Err(_) => return,
+            match rx.recv().await? {
+                ControlMessage::PrepareForBatch => {
+                    worker.prepare_for_batch().await;
+                    tx.send(Ok(())).await?;
+                }
+                ControlMessage::SendBatch => tx.send(worker.send_batch().await).await?,
+                ControlMessage::CleanupBatch => tx.send(Ok(())).await?,
+                ControlMessage::Exit => return Ok(()),
             };
         }
     }
@@ -196,22 +176,13 @@ impl ConsumerDriver {
         rx: Receiver<ControlMessage>,
         tx: Sender<Result<(), BenchmarkError>>,
         mut worker: ConsumerWorker,
-    ) {
+    ) -> Result<(), BenchmarkError> {
         loop {
-            match rx.recv().await {
-                Ok(control_message) => match control_message {
-                    ControlMessage::PrepareForBatch => {
-                        tx.send(Ok(())).await.unwrap();
-                        debug!("Consumer sent success message");
-                    }
-                    ControlMessage::SendBatch => tx.send(worker.consume().await).await.unwrap(),
-
-                    ControlMessage::CleanupBatch => {
-                        worker.send_results().await;
-                        tx.send(Ok(())).await.unwrap()
-                    }
-                },
-                Err(_) => return,
+            match rx.recv().await? {
+                ControlMessage::PrepareForBatch => tx.send(Ok(())).await?,
+                ControlMessage::SendBatch => tx.send(worker.consume().await).await?,
+                ControlMessage::CleanupBatch => tx.send(worker.send_results().await).await?,
+                ControlMessage::Exit => return Ok(()),
             };
         }
     }
@@ -223,25 +194,21 @@ impl StatsDriver {
         rx: Receiver<ControlMessage>,
         tx: Sender<Result<(), BenchmarkError>>,
         mut worker: StatsWorker,
-    ) {
+    ) -> Result<(), BenchmarkError> {
         loop {
-            match rx.recv().await {
-                Ok(control_message) => match control_message {
-                    ControlMessage::PrepareForBatch => {
-                        tx.send(Ok(())).await.unwrap();
-                        debug!("Stats driver sent success message");
-                    }
-                    ControlMessage::SendBatch => tx
-                        .send(worker.collect_send_recv_messages().await)
-                        .await
-                        .unwrap(),
-                    ControlMessage::CleanupBatch => {
-                        let results = worker.validate().await;
-                        worker.new_batch();
-                        tx.send(results).await.unwrap()
-                    }
-                },
-                Err(_) => return,
+            match rx.recv().await? {
+                ControlMessage::PrepareForBatch => {
+                    tx.send(Ok(())).await?;
+                }
+                ControlMessage::SendBatch => {
+                    tx.send(worker.collect_send_recv_messages().await).await?
+                }
+                ControlMessage::CleanupBatch => {
+                    let results = worker.validate().await;
+                    worker.new_batch();
+                    tx.send(results).await?;
+                }
+                ControlMessage::Exit => return Ok(()),
             };
         }
     }
@@ -252,4 +219,5 @@ enum ControlMessage {
     PrepareForBatch,
     SendBatch,
     CleanupBatch,
+    Exit,
 }

@@ -1,9 +1,10 @@
-use std::{
-    hash::{Hasher, Hash},
-    sync::Arc,
-};
+use std::hash::{Hasher, Hash};
 
-use fluvio::RecordKey;
+use async_std::{
+    channel::{SendError, RecvError},
+    future::TimeoutError,
+};
+use fluvio::{RecordKey, FluvioError};
 use rand::{distributions::Alphanumeric, Rng};
 use std::collections::hash_map::DefaultHasher;
 
@@ -36,12 +37,33 @@ pub fn hash_record(data: &str) -> u64 {
 #[derive(Debug, Clone)]
 pub enum BenchmarkError {
     ErrorWithExplanation(String),
-    WrappedErr(Arc<dyn std::fmt::Debug + Sync + Send>),
     Timeout,
+    /// Failed to Send or Recv from a channel
+    ChannelSendRecv,
+    FluvioError(String),
 }
-impl BenchmarkError {
-    pub fn wrap_err(e: impl std::fmt::Debug + Sync + Send + 'static) -> BenchmarkError {
-        BenchmarkError::WrappedErr(Arc::new(e))
+
+impl<T> From<SendError<T>> for BenchmarkError {
+    fn from(_: SendError<T>) -> Self {
+        BenchmarkError::ChannelSendRecv
+    }
+}
+
+impl From<RecvError> for BenchmarkError {
+    fn from(_: RecvError) -> Self {
+        BenchmarkError::ChannelSendRecv
+    }
+}
+
+impl From<TimeoutError> for BenchmarkError {
+    fn from(_: TimeoutError) -> Self {
+        BenchmarkError::Timeout
+    }
+}
+
+impl From<FluvioError> for BenchmarkError {
+    fn from(e: FluvioError) -> Self {
+        BenchmarkError::FluvioError(format!("fluvio error {:?}", e))
     }
 }
 

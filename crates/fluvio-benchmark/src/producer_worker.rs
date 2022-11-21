@@ -25,8 +25,8 @@ impl ProducerWorker {
         producer_id: u64,
         settings: BenchmarkSettings,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
-    ) -> Self {
-        let fluvio = Fluvio::connect().await.unwrap();
+    ) -> Result<Self, BenchmarkError> {
+        let fluvio = Fluvio::connect().await?;
 
         let config = TopicProducerConfigBuilder::default()
             .batch_size(settings.producer_batch_size as usize)
@@ -38,18 +38,19 @@ impl ProducerWorker {
             // todo producer isolation
             // todo producer delivery_semantic
             .build()
-            .unwrap();
+            .map_err(|e| {
+                BenchmarkError::FluvioError(format!("Fluvio topic config error: {:?}", e))
+            })?;
         let fluvio_producer = fluvio
             .topic_producer_with_config(settings.topic_name.clone(), config)
-            .await
-            .unwrap();
-        ProducerWorker {
+            .await?;
+        Ok(ProducerWorker {
             fluvio_producer,
             records_to_send: None,
             settings,
             producer_id,
             tx_to_stats_collector,
-        }
+        })
     }
     pub async fn prepare_for_batch(&mut self) {
         let records = (0..self.settings.num_records_per_producer_worker_per_batch)
@@ -89,17 +90,10 @@ impl ProducerWorker {
                     hash: record.hash,
                     send_time: Instant::now(),
                 })
-                .await
-                .map_err(|_| {
-                    BenchmarkError::ErrorWithExplanation("Tx to stats_collector closed".to_string())
-                })?;
+                .await?;
 
-            self.fluvio_producer
-                .send(record.key, record.data)
-                .await
-                .map_err(BenchmarkError::wrap_err)?;
+            self.fluvio_producer.send(record.key, record.data).await?;
         }
-        debug!("All messages sent");
         Ok(())
     }
 }

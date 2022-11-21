@@ -29,28 +29,25 @@ impl ConsumerWorker {
         rx_stop: Receiver<()>,
         assigned_partition: u64,
         preallocation_hint: u64,
-    ) -> Self {
+    ) -> Result<Self, BenchmarkError> {
         let mut config_builder = ConsumerConfigBuilder::default();
         config_builder.max_bytes(settings.consumer_max_bytes as i32);
 
-        let config = config_builder.build().unwrap();
+        let config = config_builder.build()?;
 
         let fluvio_consumer =
-            fluvio::consumer(settings.topic_name.clone(), assigned_partition as u32)
-                .await
-                .unwrap();
+            fluvio::consumer(settings.topic_name.clone(), assigned_partition as u32).await?;
         let stream = fluvio_consumer
-            .stream_with_config(Offset::absolute(0).unwrap(), config)
-            .await
-            .unwrap();
+            .stream_with_config(Offset::absolute(0)?, config)
+            .await?;
 
-        Self {
+        Ok(Self {
             consumer_id,
             tx_to_stats_collector,
             stream: Box::pin(stream),
             received: Vec::with_capacity(preallocation_hint as usize),
             rx_stop,
-        }
+        })
     }
 
     pub async fn consume(&mut self) -> Result<(), BenchmarkError> {
@@ -62,12 +59,7 @@ impl ConsumerWorker {
                         self.received.push((record, Instant::now()));
                         self.tx_to_stats_collector
                             .send(StatsCollectorMessage::MessageReceived)
-                            .await
-                            .or_else(|_| {
-                                Err(BenchmarkError::ErrorWithExplanation(
-                                    "Failed to send".to_string(),
-                                ))
-                            })?;
+                            .await?;
                     } else {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Consumer unable to get record from fluvio".to_string(),
@@ -84,7 +76,7 @@ impl ConsumerWorker {
         }
     }
 
-    pub async fn send_results(&mut self) {
+    pub async fn send_results(&mut self) -> Result<(), BenchmarkError> {
         for (record, recv_time) in self.received.iter() {
             let data = String::from_utf8_lossy(record.value());
             self.tx_to_stats_collector
@@ -93,8 +85,8 @@ impl ConsumerWorker {
                     recv_time: *recv_time,
                     consumer_id: self.consumer_id,
                 })
-                .await
-                .unwrap();
+                .await?;
         }
+        Ok(())
     }
 }
