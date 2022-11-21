@@ -37,6 +37,7 @@ pub fn hash_record(data: &str) -> u64 {
 pub enum BenchmarkError {
     ErrorWithExplanation(String),
     WrappedErr(Arc<dyn std::fmt::Debug + Sync + Send>),
+    Timeout,
 }
 impl BenchmarkError {
     pub fn wrap_err(e: impl std::fmt::Debug + Sync + Send + 'static) -> BenchmarkError {
@@ -51,6 +52,3 @@ fn generate_random_string(size: usize) -> String {
         .map(char::from)
         .collect()
 }
-
-
-

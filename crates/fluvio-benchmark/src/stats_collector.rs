@@ -1,5 +1,6 @@
 use std::{time::Instant, collections::HashMap};
-use async_std::channel::Receiver;
+use async_std::channel::{Receiver, Sender};
+use log::debug;
 
 use crate::{BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings};
 
@@ -28,37 +29,91 @@ impl BatchStats {
     }
 }
 
-pub struct StatsCollector {
+pub struct StatsWorker {
     receiver: Receiver<StatsCollectorMessage>,
     current_batch: BatchStats,
     settings: BenchmarkSettings,
+    tx_stop_consume: Sender<()>,
 }
 
-impl StatsCollector {
-    pub fn new(receiver: Receiver<StatsCollectorMessage>, settings: BenchmarkSettings) -> Self {
+impl StatsWorker {
+    pub fn new(
+        tx_stop_consume: Sender<()>,
+        receiver: Receiver<StatsCollectorMessage>,
+        settings: BenchmarkSettings,
+    ) -> Self {
         Self {
             receiver,
             current_batch: BatchStats::default(),
             settings,
+            tx_stop_consume,
         }
     }
 
-    pub async fn collect_stats(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn collect_send_recv_messages(&mut self) -> Result<(), BenchmarkError> {
+        let number_of_consumed_messages =
+            self.settings.total_number_of_messages_produced_per_batch()
+                * self
+                    .settings
+                    .number_of_expected_times_each_message_consumed();
         let total_expected_messages = self.settings.total_number_of_messages_produced_per_batch()
-            * (1 + self // Plus one is for the produce message
-                .settings
-                .number_of_expected_times_each_message_consumed());
+            + number_of_consumed_messages;
+        debug!("Stats listening for {total_expected_messages} messages");
         for _ in 0..total_expected_messages {
             match self.receiver.recv().await {
                 Ok(message) => match message {
                     StatsCollectorMessage::MessageSent { hash, send_time } => {
+                        debug!("Record sent");
                         self.current_batch.record_sent(hash, send_time)?;
                     }
-                    StatsCollectorMessage::MessageReceived {
+                    StatsCollectorMessage::MessageReceived => {
+                        debug!("Record received");
+                    }
+                    StatsCollectorMessage::MessageHash { .. } => {
+                        return Err(BenchmarkError::ErrorWithExplanation(
+                            "Received unexpected message hash".to_string(),
+                        ));
+                    }
+                },
+                Err(_) => {
+                    return Err(BenchmarkError::ErrorWithExplanation(
+                        "StatsCollectorChannelClosed".to_string(),
+                    ))
+                }
+            }
+        }
+        self.tx_stop_consume.send(()).await.or_else(|_| {
+            Err(BenchmarkError::ErrorWithExplanation(
+                "Failed to send".to_string(),
+            ))
+        })
+    }
+
+    pub async fn validate(&mut self) -> Result<(), BenchmarkError> {
+        let number_of_consumed_messages =
+            self.settings.total_number_of_messages_produced_per_batch()
+                * self
+                    .settings
+                    .number_of_expected_times_each_message_consumed();
+        for _ in 0..number_of_consumed_messages {
+            match self.receiver.recv().await {
+                Ok(message) => match message {
+                    StatsCollectorMessage::MessageSent { .. } => {
+                        return Err(BenchmarkError::ErrorWithExplanation(
+                            "Received unexpected message sent".to_string(),
+                        ));
+                    }
+                    StatsCollectorMessage::MessageReceived => {
+                        return Err(BenchmarkError::ErrorWithExplanation(
+                            "Received unexpected message received".to_string(),
+                        ));
+                    }
+                    StatsCollectorMessage::MessageHash {
                         hash,
                         recv_time,
                         consumer_id,
                     } => {
+                        debug!("Record received");
                         self.current_batch
                             .record_recv(hash, recv_time, consumer_id)?;
                     }
@@ -71,10 +126,6 @@ impl StatsCollector {
             }
         }
 
-        Ok(())
-    }
-
-    pub fn validate(&mut self) -> Result<(), BenchmarkError> {
         let expected_num_times_consumed = self
             .settings
             .number_of_expected_times_each_message_consumed();
@@ -95,8 +146,9 @@ pub enum StatsCollectorMessage {
         hash: u64,
         send_time: Instant,
     },
+    MessageReceived,
 
-    MessageReceived {
+    MessageHash {
         hash: u64,
         recv_time: Instant,
         consumer_id: u64,

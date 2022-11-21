@@ -2172,12 +2172,13 @@ dependencies = [
  "async-std",
  "clap 4.0.22",
  "criterion",
+ "env_logger",
  "fluvio",
+ "log",
  "pad",
  "rand 0.8.5",
  "serde",
  "serde_yaml 0.8.26",
- "tracing",
  "walkdir",
 ]
 

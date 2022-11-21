@@ -1,11 +1,11 @@
 ---
 matrix_name: Single Producer and Consumer
 num_samples: 5
-num_batches_per_sample: 10
+num_batches_per_sample: 1
 seconds_between_batches: 5
 worker_timeout_seconds: 10
 num_records_per_producer_worker_per_batch:
-  - 1000
+  - 1
 producer_batch_size:
   - 16000
 producer_queue_size:

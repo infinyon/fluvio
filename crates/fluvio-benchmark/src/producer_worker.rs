@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use async_std::channel::Sender;
 use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
+use log::debug;
 
 use crate::{
     benchmark_config::{
@@ -76,31 +77,29 @@ impl ProducerWorker {
     }
 
     pub async fn send_batch(&mut self) -> Result<(), BenchmarkError> {
-        Ok(
-            for record in
-                self.records_to_send
-                    .take()
-                    .ok_or(BenchmarkError::ErrorWithExplanation(
-                        "prepare_for_batch() not called on PrdoucerWorker".to_string(),
-                    ))?
-            {
-                self.tx_to_stats_collector
-                    .send(StatsCollectorMessage::MessageSent {
-                        hash: record.hash,
-                        send_time: Instant::now(),
-                    })
-                    .await
-                    .map_err(|_| {
-                        BenchmarkError::ErrorWithExplanation(
-                            "Tx to stats_collector closed".to_string(),
-                        )
-                    })?;
+        for record in self
+            .records_to_send
+            .take()
+            .ok_or(BenchmarkError::ErrorWithExplanation(
+                "prepare_for_batch() not called on PrdoucerWorker".to_string(),
+            ))?
+        {
+            self.tx_to_stats_collector
+                .send(StatsCollectorMessage::MessageSent {
+                    hash: record.hash,
+                    send_time: Instant::now(),
+                })
+                .await
+                .map_err(|_| {
+                    BenchmarkError::ErrorWithExplanation("Tx to stats_collector closed".to_string())
+                })?;
 
-                self.fluvio_producer
-                    .send(record.key, record.data)
-                    .await
-                    .map_err(BenchmarkError::wrap_err)?;
-            },
-        )
+            self.fluvio_producer
+                .send(record.key, record.data)
+                .await
+                .map_err(BenchmarkError::wrap_err)?;
+        }
+        debug!("All messages sent");
+        Ok(())
     }
 }

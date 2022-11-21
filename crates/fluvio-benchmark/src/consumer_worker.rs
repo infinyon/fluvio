@@ -16,8 +16,9 @@ use crate::{
 pub struct ConsumerWorker {
     consumer_id: u64,
     tx_to_stats_collector: Sender<StatsCollectorMessage>,
-    stream: Pin<Box<dyn Stream<Item = Result<ConsumerRecord, ErrorCode>>>>,
+    stream: Pin<Box<dyn Stream<Item = Result<ConsumerRecord, ErrorCode>> + Send>>,
     received: Vec<(ConsumerRecord, Instant)>,
+    rx_stop: Receiver<()>,
 }
 
 impl ConsumerWorker {
@@ -25,6 +26,7 @@ impl ConsumerWorker {
         settings: BenchmarkSettings,
         consumer_id: u64,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
+        rx_stop: Receiver<()>,
         assigned_partition: u64,
         preallocation_hint: u64,
     ) -> Self {
@@ -47,16 +49,25 @@ impl ConsumerWorker {
             tx_to_stats_collector,
             stream: Box::pin(stream),
             received: Vec::with_capacity(preallocation_hint as usize),
+            rx_stop,
         }
     }
 
-    pub async fn consume(&mut self, stop_rx: Receiver<()>) -> Result<(), BenchmarkError> {
+    pub async fn consume(&mut self) -> Result<(), BenchmarkError> {
         self.received.clear();
         loop {
             match self.stream.next().timeout(Duration::from_millis(20)).await {
                 Ok(record_opt) => {
                     if let Some(Ok(record)) = record_opt {
                         self.received.push((record, Instant::now()));
+                        self.tx_to_stats_collector
+                            .send(StatsCollectorMessage::MessageReceived)
+                            .await
+                            .or_else(|_| {
+                                Err(BenchmarkError::ErrorWithExplanation(
+                                    "Failed to send".to_string(),
+                                ))
+                            })?;
                     } else {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Consumer unable to get record from fluvio".to_string(),
@@ -65,7 +76,7 @@ impl ConsumerWorker {
                 }
                 // timeout
                 Err(_) => {
-                    if let Ok(_) = stop_rx.try_recv() {
+                    if let Ok(_) = self.rx_stop.try_recv() {
                         return Ok(());
                     }
                 }
@@ -77,7 +88,7 @@ impl ConsumerWorker {
         for (record, recv_time) in self.received.iter() {
             let data = String::from_utf8_lossy(record.value());
             self.tx_to_stats_collector
-                .send(StatsCollectorMessage::MessageReceived {
+                .send(StatsCollectorMessage::MessageHash {
                     hash: hash_record(&data),
                     recv_time: *recv_time,
                     consumer_id: self.consumer_id,

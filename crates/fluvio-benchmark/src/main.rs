@@ -10,6 +10,7 @@ use fluvio_benchmark::{
 use pad::PadStr;
 
 fn main() {
+    env_logger::init();
     let args = Args::parse();
 
     if args.example_config {
@@ -17,11 +18,13 @@ fn main() {
         return;
     }
 
+    // TODO accept directory of files.
     let matrices = match Args::parse().config {
         Some(path) => get_config_from_file(&path),
         None => get_default_config(),
     };
 
+    // TODO output markdown?
     for matrix in matrices {
         print_divider();
         println!("# Beginning Matrix for: {}", matrix.matrix_name);
@@ -30,7 +33,7 @@ fn main() {
         for settings in matrix.into_iter() {
             println!("Beginning a new benchmark");
             println!("Settings for this Benchmark:\n{:#?}", settings);
-            async_std::task::block_on(BenchmarkDriver::run_benchmark(settings));
+            async_std::task::block_on(BenchmarkDriver::run_benchmark(settings)).unwrap();
             print_divider();
             println!()
         }

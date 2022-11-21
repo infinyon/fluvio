@@ -1,7 +1,7 @@
 use std::time::Duration;
 use fluvio::Compression;
+use log::info;
 use serde::{Deserialize, Serialize};
-use tracing::info;
 use std::fs::File;
 
 use crate::benchmark_config::benchmark_settings::generate_new_topic_name;
@@ -129,7 +129,7 @@ impl BenchmarkMatrix {
                 }
             }
         }
-        info!("Iterating over {} test settings", settings.len());
+        info!("Iterating over {} test setting(s)", settings.len());
         settings
     }
 }
