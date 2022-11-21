@@ -2174,6 +2174,7 @@ dependencies = [
  "criterion",
  "env_logger",
  "fluvio",
+ "hdrhistogram",
  "log",
  "pad",
  "rand 0.8.5",

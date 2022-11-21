@@ -14,6 +14,7 @@ pub mod benchmark_config;
 pub mod producer_worker;
 pub mod stats_collector;
 pub mod benchmark_driver;
+pub mod stats;
 
 pub struct BenchmarkRecord {
     pub key: RecordKey,

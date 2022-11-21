@@ -1,8 +1,13 @@
-use std::{time::Instant, collections::HashMap};
+use std::{
+    time::{Instant, Duration},
+    collections::HashMap,
+};
 use async_std::channel::{Receiver, Sender};
 use log::debug;
 
-use crate::{BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings};
+use crate::{
+    BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings, stats::compute_stats,
+};
 
 pub struct SampleStats {}
 
@@ -13,9 +18,14 @@ pub struct BatchStats {
     collected_records: HashMap<u64, RecordMetadata>,
 }
 impl BatchStats {
-    pub fn record_sent(&mut self, hash: u64, send_time: Instant) -> Result<(), BenchmarkError> {
+    pub fn record_sent(
+        &mut self,
+        hash: u64,
+        send_time: Instant,
+        num_bytes: u64,
+    ) -> Result<(), BenchmarkError> {
         let val = self.collected_records.entry(hash).or_default();
-        val.mark_send_time(send_time)
+        val.mark_send_time(send_time, num_bytes)
     }
 
     pub fn record_recv(
@@ -27,18 +37,22 @@ impl BatchStats {
         let val = self.collected_records.entry(hash).or_default();
         val.mark_recv_time(recv_time, consumer_id)
     }
+
+    pub fn iter<'a>(&'a self) -> std::collections::hash_map::Values<'a, u64, RecordMetadata> {
+        self.collected_records.values()
+    }
 }
 
 pub struct StatsWorker {
     receiver: Receiver<StatsCollectorMessage>,
     current_batch: BatchStats,
     settings: BenchmarkSettings,
-    tx_stop_consume: Sender<()>,
+    tx_stop_consume: Vec<Sender<()>>,
 }
 
 impl StatsWorker {
     pub fn new(
-        tx_stop_consume: Sender<()>,
+        tx_stop_consume: Vec<Sender<()>>,
         receiver: Receiver<StatsCollectorMessage>,
         settings: BenchmarkSettings,
     ) -> Self {
@@ -63,8 +77,12 @@ impl StatsWorker {
         for _ in 0..total_expected_messages {
             match self.receiver.recv().await {
                 Ok(message) => match message {
-                    StatsCollectorMessage::MessageSent { hash, send_time } => {
-                        self.current_batch.record_sent(hash, send_time)?;
+                    StatsCollectorMessage::MessageSent {
+                        hash,
+                        send_time,
+                        num_bytes,
+                    } => {
+                        self.current_batch.record_sent(hash, send_time, num_bytes)?;
                     }
                     StatsCollectorMessage::MessageReceived => {}
                     StatsCollectorMessage::MessageHash { .. } => {
@@ -81,7 +99,9 @@ impl StatsWorker {
             }
         }
         debug!("All expected messages sent and received");
-        self.tx_stop_consume.send(()).await?;
+        for tx in self.tx_stop_consume.iter() {
+            tx.send(()).await?;
+        }
         Ok(())
     }
 
@@ -128,6 +148,8 @@ impl StatsWorker {
             value.validate(expected_num_times_consumed as usize)?;
         }
         debug!("Batch validated");
+
+        compute_stats(&self.current_batch);
         Ok(())
     }
 
@@ -141,6 +163,7 @@ pub enum StatsCollectorMessage {
     MessageSent {
         hash: u64,
         send_time: Instant,
+        num_bytes: u64,
     },
     MessageReceived,
 
@@ -153,18 +176,24 @@ pub enum StatsCollectorMessage {
 
 #[derive(Default)]
 pub struct RecordMetadata {
-    send_time: Option<Instant>,
-    first_received_time: Option<Instant>,
-    last_received_time: Option<Instant>,
+    pub num_bytes: Option<u64>,
+    pub send_time: Option<Instant>,
+    pub first_received_time: Option<Instant>,
+    pub last_received_time: Option<Instant>,
     receivers_list: Vec<u64>,
 }
 impl RecordMetadata {
-    pub fn mark_send_time(&mut self, send_time: Instant) -> Result<(), BenchmarkError> {
+    pub fn mark_send_time(
+        &mut self,
+        send_time: Instant,
+        num_bytes: u64,
+    ) -> Result<(), BenchmarkError> {
         if self.send_time.is_some() {
             Err(BenchmarkError::ErrorWithExplanation(
                 "Message already marked as sent".to_string(),
             ))
         } else {
+            self.num_bytes = Some(num_bytes);
             self.send_time = Some(send_time);
             Ok(())
         }
@@ -215,5 +244,12 @@ impl RecordMetadata {
         } else {
             Ok(())
         }
+    }
+    pub fn first_recv_latency(&self) -> Duration {
+        self.first_received_time.expect("Invalid record") - self.send_time.expect("Invalid record")
+    }
+
+    pub fn last_recv_latency(&self) -> Duration {
+        self.last_received_time.expect("Invalid record") - self.send_time.expect("Invalid record")
     }
 }

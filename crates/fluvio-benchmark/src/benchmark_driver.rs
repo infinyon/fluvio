@@ -38,10 +38,12 @@ impl BenchmarkDriver {
 
         // Set up consumers
         // Drivers tell consumers when they can stop trying to consume
-        let (tx_stop, rx_stop) = channel::unbounded();
+        let mut tx_stop = Vec::new();
         for partition in 0..settings.num_partitions {
             for consumer_number in 0..settings.num_concurrent_consumers_per_partition {
                 let (tx_control, rx_control) = channel::unbounded();
+                let (tx, rx_stop) = channel::unbounded();
+                tx_stop.push(tx);
                 let consumer_id = partition * 10000000 + consumer_number;
                 let allocation_hint = settings.num_records_per_producer_worker_per_batch
                     * settings.num_concurrent_producer_workers

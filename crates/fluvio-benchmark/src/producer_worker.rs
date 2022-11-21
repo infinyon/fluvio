@@ -88,6 +88,7 @@ impl ProducerWorker {
                 .send(StatsCollectorMessage::MessageSent {
                     hash: record.hash,
                     send_time: Instant::now(),
+                    num_bytes: record.data.len() as u64,
                 })
                 .await?;
 

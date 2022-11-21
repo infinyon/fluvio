@@ -12,6 +12,7 @@ async-std = "1.12.0"
 clap = { version = "4.0.9", features = ["derive"] }
 criterion = { version = "0.4.0", features = ["async", "async_std"] }
 env_logger = "0.9.3"
+hdrhistogram = "7.5.2"
 log = "0.4.17"
 pad = "0.1.6"
 rand = "0.8.5"
