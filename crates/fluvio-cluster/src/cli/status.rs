@@ -5,7 +5,7 @@ use fluvio::config::ConfigFile;
 use fluvio_future::io::StreamExt;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::PartitionSpec};
 
-use fluvio::{Fluvio, FluvioConfig, FluvioAdmin};
+use fluvio::{Fluvio, FluvioConfig, FluvioAdmin, ConsumerConfig};
 
 #[derive(Debug, Parser)]
 pub struct StatusOpt {}
@@ -17,11 +17,13 @@ impl StatusOpt {
 
         match fluvio {
             Ok(_fluvio) => {
-                println!("SC Running {}", Self::cluster_location_description());
-            },
-            Err(err) => {
+                println!("Cluster Running {}", Self::cluster_location_description());
+            }
+            Err(_err) => {
                 println!("none");
-                return Err(ClusterCliError::from(err));
+
+                // suppress error in this case?
+                return Ok(()) // Err(ClusterCliError::from(err));
             }
         }
 
@@ -106,7 +108,15 @@ impl StatusOpt {
         let fluvio = Fluvio::connect_with_config(fluvio_config).await.unwrap();
         let consumer = fluvio.partition_consumer(topic, partition).await.unwrap();
 
-        let mut stream = consumer.stream(fluvio::Offset::from_end(1)).await.unwrap();
+        let consumer_config = ConsumerConfig::builder()
+            .disable_continuous(true)
+            .build()
+            .unwrap();
+
+        let mut stream = consumer
+            .stream_with_config(fluvio::Offset::from_end(1), consumer_config)
+            .await
+            .unwrap();
 
         if let Some(Ok(record)) = stream.next().await {
             let string = String::from_utf8_lossy(record.value());
