@@ -1,11 +1,11 @@
 use clap::Parser;
-use crate::{cli::ClusterCliError};
-use crate::cli::ClusterTarget;
-use fluvio::config::ConfigFile;
-use fluvio_future::io::StreamExt;
-use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::PartitionSpec};
 
 use fluvio::{Fluvio, FluvioAdmin, ConsumerConfig};
+use fluvio::config::ConfigFile;
+use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::PartitionSpec};
+use fluvio_future::io::StreamExt;
+
+use crate::{cli::ClusterCliError, cli::ClusterTarget};
 
 #[derive(Debug, Parser)]
 pub struct StatusOpt {}
