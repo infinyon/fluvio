@@ -5,7 +5,7 @@ use fluvio::config::ConfigFile;
 use fluvio_future::io::StreamExt;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::PartitionSpec};
 
-use fluvio::{Fluvio, FluvioConfig, FluvioAdmin, ConsumerConfig};
+use fluvio::{Fluvio, FluvioAdmin, ConsumerConfig};
 
 #[derive(Debug, Parser)]
 pub struct StatusOpt {}
@@ -13,40 +13,33 @@ pub struct StatusOpt {}
 impl StatusOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
         let fluvio_config = target.load()?;
-        let fluvio = Fluvio::connect_with_config(&fluvio_config).await;
 
-        match fluvio {
-            Ok(_fluvio) => {
+        let fluvio = match Fluvio::connect_with_config(&fluvio_config).await {
+            Ok(fluvio) => {
                 println!("Cluster Running {}", Self::cluster_location_description()?);
+
+                fluvio
             }
             Err(_err) => {
                 println!("none");
 
                 return Ok(());
             }
-        }
-
-        let admin = FluvioAdmin::connect_with_config(&fluvio_config).await;
-        let (spus_running, cluster_has_data) = match admin {
-            Ok(admin) => {
-                if Self::spus_running(&admin).await {
-                    (true, Self::cluster_has_data(&fluvio_config, &admin).await)
-                } else {
-                    (false, false)
-                }
-            }
-            Err(_) => (false, false),
         };
 
-        match (spus_running, cluster_has_data) {
-            (true, true) => (),
-            (true, false) => {
-                println!("spus are empty")
+        let admin = FluvioAdmin::connect_with_config(&fluvio_config).await;
+        match admin {
+            Ok(admin) => {
+                if Self::spus_running(&admin).await {
+                    Self::check_spus_for_data(&fluvio, &admin).await
+                } else {
+                    println!("no spus running");
+                }
             }
-            (false, _) => {
-                println!("no spus running");
+            Err(e) => {
+                return Err(e.into());
             }
-        }
+        };
 
         Ok(())
     }
@@ -61,8 +54,14 @@ impl StatusOpt {
         }
     }
 
+    async fn check_spus_for_data(fluvio: &Fluvio, admin: &FluvioAdmin) {
+        if !Self::cluster_has_data(fluvio, admin).await {
+            println!("no spus running");
+        }
+    }
+
     /// Check if any topic in the cluster has data in any partitions.
-    async fn cluster_has_data(config: &FluvioConfig, admin: &FluvioAdmin) -> bool {
+    async fn cluster_has_data(fluvio: &Fluvio, admin: &FluvioAdmin) -> bool {
         let topics = Self::topics(admin).await;
 
         for topic in topics {
@@ -72,7 +71,7 @@ impl StatusOpt {
             };
 
             for partition in 0..partitions {
-                if let Ok(Some(_record)) = Self::last_record(config, &topic, partition as u32).await
+                if let Ok(Some(_record)) = Self::last_record(fluvio, &topic, partition as u32).await
                 {
                     return true;
                 }
@@ -104,11 +103,10 @@ impl StatusOpt {
 
     /// Get the last record in a given partition of a given topic
     async fn last_record(
-        fluvio_config: &FluvioConfig,
+        fluvio: &Fluvio,
         topic: &str,
         partition: u32,
     ) -> Result<Option<String>, ClusterCliError> {
-        let fluvio = Fluvio::connect_with_config(fluvio_config).await?;
         let consumer = fluvio.partition_consumer(topic, partition).await?;
 
         let consumer_config = ConsumerConfig::builder().disable_continuous(true).build()?;
