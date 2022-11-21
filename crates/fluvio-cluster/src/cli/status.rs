@@ -12,18 +12,17 @@ pub struct StatusOpt {}
 
 impl StatusOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
-        let fluvio_config = target.load().unwrap();
+        let fluvio_config = target.load()?;
         let fluvio = Fluvio::connect_with_config(&fluvio_config).await;
 
         match fluvio {
             Ok(_fluvio) => {
-                println!("Cluster Running {}", Self::cluster_location_description());
+                println!("Cluster Running {}", Self::cluster_location_description()?);
             }
             Err(_err) => {
                 println!("none");
 
-                // suppress error in this case?
-                return Ok(()) // Err(ClusterCliError::from(err));
+                return Ok(());
             }
         }
 
@@ -67,10 +66,14 @@ impl StatusOpt {
         let topics = Self::topics(admin).await;
 
         for topic in topics {
-            let partitions = Self::num_partitions(admin, &topic).await;
+            let partitions = match Self::num_partitions(admin, &topic).await {
+                Ok(partitions) => partitions,
+                Err(_) => return false,
+            };
 
             for partition in 0..partitions {
-                if let Some(_record) = Self::last_record(config, &topic, partition as u32).await {
+                if let Ok(Some(_record)) = Self::last_record(config, &topic, partition as u32).await
+                {
                     return true;
                 }
             }
@@ -91,12 +94,12 @@ impl StatusOpt {
     }
 
     /// Get the number of partiitions for a given topic
-    async fn num_partitions(admin: &FluvioAdmin, topic: &str) -> usize {
+    async fn num_partitions(admin: &FluvioAdmin, topic: &str) -> Result<usize, ClusterCliError> {
         let partitions = admin
             .list::<PartitionSpec, _>(vec![topic.to_string()])
             .await;
 
-        partitions.unwrap().len()
+        Ok(partitions?.len())
     }
 
     /// Get the last record in a given partition of a given topic
@@ -104,36 +107,32 @@ impl StatusOpt {
         fluvio_config: &FluvioConfig,
         topic: &str,
         partition: u32,
-    ) -> Option<String> {
-        let fluvio = Fluvio::connect_with_config(fluvio_config).await.unwrap();
-        let consumer = fluvio.partition_consumer(topic, partition).await.unwrap();
+    ) -> Result<Option<String>, ClusterCliError> {
+        let fluvio = Fluvio::connect_with_config(fluvio_config).await?;
+        let consumer = fluvio.partition_consumer(topic, partition).await?;
 
-        let consumer_config = ConsumerConfig::builder()
-            .disable_continuous(true)
-            .build()
-            .unwrap();
+        let consumer_config = ConsumerConfig::builder().disable_continuous(true).build()?;
 
         let mut stream = consumer
             .stream_with_config(fluvio::Offset::from_end(1), consumer_config)
-            .await
-            .unwrap();
+            .await?;
 
         if let Some(Ok(record)) = stream.next().await {
             let string = String::from_utf8_lossy(record.value());
-            return Some(string.to_string());
+            return Ok(Some(string.to_string()));
         }
 
-        None
+        Ok(None)
     }
 
-    fn cluster_location_description() -> String {
-        let config = ConfigFile::load_default_or_new().unwrap();
+    fn cluster_location_description() -> Result<String, ClusterCliError> {
+        let config = ConfigFile::load_default_or_new()?;
 
         match config.config().current_profile_name() {
-            Some("local") => "locally".to_string(),
+            Some("local") => Ok("locally".to_string()),
             // Cloud cluster
-            Some(other) if other.contains("cloud") => "on cloud based k8s".to_string(),
-            _ => "on local k8s".to_string(),
+            Some(other) if other.contains("cloud") => Ok("on cloud based k8s".to_string()),
+            _ => Ok("on local k8s".to_string()),
         }
     }
 }
