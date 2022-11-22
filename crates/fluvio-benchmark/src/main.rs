@@ -60,7 +60,6 @@ fn print_example_config() {
         shared_settings: SharedSettings {
             matrix_name: "ExampleMatrix".to_string(),
             num_samples: 5,
-            num_batches_per_sample: 10,
             millis_between_batches: 5,
             worker_timeout_seconds: 10,
         },

@@ -9,8 +9,6 @@ use crate::{
     BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings, stats::compute_stats,
 };
 
-pub struct SampleStats {}
-
 // We expect every message produced to be read number_of_consumers_per_partition times.
 // We also expect a total of num_producers_per_batch * num_records_per_batch unique messages.
 #[derive(Default)]

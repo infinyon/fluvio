@@ -78,14 +78,11 @@ impl BenchmarkDriver {
         debug!("Stats collector thread spawned successfully");
 
         let num_expected_messages = workers_jh.len();
-        for i in 0..settings.num_batches_per_sample + 1 {
+        for i in 0..2 {
             if i == 0 {
                 debug!("Starting warmup batch");
             } else {
-                debug!(
-                    "Starting batch {} of {}",
-                    i, settings.num_batches_per_sample
-                );
+                debug!("Starting batch ");
             }
             // Prepare for batch
             debug!("Preparing for batch");

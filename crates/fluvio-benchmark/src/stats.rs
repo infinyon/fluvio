@@ -2,14 +2,16 @@ use std::{
     time::{Duration, Instant},
     collections::HashMap,
     fmt::{Formatter, Display},
+    sync::Arc,
 };
 
+use async_std::sync::Mutex;
 use hdrhistogram::Histogram;
 use log::{info, trace};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 use statrs::statistics::Statistics;
 
-use crate::stats_collector::BatchStats;
+use crate::{stats_collector::BatchStats, benchmark_config::benchmark_settings::BenchmarkSettings};
 use serde::{Serialize, Deserialize};
 
 pub const P_VALUE: f64 = 0.001;
@@ -95,6 +97,18 @@ pub fn compute_stats(data: &BatchStats) {
     }
 }
 
+pub struct AllStats {
+    lock: Arc<Mutex<HashMap<BenchmarkSettings, BenchmarkStats>>>,
+}
+
+impl AllStats {
+    pub async fn record_datum(&self, settings: &BenchmarkSettings, variable: Variable, value: f64) {
+        let mut guard = self.lock.lock_arc().await;
+        let benchmark_stats = guard.entry(settings.clone()).or_default();
+        todo!()
+    }
+}
+#[derive(Default)]
 pub struct BenchmarkStats {
     data: HashMap<Variable, Vec<f64>>,
 }

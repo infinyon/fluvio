@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, hash::Hash};
 
 use fluvio::Compression;
 use serde::{Serialize, Deserialize};
@@ -12,7 +12,6 @@ pub struct BenchmarkSettings {
     /// Each sample is a collection of batches that all run on the same topic.
     pub worker_timeout: Duration,
     pub num_samples: u64,
-    pub num_batches_per_sample: u64,
     pub duration_between_batches: Duration,
     pub num_records_per_producer_worker_per_batch: u64,
     pub producer_batch_size: u64,
@@ -35,6 +34,52 @@ pub struct BenchmarkSettings {
     pub record_key_allocation_strategy: RecordKeyAllocationStrategy,
     // TODO
     // pub use_smart_module: Vec<bool>,
+}
+
+impl Eq for BenchmarkSettings {}
+
+impl PartialEq for BenchmarkSettings {
+    fn eq(&self, other: &Self) -> bool {
+        // We don't compare topic_name
+        self.worker_timeout == other.worker_timeout
+            && self.num_samples == other.num_samples
+            && self.duration_between_batches == other.duration_between_batches
+            && self.num_records_per_producer_worker_per_batch
+                == other.num_records_per_producer_worker_per_batch
+            && self.producer_batch_size == other.producer_batch_size
+            && self.producer_queue_size == other.producer_queue_size
+            && self.producer_linger == other.producer_linger
+            && self.producer_server_timeout == other.producer_server_timeout
+            && self.producer_compression == other.producer_compression
+            && self.consumer_max_bytes == other.consumer_max_bytes
+            && self.num_concurrent_producer_workers == other.num_concurrent_producer_workers
+            && self.num_concurrent_consumers_per_partition
+                == other.num_concurrent_consumers_per_partition
+            && self.num_partitions == other.num_partitions
+            && self.record_size_strategy == other.record_size_strategy
+            && self.record_key_allocation_strategy == other.record_key_allocation_strategy
+    }
+}
+
+impl Hash for BenchmarkSettings {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // We don't hash the topic name
+        self.worker_timeout.hash(state);
+        self.num_samples.hash(state);
+        self.duration_between_batches.hash(state);
+        self.num_records_per_producer_worker_per_batch.hash(state);
+        self.producer_batch_size.hash(state);
+        self.producer_queue_size.hash(state);
+        self.producer_linger.hash(state);
+        self.producer_server_timeout.hash(state);
+        self.producer_compression.hash(state);
+        self.consumer_max_bytes.hash(state);
+        self.num_concurrent_producer_workers.hash(state);
+        self.num_concurrent_consumers_per_partition.hash(state);
+        self.num_partitions.hash(state);
+        self.record_size_strategy.hash(state);
+        self.record_key_allocation_strategy.hash(state);
+    }
 }
 
 impl BenchmarkSettings {
@@ -107,7 +152,6 @@ impl From<BenchmarkBuilder> for BenchmarkSettings {
             topic_name: generate_new_topic_name(),
             worker_timeout: Duration::from_secs(x.shared_settings.worker_timeout_seconds),
             num_samples: x.shared_settings.num_samples,
-            num_batches_per_sample: x.shared_settings.num_batches_per_sample,
             duration_between_batches: Duration::from_millis(
                 x.shared_settings.millis_between_batches,
             ),

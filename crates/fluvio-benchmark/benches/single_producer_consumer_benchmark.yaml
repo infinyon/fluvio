@@ -2,7 +2,6 @@
 shared_settings:
   matrix_name: Single Producer and Consumer
   num_samples: 2
-  num_batches_per_sample: 2
   millis_between_batches: 2500
   worker_timeout_seconds: 60
 num_records_per_producer_worker_per_batch:

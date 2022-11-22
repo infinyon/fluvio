@@ -14,7 +14,6 @@ pub const DEFAULT_CONFIG_DIR: &'static str = "crates/fluvio-benchmark/benches";
 pub struct SharedSettings {
     pub matrix_name: String,
     pub num_samples: u64,
-    pub num_batches_per_sample: u64,
     pub millis_between_batches: u64,
     pub worker_timeout_seconds: u64,
 }
@@ -111,12 +110,12 @@ impl BenchmarkMatrix {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum RecordSizeStrategy {
     Fixed(u64),
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum RecordKeyAllocationStrategy {
     /// RecordKey::NULL
     NoKey,
