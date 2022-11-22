@@ -7,6 +7,7 @@ use std::{
 use hdrhistogram::Histogram;
 use log::{info, trace};
 use statrs::distribution::{StudentsT, ContinuousCDF};
+use statrs::statistics::Statistics;
 
 use crate::stats_collector::BatchStats;
 use serde::{Serialize, Deserialize};
@@ -146,7 +147,39 @@ impl Variable {
         if a.len() != b.len() {
             return CompareResult::Uncomparable;
         }
-        todo!()
+        match two_sample_t_test(
+            a.mean(),
+            b.mean(),
+            a.std_dev(),
+            b.std_dev(),
+            a.len(),
+            P_VALUE,
+        ) {
+            TTestResult::X1GreaterThanX2(_) => self.greater(),
+            TTestResult::FailedToRejectH0 => CompareResult::NoChange,
+            TTestResult::X1LessThanX2(_) => self.less(),
+        }
+    }
+
+    fn greater(&self) -> CompareResult {
+        match self {
+            Variable::Q900 => CompareResult::Worse,
+            Variable::Q990 => CompareResult::Worse,
+            Variable::Q999 => CompareResult::Worse,
+            Variable::ProducerThroughput => CompareResult::Better,
+            Variable::ConsumerThroughput => CompareResult::Better,
+            Variable::CombinedThroughput => CompareResult::Better,
+        }
+    }
+    fn less(&self) -> CompareResult {
+        match self {
+            Variable::Q900 => CompareResult::Better,
+            Variable::Q990 => CompareResult::Better,
+            Variable::Q999 => CompareResult::Better,
+            Variable::ProducerThroughput => CompareResult::Worse,
+            Variable::ConsumerThroughput => CompareResult::Worse,
+            Variable::CombinedThroughput => CompareResult::Worse,
+        }
     }
 }
 
@@ -169,7 +202,7 @@ pub fn two_sample_t_test(
     x2: f64,
     std_dev_1: f64,
     std_dev_2: f64,
-    num_samples: u64,
+    num_samples: usize,
     p_value: f64,
 ) -> TTestResult {
     // Welchs-t-test
