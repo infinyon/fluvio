@@ -18,4 +18,5 @@ pad = "0.1.6"
 rand = "0.8.5"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_yaml = "0.8"
+statrs = "0.16.0"
 walkdir = "2.3.2"
