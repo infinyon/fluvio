@@ -45,7 +45,7 @@ pub struct BenchmarkMatrix {
     pub num_partitions: Vec<u64>,
     // TODO
     // pub num_replicas: Vec<u64>,
-    pub record_size_strategy: Vec<RecordSizeStrategy>,
+    pub record_size_strategy: Vec<u64>,
     // TODO
     // pub use_smart_module: Vec<bool>,
     // TODO
@@ -108,11 +108,6 @@ impl BenchmarkMatrix {
             })
             .build()
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum RecordSizeStrategy {
-    Fixed(u64),
 }
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Hash, PartialEq, Eq)]

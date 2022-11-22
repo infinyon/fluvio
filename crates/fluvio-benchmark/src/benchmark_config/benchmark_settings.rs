@@ -1,9 +1,9 @@
-use std::{time::Duration, hash::Hash};
+use std::{time::Duration, hash::Hash, fmt::Display};
 
 use fluvio::Compression;
 use serde::{Serialize, Deserialize};
 
-use super::benchmark_matrix::{RecordSizeStrategy, RecordKeyAllocationStrategy, SharedSettings};
+use super::benchmark_matrix::{RecordKeyAllocationStrategy, SharedSettings};
 use rand::{Rng, thread_rng, distributions::Uniform};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -30,7 +30,7 @@ pub struct BenchmarkSettings {
     /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
     pub num_concurrent_consumers_per_partition: u64,
     pub num_partitions: u64,
-    pub record_size_strategy: RecordSizeStrategy,
+    pub record_size: u64,
     pub record_key_allocation_strategy: RecordKeyAllocationStrategy,
     // TODO
     // pub use_smart_module: Vec<bool>,
@@ -56,7 +56,7 @@ impl PartialEq for BenchmarkSettings {
             && self.num_concurrent_consumers_per_partition
                 == other.num_concurrent_consumers_per_partition
             && self.num_partitions == other.num_partitions
-            && self.record_size_strategy == other.record_size_strategy
+            && self.record_size == other.record_size
             && self.record_key_allocation_strategy == other.record_key_allocation_strategy
     }
 }
@@ -77,7 +77,7 @@ impl Hash for BenchmarkSettings {
         self.num_concurrent_producer_workers.hash(state);
         self.num_concurrent_consumers_per_partition.hash(state);
         self.num_partitions.hash(state);
-        self.record_size_strategy.hash(state);
+        self.record_size.hash(state);
         self.record_key_allocation_strategy.hash(state);
     }
 }
@@ -90,6 +90,50 @@ impl BenchmarkSettings {
 
     pub fn number_of_expected_times_each_message_consumed(&self) -> u64 {
         self.num_concurrent_consumers_per_partition
+    }
+}
+
+impl Display for BenchmarkSettings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "BenchmarkSettings:")?;
+        writeln!(
+            f,
+            "  Number of Samples: {} (Duration between samples of {:?})",
+            self.num_samples, self.duration_between_samples
+        )?;
+        let produced_mb = 
+            (self.num_records_per_producer_worker_per_batch * self.record_size * self.num_concurrent_producer_workers) as f64 / 1000000.0;
+        writeln!(
+            f,
+            "  Total produced size of sample: {} records * {} bytes per record  * {} producers = {:9.3}mb",
+            self.num_records_per_producer_worker_per_batch,
+            self.record_size,
+            self.num_concurrent_producer_workers,
+           produced_mb,
+        )?;
+        writeln!(f,
+        "  Producer details: linger {:?}, fluvio batch size {}, queue size {}, server timeout {:?}, compression {:?}",
+            self.producer_linger, 
+            self.producer_batch_size, 
+            self.producer_queue_size, 
+            self.producer_server_timeout, 
+            self.producer_compression)?;
+        writeln!(
+        f,
+            "  Total consumed size of sample: {} consumers * {:9.3}mb =  {:9.3}mb", 
+            self.num_concurrent_consumers_per_partition,
+            produced_mb,
+            produced_mb * self.num_concurrent_consumers_per_partition as f64
+    )?;
+
+        writeln!(f,"  Consumer details: Max bytes: {}", self.consumer_max_bytes)?;
+        if self.record_key_allocation_strategy != RecordKeyAllocationStrategy::NoKey {
+        writeln!(f,"  Key allocation strategy: {:?}", self.record_key_allocation_strategy)?;
+
+        }
+        Ok(())
+
+
     }
 }
 
@@ -121,7 +165,7 @@ pub struct BenchmarkBuilder {
     /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
     pub num_concurrent_consumers_per_partition: Option<u64>,
     pub num_partitions: Option<u64>,
-    pub record_size_strategy: Option<RecordSizeStrategy>,
+    pub record_size_strategy: Option<u64>,
     pub record_key_allocation_strategy: Option<RecordKeyAllocationStrategy>,
     // TODO
     // pub use_smart_module: Vec<bool>,
@@ -169,7 +213,7 @@ impl From<BenchmarkBuilder> for BenchmarkSettings {
                 .num_concurrent_consumers_per_partition
                 .unwrap(),
             num_partitions: x.num_partitions.unwrap(),
-            record_size_strategy: x.record_size_strategy.unwrap(),
+            record_size: x.record_size_strategy.unwrap(),
             record_key_allocation_strategy: x.record_key_allocation_strategy.unwrap(),
         }
     }

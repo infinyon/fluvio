@@ -2,8 +2,8 @@ use clap::{arg, Parser};
 use fluvio::Compression;
 use fluvio_benchmark::{
     benchmark_config::benchmark_matrix::{
-        BenchmarkMatrix, RecordKeyAllocationStrategy, RecordSizeStrategy, get_config_from_file,
-        get_default_config, SharedSettings,
+        BenchmarkMatrix, RecordKeyAllocationStrategy, get_config_from_file, get_default_config,
+        SharedSettings,
     },
     benchmark_driver::BenchmarkDriver,
     stats::AllStats,
@@ -36,8 +36,7 @@ fn main() {
         print_divider();
 
         for settings in matrix.into_iter() {
-            println!("Beginning a new benchmark");
-            println!("Settings for this Benchmark:\n{:#?}", settings);
+            println!("{}", settings);
             async_std::task::block_on(BenchmarkDriver::run_benchmark(
                 settings.clone(),
                 all_stats.clone(),
@@ -63,7 +62,7 @@ fn print_example_config() {
         num_concurrent_producer_workers: vec![1],
         num_concurrent_consumers_per_partition: vec![1],
         num_partitions: vec![1],
-        record_size_strategy: vec![RecordSizeStrategy::Fixed(1000)],
+        record_size_strategy: vec![1000],
         shared_settings: SharedSettings {
             matrix_name: "ExampleMatrix".to_string(),
             num_samples: 5,

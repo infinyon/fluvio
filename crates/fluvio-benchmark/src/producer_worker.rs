@@ -6,7 +6,7 @@ use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
 use crate::{
     benchmark_config::{
         benchmark_settings::BenchmarkSettings,
-        benchmark_matrix::{RecordKeyAllocationStrategy, RecordSizeStrategy, SHARED_KEY},
+        benchmark_matrix::{RecordKeyAllocationStrategy, SHARED_KEY},
     },
     BenchmarkRecord, generate_random_string, BenchmarkError,
     stats_collector::StatsCollectorMessage,
@@ -67,9 +67,7 @@ impl ProducerWorker {
                         RecordKey::from(format!("random-{}", generate_random_string(10)))
                     }
                 };
-                let data = match self.settings.record_size_strategy {
-                    RecordSizeStrategy::Fixed(size) => generate_random_string(size as usize),
-                };
+                let data = generate_random_string(self.settings.record_size as usize);
                 BenchmarkRecord::new(key, data)
             })
             .collect();
