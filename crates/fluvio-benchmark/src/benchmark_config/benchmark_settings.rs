@@ -55,3 +55,49 @@ pub fn generate_new_topic_name() -> String {
         .collect();
     format!("benchmarking-{}", chars)
 }
+
+#[derive(Default, Clone)]
+pub struct BenchmarkBuilder {
+    pub num_records_per_producer_worker_per_batch: Option<u64>,
+    pub producer_batch_size: Option<u64>,
+    pub producer_queue_size: Option<u64>,
+    pub producer_linger: Option<Duration>,
+    pub producer_server_timeout: Option<Duration>,
+    pub producer_compression: Option<Compression>,
+    // TODO
+    // pub producer_isolation: Option<...>,
+    // TODO
+    // pub producer_delivery_semantic>,
+    pub consumer_max_bytes: Option<u64>,
+    // TODO
+    // pub consumer_isolation: Option<...>,
+    pub num_concurrent_producer_workers: Option<u64>,
+    /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
+    pub num_concurrent_consumers_per_partition: Option<u64>,
+    pub num_partitions: Option<u64>,
+    pub record_size_strategy: Option<RecordSizeStrategy>,
+    pub record_key_allocation_strategy: Option<RecordKeyAllocationStrategy>,
+    // TODO
+    // pub use_smart_module: Vec<bool>,
+}
+
+pub trait CrossIterate {
+    fn cross_iterate<F: FnOnce(BenchmarkBuilder) -> Vec<BenchmarkBuilder>>(
+        self: Self,
+        f: F,
+    ) -> Self;
+    fn build(self: Self) -> Vec<BenchmarkSettings>;
+}
+
+impl CrossIterate for Vec<BenchmarkBuilder> {
+    fn cross_iterate<F: FnOnce(BenchmarkBuilder) -> Vec<BenchmarkBuilder>>(
+        self: Self,
+        f: F,
+    ) -> Self {
+        todo!()
+    }
+
+    fn build(self: Self) -> Vec<BenchmarkSettings> {
+        todo!()
+    }
+}

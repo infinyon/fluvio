@@ -6,7 +6,7 @@ use std::fs::File;
 
 use crate::benchmark_config::benchmark_settings::generate_new_topic_name;
 
-use super::benchmark_settings::BenchmarkSettings;
+use super::benchmark_settings::{BenchmarkSettings, BenchmarkBuilder, CrossIterate};
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &'static str = "SHARED_KEY";
 
@@ -23,6 +23,8 @@ pub struct BenchmarkMatrix {
     pub num_batches_per_sample: u64,
     pub millis_between_batches: u64,
     pub worker_timeout_seconds: u64,
+
+    // Dimensions
     pub num_records_per_producer_worker_per_batch: Vec<u64>,
     pub producer_batch_size: Vec<u64>,
     pub producer_queue_size: Vec<u64>,
@@ -132,6 +134,23 @@ impl BenchmarkMatrix {
         }
         info!("Iterating over {} test setting(s)", settings.len());
         settings
+    }
+
+    fn generate_settings_2(&self) -> Vec<BenchmarkSettings> {
+        let mut builder = vec![BenchmarkBuilder::default()];
+        let closure = |x: BenchmarkBuilder| {
+            let x: Vec<BenchmarkBuilder> = self
+                .num_records_per_producer_worker_per_batch
+                .iter()
+                .map(|n| {
+                    let mut y = x.clone();
+                    y.num_records_per_producer_worker_per_batch = Some(*n);
+                    y
+                })
+                .collect();
+            x
+        };
+        builder.cross_iterate(closure).build()
     }
 }
 
