@@ -55,41 +55,31 @@ pub fn compute_stats(data: &BatchStats) {
     let consume_time = last_consume_time.unwrap() - first_consume_time.unwrap();
     let combined_time = last_consume_time.unwrap() - first_produce_time.unwrap();
 
-    for v in latency_histogram.iter_quantiles(1) {
+    println!(
+        "Produced {num_records} records totaling {:9.3} mb",
+        num_bytes as f64 / 1000000.0
+    );
+    println!("Produce time:  {produce_time:?}");
+    println!("Consume time:  {consume_time:?}");
+    println!("Combined time: {combined_time:?}");
+
+    println!(
+        "Produce throughput:  {:9.3} mb/s",
+        num_bytes as f64 / produce_time.as_secs_f64() / 1000000.0
+    );
+    println!(
+        "Consume throughput:  {:9.3} mb/s",
+        num_bytes as f64 / consume_time.as_secs_f64() / 1000000.0
+    );
+    println!(
+        "Combined throughput: {:9.3} mb/s",
+        num_bytes as f64 / combined_time.as_secs_f64() / 1000000.0
+    );
+    for quantile in vec![0.9, 0.99, 0.999] {
         println!(
-            "Quantile: {:6.4} Latency: {:?}",
-            v.quantile_iterated_to(),
-            Duration::from_micros(v.value_iterated_to())
+            "Quantile: {:6.3} Latency: {:?}",
+            quantile,
+            Duration::from_micros(latency_histogram.value_at_quantile(quantile))
         );
     }
-
-    println!("Produced {num_records} records totaling {num_bytes} bytes");
-    println!(
-        "Produce time: {:?} Consume time: {:?} Combined {:?}",
-        produce_time, consume_time, combined_time
-    );
-    println!(
-        "produce  throughput bytes   / sec: {:7.2}",
-        num_bytes as f64 / produce_time.as_secs_f64()
-    );
-    println!(
-        "consume  throughput bytes   / sec: {:7.2}",
-        num_bytes as f64 / consume_time.as_secs_f64()
-    );
-    println!(
-        "combined throughput bytes   / sec: {:7.2}",
-        num_bytes as f64 / combined_time.as_secs_f64()
-    );
-    println!(
-        "produce  throughput records / sec: {:7.2}",
-        num_records as f64 / produce_time.as_secs_f64()
-    );
-    println!(
-        "consume  throughput records / sec: {:7.2}",
-        num_records as f64 / consume_time.as_secs_f64()
-    );
-    println!(
-        "combined throughput records / sec: {:7.2}",
-        num_records as f64 / combined_time.as_secs_f64()
-    );
 }

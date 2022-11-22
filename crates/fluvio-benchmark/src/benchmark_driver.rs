@@ -3,7 +3,7 @@ use async_std::{
     future::timeout,
 };
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
-use log::{info, debug};
+use log::debug;
 
 use crate::{
     benchmark_config::benchmark_settings::BenchmarkSettings, producer_worker::ProducerWorker,
@@ -126,7 +126,7 @@ impl BenchmarkDriver {
     }
     pub async fn run_benchmark(settings: BenchmarkSettings) -> Result<(), BenchmarkError> {
         for i in 0..settings.num_samples {
-            info!("Beginning sample {i}");
+            println!("\nBeginning sample {i}");
             // Create topic for this run
             let new_topic = TopicSpec::new_computed(settings.num_partitions as u32, 1, None);
             let admin = FluvioAdmin::connect().await?;
