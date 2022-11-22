@@ -2,11 +2,10 @@ use std::{
     time::{Duration, Instant},
     collections::HashMap,
     fmt::{Formatter, Display},
-    cmp::Ordering,
 };
 
 use hdrhistogram::Histogram;
-use log::info;
+use log::{info, trace};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 
 use crate::stats_collector::BatchStats;
@@ -173,8 +172,10 @@ pub fn two_sample_t_test(
     num_samples: u64,
     p_value: f64,
 ) -> TTestResult {
+    // Welchs-t-test
     // https://en.wikipedia.org/wiki/Student%27s_t-test#Equal_sample_sizes_and_variance
     // https://en.wikipedia.org/wiki/Welch%27s_t-test
+    // https://www.statology.org/welchs-t-test/
 
     let v1 = std_dev_1 * std_dev_1;
     let v2 = std_dev_2 * std_dev_2;
@@ -196,30 +197,19 @@ pub fn two_sample_t_test(
     let right_tailed_p_value = 1.0 - students_t_dist.cdf(t);
     // let two_tailed_p_value = 2.0 * f64_min(left_tailed_p_value, right_tailed_p_value);
 
-    println!(
+    trace!(
         "t: {:?} df: {:?}, lv {:?}, rv {:?}",
-        t, degrees_of_freedom, left_tailed_p_value, right_tailed_p_value
+        t,
+        degrees_of_freedom,
+        left_tailed_p_value,
+        right_tailed_p_value
     );
     if left_tailed_p_value <= p_value {
-        return TTestResult::X1LessThanX2(left_tailed_p_value);
-    }
-    if right_tailed_p_value <= p_value {
-        return TTestResult::X1GreaterThanX2(right_tailed_p_value);
-    }
-    TTestResult::FailedToRejectH0(f64_min(left_tailed_p_value, right_tailed_p_value))
-}
-/// min(a,b). Panics if not comparable
-#[inline]
-fn f64_min(a: f64, b: f64) -> f64 {
-    match a.partial_cmp(&b) {
-        None => {
-            panic!("Invalid comparison {} vs {}", a, b)
-        }
-        Some(o) => match o {
-            Ordering::Less => a,
-            Ordering::Equal => a,
-            Ordering::Greater => b,
-        },
+        TTestResult::X1LessThanX2(left_tailed_p_value)
+    } else if right_tailed_p_value <= p_value {
+        TTestResult::X1GreaterThanX2(right_tailed_p_value)
+    } else {
+        TTestResult::FailedToRejectH0
     }
 }
 fn almost_equal(a: f64, b: f64, epsilon: f64) -> bool {
@@ -229,8 +219,10 @@ fn almost_equal(a: f64, b: f64, epsilon: f64) -> bool {
 
 #[derive(Debug, Copy, Clone)]
 pub enum TTestResult {
+    /// Contains p_value of left-tailed students t test
     X1GreaterThanX2(f64),
-    FailedToRejectH0(f64),
+    FailedToRejectH0,
+    /// Contains p_value of right-tailed students t test
     X1LessThanX2(f64),
 }
 
@@ -241,9 +233,7 @@ impl PartialEq for TTestResult {
             (Self::X1GreaterThanX2(l0), Self::X1GreaterThanX2(r0)) => {
                 almost_equal(*l0, *r0, P_VALUE_EPSILON)
             }
-            (Self::FailedToRejectH0(l0), Self::FailedToRejectH0(r0)) => {
-                almost_equal(*l0, *r0, P_VALUE_EPSILON)
-            }
+            (Self::FailedToRejectH0, Self::FailedToRejectH0) => true,
             (Self::X1LessThanX2(l0), Self::X1LessThanX2(r0)) => {
                 almost_equal(*l0, *r0, P_VALUE_EPSILON)
             }
@@ -256,7 +246,9 @@ impl Display for TTestResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             TTestResult::X1GreaterThanX2(p) => ('+', p),
-            TTestResult::FailedToRejectH0(p) => ('?', p),
+            TTestResult::FailedToRejectH0 => {
+                return write!(f, "?");
+            }
             TTestResult::X1LessThanX2(p) => ('-', p),
         };
         write!(f, "{} (p={:5.3})", s.0, s.1)
@@ -277,7 +269,7 @@ mod tests {
 
         assert_eq!(
             two_sample_t_test(100.0, 105.0, 5.0, 7.0, 5, 0.05),
-            TTestResult::FailedToRejectH0(0.1168)
+            TTestResult::FailedToRejectH0
         );
 
         assert_eq!(
