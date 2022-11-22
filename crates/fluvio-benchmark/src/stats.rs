@@ -29,16 +29,24 @@ impl AllStats {
     pub async fn print_results(&self, settings: &BenchmarkSettings) {
         let guard = self.mutex.lock().await;
         if let Some(stats) = guard.get(settings) {
+            let (_values, hist) = stats.data.get(&Variable::Latency).unwrap();
+            println!("Latency");
+            for percentile in [0.0, 0.5, 0.95, 0.99, 1.0] {
+                println!(
+                    "p{percentile:4.2}: {}",
+                    Variable::Latency.format(hist.value_at_quantile(percentile))
+                );
+            }
+
             for variable in [
-                Variable::Latency,
                 Variable::ProducerThroughput,
                 Variable::ConsumerThroughput,
                 Variable::CombinedThroughput,
             ] {
                 let (_values, hist) = stats.data.get(&variable).unwrap();
 
-                println!("Percentiles for variable: {variable:?}");
-                for percentile in [0.0, 0.5, 0.95, 0.99, 1.0] {
+                println!("Throughput Max, Median, Min");
+                for percentile in [1.0, 0.5, 0.0] {
                     println!(
                         "p{percentile:4.2}: {}",
                         variable.format(hist.value_at_quantile(percentile))
