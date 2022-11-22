@@ -1,10 +1,7 @@
 use std::time::Duration;
 use fluvio::Compression;
-use log::info;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-
-use crate::benchmark_config::benchmark_settings::generate_new_topic_name;
 
 use super::benchmark_settings::{BenchmarkSettings, BenchmarkBuilder, CrossIterate};
 /// Key used by AllShareSameKey
@@ -13,16 +10,20 @@ pub const SHARED_KEY: &'static str = "SHARED_KEY";
 /// DEFAULT CONFIG DIR
 pub const DEFAULT_CONFIG_DIR: &'static str = "crates/fluvio-benchmark/benches";
 
-/// A BenchmarkMatrix contains a collection of settings and dimensions.
-/// Iterating over a BenchmarkMatrix produces a BenchmarkSettings for every possible combination of values in the matrix.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct BenchmarkMatrix {
-    /// Each sample is a collection of batches that all run on the same topic.
+pub struct SharedSettings {
     pub matrix_name: String,
     pub num_samples: u64,
     pub num_batches_per_sample: u64,
     pub millis_between_batches: u64,
     pub worker_timeout_seconds: u64,
+}
+
+/// A BenchmarkMatrix contains a collection of settings and dimensions.
+/// Iterating over a BenchmarkMatrix produces a BenchmarkSettings for every possible combination of values in the matrix.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BenchmarkMatrix {
+    pub shared_settings: SharedSettings,
 
     // Dimensions
     pub num_records_per_producer_worker_per_batch: Vec<u64>,
@@ -66,91 +67,47 @@ impl BenchmarkMatrix {
     // Impl note: This does allocate for all of the benchmark settings at once, however it made for simpler code
     // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it alloates.
     // TODO split into smaller chunks
-    fn generate_settings(&self) -> Vec<BenchmarkSettings> {
-        let mut settings = Vec::new();
-        for num_records_per_producer_worker_per_batch in
-            self.num_records_per_producer_worker_per_batch.iter()
-        {
-            for producer_batch_size in self.producer_batch_size.iter() {
-                for producer_queue_size in self.producer_queue_size.iter() {
-                    for producer_linger in self
-                        .producer_linger_millis
-                        .iter()
-                        .map(|i| Duration::from_millis(*i))
-                    {
-                        for producer_server_timeout in self
-                            .producer_server_timeout_millis
-                            .iter()
-                            .map(|i| Duration::from_millis(*i))
-                        {
-                            for producer_compression in self.producer_compression.iter() {
-                                for record_key_allocation_strategy in
-                                    self.record_key_allocation_strategy.iter()
-                                {
-                                    for consumer_max_bytes in self.consumer_max_bytes.iter() {
-                                        for num_concurrent_producer_workers in
-                                            self.num_concurrent_producer_workers.iter()
-                                        {
-                                            for num_concurrent_consumers_per_partition in
-                                                self.num_concurrent_consumers_per_partition.iter()
-                                            {
-                                                for num_partitions in self.num_partitions.iter() {
-                                                    for record_size_strategy in
-                                                        self.record_size_strategy.iter()
-                                                    {
-                                                        settings.push(BenchmarkSettings {
-                                                    topic_name:generate_new_topic_name(),
-                                                    num_samples: self.num_samples,
-                                                    num_batches_per_sample: self.num_batches_per_sample,
-                                                    duration_between_batches: Duration::from_millis(self.millis_between_batches),
-                                                    worker_timeout: Duration::from_secs(self.worker_timeout_seconds),
-                                                    num_records_per_producer_worker_per_batch:
-                                                        *num_records_per_producer_worker_per_batch,
-                                                    producer_batch_size: *producer_batch_size,
-                                                    producer_queue_size: *producer_queue_size,
-                                                    producer_linger,
-                                                    producer_server_timeout,
-                                                    producer_compression: *producer_compression,
-                                                    record_key_allocation_strategy: *record_key_allocation_strategy,
-                                                    consumer_max_bytes: *consumer_max_bytes,
-                                                    num_concurrent_producer_workers:
-                                                        *num_concurrent_producer_workers,
-                                                    num_concurrent_consumers_per_partition:
-                                                        *num_concurrent_consumers_per_partition,
-                                                    num_partitions: *num_partitions,
-                                                    record_size_strategy: *record_size_strategy,
-                                                })
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        info!("Iterating over {} test setting(s)", settings.len());
-        settings
-    }
 
-    fn generate_settings_2(&self) -> Vec<BenchmarkSettings> {
-        let mut builder = vec![BenchmarkBuilder::default()];
-        let closure = |x: BenchmarkBuilder| {
-            let x: Vec<BenchmarkBuilder> = self
-                .num_records_per_producer_worker_per_batch
-                .iter()
-                .map(|n| {
-                    let mut y = x.clone();
-                    y.num_records_per_producer_worker_per_batch = Some(*n);
-                    y
-                })
-                .collect();
-            x
-        };
-        builder.cross_iterate(closure).build()
+    fn generate_settings(&self) -> Vec<BenchmarkSettings> {
+        let builder = vec![BenchmarkBuilder::new(&self.shared_settings)];
+        builder
+            .cross_iterate(&self.num_records_per_producer_worker_per_batch, |v, b| {
+                b.num_records_per_producer_worker_per_batch = Some(v);
+            })
+            .cross_iterate(&self.producer_batch_size, |v, b| {
+                b.producer_batch_size = Some(v);
+            })
+            .cross_iterate(&self.producer_queue_size, |v, b| {
+                b.producer_queue_size = Some(v);
+            })
+            .cross_iterate(&self.producer_linger_millis, |v, b| {
+                b.producer_linger = Some(Duration::from_millis(v));
+            })
+            .cross_iterate(&self.producer_server_timeout_millis, |v, b| {
+                b.producer_server_timeout = Some(Duration::from_millis(v));
+            })
+            .cross_iterate(&self.producer_compression, |v, b| {
+                b.producer_compression = Some(v);
+            })
+            .cross_iterate(&self.consumer_max_bytes, |v, b| {
+                b.consumer_max_bytes = Some(v);
+            })
+            .cross_iterate(&self.num_concurrent_producer_workers, |v, b| {
+                b.num_concurrent_producer_workers = Some(v);
+            })
+            .cross_iterate(&self.num_concurrent_consumers_per_partition, |v, b| {
+                b.num_concurrent_consumers_per_partition = Some(v);
+            })
+            .cross_iterate(&self.num_partitions, |v, b| {
+                b.num_partitions = Some(v);
+            })
+            .cross_iterate(&self.record_size_strategy, |v, b| {
+                b.record_size_strategy = Some(v);
+            })
+            .cross_iterate(&self.record_key_allocation_strategy, |v, b| {
+                b.record_key_allocation_strategy = Some(v);
+            })
+            .build()
     }
 }
 

@@ -3,7 +3,7 @@ use fluvio::Compression;
 use fluvio_benchmark::{
     benchmark_config::benchmark_matrix::{
         BenchmarkMatrix, RecordKeyAllocationStrategy, RecordSizeStrategy, get_config_from_file,
-        get_default_config,
+        get_default_config, SharedSettings,
     },
     benchmark_driver::BenchmarkDriver,
 };
@@ -27,7 +27,10 @@ fn main() {
     // TODO output markdown?
     for matrix in matrices {
         print_divider();
-        println!("# Beginning Matrix for: {}", matrix.matrix_name);
+        println!(
+            "# Beginning Matrix for: {}",
+            matrix.shared_settings.matrix_name
+        );
         print_divider();
 
         for settings in matrix.into_iter() {
@@ -42,10 +45,6 @@ fn main() {
 
 fn print_example_config() {
     let example_config = BenchmarkMatrix {
-        num_samples: 5,
-        num_batches_per_sample: 10,
-        millis_between_batches: 5,
-        worker_timeout_seconds: 10,
         num_records_per_producer_worker_per_batch: vec![1000],
         producer_batch_size: vec![16000, 32000],
         producer_queue_size: vec![100],
@@ -58,7 +57,13 @@ fn print_example_config() {
         num_concurrent_consumers_per_partition: vec![1],
         num_partitions: vec![1],
         record_size_strategy: vec![RecordSizeStrategy::Fixed(1000)],
-        matrix_name: "ExampleMatrix".to_string(),
+        shared_settings: SharedSettings {
+            matrix_name: "ExampleMatrix".to_string(),
+            num_samples: 5,
+            num_batches_per_sample: 10,
+            millis_between_batches: 5,
+            worker_timeout_seconds: 10,
+        },
     };
     println!("{}", serde_yaml::to_string(&example_config).unwrap());
 }

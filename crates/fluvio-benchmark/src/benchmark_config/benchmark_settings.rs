@@ -3,7 +3,7 @@ use std::time::Duration;
 use fluvio::Compression;
 use serde::{Serialize, Deserialize};
 
-use super::benchmark_matrix::{RecordSizeStrategy, RecordKeyAllocationStrategy};
+use super::benchmark_matrix::{RecordSizeStrategy, RecordKeyAllocationStrategy, SharedSettings};
 use rand::{Rng, thread_rng, distributions::Uniform};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -56,8 +56,9 @@ pub fn generate_new_topic_name() -> String {
     format!("benchmarking-{}", chars)
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct BenchmarkBuilder {
+    pub shared_settings: SharedSettings,
     pub num_records_per_producer_worker_per_batch: Option<u64>,
     pub producer_batch_size: Option<u64>,
     pub producer_queue_size: Option<u64>,
@@ -80,24 +81,83 @@ pub struct BenchmarkBuilder {
     // TODO
     // pub use_smart_module: Vec<bool>,
 }
+impl BenchmarkBuilder {
+    pub fn new(shared_settings: &SharedSettings) -> Self {
+        Self {
+            shared_settings: shared_settings.clone(),
+            num_records_per_producer_worker_per_batch: Default::default(),
+            producer_batch_size: Default::default(),
+            producer_queue_size: Default::default(),
+            producer_linger: Default::default(),
+            producer_server_timeout: Default::default(),
+            producer_compression: Default::default(),
+            consumer_max_bytes: Default::default(),
+            num_concurrent_producer_workers: Default::default(),
+            num_concurrent_consumers_per_partition: Default::default(),
+            num_partitions: Default::default(),
+            record_size_strategy: Default::default(),
+            record_key_allocation_strategy: Default::default(),
+        }
+    }
+}
+
+impl From<BenchmarkBuilder> for BenchmarkSettings {
+    fn from(x: BenchmarkBuilder) -> Self {
+        BenchmarkSettings {
+            topic_name: generate_new_topic_name(),
+            worker_timeout: Duration::from_secs(x.shared_settings.worker_timeout_seconds),
+            num_samples: x.shared_settings.num_samples,
+            num_batches_per_sample: x.shared_settings.num_batches_per_sample,
+            duration_between_batches: Duration::from_millis(
+                x.shared_settings.millis_between_batches,
+            ),
+            num_records_per_producer_worker_per_batch: x
+                .num_records_per_producer_worker_per_batch
+                .unwrap(),
+            producer_batch_size: x.producer_batch_size.unwrap(),
+            producer_queue_size: x.producer_queue_size.unwrap(),
+            producer_linger: x.producer_linger.unwrap(),
+            producer_server_timeout: x.producer_server_timeout.unwrap(),
+            producer_compression: x.producer_compression.unwrap(),
+            consumer_max_bytes: x.consumer_max_bytes.unwrap(),
+            num_concurrent_producer_workers: x.num_concurrent_producer_workers.unwrap(),
+            num_concurrent_consumers_per_partition: x
+                .num_concurrent_consumers_per_partition
+                .unwrap(),
+            num_partitions: x.num_partitions.unwrap(),
+            record_size_strategy: x.record_size_strategy.unwrap(),
+            record_key_allocation_strategy: x.record_key_allocation_strategy.unwrap(),
+        }
+    }
+}
 
 pub trait CrossIterate {
-    fn cross_iterate<F: FnOnce(BenchmarkBuilder) -> Vec<BenchmarkBuilder>>(
+    fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkBuilder) + Copy>(
         self: Self,
+        values: &[T],
         f: F,
     ) -> Self;
     fn build(self: Self) -> Vec<BenchmarkSettings>;
 }
 
 impl CrossIterate for Vec<BenchmarkBuilder> {
-    fn cross_iterate<F: FnOnce(BenchmarkBuilder) -> Vec<BenchmarkBuilder>>(
+    fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkBuilder) + Copy>(
         self: Self,
+        values: &[T],
         f: F,
     ) -> Self {
-        todo!()
+        self.into_iter()
+            .flat_map(|builder| {
+                values.iter().map(move |value| {
+                    let mut clone = builder.clone();
+                    f(value.clone(), &mut clone);
+                    clone
+                })
+            })
+            .collect()
     }
 
     fn build(self: Self) -> Vec<BenchmarkSettings> {
-        todo!()
+        self.into_iter().map(|x| x.into()).collect()
     }
 }
