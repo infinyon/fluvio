@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 use async_std::{
     channel::{self, Receiver, Sender},
     future::timeout,
@@ -7,13 +9,16 @@ use log::debug;
 
 use crate::{
     benchmark_config::benchmark_settings::BenchmarkSettings, producer_worker::ProducerWorker,
-    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError,
+    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError, stats::AllStats,
 };
 
 pub struct BenchmarkDriver {}
 
 impl BenchmarkDriver {
-    pub async fn run_sample(settings: BenchmarkSettings) -> Result<(), BenchmarkError> {
+    pub async fn run_sample(
+        settings: BenchmarkSettings,
+        all_stats: AllStats,
+    ) -> Result<(), BenchmarkError> {
         // Works send results to stats collector
         let (tx_stats, rx_stats) = channel::unbounded();
 
@@ -68,7 +73,7 @@ impl BenchmarkDriver {
         }
         debug!("Consumer threads spawned successfully");
         let (tx_control, rx_control) = channel::unbounded();
-        let worker = StatsWorker::new(tx_stop, rx_stats, settings.clone());
+        let worker = StatsWorker::new(tx_stop, rx_stats, settings.clone(), all_stats);
         let jh = async_std::task::spawn(timeout(
             settings.worker_timeout,
             StatsDriver::main_loop(rx_control, tx_success, worker),
@@ -100,7 +105,6 @@ impl BenchmarkDriver {
                 &mut tx_controls,
                 ControlMessage::CleanupBatch {
                     produce_stats: i != 0,
-                    batch_num: i,
                 },
             )
             .await?;
@@ -108,10 +112,10 @@ impl BenchmarkDriver {
 
             // Wait between batches
             debug!(
-                "Waiting {:?} between batches",
-                settings.duration_between_batches
+                "Waiting {:?} between samples",
+                settings.duration_between_samples
             );
-            async_std::task::sleep(settings.duration_between_batches).await;
+            async_std::task::sleep(settings.duration_between_samples).await;
         }
         // Close all worker tasks.
         send_control_message(&mut tx_controls, ControlMessage::Exit).await?;
@@ -121,9 +125,13 @@ impl BenchmarkDriver {
 
         Ok(())
     }
-    pub async fn run_benchmark(settings: BenchmarkSettings) -> Result<(), BenchmarkError> {
-        for i in 0..settings.num_samples {
-            println!("\nBeginning sample {i}");
+    pub async fn run_benchmark(
+        settings: BenchmarkSettings,
+        all_stats: AllStats,
+    ) -> Result<(), BenchmarkError> {
+        print!("Sampling:");
+        io::stdout().flush().unwrap();
+        for _ in 0..settings.num_samples {
             // Create topic for this run
             let new_topic = TopicSpec::new_computed(settings.num_partitions as u32, 1, None);
             let admin = FluvioAdmin::connect().await?;
@@ -131,7 +139,7 @@ impl BenchmarkDriver {
                 .create(settings.topic_name.clone(), false, new_topic)
                 .await?;
             debug!("Topic created successfully {}", settings.topic_name);
-            let result = BenchmarkDriver::run_sample(settings.clone()).await;
+            let result = BenchmarkDriver::run_sample(settings.clone(), all_stats.clone()).await;
             // Clean up topic
             let _ = admin
                 .delete::<TopicSpec, String>(settings.topic_name.clone())
@@ -139,7 +147,10 @@ impl BenchmarkDriver {
             debug!("Topic deleted successfully {}", settings.topic_name);
 
             result?;
+            print!(".");
+            io::stdout().flush().unwrap();
         }
+        println!();
         Ok(())
     }
 }
@@ -220,14 +231,10 @@ impl StatsDriver {
                 ControlMessage::SendBatch => {
                     tx.send(worker.collect_send_recv_messages().await).await?
                 }
-                ControlMessage::CleanupBatch {
-                    produce_stats,
-                    batch_num,
-                } => {
+                ControlMessage::CleanupBatch { produce_stats } => {
                     let results = worker.validate().await;
                     if produce_stats {
-                        println!("\n** Stats for Batch {batch_num}**");
-                        worker.compute_stats();
+                        worker.compute_stats().await;
                     }
                     worker.new_batch();
                     tx.send(results).await?;
@@ -242,6 +249,6 @@ impl StatsDriver {
 enum ControlMessage {
     PrepareForBatch,
     SendBatch,
-    CleanupBatch { produce_stats: bool, batch_num: u64 },
+    CleanupBatch { produce_stats: bool },
     Exit,
 }

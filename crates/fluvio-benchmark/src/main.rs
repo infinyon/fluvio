@@ -6,6 +6,7 @@ use fluvio_benchmark::{
         get_default_config, SharedSettings,
     },
     benchmark_driver::BenchmarkDriver,
+    stats::AllStats,
 };
 use pad::PadStr;
 
@@ -24,7 +25,8 @@ fn main() {
         None => get_default_config(),
     };
 
-    // TODO output markdown?
+    let all_stats = AllStats::default();
+
     for matrix in matrices {
         print_divider();
         println!(
@@ -36,7 +38,12 @@ fn main() {
         for settings in matrix.into_iter() {
             println!("Beginning a new benchmark");
             println!("Settings for this Benchmark:\n{:#?}", settings);
-            async_std::task::block_on(BenchmarkDriver::run_benchmark(settings)).unwrap();
+            async_std::task::block_on(BenchmarkDriver::run_benchmark(
+                settings.clone(),
+                all_stats.clone(),
+            ))
+            .unwrap();
+            async_std::task::block_on(all_stats.print_results(&settings));
             print_divider();
             println!()
         }
@@ -60,7 +67,7 @@ fn print_example_config() {
         shared_settings: SharedSettings {
             matrix_name: "ExampleMatrix".to_string(),
             num_samples: 5,
-            millis_between_batches: 5,
+            millis_between_samples: 5,
             worker_timeout_seconds: 10,
         },
     };

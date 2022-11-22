@@ -1,5 +1,5 @@
 use std::{
-    time::{Duration, Instant},
+    time::{Instant, Duration},
     collections::HashMap,
     fmt::{Formatter, Display},
     sync::Arc,
@@ -17,108 +17,135 @@ use serde::{Serialize, Deserialize};
 pub const P_VALUE: f64 = 0.001;
 // Used to compare if two p_values are equal in TTestResult
 const P_VALUE_EPSILON: f64 = 0.00005;
-pub fn compute_stats(data: &BatchStats) {
-    // 1us to 1min with 3 degrees of precision
-    let mut latency_histogram: Histogram<u64> =
-        Histogram::new_with_bounds(1, 1000 * 1000 * 60, 3).unwrap();
 
-    let mut first_produce_time: Option<Instant> = None;
-    let mut last_produce_time: Option<Instant> = None;
-    let mut first_consume_time: Option<Instant> = None;
-    let mut last_consume_time: Option<Instant> = None; // TODO this is just the first time a single message was received... what should behavior be when multiple consumers
-    let mut num_records = 0;
-    let mut num_bytes = 0;
-    for record in data.iter() {
-        // TODO first or last recv time?
-        latency_histogram += record.first_recv_latency().as_micros() as u64;
-        let produced_time = record.send_time.unwrap();
-        let consumed_time = record.first_received_time.unwrap();
-        if let Some(p) = first_produce_time {
-            if produced_time < p {
-                first_produce_time = Some(produced_time);
-            }
-        } else {
-            first_produce_time = Some(produced_time);
-        };
-        if let Some(p) = last_produce_time {
-            if produced_time > p {
-                last_produce_time = Some(produced_time);
-            }
-        } else {
-            last_produce_time = Some(produced_time);
-        };
-        if let Some(c) = first_consume_time {
-            if consumed_time < c {
-                first_consume_time = Some(consumed_time);
-            }
-        } else {
-            first_consume_time = Some(consumed_time);
-        };
-        if let Some(c) = last_consume_time {
-            if consumed_time > c {
-                last_consume_time = Some(consumed_time);
-            }
-        } else {
-            last_consume_time = Some(consumed_time);
-        };
-        num_records += 1;
-        num_bytes += record.num_bytes.unwrap();
-    }
-    let produce_time = last_produce_time.unwrap() - first_produce_time.unwrap();
-    let consume_time = last_consume_time.unwrap() - first_consume_time.unwrap();
-    let combined_time = last_consume_time.unwrap() - first_produce_time.unwrap();
+const HIST_PRECISION: u8 = 3;
 
-    println!(
-        "Produced {num_records} records totaling {:9.3} mb",
-        num_bytes as f64 / 1000000.0
-    );
-    println!("Produce time:  {produce_time:?}");
-    println!("Consume time:  {consume_time:?}");
-    println!("Combined time: {combined_time:?}");
-
-    println!(
-        "Produce throughput:  {:9.3} mb/s",
-        num_bytes as f64 / produce_time.as_secs_f64() / 1000000.0
-    );
-    println!(
-        "Consume throughput:  {:9.3} mb/s",
-        num_bytes as f64 / consume_time.as_secs_f64() / 1000000.0
-    );
-    println!(
-        "Combined throughput: {:9.3} mb/s",
-        num_bytes as f64 / combined_time.as_secs_f64() / 1000000.0
-    );
-    for quantile in vec![0.9, 0.99, 0.999] {
-        println!(
-            "Quantile: {:6.3} Latency: {:?}",
-            quantile,
-            Duration::from_micros(latency_histogram.value_at_quantile(quantile))
-        );
-    }
-}
-
+#[derive(Clone, Default)]
 pub struct AllStats {
-    lock: Arc<Mutex<HashMap<BenchmarkSettings, BenchmarkStats>>>,
+    mutex: Arc<Mutex<HashMap<BenchmarkSettings, BenchmarkStats>>>,
 }
 
 impl AllStats {
-    pub async fn record_datum(&self, settings: &BenchmarkSettings, variable: Variable, value: f64) {
-        let mut guard = self.lock.lock_arc().await;
+    pub async fn print_results(&self, settings: &BenchmarkSettings) {
+        let guard = self.mutex.lock().await;
+        if let Some(stats) = guard.get(settings) {
+            for variable in [
+                Variable::Latency,
+                Variable::ProducerThroughput,
+                Variable::ConsumerThroughput,
+                Variable::CombinedThroughput,
+            ] {
+                let (_values, hist) = stats.data.get(&variable).unwrap();
+
+                println!("Percentiles for variable: {variable:?}");
+                for percentile in [0.0, 0.5, 0.95, 0.99, 1.0] {
+                    println!(
+                        "p{percentile:4.2}: {}",
+                        variable.format(hist.value_at_quantile(percentile))
+                    );
+                }
+            }
+        } else {
+            println!("Stats unavailable");
+        }
+    }
+
+    pub async fn compute_stats(&self, settings: &BenchmarkSettings, data: &BatchStats) {
+        let mut first_produce_time: Option<Instant> = None;
+        let mut last_produce_time: Option<Instant> = None;
+        let mut first_consume_time: Option<Instant> = None;
+        let mut last_consume_time: Option<Instant> = None; // TODO this is just the first time a single message was received... what should behavior be when multiple consumers
+        let mut num_bytes = 0;
+        let mut latency = Vec::new();
+        for record in data.iter() {
+            latency.push(record.first_recv_latency().as_micros() as u64);
+            let produced_time = record.send_time.unwrap();
+            let consumed_time = record.first_received_time.unwrap();
+            if let Some(p) = first_produce_time {
+                if produced_time < p {
+                    first_produce_time = Some(produced_time);
+                }
+            } else {
+                first_produce_time = Some(produced_time);
+            };
+            if let Some(p) = last_produce_time {
+                if produced_time > p {
+                    last_produce_time = Some(produced_time);
+                }
+            } else {
+                last_produce_time = Some(produced_time);
+            };
+            if let Some(c) = first_consume_time {
+                if consumed_time < c {
+                    first_consume_time = Some(consumed_time);
+                }
+            } else {
+                first_consume_time = Some(consumed_time);
+            };
+            if let Some(c) = last_consume_time {
+                if consumed_time > c {
+                    last_consume_time = Some(consumed_time);
+                }
+            } else {
+                last_consume_time = Some(consumed_time);
+            };
+            num_bytes += record.num_bytes.unwrap();
+        }
+        let produce_time = last_produce_time.unwrap() - first_produce_time.unwrap();
+        let consume_time = last_consume_time.unwrap() - first_consume_time.unwrap();
+        let combined_time = last_consume_time.unwrap() - first_produce_time.unwrap();
+
+        self.record_data(settings, Variable::Latency, latency).await;
+        self.record_data(
+            settings,
+            Variable::ProducerThroughput,
+            vec![(num_bytes as f64 / produce_time.as_secs_f64()) as u64],
+        )
+        .await;
+        self.record_data(
+            settings,
+            Variable::ConsumerThroughput,
+            vec![(num_bytes as f64 / consume_time.as_secs_f64()) as u64],
+        )
+        .await;
+        self.record_data(
+            settings,
+            Variable::CombinedThroughput,
+            vec![(num_bytes as f64 / combined_time.as_secs_f64()) as u64],
+        )
+        .await;
+    }
+
+    async fn record_data(
+        &self,
+        settings: &BenchmarkSettings,
+        variable: Variable,
+        values: Vec<u64>,
+    ) {
+        let mut guard = self.mutex.lock().await;
         let benchmark_stats = guard.entry(settings.clone()).or_default();
-        todo!()
+        let entry = benchmark_stats
+            .data
+            .entry(variable)
+            .or_insert_with(|| (Vec::new(), Histogram::new(HIST_PRECISION).unwrap()));
+        for u in values {
+            entry.1 += u;
+            entry.0.push(u as f64)
+        }
     }
 }
+
 #[derive(Default)]
 pub struct BenchmarkStats {
-    data: HashMap<Variable, Vec<f64>>,
+    data: HashMap<Variable, (Vec<f64>, Histogram<u64>)>,
 }
 
 impl BenchmarkStats {
     pub fn compare(&self, other: &BenchmarkStats) -> CompareResult {
         let mut better = false;
         let mut worse = false;
-        for (key, value) in self.data.iter() {
-            if let Some(other_value) = other.data.get(key) {
+        for (key, (value, _)) in self.data.iter() {
+            if let Some((other_value, _)) = other.data.get(key) {
                 let result = key.compare(value, other_value);
                 info!("Compare {key:?} result: {result:?}");
                 match result {
@@ -148,9 +175,7 @@ impl BenchmarkStats {
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug, Hash, Eq, PartialEq)]
 pub enum Variable {
-    Q900,
-    Q990,
-    Q999,
+    Latency,
     ProducerThroughput,
     ConsumerThroughput,
     CombinedThroughput,
@@ -161,6 +186,7 @@ impl Variable {
         if a.len() != b.len() {
             return CompareResult::Uncomparable;
         }
+
         match two_sample_t_test(
             a.mean(),
             b.mean(),
@@ -177,9 +203,7 @@ impl Variable {
 
     fn greater(&self) -> CompareResult {
         match self {
-            Variable::Q900 => CompareResult::Worse,
-            Variable::Q990 => CompareResult::Worse,
-            Variable::Q999 => CompareResult::Worse,
+            Variable::Latency => CompareResult::Worse,
             Variable::ProducerThroughput => CompareResult::Better,
             Variable::ConsumerThroughput => CompareResult::Better,
             Variable::CombinedThroughput => CompareResult::Better,
@@ -187,12 +211,19 @@ impl Variable {
     }
     fn less(&self) -> CompareResult {
         match self {
-            Variable::Q900 => CompareResult::Better,
-            Variable::Q990 => CompareResult::Better,
-            Variable::Q999 => CompareResult::Better,
+            Variable::Latency => CompareResult::Better,
             Variable::ProducerThroughput => CompareResult::Worse,
             Variable::ConsumerThroughput => CompareResult::Worse,
             Variable::CombinedThroughput => CompareResult::Worse,
+        }
+    }
+
+    fn format(&self, v: u64) -> String {
+        match self {
+            Variable::Latency => format!("{:>9?}", Duration::from_micros(v)),
+            Variable::ProducerThroughput => format!("{:9.3}mb/s", v as f64 / 1000000.0),
+            Variable::ConsumerThroughput => format!("{:9.3}mb/s", v as f64 / 1000000.0),
+            Variable::CombinedThroughput => format!("{:9.3}mb/s", v as f64 / 1000000.0),
         }
     }
 }

@@ -14,7 +14,7 @@ pub const DEFAULT_CONFIG_DIR: &'static str = "crates/fluvio-benchmark/benches";
 pub struct SharedSettings {
     pub matrix_name: String,
     pub num_samples: u64,
-    pub millis_between_batches: u64,
+    pub millis_between_samples: u64,
     pub worker_timeout_seconds: u64,
 }
 

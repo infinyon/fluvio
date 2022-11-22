@@ -1,8 +1,8 @@
 ---
 shared_settings:
   matrix_name: Single Producer and Consumer
-  num_samples: 2
-  millis_between_batches: 2500
+  num_samples: 10
+  millis_between_samples: 2500
   worker_timeout_seconds: 60
 num_records_per_producer_worker_per_batch:
   - 1000
@@ -22,10 +22,12 @@ consumer_max_bytes:
   - 64000
 num_concurrent_producer_workers:
   - 1
+  - 2
 num_concurrent_consumers_per_partition:
   - 1
 num_partitions:
   - 1
+  - 2
 record_size_strategy:
   - Fixed: 1000
 

@@ -12,7 +12,7 @@ pub struct BenchmarkSettings {
     /// Each sample is a collection of batches that all run on the same topic.
     pub worker_timeout: Duration,
     pub num_samples: u64,
-    pub duration_between_batches: Duration,
+    pub duration_between_samples: Duration,
     pub num_records_per_producer_worker_per_batch: u64,
     pub producer_batch_size: u64,
     pub producer_queue_size: u64,
@@ -43,7 +43,7 @@ impl PartialEq for BenchmarkSettings {
         // We don't compare topic_name
         self.worker_timeout == other.worker_timeout
             && self.num_samples == other.num_samples
-            && self.duration_between_batches == other.duration_between_batches
+            && self.duration_between_samples == other.duration_between_samples
             && self.num_records_per_producer_worker_per_batch
                 == other.num_records_per_producer_worker_per_batch
             && self.producer_batch_size == other.producer_batch_size
@@ -66,7 +66,7 @@ impl Hash for BenchmarkSettings {
         // We don't hash the topic name
         self.worker_timeout.hash(state);
         self.num_samples.hash(state);
-        self.duration_between_batches.hash(state);
+        self.duration_between_samples.hash(state);
         self.num_records_per_producer_worker_per_batch.hash(state);
         self.producer_batch_size.hash(state);
         self.producer_queue_size.hash(state);
@@ -152,8 +152,8 @@ impl From<BenchmarkBuilder> for BenchmarkSettings {
             topic_name: generate_new_topic_name(),
             worker_timeout: Duration::from_secs(x.shared_settings.worker_timeout_seconds),
             num_samples: x.shared_settings.num_samples,
-            duration_between_batches: Duration::from_millis(
-                x.shared_settings.millis_between_batches,
+            duration_between_samples: Duration::from_millis(
+                x.shared_settings.millis_between_samples,
             ),
             num_records_per_producer_worker_per_batch: x
                 .num_records_per_producer_worker_per_batch

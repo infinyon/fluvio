@@ -1,3 +1,4 @@
+use crate::stats::AllStats;
 use std::{
     time::{Instant, Duration},
     collections::HashMap,
@@ -5,9 +6,7 @@ use std::{
 use async_std::channel::{Receiver, Sender};
 use log::debug;
 
-use crate::{
-    BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings, stats::compute_stats,
-};
+use crate::{BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings};
 
 // We expect every message produced to be read number_of_consumers_per_partition times.
 // We also expect a total of num_producers_per_batch * num_records_per_batch unique messages.
@@ -46,6 +45,7 @@ pub struct StatsWorker {
     current_batch: BatchStats,
     settings: BenchmarkSettings,
     tx_stop_consume: Vec<Sender<()>>,
+    all_stats: AllStats,
 }
 
 impl StatsWorker {
@@ -53,12 +53,14 @@ impl StatsWorker {
         tx_stop_consume: Vec<Sender<()>>,
         receiver: Receiver<StatsCollectorMessage>,
         settings: BenchmarkSettings,
+        all_stats: AllStats,
     ) -> Self {
         Self {
             receiver,
             current_batch: BatchStats::default(),
             settings,
             tx_stop_consume,
+            all_stats,
         }
     }
 
@@ -150,12 +152,13 @@ impl StatsWorker {
         Ok(())
     }
 
-    pub fn compute_stats(&self) {
-        compute_stats(&self.current_batch);
+    pub async fn compute_stats(&self) {
+        self.all_stats
+            .compute_stats(&self.settings, &self.current_batch)
+            .await;
     }
 
     pub fn new_batch(&mut self) {
-        // TODO compute stats
         self.current_batch = BatchStats::default();
     }
 }
