@@ -78,11 +78,15 @@ impl BenchmarkDriver {
         debug!("Stats collector thread spawned successfully");
 
         let num_expected_messages = workers_jh.len();
-        for i in 0..settings.num_batches_per_sample {
-            debug!(
-                "Starting batch {} of {}",
-                i, settings.num_batches_per_sample
-            );
+        for i in 0..settings.num_batches_per_sample + 1 {
+            if i == 0 {
+                debug!("Starting warmup batch");
+            } else {
+                debug!(
+                    "Starting batch {} of {}",
+                    i, settings.num_batches_per_sample
+                );
+            }
             // Prepare for batch
             debug!("Preparing for batch");
             send_control_message(&mut tx_controls, ControlMessage::PrepareForBatch).await?;
@@ -95,7 +99,14 @@ impl BenchmarkDriver {
 
             // Clean up the batch
             debug!("Cleaning up batch");
-            send_control_message(&mut tx_controls, ControlMessage::CleanupBatch).await?;
+            send_control_message(
+                &mut tx_controls,
+                ControlMessage::CleanupBatch {
+                    produce_stats: i != 0,
+                    batch_num: i,
+                },
+            )
+            .await?;
             expect_success(&mut rx_success, &settings, num_expected_messages).await?;
 
             // Wait between batches
@@ -172,7 +183,7 @@ impl ProducerDriver {
                     tx.send(Ok(())).await?;
                 }
                 ControlMessage::SendBatch => tx.send(worker.send_batch().await).await?,
-                ControlMessage::CleanupBatch => tx.send(Ok(())).await?,
+                ControlMessage::CleanupBatch { .. } => tx.send(Ok(())).await?,
                 ControlMessage::Exit => return Ok(()),
             };
         }
@@ -190,7 +201,7 @@ impl ConsumerDriver {
             match rx.recv().await? {
                 ControlMessage::PrepareForBatch => tx.send(Ok(())).await?,
                 ControlMessage::SendBatch => tx.send(worker.consume().await).await?,
-                ControlMessage::CleanupBatch => tx.send(worker.send_results().await).await?,
+                ControlMessage::CleanupBatch { .. } => tx.send(worker.send_results().await).await?,
                 ControlMessage::Exit => return Ok(()),
             };
         }
@@ -212,8 +223,15 @@ impl StatsDriver {
                 ControlMessage::SendBatch => {
                     tx.send(worker.collect_send_recv_messages().await).await?
                 }
-                ControlMessage::CleanupBatch => {
+                ControlMessage::CleanupBatch {
+                    produce_stats,
+                    batch_num,
+                } => {
                     let results = worker.validate().await;
+                    if produce_stats {
+                        println!("\n** Stats for Batch {batch_num}**");
+                        worker.compute_stats();
+                    }
                     worker.new_batch();
                     tx.send(results).await?;
                 }
@@ -227,6 +245,6 @@ impl StatsDriver {
 enum ControlMessage {
     PrepareForBatch,
     SendBatch,
-    CleanupBatch,
+    CleanupBatch { produce_stats: bool, batch_num: u64 },
     Exit,
 }

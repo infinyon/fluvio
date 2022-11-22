@@ -1,13 +1,13 @@
 ---
 matrix_name: Single Producer and Consumer
 num_samples: 1
-num_batches_per_sample: 2
+num_batches_per_sample: 1
 millis_between_batches: 1500
-worker_timeout_seconds: 300
+worker_timeout_seconds: 20
 num_records_per_producer_worker_per_batch:
-  - 10000
+  - 10
 producer_batch_size:
-  - 16000
+  - 64000
 producer_queue_size:
   - 100
 producer_linger_millis:
@@ -15,13 +15,13 @@ producer_linger_millis:
 producer_server_timeout_millis:
   - 5000
 producer_compression:
-  - none
+  - gzip
 record_key_allocation_strategy:
   - NoKey
 consumer_max_bytes:
   - 64000
 num_concurrent_producer_workers:
-  - 2
+  - 1
 num_concurrent_consumers_per_partition:
   - 1
 num_partitions:

@@ -5,7 +5,6 @@ use hdrhistogram::Histogram;
 use crate::stats_collector::BatchStats;
 
 pub fn compute_stats(data: &BatchStats) {
-    println!("\n** Stats for Batch **");
     // 1us to 1min with 3 degrees of precision
     let mut latency_histogram: Histogram<u64> =
         Histogram::new_with_bounds(1, 1000 * 1000 * 60, 3).unwrap();
@@ -13,7 +12,7 @@ pub fn compute_stats(data: &BatchStats) {
     let mut first_produce_time: Option<Instant> = None;
     let mut last_produce_time: Option<Instant> = None;
     let mut first_consume_time: Option<Instant> = None;
-    let mut last_consume_time: Option<Instant> = None; // TODO this is still just the first time a single message was received.
+    let mut last_consume_time: Option<Instant> = None; // TODO this is just the first time a single message was received... what should behavior be when multiple consumers
     let mut num_records = 0;
     let mut num_bytes = 0;
     for record in data.iter() {

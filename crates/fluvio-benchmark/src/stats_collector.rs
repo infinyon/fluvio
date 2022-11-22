@@ -149,8 +149,11 @@ impl StatsWorker {
         }
         debug!("Batch validated");
 
-        compute_stats(&self.current_batch);
         Ok(())
+    }
+
+    pub fn compute_stats(&self) {
+        compute_stats(&self.current_batch);
     }
 
     pub fn new_batch(&mut self) {
