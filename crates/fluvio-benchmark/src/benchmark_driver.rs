@@ -3,7 +3,7 @@ use async_std::{
     channel::{self, Receiver, Sender},
     future::timeout,
 };
-use log::{debug, info};
+use tracing::{debug, info};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::benchmark_settings::BenchmarkSettings, producer_worker::ProducerWorker,

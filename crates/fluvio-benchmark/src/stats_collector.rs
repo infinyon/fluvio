@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
 };
 use async_std::channel::{Receiver, Sender};
-use log::debug;
+use tracing::debug;
 
 use crate::{BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings};
 use crate::stats::AllStats;

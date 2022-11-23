@@ -6,7 +6,7 @@ use std::{
 };
 use async_std::sync::Mutex;
 use hdrhistogram::Histogram;
-use log::{info, trace};
+use tracing::{info, trace};
 use serde::{Serialize, Deserialize};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 use statrs::statistics::Statistics;
@@ -334,19 +334,19 @@ impl Variable {
 
 #[derive(Copy, Clone, Debug)]
 pub enum CompareResult {
-    /// At least one comparision was better at the p=0.001 level
+    /// Variable performance is better at the p=0.001 level
     Better {
         previous: f64,
         next: f64,
         p_value: f64,
     },
-    /// At least one comparision was worse at the p=0.001 level
+    /// Variable performance is worse at the p=0.001 level
     Worse {
         previous: f64,
         next: f64,
         p_value: f64,
     },
-    /// No comparisions were different at p = .001 level
+    /// No changed detected at p = .001 level
     NoChange,
     /// The BenchmarkStats do not have the same variables so they cannot be compared
     Uncomparable,
@@ -383,7 +383,6 @@ pub fn two_sample_t_test(
     // Two-tailed test: p-value = 2 * min{cdf(x) , 1 - cdf(x)}
     let left_tailed_p_value = students_t_dist.cdf(t);
     let right_tailed_p_value = 1.0 - students_t_dist.cdf(t);
-    // let two_tailed_p_value = 2.0 * f64_min(left_tailed_p_value, right_tailed_p_value);
 
     trace!(
         "t: {:?} df: {:?}, lv {:?}, rv {:?}",

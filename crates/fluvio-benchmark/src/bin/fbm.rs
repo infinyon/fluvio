@@ -2,10 +2,8 @@ use std::{
     fs::{File, self},
     io::{Read, Write},
 };
-
 use clap::{arg, Parser};
 use pad::PadStr;
-
 use fluvio::Compression;
 use fluvio_benchmark::{
     benchmark_config::benchmark_matrix::{
@@ -21,7 +19,6 @@ const HISTORIC_RUN_PATH: &str = "target/benchmark/previous";
 const HISTORIC_RUN_DIR: &str = "target/benchmark";
 
 fn main() {
-    env_logger::init();
     let args = Args::parse();
 
     if args.example_config {

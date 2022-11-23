@@ -2185,15 +2185,15 @@ dependencies = [
  "async-std",
  "bincode",
  "clap 4.0.22",
- "env_logger",
  "fluvio",
+ "fluvio-future",
  "hdrhistogram",
- "log",
  "pad",
  "rand 0.8.5",
  "serde",
  "serde_yaml 0.8.26",
  "statrs",
+ "tracing",
  "walkdir",
 ]
 
