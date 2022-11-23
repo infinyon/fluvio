@@ -45,7 +45,7 @@ pub struct BenchmarkMatrix {
     pub num_partitions: Vec<u64>,
     // TODO
     // pub num_replicas: Vec<u64>,
-    pub record_size_strategy: Vec<u64>,
+    pub record_size: Vec<u64>,
     // TODO
     // pub use_smart_module: Vec<bool>,
     // TODO
@@ -100,7 +100,7 @@ impl BenchmarkMatrix {
             .cross_iterate(&self.num_partitions, |v, b| {
                 b.num_partitions = Some(v);
             })
-            .cross_iterate(&self.record_size_strategy, |v, b| {
+            .cross_iterate(&self.record_size, |v, b| {
                 b.record_size_strategy = Some(v);
             })
             .cross_iterate(&self.record_key_allocation_strategy, |v, b| {

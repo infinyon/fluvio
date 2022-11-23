@@ -15,7 +15,7 @@ use crate::{
 pub struct BenchmarkDriver {}
 
 impl BenchmarkDriver {
-    pub async fn run_sample(
+    pub async fn run_samples(
         settings: BenchmarkSettings,
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
@@ -83,11 +83,13 @@ impl BenchmarkDriver {
         debug!("Stats collector thread spawned successfully");
 
         let num_expected_messages = workers_jh.len();
-        for i in 0..2 {
-            if i == 0 {
-                debug!("Starting warmup batch");
-            } else {
-                debug!("Starting batch ");
+
+        print!("Sampling:");
+        io::stdout().flush().unwrap();
+        for i in 0..settings.num_samples + 1 {
+            if i != 0 {
+                print!(".");
+                io::stdout().flush().unwrap();
             }
             // Prepare for batch
             debug!("Preparing for batch");
@@ -117,6 +119,7 @@ impl BenchmarkDriver {
             );
             async_std::task::sleep(settings.duration_between_samples).await;
         }
+        println!();
         // Close all worker tasks.
         send_control_message(&mut tx_controls, ControlMessage::Exit).await?;
         for jh in workers_jh {
@@ -129,28 +132,21 @@ impl BenchmarkDriver {
         settings: BenchmarkSettings,
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
-        print!("Sampling:");
-        io::stdout().flush().unwrap();
-        for _ in 0..settings.num_samples {
-            // Create topic for this run
-            let new_topic = TopicSpec::new_computed(settings.num_partitions as u32, 1, None);
-            let admin = FluvioAdmin::connect().await?;
-            admin
-                .create(settings.topic_name.clone(), false, new_topic)
-                .await?;
-            debug!("Topic created successfully {}", settings.topic_name);
-            let result = BenchmarkDriver::run_sample(settings.clone(), all_stats.clone()).await;
-            // Clean up topic
-            let _ = admin
-                .delete::<TopicSpec, String>(settings.topic_name.clone())
-                .await?;
-            debug!("Topic deleted successfully {}", settings.topic_name);
+        // Create topic for this run
+        let new_topic = TopicSpec::new_computed(settings.num_partitions as u32, 1, None);
+        let admin = FluvioAdmin::connect().await?;
+        admin
+            .create(settings.topic_name.clone(), false, new_topic)
+            .await?;
+        debug!("Topic created successfully {}", settings.topic_name);
+        let result = BenchmarkDriver::run_samples(settings.clone(), all_stats.clone()).await;
+        // Clean up topic
+        let _ = admin
+            .delete::<TopicSpec, String>(settings.topic_name.clone())
+            .await?;
+        debug!("Topic deleted successfully {}", settings.topic_name);
 
-            result?;
-            print!(".");
-            io::stdout().flush().unwrap();
-        }
-        println!();
+        result?;
         Ok(())
     }
 }

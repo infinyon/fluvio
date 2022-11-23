@@ -45,7 +45,7 @@ impl AllStats {
             ] {
                 let (_values, hist) = stats.data.get(&variable).unwrap();
 
-                println!("Throughput Max, Median, Min");
+                println!("{:?} Max, Median, Min", variable);
                 for percentile in [1.0, 0.5, 0.0] {
                     println!(
                         "p{percentile:4.2}: {}",

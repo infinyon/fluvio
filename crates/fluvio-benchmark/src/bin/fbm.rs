@@ -62,7 +62,7 @@ fn print_example_config() {
         num_concurrent_producer_workers: vec![1],
         num_concurrent_consumers_per_partition: vec![1],
         num_partitions: vec![1],
-        record_size_strategy: vec![1000],
+        record_size: vec![1000],
         shared_settings: SharedSettings {
             matrix_name: "ExampleMatrix".to_string(),
             num_samples: 5,
