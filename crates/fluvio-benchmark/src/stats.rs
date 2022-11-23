@@ -1,6 +1,6 @@
 use std::{
     time::{Instant, Duration},
-    collections::HashMap,
+    collections::{HashMap, BTreeMap},
     fmt::{Formatter, Display},
     sync::Arc,
 };
@@ -11,7 +11,10 @@ use log::{info, trace};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 use statrs::statistics::Statistics;
 
-use crate::{stats_collector::BatchStats, benchmark_config::benchmark_settings::BenchmarkSettings};
+use crate::{
+    stats_collector::BatchStats, benchmark_config::benchmark_settings::BenchmarkSettings,
+    BenchmarkError,
+};
 use serde::{Serialize, Deserialize};
 
 pub const P_VALUE: f64 = 0.001;
@@ -26,10 +29,39 @@ pub struct AllStats {
 }
 
 impl AllStats {
+    pub async fn encode(&self) -> Vec<u8> {
+        let guard = self.mutex.lock().await;
+        bincode::serialize(&*guard).unwrap()
+    }
+
+    pub fn decode(bytes: &[u8]) -> Result<Self, BenchmarkError> {
+        let decoded: HashMap<BenchmarkSettings, BenchmarkStats> = bincode::deserialize(bytes)
+            .map_err(|_| {
+                BenchmarkError::ErrorWithExplanation("Failed to deserialized".to_string())
+            })?;
+        Ok(Self {
+            mutex: Arc::new(Mutex::new(decoded)),
+        })
+    }
+    pub async fn compare_stats(&self, settings: &BenchmarkSettings, other: AllStats) {
+        let guard = self.mutex.lock().await;
+        let other = other.mutex.lock().await;
+        let stats = guard.get(settings).unwrap();
+
+        if let Some(other_stats) = other.get(settings) {
+            println!("Previous results for settings found:",);
+            stats.compare(other_stats, settings)
+        }
+    }
+
     pub async fn print_results(&self, settings: &BenchmarkSettings) {
         let guard = self.mutex.lock().await;
         if let Some(stats) = guard.get(settings) {
-            let (_values, hist) = stats.data.get(&Variable::Latency).unwrap();
+            let values = stats.data.get(&Variable::Latency).unwrap();
+            let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
+            for v in values.iter() {
+                hist += *v;
+            }
             println!("Latency");
             for percentile in [0.0, 0.5, 0.95, 0.99, 1.0] {
                 println!(
@@ -43,9 +75,13 @@ impl AllStats {
                 Variable::ConsumerThroughput,
                 Variable::CombinedThroughput,
             ] {
-                let (_values, hist) = stats.data.get(&variable).unwrap();
+                let values = stats.data.get(&variable).unwrap();
+                let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
+                for v in values.iter() {
+                    hist += *v;
+                }
 
-                println!("{:?} Max, Median, Min", variable);
+                println!("{} Max, Median, Min", variable);
                 for percentile in [1.0, 0.5, 0.0] {
                     println!(
                         "p{percentile:4.2}: {}",
@@ -128,65 +164,73 @@ impl AllStats {
         &self,
         settings: &BenchmarkSettings,
         variable: Variable,
-        values: Vec<u64>,
+        mut values: Vec<u64>,
     ) {
         let mut guard = self.mutex.lock().await;
         let benchmark_stats = guard.entry(settings.clone()).or_default();
-        let entry = benchmark_stats
-            .data
-            .entry(variable)
-            .or_insert_with(|| (Vec::new(), Histogram::new(HIST_PRECISION).unwrap()));
-        for u in values {
-            entry.1 += u;
-            entry.0.push(u as f64)
-        }
+        let entry = benchmark_stats.data.entry(variable).or_default();
+        entry.append(&mut values);
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct BenchmarkStats {
-    data: HashMap<Variable, (Vec<f64>, Histogram<u64>)>,
+    data: BTreeMap<Variable, Vec<u64>>,
 }
 
 impl BenchmarkStats {
-    pub fn compare(&self, other: &BenchmarkStats) -> CompareResult {
-        let mut better = false;
-        let mut worse = false;
-        for (key, (value, _)) in self.data.iter() {
-            if let Some((other_value, _)) = other.data.get(key) {
-                let result = key.compare(value, other_value);
-                info!("Compare {key:?} result: {result:?}");
-                match result {
-                    CompareResult::Better => better = true,
-                    CompareResult::Worse => worse = true,
-                    CompareResult::Mixed => unreachable!(),
-                    CompareResult::NoChange => {}
-                    CompareResult::Uncomparable => return CompareResult::Uncomparable,
-                }
+    pub fn compare(&self, other: &BenchmarkStats, settings: &BenchmarkSettings) {
+        for (variable, samples) in self.data.iter() {
+            if let Some(other_samples) = other.data.get(variable) {
+                let (samples, other_samples) = if samples.len() == settings.num_samples {
+                    let samples: Vec<f64> = samples.iter().map(|x| *x as f64).collect();
+                    let other_samples: Vec<f64> = other_samples.iter().map(|x| *x as f64).collect();
+                    (samples, other_samples)
+                } else {
+                    let items_per_sample = samples.len() / settings.num_samples as usize;
+                    let samples: Vec<f64> = (0..settings.num_samples)
+                        .map(|i| {
+                            *samples[i * items_per_sample..(i + 1) * items_per_sample]
+                                .iter()
+                                .max()
+                                .unwrap() as f64
+                        })
+                        .collect();
+                    let other_samples: Vec<f64> = (0..settings.num_samples)
+                        .map(|i| {
+                            *other_samples[i * items_per_sample..(i + 1) * items_per_sample]
+                                .iter()
+                                .max()
+                                .unwrap() as f64
+                        })
+                        .collect();
+                    (samples, other_samples)
+                };
+                let result = variable.compare(&samples, &other_samples);
+                println!("Comparing {variable}... {}", variable.format_result(result));
             } else {
-                info!("Key not found: {key:?}");
-                return CompareResult::Uncomparable;
+                info!("Key not found: {variable}");
             }
-        }
-
-        if better && worse {
-            CompareResult::Mixed
-        } else if better {
-            CompareResult::Better
-        } else if worse {
-            CompareResult::Worse
-        } else {
-            CompareResult::NoChange
         }
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Variable {
     Latency,
     ProducerThroughput,
     ConsumerThroughput,
     CombinedThroughput,
+}
+impl Display for Variable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Variable::Latency => write!(f, "latency"),
+            Variable::ProducerThroughput => write!(f, "producer throughput"),
+            Variable::ConsumerThroughput => write!(f, "consumer throughput"),
+            Variable::CombinedThroughput => write!(f, "combined throughput"),
+        }
+    }
 }
 
 impl Variable {
@@ -194,35 +238,89 @@ impl Variable {
         if a.len() != b.len() {
             return CompareResult::Uncomparable;
         }
+        let a_mean = a.mean();
+        let b_mean = b.mean();
 
-        match two_sample_t_test(
-            a.mean(),
-            b.mean(),
-            a.std_dev(),
-            b.std_dev(),
-            a.len(),
-            P_VALUE,
-        ) {
-            TTestResult::X1GreaterThanX2(_) => self.greater(),
+        match two_sample_t_test(a_mean, b_mean, a.std_dev(), b.std_dev(), a.len(), P_VALUE) {
+            TTestResult::X1GreaterThanX2(p) => self.greater(a_mean, b_mean, p),
             TTestResult::FailedToRejectH0 => CompareResult::NoChange,
-            TTestResult::X1LessThanX2(_) => self.less(),
+            TTestResult::X1LessThanX2(p) => self.less(a_mean, b_mean, p),
         }
     }
 
-    fn greater(&self) -> CompareResult {
-        match self {
-            Variable::Latency => CompareResult::Worse,
-            Variable::ProducerThroughput => CompareResult::Better,
-            Variable::ConsumerThroughput => CompareResult::Better,
-            Variable::CombinedThroughput => CompareResult::Better,
+    fn format_result(&self, result: CompareResult) -> String {
+        match result {
+            CompareResult::Better {
+                previous,
+                next,
+                p_value,
+            } => format!(
+                "better: {} -> {} (p={:7.5})",
+                self.format(previous as u64),
+                self.format(next as u64),
+                p_value
+            ),
+            CompareResult::Worse {
+                previous,
+                next,
+                p_value,
+            } => format!(
+                "worse: {} -> {} (p={:7.5})",
+                self.format(previous as u64),
+                self.format(next as u64),
+                p_value
+            ),
+            CompareResult::NoChange => "no statistically significant change detected".to_string(),
+            CompareResult::Uncomparable => "uncomparable".to_string(),
         }
     }
-    fn less(&self) -> CompareResult {
+
+    fn greater(&self, a_mean: f64, b_mean: f64, p_value: f64) -> CompareResult {
         match self {
-            Variable::Latency => CompareResult::Better,
-            Variable::ProducerThroughput => CompareResult::Worse,
-            Variable::ConsumerThroughput => CompareResult::Worse,
-            Variable::CombinedThroughput => CompareResult::Worse,
+            Variable::Latency => CompareResult::Worse {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
+            Variable::ProducerThroughput => CompareResult::Better {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
+            Variable::ConsumerThroughput => CompareResult::Better {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
+            Variable::CombinedThroughput => CompareResult::Better {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
+        }
+    }
+    fn less(&self, a_mean: f64, b_mean: f64, p_value: f64) -> CompareResult {
+        match self {
+            Variable::Latency => CompareResult::Better {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
+            Variable::ProducerThroughput => CompareResult::Worse {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
+            Variable::ConsumerThroughput => CompareResult::Worse {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
+            Variable::CombinedThroughput => CompareResult::Worse {
+                previous: b_mean,
+                next: a_mean,
+                p_value,
+            },
         }
     }
 
@@ -239,11 +337,17 @@ impl Variable {
 #[derive(Copy, Clone, Debug)]
 pub enum CompareResult {
     /// At least one comparision was better at the p=0.001 level
-    Better,
+    Better {
+        previous: f64,
+        next: f64,
+        p_value: f64,
+    },
     /// At least one comparision was worse at the p=0.001 level
-    Worse,
-    /// At least one comparision was better and one comparision was worse at the p = 0.001 level
-    Mixed,
+    Worse {
+        previous: f64,
+        next: f64,
+        p_value: f64,
+    },
     /// No comparisions were different at p = .001 level
     NoChange,
     /// The BenchmarkStats do not have the same variables so they cannot be compared

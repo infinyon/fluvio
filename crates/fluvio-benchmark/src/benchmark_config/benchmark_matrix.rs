@@ -13,7 +13,7 @@ pub const DEFAULT_CONFIG_DIR: &'static str = "crates/fluvio-benchmark/benches";
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SharedSettings {
     pub matrix_name: String,
-    pub num_samples: u64,
+    pub num_samples: usize,
     pub millis_between_samples: u64,
     pub worker_timeout_seconds: u64,
 }

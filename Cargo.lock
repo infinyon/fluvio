@@ -2185,6 +2185,7 @@ name = "fluvio-benchmark"
 version = "0.0.0"
 dependencies = [
  "async-std",
+ "bincode",
  "clap 4.0.22",
  "criterion",
  "env_logger",

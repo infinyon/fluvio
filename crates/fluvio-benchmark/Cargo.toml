@@ -9,6 +9,7 @@ edition = "2021"
 fluvio = { path = "../fluvio" }
 
 async-std = "1.12.0"
+bincode = "1.3.3"
 clap = { version = "4.0.9", features = ["derive"] }
 criterion = { version = "0.4.0", features = ["async", "async_std"] }
 env_logger = "0.9.3"

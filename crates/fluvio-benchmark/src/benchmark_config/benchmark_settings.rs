@@ -11,7 +11,7 @@ pub struct BenchmarkSettings {
     pub topic_name: String,
     /// Each sample is a collection of batches that all run on the same topic.
     pub worker_timeout: Duration,
-    pub num_samples: u64,
+    pub num_samples: usize,
     pub duration_between_samples: Duration,
     pub num_records_per_producer_worker_per_batch: u64,
     pub producer_batch_size: u64,
@@ -105,7 +105,7 @@ impl Display for BenchmarkSettings {
             (self.num_records_per_producer_worker_per_batch * self.record_size * self.num_concurrent_producer_workers) as f64 / 1000000.0;
         writeln!(
             f,
-            "  Total produced size of sample: {} records * {} bytes per record  * {} producers = {:9.3}mb",
+            "  Total produced size of sample: {} records * {} bytes per record  * {} producers = {:.3}mb",
             self.num_records_per_producer_worker_per_batch,
             self.record_size,
             self.num_concurrent_producer_workers,
@@ -120,7 +120,7 @@ impl Display for BenchmarkSettings {
             self.producer_compression)?;
         writeln!(
         f,
-            "  Total consumed size of sample: {} consumers * {:9.3}mb =  {:9.3}mb", 
+            "  Total consumed size of sample: {} consumers * {:.3}mb =  {:.3}mb", 
             self.num_concurrent_consumers_per_partition,
             produced_mb,
             produced_mb * self.num_concurrent_consumers_per_partition as f64
