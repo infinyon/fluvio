@@ -5,10 +5,10 @@ version = "0.1.0"
 apiVersion = "0.1.0"
 description = "Regex SmartModule"
 license = "Apache-2.0"
+visibility = "public"
 repository = "https://github.com/infinyon/fluvio"
 
 [[params]]
 name = "regex"
 description = "Regex filter"
-
-
+optional = false
