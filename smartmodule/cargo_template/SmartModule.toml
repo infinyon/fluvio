@@ -5,6 +5,7 @@ version = "0.1.0"
 apiVersion = "0.1.0"
 description = "{{project-description}}"
 license = "Apache-2.0"
+visibility = {% if smartmodule-public %}"public"{% else %}"private"{% endif %}
 
 [[params]]
 name = "input"

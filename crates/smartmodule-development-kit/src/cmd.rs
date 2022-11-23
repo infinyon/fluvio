@@ -7,6 +7,7 @@ use crate::test::TestCmd;
 use crate::load::LoadCmd;
 use crate::publish::PublishCmd;
 use crate::hub::HubCmd;
+use crate::set_public::SetPublicOpt;
 
 /// SmartModule Development Kit utility
 #[derive(Debug, Parser)]
@@ -22,6 +23,9 @@ pub enum SmdkCommand {
     /// Hub options
     #[clap(subcommand, hide = true)]
     Hub(HubCmd),
+    /// Set package as public
+    #[clap(name = "set-public")]
+    SetPublic(SetPublicOpt),
 }
 
 impl SmdkCommand {
@@ -33,6 +37,7 @@ impl SmdkCommand {
             SmdkCommand::Load(opt) => opt.process(),
             SmdkCommand::Publish(opt) => opt.process(),
             SmdkCommand::Hub(opt) => opt.process(),
+            SmdkCommand::SetPublic(opt) => opt.process(),
         }
     }
 }

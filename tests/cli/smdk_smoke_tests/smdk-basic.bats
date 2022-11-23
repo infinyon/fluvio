@@ -33,6 +33,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -42,6 +43,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -59,6 +61,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -68,6 +71,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -85,6 +89,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -94,6 +99,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -111,6 +117,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -120,6 +127,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -137,6 +145,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -146,6 +155,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -165,6 +175,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -174,6 +185,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -191,6 +203,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -200,6 +213,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -217,6 +231,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -226,6 +241,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -243,6 +259,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -252,6 +269,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -269,6 +287,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG=
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -278,6 +297,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -296,6 +316,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -305,6 +326,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -321,6 +343,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -330,6 +353,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -346,6 +370,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -355,6 +380,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -371,6 +397,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -380,6 +407,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -396,6 +424,7 @@ setup_file() {
     PARAMS_FLAG=--no-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -405,6 +434,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -423,6 +453,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -432,6 +463,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -448,6 +480,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -457,6 +490,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -473,6 +507,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -482,6 +517,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -498,6 +534,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -507,6 +544,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
@@ -523,6 +561,7 @@ setup_file() {
     PARAMS_FLAG=--with-params
     SM_CRATE_PATH_FLAG="--sm-crate-path $(pwd)/crates/fluvio-smartmodule"
     SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
 
     # Generate
     cd $TEST_DIR
@@ -532,6 +571,7 @@ setup_file() {
         $SM_CRATE_PATH_FLAG \
         $TESTING_GROUP_NAME_FLAG \
         --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
         --silent \
         $SM_PACKAGE_NAME
     assert_success
