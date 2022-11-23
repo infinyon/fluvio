@@ -82,9 +82,12 @@ impl PackageMeta {
         format!("{}/{}@{}", self.group, self.name, self.version)
     }
 
-    /// Retrives the S3's object name from this package. Eg: `infinyon/example-0.0.1.tar`
+    /// Retrives the S3's object name from this package. Eg: `infinyon/example-0.0.1.ipkg`
     pub fn obj_name(&self) -> String {
-        format!("{}/{}-{}.tar", self.group, self.name, self.version)
+        format!(
+            "{}/{}-{}.{HUB_PACKAGE_EXT}",
+            self.group, self.name, self.version
+        )
     }
 
     /// Builds the S3 object path from the provided package name.

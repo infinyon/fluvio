@@ -90,7 +90,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -108,7 +108,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -118,7 +118,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "eyre",
  "fluvio-protocol",
@@ -138,7 +138,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.9"
+version = "0.4.0"
 dependencies = [
  "thiserror",
  "tracing",
