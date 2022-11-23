@@ -7,6 +7,8 @@ use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+use tracing::debug;
+
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 const INFINYON_CONFIG_PATH_ENV: &str = "INFINYON_CONFIG_PATH";
@@ -28,6 +30,7 @@ pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
     // the ENV variable should point directly to the applicable profile
     if let Ok(profilepath) = env::var(INFINYON_CONFIG_PATH_ENV) {
         let cred = Credentials::load(Path::new(&profilepath))?;
+        debug!("{INFINYON_CONFIG_PATH_ENV} {profilepath} loaded");
         return Ok(cred.token);
     }
     let cfgpath = default_file_path();
