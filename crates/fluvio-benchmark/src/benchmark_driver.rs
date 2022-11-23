@@ -1,11 +1,11 @@
-use std::io::{self, Write};
+use std::time::Instant;
 
 use async_std::{
     channel::{self, Receiver, Sender},
     future::timeout,
 };
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
-use log::debug;
+use log::{debug, info};
 
 use crate::{
     benchmark_config::benchmark_settings::BenchmarkSettings, producer_worker::ProducerWorker,
@@ -84,13 +84,8 @@ impl BenchmarkDriver {
 
         let num_expected_messages = workers_jh.len();
 
-        print!("Sampling:");
-        io::stdout().flush().unwrap();
         for i in 0..settings.num_samples + 1 {
-            if i != 0 {
-                print!(".");
-                io::stdout().flush().unwrap();
-            }
+            let now = Instant::now();
             // Prepare for batch
             debug!("Preparing for batch");
             send_control_message(&mut tx_controls, ControlMessage::PrepareForBatch).await?;
@@ -117,7 +112,16 @@ impl BenchmarkDriver {
                 "Waiting {:?} between samples",
                 settings.duration_between_samples
             );
+
+            let elapsed = now.elapsed();
             async_std::task::sleep(settings.duration_between_samples).await;
+
+            if i != 0 {
+                info!(
+                    "Sample {} / {} complete, took {:?} + {:?}",
+                    i, settings.num_samples, elapsed, settings.duration_between_samples
+                );
+            }
         }
         println!();
         // Close all worker tasks.

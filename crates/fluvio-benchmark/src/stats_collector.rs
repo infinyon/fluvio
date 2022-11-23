@@ -184,7 +184,7 @@ pub struct RecordMetadata {
     pub send_time: Option<Instant>,
     pub first_received_time: Option<Instant>,
     pub last_received_time: Option<Instant>,
-    receivers_list: Vec<u64>,
+    pub receivers_list: Vec<u64>,
 }
 impl RecordMetadata {
     pub fn mark_send_time(

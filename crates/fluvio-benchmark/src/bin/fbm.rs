@@ -60,6 +60,7 @@ fn main() {
             println!()
         }
     }
+    println!("Note: throughput is based on total produced bytes only");
 
     async_std::task::block_on(write_stats(all_stats)).unwrap();
 }
