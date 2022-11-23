@@ -8,7 +8,7 @@ use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode
 use fluvio::dataplane::record::ConsumerRecord;
 use crate::{BenchmarkError, hash_record};
 use crate::{
-    benchmark_config::benchmark_settings::BenchmarkSettings, stats_collector::StatsCollectorMessage,
+    benchmark_config::benchmark_config::BenchmarkConfig, stats_collector::StatsCollectorMessage,
 };
 
 pub struct ConsumerWorker {
@@ -21,7 +21,7 @@ pub struct ConsumerWorker {
 
 impl ConsumerWorker {
     pub async fn new(
-        settings: BenchmarkSettings,
+        settings: BenchmarkConfig,
         consumer_id: u64,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
         rx_stop: Receiver<()>,

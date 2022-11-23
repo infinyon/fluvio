@@ -3,7 +3,7 @@ use async_std::channel::Sender;
 use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
 use crate::{
     benchmark_config::{
-        benchmark_settings::BenchmarkSettings,
+        benchmark_config::BenchmarkConfig,
         benchmark_matrix::{RecordKeyAllocationStrategy, SHARED_KEY},
     },
     BenchmarkRecord, generate_random_string, BenchmarkError,
@@ -13,14 +13,14 @@ use crate::{
 pub struct ProducerWorker {
     fluvio_producer: TopicProducer,
     records_to_send: Option<Vec<BenchmarkRecord>>,
-    settings: BenchmarkSettings,
+    settings: BenchmarkConfig,
     producer_id: u64,
     tx_to_stats_collector: Sender<StatsCollectorMessage>,
 }
 impl ProducerWorker {
     pub async fn new(
         producer_id: u64,
-        settings: BenchmarkSettings,
+        settings: BenchmarkConfig,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
     ) -> Result<Self, BenchmarkError> {
         let fluvio = Fluvio::connect().await?;

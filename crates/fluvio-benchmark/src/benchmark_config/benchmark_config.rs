@@ -2,10 +2,10 @@ use std::{time::Duration, hash::Hash, fmt::Display};
 use rand::{Rng, thread_rng, distributions::Uniform};
 use serde::{Serialize, Deserialize};
 use fluvio::Compression;
-use super::benchmark_matrix::{RecordKeyAllocationStrategy, SharedSettings};
+use super::benchmark_matrix::{RecordKeyAllocationStrategy, SharedConfig};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct BenchmarkSettings {
+pub struct BenchmarkConfig {
     pub topic_name: String,
     /// Each sample is a collection of batches that all run on the same topic.
     pub worker_timeout: Duration,
@@ -34,9 +34,9 @@ pub struct BenchmarkSettings {
     // pub use_smart_module: Vec<bool>,
 }
 
-impl Eq for BenchmarkSettings {}
+impl Eq for BenchmarkConfig {}
 
-impl PartialEq for BenchmarkSettings {
+impl PartialEq for BenchmarkConfig {
     fn eq(&self, other: &Self) -> bool {
         // We don't compare topic_name
         self.worker_timeout == other.worker_timeout
@@ -59,7 +59,7 @@ impl PartialEq for BenchmarkSettings {
     }
 }
 
-impl Hash for BenchmarkSettings {
+impl Hash for BenchmarkConfig {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         // We don't hash the topic name
         self.worker_timeout.hash(state);
@@ -80,7 +80,7 @@ impl Hash for BenchmarkSettings {
     }
 }
 
-impl BenchmarkSettings {
+impl BenchmarkConfig {
     pub fn total_number_of_messages_produced_per_batch(&self) -> u64 {
         self.num_records_per_producer_worker_per_batch as u64
             * self.num_concurrent_producer_workers as u64
@@ -91,9 +91,9 @@ impl BenchmarkSettings {
     }
 }
 
-impl Display for BenchmarkSettings {
+impl Display for BenchmarkConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "BenchmarkSettings:")?;
+        writeln!(f, "BenchmarkConfig:")?;
         writeln!(
             f,
             "  Number of Samples: {} (Duration between samples of {:?})",
@@ -152,7 +152,7 @@ pub fn generate_new_topic_name() -> String {
 
 #[derive(Clone)]
 pub struct BenchmarkBuilder {
-    pub shared_settings: SharedSettings,
+    pub shared_settings: SharedConfig,
     pub num_records_per_producer_worker_per_batch: Option<u64>,
     pub producer_batch_size: Option<u64>,
     pub producer_queue_size: Option<u64>,
@@ -176,7 +176,7 @@ pub struct BenchmarkBuilder {
     // pub use_smart_module: Vec<bool>,
 }
 impl BenchmarkBuilder {
-    pub fn new(shared_settings: &SharedSettings) -> Self {
+    pub fn new(shared_settings: &SharedConfig) -> Self {
         Self {
             shared_settings: shared_settings.clone(),
             num_records_per_producer_worker_per_batch: Default::default(),
@@ -195,9 +195,9 @@ impl BenchmarkBuilder {
     }
 }
 
-impl From<BenchmarkBuilder> for BenchmarkSettings {
+impl From<BenchmarkBuilder> for BenchmarkConfig {
     fn from(x: BenchmarkBuilder) -> Self {
-        BenchmarkSettings {
+        BenchmarkConfig {
             topic_name: generate_new_topic_name(),
             worker_timeout: Duration::from_secs(x.shared_settings.worker_timeout_seconds),
             num_samples: x.shared_settings.num_samples,
@@ -230,7 +230,7 @@ pub trait CrossIterate {
         values: &[T],
         f: F,
     ) -> Self;
-    fn build(self) -> Vec<BenchmarkSettings>;
+    fn build(self) -> Vec<BenchmarkConfig>;
 }
 
 impl CrossIterate for Vec<BenchmarkBuilder> {
@@ -250,7 +250,7 @@ impl CrossIterate for Vec<BenchmarkBuilder> {
             .collect()
     }
 
-    fn build(self) -> Vec<BenchmarkSettings> {
+    fn build(self) -> Vec<BenchmarkConfig> {
         self.into_iter().map(|x| x.into()).collect()
     }
 }

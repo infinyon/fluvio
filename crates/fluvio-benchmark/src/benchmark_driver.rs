@@ -6,7 +6,7 @@ use async_std::{
 use tracing::{debug, info};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
-    benchmark_config::benchmark_settings::BenchmarkSettings, producer_worker::ProducerWorker,
+    benchmark_config::benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
     consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError, stats::AllStats,
 };
 
@@ -14,7 +14,7 @@ pub struct BenchmarkDriver {}
 
 impl BenchmarkDriver {
     pub async fn run_samples(
-        settings: BenchmarkSettings,
+        settings: BenchmarkConfig,
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
         // Works send results to stats collector
@@ -131,7 +131,7 @@ impl BenchmarkDriver {
         Ok(())
     }
     pub async fn run_benchmark(
-        settings: BenchmarkSettings,
+        settings: BenchmarkConfig,
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
         // Create topic for this run
@@ -165,7 +165,7 @@ async fn send_control_message(
 
 async fn expect_success(
     rx_success: &mut Receiver<Result<(), BenchmarkError>>,
-    settings: &BenchmarkSettings,
+    settings: &BenchmarkConfig,
     num_expected_messages: usize,
 ) -> Result<(), BenchmarkError> {
     for _ in 0..num_expected_messages {

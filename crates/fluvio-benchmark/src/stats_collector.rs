@@ -5,7 +5,7 @@ use std::{
 use async_std::channel::{Receiver, Sender};
 use tracing::debug;
 
-use crate::{BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings};
+use crate::{BenchmarkError, benchmark_config::benchmark_config::BenchmarkConfig};
 use crate::stats::AllStats;
 
 // We expect every message produced to be read number_of_consumers_per_partition times.
@@ -43,7 +43,7 @@ impl BatchStats {
 pub struct StatsWorker {
     receiver: Receiver<StatsCollectorMessage>,
     current_batch: BatchStats,
-    settings: BenchmarkSettings,
+    settings: BenchmarkConfig,
     tx_stop_consume: Vec<Sender<()>>,
     all_stats: AllStats,
 }
@@ -52,7 +52,7 @@ impl StatsWorker {
     pub fn new(
         tx_stop_consume: Vec<Sender<()>>,
         receiver: Receiver<StatsCollectorMessage>,
-        settings: BenchmarkSettings,
+        settings: BenchmarkConfig,
         all_stats: AllStats,
     ) -> Self {
         Self {

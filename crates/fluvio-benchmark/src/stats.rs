@@ -11,7 +11,7 @@ use serde::{Serialize, Deserialize};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 use statrs::statistics::Statistics;
 use crate::{
-    stats_collector::BatchStats, benchmark_config::benchmark_settings::BenchmarkSettings,
+    stats_collector::BatchStats, benchmark_config::benchmark_config::BenchmarkConfig,
     BenchmarkError,
 };
 
@@ -23,7 +23,7 @@ const HIST_PRECISION: u8 = 3;
 
 #[derive(Clone, Default)]
 pub struct AllStats {
-    mutex: Arc<Mutex<HashMap<BenchmarkSettings, BenchmarkStats>>>,
+    mutex: Arc<Mutex<HashMap<BenchmarkConfig, BenchmarkStats>>>,
 }
 
 impl AllStats {
@@ -33,7 +33,7 @@ impl AllStats {
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, BenchmarkError> {
-        let decoded: HashMap<BenchmarkSettings, BenchmarkStats> = bincode::deserialize(bytes)
+        let decoded: HashMap<BenchmarkConfig, BenchmarkStats> = bincode::deserialize(bytes)
             .map_err(|_| {
                 BenchmarkError::ErrorWithExplanation("Failed to deserialized".to_string())
             })?;
@@ -41,7 +41,7 @@ impl AllStats {
             mutex: Arc::new(Mutex::new(decoded)),
         })
     }
-    pub async fn compare_stats(&self, settings: &BenchmarkSettings, other: AllStats) {
+    pub async fn compare_stats(&self, settings: &BenchmarkConfig, other: AllStats) {
         let guard = self.mutex.lock().await;
         let other = other.mutex.lock().await;
         let stats = guard.get(settings).unwrap();
@@ -52,7 +52,7 @@ impl AllStats {
         }
     }
 
-    pub async fn print_results(&self, settings: &BenchmarkSettings) {
+    pub async fn print_results(&self, settings: &BenchmarkConfig) {
         let guard = self.mutex.lock().await;
         if let Some(stats) = guard.get(settings) {
             let values = stats.data.get(&Variable::Latency).unwrap();
@@ -92,7 +92,7 @@ impl AllStats {
         }
     }
 
-    pub async fn compute_stats(&self, settings: &BenchmarkSettings, data: &BatchStats) {
+    pub async fn compute_stats(&self, settings: &BenchmarkConfig, data: &BatchStats) {
         let mut first_produce_time: Option<Instant> = None;
         let mut last_produce_time: Option<Instant> = None;
         let mut first_consume_time: Option<Instant> = None;
@@ -160,7 +160,7 @@ impl AllStats {
 
     async fn record_data(
         &self,
-        settings: &BenchmarkSettings,
+        settings: &BenchmarkConfig,
         variable: Variable,
         mut values: Vec<u64>,
     ) {
@@ -177,7 +177,7 @@ pub struct BenchmarkStats {
 }
 
 impl BenchmarkStats {
-    pub fn compare(&self, other: &BenchmarkStats, settings: &BenchmarkSettings) {
+    pub fn compare(&self, other: &BenchmarkStats, settings: &BenchmarkConfig) {
         for (variable, samples) in self.data.iter() {
             if let Some(other_samples) = other.data.get(variable) {
                 let (samples, other_samples) = if samples.len() == settings.num_samples {

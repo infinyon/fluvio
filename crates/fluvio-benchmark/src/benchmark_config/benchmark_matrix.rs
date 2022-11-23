@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::fs::File;
 use serde::{Deserialize, Serialize};
 use fluvio::Compression;
-use super::benchmark_settings::{BenchmarkSettings, BenchmarkBuilder, CrossIterate};
+use super::benchmark_config::{BenchmarkConfig, BenchmarkBuilder, CrossIterate};
 
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &str = "SHARED_KEY";
@@ -11,51 +11,72 @@ pub const SHARED_KEY: &str = "SHARED_KEY";
 pub const DEFAULT_CONFIG_DIR: &str = "crates/fluvio-benchmark/benches";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SharedSettings {
+pub struct SharedConfig {
     pub matrix_name: String,
     pub num_samples: usize,
     pub millis_between_samples: u64,
     pub worker_timeout_seconds: u64,
 }
 
-/// A BenchmarkMatrix contains a collection of settings and dimensions.
-/// Iterating over a BenchmarkMatrix produces a BenchmarkSettings for every possible combination of values in the matrix.
+/// Corresponds to https://docs.rs/fluvio/latest/fluvio/struct.TopicProducerConfigBuilder.html
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct BenchmarkMatrix {
-    pub shared_settings: SharedSettings,
-
-    // Dimensions
-    pub num_records_per_producer_worker_per_batch: Vec<u64>,
-    pub producer_batch_size: Vec<u64>,
-    pub producer_queue_size: Vec<u64>,
-    pub producer_linger_millis: Vec<u64>,
-    pub producer_server_timeout_millis: Vec<u64>,
-    pub producer_compression: Vec<Compression>,
-    pub record_key_allocation_strategy: Vec<RecordKeyAllocationStrategy>,
+pub struct FluvioProducerConfig {
+    pub batch_size: Vec<u64>,
+    pub queue_size: Vec<u64>,
+    pub linger_millis: Vec<u64>,
+    pub server_timeout_millis: Vec<u64>,
+    pub compression: Vec<Compression>,
     // TODO
     // pub producer_isolation:...,
     // TODO
     // pub producer_delivery_semantic,
-    pub consumer_max_bytes: Vec<u64>,
+}
+
+/// Corresponds to https://docs.rs/fluvio/latest/fluvio/consumer/struct.ConsumerConfigBuilder.html
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FluvioConsumerConfig {
+    pub max_bytes: Vec<u64>,
     // TODO
     // pub consumer_isolation:...,
-    pub num_concurrent_producer_workers: Vec<u64>,
-    /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
-    pub num_concurrent_consumers_per_partition: Vec<u64>,
+}
+
+/// Corresponds to https://docs.rs/fluvio/latest/fluvio/metadata/topic/struct.TopicSpec.html
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FluvioTopicConfig {
     pub num_partitions: Vec<u64>,
-    // TODO
-    // pub num_replicas: Vec<u64>,
-    pub record_size: Vec<u64>,
     // TODO
     // pub use_smart_module: Vec<bool>,
     // TODO
-    // IgnoreRac
+    // IgnoreRack
+    // TODO
+    // pub num_replicas: Vec<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BenchmarkLoadConfig {
+    pub num_records_per_producer_worker_per_batch: Vec<u64>,
+    pub record_key_allocation_strategy: Vec<RecordKeyAllocationStrategy>,
+    pub num_concurrent_producer_workers: Vec<u64>,
+    /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
+    pub num_concurrent_consumers_per_partition: Vec<u64>,
+    pub record_size: Vec<u64>,
+}
+
+/// A BenchmarkMatrix contains a collection of settings and dimensions.
+/// Iterating over a BenchmarkMatrix produces a BenchmarkSettings for every possible combination of values in the matrix.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BenchmarkMatrix {
+    pub shared_config: SharedConfig,
+    pub producer_config: FluvioProducerConfig,
+    pub consumer_config: FluvioConsumerConfig,
+    pub topic_config: FluvioTopicConfig,
+    pub load_config: BenchmarkLoadConfig,
 }
 
 impl IntoIterator for BenchmarkMatrix {
-    type Item = BenchmarkSettings;
+    type Item = BenchmarkConfig;
 
-    type IntoIter = <Vec<BenchmarkSettings> as IntoIterator>::IntoIter;
+    type IntoIter = <Vec<BenchmarkConfig> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.generate_settings().into_iter()
@@ -67,43 +88,49 @@ impl BenchmarkMatrix {
     // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it alloates.
     // TODO split into smaller chunks
 
-    fn generate_settings(&self) -> Vec<BenchmarkSettings> {
-        let builder = vec![BenchmarkBuilder::new(&self.shared_settings)];
+    fn generate_settings(&self) -> Vec<BenchmarkConfig> {
+        let builder = vec![BenchmarkBuilder::new(&self.shared_config)];
         builder
-            .cross_iterate(&self.num_records_per_producer_worker_per_batch, |v, b| {
-                b.num_records_per_producer_worker_per_batch = Some(v);
-            })
-            .cross_iterate(&self.producer_batch_size, |v, b| {
+            .cross_iterate(
+                &self.load_config.num_records_per_producer_worker_per_batch,
+                |v, b| {
+                    b.num_records_per_producer_worker_per_batch = Some(v);
+                },
+            )
+            .cross_iterate(&self.producer_config.batch_size, |v, b| {
                 b.producer_batch_size = Some(v);
             })
-            .cross_iterate(&self.producer_queue_size, |v, b| {
+            .cross_iterate(&self.producer_config.queue_size, |v, b| {
                 b.producer_queue_size = Some(v);
             })
-            .cross_iterate(&self.producer_linger_millis, |v, b| {
+            .cross_iterate(&self.producer_config.linger_millis, |v, b| {
                 b.producer_linger = Some(Duration::from_millis(v));
             })
-            .cross_iterate(&self.producer_server_timeout_millis, |v, b| {
+            .cross_iterate(&self.producer_config.server_timeout_millis, |v, b| {
                 b.producer_server_timeout = Some(Duration::from_millis(v));
             })
-            .cross_iterate(&self.producer_compression, |v, b| {
+            .cross_iterate(&self.producer_config.compression, |v, b| {
                 b.producer_compression = Some(v);
             })
-            .cross_iterate(&self.consumer_max_bytes, |v, b| {
+            .cross_iterate(&self.consumer_config.max_bytes, |v, b| {
                 b.consumer_max_bytes = Some(v);
             })
-            .cross_iterate(&self.num_concurrent_producer_workers, |v, b| {
+            .cross_iterate(&self.load_config.num_concurrent_producer_workers, |v, b| {
                 b.num_concurrent_producer_workers = Some(v);
             })
-            .cross_iterate(&self.num_concurrent_consumers_per_partition, |v, b| {
-                b.num_concurrent_consumers_per_partition = Some(v);
-            })
-            .cross_iterate(&self.num_partitions, |v, b| {
+            .cross_iterate(
+                &self.load_config.num_concurrent_consumers_per_partition,
+                |v, b| {
+                    b.num_concurrent_consumers_per_partition = Some(v);
+                },
+            )
+            .cross_iterate(&self.topic_config.num_partitions, |v, b| {
                 b.num_partitions = Some(v);
             })
-            .cross_iterate(&self.record_size, |v, b| {
+            .cross_iterate(&self.load_config.record_size, |v, b| {
                 b.record_size_strategy = Some(v);
             })
-            .cross_iterate(&self.record_key_allocation_strategy, |v, b| {
+            .cross_iterate(&self.load_config.record_key_allocation_strategy, |v, b| {
                 b.record_key_allocation_strategy = Some(v);
             })
             .build()
