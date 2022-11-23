@@ -1,12 +1,11 @@
 use std::hash::{Hasher, Hash};
-
+use std::collections::hash_map::DefaultHasher;
 use async_std::{
     channel::{SendError, RecvError},
     future::TimeoutError,
 };
-use fluvio::{RecordKey, FluvioError};
 use rand::{distributions::Alphanumeric, Rng};
-use std::collections::hash_map::DefaultHasher;
+use fluvio::{RecordKey, FluvioError};
 
 pub mod consumer;
 pub mod consumer_worker;

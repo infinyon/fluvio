@@ -2,12 +2,13 @@
 name = "fluvio-benchmark"
 version = "0.0.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio benchmarking tool"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
 
 [dependencies]
-fluvio = { path = "../fluvio" }
-
 async-std = "1.12.0"
 bincode = "1.3.3"
 clap = { version = "4.0.9", features = ["derive"] }
@@ -20,3 +21,6 @@ serde = { version = "1.0.103", features = ['derive'] }
 serde_yaml = "0.8"
 statrs = "0.16.0"
 walkdir = "2.3.2"
+
+
+fluvio = { path = "../fluvio" }

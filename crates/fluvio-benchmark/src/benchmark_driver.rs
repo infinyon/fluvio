@@ -1,12 +1,10 @@
 use std::time::Instant;
-
 use async_std::{
     channel::{self, Receiver, Sender},
     future::timeout,
 };
-use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use log::{debug, info};
-
+use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::benchmark_settings::BenchmarkSettings, producer_worker::ProducerWorker,
     consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError, stats::AllStats,

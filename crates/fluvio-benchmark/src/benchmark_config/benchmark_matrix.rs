@@ -1,9 +1,9 @@
 use std::time::Duration;
-use fluvio::Compression;
-use serde::{Deserialize, Serialize};
 use std::fs::File;
-
+use serde::{Deserialize, Serialize};
+use fluvio::Compression;
 use super::benchmark_settings::{BenchmarkSettings, BenchmarkBuilder, CrossIterate};
+
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &str = "SHARED_KEY";
 

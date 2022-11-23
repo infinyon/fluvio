@@ -1,10 +1,8 @@
 use std::{time::Duration, hash::Hash, fmt::Display};
-
-use fluvio::Compression;
-use serde::{Serialize, Deserialize};
-
-use super::benchmark_matrix::{RecordKeyAllocationStrategy, SharedSettings};
 use rand::{Rng, thread_rng, distributions::Uniform};
+use serde::{Serialize, Deserialize};
+use fluvio::Compression;
+use super::benchmark_matrix::{RecordKeyAllocationStrategy, SharedSettings};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkSettings {

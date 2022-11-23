@@ -4,6 +4,8 @@ use std::{
 };
 
 use clap::{arg, Parser};
+use pad::PadStr;
+
 use fluvio::Compression;
 use fluvio_benchmark::{
     benchmark_config::benchmark_matrix::{
@@ -14,7 +16,6 @@ use fluvio_benchmark::{
     stats::AllStats,
     BenchmarkError,
 };
-use pad::PadStr;
 
 const HISTORIC_RUN_PATH: &str = "target/benchmark/previous";
 const HISTORIC_RUN_DIR: &str = "target/benchmark";

@@ -1,4 +1,3 @@
-use crate::stats::AllStats;
 use std::{
     time::{Instant, Duration},
     collections::HashMap,
@@ -7,6 +6,7 @@ use async_std::channel::{Receiver, Sender};
 use log::debug;
 
 use crate::{BenchmarkError, benchmark_config::benchmark_settings::BenchmarkSettings};
+use crate::stats::AllStats;
 
 // We expect every message produced to be read number_of_consumers_per_partition times.
 // We also expect a total of num_producers_per_batch * num_records_per_batch unique messages.

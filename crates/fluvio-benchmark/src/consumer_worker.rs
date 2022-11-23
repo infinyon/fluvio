@@ -1,13 +1,11 @@
 use std::pin::Pin;
 use std::time::{Duration, Instant};
-
 use async_std::channel::Receiver;
 use async_std::prelude::FutureExt;
 use async_std::stream::StreamExt;
 use async_std::{channel::Sender, stream::Stream};
 use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode};
 use fluvio::dataplane::record::ConsumerRecord;
-
 use crate::{BenchmarkError, hash_record};
 use crate::{
     benchmark_config::benchmark_settings::BenchmarkSettings, stats_collector::StatsCollectorMessage,

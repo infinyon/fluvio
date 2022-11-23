@@ -1,8 +1,6 @@
 use std::time::Instant;
-
 use async_std::channel::Sender;
 use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
-
 use crate::{
     benchmark_config::{
         benchmark_settings::BenchmarkSettings,

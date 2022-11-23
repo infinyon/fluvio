@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-
 use async_std::stream::StreamExt;
 use fluvio::{PartitionConsumer, Offset};
 

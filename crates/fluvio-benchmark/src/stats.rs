@@ -4,18 +4,16 @@ use std::{
     fmt::{Formatter, Display},
     sync::Arc,
 };
-
 use async_std::sync::Mutex;
 use hdrhistogram::Histogram;
 use log::{info, trace};
+use serde::{Serialize, Deserialize};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 use statrs::statistics::Statistics;
-
 use crate::{
     stats_collector::BatchStats, benchmark_config::benchmark_settings::BenchmarkSettings,
     BenchmarkError,
 };
-use serde::{Serialize, Deserialize};
 
 pub const P_VALUE: f64 = 0.001;
 // Used to compare if two p_values are equal in TTestResult
