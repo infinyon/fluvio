@@ -108,7 +108,7 @@ impl PackageMeta {
         }
 
         Ok(format!(
-            "{}/{}-{}.tar",
+            "{}/{}-{}.{HUB_PACKAGE_EXT}",
             parts[0], name_version[0], name_version[1]
         ))
     }
@@ -324,13 +324,13 @@ fn builds_obj_key_from_package_name() {
         "infinyon/regex@0.0.1",
     ];
     let obj_paths = vec![
-        "infinyon/example-0.0.1.tar",
-        "infinyon/example-sm-0.1.0.tar",
-        "infinyon/json-sql-0.0.2.tar",
-        "infinyon/test-0.1.0.tar",
-        "infinyon/hub-cli-0.1.0.tar",
-        "infinyon/test-cli-0.1.0.tar",
-        "infinyon/regex-0.0.1.tar",
+        "infinyon/example-0.0.1.ipkg",
+        "infinyon/example-sm-0.1.0.ipkg",
+        "infinyon/json-sql-0.0.2.ipkg",
+        "infinyon/test-0.1.0.ipkg",
+        "infinyon/hub-cli-0.1.0.ipkg",
+        "infinyon/test-cli-0.1.0.ipkg",
+        "infinyon/regex-0.0.1.ipkg",
     ];
 
     for (idx, name) in pkg_names.iter().enumerate() {
