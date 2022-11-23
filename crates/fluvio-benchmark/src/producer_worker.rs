@@ -13,25 +13,25 @@ use crate::{
 pub struct ProducerWorker {
     fluvio_producer: TopicProducer,
     records_to_send: Option<Vec<BenchmarkRecord>>,
-    settings: BenchmarkConfig,
+    config: BenchmarkConfig,
     producer_id: u64,
     tx_to_stats_collector: Sender<StatsCollectorMessage>,
 }
 impl ProducerWorker {
     pub async fn new(
         producer_id: u64,
-        settings: BenchmarkConfig,
+        config: BenchmarkConfig,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
     ) -> Result<Self, BenchmarkError> {
         let fluvio = Fluvio::connect().await?;
 
         let config = TopicProducerConfigBuilder::default()
-            .batch_size(settings.producer_batch_size as usize)
-            .batch_queue_size(settings.producer_queue_size as usize)
-            .linger(settings.producer_linger)
+            .batch_size(config.producer_batch_size as usize)
+            .batch_queue_size(config.producer_queue_size as usize)
+            .linger(config.producer_linger)
             // todo allow alternate partitioner
-            .compression(settings.producer_compression)
-            .timeout(settings.producer_server_timeout)
+            .compression(config.producer_compression)
+            .timeout(config.producer_server_timeout)
             // todo producer isolation
             // todo producer delivery_semantic
             .build()
@@ -39,20 +39,20 @@ impl ProducerWorker {
                 BenchmarkError::FluvioError(format!("Fluvio topic config error: {:?}", e))
             })?;
         let fluvio_producer = fluvio
-            .topic_producer_with_config(settings.topic_name.clone(), config)
+            .topic_producer_with_config(config.topic_name.clone(), config)
             .await?;
         Ok(ProducerWorker {
             fluvio_producer,
             records_to_send: None,
-            settings,
+            config,
             producer_id,
             tx_to_stats_collector,
         })
     }
     pub async fn prepare_for_batch(&mut self) {
-        let records = (0..self.settings.num_records_per_producer_worker_per_batch)
+        let records = (0..self.config.num_records_per_producer_worker_per_batch)
             .map(|i| {
-                let key = match self.settings.record_key_allocation_strategy {
+                let key = match self.config.record_key_allocation_strategy {
                     RecordKeyAllocationStrategy::NoKey => RecordKey::NULL,
                     RecordKeyAllocationStrategy::AllShareSameKey => RecordKey::from(SHARED_KEY),
                     RecordKeyAllocationStrategy::ProducerWorkerUniqueKey => {
@@ -65,7 +65,7 @@ impl ProducerWorker {
                         RecordKey::from(format!("random-{}", generate_random_string(10)))
                     }
                 };
-                let data = generate_random_string(self.settings.record_size as usize);
+                let data = generate_random_string(self.config.record_size as usize);
                 BenchmarkRecord::new(key, data)
             })
             .collect();

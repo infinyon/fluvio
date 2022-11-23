@@ -43,7 +43,7 @@ impl BatchStats {
 pub struct StatsWorker {
     receiver: Receiver<StatsCollectorMessage>,
     current_batch: BatchStats,
-    settings: BenchmarkConfig,
+    config: BenchmarkConfig,
     tx_stop_consume: Vec<Sender<()>>,
     all_stats: AllStats,
 }
@@ -52,24 +52,22 @@ impl StatsWorker {
     pub fn new(
         tx_stop_consume: Vec<Sender<()>>,
         receiver: Receiver<StatsCollectorMessage>,
-        settings: BenchmarkConfig,
+        config: BenchmarkConfig,
         all_stats: AllStats,
     ) -> Self {
         Self {
             receiver,
             current_batch: BatchStats::default(),
-            settings,
+            config,
             tx_stop_consume,
             all_stats,
         }
     }
 
     pub async fn collect_send_recv_messages(&mut self) -> Result<(), BenchmarkError> {
-        let num_produced = self.settings.total_number_of_messages_produced_per_batch();
-        let num_consumed = self.settings.total_number_of_messages_produced_per_batch()
-            * self
-                .settings
-                .number_of_expected_times_each_message_consumed();
+        let num_produced = self.config.total_number_of_messages_produced_per_batch();
+        let num_consumed = self.config.total_number_of_messages_produced_per_batch()
+            * self.config.number_of_expected_times_each_message_consumed();
         let total_expected_messages = num_produced + num_consumed;
         debug!(
             "Stats listening for {num_produced} sent messages and {num_consumed} received messages"
@@ -106,11 +104,8 @@ impl StatsWorker {
     }
 
     pub async fn validate(&mut self) -> Result<(), BenchmarkError> {
-        let number_of_consumed_messages =
-            self.settings.total_number_of_messages_produced_per_batch()
-                * self
-                    .settings
-                    .number_of_expected_times_each_message_consumed();
+        let number_of_consumed_messages = self.config.total_number_of_messages_produced_per_batch()
+            * self.config.number_of_expected_times_each_message_consumed();
         for _ in 0..number_of_consumed_messages {
             match self.receiver.recv().await {
                 Ok(message) => match message {
@@ -141,9 +136,8 @@ impl StatsWorker {
             }
         }
 
-        let expected_num_times_consumed = self
-            .settings
-            .number_of_expected_times_each_message_consumed();
+        let expected_num_times_consumed =
+            self.config.number_of_expected_times_each_message_consumed();
         for value in self.current_batch.collected_records.values() {
             value.validate(expected_num_times_consumed as usize)?;
         }
@@ -154,7 +148,7 @@ impl StatsWorker {
 
     pub async fn compute_stats(&self) {
         self.all_stats
-            .compute_stats(&self.settings, &self.current_batch)
+            .compute_stats(&self.config, &self.current_batch)
             .await;
     }
 

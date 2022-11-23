@@ -14,7 +14,7 @@ pub struct BenchmarkDriver {}
 
 impl BenchmarkDriver {
     pub async fn run_samples(
-        settings: BenchmarkConfig,
+        config: BenchmarkConfig,
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
         // Works send results to stats collector
@@ -26,12 +26,11 @@ impl BenchmarkDriver {
         let mut workers_jh = Vec::new();
 
         // Set up producers
-        for producer_id in 0..settings.num_concurrent_producer_workers {
+        for producer_id in 0..config.num_concurrent_producer_workers {
             let (tx_control, rx_control) = channel::unbounded();
-            let worker =
-                ProducerWorker::new(producer_id, settings.clone(), tx_stats.clone()).await?;
+            let worker = ProducerWorker::new(producer_id, config.clone(), tx_stats.clone()).await?;
             let jh = async_std::task::spawn(timeout(
-                settings.worker_timeout,
+                config.worker_timeout,
                 ProducerDriver::main_loop(rx_control, tx_success.clone(), worker),
             ));
             tx_controls.push(tx_control);
@@ -42,17 +41,17 @@ impl BenchmarkDriver {
         // Set up consumers
         // Drivers tell consumers when they can stop trying to consume
         let mut tx_stop = Vec::new();
-        for partition in 0..settings.num_partitions {
-            for consumer_number in 0..settings.num_concurrent_consumers_per_partition {
+        for partition in 0..config.num_partitions {
+            for consumer_number in 0..config.num_concurrent_consumers_per_partition {
                 let (tx_control, rx_control) = channel::unbounded();
                 let (tx, rx_stop) = channel::unbounded();
                 tx_stop.push(tx);
                 let consumer_id = partition * 10000000 + consumer_number;
-                let allocation_hint = settings.num_records_per_producer_worker_per_batch
-                    * settings.num_concurrent_producer_workers
-                    / settings.num_partitions;
+                let allocation_hint = config.num_records_per_producer_worker_per_batch
+                    * config.num_concurrent_producer_workers
+                    / config.num_partitions;
                 let worker = ConsumerWorker::new(
-                    settings.clone(),
+                    config.clone(),
                     consumer_id,
                     tx_stats.clone(),
                     rx_stop.clone(),
@@ -61,7 +60,7 @@ impl BenchmarkDriver {
                 )
                 .await?;
                 let jh = async_std::task::spawn(timeout(
-                    settings.worker_timeout,
+                    config.worker_timeout,
                     ConsumerDriver::main_loop(rx_control, tx_success.clone(), worker),
                 ));
                 tx_controls.push(tx_control);
@@ -71,9 +70,9 @@ impl BenchmarkDriver {
         }
         debug!("Consumer threads spawned successfully");
         let (tx_control, rx_control) = channel::unbounded();
-        let worker = StatsWorker::new(tx_stop, rx_stats, settings.clone(), all_stats);
+        let worker = StatsWorker::new(tx_stop, rx_stats, config.clone(), all_stats);
         let jh = async_std::task::spawn(timeout(
-            settings.worker_timeout,
+            config.worker_timeout,
             StatsDriver::main_loop(rx_control, tx_success, worker),
         ));
         workers_jh.push(jh);
@@ -82,17 +81,17 @@ impl BenchmarkDriver {
 
         let num_expected_messages = workers_jh.len();
 
-        for i in 0..settings.num_samples + 1 {
+        for i in 0..config.num_samples + 1 {
             let now = Instant::now();
             // Prepare for batch
             debug!("Preparing for batch");
             send_control_message(&mut tx_controls, ControlMessage::PrepareForBatch).await?;
-            expect_success(&mut rx_success, &settings, num_expected_messages).await?;
+            expect_success(&mut rx_success, &config, num_expected_messages).await?;
 
             // Do the batch
             debug!("Sending batch");
             send_control_message(&mut tx_controls, ControlMessage::SendBatch).await?;
-            expect_success(&mut rx_success, &settings, num_expected_messages).await?;
+            expect_success(&mut rx_success, &config, num_expected_messages).await?;
 
             // Clean up the batch
             debug!("Cleaning up batch");
@@ -103,21 +102,21 @@ impl BenchmarkDriver {
                 },
             )
             .await?;
-            expect_success(&mut rx_success, &settings, num_expected_messages).await?;
+            expect_success(&mut rx_success, &config, num_expected_messages).await?;
 
             // Wait between batches
             debug!(
                 "Waiting {:?} between samples",
-                settings.duration_between_samples
+                config.duration_between_samples
             );
 
             let elapsed = now.elapsed();
-            async_std::task::sleep(settings.duration_between_samples).await;
+            async_std::task::sleep(config.duration_between_samples).await;
 
             if i != 0 {
                 info!(
                     "Sample {} / {} complete, took {:?} + {:?}",
-                    i, settings.num_samples, elapsed, settings.duration_between_samples
+                    i, config.num_samples, elapsed, config.duration_between_samples
                 );
             }
         }
@@ -125,28 +124,28 @@ impl BenchmarkDriver {
         // Close all worker tasks.
         send_control_message(&mut tx_controls, ControlMessage::Exit).await?;
         for jh in workers_jh {
-            timeout(settings.worker_timeout, jh).await???;
+            timeout(config.worker_timeout, jh).await???;
         }
 
         Ok(())
     }
     pub async fn run_benchmark(
-        settings: BenchmarkConfig,
+        config: BenchmarkConfig,
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
         // Create topic for this run
-        let new_topic = TopicSpec::new_computed(settings.num_partitions as u32, 1, None);
+        let new_topic = TopicSpec::new_computed(config.num_partitions as u32, 1, None);
         let admin = FluvioAdmin::connect().await?;
         admin
-            .create(settings.topic_name.clone(), false, new_topic)
+            .create(config.topic_name.clone(), false, new_topic)
             .await?;
-        debug!("Topic created successfully {}", settings.topic_name);
-        let result = BenchmarkDriver::run_samples(settings.clone(), all_stats.clone()).await;
+        debug!("Topic created successfully {}", config.topic_name);
+        let result = BenchmarkDriver::run_samples(config.clone(), all_stats.clone()).await;
         // Clean up topic
         admin
-            .delete::<TopicSpec, String>(settings.topic_name.clone())
+            .delete::<TopicSpec, String>(config.topic_name.clone())
             .await?;
-        debug!("Topic deleted successfully {}", settings.topic_name);
+        debug!("Topic deleted successfully {}", config.topic_name);
 
         result?;
         Ok(())
@@ -165,11 +164,11 @@ async fn send_control_message(
 
 async fn expect_success(
     rx_success: &mut Receiver<Result<(), BenchmarkError>>,
-    settings: &BenchmarkConfig,
+    config: &BenchmarkConfig,
     num_expected_messages: usize,
 ) -> Result<(), BenchmarkError> {
     for _ in 0..num_expected_messages {
-        timeout(settings.worker_timeout, rx_success.recv()).await???;
+        timeout(config.worker_timeout, rx_success.recv()).await???;
     }
     Ok(())
 }

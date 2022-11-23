@@ -44,16 +44,16 @@ fn main() {
         );
         print_divider();
 
-        for settings in matrix.into_iter() {
-            println!("{}", settings);
+        for config in matrix.into_iter() {
+            println!("{}", config);
             async_std::task::block_on(BenchmarkDriver::run_benchmark(
-                settings.clone(),
+                config.clone(),
                 all_stats.clone(),
             ))
             .unwrap();
-            async_std::task::block_on(all_stats.print_results(&settings));
+            async_std::task::block_on(all_stats.print_results(&config));
             if let Some(other) = previous.as_ref() {
-                async_std::task::block_on(all_stats.compare_stats(&settings, other.clone()));
+                async_std::task::block_on(all_stats.compare_stats(&config, other.clone()));
             }
             print_divider();
             println!()

@@ -62,8 +62,8 @@ pub struct BenchmarkLoadConfig {
     pub record_size: Vec<u64>,
 }
 
-/// A BenchmarkMatrix contains a collection of settings and dimensions.
-/// Iterating over a BenchmarkMatrix produces a BenchmarkSettings for every possible combination of values in the matrix.
+/// A BenchmarkMatrix contains shared config for all runs and dimensions that hold values that will change across runs.
+/// Iterating over a BenchmarkMatrix produces a BenchmarkConfig for every possible combination of values in the matrix.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkMatrix {
     pub shared_config: SharedConfig,
@@ -79,16 +79,16 @@ impl IntoIterator for BenchmarkMatrix {
     type IntoIter = <Vec<BenchmarkConfig> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.generate_settings().into_iter()
+        self.generate_configs().into_iter()
     }
 }
 
 impl BenchmarkMatrix {
-    // Impl note: This does allocate for all of the benchmark settings at once, however it made for simpler code
+    // Impl note: This does allocate for all of the benchmark configs at once, however it made for simpler code
     // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it alloates.
     // TODO split into smaller chunks
 
-    fn generate_settings(&self) -> Vec<BenchmarkConfig> {
+    fn generate_configs(&self) -> Vec<BenchmarkConfig> {
         let builder = vec![BenchmarkBuilder::new(&self.shared_config)];
         builder
             .cross_iterate(

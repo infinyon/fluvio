@@ -41,20 +41,20 @@ impl AllStats {
             mutex: Arc::new(Mutex::new(decoded)),
         })
     }
-    pub async fn compare_stats(&self, settings: &BenchmarkConfig, other: AllStats) {
+    pub async fn compare_stats(&self, config: &BenchmarkConfig, other: AllStats) {
         let guard = self.mutex.lock().await;
         let other = other.mutex.lock().await;
-        let stats = guard.get(settings).unwrap();
+        let stats = guard.get(config).unwrap();
 
-        if let Some(other_stats) = other.get(settings) {
-            println!("Previous results for settings found:",);
-            stats.compare(other_stats, settings)
+        if let Some(other_stats) = other.get(config) {
+            println!("Previous results for config found:",);
+            stats.compare(other_stats, config)
         }
     }
 
-    pub async fn print_results(&self, settings: &BenchmarkConfig) {
+    pub async fn print_results(&self, config: &BenchmarkConfig) {
         let guard = self.mutex.lock().await;
-        if let Some(stats) = guard.get(settings) {
+        if let Some(stats) = guard.get(config) {
             let values = stats.data.get(&Variable::Latency).unwrap();
             let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
             for v in values.iter() {
@@ -92,7 +92,7 @@ impl AllStats {
         }
     }
 
-    pub async fn compute_stats(&self, settings: &BenchmarkConfig, data: &BatchStats) {
+    pub async fn compute_stats(&self, config: &BenchmarkConfig, data: &BatchStats) {
         let mut first_produce_time: Option<Instant> = None;
         let mut last_produce_time: Option<Instant> = None;
         let mut first_consume_time: Option<Instant> = None;
@@ -137,21 +137,21 @@ impl AllStats {
         let consume_time = last_consume_time.unwrap() - first_consume_time.unwrap();
         let combined_time = last_consume_time.unwrap() - first_produce_time.unwrap();
 
-        self.record_data(settings, Variable::Latency, latency).await;
+        self.record_data(config, Variable::Latency, latency).await;
         self.record_data(
-            settings,
+            config,
             Variable::ProducerThroughput,
             vec![(num_bytes as f64 / produce_time.as_secs_f64()) as u64],
         )
         .await;
         self.record_data(
-            settings,
+            config,
             Variable::ConsumerThroughput,
             vec![(num_bytes as f64 / consume_time.as_secs_f64()) as u64],
         )
         .await;
         self.record_data(
-            settings,
+            config,
             Variable::CombinedThroughput,
             vec![(num_bytes as f64 / combined_time.as_secs_f64()) as u64],
         )
@@ -160,12 +160,12 @@ impl AllStats {
 
     async fn record_data(
         &self,
-        settings: &BenchmarkConfig,
+        config: &BenchmarkConfig,
         variable: Variable,
         mut values: Vec<u64>,
     ) {
         let mut guard = self.mutex.lock().await;
-        let benchmark_stats = guard.entry(settings.clone()).or_default();
+        let benchmark_stats = guard.entry(config.clone()).or_default();
         let entry = benchmark_stats.data.entry(variable).or_default();
         entry.append(&mut values);
     }
@@ -177,16 +177,16 @@ pub struct BenchmarkStats {
 }
 
 impl BenchmarkStats {
-    pub fn compare(&self, other: &BenchmarkStats, settings: &BenchmarkConfig) {
+    pub fn compare(&self, other: &BenchmarkStats, config: &BenchmarkConfig) {
         for (variable, samples) in self.data.iter() {
             if let Some(other_samples) = other.data.get(variable) {
-                let (samples, other_samples) = if samples.len() == settings.num_samples {
+                let (samples, other_samples) = if samples.len() == config.num_samples {
                     let samples: Vec<f64> = samples.iter().map(|x| *x as f64).collect();
                     let other_samples: Vec<f64> = other_samples.iter().map(|x| *x as f64).collect();
                     (samples, other_samples)
                 } else {
-                    let items_per_sample = samples.len() / settings.num_samples as usize;
-                    let samples: Vec<f64> = (0..settings.num_samples)
+                    let items_per_sample = samples.len() / config.num_samples as usize;
+                    let samples: Vec<f64> = (0..config.num_samples)
                         .map(|i| {
                             *samples[i * items_per_sample..(i + 1) * items_per_sample]
                                 .iter()
@@ -194,7 +194,7 @@ impl BenchmarkStats {
                                 .unwrap() as f64
                         })
                         .collect();
-                    let other_samples: Vec<f64> = (0..settings.num_samples)
+                    let other_samples: Vec<f64> = (0..config.num_samples)
                         .map(|i| {
                             *other_samples[i * items_per_sample..(i + 1) * items_per_sample]
                                 .iter()

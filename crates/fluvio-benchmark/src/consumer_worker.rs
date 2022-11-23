@@ -21,7 +21,7 @@ pub struct ConsumerWorker {
 
 impl ConsumerWorker {
     pub async fn new(
-        settings: BenchmarkConfig,
+        config: BenchmarkConfig,
         consumer_id: u64,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
         rx_stop: Receiver<()>,
@@ -29,12 +29,12 @@ impl ConsumerWorker {
         preallocation_hint: u64,
     ) -> Result<Self, BenchmarkError> {
         let mut config_builder = ConsumerConfigBuilder::default();
-        config_builder.max_bytes(settings.consumer_max_bytes as i32);
+        config_builder.max_bytes(config.consumer_max_bytes as i32);
 
         let config = config_builder.build()?;
 
         let fluvio_consumer =
-            fluvio::consumer(settings.topic_name.clone(), assigned_partition as u32).await?;
+            fluvio::consumer(config.topic_name.clone(), assigned_partition as u32).await?;
         let stream = fluvio_consumer
             .stream_with_config(Offset::absolute(0)?, config)
             .await?;

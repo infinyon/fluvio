@@ -152,7 +152,7 @@ pub fn generate_new_topic_name() -> String {
 
 #[derive(Clone)]
 pub struct BenchmarkBuilder {
-    pub shared_settings: SharedConfig,
+    pub shared_config: SharedConfig,
     pub num_records_per_producer_worker_per_batch: Option<u64>,
     pub producer_batch_size: Option<u64>,
     pub producer_queue_size: Option<u64>,
@@ -176,9 +176,9 @@ pub struct BenchmarkBuilder {
     // pub use_smart_module: Vec<bool>,
 }
 impl BenchmarkBuilder {
-    pub fn new(shared_settings: &SharedConfig) -> Self {
+    pub fn new(shared_config: &SharedConfig) -> Self {
         Self {
-            shared_settings: shared_settings.clone(),
+            shared_config: shared_config.clone(),
             num_records_per_producer_worker_per_batch: Default::default(),
             producer_batch_size: Default::default(),
             producer_queue_size: Default::default(),
@@ -199,11 +199,9 @@ impl From<BenchmarkBuilder> for BenchmarkConfig {
     fn from(x: BenchmarkBuilder) -> Self {
         BenchmarkConfig {
             topic_name: generate_new_topic_name(),
-            worker_timeout: Duration::from_secs(x.shared_settings.worker_timeout_seconds),
-            num_samples: x.shared_settings.num_samples,
-            duration_between_samples: Duration::from_millis(
-                x.shared_settings.millis_between_samples,
-            ),
+            worker_timeout: Duration::from_secs(x.shared_config.worker_timeout_seconds),
+            num_samples: x.shared_config.num_samples,
+            duration_between_samples: Duration::from_millis(x.shared_config.millis_between_samples),
             num_records_per_producer_worker_per_batch: x
                 .num_records_per_producer_worker_per_batch
                 .unwrap(),
