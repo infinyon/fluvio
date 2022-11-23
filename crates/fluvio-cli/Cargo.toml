@@ -41,7 +41,7 @@ producer-file-io = ["fluvio-cli-common/file-records"]
 tracing = { workspace = true }
 url = "2.1.1"
 semver = "1.0.0"
-clap = { workspace = true , features = ["std", "derive", "string", "help", "usage", "error-context"], default-features = false }
+clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"], default-features = false }
 clap_complete = "4.0.2"
 dirs = "4.0.0"
 thiserror = { workspace = true }
