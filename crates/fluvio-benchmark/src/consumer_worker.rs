@@ -68,7 +68,7 @@ impl ConsumerWorker {
                 }
                 // timeout
                 Err(_) => {
-                    if let Ok(_) = self.rx_stop.try_recv() {
+                    if self.rx_stop.try_recv().is_ok() {
                         return Ok(());
                     }
                 }

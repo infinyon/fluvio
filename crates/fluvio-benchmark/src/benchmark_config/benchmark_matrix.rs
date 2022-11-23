@@ -5,10 +5,10 @@ use std::fs::File;
 
 use super::benchmark_settings::{BenchmarkSettings, BenchmarkBuilder, CrossIterate};
 /// Key used by AllShareSameKey
-pub const SHARED_KEY: &'static str = "SHARED_KEY";
+pub const SHARED_KEY: &str = "SHARED_KEY";
 
 /// DEFAULT CONFIG DIR
-pub const DEFAULT_CONFIG_DIR: &'static str = "crates/fluvio-benchmark/benches";
+pub const DEFAULT_CONFIG_DIR: &str = "crates/fluvio-benchmark/benches";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SharedSettings {

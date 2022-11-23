@@ -35,7 +35,7 @@ impl BatchStats {
         val.mark_recv_time(recv_time, consumer_id)
     }
 
-    pub fn iter<'a>(&'a self) -> std::collections::hash_map::Values<'a, u64, RecordMetadata> {
+    pub fn iter(&self) -> std::collections::hash_map::Values<u64, RecordMetadata> {
         self.collected_records.values()
     }
 }

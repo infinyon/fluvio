@@ -145,7 +145,7 @@ impl BenchmarkDriver {
         debug!("Topic created successfully {}", settings.topic_name);
         let result = BenchmarkDriver::run_samples(settings.clone(), all_stats.clone()).await;
         // Clean up topic
-        let _ = admin
+        admin
             .delete::<TopicSpec, String>(settings.topic_name.clone())
             .await?;
         debug!("Topic deleted successfully {}", settings.topic_name);
@@ -156,7 +156,7 @@ impl BenchmarkDriver {
 }
 
 async fn send_control_message(
-    tx_control: &mut Vec<Sender<ControlMessage>>,
+    tx_control: &mut [Sender<ControlMessage>],
     message: ControlMessage,
 ) -> Result<(), BenchmarkError> {
     for tx_control in tx_control.iter_mut() {

@@ -221,16 +221,16 @@ impl From<BenchmarkBuilder> for BenchmarkSettings {
 
 pub trait CrossIterate {
     fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkBuilder) + Copy>(
-        self: Self,
+        self,
         values: &[T],
         f: F,
     ) -> Self;
-    fn build(self: Self) -> Vec<BenchmarkSettings>;
+    fn build(self) -> Vec<BenchmarkSettings>;
 }
 
 impl CrossIterate for Vec<BenchmarkBuilder> {
     fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkBuilder) + Copy>(
-        self: Self,
+        self,
         values: &[T],
         f: F,
     ) -> Self {
@@ -245,7 +245,7 @@ impl CrossIterate for Vec<BenchmarkBuilder> {
             .collect()
     }
 
-    fn build(self: Self) -> Vec<BenchmarkSettings> {
+    fn build(self) -> Vec<BenchmarkSettings> {
         self.into_iter().map(|x| x.into()).collect()
     }
 }

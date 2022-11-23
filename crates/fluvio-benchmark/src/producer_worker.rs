@@ -75,13 +75,11 @@ impl ProducerWorker {
     }
 
     pub async fn send_batch(&mut self) -> Result<(), BenchmarkError> {
-        for record in self
-            .records_to_send
-            .take()
-            .ok_or(BenchmarkError::ErrorWithExplanation(
+        for record in self.records_to_send.take().ok_or_else(|| {
+            BenchmarkError::ErrorWithExplanation(
                 "prepare_for_batch() not called on PrdoucerWorker".to_string(),
-            ))?
-        {
+            )
+        })? {
             self.tx_to_stats_collector
                 .send(StatsCollectorMessage::MessageSent {
                     hash: record.hash,
