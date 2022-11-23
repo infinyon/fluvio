@@ -706,7 +706,7 @@ jobs:
             smoke-test-k8-tls,
             smoke-test-k8-tls-root-unclean,
           ]
-        k8: [k3d, minikube]
+        k8: [k3d]
         spu: [1,2]
     steps:
       - uses: actions/checkout@v3
