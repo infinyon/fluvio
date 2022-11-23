@@ -101,8 +101,10 @@ impl Display for BenchmarkSettings {
             "  Number of Samples: {} (Duration between samples of {:?})",
             self.num_samples, self.duration_between_samples
         )?;
-        let produced_mb = 
-            (self.num_records_per_producer_worker_per_batch * self.record_size * self.num_concurrent_producer_workers) as f64 / 1000000.0;
+        let produced_mb = (self.num_records_per_producer_worker_per_batch
+            * self.record_size
+            * self.num_concurrent_producer_workers) as f64
+            / 1000000.0;
         writeln!(
             f,
             "  Total produced size of sample: {} records * {} bytes per record  * {} producers = {:.3}mb",
@@ -113,27 +115,32 @@ impl Display for BenchmarkSettings {
         )?;
         writeln!(f,
         "  Producer details: linger {:?}, fluvio batch size {}, queue size {}, server timeout {:?}, compression {:?}",
-            self.producer_linger, 
-            self.producer_batch_size, 
-            self.producer_queue_size, 
-            self.producer_server_timeout, 
+            self.producer_linger,
+            self.producer_batch_size,
+            self.producer_queue_size,
+            self.producer_server_timeout,
             self.producer_compression)?;
         writeln!(
-        f,
-            "  Total consumed size of sample: {} consumers * {:.3}mb =  {:.3}mb", 
+            f,
+            "  Total consumed size of sample: {} consumers * {:.3}mb =  {:.3}mb",
             self.num_concurrent_consumers_per_partition,
             produced_mb,
             produced_mb * self.num_concurrent_consumers_per_partition as f64
-    )?;
+        )?;
 
-        writeln!(f,"  Consumer details: Max bytes: {}", self.consumer_max_bytes)?;
+        writeln!(
+            f,
+            "  Consumer details: Max bytes: {}",
+            self.consumer_max_bytes
+        )?;
         if self.record_key_allocation_strategy != RecordKeyAllocationStrategy::NoKey {
-        writeln!(f,"  Key allocation strategy: {:?}", self.record_key_allocation_strategy)?;
-
+            writeln!(
+                f,
+                "  Key allocation strategy: {:?}",
+                self.record_key_allocation_strategy
+            )?;
         }
         Ok(())
-
-
     }
 }
 
