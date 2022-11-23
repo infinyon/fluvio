@@ -23,4 +23,4 @@ walkdir = "2.3.2"
 
 
 fluvio = { path = "../fluvio" }
-fluvio-future = "0.4.0"
+fluvio-future = { version = "0.4.0", features = ['subscriber'] }

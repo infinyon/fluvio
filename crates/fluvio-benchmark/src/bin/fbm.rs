@@ -20,6 +20,7 @@ const HISTORIC_RUN_PATH: &str = "target/benchmark/previous";
 const HISTORIC_RUN_DIR: &str = "target/benchmark";
 
 fn main() {
+    fluvio_future::subscriber::init_tracer(None);
     let args = Args::parse();
 
     if args.example_config {

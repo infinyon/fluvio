@@ -25,7 +25,7 @@ impl ProducerWorker {
     ) -> Result<Self, BenchmarkError> {
         let fluvio = Fluvio::connect().await?;
 
-        let config = TopicProducerConfigBuilder::default()
+        let fluvio_config = TopicProducerConfigBuilder::default()
             .batch_size(config.producer_batch_size as usize)
             .batch_queue_size(config.producer_queue_size as usize)
             .linger(config.producer_linger)
@@ -39,7 +39,7 @@ impl ProducerWorker {
                 BenchmarkError::FluvioError(format!("Fluvio topic config error: {:?}", e))
             })?;
         let fluvio_producer = fluvio
-            .topic_producer_with_config(config.topic_name.clone(), config)
+            .topic_producer_with_config(config.topic_name.clone(), fluvio_config)
             .await?;
         Ok(ProducerWorker {
             fluvio_producer,

@@ -31,12 +31,12 @@ impl ConsumerWorker {
         let mut config_builder = ConsumerConfigBuilder::default();
         config_builder.max_bytes(config.consumer_max_bytes as i32);
 
-        let config = config_builder.build()?;
+        let fluvio_config = config_builder.build()?;
 
         let fluvio_consumer =
             fluvio::consumer(config.topic_name.clone(), assigned_partition as u32).await?;
         let stream = fluvio_consumer
-            .stream_with_config(Offset::absolute(0)?, config)
+            .stream_with_config(Offset::absolute(0)?, fluvio_config)
             .await?;
 
         Ok(Self {
