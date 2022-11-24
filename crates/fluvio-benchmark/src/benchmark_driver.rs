@@ -1,9 +1,7 @@
 use std::time::Instant;
-use async_std::{
-    channel::{self, Receiver, Sender},
-    future::timeout,
-};
+use async_channel::{unbounded, Sender, Receiver};
 use tracing::{debug, info};
+use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
@@ -18,18 +16,18 @@ impl BenchmarkDriver {
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
         // Works send results to stats collector
-        let (tx_stats, rx_stats) = channel::unbounded();
+        let (tx_stats, rx_stats) = unbounded();
 
         // Producers alert driver on success.
-        let (tx_success, mut rx_success) = channel::unbounded();
+        let (tx_success, mut rx_success) = unbounded();
         let mut tx_controls = Vec::new();
         let mut workers_jh = Vec::new();
 
         // Set up producers
         for producer_id in 0..config.num_concurrent_producer_workers {
-            let (tx_control, rx_control) = channel::unbounded();
+            let (tx_control, rx_control) = unbounded();
             let worker = ProducerWorker::new(producer_id, config.clone(), tx_stats.clone()).await?;
-            let jh = async_std::task::spawn(timeout(
+            let jh = spawn(timeout(
                 config.worker_timeout,
                 ProducerDriver::main_loop(rx_control, tx_success.clone(), worker),
             ));
@@ -43,8 +41,8 @@ impl BenchmarkDriver {
         let mut tx_stop = Vec::new();
         for partition in 0..config.num_partitions {
             for consumer_number in 0..config.num_concurrent_consumers_per_partition {
-                let (tx_control, rx_control) = channel::unbounded();
-                let (tx, rx_stop) = channel::unbounded();
+                let (tx_control, rx_control) = unbounded();
+                let (tx, rx_stop) = unbounded();
                 tx_stop.push(tx);
                 let consumer_id = partition * 10000000 + consumer_number;
                 let allocation_hint = config.num_records_per_producer_worker_per_batch
@@ -59,7 +57,7 @@ impl BenchmarkDriver {
                     allocation_hint,
                 )
                 .await?;
-                let jh = async_std::task::spawn(timeout(
+                let jh = spawn(timeout(
                     config.worker_timeout,
                     ConsumerDriver::main_loop(rx_control, tx_success.clone(), worker),
                 ));
@@ -69,9 +67,9 @@ impl BenchmarkDriver {
             }
         }
         debug!("Consumer threads spawned successfully");
-        let (tx_control, rx_control) = channel::unbounded();
+        let (tx_control, rx_control) = unbounded();
         let worker = StatsWorker::new(tx_stop, rx_stats, config.clone(), all_stats);
-        let jh = async_std::task::spawn(timeout(
+        let jh = spawn(timeout(
             config.worker_timeout,
             StatsDriver::main_loop(rx_control, tx_success, worker),
         ));
@@ -111,7 +109,7 @@ impl BenchmarkDriver {
             );
 
             let elapsed = now.elapsed();
-            async_std::task::sleep(config.duration_between_samples).await;
+            sleep(config.duration_between_samples).await;
 
             if i != 0 {
                 info!(

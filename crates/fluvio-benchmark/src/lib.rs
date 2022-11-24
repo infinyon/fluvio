@@ -1,9 +1,7 @@
 use std::hash::{Hasher, Hash};
 use std::collections::hash_map::DefaultHasher;
-use async_std::{
-    channel::{SendError, RecvError},
-    future::TimeoutError,
-};
+use async_channel::{SendError, RecvError};
+use fluvio_future::future::TimeoutError;
 use rand::{distributions::Alphanumeric, Rng};
 use fluvio::{RecordKey, FluvioError};
 

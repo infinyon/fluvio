@@ -4,7 +4,7 @@ use std::{
     fmt::{Formatter, Display},
     sync::Arc,
 };
-use async_std::sync::Mutex;
+use fluvio_future::sync::Mutex;
 use hdrhistogram::Histogram;
 use tracing::{info, trace};
 use serde::{Serialize, Deserialize};
@@ -54,7 +54,7 @@ impl AllStats {
 
     pub async fn print_results(&self, config: &BenchmarkConfig) {
         let guard = self.mutex.lock().await;
-        if let Some(stats) = guard.get(config) {
+        if let Some(stats) = guard.get(&config) {
             let values = stats.data.get(&Variable::Latency).unwrap();
             let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
             for v in values.iter() {

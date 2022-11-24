@@ -1,11 +1,10 @@
 use std::pin::Pin;
 use std::time::{Duration, Instant};
-use async_std::channel::Receiver;
-use async_std::prelude::FutureExt;
-use async_std::stream::StreamExt;
-use async_std::{channel::Sender, stream::Stream};
+use async_channel::{Sender, Receiver};
 use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode};
 use fluvio::dataplane::record::ConsumerRecord;
+use fluvio_future::future::timeout;
+use futures_util::{Stream, StreamExt};
 use crate::{BenchmarkError, hash_record};
 use crate::{
     benchmark_config::benchmark_config::BenchmarkConfig, stats_collector::StatsCollectorMessage,
@@ -51,7 +50,7 @@ impl ConsumerWorker {
     pub async fn consume(&mut self) -> Result<(), BenchmarkError> {
         self.received.clear();
         loop {
-            match self.stream.next().timeout(Duration::from_millis(20)).await {
+            match timeout(Duration::from_millis(20), self.stream.next()).await {
                 Ok(record_opt) => {
                     if let Some(Ok(record)) = record_opt {
                         self.received.push((record, Instant::now()));

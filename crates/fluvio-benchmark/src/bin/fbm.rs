@@ -3,6 +3,7 @@ use std::{
     io::{Read, Write},
 };
 use clap::{arg, Parser};
+use fluvio_future::task::run_block_on;
 use pad::PadStr;
 use fluvio::Compression;
 use fluvio_benchmark::{
@@ -20,7 +21,7 @@ const HISTORIC_RUN_PATH: &str = "target/benchmark/previous";
 const HISTORIC_RUN_DIR: &str = "target/benchmark";
 
 fn main() {
-    fluvio_future::subscriber::init_tracer(None);
+    fluvio_future::subscriber::init_logger();
     let args = Args::parse();
 
     if args.example_config {
@@ -47,14 +48,14 @@ fn main() {
 
         for config in matrix.into_iter() {
             println!("{}", config);
-            async_std::task::block_on(BenchmarkDriver::run_benchmark(
+            run_block_on(BenchmarkDriver::run_benchmark(
                 config.clone(),
                 all_stats.clone(),
             ))
             .unwrap();
-            async_std::task::block_on(all_stats.print_results(&config));
+            run_block_on(all_stats.print_results(&config));
             if let Some(other) = previous.as_ref() {
-                async_std::task::block_on(all_stats.compare_stats(&config, other.clone()));
+                run_block_on(all_stats.compare_stats(&config, other.clone()));
             }
             print_divider();
             println!()
@@ -62,7 +63,7 @@ fn main() {
     }
     println!("Note: throughput is based on total produced bytes only");
 
-    async_std::task::block_on(write_stats(all_stats)).unwrap();
+    run_block_on(write_stats(all_stats)).unwrap();
 }
 
 fn load_previous_stats() -> Option<AllStats> {

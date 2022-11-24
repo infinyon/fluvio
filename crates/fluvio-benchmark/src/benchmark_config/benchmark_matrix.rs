@@ -1,6 +1,7 @@
 use std::time::Duration;
 use std::fs::File;
 use serde::{Deserialize, Serialize};
+
 use fluvio::Compression;
 use super::benchmark_config::{BenchmarkConfig, BenchmarkBuilder, CrossIterate};
 

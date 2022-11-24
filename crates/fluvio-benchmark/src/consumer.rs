@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
-use async_std::stream::StreamExt;
 use fluvio::{PartitionConsumer, Offset};
+use futures_util::StreamExt;
 
 pub struct Consumer {
     pub consumer: PartitionConsumer,

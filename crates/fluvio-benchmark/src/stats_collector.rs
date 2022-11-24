@@ -2,7 +2,7 @@ use std::{
     time::{Instant, Duration},
     collections::HashMap,
 };
-use async_std::channel::{Receiver, Sender};
+use async_channel::{Receiver, Sender};
 use tracing::debug;
 
 use crate::{BenchmarkError, benchmark_config::benchmark_config::BenchmarkConfig};
