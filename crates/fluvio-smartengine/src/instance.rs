@@ -4,7 +4,7 @@ use std::fmt::{self, Debug};
 
 use tracing::{debug};
 use anyhow::{Error, Result};
-use wasmtime::{Memory, Module, Caller, Extern, Trap, Instance, Func, AsContextMut, AsContext};
+use wasmtime::{Memory, Module, Caller, Extern, Instance, Func, AsContextMut, AsContext};
 
 use fluvio_protocol::{Encoder, Decoder};
 
@@ -99,7 +99,7 @@ impl SmartModuleInstanceContext {
                 debug!(len, "callback from wasm filter");
                 let memory = match caller.get_export("memory") {
                     Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
+                    _ => anyhow::bail!("failed to find host memory"),
                 };
 
                 let records = RecordsMemory { ptr, len, memory };
