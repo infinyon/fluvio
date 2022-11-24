@@ -520,7 +520,7 @@ jobs:
       UNINSTALL: noclean
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
-      SERVER_LOG: fluvio=debug
+      SERVER_LOG: fluvio=info
     strategy:
       fail-fast: false
       matrix:
