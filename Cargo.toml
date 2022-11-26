@@ -54,7 +54,9 @@ anyhow = "1.0.38"
 tracing = "0.1.19"
 thiserror = "1.0.20"
 clap = "4.0.10"
-
+bytes = "1"
+fluvio-future = "0.4.0"
+ 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
