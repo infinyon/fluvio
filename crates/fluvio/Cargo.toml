@@ -20,7 +20,7 @@ smartengine = ["fluvio-smartengine"]
 unstable = []
 
 [dependencies]
-tracing = { workspace = true }
+tracing = "0.1.19"
 futures-util = "0.3.6"
 bytes = "1.0.1"
 toml = "0.5.5"
