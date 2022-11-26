@@ -44,7 +44,7 @@ semver = "1.0.0"
 clap = { version = "4.0.9", features = ["std", "derive", "string", "help", "usage", "error-context"], default-features = false }
 clap_complete = "4.0.2"
 dirs = "4.0.0"
-thiserror = "1.0.20"
+thiserror = { workspace = true }
 eyre = "0.6.1"
 color-eyre = { version = "0.6.0", default-features = false }
 which = "4.0.2"

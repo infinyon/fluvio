@@ -15,11 +15,11 @@ doc = false
 
 [dependencies]
 tracing = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
 clap = { version = "4.0.10", features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 dirs = "4.0.0"
-thiserror = "1.0.20"
 toml = { version = "0.5.9" }
-anyhow = { workspace = true }
 cargo_metadata = "0.15.0"
 cargo-generate = "0.17.0"
 convert_case = "0.6.0"
