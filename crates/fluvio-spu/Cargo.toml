@@ -20,7 +20,7 @@ doc = false
 [dependencies]
 cfg-if = "1.0.0"
 anyhow = { workspace = true }
-tracing = "0.1.27"
+tracing = { workspace = true }
 bytes = "1.0.0"
 clap = { version = "4.0.9", features = ["std", "derive", "env"], default-features = false }
 toml = "0.5.5"

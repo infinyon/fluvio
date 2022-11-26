@@ -38,7 +38,7 @@ smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
-tracing = "0.1.19"
+tracing = { workspace = true }
 url = "2.1.1"
 semver = "1.0.0"
 clap = { version = "4.0.9", features = ["std", "derive", "string", "help", "usage", "error-context"], default-features = false }
