@@ -40,7 +40,8 @@ members = [
     "crates/fluvio-test-util",
     "crates/fluvio-types",
     "release-tools/check-crate-version",
-    "crates/smartmodule-development-kit"
+    "crates/smartmodule-development-kit",
+    "crates/cdk"
 ]
 
 exclude = [
