@@ -17,7 +17,7 @@ doc = false
 tracing = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-clap = { version = "4.0.10", features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
+clap = { workspace = true,features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 dirs = "4.0.0"
 toml = { version = "0.5.9" }
 cargo_metadata = "0.15.0"
