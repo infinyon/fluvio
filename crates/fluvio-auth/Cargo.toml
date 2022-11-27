@@ -17,8 +17,8 @@ path = "src/lib.rs"
 async-trait = "0.1.41"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_json = "1.0.59"
-thiserror = "1.0.21"
-tracing = "0.1"
+thiserror = { workspace = true }
+tracing = { workspace = true }
 x509-parser = "0.14.0"
 
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }

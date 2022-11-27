@@ -27,7 +27,7 @@ cli = [
 colored = "2.0.0"
 semver = "1.0.3"
 url = "2.1.1"
-tracing = "0.1.19"
+tracing = { workspace = true }
 serde = "1.0.115"
 serde_json = "1.0.57"
 serde_yaml = "0.9.0"
@@ -49,7 +49,7 @@ indicatif = "0.17.0"
 rand = "0.8.4"
 chrono = { version = "0.4" }
 color-eyre = { version = "0.6.0", default-features = false, optional = true }
-clap = { version = "4.0.9", features = [
+clap = { workspace = true, features = [
     "std",
     "derive",
 ], default-features = false, optional = true }
@@ -68,7 +68,7 @@ k8-client = { version = "8.0.0" }
 k8-metadata-client = { version = "5.0.0" }
 k8-types = { version = "0.7.0", features = ["app"] }
 fluvio-command = { version = "0.2.0" }
-fluvio-future = { version = "0.4.0" }
+fluvio-future = { workspace = true }
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-extension-common = { path = "../fluvio-extension-common", optional = true }
@@ -80,4 +80,4 @@ fluvio-types = { path = "../fluvio-types" }
 fluvio-channel = { path = "../fluvio-channel" }
 
 [dev-dependencies]
-fluvio-future = { version = "0.4.0", features = ["task", "fixture"] }
+fluvio-future = { workspace = true, features = ["task", "fixture"] }
