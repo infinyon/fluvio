@@ -18,16 +18,5 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
-dirs = "4.0.0"
-toml = { version = "0.5.9" }
-cargo_metadata = "0.15.0"
-cargo-generate = "0.17.0"
-convert_case = "0.6.0"
-include_dir = "0.7.2"
-tempfile = "3.3.0"
-enum-display = "0.1.3"
-lib-cargo-crate = "0.1.6"
 
-
-fluvio = { path = "../fluvio", default-features = false }
 fluvio-future = { version = "0.4.0", features = ["subscriber"]}

@@ -858,19 +858,9 @@ name = "cdk"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "cargo-generate",
- "cargo_metadata",
  "clap 4.0.26",
- "convert_case",
- "dirs",
- "enum-display",
- "fluvio",
  "fluvio-future",
- "include_dir",
- "lib-cargo-crate",
- "tempfile",
  "thiserror",
- "toml",
  "tracing",
 ]
 
