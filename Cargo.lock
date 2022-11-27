@@ -4060,6 +4060,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "json-test-connector"
+version = "0.0.0"
+
+[[package]]
 name = "k8-client"
 version = "8.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
