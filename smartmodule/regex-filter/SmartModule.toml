@@ -1,6 +1,6 @@
 [package]
 name = "regex-filter"
-group = "fluvio"
+group = "infinyon"
 version = "0.1.0"
 apiVersion = "0.1.0"
 description = "Regex SmartModule"
