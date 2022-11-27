@@ -1,17 +1,14 @@
 [package]
-name = "cdk"
+name = "cargo-builder"
 version = "0.0.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-description = "Connector Development Kit"
+description = "Build Cargo project programmability"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 publish = false
 
-[[bin]]
-name = "cdk"
-path = "src/main.rs"
-doc = false
+
 
 [dependencies]
 tracing = { workspace = true }
@@ -19,6 +16,4 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 convert_case = { workspace = true }
-
-fluvio-future = { version = "0.4.0", features = ["subscriber"]}
-cargo-builder = { path = "../cargo-builder"}
+cargo_metadata = "0.15.0"

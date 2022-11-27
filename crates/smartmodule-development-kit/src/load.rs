@@ -7,7 +7,7 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio::Fluvio;
 use fluvio_future::task::run_block_on;
-use crate::package::{PackageInfo, PackageOption};
+use cargo_builder::package::{PackageInfo, PackageOption};
 
 pub const DEFAULT_META_LOCATION: &str = "SmartModule.toml";
 

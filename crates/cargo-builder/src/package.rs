@@ -119,7 +119,7 @@ impl PackageInfo {
     }
 
     /// Read the raw bytes from the package 'output_path'
-    pub(crate) fn read_bytes(&self) -> Result<Vec<u8>> {
-        crate::read_bytes_from_path(&self.output_path)
+    pub fn read_bytes(&self) -> std::io::Result<Vec<u8>> {
+        std::fs::read(&self.output_path)
     }
 }

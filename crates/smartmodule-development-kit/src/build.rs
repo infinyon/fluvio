@@ -4,7 +4,8 @@ use std::str;
 
 use anyhow::{Error, Result, anyhow};
 use clap::Parser;
-use crate::package::{PackageInfo, PackageOption};
+
+use cargo_builder::package::{PackageInfo, PackageOption};
 
 pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 

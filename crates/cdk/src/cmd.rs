@@ -1,20 +1,20 @@
 use clap::Parser;
 use anyhow::Result;
 
+use crate::build::BuildOpt;
+
 /// Connector Development Kit
 #[derive(Debug, Parser)]
 pub enum CdkCommand {
+    Build(BuildOpt),
     Test,
 }
 
 impl CdkCommand {
     pub(crate) fn process(self) -> Result<()> {
         match self {
-            Self::Test => {
-                println!("Hello cdk");
-            }
+            CdkCommand::Build(opt) => opt.process(),
+            CdkCommand::Test => todo!(),
         }
-
-        Ok(())
     }
 }

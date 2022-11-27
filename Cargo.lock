@@ -745,6 +745,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-builder"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "cargo_metadata",
+ "clap 4.0.26",
+ "convert_case",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "cargo-generate"
 version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -858,7 +870,9 @@ name = "cdk"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "cargo-builder",
  "clap 4.0.26",
+ "convert_case",
  "fluvio-future",
  "thiserror",
  "tracing",
@@ -6034,8 +6048,8 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "bytes 1.3.0",
+ "cargo-builder",
  "cargo-generate",
- "cargo_metadata",
  "clap 4.0.26",
  "convert_case",
  "dirs",
