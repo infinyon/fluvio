@@ -49,10 +49,10 @@ pub struct PackageCmd {
 }
 
 impl PackageCmd {
-    pub(crate) fn as_opt(self) -> PackageOption {
+    pub(crate) fn as_opt(&self) -> PackageOption {
         PackageOption {
-            release: self.release,
-            package_name: self.package_name,
+            release: self.release.clone(),
+            package_name: self.package_name.clone(),
         }
     }
 }

@@ -117,7 +117,7 @@ mod test {
         let cargo = Cargo::build().build().unwrap();
 
         assert_eq!(cargo.profile, "release");
-        assert_eq!(cargo.lib, true);
+        assert!(cargo.lib);
 
         let cargo = cargo.make_cargo_cmd().expect("cmd");
         let args: Vec<&OsStr> = cargo.get_args().collect();

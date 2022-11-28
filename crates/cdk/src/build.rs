@@ -6,7 +6,7 @@ use clap::Parser;
 use cargo_builder::package::{PackageInfo, PackageOption};
 use cargo_builder::cargo::Cargo;
 
-/// Builds the SmartModule in the current working directory into a WASM file
+/// Builds the Connector in the current working directory
 #[derive(Debug, Parser)]
 pub struct BuildCmd {
     #[clap(flatten)]
@@ -24,7 +24,7 @@ impl BuildCmd {
 
         let cargo = Cargo::build()
             .profile(opt.release)
-            .lib(true)
+            .lib(false)
             .package(p.package)
             .extra_arguments(self.extra_arguments)
             .build()?;
@@ -45,10 +45,10 @@ pub struct PackageCmd {
 }
 
 impl PackageCmd {
-    pub(crate) fn as_opt(self) -> PackageOption {
+    pub(crate) fn as_opt(&self) -> PackageOption {
         PackageOption {
-            release: self.release,
-            package_name: self.package_name,
+            release: self.release.clone(),
+            package_name: self.package_name.clone(),
         }
     }
 }
