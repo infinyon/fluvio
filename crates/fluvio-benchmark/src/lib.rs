@@ -1,8 +1,10 @@
 use std::hash::{Hasher, Hash};
 use std::collections::hash_map::DefaultHasher;
+use std::io::Error as IoError;
 use async_channel::{SendError, RecvError};
-use fluvio_future::future::TimeoutError;
+use fluvio_cli_common::error::CliError;
 use rand::{distributions::Alphanumeric, Rng};
+use fluvio_future::future::TimeoutError;
 use fluvio::{RecordKey, FluvioError};
 
 pub mod consumer;
@@ -32,39 +34,29 @@ pub fn hash_record(data: &str) -> u64 {
     hasher_state.finish()
 }
 
-#[derive(Debug, Clone)]
+#[derive(thiserror::Error, Debug)]
 pub enum BenchmarkError {
+    #[error(transparent)]
+    CliError(#[from] CliError),
+    #[error(transparent)]
+    IoError(#[from] IoError),
+    #[error("{0}")]
     ErrorWithExplanation(String),
-    Timeout,
-    /// Failed to Send or Recv from a channel
-    ChannelSendRecv,
-    FluvioError(String),
+    #[error(transparent)]
+    TimeoutError(#[from] TimeoutError),
+    #[error("SendError")]
+    SendError,
+    #[error(transparent)]
+    RecvError(#[from] RecvError),
+    #[error(transparent)]
+    FluvioError(#[from] FluvioError),
 }
 
 impl<T> From<SendError<T>> for BenchmarkError {
     fn from(_: SendError<T>) -> Self {
-        BenchmarkError::ChannelSendRecv
+        BenchmarkError::SendError
     }
 }
-
-impl From<RecvError> for BenchmarkError {
-    fn from(_: RecvError) -> Self {
-        BenchmarkError::ChannelSendRecv
-    }
-}
-
-impl From<TimeoutError> for BenchmarkError {
-    fn from(_: TimeoutError) -> Self {
-        BenchmarkError::Timeout
-    }
-}
-
-impl From<FluvioError> for BenchmarkError {
-    fn from(e: FluvioError) -> Self {
-        BenchmarkError::FluvioError(format!("fluvio error {:?}", e))
-    }
-}
-
 fn generate_random_string(size: usize) -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)

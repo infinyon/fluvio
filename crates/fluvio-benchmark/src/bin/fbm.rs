@@ -1,8 +1,9 @@
 use std::{
-    fs::{File, self},
-    io::{Read, Write},
+    fs::File,
+    io::{Read, Write}, path::PathBuf,
 };
 use clap::{arg, Parser};
+use fluvio_cli_common::install::fluvio_base_dir;
 use fluvio_future::task::run_block_on;
 use pad::PadStr;
 use fluvio::Compression;
@@ -17,8 +18,6 @@ use fluvio_benchmark::{
     BenchmarkError,
 };
 
-const HISTORIC_RUN_PATH: &str = "target/benchmark/previous";
-const HISTORIC_RUN_DIR: &str = "target/benchmark";
 
 fn main() {
     fluvio_future::subscriber::init_logger();
@@ -65,9 +64,25 @@ fn main() {
 
     run_block_on(write_stats(all_stats)).unwrap();
 }
+fn benchmarking_dir() -> Result<PathBuf, BenchmarkError> {
+    let dir_path = fluvio_base_dir()?.join("benchmarks");
+    if !dir_path.exists() {
+        std::fs::create_dir_all(&dir_path)?;
+    }
+    Ok(dir_path)
+}
+
+fn historic_run_path() -> Result<PathBuf, BenchmarkError> {
+    let mut path = benchmarking_dir()?;
+    path.push("previous");
+    Ok(path)
+
+
+
+}
 
 fn load_previous_stats() -> Option<AllStats> {
-    let mut file = File::open(HISTORIC_RUN_PATH).ok()?;
+    let mut file = File::open(historic_run_path().ok()?).ok()?;
     let mut buffer: Vec<u8> = Vec::new();
     file.read_to_end(&mut buffer).ok()?;
     AllStats::decode(&buffer).ok()
@@ -75,13 +90,11 @@ fn load_previous_stats() -> Option<AllStats> {
 
 async fn write_stats(stats: AllStats) -> Result<(), BenchmarkError> {
     let encoded = stats.encode().await;
-    fs::create_dir_all(HISTORIC_RUN_DIR)
-        .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("create output dir: {:?}", e)))?;
 
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
-        .open(HISTORIC_RUN_PATH)
+        .open(historic_run_path()?)
         .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{:?}", e)))?;
     file.write(&encoded)
         .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{:?}", e)))?;

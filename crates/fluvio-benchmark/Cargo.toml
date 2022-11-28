@@ -20,10 +20,12 @@ rand = "0.8.5"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_yaml = "0.8"
 statrs = "0.16.0"
+thiserror = "1.0.20"
 walkdir = "2.3.2"
 
 
 fluvio = { path = "../fluvio" }
+fluvio-cli-common = { path = "../fluvio-cli-common"}
 # fluvio-future = { version = "0.4.0", features = ['subscriber'] }
 fluvio-future = { path = "../../../future-aio", features = [
     'task',
