@@ -65,6 +65,8 @@ pub struct SmartModulePackage {
     pub api_version: FluvioSemVersion,
     pub description: Option<String>,
     pub license: Option<String>,
+
+    #[fluvio(min_version = 19)]
     #[cfg_attr(
         feature = "use_serde",
         serde(default = "SmartModulePackage::visibility_if_missing")
