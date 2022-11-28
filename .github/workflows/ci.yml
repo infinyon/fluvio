@@ -132,22 +132,8 @@ jobs:
     strategy:
       #    fail-fast: false
       matrix:
-        rust-target:
-          - aarch64-apple-darwin
-          - arm-unknown-linux-gnueabihf
-          - armv7-unknown-linux-gnueabihf
-          - x86_64-apple-darwin
-        rust: [stable]
-        binary: [fluvio]
-        exclude:
-          # Currently unsupported by cranelift-codegen v0.88.1
-          - rust-target: arm-unknown-linux-gnueabihf
-            binary: smdk
-          - rust-target: armv7-unknown-linux-gnueabihf
-            binary: smdk
-          - rust-target: x86_64-pc-windows-gnu
-            binary: smdk.exe
         include:
+          # fluvio
           - os: ubuntu-latest
             rust: stable
             rust-target: arm-unknown-linux-gnueabihf
@@ -166,17 +152,20 @@ jobs:
             binary: fluvio
           - os: macos-12
             rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fluvio
+
+          # fluvio-run
+          - os: macos-12
+            rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-run
           - os: macos-12
             rust: stable
             rust-target: aarch64-apple-darwin
-            binary: fluvio
-          - os: macos-12
-            rust: stable
-            rust-target: aarch64-apple-darwin
             binary: fluvio-run
 
+          # fluvio-channel
           - os: ubuntu-latest
             rust: stable
             rust-target: arm-unknown-linux-gnueabihf
@@ -198,6 +187,7 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
 
+          # smdk
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
