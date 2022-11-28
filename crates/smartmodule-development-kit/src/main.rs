@@ -5,7 +5,6 @@ mod test;
 mod load;
 mod publish;
 mod hub;
-mod package;
 
 use std::path::{PathBuf};
 use clap::Parser;

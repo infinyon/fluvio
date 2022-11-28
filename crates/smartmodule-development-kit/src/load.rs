@@ -7,13 +7,15 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio::Fluvio;
 use fluvio_future::task::run_block_on;
-use crate::package::{PackageInfo, PackageOption};
+use cargo_builder::package::{PackageInfo};
+
+use crate::build::PackageCmd;
 
 pub const DEFAULT_META_LOCATION: &str = "SmartModule.toml";
 
 /// Load SmartModule into Fluvio cluster
 #[derive(Debug, Parser)]
-pub struct LoadOpt {
+pub struct LoadCmd {
     #[clap(long)]
     name: Option<String>,
 
@@ -22,7 +24,7 @@ pub struct LoadOpt {
     package_path: Option<PathBuf>,
 
     #[clap(flatten)]
-    package: PackageOption,
+    package: PackageCmd,
 
     /// Optional wasm file path
     #[clap(long)]
@@ -36,17 +38,17 @@ pub struct LoadOpt {
     #[clap(long, action)]
     dry_run: bool,
 }
-impl LoadOpt {
-    pub(crate) fn process(&self) -> Result<()> {
+impl LoadCmd {
+    pub(crate) fn process(self) -> Result<()> {
         if let Some(path) = &self.package_path {
             std::env::set_current_dir(path)?;
         }
 
         println!("Loading package at: {}", std::env::current_dir()?.display());
 
+        let opt = self.package.as_opt();
         // resolve the current cargo project
-        let package_info =
-            PackageInfo::from_options(&self.package).map_err(|e| anyhow::anyhow!(e))?;
+        let package_info = PackageInfo::from_options(&opt).map_err(|e| anyhow::anyhow!(e))?;
 
         // load ./SmartModule.toml relative to the project root
         let mut sm_toml = package_info.package_path.clone();
@@ -74,26 +76,31 @@ impl LoadOpt {
 
         let fluvio_config = self.target.clone().load()?;
 
-        if let Err(e) = run_block_on(self.create(fluvio_config, spec, sm_id)) {
+        if let Err(e) = run_block_on(create(fluvio_config, spec, sm_id, self.dry_run)) {
             eprintln!("{}", e);
             std::process::exit(1);
         }
         Ok(())
     }
+}
 
-    async fn create(&self, config: FluvioConfig, spec: SmartModuleSpec, id: String) -> Result<()> {
-        println!("Trying connection to fluvio {}", config.endpoint);
-        let fluvio = Fluvio::connect_with_config(&config).await?;
+async fn create(
+    config: FluvioConfig,
+    spec: SmartModuleSpec,
+    id: String,
+    dry_run: bool,
+) -> Result<()> {
+    println!("Trying connection to fluvio {}", config.endpoint);
+    let fluvio = Fluvio::connect_with_config(&config).await?;
 
-        let admin = fluvio.admin().await;
+    let admin = fluvio.admin().await;
 
-        if !self.dry_run {
-            println!("Creating SmartModule: {}", id);
-            admin.create(id, false, spec).await?;
-        } else {
-            println!("Dry run mode: Skipping SmartModule create");
-        }
-
-        Ok(())
+    if !dry_run {
+        println!("Creating SmartModule: {}", id);
+        admin.create(id, false, spec).await?;
+    } else {
+        println!("Dry run mode: Skipping SmartModule create");
     }
+
+    Ok(())
 }

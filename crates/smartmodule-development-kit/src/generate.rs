@@ -21,7 +21,7 @@ const FLUVIO_SMARTMODULE_REPO: &str = "https://github.com/infinyon/fluvio.git";
 
 /// Generate new SmartModule project
 #[derive(Debug, Parser)]
-pub struct GenerateOpt {
+pub struct GenerateCmd {
     /// SmartModule Project Name
     name: Option<String>,
 
@@ -181,7 +181,7 @@ pub struct GenerateOpt {
     develop: bool,
 }
 
-impl GenerateOpt {
+impl GenerateCmd {
     pub(crate) fn process(self) -> Result<()> {
         // If a name isn't specified, you'll get prompted in wizard
         if let Some(ref name) = self.name {

@@ -27,9 +27,9 @@ tar = "0.4"
 tempfile = "3.3.0"
 tokio = "1.20"
 toml = "0.5.9"
-tracing = "0.1.36"
-thiserror = "1.0"
-wasmparser = { version = "0.93.0" }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+wasmparser = { version = "0.95.0" }
 
 fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
 fluvio-types = { path = "../fluvio-types" }

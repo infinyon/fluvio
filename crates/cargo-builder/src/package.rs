@@ -4,19 +4,13 @@ use std::fmt::Debug;
 use std::{env};
 use std::path::{Path, PathBuf};
 
-use clap::Parser;
 use anyhow::Result;
 use cargo_metadata::{CargoOpt, MetadataCommand};
 use convert_case::{Case, Casing};
 
-#[derive(Debug, Parser)]
+#[derive(Debug)]
 pub struct PackageOption {
-    /// Release profile name
-    #[clap(long, default_value = "release-lto")]
     pub release: String,
-
-    /// Optional package/project name
-    #[clap(long, short)]
     pub package_name: Option<String>,
 }
 
@@ -96,7 +90,7 @@ impl PackageInfo {
         let output_path = PathBuf::from(format!(
             "{}/{}/{}/{}.wasm",
             metadata.target_directory,
-            crate::build::BUILD_TARGET,
+            "test",
             options.release,
             package.name.to_case(Case::Snake)
         ));
@@ -119,7 +113,7 @@ impl PackageInfo {
     }
 
     /// Read the raw bytes from the package 'output_path'
-    pub(crate) fn read_bytes(&self) -> Result<Vec<u8>> {
-        crate::read_bytes_from_path(&self.output_path)
+    pub fn read_bytes(&self) -> std::io::Result<Vec<u8>> {
+        std::fs::read(&self.output_path)
     }
 }

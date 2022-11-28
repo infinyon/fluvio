@@ -5,13 +5,15 @@ build-cli: install_rustup_target
 build-smdk: install_rustup_target
 	$(CARGO_BUILDER) build --bin smdk -p smartmodule-development-kit $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
 
+build-cdk: install_rustup_target
+	$(CARGO_BUILDER) build --bin cdk -p cdk $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
+
 build-fbm: install_rustup_target
 	$(CARGO_BUILDER) build --bin fbm -p fluvio-benchmark $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
 	cargo build --bin fluvio -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer
-
 
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG)

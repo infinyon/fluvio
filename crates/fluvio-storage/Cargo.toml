@@ -19,9 +19,9 @@ cli = ["clap"]
 fixture = []
 
 [dependencies]
-tracing = "0.1.19"
+tracing = { workspace = true }
 libc = "0.2.116"
-bytes = "1.1.0"
+bytes = { workspace = true }
 futures-lite = "1.7.0"
 pin-utils = "0.1.0-alpha.4"
 async-channel = "1.5.1"

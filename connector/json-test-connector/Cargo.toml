@@ -1,0 +1,11 @@
+[package]
+name = "json-test-connector"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Connector that generates JSON test data"
+edition = "2021"
+publish = false
+
+
+
+[dependencies]

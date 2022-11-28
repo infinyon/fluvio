@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::str;
 
 use anyhow::{Result};
 use clap::Parser;
@@ -7,9 +6,7 @@ use clap::Parser;
 use cargo_builder::package::{PackageInfo, PackageOption};
 use cargo_builder::cargo::Cargo;
 
-pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
-
-/// Builds the SmartModule in the current working directory into a WASM file
+/// Builds the Connector in the current working directory
 #[derive(Debug, Parser)]
 pub struct BuildCmd {
     #[clap(flatten)]
@@ -27,9 +24,8 @@ impl BuildCmd {
 
         let cargo = Cargo::build()
             .profile(opt.release)
-            .lib(true)
+            .lib(false)
             .package(p.package)
-            .target(BUILD_TARGET)
             .extra_arguments(self.extra_arguments)
             .build()?;
 
@@ -40,7 +36,7 @@ impl BuildCmd {
 #[derive(Debug, Parser)]
 pub struct PackageCmd {
     /// Release profile name
-    #[clap(long, default_value = "release-lto")]
+    #[clap(long, default_value = "release")]
     pub release: String,
 
     /// Optional package/project name

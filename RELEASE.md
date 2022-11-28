@@ -79,7 +79,7 @@ to prepare for the next release and announce the current release to the communit
 1. The automated workflow created an issue called [Release Checklist]: VERSION. Add that issue to the corresponding [milestone](https://github.com/infinyon/fluvio/milestone)
 2. Update files in Fluvio repo, open PR (with the `?template=release_template.md` PR template) and merge
     - Update `VERSION` file for next release
-      - [ ] Minor version bump the version in the `VERSION` file.
+      - [ ] Minor version bump the version in the `VERSION` file with `-dev-1`.  For example, if release was `0.10.1` then version should be bump to `0.10.2-dev-1`.
     - Update `CHANGELOG.md` file for next release
       - [ ] Add Platform version section (matching value as `VERSION` file) with a release date of `UNRELEASED` to 
       `CHANGELOG.md` at top of file (but under the `# Release Notes` header)

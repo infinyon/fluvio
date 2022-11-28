@@ -38,13 +38,13 @@ smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
-tracing = "0.1.19"
+tracing = { workspace = true }
 url = "2.1.1"
 semver = "1.0.0"
-clap = { version = "4.0.9", features = ["std", "derive", "string", "help", "usage", "error-context"], default-features = false }
+clap = { workspace = true , features = ["std", "derive", "string", "help", "usage", "error-context"], default-features = false }
 clap_complete = "4.0.2"
 dirs = "4.0.0"
-thiserror = "1.0.20"
+thiserror = { workspace = true }
 eyre = "0.6.1"
 color-eyre = { version = "0.6.0", default-features = false }
 which = "4.0.2"

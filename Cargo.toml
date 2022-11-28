@@ -42,13 +42,24 @@ members = [
     "crates/fluvio-types",
     "release-tools/check-crate-version",
     "crates/smartmodule-development-kit",
-]
+    "crates/cdk",
+    "crates/cargo-builder",
+    "connector/json-test-connector"
 
 exclude = ["smartmodule/regex-filter"]
 resolver = "2"
 
 [workspace.dependencies]
-anyhow = { version = "1.0.38" }
+anyhow = "1.0.38" 
+tracing = "0.1.19"
+thiserror = "1.0.20"
+clap = "4.0.10"
+bytes = "1"
+fluvio-future = "0.4.0"
+convert_case = "0.6.0"
+derive_builder = "0.11.0"
+portpicker = "0.1.1"
+
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
