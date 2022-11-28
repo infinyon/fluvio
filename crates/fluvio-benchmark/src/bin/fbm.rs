@@ -9,7 +9,7 @@ use pad::PadStr;
 use fluvio::Compression;
 use fluvio_benchmark::{
     benchmark_config::{benchmark_matrix::{
-        BenchmarkMatrix, RecordKeyAllocationStrategy, get_config_from_file, get_default_config,
+        BenchmarkMatrix, RecordKeyAllocationStrategy, get_config_from_file,
         SharedConfig, FluvioProducerConfig, FluvioConsumerConfig, FluvioTopicConfig,
         BenchmarkLoadConfig,
     }, Seconds, Millis},
@@ -31,7 +31,7 @@ fn main() {
     // TODO accept directory of files.
     let matrices = match Args::parse().config {
         Some(path) => get_config_from_file(&path),
-        None => get_default_config(),
+        None => default_configs(),
     };
 
     let all_stats = AllStats::default();
@@ -76,9 +76,6 @@ fn historic_run_path() -> Result<PathBuf, BenchmarkError> {
     let mut path = benchmarking_dir()?;
     path.push("previous");
     Ok(path)
-
-
-
 }
 
 fn load_previous_stats() -> Option<AllStats> {
@@ -133,9 +130,35 @@ fn print_example_config() {
     println!("{}", serde_yaml::to_string(&example_config).unwrap());
 }
 
+fn default_configs() -> Vec<BenchmarkMatrix> {
+    vec![ BenchmarkMatrix { shared_config: SharedConfig {
+        matrix_name: "Fluvio Default Benchmark".to_string(),
+        num_samples: 100,
+        millis_between_samples: Millis::new(250),
+        worker_timeout_seconds: Seconds::new(3000),
+    }, producer_config: FluvioProducerConfig {
+        batch_size: vec![16000],
+        queue_size: vec![100],
+        linger_millis: vec![Millis::new(10)],
+        server_timeout_millis: vec![Millis::new(5000)],
+        compression: vec![Compression::None],
+    }, consumer_config: FluvioConsumerConfig {
+        max_bytes: vec![64000],
+    }, topic_config: FluvioTopicConfig { num_partitions: vec![1] }, 
+        load_config: BenchmarkLoadConfig { 
+            num_records_per_producer_worker_per_batch: vec![1000], 
+            record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey], 
+            num_concurrent_producer_workers: vec![1], 
+            num_concurrent_consumers_per_partition:vec![1], 
+            record_size: vec![1000] } }]
+}
+
+
+
 fn print_divider() {
     println!("{}", "".pad_to_width_with_char(50, '#'));
 }
+
 
 #[derive(Parser, Debug)]
 struct Args {

@@ -10,8 +10,6 @@ use super::{
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &str = "SHARED_KEY";
 
-/// DEFAULT CONFIG DIR
-pub const DEFAULT_CONFIG_DIR: &str = "crates/fluvio-benchmark/benches";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SharedConfig {
@@ -88,8 +86,7 @@ impl IntoIterator for BenchmarkMatrix {
 
 impl BenchmarkMatrix {
     // Impl note: This does allocate for all of the benchmark configs at once, however it made for simpler code
-    // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it alloates.
-    // TODO split into smaller chunks
+    // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it allocates.
 
     fn generate_configs(&self) -> Vec<BenchmarkConfig> {
         let builder = vec![BenchmarkBuilder::new(&self.shared_config)];
@@ -156,64 +153,9 @@ pub enum RecordKeyAllocationStrategy {
     RandomKey,
 }
 
-pub fn get_default_config() -> Vec<BenchmarkMatrix> {
-    walkdir::WalkDir::new(DEFAULT_CONFIG_DIR)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter_map(|e| {
-            if e.path().extension().is_some() {
-                Some(e)
-            } else {
-                None
-            }
-        })
-        .map(|e| {
-            let file = File::open(e.path()).unwrap();
-            serde_yaml::from_reader::<_, BenchmarkMatrix>(file).unwrap()
-        })
-        .collect()
-}
 
 pub fn get_config_from_file(path: &str) -> Vec<BenchmarkMatrix> {
     let file = File::open(path).unwrap();
     vec![serde_yaml::from_reader::<_, BenchmarkMatrix>(file).unwrap()]
 }
 
-#[cfg(test)]
-mod tests {
-
-    use std::{path::Path, fs::File};
-
-    use super::BenchmarkMatrix;
-
-    fn test_config(path: &Path) -> bool {
-        let file = File::open(path).expect("Unable to open file");
-        match serde_yaml::from_reader::<_, BenchmarkMatrix>(file) {
-            Ok(_) => true,
-            Err(e) => {
-                println!("failed to parse configuration at {}: {}", path.display(), e);
-                false
-            }
-        }
-    }
-
-    #[test]
-    fn load_configs() {
-        // make sure all the configs in benches can be parsed correctly
-        let mut success = true;
-        for file in walkdir::WalkDir::new("benches")
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter_map(|e| {
-                if e.path().extension().is_some() {
-                    Some(e)
-                } else {
-                    None
-                }
-            })
-        {
-            success = success && test_config(file.path());
-        }
-        assert!(success, "one or more configuration files failed to parse");
-    }
-}
