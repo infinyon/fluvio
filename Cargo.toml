@@ -45,6 +45,7 @@ members = [
     "crates/cdk",
     "crates/cargo-builder",
     "connector/json-test-connector"
+]
 
 exclude = ["smartmodule/regex-filter"]
 resolver = "2"
