@@ -11,7 +11,7 @@ const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
 /// Publish SmartModule to SmartModule Hub
 #[derive(Debug, Parser)]
-pub struct PublishOpt {
+pub struct PublishCmd {
     pub package_meta: Option<String>,
 
     /// do only the pack portion
@@ -26,7 +26,7 @@ pub struct PublishOpt {
     remote: Option<String>,
 }
 
-impl PublishOpt {
+impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
 

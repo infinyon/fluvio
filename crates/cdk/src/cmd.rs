@@ -1,12 +1,12 @@
 use clap::Parser;
 use anyhow::Result;
 
-use crate::build::BuildOpt;
+use crate::build::BuildCmd;
 
 /// Connector Development Kit
 #[derive(Debug, Parser)]
 pub enum CdkCommand {
-    Build(BuildOpt),
+    Build(BuildCmd),
     Test,
 }
 

@@ -750,7 +750,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "cargo_metadata",
- "clap 4.0.26",
  "convert_case",
  "derive_builder",
  "thiserror",

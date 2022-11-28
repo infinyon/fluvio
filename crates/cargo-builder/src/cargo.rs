@@ -27,7 +27,10 @@ impl Display for Profile {
 /// Builder Argument
 #[derive(Builder, Debug, Default)]
 #[builder(setter(into))]
-pub struct BuildCmd {
+pub struct Cargo {
+    /// Basic cargo command
+    pub cmd: String,
+
     /// --profile
     #[builder(setter(into), default = "Profile::default().to_string()")]
     pub profile: String,
@@ -45,9 +48,11 @@ pub struct BuildCmd {
     pub extra_arguments: Vec<String>,
 }
 
-impl BuildCmd {
-    pub fn builder() -> BuildCmdBuilder {
-        BuildCmdBuilder::default()
+impl Cargo {
+    pub fn build() -> CargoBuilder {
+        let mut builder = CargoBuilder::default();
+        builder.cmd("build");
+        builder
     }
 
     /// Run Cargo using the `cargo` command line tool
@@ -76,7 +81,7 @@ impl BuildCmd {
 
         cargo
             .current_dir(&cwd)
-            .arg("build")
+            .arg(&self.cmd)
             .arg("--profile")
             .arg(&self.profile);
 
@@ -109,22 +114,19 @@ mod test {
 
     #[test]
     fn test_builder_default() {
-        let config = BuildCmd::builder().build().expect("should build");
+        let cargo = Cargo::build().build().unwrap();
 
-        assert_eq!(config.profile, "release");
-        assert_eq!(config.lib, true);
+        assert_eq!(cargo.profile, "release");
+        assert_eq!(cargo.lib, true);
 
-        let cargo = config.make_cargo_cmd().expect("cmd");
+        let cargo = cargo.make_cargo_cmd().expect("cmd");
         let args: Vec<&OsStr> = cargo.get_args().collect();
         assert_eq!(args, &["build", "--profile", "release", "--lib"]);
     }
 
     #[test]
     fn test_builder_package() {
-        let config = BuildCmd::builder()
-            .package("foo")
-            .build()
-            .expect("should build");
+        let config = Cargo::build().package("foo").build().expect("should build");
 
         assert_eq!(config.profile, "release");
         assert_eq!(config.package, Some("foo".to_string()));

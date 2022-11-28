@@ -1,24 +1,24 @@
 use clap::Parser;
 use anyhow::Result;
 
-use crate::build::BuildOpt;
-use crate::generate::GenerateOpt;
-use crate::test::TestOpt;
-use crate::load::LoadOpt;
-use crate::publish::PublishOpt;
+use crate::build::BuildCmd;
+use crate::generate::GenerateCmd;
+use crate::test::TestCmd;
+use crate::load::LoadCmd;
+use crate::publish::PublishCmd;
 use crate::hub::HubCmd;
 
 /// SmartModule Development Kit utility
 #[derive(Debug, Parser)]
 pub enum SmdkCommand {
     /// Builds SmartModule into WASM
-    Build(BuildOpt),
+    Build(BuildCmd),
     /// Generates a new SmartModule Project
-    Generate(GenerateOpt),
-    Test(TestOpt),
-    Load(LoadOpt),
+    Generate(GenerateCmd),
+    Test(TestCmd),
+    Load(LoadCmd),
     /// Publish SmartModule to Hub
-    Publish(PublishOpt),
+    Publish(PublishCmd),
     /// Hub options
     #[clap(subcommand, hide = true)]
     Hub(HubCmd),

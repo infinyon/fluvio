@@ -1,62 +1,54 @@
-use std::process::{Command, Stdio};
 use std::fmt::Debug;
-use std::str;
 
-use anyhow::{Error, Result, anyhow};
+use anyhow::{Result};
 use clap::Parser;
 
 use cargo_builder::package::{PackageInfo, PackageOption};
-
-pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
+use cargo_builder::cargo::Cargo;
 
 /// Builds the SmartModule in the current working directory into a WASM file
 #[derive(Debug, Parser)]
-pub struct BuildOpt {
+pub struct BuildCmd {
     #[clap(flatten)]
-    package: PackageOption,
+    package: PackageCmd,
 
     /// Extra arguments to be passed to cargo
     #[clap(raw = true)]
     extra_arguments: Vec<String>,
 }
 
-impl BuildOpt {
-    pub(crate) fn process(&self) -> Result<()> {
-        let p = PackageInfo::from_options(&self.package).map_err(|e| anyhow::anyhow!(e))?;
+impl BuildCmd {
+    pub(crate) fn process(self) -> Result<()> {
+        let opt = self.package.as_opt();
+        let p = PackageInfo::from_options(&opt).map_err(|e| anyhow::anyhow!(e))?;
 
-        let mut cargo = BuildOpt::make_cargo_cmd()?;
+        let cargo = Cargo::build()
+            .profile(opt.release)
+            .lib(true)
+            .package(p.package)
+            .extra_arguments(self.extra_arguments)
+            .build()?;
 
-        let cwd = std::env::current_dir()?;
-        cargo
-            .current_dir(&cwd)
-            .arg("build")
-            .arg("--profile")
-            .arg(&self.package.release)
-            .arg("--lib")
-            .arg("-p")
-            .arg(p.package);
-        cargo.arg("--target").arg(BUILD_TARGET);
-        if !self.extra_arguments.is_empty() {
-            cargo.args(&self.extra_arguments);
-        }
-        let status = cargo.status().map_err(Error::from)?;
-
-        if status.success() {
-            Ok(())
-        } else {
-            let output = cargo.output()?;
-            let stderr = String::from_utf8(output.stderr)?;
-            Err(anyhow!(stderr))
-        }
+        cargo.run()
     }
+}
 
-    fn make_cargo_cmd() -> Result<Command> {
-        let mut cargo = Command::new("cargo");
+#[derive(Debug, Parser)]
+pub struct PackageCmd {
+    /// Release profile name
+    #[clap(long, default_value = "release")]
+    pub release: String,
 
-        cargo.output().map_err(Error::from)?;
-        cargo.stdout(Stdio::inherit());
-        cargo.stderr(Stdio::inherit());
+    /// Optional package/project name
+    #[clap(long, short)]
+    pub package_name: Option<String>,
+}
 
-        Ok(cargo)
+impl PackageCmd {
+    pub(crate) fn as_opt(self) -> PackageOption {
+        PackageOption {
+            release: self.release,
+            package_name: self.package_name,
+        }
     }
 }
