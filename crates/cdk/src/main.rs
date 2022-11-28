@@ -1,4 +1,5 @@
 mod cmd;
+mod build;
 
 fn main() -> anyhow::Result<()> {
     use clap::Parser;

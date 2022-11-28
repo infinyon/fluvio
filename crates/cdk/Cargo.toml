@@ -18,5 +18,7 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
+convert_case = { workspace = true }
 
 fluvio-future = { version = "0.4.0", features = ["subscriber"]}
+cargo-builder = { path = "../cargo-builder"}

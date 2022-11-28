@@ -6,23 +6,24 @@ use std::fmt::Debug;
 use bytes::Bytes;
 use clap::Parser;
 use anyhow::{Result, Context, anyhow};
+use tracing::debug;
+
+use cargo_builder::package::{PackageInfo};
 use fluvio::FluvioConfig;
 use fluvio_future::task::run_block_on;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_smartengine::transformation::TransformationConfig;
-use tracing::debug;
-
 use fluvio_smartengine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use fluvio_protocol::record::Record;
 use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
 
-use crate::package::{PackageInfo, PackageOption};
+use crate::build::PackageCmd;
 
 /// Test SmartModule
 #[derive(Debug, Parser)]
-pub struct TestOpt {
+pub struct TestCmd {
     /// Provide test input with this flag
     #[clap(long, group = "TestInput")]
     text: Option<String>,
@@ -39,7 +40,7 @@ pub struct TestOpt {
     key: Option<String>,
 
     #[clap(flatten)]
-    package: PackageOption,
+    package: PackageCmd,
 
     /// Optional wasm file path
     #[clap(long, group = "TestSmartModule")]
@@ -74,7 +75,7 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
-impl TestOpt {
+impl TestCmd {
     pub(crate) fn process(self) -> Result<()> {
         debug!("starting smart module test");
 
@@ -89,8 +90,9 @@ impl TestOpt {
         } else if let Some(wasm_file) = self.wasm_file {
             build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, self.params)?
         } else {
+            let opt = self.package.as_opt();
             build_chain_ad_hoc(
-                PackageInfo::from_options(&self.package)
+                PackageInfo::from_options(&opt)
                     .map_err(|e| anyhow::anyhow!(e))?
                     .read_bytes()?,
                 self.params,
