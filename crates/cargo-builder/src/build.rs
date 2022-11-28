@@ -1,43 +1,59 @@
-use std::process::{Command, Stdio};
-use std::fmt::Debug;
-use std::str;
+// Run Cargo using the `cargo` command line tool.
 
-use anyhow::{Error, Result, anyhow};
-use clap::Parser;
-use crate::package::{PackageInfo, PackageOption};
+use std::{
+    fmt::{Debug, Display, Formatter},
+    process::{Command, Stdio},
+};
 
-pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
+use anyhow::{Error, anyhow, Result};
+use derive_builder::Builder;
 
-/// Builds the SmartModule in the current working directory into a WASM file
-#[derive(Debug, Parser)]
-pub struct BuildOpt {
-    #[clap(flatten)]
-    package: PackageOption,
-
-    /// Extra arguments to be passed to cargo
-    #[clap(raw = true)]
-    extra_arguments: Vec<String>,
+#[derive(Default)]
+pub enum Profile {
+    Debug,
+    #[default]
+    Release,
 }
 
-impl BuildOpt {
-    pub(crate) fn process(&self) -> Result<()> {
-        let p = PackageInfo::from_options(&self.package).map_err(|e| anyhow::anyhow!(e))?;
-
-        let mut cargo = BuildOpt::make_cargo_cmd()?;
-
-        let cwd = std::env::current_dir()?;
-        cargo
-            .current_dir(&cwd)
-            .arg("build")
-            .arg("--profile")
-            .arg(&self.package.release)
-            .arg("--lib")
-            .arg("-p")
-            .arg(p.package);
-        cargo.arg("--target").arg(BUILD_TARGET);
-        if !self.extra_arguments.is_empty() {
-            cargo.args(&self.extra_arguments);
+impl Display for Profile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Profile::Debug => write!(f, "debug"),
+            Profile::Release => write!(f, "release"),
         }
+    }
+}
+
+/// Builder Argument
+#[derive(Builder, Debug, Default)]
+#[builder(setter(into))]
+pub struct BuildCmd {
+    /// --profile
+    #[builder(setter(into), default = "Profile::default().to_string()")]
+    pub profile: String,
+    /// --lib
+    #[builder(default = "true")]
+    pub lib: bool,
+    /// The location at which to find the chart to install
+    /// --package
+    #[builder(setter(strip_option), default)]
+    pub package: Option<String>,
+    /// --target
+    #[builder(setter(strip_option), default)]
+    pub target: Option<String>,
+    #[builder(default)]
+    pub extra_arguments: Vec<String>,
+}
+
+impl BuildCmd {
+    pub fn builder() -> BuildCmdBuilder {
+        BuildCmdBuilder::default()
+    }
+
+    /// Run Cargo using the `cargo` command line tool
+    pub fn run(&self) -> Result<()> {
+        let mut cargo = self.make_cargo_cmd()?;
+
         let status = cargo.status().map_err(Error::from)?;
 
         if status.success() {
@@ -49,13 +65,75 @@ impl BuildOpt {
         }
     }
 
-    fn make_cargo_cmd() -> Result<Command> {
+    fn make_cargo_cmd(&self) -> Result<Command> {
+        let cwd = std::env::current_dir()?;
+
         let mut cargo = Command::new("cargo");
 
         cargo.output().map_err(Error::from)?;
         cargo.stdout(Stdio::inherit());
         cargo.stderr(Stdio::inherit());
 
+        cargo
+            .current_dir(&cwd)
+            .arg("build")
+            .arg("--profile")
+            .arg(&self.profile);
+
+        if self.lib {
+            cargo.arg("--lib");
+        }
+
+        if let Some(pkg) = &self.package {
+            cargo.arg("-p").arg(pkg);
+        }
+
+        if let Some(target) = &self.target {
+            cargo.arg("--target").arg(target);
+        }
+
+        if !self.extra_arguments.is_empty() {
+            cargo.args(&self.extra_arguments);
+        }
+
         Ok(cargo)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use std::ffi::OsStr;
+
+    use super::*;
+
+    #[test]
+    fn test_builder_default() {
+        let config = BuildCmd::builder().build().expect("should build");
+
+        assert_eq!(config.profile, "release");
+        assert_eq!(config.lib, true);
+
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(args, &["build", "--profile", "release", "--lib"]);
+    }
+
+    #[test]
+    fn test_builder_package() {
+        let config = BuildCmd::builder()
+            .package("foo")
+            .build()
+            .expect("should build");
+
+        assert_eq!(config.profile, "release");
+        assert_eq!(config.package, Some("foo".to_string()));
+
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(
+            args,
+            &["build", "--profile", "release", "--lib", "-p", "foo"]
+        );
     }
 }

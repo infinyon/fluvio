@@ -59,6 +59,9 @@ clap = "4.0.10"
 bytes = "1"
 fluvio-future = "0.4.0"
 convert_case = "0.6.0"
+derive_builder = "0.11.0"
+portpicker = "0.1.1"
+
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

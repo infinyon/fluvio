@@ -752,6 +752,7 @@ dependencies = [
  "cargo_metadata",
  "clap 4.0.26",
  "convert_case",
+ "derive_builder",
  "thiserror",
  "tracing",
 ]

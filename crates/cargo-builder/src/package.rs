@@ -96,7 +96,7 @@ impl PackageInfo {
         let output_path = PathBuf::from(format!(
             "{}/{}/{}/{}.wasm",
             metadata.target_directory,
-            crate::build::BUILD_TARGET,
+            "test",
             options.release,
             package.name.to_case(Case::Snake)
         ));

@@ -14,6 +14,7 @@ publish = false
 tracing = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 convert_case = { workspace = true }
+derive_builder = { workspace = true }
+clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 cargo_metadata = "0.15.0"
