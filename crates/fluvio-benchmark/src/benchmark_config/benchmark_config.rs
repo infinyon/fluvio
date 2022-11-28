@@ -199,9 +199,9 @@ impl From<BenchmarkBuilder> for BenchmarkConfig {
     fn from(x: BenchmarkBuilder) -> Self {
         BenchmarkConfig {
             topic_name: generate_new_topic_name(),
-            worker_timeout: Duration::from_secs(x.shared_config.worker_timeout_seconds),
+            worker_timeout: x.shared_config.worker_timeout_seconds.into(),
             num_samples: x.shared_config.num_samples,
-            duration_between_samples: Duration::from_millis(x.shared_config.millis_between_samples),
+            duration_between_samples: x.shared_config.millis_between_samples.into(),
             num_records_per_producer_worker_per_batch: x
                 .num_records_per_producer_worker_per_batch
                 .unwrap(),

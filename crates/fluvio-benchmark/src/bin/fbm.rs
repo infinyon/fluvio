@@ -7,11 +7,11 @@ use fluvio_future::task::run_block_on;
 use pad::PadStr;
 use fluvio::Compression;
 use fluvio_benchmark::{
-    benchmark_config::benchmark_matrix::{
+    benchmark_config::{benchmark_matrix::{
         BenchmarkMatrix, RecordKeyAllocationStrategy, get_config_from_file, get_default_config,
         SharedConfig, FluvioProducerConfig, FluvioConsumerConfig, FluvioTopicConfig,
         BenchmarkLoadConfig,
-    },
+    }, Seconds, Millis},
     benchmark_driver::BenchmarkDriver,
     stats::AllStats,
     BenchmarkError,
@@ -93,14 +93,14 @@ fn print_example_config() {
         shared_config: SharedConfig {
             matrix_name: "ExampleMatrix".to_string(),
             num_samples: 100,
-            millis_between_samples: 500,
-            worker_timeout_seconds: 3600,
+            millis_between_samples: Millis::new(500),
+            worker_timeout_seconds: Seconds::new(3600),
         },
         producer_config: FluvioProducerConfig {
             batch_size: vec![16000],
             queue_size: vec![100],
-            linger_millis: vec![10],
-            server_timeout_millis: vec![5000],
+            linger_millis: vec![Millis::new(10)],
+            server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
         },
         consumer_config: FluvioConsumerConfig {

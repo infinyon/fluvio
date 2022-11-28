@@ -1,9 +1,11 @@
-use std::time::Duration;
 use std::fs::File;
 use serde::{Deserialize, Serialize};
 
 use fluvio::Compression;
-use super::benchmark_config::{BenchmarkConfig, BenchmarkBuilder, CrossIterate};
+use super::{
+    benchmark_config::{BenchmarkConfig, BenchmarkBuilder, CrossIterate},
+    Millis, Seconds,
+};
 
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &str = "SHARED_KEY";
@@ -15,8 +17,8 @@ pub const DEFAULT_CONFIG_DIR: &str = "crates/fluvio-benchmark/benches";
 pub struct SharedConfig {
     pub matrix_name: String,
     pub num_samples: usize,
-    pub millis_between_samples: u64,
-    pub worker_timeout_seconds: u64,
+    pub millis_between_samples: Millis,
+    pub worker_timeout_seconds: Seconds,
 }
 
 /// Corresponds to https://docs.rs/fluvio/latest/fluvio/struct.TopicProducerConfigBuilder.html
@@ -24,8 +26,8 @@ pub struct SharedConfig {
 pub struct FluvioProducerConfig {
     pub batch_size: Vec<u64>,
     pub queue_size: Vec<u64>,
-    pub linger_millis: Vec<u64>,
-    pub server_timeout_millis: Vec<u64>,
+    pub linger_millis: Vec<Millis>,
+    pub server_timeout_millis: Vec<Millis>,
     pub compression: Vec<Compression>,
     // TODO
     // pub producer_isolation:...,
@@ -105,10 +107,10 @@ impl BenchmarkMatrix {
                 b.producer_queue_size = Some(v);
             })
             .cross_iterate(&self.producer_config.linger_millis, |v, b| {
-                b.producer_linger = Some(Duration::from_millis(v));
+                b.producer_linger = Some(v.into());
             })
             .cross_iterate(&self.producer_config.server_timeout_millis, |v, b| {
-                b.producer_server_timeout = Some(Duration::from_millis(v));
+                b.producer_server_timeout = Some(v.into());
             })
             .cross_iterate(&self.producer_config.compression, |v, b| {
                 b.producer_compression = Some(v);
