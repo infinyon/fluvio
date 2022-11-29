@@ -88,11 +88,16 @@ impl BenchmarkMatrix {
 
     fn generate_configs(&self) -> Vec<BenchmarkConfig> {
         let profile_name = ConfigFile::load_default_or_new()
-            .unwrap()
-            .config()
-            .current_profile_name()
-            .unwrap()
-            .to_string();
+            .map(|config_file| {
+                config_file
+                    .config()
+                    .current_profile_name()
+                    .map(|s| s.to_string())
+            })
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| "Unknown".to_string());
+
         let builder = vec![BenchmarkBuilder::new(&self.shared_config, profile_name)];
         builder
             .cross_iterate(
