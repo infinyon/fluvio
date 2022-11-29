@@ -44,7 +44,7 @@ impl AllStats {
         if let Some(other_stats) = other.0.get(config) {
             stats.compare(other_stats, config)
         } else {
-            "No previous results for config found.".to_string()
+            "**No previous results for config found.**".to_string()
         }
     }
 
@@ -262,7 +262,7 @@ impl BenchmarkStats {
             ));
             md.push_str(&mk_md_table_from_yaml(&yaml, &None));
         } else {
-            md.push_str("No variables found");
+            md.push_str("**No comparison variables found**");
         }
         md
     }
