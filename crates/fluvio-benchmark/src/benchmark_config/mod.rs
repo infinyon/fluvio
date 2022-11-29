@@ -33,4 +33,3 @@ impl From<Seconds> for Duration {
         Duration::from_secs(m.0)
     }
 }
-

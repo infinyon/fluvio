@@ -10,7 +10,6 @@ use super::{
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &str = "SHARED_KEY";
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SharedConfig {
     pub matrix_name: String,
@@ -153,9 +152,7 @@ pub enum RecordKeyAllocationStrategy {
     RandomKey,
 }
 
-
 pub fn get_config_from_file(path: &str) -> Vec<BenchmarkMatrix> {
     let file = File::open(path).unwrap();
     vec![serde_yaml::from_reader::<_, BenchmarkMatrix>(file).unwrap()]
 }
-

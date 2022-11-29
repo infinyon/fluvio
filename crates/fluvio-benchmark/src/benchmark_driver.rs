@@ -132,8 +132,11 @@ impl BenchmarkDriver {
         all_stats: AllStats,
     ) -> Result<(), BenchmarkError> {
         // Create topic for this run
+        
         let new_topic = TopicSpec::new_computed(config.num_partitions as u32, 1, None);
+        debug!("Create topic spec");
         let admin = FluvioAdmin::connect().await?;
+        debug!("Connected to admin");
         admin
             .create(config.topic_name.clone(), false, new_topic)
             .await?;
