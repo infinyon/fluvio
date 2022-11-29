@@ -119,7 +119,6 @@ impl BenchmarkDriver {
                 );
             }
         }
-        println!();
         // Close all worker tasks.
         send_control_message(&mut tx_controls, ControlMessage::Exit).await?;
         for jh in workers_jh {

@@ -100,8 +100,9 @@ impl AllStats {
             }
             md.push_str("\n\n**Throughput (Total Produced Bytes / Time)**\n\n");
             md.push_str(&mk_md_table_from_yaml(&throughput_yaml, &None));
+            md.push('\n');
         } else {
-            md.push_str("Stats unavailable");
+            md.push_str("Stats unavailable\n");
         }
         md
     }
