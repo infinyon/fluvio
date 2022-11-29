@@ -31,7 +31,6 @@ pub fn fluvio_bin_dir() -> Result<PathBuf> {
     Ok(fluvio_base_dir()?.join("bin"))
 }
 
-
 fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf> {
     if !path.exists() {
         // Create the base dir if it doesn't exist yet (#718)

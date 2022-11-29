@@ -3,7 +3,7 @@ use async_channel::Sender;
 use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
 use crate::{
     benchmark_config::{
-        benchmark_config::BenchmarkConfig,
+        BenchmarkConfig,
         benchmark_matrix::{RecordKeyAllocationStrategy, SHARED_KEY},
     },
     BenchmarkRecord, generate_random_string, BenchmarkError,

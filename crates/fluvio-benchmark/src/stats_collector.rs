@@ -5,7 +5,7 @@ use std::{
 use async_channel::{Receiver, Sender};
 use tracing::debug;
 
-use crate::{BenchmarkError, benchmark_config::benchmark_config::BenchmarkConfig};
+use crate::{BenchmarkError, benchmark_config::BenchmarkConfig};
 use crate::stats::AllStatsSync;
 
 // We expect every message produced to be read number_of_consumers_per_partition times.

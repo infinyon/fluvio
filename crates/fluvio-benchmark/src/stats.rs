@@ -11,10 +11,7 @@ use tracing::{trace, debug};
 use serde::{Serialize, Deserialize};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 use statrs::statistics::Statistics;
-use crate::{
-    stats_collector::BatchStats, benchmark_config::benchmark_config::BenchmarkConfig,
-    BenchmarkError,
-};
+use crate::{stats_collector::BatchStats, benchmark_config::BenchmarkConfig, BenchmarkError};
 
 pub const P_VALUE: f64 = 0.001;
 // Used to compare if two p_values are equal in TTestResult
@@ -63,7 +60,7 @@ impl AllStats {
 
     pub fn to_markdown(&self, config: &BenchmarkConfig) -> String {
         let mut md = String::new();
-        if let Some(stats) = self.0.get(&config) {
+        if let Some(stats) = self.0.get(config) {
             let values = stats.data.get(&Variable::Latency).unwrap();
             let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
             for v in values.iter() {
@@ -225,7 +222,7 @@ impl BenchmarkStats {
                         next,
                         p_value,
                     } => {
-                        yaml.push_str(&format!("  Change: Better\n"));
+                        yaml.push_str("  Change: Better\n");
                         yaml.push_str(&format!(
                             "  Previous: {}\n",
                             variable.format(previous as u64)
@@ -238,7 +235,7 @@ impl BenchmarkStats {
                         next,
                         p_value,
                     } => {
-                        yaml.push_str(&format!("  Change: Worse\n"));
+                        yaml.push_str("  Change: Worse\n");
                         yaml.push_str(&format!(
                             "  Previous: {}\n",
                             variable.format(previous as u64)
@@ -247,17 +244,17 @@ impl BenchmarkStats {
                         yaml.push_str(&format!("  P-Value: {:7.5}\n", p_value));
                     }
                     CompareResult::NoChange => {
-                        yaml.push_str(&format!("  Change: None\n"));
+                        yaml.push_str("  Change: None\n");
                     }
                     CompareResult::Uncomparable => {
-                        yaml.push_str(&format!("  Change: Uncomparable\n"));
+                        yaml.push_str("  Change: Uncomparable\n");
                     }
                 }
             } else {
                 debug!("Key not found: {variable}");
             }
         }
-        if self.data.len() > 0 {
+        if !self.data.is_empty() {
             md.push_str(&format!(
                 "**Comparision with previous results: {} @ {}**\n\n",
                 other.config.current_profile, other.config.timestamp

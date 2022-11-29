@@ -6,9 +6,7 @@ use fluvio::dataplane::record::ConsumerRecord;
 use fluvio_future::future::timeout;
 use futures_util::{Stream, StreamExt};
 use crate::{BenchmarkError, hash_record};
-use crate::{
-    benchmark_config::benchmark_config::BenchmarkConfig, stats_collector::StatsCollectorMessage,
-};
+use crate::{benchmark_config::BenchmarkConfig, stats_collector::StatsCollectorMessage};
 
 pub struct ConsumerWorker {
     consumer_id: u64,

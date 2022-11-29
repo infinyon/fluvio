@@ -4,7 +4,7 @@ use tracing::{debug, info};
 use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
-    benchmark_config::benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
+    benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
     consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError,
     stats::AllStatsSync,
 };

@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use fluvio::{Compression, config::ConfigFile};
 use super::{
-    benchmark_config::{BenchmarkConfig, BenchmarkBuilder, CrossIterate},
-    Millis, Seconds,
+    {BenchmarkConfig, BenchmarkBuilder, CrossIterate}, Millis, Seconds,
 };
 
 /// Key used by AllShareSameKey
