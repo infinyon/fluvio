@@ -5,7 +5,8 @@ use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
-    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError, stats::AllStats,
+    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError,
+    stats::AllStatsSync,
 };
 
 pub struct BenchmarkDriver {}
@@ -13,7 +14,7 @@ pub struct BenchmarkDriver {}
 impl BenchmarkDriver {
     pub async fn run_samples(
         config: BenchmarkConfig,
-        all_stats: AllStats,
+        all_stats: AllStatsSync,
     ) -> Result<(), BenchmarkError> {
         // Works send results to stats collector
         let (tx_stats, rx_stats) = unbounded();
@@ -129,10 +130,10 @@ impl BenchmarkDriver {
     }
     pub async fn run_benchmark(
         config: BenchmarkConfig,
-        all_stats: AllStats,
+        all_stats: AllStatsSync,
     ) -> Result<(), BenchmarkError> {
         // Create topic for this run
-        
+
         let new_topic = TopicSpec::new_computed(config.num_partitions as u32, 1, None);
         debug!("Create topic spec");
         let admin = FluvioAdmin::connect().await?;

@@ -21,40 +21,49 @@ const P_VALUE_EPSILON: f64 = 0.00005;
 
 const HIST_PRECISION: u8 = 3;
 
-#[derive(Clone, Default)]
-pub struct AllStats {
-    mutex: Arc<Mutex<HashMap<BenchmarkConfig, BenchmarkStats>>>,
-}
+pub type AllStatsSync = Arc<Mutex<AllStats>>;
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct AllStats(HashMap<BenchmarkConfig, BenchmarkStats>);
 
 impl AllStats {
-    pub async fn encode(&self) -> Vec<u8> {
-        let guard = self.mutex.lock().await;
-        bincode::serialize(&*guard).unwrap()
+    pub fn iter(&self) -> std::collections::hash_map::Iter<'_, BenchmarkConfig, BenchmarkStats> {
+        self.0.iter()
+    }
+    pub fn encode(&self) -> Vec<u8> {
+        bincode::serialize(self).unwrap()
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, BenchmarkError> {
-        let decoded: HashMap<BenchmarkConfig, BenchmarkStats> = bincode::deserialize(bytes)
-            .map_err(|_| {
-                BenchmarkError::ErrorWithExplanation("Failed to deserialized".to_string())
-            })?;
-        Ok(Self {
-            mutex: Arc::new(Mutex::new(decoded)),
-        })
+        let decoded: Self = bincode::deserialize(bytes).map_err(|_| {
+            BenchmarkError::ErrorWithExplanation("Failed to deserialized".to_string())
+        })?;
+        Ok(decoded)
     }
-    pub async fn compare_stats(&self, config: &BenchmarkConfig, other: AllStats) {
-        let guard = self.mutex.lock().await;
-        let other = other.mutex.lock().await;
-        let stats = guard.get(config).unwrap();
+    pub fn compare_stats(&self, config: &BenchmarkConfig, other: &AllStats) {
+        let stats = self.0.get(config).unwrap();
 
-        if let Some(other_stats) = other.get(config) {
-            println!("Previous results for config found:",);
+        if let Some(other_stats) = other.0.get(config) {
+            println!(
+                "Previous results for config found: {} @ {}",
+                other_stats.config.current_profile, other_stats.config.timestamp
+            );
             stats.compare(other_stats, config)
         }
     }
 
-    pub async fn print_results(&self, config: &BenchmarkConfig) {
-        let guard = self.mutex.lock().await;
-        if let Some(stats) = guard.get(&config) {
+    /// Merges the maps of config -> stats, giving priority to self in the case of duplicate
+    /// configs
+    pub fn merge(&mut self, other: &AllStats) {
+        for (config, results) in other.iter() {
+            if self.0.get(config).is_none() {
+                self.0.insert(config.clone(), results.clone());
+            }
+        }
+    }
+
+    pub fn print_results(&self, config: &BenchmarkConfig) {
+        if let Some(stats) = self.0.get(&config) {
             let values = stats.data.get(&Variable::Latency).unwrap();
             let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
             for v in values.iter() {
@@ -92,7 +101,7 @@ impl AllStats {
         }
     }
 
-    pub async fn compute_stats(&self, config: &BenchmarkConfig, data: &BatchStats) {
+    pub fn compute_stats(&mut self, config: &BenchmarkConfig, data: &BatchStats) {
         let mut first_produce_time: Option<Instant> = None;
         let mut last_produce_time: Option<Instant> = None;
         let mut first_consume_time: Option<Instant> = None;
@@ -137,43 +146,38 @@ impl AllStats {
         let consume_time = last_consume_time.unwrap() - first_consume_time.unwrap();
         let combined_time = last_consume_time.unwrap() - first_produce_time.unwrap();
 
-        self.record_data(config, Variable::Latency, latency).await;
+        self.record_data(config, Variable::Latency, latency);
         self.record_data(
             config,
             Variable::ProducerThroughput,
             vec![(num_bytes as f64 / produce_time.as_secs_f64()) as u64],
-        )
-        .await;
+        );
         self.record_data(
             config,
             Variable::ConsumerThroughput,
             vec![(num_bytes as f64 / consume_time.as_secs_f64()) as u64],
-        )
-        .await;
+        );
         self.record_data(
             config,
             Variable::CombinedThroughput,
             vec![(num_bytes as f64 / combined_time.as_secs_f64()) as u64],
-        )
-        .await;
+        );
     }
 
-    async fn record_data(
-        &self,
-        config: &BenchmarkConfig,
-        variable: Variable,
-        mut values: Vec<u64>,
-    ) {
-        let mut guard = self.mutex.lock().await;
-        let benchmark_stats = guard.entry(config.clone()).or_default();
+    fn record_data(&mut self, config: &BenchmarkConfig, variable: Variable, mut values: Vec<u64>) {
+        let benchmark_stats = self
+            .0
+            .entry(config.clone())
+            .or_insert_with(|| BenchmarkStats::new(config));
         let entry = benchmark_stats.data.entry(variable).or_default();
         entry.append(&mut values);
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct BenchmarkStats {
     data: BTreeMap<Variable, Vec<u64>>,
+    config: BenchmarkConfig,
 }
 
 impl BenchmarkStats {
@@ -209,6 +213,13 @@ impl BenchmarkStats {
             } else {
                 info!("Key not found: {variable}");
             }
+        }
+    }
+
+    pub fn new(config: &BenchmarkConfig) -> Self {
+        Self {
+            data: Default::default(),
+            config: config.clone(),
         }
     }
 }

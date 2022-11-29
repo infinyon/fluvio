@@ -6,7 +6,7 @@ use async_channel::{Receiver, Sender};
 use tracing::debug;
 
 use crate::{BenchmarkError, benchmark_config::benchmark_config::BenchmarkConfig};
-use crate::stats::AllStats;
+use crate::stats::AllStatsSync;
 
 // We expect every message produced to be read number_of_consumers_per_partition times.
 // We also expect a total of num_producers_per_batch * num_records_per_batch unique messages.
@@ -45,7 +45,7 @@ pub struct StatsWorker {
     current_batch: BatchStats,
     config: BenchmarkConfig,
     tx_stop_consume: Vec<Sender<()>>,
-    all_stats: AllStats,
+    all_stats: AllStatsSync,
 }
 
 impl StatsWorker {
@@ -53,7 +53,7 @@ impl StatsWorker {
         tx_stop_consume: Vec<Sender<()>>,
         receiver: Receiver<StatsCollectorMessage>,
         config: BenchmarkConfig,
-        all_stats: AllStats,
+        all_stats: AllStatsSync,
     ) -> Self {
         Self {
             receiver,
@@ -148,8 +148,9 @@ impl StatsWorker {
 
     pub async fn compute_stats(&self) {
         self.all_stats
-            .compute_stats(&self.config, &self.current_batch)
-            .await;
+            .lock()
+            .await
+            .compute_stats(&self.config, &self.current_batch);
     }
 
     pub fn new_batch(&mut self) {

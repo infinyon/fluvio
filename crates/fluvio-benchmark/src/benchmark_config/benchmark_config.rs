@@ -1,4 +1,9 @@
-use std::{time::Duration, hash::Hash, fmt::Display};
+use std::{
+    time::{Duration, SystemTime},
+    hash::Hash,
+    fmt::Display,
+};
+use chrono::{DateTime, Utc};
 use rand::{Rng, thread_rng, distributions::Uniform};
 use serde::{Serialize, Deserialize};
 use fluvio::Compression;
@@ -7,6 +12,8 @@ use super::benchmark_matrix::{RecordKeyAllocationStrategy, SharedConfig};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkConfig {
     pub topic_name: String,
+    pub current_profile: String,
+    pub timestamp: DateTime<Utc>,
     /// Each sample is a collection of batches that all run on the same topic.
     pub worker_timeout: Duration,
     pub num_samples: usize,
@@ -94,6 +101,8 @@ impl BenchmarkConfig {
 impl Display for BenchmarkConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "BenchmarkConfig:")?;
+        writeln!(f, "  Profile: {}", self.current_profile)?;
+        writeln!(f, "  Timestamp: {}", self.timestamp)?;
         writeln!(
             f,
             "  Number of Samples: {} (Duration between samples of {:?})",
@@ -153,6 +162,7 @@ pub fn generate_new_topic_name() -> String {
 #[derive(Clone)]
 pub struct BenchmarkBuilder {
     pub shared_config: SharedConfig,
+    pub current_profile: String,
     pub num_records_per_producer_worker_per_batch: Option<u64>,
     pub producer_batch_size: Option<u64>,
     pub producer_queue_size: Option<u64>,
@@ -176,7 +186,7 @@ pub struct BenchmarkBuilder {
     // pub use_smart_module: Vec<bool>,
 }
 impl BenchmarkBuilder {
-    pub fn new(shared_config: &SharedConfig) -> Self {
+    pub fn new(shared_config: &SharedConfig, profile: String) -> Self {
         Self {
             shared_config: shared_config.clone(),
             num_records_per_producer_worker_per_batch: Default::default(),
@@ -191,6 +201,7 @@ impl BenchmarkBuilder {
             num_partitions: Default::default(),
             record_size_strategy: Default::default(),
             record_key_allocation_strategy: Default::default(),
+            current_profile: profile,
         }
     }
 }
@@ -218,6 +229,8 @@ impl From<BenchmarkBuilder> for BenchmarkConfig {
             num_partitions: x.num_partitions.unwrap(),
             record_size: x.record_size_strategy.unwrap(),
             record_key_allocation_strategy: x.record_key_allocation_strategy.unwrap(),
+            current_profile: x.current_profile,
+            timestamp: SystemTime::now().into(),
         }
     }
 }

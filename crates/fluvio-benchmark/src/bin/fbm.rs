@@ -2,10 +2,13 @@ use std::{
     fs::File,
     io::{Read, Write},
     path::PathBuf,
+    sync::Arc,
+    mem,
 };
 use clap::{arg, Parser};
 use fluvio_cli_common::install::fluvio_base_dir;
-use fluvio_future::task::run_block_on;
+use fluvio_future::{task::run_block_on, sync::Mutex};
+use futures_util::FutureExt;
 use pad::PadStr;
 use fluvio::Compression;
 use fluvio_benchmark::{
@@ -17,7 +20,7 @@ use fluvio_benchmark::{
         Seconds, Millis,
     },
     benchmark_driver::BenchmarkDriver,
-    stats::AllStats,
+    stats::{AllStats, AllStatsSync},
     BenchmarkError,
 };
 
@@ -40,7 +43,7 @@ fn main() {
         }
     };
 
-    let all_stats = AllStats::default();
+    let all_stats = Arc::new(Mutex::new(AllStats::default()));
     let previous = load_previous_stats();
 
     for matrix in matrices {
@@ -58,9 +61,10 @@ fn main() {
                 all_stats.clone(),
             ))
             .unwrap();
-            run_block_on(all_stats.print_results(&config));
+
+            run_block_on(all_stats.lock().map(|a| a.print_results(&config)));
             if let Some(other) = previous.as_ref() {
-                run_block_on(all_stats.compare_stats(&config, other.clone()));
+                run_block_on(all_stats.lock().map(|a| a.compare_stats(&config, &other)));
             }
             print_divider();
             println!()
@@ -68,7 +72,17 @@ fn main() {
     }
     println!("Note: throughput is based on total produced bytes only");
 
-    run_block_on(write_stats(all_stats)).unwrap();
+    let mut all_stats = run_block_on(take_stats(all_stats));
+
+    if let Some(previous) = previous {
+        all_stats.merge(&previous)
+    }
+    write_stats(all_stats).unwrap();
+}
+
+async fn take_stats(all_stats: AllStatsSync) -> AllStats {
+    let mut guard = all_stats.lock().await;
+    mem::replace(&mut *guard, AllStats::default())
 }
 fn benchmarking_dir() -> Result<PathBuf, BenchmarkError> {
     let dir_path = fluvio_base_dir()?.join("benchmarks");
@@ -91,8 +105,8 @@ fn load_previous_stats() -> Option<AllStats> {
     AllStats::decode(&buffer).ok()
 }
 
-async fn write_stats(stats: AllStats) -> Result<(), BenchmarkError> {
-    let encoded = stats.encode().await;
+fn write_stats(stats: AllStats) -> Result<(), BenchmarkError> {
+    let encoded = stats.encode();
 
     let mut file = std::fs::OpenOptions::new()
         .write(true)
@@ -149,8 +163,7 @@ fn print_example_config() {
 }
 
 fn test_configs() -> Vec<BenchmarkMatrix> {
-    let compression = 
-    BenchmarkMatrix {
+    let compression = BenchmarkMatrix {
         shared_config: SharedConfig {
             matrix_name: "Test Compression".to_string(),
             num_samples: 2,
@@ -185,8 +198,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
         },
     };
 
-    let record_key = 
-    BenchmarkMatrix {
+    let record_key = BenchmarkMatrix {
         shared_config: SharedConfig {
             matrix_name: "Test Record Key Strategies".to_string(),
             num_samples: 2,
@@ -199,15 +211,13 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
             queue_size: vec![100],
             linger_millis: vec![Millis::new(10)],
             server_timeout_millis: vec![Millis::new(5000)],
-            compression: vec![
-                Compression::None,
-            ],
+            compression: vec![Compression::None],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
         },
         topic_config: FluvioTopicConfig {
-            num_partitions: vec![1,2,10],
+            num_partitions: vec![1, 2, 10],
         },
         load_config: BenchmarkLoadConfig {
             num_records_per_producer_worker_per_batch: vec![10],
@@ -224,8 +234,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
         },
     };
 
-    let concurrent = 
-    BenchmarkMatrix {
+    let concurrent = BenchmarkMatrix {
         shared_config: SharedConfig {
             matrix_name: "Test concurrent producers and consumers".to_string(),
             num_samples: 2,
@@ -238,9 +247,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
             queue_size: vec![100],
             linger_millis: vec![Millis::new(10)],
             server_timeout_millis: vec![Millis::new(5000)],
-            compression: vec![
-                Compression::None,
-            ],
+            compression: vec![Compression::None],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
@@ -256,7 +263,6 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
             record_size: vec![10],
         },
     };
-
 
     vec![compression, record_key, concurrent]
 }

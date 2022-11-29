@@ -1,7 +1,7 @@
 use std::fs::File;
 use serde::{Deserialize, Serialize};
 
-use fluvio::Compression;
+use fluvio::{Compression, config::ConfigFile};
 use super::{
     benchmark_config::{BenchmarkConfig, BenchmarkBuilder, CrossIterate},
     Millis, Seconds,
@@ -88,7 +88,13 @@ impl BenchmarkMatrix {
     // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it allocates.
 
     fn generate_configs(&self) -> Vec<BenchmarkConfig> {
-        let builder = vec![BenchmarkBuilder::new(&self.shared_config)];
+        let profile_name = ConfigFile::load_default_or_new()
+            .unwrap()
+            .config()
+            .current_profile_name()
+            .unwrap()
+            .to_string();
+        let builder = vec![BenchmarkBuilder::new(&self.shared_config, profile_name)];
         builder
             .cross_iterate(
                 &self.load_config.num_records_per_producer_worker_per_batch,
