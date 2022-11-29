@@ -188,10 +188,10 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
     let record_key = 
     BenchmarkMatrix {
         shared_config: SharedConfig {
-            matrix_name: "Test Compression".to_string(),
+            matrix_name: "Test Record Key Strategies".to_string(),
             num_samples: 2,
             // TODO change to 0 once race condition is fixed
-            millis_between_samples: Millis::new(200),
+            millis_between_samples: Millis::new(500),
             worker_timeout_seconds: Seconds::new(20),
         },
         producer_config: FluvioProducerConfig {
@@ -207,7 +207,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
             max_bytes: vec![64000],
         },
         topic_config: FluvioTopicConfig {
-            num_partitions: vec![2],
+            num_partitions: vec![1,2,10],
         },
         load_config: BenchmarkLoadConfig {
             num_records_per_producer_worker_per_batch: vec![10],
@@ -223,7 +223,42 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
             record_size: vec![10],
         },
     };
-    vec![compression]
+
+    let concurrent = 
+    BenchmarkMatrix {
+        shared_config: SharedConfig {
+            matrix_name: "Test concurrent producers and consumers".to_string(),
+            num_samples: 2,
+            // TODO change to 0 once race condition is fixed
+            millis_between_samples: Millis::new(500),
+            worker_timeout_seconds: Seconds::new(20),
+        },
+        producer_config: FluvioProducerConfig {
+            batch_size: vec![16000],
+            queue_size: vec![100],
+            linger_millis: vec![Millis::new(10)],
+            server_timeout_millis: vec![Millis::new(5000)],
+            compression: vec![
+                Compression::None,
+            ],
+        },
+        consumer_config: FluvioConsumerConfig {
+            max_bytes: vec![64000],
+        },
+        topic_config: FluvioTopicConfig {
+            num_partitions: vec![10],
+        },
+        load_config: BenchmarkLoadConfig {
+            num_records_per_producer_worker_per_batch: vec![10],
+            record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::RandomKey],
+            num_concurrent_producer_workers: vec![30],
+            num_concurrent_consumers_per_partition: vec![3],
+            record_size: vec![10],
+        },
+    };
+
+
+    vec![compression, record_key, concurrent]
 }
 
 fn default_configs() -> Vec<BenchmarkMatrix> {
