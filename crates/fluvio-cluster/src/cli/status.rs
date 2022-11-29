@@ -5,45 +5,55 @@ use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::Pa
 use fluvio_future::io::StreamExt;
 use tracing::debug;
 
+use crate::ClusterChecker;
 use crate::{cli::ClusterCliError, cli::ClusterTarget};
+use crate::progress::ProgressBarFactory;
 
 #[derive(Debug, Parser)]
 pub struct StatusOpt {}
 
 impl StatusOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
+        let pb_factory = ProgressBarFactory::new(false);
+        pb_factory.println("📝 Running cluster status checks");
+
         let fluvio_config = target.load()?;
 
-        let fluvio = match Fluvio::connect_with_config(&fluvio_config).await {
-            Ok(fluvio) => {
-                println!("Cluster Running {}", Self::cluster_location_descriptor()?);
+        ClusterChecker::empty()
+            .with_status_checks()
+            .run(&pb_factory, false)
+            .await?;
 
-                fluvio
-            }
-            Err(err) => {
-                debug!("Error when trying to reach cluster: {}", err);
+        // let fluvio = match Fluvio::connect_with_config(&fluvio_config).await {
+        //     Ok(fluvio) => {
+        //         println!("Cluster Running {}", Self::cluster_location_descriptor()?);
 
-                println!("none");
+        //         fluvio
+        //     }
+        //     Err(err) => {
+        //         debug!("Error when trying to reach cluster: {}", err);
 
-                return Ok(());
-            }
-        };
+        //         println!("none");
 
-        let admin = FluvioAdmin::connect_with_config(&fluvio_config).await;
-        match admin {
-            Ok(admin) => {
-                if Self::spus_running(&admin).await {
-                    Self::check_spus_for_data(&fluvio, &admin).await
-                } else {
-                    println!("no spus running");
-                }
-            }
-            Err(e) => {
-                debug!("unable to connect to admin: {}", e);
+        //         return Ok(());
+        //     }
+        // };
 
-                return Err(e.into());
-            }
-        };
+        // let admin = FluvioAdmin::connect_with_config(&fluvio_config).await;
+        // match admin {
+        //     Ok(admin) => {
+        //         if Self::spus_running(&admin).await {
+        //             Self::check_spus_for_data(&fluvio, &admin).await
+        //         } else {
+        //             println!("no spus running");
+        //         }
+        //     }
+        //     Err(e) => {
+        //         debug!("unable to connect to admin: {}", e);
+
+        //         return Err(e.into());
+        //     }
+        // };
 
         Ok(())
     }
