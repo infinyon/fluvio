@@ -2,6 +2,7 @@ use std::{
     time::{Duration, SystemTime},
     hash::Hash,
 };
+use derive_builder::Builder;
 use chrono::{DateTime, Utc};
 use rand::{Rng, thread_rng, distributions::Uniform};
 use serde::{Serialize, Deserialize};
@@ -10,8 +11,8 @@ use fluvio::Compression;
 use self::benchmark_matrix::{RecordKeyAllocationStrategy, SharedConfig};
 
 pub mod benchmark_matrix;
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+
 pub struct Millis(u64);
 impl Millis {
     pub fn new(millis: u64) -> Self {
@@ -39,11 +40,13 @@ impl From<Seconds> for Duration {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Builder)]
 pub struct BenchmarkConfig {
     pub matrix_name: String,
+    #[builder(private)]
     pub topic_name: String,
     pub current_profile: String,
+    #[builder(private)]
     pub timestamp: DateTime<Utc>,
     /// Each sample is a collection of batches that all run on the same topic.
     pub worker_timeout: Duration,
@@ -147,86 +150,25 @@ pub fn generate_new_topic_name() -> String {
         .collect();
     format!("benchmarking-{}", chars)
 }
-
-#[derive(Clone)]
-pub struct BenchmarkBuilder {
-    pub shared_config: SharedConfig,
-    pub current_profile: String,
-    pub num_records_per_producer_worker_per_batch: Option<u64>,
-    pub producer_batch_size: Option<u64>,
-    pub producer_queue_size: Option<u64>,
-    pub producer_linger: Option<Duration>,
-    pub producer_server_timeout: Option<Duration>,
-    pub producer_compression: Option<Compression>,
-    // TODO
-    // pub producer_isolation: Option<...>,
-    // TODO
-    // pub producer_delivery_semantic>,
-    pub consumer_max_bytes: Option<u64>,
-    // TODO
-    // pub consumer_isolation: Option<...>,
-    pub num_concurrent_producer_workers: Option<u64>,
-    /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
-    pub num_concurrent_consumers_per_partition: Option<u64>,
-    pub num_partitions: Option<u64>,
-    pub record_size_strategy: Option<u64>,
-    pub record_key_allocation_strategy: Option<RecordKeyAllocationStrategy>,
-    // TODO
-    // pub use_smart_module: Vec<bool>,
-}
-impl BenchmarkBuilder {
-    pub fn new(shared_config: &SharedConfig, profile: String) -> Self {
-        Self {
-            shared_config: shared_config.clone(),
-            num_records_per_producer_worker_per_batch: Default::default(),
-            producer_batch_size: Default::default(),
-            producer_queue_size: Default::default(),
-            producer_linger: Default::default(),
-            producer_server_timeout: Default::default(),
-            producer_compression: Default::default(),
-            consumer_max_bytes: Default::default(),
-            num_concurrent_producer_workers: Default::default(),
-            num_concurrent_consumers_per_partition: Default::default(),
-            num_partitions: Default::default(),
-            record_size_strategy: Default::default(),
-            record_key_allocation_strategy: Default::default(),
-            current_profile: profile,
-        }
+impl BenchmarkConfigBuilder {
+    fn prebuild(&mut self) -> &mut Self {
+        self.topic_name(generate_new_topic_name());
+        self.timestamp(SystemTime::now().into());
+        self
     }
-}
-
-impl From<BenchmarkBuilder> for BenchmarkConfig {
-    fn from(x: BenchmarkBuilder) -> Self {
-        BenchmarkConfig {
-            topic_name: generate_new_topic_name(),
-            worker_timeout: x.shared_config.worker_timeout_seconds.into(),
-            num_samples: x.shared_config.num_samples,
-            duration_between_samples: x.shared_config.millis_between_samples.into(),
-            num_records_per_producer_worker_per_batch: x
-                .num_records_per_producer_worker_per_batch
-                .unwrap(),
-            producer_batch_size: x.producer_batch_size.unwrap(),
-            producer_queue_size: x.producer_queue_size.unwrap(),
-            producer_linger: x.producer_linger.unwrap(),
-            producer_server_timeout: x.producer_server_timeout.unwrap(),
-            producer_compression: x.producer_compression.unwrap(),
-            consumer_max_bytes: x.consumer_max_bytes.unwrap(),
-            num_concurrent_producer_workers: x.num_concurrent_producer_workers.unwrap(),
-            num_concurrent_consumers_per_partition: x
-                .num_concurrent_consumers_per_partition
-                .unwrap(),
-            num_partitions: x.num_partitions.unwrap(),
-            record_size: x.record_size_strategy.unwrap(),
-            record_key_allocation_strategy: x.record_key_allocation_strategy.unwrap(),
-            current_profile: x.current_profile,
-            timestamp: SystemTime::now().into(),
-            matrix_name: x.shared_config.matrix_name,
-        }
+    pub fn new(shared_config: &SharedConfig, profile: String) -> Self {
+        let mut s = Self::default();
+        s.matrix_name(shared_config.matrix_name.clone())
+            .num_samples(shared_config.num_samples)
+            .duration_between_samples(shared_config.millis_between_samples.into())
+            .worker_timeout(shared_config.worker_timeout_seconds.into())
+            .current_profile(profile);
+        s
     }
 }
 
 pub trait CrossIterate {
-    fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkBuilder) + Copy>(
+    fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkConfigBuilder) + Copy>(
         self,
         values: &[T],
         f: F,
@@ -234,8 +176,8 @@ pub trait CrossIterate {
     fn build(self) -> Vec<BenchmarkConfig>;
 }
 
-impl CrossIterate for Vec<BenchmarkBuilder> {
-    fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkBuilder) + Copy>(
+impl CrossIterate for Vec<BenchmarkConfigBuilder> {
+    fn cross_iterate<T: Clone, F: Fn(T, &mut BenchmarkConfigBuilder) + Copy>(
         self,
         values: &[T],
         f: F,
@@ -252,6 +194,8 @@ impl CrossIterate for Vec<BenchmarkBuilder> {
     }
 
     fn build(self) -> Vec<BenchmarkConfig> {
-        self.into_iter().map(|x| x.into()).collect()
+        self.into_iter()
+            .map(|mut x| x.prebuild().build().unwrap())
+            .collect()
     }
 }

@@ -2,9 +2,7 @@ use std::fs::File;
 use serde::{Deserialize, Serialize};
 
 use fluvio::{Compression, config::ConfigFile};
-use super::{
-    {BenchmarkConfig, BenchmarkBuilder, CrossIterate}, Millis, Seconds,
-};
+use super::{BenchmarkConfig, BenchmarkConfigBuilder, CrossIterate, Millis, Seconds};
 
 /// Key used by AllShareSameKey
 pub const SHARED_KEY: &str = "SHARED_KEY";
@@ -98,49 +96,52 @@ impl BenchmarkMatrix {
             .flatten()
             .unwrap_or_else(|| "Unknown".to_string());
 
-        let builder = vec![BenchmarkBuilder::new(&self.shared_config, profile_name)];
+        let builder = vec![BenchmarkConfigBuilder::new(
+            &self.shared_config,
+            profile_name,
+        )];
         builder
             .cross_iterate(
                 &self.load_config.num_records_per_producer_worker_per_batch,
                 |v, b| {
-                    b.num_records_per_producer_worker_per_batch = Some(v);
+                    b.num_records_per_producer_worker_per_batch(v);
                 },
             )
             .cross_iterate(&self.producer_config.batch_size, |v, b| {
-                b.producer_batch_size = Some(v);
+                b.producer_batch_size(v);
             })
             .cross_iterate(&self.producer_config.queue_size, |v, b| {
-                b.producer_queue_size = Some(v);
+                b.producer_queue_size(v);
             })
             .cross_iterate(&self.producer_config.linger_millis, |v, b| {
-                b.producer_linger = Some(v.into());
+                b.producer_linger(v.into());
             })
             .cross_iterate(&self.producer_config.server_timeout_millis, |v, b| {
-                b.producer_server_timeout = Some(v.into());
+                b.producer_server_timeout(v.into());
             })
             .cross_iterate(&self.producer_config.compression, |v, b| {
-                b.producer_compression = Some(v);
+                b.producer_compression(v);
             })
             .cross_iterate(&self.consumer_config.max_bytes, |v, b| {
-                b.consumer_max_bytes = Some(v);
+                b.consumer_max_bytes(v);
             })
             .cross_iterate(&self.load_config.num_concurrent_producer_workers, |v, b| {
-                b.num_concurrent_producer_workers = Some(v);
+                b.num_concurrent_producer_workers(v);
             })
             .cross_iterate(
                 &self.load_config.num_concurrent_consumers_per_partition,
                 |v, b| {
-                    b.num_concurrent_consumers_per_partition = Some(v);
+                    b.num_concurrent_consumers_per_partition(v);
                 },
             )
             .cross_iterate(&self.topic_config.num_partitions, |v, b| {
-                b.num_partitions = Some(v);
+                b.num_partitions(v);
             })
             .cross_iterate(&self.load_config.record_size, |v, b| {
-                b.record_size_strategy = Some(v);
+                b.record_size(v);
             })
             .cross_iterate(&self.load_config.record_key_allocation_strategy, |v, b| {
-                b.record_key_allocation_strategy = Some(v);
+                b.record_key_allocation_strategy(v);
             })
             .build()
     }
