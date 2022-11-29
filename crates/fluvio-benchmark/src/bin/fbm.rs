@@ -170,7 +170,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
         shared_config: SharedConfig {
             matrix_name: "Test Compression".to_string(),
             num_samples: 2,
-            worker_timeout_seconds: Seconds::new(20),
+            worker_timeout_seconds: Seconds::new(300),
             millis_between_samples,
         },
         producer_config: FluvioProducerConfig {
