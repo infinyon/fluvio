@@ -15,8 +15,8 @@ chrono = { version = "0.4.23", features = ['serde']}
 clap = { version = "4.0.9", features = ["derive"] }
 futures-util = "0.3.6"
 hdrhistogram = "7.5.2"
+madato = "0.5.3"
 tracing = "0.1.26"
-pad = "0.1.6"
 rand = "0.8.5"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_yaml = "0.8"

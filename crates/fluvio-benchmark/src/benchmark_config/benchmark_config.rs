@@ -1,7 +1,6 @@
 use std::{
     time::{Duration, SystemTime},
     hash::Hash,
-    fmt::Display,
 };
 use chrono::{DateTime, Utc};
 use rand::{Rng, thread_rng, distributions::Uniform};
@@ -11,6 +10,7 @@ use super::benchmark_matrix::{RecordKeyAllocationStrategy, SharedConfig};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkConfig {
+    pub matrix_name: String,
     pub topic_name: String,
     pub current_profile: String,
     pub timestamp: DateTime<Utc>,
@@ -45,7 +45,7 @@ impl Eq for BenchmarkConfig {}
 
 impl PartialEq for BenchmarkConfig {
     fn eq(&self, other: &Self) -> bool {
-        // We don't compare topic_name
+        // We don't compare topic_name, current_profile, or timestamp
         self.worker_timeout == other.worker_timeout
             && self.num_samples == other.num_samples
             && self.duration_between_samples == other.duration_between_samples
@@ -63,12 +63,13 @@ impl PartialEq for BenchmarkConfig {
             && self.num_partitions == other.num_partitions
             && self.record_size == other.record_size
             && self.record_key_allocation_strategy == other.record_key_allocation_strategy
+            && self.matrix_name == other.matrix_name
     }
 }
 
 impl Hash for BenchmarkConfig {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        // We don't hash the topic name
+        // We don't hash the topic name, current_profile, or timestamp
         self.worker_timeout.hash(state);
         self.num_samples.hash(state);
         self.duration_between_samples.hash(state);
@@ -84,6 +85,7 @@ impl Hash for BenchmarkConfig {
         self.num_partitions.hash(state);
         self.record_size.hash(state);
         self.record_key_allocation_strategy.hash(state);
+        self.matrix_name.hash(state);
     }
 }
 
@@ -96,58 +98,14 @@ impl BenchmarkConfig {
     pub fn number_of_expected_times_each_message_consumed(&self) -> u64 {
         self.num_concurrent_consumers_per_partition
     }
-}
 
-impl Display for BenchmarkConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "BenchmarkConfig:")?;
-        writeln!(f, "  Profile: {}", self.current_profile)?;
-        writeln!(f, "  Timestamp: {}", self.timestamp)?;
-        writeln!(
-            f,
-            "  Number of Samples: {} (Duration between samples of {:?})",
-            self.num_samples, self.duration_between_samples
-        )?;
-        let produced_mb = (self.num_records_per_producer_worker_per_batch
-            * self.record_size
-            * self.num_concurrent_producer_workers) as f64
-            / 1000000.0;
-        writeln!(
-            f,
-            "  Total produced size of sample: {} records * {} bytes per record  * {} producers = {:.3}mb",
-            self.num_records_per_producer_worker_per_batch,
-            self.record_size,
-            self.num_concurrent_producer_workers,
-           produced_mb,
-        )?;
-        writeln!(f,
-        "  Producer details: linger {:?}, fluvio batch size {}, queue size {}, server timeout {:?}, compression {:?}",
-            self.producer_linger,
-            self.producer_batch_size,
-            self.producer_queue_size,
-            self.producer_server_timeout,
-            self.producer_compression)?;
-        writeln!(
-            f,
-            "  Total consumed size of sample: {} consumers * {:.3}mb =  {:.3}mb",
-            self.num_concurrent_consumers_per_partition,
-            produced_mb,
-            produced_mb * self.num_concurrent_consumers_per_partition as f64
-        )?;
-
-        writeln!(
-            f,
-            "  Consumer details: Max bytes: {}",
-            self.consumer_max_bytes
-        )?;
-        if self.record_key_allocation_strategy != RecordKeyAllocationStrategy::NoKey {
-            writeln!(
-                f,
-                "  Key allocation strategy: {:?}",
-                self.record_key_allocation_strategy
-            )?;
-        }
-        Ok(())
+    pub fn to_markdown(&self) -> String {
+        let mut md = String::new();
+        md.push_str("**Config**\n");
+        md.push_str("```yaml");
+        md.push_str(&serde_yaml::to_string(self).unwrap());
+        md.push_str("```");
+        md
     }
 }
 
@@ -231,6 +189,7 @@ impl From<BenchmarkBuilder> for BenchmarkConfig {
             record_key_allocation_strategy: x.record_key_allocation_strategy.unwrap(),
             current_profile: x.current_profile,
             timestamp: SystemTime::now().into(),
+            matrix_name: x.shared_config.matrix_name,
         }
     }
 }

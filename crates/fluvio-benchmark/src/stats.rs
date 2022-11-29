@@ -6,7 +6,8 @@ use std::{
 };
 use fluvio_future::sync::Mutex;
 use hdrhistogram::Histogram;
-use tracing::{info, trace};
+use madato::yaml::mk_md_table_from_yaml;
+use tracing::{trace, debug};
 use serde::{Serialize, Deserialize};
 use statrs::distribution::{StudentsT, ContinuousCDF};
 use statrs::statistics::Statistics;
@@ -40,15 +41,13 @@ impl AllStats {
         })?;
         Ok(decoded)
     }
-    pub fn compare_stats(&self, config: &BenchmarkConfig, other: &AllStats) {
+    pub fn compare_stats(&self, config: &BenchmarkConfig, other: &AllStats) -> String {
         let stats = self.0.get(config).unwrap();
 
         if let Some(other_stats) = other.0.get(config) {
-            println!(
-                "Previous results for config found: {} @ {}",
-                other_stats.config.current_profile, other_stats.config.timestamp
-            );
             stats.compare(other_stats, config)
+        } else {
+            "No previous results for config found.".to_string()
         }
     }
 
@@ -62,43 +61,52 @@ impl AllStats {
         }
     }
 
-    pub fn print_results(&self, config: &BenchmarkConfig) {
+    pub fn to_markdown(&self, config: &BenchmarkConfig) -> String {
+        let mut md = String::new();
         if let Some(stats) = self.0.get(&config) {
             let values = stats.data.get(&Variable::Latency).unwrap();
             let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
             for v in values.iter() {
                 hist += *v;
             }
-            println!("Latency");
+            let mut latency_yaml = "- Variable: Latency\n".to_string();
             for percentile in [0.0, 0.5, 0.95, 0.99, 1.0] {
-                println!(
-                    "p{percentile:4.2}: {}",
+                latency_yaml.push_str(&format!(
+                    "  p{percentile:4.2}: {}\n",
                     Variable::Latency.format(hist.value_at_quantile(percentile))
-                );
+                ));
             }
-
-            for variable in [
-                Variable::ProducerThroughput,
-                Variable::ConsumerThroughput,
-                Variable::CombinedThroughput,
+            md.push_str("**Per Record E2E Latency**\n\n");
+            md.push_str(&mk_md_table_from_yaml(&latency_yaml, &None));
+            let mut throughput_yaml = String::new();
+            for (variable, description) in [
+                (Variable::ProducerThroughput, "First Produced Message <-> Last Produced Message"),
+                (Variable::ConsumerThroughput, "First Consumed Message (First Time Consumed) <-> Last Consumed Message (First Time Consumed)"),
+                (Variable::CombinedThroughput, "First Produced Message <-> Last Consumed Message (First Time Consumed)"),
             ] {
+                throughput_yaml.push_str(&format!("- Variable: {}\n", variable));
                 let values = stats.data.get(&variable).unwrap();
                 let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
                 for v in values.iter() {
                     hist += *v;
                 }
 
-                println!("{} Max, Median, Min", variable);
-                for percentile in [1.0, 0.5, 0.0] {
-                    println!(
-                        "p{percentile:4.2}: {}",
+                for (label, percentile) in [("Min", 0.0), ("Median", 0.5), ("Max", 1.0)] {
+                    throughput_yaml.push_str(&format!(
+                        "  {}: {}\n",
+                        label,
                         variable.format(hist.value_at_quantile(percentile))
-                    );
+                    ));
                 }
+
+                throughput_yaml.push_str(&format!("  Description: \"{}\"\n", description));
             }
+            md.push_str("\n\n**Throughput (Total Produced Bytes / Time)**\n\n");
+            md.push_str(&mk_md_table_from_yaml(&throughput_yaml, &None));
         } else {
-            println!("Stats unavailable");
+            md.push_str("Stats unavailable");
         }
+        md
     }
 
     pub fn compute_stats(&mut self, config: &BenchmarkConfig, data: &BatchStats) {
@@ -181,8 +189,11 @@ pub struct BenchmarkStats {
 }
 
 impl BenchmarkStats {
-    pub fn compare(&self, other: &BenchmarkStats, config: &BenchmarkConfig) {
+    pub fn compare(&self, other: &BenchmarkStats, config: &BenchmarkConfig) -> String {
+        let mut md = String::new();
+        let mut yaml = String::new();
         for (variable, samples) in self.data.iter() {
+            yaml.push_str(&format!("- Variable: {}\n", variable));
             if let Some(other_samples) = other.data.get(variable) {
                 let (samples, other_samples) = if samples.len() == config.num_samples {
                     let samples: Vec<f64> = samples.iter().map(|x| *x as f64).collect();
@@ -208,12 +219,54 @@ impl BenchmarkStats {
                         .collect();
                     (samples, other_samples)
                 };
-                let result = variable.compare(&samples, &other_samples);
-                println!("Comparing {variable}... {}", variable.format_result(result));
+                match variable.compare(&samples, &other_samples) {
+                    CompareResult::Better {
+                        previous,
+                        next,
+                        p_value,
+                    } => {
+                        yaml.push_str(&format!("  Change: Better\n"));
+                        yaml.push_str(&format!(
+                            "  Previous: {}\n",
+                            variable.format(previous as u64)
+                        ));
+                        yaml.push_str(&format!("  Current: {}\n", variable.format(next as u64)));
+                        yaml.push_str(&format!("  P-Value: {:7.5}\n", p_value));
+                    }
+                    CompareResult::Worse {
+                        previous,
+                        next,
+                        p_value,
+                    } => {
+                        yaml.push_str(&format!("  Change: Worse\n"));
+                        yaml.push_str(&format!(
+                            "  Previous: {}\n",
+                            variable.format(previous as u64)
+                        ));
+                        yaml.push_str(&format!("  Current: {}\n", variable.format(next as u64)));
+                        yaml.push_str(&format!("  P-Value: {:7.5}\n", p_value));
+                    }
+                    CompareResult::NoChange => {
+                        yaml.push_str(&format!("  Change: None\n"));
+                    }
+                    CompareResult::Uncomparable => {
+                        yaml.push_str(&format!("  Change: Uncomparable\n"));
+                    }
+                }
             } else {
-                info!("Key not found: {variable}");
+                debug!("Key not found: {variable}");
             }
         }
+        if self.data.len() > 0 {
+            md.push_str(&format!(
+                "**Comparision with previous results: {} @ {}**\n\n",
+                other.config.current_profile, other.config.timestamp
+            ));
+            md.push_str(&mk_md_table_from_yaml(&yaml, &None));
+        } else {
+            md.push_str("No variables found");
+        }
+        md
     }
 
     pub fn new(config: &BenchmarkConfig) -> Self {
@@ -234,10 +287,10 @@ pub enum Variable {
 impl Display for Variable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Variable::Latency => write!(f, "latency"),
-            Variable::ProducerThroughput => write!(f, "producer throughput"),
-            Variable::ConsumerThroughput => write!(f, "consumer throughput"),
-            Variable::CombinedThroughput => write!(f, "combined throughput"),
+            Variable::Latency => write!(f, "Latency"),
+            Variable::ProducerThroughput => write!(f, "Producer Throughput"),
+            Variable::ConsumerThroughput => write!(f, "Consumer Throughput"),
+            Variable::CombinedThroughput => write!(f, "Combined Throughput"),
         }
     }
 }
@@ -254,33 +307,6 @@ impl Variable {
             TTestResult::X1GreaterThanX2(p) => self.greater(a_mean, b_mean, p),
             TTestResult::FailedToRejectH0 => CompareResult::NoChange,
             TTestResult::X1LessThanX2(p) => self.less(a_mean, b_mean, p),
-        }
-    }
-
-    fn format_result(&self, result: CompareResult) -> String {
-        match result {
-            CompareResult::Better {
-                previous,
-                next,
-                p_value,
-            } => format!(
-                "better: {} -> {} (p={:7.5})",
-                self.format(previous as u64),
-                self.format(next as u64),
-                p_value
-            ),
-            CompareResult::Worse {
-                previous,
-                next,
-                p_value,
-            } => format!(
-                "worse: {} -> {} (p={:7.5})",
-                self.format(previous as u64),
-                self.format(next as u64),
-                p_value
-            ),
-            CompareResult::NoChange => "no statistically significant change detected".to_string(),
-            CompareResult::Uncomparable => "uncomparable".to_string(),
         }
     }
 

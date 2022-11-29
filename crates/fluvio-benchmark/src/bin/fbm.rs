@@ -9,7 +9,6 @@ use clap::{arg, Parser};
 use fluvio_cli_common::install::fluvio_base_dir;
 use fluvio_future::{task::run_block_on, sync::Mutex, future::timeout};
 use futures_util::FutureExt;
-use pad::PadStr;
 use fluvio::Compression;
 use fluvio_benchmark::{
     benchmark_config::{
@@ -46,31 +45,33 @@ fn main() {
     let all_stats = Arc::new(Mutex::new(AllStats::default()));
     let previous = load_previous_stats();
 
+    println!("# Fluvio Benchmark Results");
     for matrix in matrices {
-        print_divider();
-        println!(
-            "# Beginning Matrix for: {}",
-            matrix.shared_config.matrix_name
-        );
-        print_divider();
-
-        for config in matrix.into_iter() {
-            println!("{}", config);
-            run_block_on(timeout(config.worker_timeout,BenchmarkDriver::run_benchmark(
-                config.clone(),
-                all_stats.clone(),
-            ))).unwrap()
+        println!("## Matrix: {}", matrix.shared_config.matrix_name);
+        for (i, config) in matrix.into_iter().enumerate() {
+            run_block_on(timeout(
+                config.worker_timeout,
+                BenchmarkDriver::run_benchmark(config.clone(), all_stats.clone()),
+            ))
+            .unwrap()
             .unwrap();
-
-            run_block_on(all_stats.lock().map(|a| a.print_results(&config)));
+            println!("### {}: Iteration {:3.0}", config.matrix_name, i);
+            println!("{}", config.to_markdown());
+            println!();
+            run_block_on(
+                all_stats
+                    .lock()
+                    .map(|a| println!("{}", a.to_markdown(&config))),
+            );
             if let Some(other) = previous.as_ref() {
-                run_block_on(all_stats.lock().map(|a| a.compare_stats(&config, &other)));
+                run_block_on(
+                    all_stats
+                        .lock()
+                        .map(|a| println!("{}", a.compare_stats(&config, &other))),
+                );
             }
-            print_divider();
-            println!()
         }
     }
-    println!("Note: throughput is based on total produced bytes only");
 
     let mut all_stats = run_block_on(take_stats(all_stats));
 
@@ -288,16 +289,13 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
             num_partitions: vec![1],
         },
         load_config: BenchmarkLoadConfig {
-            num_records_per_producer_worker_per_batch: vec![1000],
+            num_records_per_producer_worker_per_batch: vec![100, 1000, 10000],
             record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey],
             num_concurrent_producer_workers: vec![1],
             num_concurrent_consumers_per_partition: vec![1],
             record_size: vec![1000],
         },
     }]
-}
-fn print_divider() {
-    println!("{}", "".pad_to_width_with_char(50, '#'));
 }
 
 #[derive(Parser, Debug)]
