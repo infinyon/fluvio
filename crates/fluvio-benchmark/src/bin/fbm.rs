@@ -23,13 +23,13 @@ use fluvio_benchmark::{
     BenchmarkError,
 };
 
-fn main() {
+fn main() -> Result<(), BenchmarkError> {
     fluvio_future::subscriber::init_logger();
     let args = Args::parse();
 
     if args.example_config {
         print_example_config();
-        return;
+        return Ok(());
     }
 
     // TODO accept directory of files.
@@ -52,9 +52,7 @@ fn main() {
             run_block_on(timeout(
                 config.worker_timeout,
                 BenchmarkDriver::run_benchmark(config.clone(), all_stats.clone()),
-            ))
-            .unwrap()
-            .unwrap();
+            ))??;
             println!("### {}: Iteration {:3.0}", config.matrix_name, i);
             println!("{}", config.to_markdown());
             println!();
@@ -78,7 +76,7 @@ fn main() {
     if let Some(previous) = previous {
         all_stats.merge(&previous)
     }
-    write_stats(all_stats).unwrap();
+    write_stats(all_stats)
 }
 
 async fn take_stats(all_stats: AllStatsSync) -> AllStats {
