@@ -2444,6 +2444,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-connector-package"
+version = "0.0.0"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-controlplane"
 version = "0.0.0"
 dependencies = [

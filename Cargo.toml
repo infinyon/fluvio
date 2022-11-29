@@ -15,6 +15,7 @@ members = [
     "crates/fluvio-cli-common",
     "crates/fluvio-cluster",
     "crates/fluvio-compression",
+    "crates/fluvio-connector-package",
     "crates/fluvio-controlplane",
     "crates/fluvio-controlplane-metadata",
     "crates/fluvio-hub-util",
