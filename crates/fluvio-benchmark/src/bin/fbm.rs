@@ -7,7 +7,7 @@ use std::{
 };
 use clap::{arg, Parser};
 use fluvio_cli_common::install::fluvio_base_dir;
-use fluvio_future::{task::run_block_on, sync::Mutex};
+use fluvio_future::{task::run_block_on, sync::Mutex, future::timeout};
 use futures_util::FutureExt;
 use pad::PadStr;
 use fluvio::Compression;
@@ -56,10 +56,10 @@ fn main() {
 
         for config in matrix.into_iter() {
             println!("{}", config);
-            run_block_on(BenchmarkDriver::run_benchmark(
+            run_block_on(timeout(config.worker_timeout,BenchmarkDriver::run_benchmark(
                 config.clone(),
                 all_stats.clone(),
-            ))
+            ))).unwrap()
             .unwrap();
 
             run_block_on(all_stats.lock().map(|a| a.print_results(&config)));
@@ -163,13 +163,14 @@ fn print_example_config() {
 }
 
 fn test_configs() -> Vec<BenchmarkMatrix> {
+    // TODO 0 once hanging bug is fixed
+    let millis_between_samples = Millis::new(500);
     let compression = BenchmarkMatrix {
         shared_config: SharedConfig {
             matrix_name: "Test Compression".to_string(),
             num_samples: 2,
-            // TODO change to 0 once race condition is fixed
-            millis_between_samples: Millis::new(200),
             worker_timeout_seconds: Seconds::new(20),
+            millis_between_samples,
         },
         producer_config: FluvioProducerConfig {
             batch_size: vec![16000],
@@ -202,9 +203,8 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
         shared_config: SharedConfig {
             matrix_name: "Test Record Key Strategies".to_string(),
             num_samples: 2,
-            // TODO change to 0 once race condition is fixed
-            millis_between_samples: Millis::new(500),
             worker_timeout_seconds: Seconds::new(20),
+            millis_between_samples,
         },
         producer_config: FluvioProducerConfig {
             batch_size: vec![16000],
@@ -238,9 +238,8 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
         shared_config: SharedConfig {
             matrix_name: "Test concurrent producers and consumers".to_string(),
             num_samples: 2,
-            // TODO change to 0 once race condition is fixed
-            millis_between_samples: Millis::new(500),
             worker_timeout_seconds: Seconds::new(20),
+            millis_between_samples,
         },
         producer_config: FluvioProducerConfig {
             batch_size: vec![16000],
