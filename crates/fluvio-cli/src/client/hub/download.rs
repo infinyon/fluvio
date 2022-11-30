@@ -12,10 +12,12 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleMetadata, SmartModule
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_hub_util as hubutil;
+use hubutil::HubAccess;
 use tracing::info;
 
 use crate::{CliError, Result};
 use crate::client::cmd::ClientCmd;
+use crate::client::hub::get_hub_access;
 
 /// Download a SmartModule from the hub
 #[derive(Debug, Parser)]
@@ -52,8 +54,9 @@ impl ClientCmd for DownloadHubOpt {
             download_cluster(fluvio_config, &self.pkgname).await?;
             return Ok(());
         }
+        let access = get_hub_access(&self.remote)?;
 
-        let pkgfile = download_local(&self.pkgname, &self.remote).await?;
+        let pkgfile = download_local(&self.pkgname, &access).await?;
         if self.local {
             return Ok(());
         }
@@ -66,21 +69,18 @@ impl ClientCmd for DownloadHubOpt {
 
 /// download smartmodule from hub to local fs
 /// returns path of downloaded of package
-async fn download_local(pkgname: &str, remote: &Option<String>) -> Result<String> {
+async fn download_local(pkgname: &str, access: &HubAccess) -> Result<String> {
     let fname = hubutil::cli_pkgname_to_filename(pkgname).map_err(|_| {
         CliError::HubError(format!(
             "invalid package name format {pkgname}, is it the form infinyon/json-sql@0.1.0"
         ))
     })?;
 
-    let access = hubutil::HubAccess::default_load(remote).map_err(|_| {
-        CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
-    })?;
     let url = hubutil::cli_pkgname_to_url(pkgname, &access.remote)
         .map_err(|_| CliError::HubError(format!("invalid pkgname {pkgname}")))?;
     println!("downloading {pkgname} to {fname}");
 
-    let data = hubutil::get_package(&url, &access)
+    let data = hubutil::get_package(&url, access)
         .await
         .map_err(|err| CliError::HubError(format!("downloading {pkgname}\nServer: {err}")))?;
 

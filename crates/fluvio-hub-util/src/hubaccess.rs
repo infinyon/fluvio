@@ -24,6 +24,7 @@ pub const ACTION_DOWNLOAD: &str = "dl";
 pub const ACTION_PUBLISH: &str = "pbl";
 
 const INFINYON_HUB_REMOTE: &str = "INFINYON_HUB_REMOTE";
+const FLUVIO_HUB_PROFILE_ENV: &str = "FLUVIO_HUB_PROFILE";
 
 #[derive(Serialize, Deserialize)]
 pub struct HubAccess {
@@ -46,7 +47,8 @@ impl HubAccess {
 
     pub fn default_load(remote: &Option<String>) -> Result<Self> {
         let cfgpath = default_cfg_path()?;
-        HubAccess::load_path(&cfgpath, None, remote)
+        let profileopt = std::env::var(FLUVIO_HUB_PROFILE_ENV).ok();
+        HubAccess::load_path(&cfgpath, profileopt, remote)
     }
 
     pub async fn create_hubid(&self, hubid: &str) -> Result<()> {

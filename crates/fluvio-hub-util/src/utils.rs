@@ -10,11 +10,18 @@ use crate::errors::Result;
 use crate::HubUtilError;
 use crate::{HUB_API_SM, HUB_PACKAGE_EXT};
 use crate::{package_get_meta, packagename_validate};
+use crate::PackageMeta;
 
 /// Used by hub server web api and cli exchange package lists
 #[derive(Serialize, Deserialize)]
 pub struct PackageList {
     pub packages: Vec<String>,
+}
+
+/// Used by hub server web api and cli exchange package lists
+#[derive(Serialize, Deserialize)]
+pub struct PackageListMeta {
+    pub packages: Vec<PackageMeta>,
 }
 
 // returns (org, pname, ver)

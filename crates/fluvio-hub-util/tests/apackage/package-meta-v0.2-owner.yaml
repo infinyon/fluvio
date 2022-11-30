@@ -5,6 +5,6 @@ version: "0.0.1"
 group: infinyon
 description: Describe the module here
 license: e.g. Apache2
-visibility: private
+private: true
 manifest:
   - tests/apackage/module.wasm

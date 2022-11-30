@@ -160,6 +160,11 @@ pub struct GenerateCmd {
     #[clap(long, value_enum, value_name = "TYPE", env = "SMDK_SM_TYPE")]
     sm_type: Option<SmartModuleType>,
 
+    /// Visibility of SmartModule project to generate.
+    /// Skip prompt if value given.
+    #[clap(long, value_enum, value_name = "PUBLIC", env = "SMDK_SM_PUBLIC")]
+    sm_public: Option<bool>,
+
     /// Include SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
     #[clap(long, group("SmartModuleParams"), action, env = "SMDK_WITH_PARAMS")]
@@ -253,7 +258,8 @@ impl GenerateCmd {
             .with_project_group(group.clone())
             .with_smart_module_type(self.sm_type)
             .with_smart_module_params(sm_params)
-            .with_smart_module_cargo_dependency(Some(sm_dep_source));
+            .with_smart_module_cargo_dependency(Some(sm_dep_source))
+            .with_smart_module_public(self.sm_public);
 
         // cargo generate template source
         // Check user git, user path, develop, then default to the built-in
@@ -322,6 +328,7 @@ enum SmdkTemplateValue {
     SmCargoDependency(CargoSmDependSource),
     SmType(SmartModuleType),
     ProjectGroup(String),
+    SmPublic(bool),
 }
 
 impl std::fmt::Display for SmdkTemplateValue {
@@ -338,6 +345,9 @@ impl std::fmt::Display for SmdkTemplateValue {
             }
             SmdkTemplateValue::ProjectGroup(group) => {
                 write!(f, "project-group={}", group)
+            }
+            SmdkTemplateValue::SmPublic(public) => {
+                write!(f, "smartmodule-public={}", public)
             }
         }
     }
@@ -512,6 +522,14 @@ impl SmdkTemplateUserValues {
         self
     }
 
+    fn with_smart_module_public(&mut self, public: Option<bool>) -> &mut Self {
+        if let Some(p) = public {
+            debug!("User project public: {p:#?}");
+            self.values.push(SmdkTemplateValue::SmPublic(p));
+        }
+        self
+    }
+
     fn to_vec(&self) -> Vec<SmdkTemplateValue> {
         self.values.clone()
     }
@@ -580,7 +598,7 @@ mod test {
 
         let mut temp_dir = temp_dir.unwrap();
         let smart_toml =
-            temp_dir.find(|entry| entry.as_ref().unwrap().file_name().eq("Smart.toml"));
+            temp_dir.find(|entry| entry.as_ref().unwrap().file_name().eq("SmartModule.toml"));
 
         assert!(
             smart_toml.is_some(),
@@ -689,6 +707,16 @@ mod test {
                         "project-group=ExampleGroupName"
                     );
                 }
+                SmdkTemplateValue::SmPublic(_) => {
+                    assert_eq!(
+                        &SmdkTemplateValue::SmPublic(true).to_string(),
+                        "smartmodule-public=true"
+                    );
+                    assert_eq!(
+                        &SmdkTemplateValue::SmPublic(false).to_string(),
+                        "smartmodule-public=false"
+                    );
+                }
             }
         }
     }
@@ -703,7 +731,8 @@ mod test {
             .with_smart_module_params(Some(true))
             .with_smart_module_cargo_dependency(Some(CargoSmDependSource::CratesIo(
                 test_version_number.clone(),
-            )));
+            )))
+            .with_smart_module_public(Some(false));
 
         let values_vec = values.to_vec();
 
@@ -731,6 +760,9 @@ mod test {
                         v,
                         SmdkTemplateValue::ProjectGroup("ExampleGroupName".to_string())
                     );
+                }
+                SmdkTemplateValue::SmPublic(_) => {
+                    assert_eq!(v, SmdkTemplateValue::SmPublic(false));
                 }
             }
         }

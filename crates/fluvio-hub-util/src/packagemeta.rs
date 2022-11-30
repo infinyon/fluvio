@@ -5,6 +5,8 @@ use std::fs;
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleVisibility;
+
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, error};
 
@@ -28,9 +30,20 @@ pub struct PackageMeta {
     // author: Option<String>,
     pub description: String,
     pub license: String,
+
+    #[serde(default = "PackageMeta::visibility_if_missing")]
+    pub visibility: PkgVisibility, // private is default if missing
     pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
                                // repository: optional url
                                // repository-commit: optional hash
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum PkgVisibility {
+    #[default]
+    Private,
+    Public,
 }
 
 impl Default for PackageMeta {
@@ -42,6 +55,7 @@ impl Default for PackageMeta {
             group: "NameOfContributingGroup".into(),
             description: "Describe the module here".into(),
             license: "e.g. Apache2".into(),
+            visibility: PkgVisibility::Private,
             manifest: Vec::new(),
         }
     }
@@ -68,9 +82,12 @@ impl PackageMeta {
         format!("{}/{}@{}", self.group, self.name, self.version)
     }
 
-    /// Retrives the S3's object name from this package. Eg: `infinyon/example-0.0.1.tar`
+    /// Retrives the S3's object name from this package. Eg: `infinyon/example-0.0.1.ipkg`
     pub fn obj_name(&self) -> String {
-        format!("{}/{}-{}.tar", self.group, self.name, self.version)
+        format!(
+            "{}/{}-{}.{HUB_PACKAGE_EXT}",
+            self.group, self.name, self.version
+        )
     }
 
     /// Builds the S3 object path from the provided package name.
@@ -94,7 +111,7 @@ impl PackageMeta {
         }
 
         Ok(format!(
-            "{}/{}-{}.tar",
+            "{}/{}-{}.{HUB_PACKAGE_EXT}",
             parts[0], name_version[0], name_version[1]
         ))
     }
@@ -125,6 +142,12 @@ impl PackageMeta {
     /// the packagefile name as defined by the package meta data
     pub fn packagefile_name_unsigned(&self) -> String {
         self.name.clone() + "-" + &self.version + ".tar"
+    }
+
+    /// used by serde to fill in private field if missing on parse
+    /// this helps support old versions of the package format
+    pub fn visibility_if_missing() -> PkgVisibility {
+        PkgVisibility::Private
     }
 
     pub fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()> {
@@ -160,6 +183,7 @@ impl PackageMeta {
         self.group = spk.group.clone();
         self.version = spk.version.to_string();
         self.description = spk.description.clone().unwrap_or_default();
+        self.visibility = PkgVisibility::from(&spk.visibility);
 
         // needed for fluvio sm download
         self.manifest.push(fpath.into());
@@ -281,6 +305,16 @@ pub fn package_meta_from_bytes(reader: &[u8]) -> Result<PackageMeta> {
     ))
 }
 
+// from Smartmodule to package vaisiblity
+impl From<&SmartModuleVisibility> for PkgVisibility {
+    fn from(sm: &SmartModuleVisibility) -> Self {
+        match sm {
+            SmartModuleVisibility::Public => Self::Public,
+            SmartModuleVisibility::Private => Self::Private,
+        }
+    }
+}
+
 #[test]
 fn builds_obj_key_from_package_name() {
     let pkg_names = vec![
@@ -293,13 +327,13 @@ fn builds_obj_key_from_package_name() {
         "infinyon/regex@0.0.1",
     ];
     let obj_paths = vec![
-        "infinyon/example-0.0.1.tar",
-        "infinyon/example-sm-0.1.0.tar",
-        "infinyon/json-sql-0.0.2.tar",
-        "infinyon/test-0.1.0.tar",
-        "infinyon/hub-cli-0.1.0.tar",
-        "infinyon/test-cli-0.1.0.tar",
-        "infinyon/regex-0.0.1.tar",
+        "infinyon/example-0.0.1.ipkg",
+        "infinyon/example-sm-0.1.0.ipkg",
+        "infinyon/json-sql-0.0.2.ipkg",
+        "infinyon/test-0.1.0.ipkg",
+        "infinyon/hub-cli-0.1.0.ipkg",
+        "infinyon/test-cli-0.1.0.ipkg",
+        "infinyon/regex-0.0.1.ipkg",
     ];
 
     for (idx, name) in pkg_names.iter().enumerate() {
@@ -307,6 +341,17 @@ fn builds_obj_key_from_package_name() {
             &PackageMeta::object_path_from_name(name).unwrap(),
             obj_paths.get(idx).unwrap()
         );
+    }
+}
+
+// this end up mostly for any cli tools printing out the status
+impl std::fmt::Display for PkgVisibility {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        let lbl = match self {
+            PkgVisibility::Private => "private",
+            PkgVisibility::Public => "public",
+        };
+        write!(f, "{}", lbl)
     }
 }
 
@@ -459,5 +504,55 @@ fn hub_packagemeta_naming_check() {
     for pm in deny {
         let res = pm.naming_check();
         assert!(res.is_err(), "Denied an valid package meta config {pm:?}");
+    }
+}
+
+#[cfg(test)]
+mod t_packagemeta_version {
+
+    use crate::HubUtilError;
+    use crate::PackageMeta;
+    use crate::PkgVisibility;
+
+    fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
+        let pm = PackageMeta::read_from_file(fname)?;
+        Ok(pm)
+    }
+
+    /// the current code should be able to load all old versions
+    #[test]
+    fn backward_compat() {
+        let flist = vec![
+            "tests/apackage/package-meta.yaml",
+            "tests/apackage/package-meta-v0.1.yaml",
+            "tests/apackage/package-meta-v0.2-owner.yaml",
+            "tests/apackage/package-meta-v0.2-public.yaml",
+        ];
+
+        for ver in flist {
+            let msg = format!("Failed to read {ver}");
+            let _pm = read_pkgmeta(ver).expect(&msg);
+        }
+    }
+
+    #[test]
+    fn visibility_invalid() {
+        let visbad = "tests/apackage/package-meta-v0.2-visbad.yaml";
+        let res = read_pkgmeta(visbad);
+        println!("{:?}", &res);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn visibility_defaults_owner_v0_1() {
+        // if package meta is missing any visibility field, like older versions will be missing
+        // check that they default to private (Owner) visiblity
+        let visbad = "tests/apackage/package-meta-v0.1.yaml";
+        let res = read_pkgmeta(visbad);
+        println!("{:?}", &res);
+        assert!(res.is_ok());
+        if let Ok(pm) = res {
+            assert_eq!(pm.visibility, PkgVisibility::Private);
+        }
     }
 }

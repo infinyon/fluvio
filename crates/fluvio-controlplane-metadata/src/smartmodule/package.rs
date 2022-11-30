@@ -65,6 +65,13 @@ pub struct SmartModulePackage {
     pub api_version: FluvioSemVersion,
     pub description: Option<String>,
     pub license: Option<String>,
+
+    #[fluvio(min_version = 19)]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default = "SmartModulePackage::visibility_if_missing")
+    )]
+    pub visibility: SmartModuleVisibility,
     pub repository: Option<String>,
 }
 
@@ -89,12 +96,28 @@ impl SmartModulePackage {
             self.group, GROUP_SEPARATOR, self.name, VERSION_SEPARATOR, self.version
         )
     }
+
+    pub fn visibility_if_missing() -> SmartModuleVisibility {
+        SmartModuleVisibility::Private
+    }
 }
 
 #[derive(Debug, Error)]
 pub enum SmartModuleKeyError {
     #[error("SmartModule version`{version}` is not valid because {error}")]
     InvalidVersion { version: String, error: String },
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "lowercase")
+)]
+pub enum SmartModuleVisibility {
+    #[default]
+    Private,
+    Public,
 }
 
 #[derive(Default)]
@@ -239,6 +262,28 @@ impl Decoder for FluvioSemVersion {
             .map_err(|err| std::io::Error::new(std::io::ErrorKind::InvalidData, err))?;
         self.0 = version;
         Ok(())
+    }
+}
+
+impl std::fmt::Display for SmartModuleVisibility {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        let lbl = match self {
+            Self::Private => "private",
+            Self::Public => "public",
+        };
+        write!(f, "{}", lbl)
+    }
+}
+
+impl std::convert::TryFrom<&str> for SmartModuleVisibility {
+    type Error = &'static str;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        match s {
+            "private" => Ok(SmartModuleVisibility::Private),
+            "public" => Ok(SmartModuleVisibility::Public),
+            _ => Err("Only private or public is allowed"),
+        }
     }
 }
 

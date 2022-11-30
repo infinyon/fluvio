@@ -53,3 +53,15 @@ mod cmd {
         }
     }
 }
+
+use fluvio_hub_util as hubutil;
+use hubutil::HubAccess;
+
+use crate::{CliError, Result};
+
+pub(crate) fn get_hub_access(remote: &Option<String>) -> Result<HubAccess> {
+    let access = HubAccess::default_load(remote).map_err(|_| {
+        CliError::HubError("missing access credentials, try 'fluvio cloud login'".into())
+    })?;
+    Ok(access)
+}

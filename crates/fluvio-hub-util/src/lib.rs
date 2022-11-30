@@ -18,7 +18,7 @@ pub use surf as http;
 
 pub const CLI_CONFIG_HUB: &str = "hub";
 
-pub const HUB_PACKAGE_VERSION: &str = "0.1";
+pub const HUB_PACKAGE_VERSION: &str = "0.2";
 pub const HUB_PACKAGE_META: &str = "package-meta.yaml";
 pub const HUB_REMOTE: &str = "https://hub.infinyon.cloud";
 

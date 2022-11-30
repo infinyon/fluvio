@@ -16,3 +16,8 @@ default = "filter"
 type = "bool"
 prompt = "Will your SmartModule use init parameters?"
 default = false
+
+[placeholders.smartmodule-public]
+type = "bool"
+prompt = "Will your SmartModule be public?"
+default = false
