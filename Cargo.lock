@@ -1935,6 +1935,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
+name = "dtoa"
+version = "0.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
+
+[[package]]
 name = "duct"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2224,13 +2230,15 @@ version = "0.0.0"
 dependencies = [
  "async-channel",
  "bincode",
+ "chrono",
  "clap 4.0.26",
+ "derive_builder",
  "fluvio",
  "fluvio-cli-common",
  "fluvio-future",
  "futures-util",
  "hdrhistogram",
- "pad",
+ "madato",
  "rand 0.8.5",
  "serde",
  "serde_yaml 0.8.26",
@@ -2425,7 +2433,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bytes 1.3.0",
  "flate2",
@@ -2540,6 +2548,7 @@ dependencies = [
  "ed25519-dalek",
  "flate2",
  "fluvio-controlplane-metadata",
+ "fluvio-hub-util-protocol",
  "fluvio-types",
  "hex",
  "http-client",
@@ -2562,6 +2571,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-hub-util-protocol"
+version = "0.0.0"
+dependencies = [
+ "cargo_toml",
+ "const_format",
+ "dirs",
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "thiserror",
+ "toml",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-package-index"
 version = "0.7.2"
 dependencies = [
@@ -2577,7 +2603,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "bytes 1.3.0",
  "content_inspector",
@@ -4337,6 +4363,9 @@ name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "linux-raw-sys"
@@ -4443,6 +4472,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "madato"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c36112680b23ee7a5d2a10e56b59a74e4028963e9080b8abec4e69d0d773dc06"
+dependencies = [
+ "indexmap",
+ "linked-hash-map",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_yaml 0.7.5",
 ]
 
 [[package]]
@@ -4898,15 +4941,6 @@ name = "owo-colors"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
-
-[[package]]
-name = "pad"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2ad9b889f1b12e0b9ee24db044b5129150d5eada288edc800f789928dc8c0e3"
-dependencies = [
- "unicode-width",
-]
 
 [[package]]
 name = "parking"
@@ -5990,6 +6024,18 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serde_yaml"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef8099d3df28273c99a1728190c7a9f19d444c941044f64adf986bee7ec53051"
+dependencies = [
+ "dtoa",
+ "linked-hash-map",
+ "serde",
+ "yaml-rust",
 ]
 
 [[package]]

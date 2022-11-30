@@ -1,123 +1,28 @@
-use std::default::Default;
 use std::io::Read;
 use std::path::Path;
 use std::fs;
 
-use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
-use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
-use fluvio_controlplane_metadata::smartmodule::SmartModuleVisibility;
-
-use serde::{Deserialize, Serialize};
-use tracing::{debug, info, error};
+use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::smartmodule as smpkg;
+use fluvio_hub_util_protocol::{PackageMeta, PkgVisibility, HubUtilError};
+use fluvio_hub_util_protocol::constants::HUB_PACKAGE_META;
 
-use crate::HUB_PACKAGE_META;
-use crate::HUB_PACKAGE_VERSION;
-use crate::HUB_PACKAGE_EXT;
-use crate::HubUtilError;
 use crate::package_get_topfile;
 
 type Result<T> = std::result::Result<T, HubUtilError>;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
-/// defines hub package metadata
-pub struct PackageMeta {
-    pub package_format_version: String, // SerVer
-    pub name: String,
-    pub version: String, // SemVer?, package version
-    pub group: String,
-    // author: Option<String>,
-    pub description: String,
-    pub license: String,
-
-    #[serde(default = "PackageMeta::visibility_if_missing")]
-    pub visibility: PkgVisibility, // private is default if missing
-    pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
-                               // repository: optional url
-                               // repository-commit: optional hash
+pub trait PackageMetaExt {
+    fn read_from_file(filename: &str) -> Result<PackageMeta>;
+    fn manifest_paths(&self, pkgpath_in: &str) -> Result<Vec<String>>;
+    fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()>;
+    fn update_from_cargo_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()>;
+    fn update_from_smartmodule_toml(&mut self, fpath: &str) -> Result<()>;
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum PkgVisibility {
-    #[default]
-    Private,
-    Public,
-}
-
-impl Default for PackageMeta {
-    fn default() -> PackageMeta {
-        PackageMeta {
-            package_format_version: HUB_PACKAGE_VERSION.into(),
-            name: "NameOfThePackage".into(),
-            version: "0.0".into(),
-            group: "NameOfContributingGroup".into(),
-            description: "Describe the module here".into(),
-            license: "e.g. Apache2".into(),
-            visibility: PkgVisibility::Private,
-            manifest: Vec::new(),
-        }
-    }
-}
-
-impl PackageMeta {
-    /// Retrieves the fully qualified name for the `PackageMeta`.
-    ///
-    /// Eg: `infinyon-example-0.0.1`
-    pub fn id(&self) -> Result<String> {
-        let fluvio_semver = FluvioSemVersion::parse(&self.version)
-            .map_err(|err| HubUtilError::SemVerError(err.to_string()))?;
-        let package_key = SmartModulePackageKey {
-            name: self.name.clone(),
-            group: Some(self.group.clone()),
-            version: Some(fluvio_semver),
-        };
-
-        Ok(package_key.store_id())
-    }
-
-    /// Retrives the package name from this package. Eg: `infinyon/example/0.0.1`
-    pub fn pkg_name(&self) -> String {
-        format!("{}/{}@{}", self.group, self.name, self.version)
-    }
-
-    /// Retrives the S3's object name from this package. Eg: `infinyon/example-0.0.1.ipkg`
-    pub fn obj_name(&self) -> String {
-        format!(
-            "{}/{}-{}.{HUB_PACKAGE_EXT}",
-            self.group, self.name, self.version
-        )
-    }
-
-    /// Builds the S3 object path from the provided package name.
-    ///
-    /// A S3 object path is structure as `{group}/{pkgname}-{pkgver}.tar`, this
-    /// can be build from the package name which holds the same data in a
-    /// the following format: `{group}/{pkgname}@{pkgver}"`
-    pub fn object_path_from_name(pkg_name: &str) -> Result<String> {
-        let parts = pkg_name.split('/').collect::<Vec<&str>>();
-
-        if parts.len() != 2 {
-            error!("The provided name is not a valid package name: {pkg_name}");
-            return Err(HubUtilError::InvalidPackageName(pkg_name.into()));
-        }
-
-        let name_version = parts.get(1).unwrap().split('@').collect::<Vec<&str>>();
-
-        if name_version.len() != 2 {
-            error!("The provided name is not a valid package name: {pkg_name}");
-            return Err(HubUtilError::InvalidPackageName(pkg_name.into()));
-        }
-
-        Ok(format!(
-            "{}/{}-{}.{HUB_PACKAGE_EXT}",
-            parts[0], name_version[0], name_version[1]
-        ))
-    }
-
+impl PackageMetaExt for PackageMeta {
     /// read package-meta file (not a package.tar file, just the meta file)
-    pub fn read_from_file(filename: &str) -> Result<Self> {
+    fn read_from_file(filename: &str) -> Result<Self> {
         let pm_raw: Vec<u8> = fs::read(filename)?;
         let pm_read: PackageMeta = serde_yaml::from_slice(&pm_raw)?;
         debug!(target: "package-meta", "read_from_file {}, {:?}", &filename, &pm_read);
@@ -125,7 +30,7 @@ impl PackageMeta {
     }
 
     /// provide the manifest list with full paths to manifest files
-    pub fn manifest_paths(&self, pkgpath_in: &str) -> Result<Vec<String>> {
+    fn manifest_paths(&self, pkgpath_in: &str) -> Result<Vec<String>> {
         let base_dir = Path::new(pkgpath_in);
         let full_mf_iter = self.manifest.iter().map(|relname| {
             let pb = base_dir.join(relname);
@@ -134,23 +39,7 @@ impl PackageMeta {
         Ok(full_mf_iter.collect())
     }
 
-    /// the packagefile name as defined by the package meta data
-    pub fn packagefile_name(&self) -> String {
-        self.name.clone() + "-" + &self.version + "." + HUB_PACKAGE_EXT
-    }
-
-    /// the packagefile name as defined by the package meta data
-    pub fn packagefile_name_unsigned(&self) -> String {
-        self.name.clone() + "-" + &self.version + ".tar"
-    }
-
-    /// used by serde to fill in private field if missing on parse
-    /// this helps support old versions of the package format
-    pub fn visibility_if_missing() -> PkgVisibility {
-        PkgVisibility::Private
-    }
-
-    pub fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()> {
+    fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()> {
         let serialized = serde_yaml::to_string(&self)?;
         fs::write(pmetapath, serialized.as_bytes())?;
         Ok(())
@@ -158,7 +47,7 @@ impl PackageMeta {
 
     /// Pull pacakge-meta info from Cargo.toml,
     /// particularly package name and version
-    pub fn update_from_cargo_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()> {
+    fn update_from_cargo_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()> {
         let ctoml = cargo_toml::Manifest::from_path(fpath)?;
         let cpkg = ctoml
             .package
@@ -172,7 +61,7 @@ impl PackageMeta {
     }
 
     /// Pull package-meta info from smartmodule meta toml
-    pub fn update_from_smartmodule_toml(&mut self, fpath: &str) -> Result<()> {
+    fn update_from_smartmodule_toml(&mut self, fpath: &str) -> Result<()> {
         info!(fpath, "opening smartmodule toml");
         let spkg = smpkg::SmartModuleMetadata::from_toml(fpath)?;
         let spk = &spkg.package;
@@ -188,25 +77,6 @@ impl PackageMeta {
         // needed for fluvio sm download
         self.manifest.push(fpath.into());
         Ok(())
-    }
-
-    /// simple because it's not the crypto validation
-    pub fn naming_check(&self) -> Result<()> {
-        let mut advice = String::new();
-
-        advice.push_str(&validate_lowercase(&self.group, "group"));
-        advice.push_str(&validate_allowedchars(&self.group, "group"));
-        advice.push_str(&validate_notempty(&self.group, "group"));
-
-        advice.push_str(&validate_lowercase(&self.name, "package name"));
-        advice.push_str(&validate_allowedchars(&self.name, "package name"));
-        advice.push_str(&validate_notempty(&self.name, "package name"));
-
-        if !advice.is_empty() {
-            Err(HubUtilError::PackageVerify(advice))
-        } else {
-            Ok(())
-        }
     }
 }
 
@@ -305,16 +175,6 @@ pub fn package_meta_from_bytes(reader: &[u8]) -> Result<PackageMeta> {
     ))
 }
 
-// from Smartmodule to package vaisiblity
-impl From<&SmartModuleVisibility> for PkgVisibility {
-    fn from(sm: &SmartModuleVisibility) -> Self {
-        match sm {
-            SmartModuleVisibility::Public => Self::Public,
-            SmartModuleVisibility::Private => Self::Private,
-        }
-    }
-}
-
 #[test]
 fn builds_obj_key_from_package_name() {
     let pkg_names = vec![
@@ -341,17 +201,6 @@ fn builds_obj_key_from_package_name() {
             &PackageMeta::object_path_from_name(name).unwrap(),
             obj_paths.get(idx).unwrap()
         );
-    }
-}
-
-// this end up mostly for any cli tools printing out the status
-impl std::fmt::Display for PkgVisibility {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        let lbl = match self {
-            PkgVisibility::Private => "private",
-            PkgVisibility::Public => "public",
-        };
-        write!(f, "{}", lbl)
     }
 }
 
@@ -509,10 +358,9 @@ fn hub_packagemeta_naming_check() {
 
 #[cfg(test)]
 mod t_packagemeta_version {
+    use fluvio_hub_util_protocol::{HubUtilError, PackageMeta, PkgVisibility};
 
-    use crate::HubUtilError;
-    use crate::PackageMeta;
-    use crate::PkgVisibility;
+    use crate::PackageMetaExt;
 
     fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
         let pm = PackageMeta::read_from_file(fname)?;

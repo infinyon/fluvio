@@ -11,18 +11,15 @@ use sha2::{Digest, Sha512};
 use tracing::{debug, warn};
 use wasmparser::{Parser, Chunk, Payload};
 
-use crate::HUB_SIGNFILE_BASE;
+use fluvio_hub_util_protocol::{HubUtilError, PackageMeta, Result};
+use fluvio_hub_util_protocol::constants::{
+    DEF_HUB_INIT_DIR, HUB_PACKAGE_META, HUB_SIGNFILE_BASE, HUB_MANIFEST_BLOB,
+    HUB_PACKAGE_META_CLEAN,
+};
+
+use crate::PackageMetaExt;
 use crate::keymgmt::{Keypair, PublicKey, Signature};
-
-use crate::DEF_HUB_INIT_DIR;
-use crate::HUB_MANIFEST_BLOB;
-use crate::HUB_PACKAGE_META;
-use crate::HUB_PACKAGE_META_CLEAN;
 use crate::HubAccess;
-use crate::HubUtilError;
-use crate::PackageMeta;
-
-type Result<T> = std::result::Result<T, HubUtilError>;
 
 /// assemble files into an unsigned fluvio package, a file will be created named
 /// packagename-A.B.C.tar after signing it's called an ipkg

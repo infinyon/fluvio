@@ -6,12 +6,12 @@ use surf::http::mime;
 use surf::StatusCode;
 use tracing::{debug, info};
 
+use fluvio_hub_util_protocol::{Result, HubUtilError};
+use fluvio_hub_util_protocol::infinyon_tok::read_infinyon_token;
+use fluvio_hub_util_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
-use crate::errors::Result;
-use crate::{HubUtilError, read_infinyon_token};
 use crate::keymgmt::Keypair;
-use crate::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 
 // in .fluvio/hub/hcurrent
 const ACCESS_FILE_PTR: &str = "hcurrent";
