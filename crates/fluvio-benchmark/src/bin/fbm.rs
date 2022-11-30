@@ -4,6 +4,7 @@ use std::{
     path::PathBuf,
     sync::Arc,
     mem,
+    time::Duration,
 };
 use clap::{arg, Parser};
 use fluvio_cli_common::install::fluvio_base_dir;
