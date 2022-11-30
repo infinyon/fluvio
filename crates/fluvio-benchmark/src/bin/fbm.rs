@@ -4,6 +4,7 @@ use std::{
     path::PathBuf,
     sync::Arc,
     mem,
+    time::Duration,
 };
 use clap::{arg, Parser};
 use fluvio_cli_common::install::fluvio_base_dir;
@@ -50,7 +51,8 @@ fn main() -> Result<(), BenchmarkError> {
         println!("## Matrix: {}", matrix.shared_config.matrix_name);
         for (i, config) in matrix.into_iter().enumerate() {
             run_block_on(timeout(
-                config.worker_timeout,
+                // Give time for workers to clean up if workers timeout.
+                config.worker_timeout + Duration::from_secs(10),
                 BenchmarkDriver::run_benchmark(config.clone(), all_stats.clone()),
             ))??;
             println!("### {}: Iteration {:3.0}", config.matrix_name, i);
