@@ -271,8 +271,7 @@ impl std::fmt::Display for SmartModuleVisibility {
             Self::Private => "private",
             Self::Public => "public",
         };
-        write!(f, "{}", lbl)?;
-        Ok(())
+        write!(f, "{}", lbl)
     }
 }
 
