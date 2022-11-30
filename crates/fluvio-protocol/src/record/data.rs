@@ -51,6 +51,7 @@ static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
 /// let key: RecordKey = String::from("Hello, world!").into();
 /// let key: RecordKey = vec![1, 2, 3, 4].into();
 /// ```
+#[derive(Hash)]
 pub struct RecordKey(RecordKeyInner);
 
 impl RecordKey {
@@ -73,6 +74,7 @@ impl RecordKey {
     }
 }
 
+#[derive(Hash)]
 enum RecordKeyInner {
     Null,
     Key(RecordData),
@@ -93,7 +95,7 @@ impl<K: Into<Vec<u8>>> From<K> for RecordKey {
 /// [the Producer API] as an example.
 ///
 /// [the Producer API]: https://docs.rs/fluvio/producer/TopicProducer::send
-#[derive(Clone, Default, Eq, PartialEq)]
+#[derive(Clone, Default, Eq, PartialEq, Hash)]
 pub struct RecordData(Bytes);
 
 impl RecordData {

@@ -14,7 +14,7 @@ use fluvio_types::defaults::CLI_CONFIG_PATH;
 #[cfg(not(feature = "default"))]
 pub const CLI_CONFIG_PATH: &str = ".fluvio";
 
-fn fluvio_base_dir() -> Result<PathBuf> {
+pub fn fluvio_base_dir() -> Result<PathBuf> {
     if let Ok(dir) = std::env::var(FLUVIO_DIR) {
         // Assume this is like `~/.fluvio
         let path = PathBuf::from(dir);

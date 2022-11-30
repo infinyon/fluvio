@@ -66,7 +66,7 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -115,6 +115,10 @@ jobs:
       - name: Build smdk
         if: matrix.binary == 'smdk'
         run: make build-smdk
+
+      - name: Build fbm
+        if: matrix.binary == 'fbm'
+        run: make build-fbm
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -197,6 +201,28 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: smdk
 
+          # fbm
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: arm-unknown-linux-gnueabihf
+            binary: fbm
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fbm
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: fbm.exe
+          - os: macos-12
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fbm
+          - os: macos-12
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fbm
+
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -272,6 +298,16 @@ jobs:
         timeout-minutes: 30
         if: matrix.binary == 'smdk.exe'
         run: make build-smdk
+
+      - name: Build fbm
+        timeout-minutes: 30
+        if: matrix.binary == 'fbm'
+        run: make build-fbm
+
+      - name: Build fbm.exe
+        timeout-minutes: 30
+        if: matrix.binary == 'fbm.exe'
+        run: make build-fbm
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -1147,7 +1183,7 @@ jobs:
           - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
-        artifact: [fluvio, fluvio-channel, smdk]
+        artifact: [fluvio, fluvio-channel, smdk, fbm]
         exclude:
           - rust-target: armv7-unknown-linux-gnueabihf
             artifact: smdk
@@ -1168,6 +1204,8 @@ jobs:
             artifact: fluvio-channel.exe
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-test
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: fbm.exe
     permissions: write-all
     steps:
       #- name: Login GH CLI

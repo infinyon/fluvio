@@ -1,6 +1,4 @@
-use std::{
-    io::{Error as IoError},
-};
+use std::io::Error as IoError;
 
 use semver::Version;
 use fluvio_index::{PackageId, Target};
