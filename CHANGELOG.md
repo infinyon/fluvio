@@ -1,9 +1,13 @@
 # Release Notes
 
-## Platform Version 0.10.2 - UNRELEASED
+## Platform Version 0.10.2 - 2022-12-01
+* Add hub private packages ([#2828](https://github.com/infinyon/fluvio/issues/2828))
+* Update wasmtime to 0.3.0 ([#2831](https://github.com/infinyon/fluvio/issues/2831))
+* Benchmarking tool behaviour on timeout ([#2838](https://github.com/infinyon/fluvio/issues/2838))
+* Correct producer throughput measurement ([#2839](https://github.com/infinyon/fluvio/issues/2839))
+* Release batches lock ([#2840](https://github.com/infinyon/fluvio/issues/2840))
 
 ## Platform Version 0.10.1 - 2022-11-18
-
 * Improve performance for `RecordAccumulator` in `batches` ([#2799](https://github.com/infinyon/fluvio/pull/2799))
 * Replace `PartitionId`, `PartitionCount` and `ReplicationFactor` aliased types to use `u32` over `i32` ([#2799](https://github.com/infinyon/fluvio/pull/2799))
 * Standardize reading records from CLI input ([#2756](https://github.com/infinyon/fluvio/pull/2756))
