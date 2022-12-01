@@ -5,8 +5,8 @@ use std::fs;
 use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::smartmodule as smpkg;
-use fluvio_hub_util_protocol::{PackageMeta, PkgVisibility, HubUtilError};
-use fluvio_hub_util_protocol::constants::HUB_PACKAGE_META;
+use fluvio_hub_protocol::{PackageMeta, PkgVisibility, HubUtilError};
+use fluvio_hub_protocol::constants::HUB_PACKAGE_META;
 
 use crate::package_get_topfile;
 
@@ -118,15 +118,6 @@ pub fn validate_allowedchars(val: &str, name: &str) -> String {
     } else {
         String::new()
     }
-}
-
-pub fn validate_noleading_punct(val: &str, name: &str) -> String {
-    if let Some(c) = val.chars().next() {
-        if matches!(c, '_' | '-') {
-            return format!("{name} {val} no leading punctuation allowed '-' or '_'\n");
-        }
-    }
-    String::new()
 }
 
 /// certain output files are transformed in name vs their package name
@@ -358,7 +349,7 @@ fn hub_packagemeta_naming_check() {
 
 #[cfg(test)]
 mod t_packagemeta_version {
-    use fluvio_hub_util_protocol::{HubUtilError, PackageMeta, PkgVisibility};
+    use fluvio_hub_protocol::{HubUtilError, PackageMeta, PkgVisibility};
 
     use crate::PackageMetaExt;
 

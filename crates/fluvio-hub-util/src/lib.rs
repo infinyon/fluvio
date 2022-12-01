@@ -13,6 +13,9 @@ pub use packagemeta::*;
 pub use utils::*;
 pub use surf as http;
 
+pub use fluvio_hub_protocol::*;
+pub use fluvio_hub_protocol::constants::*;
+
 // HUB API URL chunks
 pub const HUB_API_V: &str = "hub/v0";
 pub const HUB_API_SM: &str = concatcp!(HUB_API_V, "/pkg/pub");

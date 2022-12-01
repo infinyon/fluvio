@@ -11,8 +11,8 @@ use sha2::{Digest, Sha512};
 use tracing::{debug, warn};
 use wasmparser::{Parser, Chunk, Payload};
 
-use fluvio_hub_util_protocol::{HubUtilError, PackageMeta, Result};
-use fluvio_hub_util_protocol::constants::{
+use fluvio_hub_protocol::{HubUtilError, PackageMeta, Result};
+use fluvio_hub_protocol::constants::{
     DEF_HUB_INIT_DIR, HUB_PACKAGE_META, HUB_SIGNFILE_BASE, HUB_MANIFEST_BLOB,
     HUB_PACKAGE_META_CLEAN,
 };

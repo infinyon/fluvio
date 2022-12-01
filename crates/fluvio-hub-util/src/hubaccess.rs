@@ -6,9 +6,9 @@ use surf::http::mime;
 use surf::StatusCode;
 use tracing::{debug, info};
 
-use fluvio_hub_util_protocol::{Result, HubUtilError};
-use fluvio_hub_util_protocol::infinyon_tok::read_infinyon_token;
-use fluvio_hub_util_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
+use fluvio_hub_protocol::{Result, HubUtilError};
+use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
+use fluvio_hub_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 use crate::keymgmt::Keypair;

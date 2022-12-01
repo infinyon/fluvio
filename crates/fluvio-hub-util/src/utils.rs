@@ -5,8 +5,8 @@ use surf::http::mime;
 use surf::StatusCode;
 use tracing::debug;
 
-use fluvio_hub_util_protocol::{PackageMeta, Result, HubUtilError};
-use fluvio_hub_util_protocol::constants::HUB_PACKAGE_EXT;
+use fluvio_hub_protocol::{PackageMeta, Result, HubUtilError};
+use fluvio_hub_protocol::constants::HUB_PACKAGE_EXT;
 
 use crate::HubAccess;
 use crate::HUB_API_SM;

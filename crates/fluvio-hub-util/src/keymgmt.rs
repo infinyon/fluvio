@@ -8,7 +8,7 @@ use std::io::Write;
 use ed25519_dalek::{Signer, Verifier};
 use pem::Pem;
 
-use fluvio_hub_util_protocol::{HubUtilError, Result};
+use fluvio_hub_protocol::{HubUtilError, Result};
 
 // keypair containing private and public keys
 pub struct Keypair {

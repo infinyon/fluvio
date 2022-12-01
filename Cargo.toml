@@ -18,7 +18,7 @@ members = [
     "crates/fluvio-controlplane",
     "crates/fluvio-controlplane-metadata",
     "crates/fluvio-hub-util",
-    "crates/fluvio-hub-util-protocol",
+    "crates/fluvio-hub-protocol",
     "crates/fluvio-extension-common",
     "crates/fluvio-package-index",
     "crates/fluvio-protocol",

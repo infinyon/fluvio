@@ -1,9 +1,9 @@
 [package]
-name = "fluvio-hub-util-protocol"
+name = "fluvio-hub-protocol"
 version = "0.0.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "API for SmartModule Hub"
+description = "Hub's Shared Resources"
 authors = ["fluvio.io"]
 repository = "https://github.com/infinyon/fluvio"
 publish = false
