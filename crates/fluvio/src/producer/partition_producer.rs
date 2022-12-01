@@ -187,19 +187,21 @@ impl PartitionProducer {
             .await?;
 
         let mut batches_ready = vec![];
-        let mut batches = self.batches_lock.batches.lock().await;
-        while !batches.is_empty() {
-            let ready = force
-                || batches.front().map_or(false, |batch| {
-                    batch.is_full() || batch.elapsed() as u128 >= self.config.linger.as_millis()
-                });
-            if ready {
-                if let Some(batch) = batches.pop_front() {
-                    batches_ready.push(batch);
-                    self.batches_lock.control.notify_all();
+        {
+            let mut batches = self.batches_lock.batches.lock().await;
+            while !batches.is_empty() {
+                let ready = force
+                    || batches.front().map_or(false, |batch| {
+                        batch.is_full() || batch.elapsed() as u128 >= self.config.linger.as_millis()
+                    });
+                if ready {
+                    if let Some(batch) = batches.pop_front() {
+                        batches_ready.push(batch);
+                        self.batches_lock.control.notify_all();
+                    }
+                } else {
+                    break;
                 }
-            } else {
-                break;
             }
         }
 
