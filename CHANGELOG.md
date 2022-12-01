@@ -1,5 +1,8 @@
 # Release Notes
 
+## Platform Version 0.10.3 - Unreleased
+
+
 ## Platform Version 0.10.2 - 2022-12-01
 * Add hub private packages ([#2828](https://github.com/infinyon/fluvio/issues/2828))
 * Update wasmtime to 0.3.0 ([#2831](https://github.com/infinyon/fluvio/issues/2831))
