@@ -109,7 +109,7 @@ impl AllStats {
 
     pub fn compute_stats(&mut self, config: &BenchmarkConfig, data: &BatchStats) {
         let mut first_produce_time: Option<Instant> = None;
-        let mut last_produce_time: Option<Instant> = None;
+        let last_produce_time = data.last_flush_time.unwrap();
         let mut first_consume_time: Option<Instant> = None;
         let mut last_consume_time: Option<Instant> = None; // TODO this is just the first time a single message was received... what should behavior be when multiple consumers
         let mut num_bytes = 0;
@@ -124,13 +124,6 @@ impl AllStats {
                 }
             } else {
                 first_produce_time = Some(produced_time);
-            };
-            if let Some(p) = last_produce_time {
-                if produced_time > p {
-                    last_produce_time = Some(produced_time);
-                }
-            } else {
-                last_produce_time = Some(produced_time);
             };
             if let Some(c) = first_consume_time {
                 if consumed_time < c {
@@ -148,7 +141,7 @@ impl AllStats {
             };
             num_bytes += record.num_bytes.unwrap();
         }
-        let produce_time = last_produce_time.unwrap() - first_produce_time.unwrap();
+        let produce_time = last_produce_time - first_produce_time.unwrap();
         let consume_time = last_consume_time.unwrap() - first_consume_time.unwrap();
         let combined_time = last_consume_time.unwrap() - first_produce_time.unwrap();
 

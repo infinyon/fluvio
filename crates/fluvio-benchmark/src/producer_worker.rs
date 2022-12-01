@@ -89,6 +89,11 @@ impl ProducerWorker {
             self.fluvio_producer.send(record.key, record.data).await?;
         }
         self.fluvio_producer.flush().await?;
+        self.tx_to_stats_collector
+            .send(StatsCollectorMessage::ProducerFlushed {
+                flush_time: Instant::now(),
+            })
+            .await?;
         Ok(())
     }
 }

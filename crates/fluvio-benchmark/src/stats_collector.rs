@@ -13,6 +13,7 @@ use crate::stats::AllStatsSync;
 #[derive(Default)]
 pub struct BatchStats {
     collected_records: HashMap<u64, RecordMetadata>,
+    pub last_flush_time: Option<Instant>,
 }
 impl BatchStats {
     pub fn record_sent(
@@ -33,6 +34,16 @@ impl BatchStats {
     ) -> Result<(), BenchmarkError> {
         let val = self.collected_records.entry(hash).or_default();
         val.mark_recv_time(recv_time, consumer_id)
+    }
+
+    pub fn flush_recv(&mut self, flush_time: Instant) {
+        if let Some(previous) = self.last_flush_time {
+            if flush_time > previous {
+                self.last_flush_time = Some(flush_time);
+            }
+        } else {
+            self.last_flush_time = Some(flush_time)
+        }
     }
 
     pub fn iter(&self) -> std::collections::hash_map::Values<u64, RecordMetadata> {
@@ -68,7 +79,8 @@ impl StatsWorker {
         let num_produced = self.config.total_number_of_messages_produced_per_batch();
         let num_consumed = self.config.total_number_of_messages_produced_per_batch()
             * self.config.number_of_expected_times_each_message_consumed();
-        let total_expected_messages = num_produced + num_consumed;
+        let num_flushed = self.config.num_concurrent_producer_workers;
+        let total_expected_messages = num_produced + num_consumed + num_flushed;
         debug!(
             "Stats listening for {num_produced} sent messages and {num_consumed} received messages"
         );
@@ -87,6 +99,9 @@ impl StatsWorker {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message hash".to_string(),
                         ));
+                    }
+                    StatsCollectorMessage::ProducerFlushed { flush_time } => {
+                        self.current_batch.flush_recv(flush_time)
                     }
                 },
                 Err(_) => {
@@ -127,6 +142,11 @@ impl StatsWorker {
                         self.current_batch
                             .record_recv(hash, recv_time, consumer_id)?;
                     }
+                    StatsCollectorMessage::ProducerFlushed { .. } => {
+                        return Err(BenchmarkError::ErrorWithExplanation(
+                            "Received unexpected message flushed".to_string(),
+                        ));
+                    }
                 },
                 Err(_) => {
                     return Err(BenchmarkError::ErrorWithExplanation(
@@ -163,6 +183,9 @@ pub enum StatsCollectorMessage {
         hash: u64,
         send_time: Instant,
         num_bytes: u64,
+    },
+    ProducerFlushed {
+        flush_time: Instant,
     },
     MessageReceived,
 
