@@ -7,7 +7,6 @@ use rand::{distributions::Alphanumeric, Rng};
 use fluvio_future::future::TimeoutError;
 use fluvio::{RecordKey, FluvioError};
 
-pub mod consumer;
 pub mod consumer_worker;
 pub mod benchmark_config;
 pub mod producer_worker;
