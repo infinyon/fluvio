@@ -20,7 +20,7 @@ pub struct ConnectorPackage {
     pub group: String,
     pub version: FluvioSemVersion,
     pub fluvio: FluvioSemVersion,
-    #[serde(rename = "api-version")]
+    #[serde(rename = "apiVersion")]
     pub api_version: FluvioSemVersion,
     pub description: Option<String>,
     pub license: Option<String>,
@@ -147,7 +147,7 @@ mod tests {
             group = "p_group"
             version = "0.1.1"
             fluvio = "0.1.2"
-            api-version = "0.1.3"
+            apiVersion = "0.1.3"
             description = "descr"
             license = "license"
 

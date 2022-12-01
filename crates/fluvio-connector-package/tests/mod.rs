@@ -68,7 +68,7 @@ name = "json-test-connector"
 group = "fluvio"
 version = "0.1.0"
 fluvio = "0.10.0"
-api-version = "0.1.0"
+apiVersion = "0.1.0"
 description = "Generate JSON generator"
 license = "Apache-2.0"
 
