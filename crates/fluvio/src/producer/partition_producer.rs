@@ -187,6 +187,7 @@ impl PartitionProducer {
             .await?;
 
         let mut batches_ready = vec![];
+        {
         let mut batches = self.batches_lock.batches.lock().await;
         while !batches.is_empty() {
             let ready = force
@@ -201,6 +202,7 @@ impl PartitionProducer {
             } else {
                 break;
             }
+        }
         }
 
         // Send each batch and notify base offset
