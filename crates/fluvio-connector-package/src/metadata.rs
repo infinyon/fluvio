@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use serde::{Serialize, Deserialize};
 
@@ -22,6 +20,7 @@ pub struct ConnectorPackage {
     pub group: String,
     pub version: FluvioSemVersion,
     pub fluvio: FluvioSemVersion,
+    #[serde(rename = "api-version")]
     pub api_version: FluvioSemVersion,
     pub description: Option<String>,
     pub license: Option<String>,
@@ -99,7 +98,7 @@ impl ConnectorMetadata {
         Ok(toml::from_str(input)?)
     }
 
-    pub fn from_toml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    pub fn from_toml_file<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
         let content = std::fs::read(path)?;
         Ok(toml::from_slice(content.as_slice())?)
     }
@@ -108,7 +107,7 @@ impl ConnectorMetadata {
         Ok(toml::to_string(self)?)
     }
 
-    pub fn to_toml_file<P: AsRef<Path>>(&self, path: P) -> anyhow::Result<()> {
+    pub fn to_toml_file<P: AsRef<std::path::Path>>(&self, path: P) -> anyhow::Result<()> {
         let content = toml::to_vec(&self)?;
         std::fs::write(path, content.as_slice())?;
         Ok(())
@@ -148,7 +147,7 @@ mod tests {
             group = "p_group"
             version = "0.1.1"
             fluvio = "0.1.2"
-            api_version = "0.1.3"
+            api-version = "0.1.3"
             description = "descr"
             license = "license"
 
