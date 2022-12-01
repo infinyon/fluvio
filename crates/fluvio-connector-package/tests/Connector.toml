@@ -1,0 +1,22 @@
+[package]
+name = "json-test-connector"
+group = "fluvio"
+version = "0.1.0"
+api_version = "0.1.0"
+fluvio = "0.10.0"
+description = "Generate JSON generator"
+license = "Apache-2.0"
+
+
+[direction]
+source = true
+
+[deployment]
+image = "fluvio/json-test-connector:0.1.0"
+
+
+
+[[params]]
+name = "template"
+description = "JSON template"
+type = "string"
