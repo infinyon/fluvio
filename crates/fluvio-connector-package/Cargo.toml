@@ -1,0 +1,22 @@
+[package]
+name = "fluvio-connector-package"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio Connector Package"
+
+[features]
+default = ["toml"]
+
+[dependencies]
+fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata/", default-features = false, features = ["use_serde"] }
+serde = { version = "1.0", default-features = false, features = ["derive"]}
+toml = { version = "0.5", default-features = false, optional = true}
+
+tracing = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.3"
