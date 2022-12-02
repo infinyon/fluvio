@@ -1,7 +1,7 @@
 use std::fs::File;
 use serde::{Deserialize, Serialize};
 
-use fluvio::{Compression, config::ConfigFile, Isolation};
+use fluvio::{Compression, config::ConfigFile, Isolation, DeliverySemantic, RetryPolicy, RetryStrategy};
 use super::{BenchmarkConfig, BenchmarkConfigBuilder, CrossIterate, Millis, Seconds};
 
 /// Key used by AllShareSameKey
@@ -14,6 +14,17 @@ pub struct SharedConfig {
     pub millis_between_samples: Millis,
     pub worker_timeout_seconds: Seconds,
 }
+impl SharedConfig {
+    pub fn new(name: &str) -> Self {
+        Self {
+            matrix_name: name.to_string(),
+            num_samples: 2,
+            worker_timeout_seconds: Seconds::new(300),
+            // TODO 0 millis once hanging bug is fixed
+            millis_between_samples: Millis::new(500),
+        }
+    }
+}
 
 /// Corresponds to https://docs.rs/fluvio/latest/fluvio/struct.TopicProducerConfigBuilder.html
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,16 +35,36 @@ pub struct FluvioProducerConfig {
     pub server_timeout_millis: Vec<Millis>,
     pub compression: Vec<Compression>,
     pub isolation: Vec<Isolation>,
-    // TODO
-    // pub producer_delivery_semantic,
+    pub delivery_semantic: Vec<DeliverySemanticStrategy>, // TODO
+}
+
+impl Default for FluvioProducerConfig {
+    fn default() -> Self {
+        Self {
+            batch_size: vec![16000],
+            queue_size: vec![100],
+            linger_millis: vec![Millis::new(10)],
+            server_timeout_millis: vec![Millis::new(5000)],
+            compression: vec![Compression::None],
+            isolation: vec![Isolation::ReadUncommitted],
+            delivery_semantic: vec![DeliverySemanticStrategy::AtLeastOnceExponential],
+        }
+    }
 }
 
 /// Corresponds to https://docs.rs/fluvio/latest/fluvio/consumer/struct.ConsumerConfigBuilder.html
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FluvioConsumerConfig {
     pub max_bytes: Vec<u64>,
-    // TODO
-    // pub consumer_isolation:...,
+    pub isolation: Vec<Isolation>,
+}
+impl Default for FluvioConsumerConfig {
+    fn default() -> Self {
+        Self {
+            max_bytes: vec![64000],
+            isolation: vec![Isolation::ReadUncommitted],
+        }
+    }
 }
 
 /// Corresponds to https://docs.rs/fluvio/latest/fluvio/metadata/topic/struct.TopicSpec.html
@@ -47,6 +78,13 @@ pub struct FluvioTopicConfig {
     // TODO
     // pub num_replicas: Vec<u64>,
 }
+impl Default for FluvioTopicConfig {
+    fn default() -> Self {
+        Self {
+            num_partitions: vec![1],
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BenchmarkLoadConfig {
@@ -56,6 +94,17 @@ pub struct BenchmarkLoadConfig {
     /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
     pub num_concurrent_consumers_per_partition: Vec<u64>,
     pub record_size: Vec<u64>,
+}
+impl Default for BenchmarkLoadConfig {
+    fn default() -> Self {
+        Self {
+            num_records_per_producer_worker_per_batch: vec![10],
+            record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey],
+            num_concurrent_producer_workers: vec![1],
+            num_concurrent_consumers_per_partition: vec![1],
+            record_size: vec![10],
+        }
+    }
 }
 
 /// A BenchmarkMatrix contains shared config for all runs and dimensions that hold values that will change across runs.
@@ -80,6 +129,18 @@ impl IntoIterator for BenchmarkMatrix {
 }
 
 impl BenchmarkMatrix {
+    pub fn new(name: &str) -> Self {
+        Self {
+            shared_config: SharedConfig::new(name),
+            producer_config: Default::default(),
+            consumer_config: Default::default(),
+            topic_config: Default::default(),
+            load_config: Default::default(),
+        }
+    }
+}
+
+impl BenchmarkMatrix {
     // Impl note: This does allocate for all of the benchmark configs at once, however it made for simpler code
     // and as there is a very low practical limit for the number of benchmarks that can be run in a reasonable time period, its not an issue that it allocates.
 
@@ -100,12 +161,7 @@ impl BenchmarkMatrix {
             profile_name,
         )];
         builder
-            .cross_iterate(
-                &self.load_config.num_records_per_producer_worker_per_batch,
-                |v, b| {
-                    b.num_records_per_producer_worker_per_batch(v);
-                },
-            )
+            // Fluvio Producer
             .cross_iterate(&self.producer_config.batch_size, |v, b| {
                 b.producer_batch_size(v);
             })
@@ -124,9 +180,27 @@ impl BenchmarkMatrix {
             .cross_iterate(&self.producer_config.isolation, |v, b| {
                 b.producer_isolation(v);
             })
+            .cross_iterate(&self.producer_config.delivery_semantic, |v, b| {
+                b.producer_delivery_semantic(v.into());
+            })
+            // Fluvio Consumer
             .cross_iterate(&self.consumer_config.max_bytes, |v, b| {
                 b.consumer_max_bytes(v);
             })
+            .cross_iterate(&self.consumer_config.isolation, |v, b| {
+                b.consumer_isolation(v);
+            })
+            // Fluvio Topic
+            .cross_iterate(&self.topic_config.num_partitions, |v, b| {
+                b.num_partitions(v);
+            })
+            // Benchmark Load
+            .cross_iterate(
+                &self.load_config.num_records_per_producer_worker_per_batch,
+                |v, b| {
+                    b.num_records_per_producer_worker_per_batch(v);
+                },
+            )
             .cross_iterate(&self.load_config.num_concurrent_producer_workers, |v, b| {
                 b.num_concurrent_producer_workers(v);
             })
@@ -136,9 +210,6 @@ impl BenchmarkMatrix {
                     b.num_concurrent_consumers_per_partition(v);
                 },
             )
-            .cross_iterate(&self.topic_config.num_partitions, |v, b| {
-                b.num_partitions(v);
-            })
             .cross_iterate(&self.load_config.record_size, |v, b| {
                 b.record_size(v);
             })
@@ -168,4 +239,37 @@ pub enum RecordKeyAllocationStrategy {
 pub fn get_config_from_file(path: &str) -> Vec<BenchmarkMatrix> {
     let file = File::open(path).unwrap();
     vec![serde_yaml::from_reader::<_, BenchmarkMatrix>(file).unwrap()]
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum DeliverySemanticStrategy {
+    AtMostOnce,
+    AtLeastOnceFixed,
+    AtLeastOnceExponential,
+    AtLeastOnceFibonacci,
+    AtLeastOnceCustom(RetryPolicy),
+}
+
+impl From<DeliverySemanticStrategy> for DeliverySemantic {
+    fn from(s: DeliverySemanticStrategy) -> Self {
+        let mut policy = RetryPolicy::default();
+        match s {
+            DeliverySemanticStrategy::AtMostOnce => DeliverySemantic::AtMostOnce,
+            DeliverySemanticStrategy::AtLeastOnceFixed => {
+                policy.strategy = RetryStrategy::FixedDelay;
+                DeliverySemantic::AtLeastOnce(policy)
+            }
+            DeliverySemanticStrategy::AtLeastOnceExponential => {
+                policy.strategy = RetryStrategy::ExponentialBackoff;
+                DeliverySemantic::AtLeastOnce(policy)
+            }
+            DeliverySemanticStrategy::AtLeastOnceFibonacci => {
+                policy.strategy = RetryStrategy::FibonacciBackoff;
+                DeliverySemantic::AtLeastOnce(policy)
+            }
+            DeliverySemanticStrategy::AtLeastOnceCustom(policy) => {
+                DeliverySemantic::AtLeastOnce(policy)
+            }
+        }
+    }
 }

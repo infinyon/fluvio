@@ -33,7 +33,7 @@ impl ProducerWorker {
             .compression(config.producer_compression)
             .timeout(config.producer_server_timeout)
             .isolation(config.producer_isolation)
-            // todo producer delivery_semantic
+            .delivery_semantic(config.producer_delivery_semantic)
             .build()
             .map_err(|e| {
                 BenchmarkError::ErrorWithExplanation(format!("Fluvio topic config error: {:?}", e))

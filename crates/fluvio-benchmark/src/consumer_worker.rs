@@ -27,6 +27,7 @@ impl ConsumerWorker {
     ) -> Result<Self, BenchmarkError> {
         let mut config_builder = ConsumerConfigBuilder::default();
         config_builder.max_bytes(config.consumer_max_bytes as i32);
+        config_builder.isolation(config.consumer_isolation);
 
         let fluvio_config = config_builder.build()?;
 
