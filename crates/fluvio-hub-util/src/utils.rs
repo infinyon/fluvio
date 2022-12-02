@@ -5,7 +5,7 @@ use surf::http::mime;
 use surf::StatusCode;
 use tracing::debug;
 
-use fluvio_hub_protocol::{PackageMeta, Result, HubUtilError};
+use fluvio_hub_protocol::{PackageMeta, Result, HubError};
 use fluvio_hub_protocol::constants::HUB_PACKAGE_EXT;
 
 use crate::HubAccess;
@@ -28,7 +28,7 @@ pub struct PackageListMeta {
 pub fn cli_pkgname_split(pkgname: &str) -> Result<(&str, &str, &str)> {
     let idx1 = pkgname
         .rfind('@')
-        .ok_or_else(|| HubUtilError::InvalidPackageName(format!("{pkgname} missing version")))?;
+        .ok_or_else(|| HubError::InvalidPackageName(format!("{pkgname} missing version")))?;
     let split1 = pkgname.split_at(idx1); // this gives us (pkgname, ver)
     let (orgpkg, verstr) = split1;
     let ver = verstr.trim_start_matches('@');
@@ -72,7 +72,7 @@ pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
     let mut resp = surf::get(pkgurl)
         .header("Authorization", actiontoken)
         .await
-        .map_err(|_| HubUtilError::PackageDownload("authorization error".into()))?;
+        .map_err(|_| HubError::PackageDownload("authorization error".into()))?;
 
     match resp.status() {
         StatusCode::Ok => {}
@@ -82,7 +82,7 @@ pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
                 .await
                 .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
             let msg = format!("Status({code}) {body_err_message}");
-            return Err(HubUtilError::PackageDownload(msg));
+            return Err(HubError::PackageDownload(msg));
         }
     }
 
@@ -92,7 +92,7 @@ pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
     let data = resp
         .body_bytes()
         .await
-        .map_err(|_| HubUtilError::PackageDownload("Data unpack failure".into()))?;
+        .map_err(|_| HubError::PackageDownload("Data unpack failure".into()))?;
     Ok(data)
 }
 
@@ -101,17 +101,17 @@ pub async fn get_package_noauth(pkgurl: &str) -> Result<Vec<u8>> {
     //todo use auth
     let mut resp = surf::get(pkgurl)
         .await
-        .map_err(|_| HubUtilError::PackageDownload("".into()))?;
+        .map_err(|_| HubError::PackageDownload("".into()))?;
     match resp.status() {
         StatusCode::Ok => {}
         _ => {
-            return Err(HubUtilError::PackageDownload("".into()));
+            return Err(HubError::PackageDownload("".into()));
         }
     }
     let data = resp
         .body_bytes()
         .await
-        .map_err(|_| HubUtilError::PackageDownload("Data unpack failure".into()))?;
+        .map_err(|_| HubError::PackageDownload("Data unpack failure".into()))?;
     Ok(data)
 }
 
@@ -136,7 +136,7 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
         .to_string_lossy()
         .to_string();
     if pkgfile != pm.packagefile_name() {
-        return Err(HubUtilError::InvalidPackageName(format!(
+        return Err(HubError::InvalidPackageName(format!(
             "{pkgfile} invalid name"
         )));
     }
@@ -153,24 +153,24 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
         .header("Authorization", &actiontoken);
     let mut res = req
         .await
-        .map_err(|e| HubUtilError::HubAccess(format!("Failed to connect {e}")))?;
+        .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
 
     match res.status() {
         surf::http::StatusCode::Ok => {
             println!("Package uploaded!");
             Ok(())
         }
-        surf::http::StatusCode::Unauthorized => Err(HubUtilError::HubAccess(
-            "Unauthorized, please log in".into(),
-        )),
+        surf::http::StatusCode::Unauthorized => {
+            Err(HubError::HubAccess("Unauthorized, please log in".into()))
+        }
         _ => {
             debug!("push result: {} \n{res:?}", res.status());
             let bodymsg = res
                 .body_string()
                 .await
-                .map_err(|_e| HubUtilError::HubAccess("Failed to download err body".into()))?;
+                .map_err(|_e| HubError::HubAccess("Failed to download err body".into()))?;
             let msg = format!("error status code({}) {}", res.status(), bodymsg);
-            Err(HubUtilError::HubAccess(msg))
+            Err(HubError::HubAccess(msg))
         }
     }
 }

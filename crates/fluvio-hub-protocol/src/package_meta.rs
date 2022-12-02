@@ -8,7 +8,7 @@ use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleVisibility;
 use fluvio_controlplane_metadata::smartmodule as smpkg;
 
-use crate::{HubUtilError, Result};
+use crate::{HubError, Result};
 use crate::constants::{HUB_PACKAGE_EXT, HUB_PACKAGE_VERSION};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
@@ -58,7 +58,7 @@ impl PackageMeta {
     /// Eg: `infinyon-example-0.0.1`
     pub fn id(&self) -> Result<String> {
         let fluvio_semver = FluvioSemVersion::parse(&self.version)
-            .map_err(|err| HubUtilError::SemVerError(err.to_string()))?;
+            .map_err(|err| HubError::SemVerError(err.to_string()))?;
         let package_key = SmartModulePackageKey {
             name: self.name.clone(),
             group: Some(self.group.clone()),
@@ -91,14 +91,14 @@ impl PackageMeta {
 
         if parts.len() != 2 {
             error!("The provided name is not a valid package name: {pkg_name}");
-            return Err(HubUtilError::InvalidPackageName(pkg_name.into()));
+            return Err(HubError::InvalidPackageName(pkg_name.into()));
         }
 
         let name_version = parts.get(1).unwrap().split('@').collect::<Vec<&str>>();
 
         if name_version.len() != 2 {
             error!("The provided name is not a valid package name: {pkg_name}");
-            return Err(HubUtilError::InvalidPackageName(pkg_name.into()));
+            return Err(HubError::InvalidPackageName(pkg_name.into()));
         }
 
         Ok(format!(
@@ -155,7 +155,7 @@ impl PackageMeta {
         advice.push_str(&validate_notempty(&self.name, "package name"));
 
         if !advice.is_empty() {
-            Err(HubUtilError::PackageVerify(advice))
+            Err(HubError::PackageVerify(advice))
         } else {
             Ok(())
         }
@@ -168,7 +168,7 @@ pub fn packagename_validate(pkgname: &str) -> Result<()> {
     advice.push_str(&validate_allowedchars(pkgname, "package name"));
 
     if !advice.is_empty() {
-        Err(HubUtilError::InvalidPackageName(advice))
+        Err(HubError::InvalidPackageName(advice))
     } else {
         Ok(())
     }

@@ -6,7 +6,7 @@ use surf::http::mime;
 use surf::StatusCode;
 use tracing::{debug, info};
 
-use fluvio_hub_protocol::{Result, HubUtilError};
+use fluvio_hub_protocol::{Result, HubError};
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
 use fluvio_hub_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
@@ -67,7 +67,7 @@ impl HubAccess {
             .header("Authorization", &action_token);
         let res = req
             .await
-            .map_err(|e| HubUtilError::HubAccess(format!("Failed to connect {e}")))?;
+            .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
         let status = res.status();
         match status {
             StatusCode::Created => {
@@ -78,15 +78,15 @@ impl HubAccess {
             }
             StatusCode::Forbidden => {
                 let msg = format!("hub: hubid {hubid} already taken");
-                return Err(HubUtilError::HubAccess(msg));
+                return Err(HubError::HubAccess(msg));
             }
             StatusCode::Unauthorized => {
                 let msg = "hub: authorization error, try 'fluvio cloud login'".to_string();
-                return Err(HubUtilError::HubAccess(msg));
+                return Err(HubError::HubAccess(msg));
             }
             sc => {
                 let msg = format!("hub: hubid creation error {sc}");
-                return Err(HubUtilError::HubAccess(msg));
+                return Err(HubError::HubAccess(msg));
             }
         }
         Ok(())
@@ -127,29 +127,29 @@ impl HubAccess {
             act: String::from(action),
         };
         let msg_action_token = serde_json::to_string(&mat)
-            .map_err(|_e| HubUtilError::HubAccess("Failed access setup".to_string()))?;
+            .map_err(|_e| HubError::HubAccess("Failed access setup".to_string()))?;
         let req = surf::get(api_url)
             .content_type(mime::JSON)
             .body_bytes(msg_action_token)
             .header("Authorization", &authn_token);
         let mut res = req
             .await
-            .map_err(|e| HubUtilError::HubAccess(format!("Failed to connect {e}")))?;
+            .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
         let status_code = res.status();
         match status_code {
             StatusCode::Ok => {
                 let action_token = res.body_string().await.map_err(|e| {
                     debug!("err {e} {res:?}");
-                    HubUtilError::HubAccess("Failed to parse reply".to_string())
+                    HubError::HubAccess("Failed to parse reply".to_string())
                 })?;
                 Ok(action_token)
             }
-            StatusCode::Unauthorized => Err(HubUtilError::HubAccess(
+            StatusCode::Unauthorized => Err(HubError::HubAccess(
                 "Unauthorized, please log in with 'fluvio cloud login'".into(),
             )),
             _ => {
                 let msg = format!("Unknown error: {}", res.status());
-                Err(HubUtilError::HubAccess(msg))
+                Err(HubError::HubAccess(msg))
             }
         }
     }
@@ -182,7 +182,7 @@ impl HubAccess {
             } else {
                 info!("Creating initial hub credentials");
                 // if the ptr file doesn't exist, then assume we need to create the default config
-                let deferr = Err(HubUtilError::HubAccess(
+                let deferr = Err(HubError::HubAccess(
                     "Couldn't create default hubaccess credentials".to_string(),
                 ));
                 std::fs::create_dir(&base_path)?;
@@ -205,7 +205,7 @@ impl HubAccess {
         let mut ha: HubAccess = serde_yaml::from_str(&buf).map_err(|e| {
             let spath = profile_path.display();
             debug!("parse error {e}");
-            HubUtilError::HubAccess(format!("Could not load from {spath}"))
+            HubError::HubAccess(format!("Could not load from {spath}"))
         })?;
 
         // generate keys if they don't exist
@@ -280,7 +280,7 @@ pub struct MsgHubIdReq {
 
 pub fn default_cfg_path() -> Result<PathBuf> {
     let mut hub_cfg_path =
-        dirs::home_dir().ok_or_else(|| HubUtilError::HubAccess("no home directory".into()))?;
+        dirs::home_dir().ok_or_else(|| HubError::HubAccess("no home directory".into()))?;
     hub_cfg_path.push(CLI_CONFIG_PATH); // .fluvio
     hub_cfg_path.push(CLI_CONFIG_HUB);
     Ok(hub_cfg_path)

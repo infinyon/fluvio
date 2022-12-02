@@ -11,7 +11,7 @@ use sha2::{Digest, Sha512};
 use tracing::{debug, warn};
 use wasmparser::{Parser, Chunk, Payload};
 
-use fluvio_hub_protocol::{HubUtilError, PackageMeta, Result};
+use fluvio_hub_protocol::{HubError, PackageMeta, Result};
 use fluvio_hub_protocol::constants::{
     DEF_HUB_INIT_DIR, HUB_PACKAGE_META, HUB_SIGNFILE_BASE, HUB_MANIFEST_BLOB,
     HUB_PACKAGE_META_CLEAN,
@@ -76,9 +76,9 @@ fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
         let fname = Path::new(fname);
 
         // in package, the source path is stripped
-        let just_fname = fname.file_name().ok_or_else(|| {
-            HubUtilError::ManifestInvalidFile(fname.to_string_lossy().to_string())
-        })?;
+        let just_fname = fname
+            .file_name()
+            .ok_or_else(|| HubError::ManifestInvalidFile(fname.to_string_lossy().to_string()))?;
         tf.append_path_with_name(fname, just_fname)?;
         let just_fname = just_fname.to_string_lossy().to_string();
         pm_clean.manifest.push(just_fname);
@@ -208,13 +208,13 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
         }
     }
     if num_files == 0 {
-        return Err(HubUtilError::PackageSigning(format!(
+        return Err(HubError::PackageSigning(format!(
             "{in_pkgfile}: no files in package"
         )));
     }
     let buf = serde_json::to_string(&sig.pkgsig).map_err(|e| {
         warn!("signature serialization: {}", e);
-        HubUtilError::PackageSigning(format!("{in_pkgfile}: signature serialization fault"))
+        HubError::PackageSigning(format!("{in_pkgfile}: signature serialization fault"))
     })?;
     let signame = format!("{HUB_SIGNFILE_BASE}.{sig_number}");
     let tmpsigfile = tempdir.path().join(&signame);
@@ -228,9 +228,7 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
         warn!("{}, falling back to copy", e);
         std::fs::copy(sf_path, out_pkgfile).map_err(|e| {
             warn!("copy failure {}", e);
-            HubUtilError::PackageSigning(format!(
-                "{in_pkgfile}: fault creating signed package\n{e}"
-            ))
+            HubError::PackageSigning(format!("{in_pkgfile}: fault creating signed package\n{e}"))
         })?;
     }
     Ok(())
@@ -257,17 +255,17 @@ pub fn package_getsigs_with_readio<R: std::io::Read>(
         let fnamestr = fp.to_string_lossy().to_string();
         let file_base = fp
             .file_stem()
-            .ok_or_else(|| HubUtilError::PackageVerify(format!("{} bad filename", pkgfile)))?;
+            .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
         let file_name = fp
             .file_name()
-            .ok_or_else(|| HubUtilError::PackageVerify(format!("{} bad filename", pkgfile)))?;
+            .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
         if fh.unpack_in(tempdir.path())? {
             let tmpfile = tempdir.path().join(file_name);
             let buf = std::fs::read(&tmpfile)?;
             if file_base == HUB_SIGNFILE_BASE {
                 // unpack the file, check if the signing key matches and validate it
                 let ps: PackageSignature = serde_json::from_slice(&buf).map_err(|_| {
-                    HubUtilError::PackageVerify(format!("{} could not decode sig", pkgfile))
+                    HubError::PackageVerify(format!("{} could not decode sig", pkgfile))
                 })?;
                 sigs.insert(fnamestr.to_string(), ps);
             }
@@ -301,11 +299,11 @@ pub fn package_get_topfile_with_readio<R: std::io::Read>(
             }
             let mut buf: Vec<u8> = Vec::new();
             f.read_to_end(&mut buf)
-                .map_err(|_| HubUtilError::PackageMissingFile(topfile.into()))?;
+                .map_err(|_| HubError::PackageMissingFile(topfile.into()))?;
             return Ok(buf);
         }
     }
-    Err(HubUtilError::PackageMissingFile(topfile.into()))
+    Err(HubError::PackageMissingFile(topfile.into()))
 }
 
 /// extract files out of the package manifest
@@ -340,11 +338,11 @@ pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
             }
             let mut buf: Vec<u8> = Vec::new();
             f.read_to_end(&mut buf)
-                .map_err(|_| HubUtilError::PackageMissingFile(filename.into()))?;
+                .map_err(|_| HubError::PackageMissingFile(filename.into()))?;
             return Ok(buf);
         }
     }
-    Err(HubUtilError::PackageMissingFile(filename.into()))
+    Err(HubError::PackageMissingFile(filename.into()))
 }
 
 /// Extracts WASM files from the package manifest ensuring these are valid
@@ -367,7 +365,7 @@ fn validate_wasm_file(mut data: &[u8]) -> Result<()> {
     loop {
         match parser
             .parse(data, true)
-            .map_err(|err| HubUtilError::InvalidWasmFileEncountered(err.to_string()))?
+            .map_err(|err| HubError::InvalidWasmFileEncountered(err.to_string()))?
         {
             // Given that file bytes are present, its not possible to meet
             // this state.
@@ -425,21 +423,19 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
         let fnamestr = fp.to_string_lossy().to_string();
         let file_name = fp
             .file_name()
-            .ok_or_else(|| HubUtilError::PackageVerify(format!("{} bad filename", pkgfile)))?;
+            .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
         if vers.contains_key(&fnamestr) && fh.unpack_in(tempdir.path())? {
             let tmpfile = tempdir.path().join(file_name);
             let buf = std::fs::read(&tmpfile)?;
 
             let mut iv = vers
                 .get_mut(&fnamestr)
-                .ok_or_else(|| HubUtilError::PackageVerify(format!("{} verify error", pkgfile)))?;
+                .ok_or_else(|| HubError::PackageVerify(format!("{} verify error", pkgfile)))?;
             iv.seen = true;
-            let sigbytes = hex::decode(&iv.fsig.sig).map_err(|_| {
-                HubUtilError::PackageVerify(format!("{} key decode error", pkgfile))
-            })?;
-            let signature = Signature::from_bytes(&sigbytes).map_err(|_| {
-                HubUtilError::PackageVerify(format!("{} key decode error", pkgfile))
-            })?;
+            let sigbytes = hex::decode(&iv.fsig.sig)
+                .map_err(|_| HubError::PackageVerify(format!("{} key decode error", pkgfile)))?;
+            let signature = Signature::from_bytes(&sigbytes)
+                .map_err(|_| HubError::PackageVerify(format!("{} key decode error", pkgfile)))?;
             iv.verify_ok = pubkey.verify(&buf, &signature).is_ok();
         }
     }
@@ -453,7 +449,7 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
         abad || !pass
     });
     if any_bad {
-        Err(HubUtilError::PackageVerify("failed verify".into()))
+        Err(HubError::PackageVerify("failed verify".into()))
     } else {
         Ok(())
     }
@@ -482,9 +478,7 @@ pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
             let (_fname, pkgsig) = rec;
             (pkgsig.pubkey == string_pubkey).then_some(pkgsig)
         })
-        .ok_or_else(|| {
-            HubUtilError::PackageVerify(format!("{pkgfile} no signature with given key"))
-        })?;
+        .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} no signature with given key")))?;
 
     readio.rewind()?;
     package_verify_sig_from_readio(readio, pkgfile, sig)?;

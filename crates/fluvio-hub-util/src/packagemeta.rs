@@ -5,12 +5,12 @@ use std::fs;
 use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::smartmodule as smpkg;
-use fluvio_hub_protocol::{PackageMeta, PkgVisibility, HubUtilError};
+use fluvio_hub_protocol::{PackageMeta, PkgVisibility, HubError};
 use fluvio_hub_protocol::constants::HUB_PACKAGE_META;
 
 use crate::package_get_topfile;
 
-type Result<T> = std::result::Result<T, HubUtilError>;
+type Result<T> = std::result::Result<T, HubError>;
 
 pub trait PackageMetaExt {
     fn read_from_file(filename: &str) -> Result<PackageMeta>;
@@ -49,9 +49,7 @@ impl PackageMetaExt for PackageMeta {
     /// particularly package name and version
     fn update_from_cargo_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()> {
         let ctoml = cargo_toml::Manifest::from_path(fpath)?;
-        let cpkg = ctoml
-            .package
-            .ok_or(HubUtilError::CargoMissingPackageSection)?;
+        let cpkg = ctoml.package.ok_or(HubError::CargoMissingPackageSection)?;
 
         packagename_validate(&cpkg.name)?;
         self.name = cpkg.name;
@@ -86,7 +84,7 @@ pub fn packagename_validate(pkgname: &str) -> Result<()> {
     advice.push_str(&validate_allowedchars(pkgname, "package name"));
 
     if !advice.is_empty() {
-        Err(HubUtilError::InvalidPackageName(advice))
+        Err(HubError::InvalidPackageName(advice))
     } else {
         Ok(())
     }
@@ -134,8 +132,8 @@ pub fn packagename_transform(pkgname: &str) -> Result<String> {
 /// given a package.tar file get the package-meta data
 pub fn package_get_meta(pkgfile: &str) -> Result<PackageMeta> {
     let buf = package_get_topfile(pkgfile, HUB_PACKAGE_META)?;
-    let strbuf = std::str::from_utf8(&buf)
-        .map_err(|_| HubUtilError::UnableGetPackageMeta(pkgfile.into()))?;
+    let strbuf =
+        std::str::from_utf8(&buf).map_err(|_| HubError::UnableGetPackageMeta(pkgfile.into()))?;
     let pm: PackageMeta = serde_yaml::from_str(strbuf)?;
     Ok(pm)
 }
@@ -161,7 +159,7 @@ pub fn package_meta_from_bytes(reader: &[u8]) -> Result<PackageMeta> {
         }
     }
 
-    Err(HubUtilError::UnableGetPackageMeta(
+    Err(HubError::UnableGetPackageMeta(
         "Provided bytes doesn't belong to an actual TAR file".into(),
     ))
 }
@@ -349,11 +347,11 @@ fn hub_packagemeta_naming_check() {
 
 #[cfg(test)]
 mod t_packagemeta_version {
-    use fluvio_hub_protocol::{HubUtilError, PackageMeta, PkgVisibility};
+    use fluvio_hub_protocol::{HubError, PackageMeta, PkgVisibility};
 
     use crate::PackageMetaExt;
 
-    fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubUtilError> {
+    fn read_pkgmeta(fname: &str) -> Result<PackageMeta, HubError> {
         let pm = PackageMeta::read_from_file(fname)?;
         Ok(pm)
     }
