@@ -1,11 +1,7 @@
-use fluvio_connector_package::metadata::Parameter;
-use fluvio_connector_package::metadata::Parameters;
-use fluvio_connector_package::metadata::ParameterType;
+use std::collections::HashMap;
+
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
-use fluvio_connector_package::metadata::ConnectorPackage;
-use fluvio_connector_package::metadata::Deployment;
-use fluvio_connector_package::metadata::Direction;
-use fluvio_connector_package::metadata::ConnectorMetadata;
+use fluvio_connector_package::metadata::*;
 
 #[test]
 fn test_read_from_toml_file() {
@@ -36,7 +32,23 @@ fn test_read_from_toml_file() {
                 name: "template".into(),
                 description: Some("JSON template".into()),
                 ty: ParameterType::String
-            }])
+            }]),
+            secrets: Secrets::from(HashMap::from([
+                (
+                    "password".into(),
+                    Secret {
+                        ty: SecretType::Env,
+                        mount: None,
+                    }
+                ),
+                (
+                    "my_cert".into(),
+                    Secret {
+                        ty: SecretType::File,
+                        mount: Some("/mydata/secret1".into())
+                    }
+                )
+            ])),
         }
     )
 }
@@ -57,13 +69,7 @@ fn test_write_to_toml_file() {
     //then
     assert_eq!(
         content,
-        r#"[direction]
-source = true
-
-[deployment]
-image = "fluvio/json-test-connector:0.1.0"
-
-[package]
+        r#"[package]
 name = "json-test-connector"
 group = "fluvio"
 version = "0.1.0"
@@ -71,6 +77,18 @@ fluvio = "0.10.0"
 apiVersion = "0.1.0"
 description = "Generate JSON generator"
 license = "Apache-2.0"
+
+[direction]
+source = true
+
+[deployment]
+image = "fluvio/json-test-connector:0.1.0"
+[secret.password]
+type = "env"
+
+[secret.my_cert]
+type = "file"
+mount = "/mydata/secret1"
 
 [[params]]
 name = "template"
