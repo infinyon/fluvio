@@ -8,8 +8,7 @@ use std::io::Write;
 use ed25519_dalek::{Signer, Verifier};
 use pem::Pem;
 
-use crate::errors::HubUtilError;
-use crate::errors::Result;
+use fluvio_hub_protocol::{HubError, Result};
 
 // keypair containing private and public keys
 pub struct Keypair {
@@ -20,8 +19,8 @@ impl Keypair {
     // failable clone
     pub fn clone_with_result(&self) -> Result<Self> {
         use ed25519_dalek::SecretKey;
-        let secret = SecretKey::from_bytes(&self.kp.secret.to_bytes())
-            .map_err(|_| HubUtilError::KeyVerify)?;
+        let secret =
+            SecretKey::from_bytes(&self.kp.secret.to_bytes()).map_err(|_| HubError::KeyVerify)?;
         let kp = ed25519_dalek::Keypair {
             secret,
             public: self.kp.public,
@@ -49,7 +48,7 @@ impl Keypair {
         let mut secret = [0_u8; SECRET_KEY_LENGTH];
         thread_rng().fill_bytes(&mut secret);
         let secret = SecretKey::from_bytes(&secret)
-            .map_err(|_| HubUtilError::General("Key generation error".into()))?;
+            .map_err(|_| HubError::General("Key generation error".into()))?;
         Ok(Keypair {
             kp: ed25519_dalek::Keypair {
                 public: (&secret).into(),
@@ -63,7 +62,7 @@ impl Keypair {
         let sig = self
             .kp
             .try_sign(buf)
-            .map_err(|_| HubUtilError::SignatureError)?;
+            .map_err(|_| HubError::SignatureError)?;
         Ok(sig)
     }
 
@@ -76,9 +75,9 @@ impl Keypair {
     /// read private key and derive public to populate keypair
     pub fn read_from_file(fname: &str) -> Result<Keypair> {
         let buf = std::fs::read(fname)?;
-        let pem = pem::parse(&buf).map_err(|_| HubUtilError::InvalidKeyPairFile(fname.into()))?;
+        let pem = pem::parse(&buf).map_err(|_| HubError::InvalidKeyPairFile(fname.into()))?;
         if pem.tag != "PRIVATE KEY" {
-            return Err(HubUtilError::InvalidKeyPairFile(fname.into()));
+            return Err(HubError::InvalidKeyPairFile(fname.into()));
         }
         Keypair::from_secret_bytes(&pem.contents)
     }
@@ -101,7 +100,7 @@ impl Keypair {
     }
 
     pub fn from_hex(hexstring: &str) -> Result<Keypair> {
-        let pkbytes = hex::decode(hexstring).map_err(|_| HubUtilError::KeyVerify)?;
+        let pkbytes = hex::decode(hexstring).map_err(|_| HubError::KeyVerify)?;
         Keypair::from_secret_bytes(&pkbytes)
     }
 
@@ -110,17 +109,13 @@ impl Keypair {
     /// ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACGeGHWvt/E60k/FLuDsCkArLAIa4lvwk1wg3nJIGJl sshkey@example.com
     pub fn from_ssh(env_val: &str) -> Result<Keypair> {
         let sshprivkey =
-            ssh_key::PrivateKey::from_openssh(env_val).map_err(|_| HubUtilError::KeyVerify)?;
-        let keypair = sshprivkey
-            .key_data()
-            .ed25519()
-            .ok_or(HubUtilError::KeyVerify)?;
+            ssh_key::PrivateKey::from_openssh(env_val).map_err(|_| HubError::KeyVerify)?;
+        let keypair = sshprivkey.key_data().ed25519().ok_or(HubError::KeyVerify)?;
         Keypair::from_secret_bytes(keypair.private.as_ref())
     }
 
     fn from_secret_bytes(sbytes: &[u8]) -> Result<Keypair> {
-        let skey =
-            ed25519_dalek::SecretKey::from_bytes(sbytes).map_err(|_| HubUtilError::KeyVerify)?;
+        let skey = ed25519_dalek::SecretKey::from_bytes(sbytes).map_err(|_| HubError::KeyVerify)?;
         let pkey: ed25519_dalek::PublicKey = (&skey).into();
         let ekeypair = ed25519_dalek::Keypair {
             secret: skey,
@@ -137,12 +132,12 @@ impl Keypair {
 impl PublicKey {
     pub fn read_from_file(fname: &str) -> Result<PublicKey> {
         let buf = std::fs::read(fname)?;
-        let pem = pem::parse(&buf).map_err(|_| HubUtilError::InvalidPublicKeyFile(fname.into()))?;
+        let pem = pem::parse(&buf).map_err(|_| HubError::InvalidPublicKeyFile(fname.into()))?;
         if pem.tag != "PUBLIC KEY" {
-            return Err(HubUtilError::InvalidPublicKeyFile(fname.into()));
+            return Err(HubError::InvalidPublicKeyFile(fname.into()));
         }
-        let pubkey = ed25519_dalek::PublicKey::from_bytes(&pem.contents)
-            .map_err(|_| HubUtilError::KeyVerify)?;
+        let pubkey =
+            ed25519_dalek::PublicKey::from_bytes(&pem.contents).map_err(|_| HubError::KeyVerify)?;
         Ok(PublicKey { pubkey })
     }
 
@@ -163,7 +158,7 @@ impl PublicKey {
     pub fn verify(&self, msg: &[u8], sig: &Signature) -> Result<()> {
         self.pubkey
             .verify(msg, sig)
-            .map_err(|_| HubUtilError::SignatureError)?;
+            .map_err(|_| HubError::SignatureError)?;
         Ok(())
     }
 
@@ -172,10 +167,10 @@ impl PublicKey {
     }
 
     pub fn from_hex(hexstring: &str) -> Result<PublicKey> {
-        let pkbytes = hex::decode(hexstring).map_err(|_| HubUtilError::KeyVerify)?;
+        let pkbytes = hex::decode(hexstring).map_err(|_| HubError::KeyVerify)?;
         let pk = PublicKey {
             pubkey: ed25519_dalek::PublicKey::from_bytes(&pkbytes)
-                .map_err(|_| HubUtilError::KeyVerify)?,
+                .map_err(|_| HubError::KeyVerify)?,
         };
         Ok(pk)
     }
@@ -185,13 +180,10 @@ impl PublicKey {
     /// ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACGeGHWvt/E60k/FLuDsCkArLAIa4lvwk1wg3nJIGJl sshkey@example.com
     pub fn from_ssh(env_val: &str) -> Result<PublicKey> {
         let sshpubkey =
-            ssh_key::PublicKey::from_openssh(env_val).map_err(|_| HubUtilError::KeyVerify)?;
-        let ekey = sshpubkey
-            .key_data()
-            .ed25519()
-            .ok_or(HubUtilError::KeyVerify)?;
-        let pubkey = ed25519_dalek::PublicKey::from_bytes(ekey.as_ref())
-            .map_err(|_| HubUtilError::KeyVerify)?;
+            ssh_key::PublicKey::from_openssh(env_val).map_err(|_| HubError::KeyVerify)?;
+        let ekey = sshpubkey.key_data().ed25519().ok_or(HubError::KeyVerify)?;
+        let pubkey =
+            ed25519_dalek::PublicKey::from_bytes(ekey.as_ref()).map_err(|_| HubError::KeyVerify)?;
         Ok(PublicKey { pubkey })
     }
 

@@ -32,6 +32,7 @@ thiserror = { workspace = true }
 wasmparser = { version = "0.95.0" }
 
 fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
+fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { path = "../fluvio-types" }
 
 # feature control
