@@ -1,7 +1,7 @@
 use std::fs::File;
 use serde::{Deserialize, Serialize};
 
-use fluvio::{Compression, config::ConfigFile};
+use fluvio::{Compression, config::ConfigFile, Isolation};
 use super::{BenchmarkConfig, BenchmarkConfigBuilder, CrossIterate, Millis, Seconds};
 
 /// Key used by AllShareSameKey
@@ -23,8 +23,7 @@ pub struct FluvioProducerConfig {
     pub linger_millis: Vec<Millis>,
     pub server_timeout_millis: Vec<Millis>,
     pub compression: Vec<Compression>,
-    // TODO
-    // pub producer_isolation:...,
+    pub isolation: Vec<Isolation>,
     // TODO
     // pub producer_delivery_semantic,
 }
@@ -121,6 +120,9 @@ impl BenchmarkMatrix {
             })
             .cross_iterate(&self.producer_config.compression, |v, b| {
                 b.producer_compression(v);
+            })
+            .cross_iterate(&self.producer_config.isolation, |v, b| {
+                b.producer_isolation(v);
             })
             .cross_iterate(&self.consumer_config.max_bytes, |v, b| {
                 b.consumer_max_bytes(v);

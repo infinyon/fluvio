@@ -32,7 +32,7 @@ impl ProducerWorker {
             // todo allow alternate partitioner
             .compression(config.producer_compression)
             .timeout(config.producer_server_timeout)
-            // todo producer isolation
+            .isolation(config.producer_isolation)
             // todo producer delivery_semantic
             .build()
             .map_err(|e| {

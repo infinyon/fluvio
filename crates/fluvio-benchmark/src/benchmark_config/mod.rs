@@ -6,7 +6,7 @@ use derive_builder::Builder;
 use chrono::{DateTime, Utc};
 use rand::{Rng, thread_rng, distributions::Uniform};
 use serde::{Serialize, Deserialize};
-use fluvio::Compression;
+use fluvio::{Compression, Isolation};
 
 use self::benchmark_matrix::{RecordKeyAllocationStrategy, SharedConfig};
 
@@ -58,8 +58,7 @@ pub struct BenchmarkConfig {
     pub producer_linger: Duration,
     pub producer_server_timeout: Duration,
     pub producer_compression: Compression,
-    // TODO
-    // pub producer_isolation:...,
+    pub producer_isolation: Isolation,
     // TODO
     // pub producer_delivery_semantic,
     pub consumer_max_bytes: u64,

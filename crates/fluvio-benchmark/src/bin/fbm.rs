@@ -10,7 +10,7 @@ use clap::{arg, Parser};
 use fluvio_cli_common::install::fluvio_base_dir;
 use fluvio_future::{task::run_block_on, sync::Mutex, future::timeout};
 use futures_util::FutureExt;
-use fluvio::Compression;
+use fluvio::{Compression, Isolation};
 use fluvio_benchmark::{
     benchmark_config::{
         benchmark_matrix::{
@@ -139,6 +139,7 @@ fn print_example_config() {
                 Compression::Snappy,
                 Compression::Lz4,
             ],
+            isolation: vec![Isolation::ReadUncommitted, Isolation::ReadCommitted],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
@@ -184,6 +185,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
                 Compression::Snappy,
                 Compression::Lz4,
             ],
+            isolation: vec![Isolation::ReadUncommitted],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
@@ -213,6 +215,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
             linger_millis: vec![Millis::new(10)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
+            isolation: vec![Isolation::ReadUncommitted],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
@@ -248,6 +251,7 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
             linger_millis: vec![Millis::new(10)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
+            isolation: vec![Isolation::ReadUncommitted],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
@@ -264,7 +268,37 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
         },
     };
 
-    vec![compression, record_key, concurrent]
+    let isolation = BenchmarkMatrix {
+        shared_config: SharedConfig {
+            matrix_name: "Test Record Key Strategies".to_string(),
+            num_samples: 2,
+            worker_timeout_seconds: Seconds::new(20),
+            millis_between_samples,
+        },
+        producer_config: FluvioProducerConfig {
+            batch_size: vec![16000],
+            queue_size: vec![100],
+            linger_millis: vec![Millis::new(10)],
+            server_timeout_millis: vec![Millis::new(5000)],
+            compression: vec![Compression::None],
+            isolation: vec![Isolation::ReadUncommitted, Isolation::ReadCommitted],
+        },
+        consumer_config: FluvioConsumerConfig {
+            max_bytes: vec![64000],
+        },
+        topic_config: FluvioTopicConfig {
+            num_partitions: vec![1, 2, 10],
+        },
+        load_config: BenchmarkLoadConfig {
+            num_records_per_producer_worker_per_batch: vec![10],
+            record_key_allocation_strategy: vec![RecordKeyAllocationStrategy::NoKey],
+            num_concurrent_producer_workers: vec![2],
+            num_concurrent_consumers_per_partition: vec![2],
+            record_size: vec![10],
+        },
+    };
+
+    vec![compression, record_key, concurrent, isolation]
 }
 
 fn default_configs() -> Vec<BenchmarkMatrix> {
@@ -281,6 +315,7 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
             linger_millis: vec![Millis::new(10)],
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
+            isolation: vec![Isolation::ReadUncommitted],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
