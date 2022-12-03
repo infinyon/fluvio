@@ -768,7 +768,6 @@ dependencies = [
  "convert_case",
  "derive_builder",
  "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -2245,7 +2244,6 @@ dependencies = [
  "statrs",
  "thiserror",
  "tracing",
- "walkdir",
 ]
 
 [[package]]
