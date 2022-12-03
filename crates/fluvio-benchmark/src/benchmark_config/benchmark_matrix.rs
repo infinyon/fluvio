@@ -47,7 +47,9 @@ impl Default for FluvioProducerConfig {
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
             isolation: vec![Isolation::ReadUncommitted],
-            delivery_semantic: vec![DeliverySemanticStrategy::AtLeastOnceExponential],
+            delivery_semantic: vec![DeliverySemanticStrategy::AtLeastOnce(
+                AtLeastOnceStrategy::Exponential,
+            )],
         }
     }
 }
@@ -244,10 +246,15 @@ pub fn get_config_from_file(path: &str) -> Vec<BenchmarkMatrix> {
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum DeliverySemanticStrategy {
     AtMostOnce,
-    AtLeastOnceFixed,
-    AtLeastOnceExponential,
-    AtLeastOnceFibonacci,
-    AtLeastOnceCustom(RetryPolicy),
+    AtLeastOnce(AtLeastOnceStrategy),
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum AtLeastOnceStrategy {
+    Fixed,
+    Exponential,
+    Fibonacci,
+    Custom(RetryPolicy),
 }
 
 impl From<DeliverySemanticStrategy> for DeliverySemantic {
@@ -255,21 +262,21 @@ impl From<DeliverySemanticStrategy> for DeliverySemantic {
         let mut policy = RetryPolicy::default();
         match s {
             DeliverySemanticStrategy::AtMostOnce => DeliverySemantic::AtMostOnce,
-            DeliverySemanticStrategy::AtLeastOnceFixed => {
-                policy.strategy = RetryStrategy::FixedDelay;
-                DeliverySemantic::AtLeastOnce(policy)
-            }
-            DeliverySemanticStrategy::AtLeastOnceExponential => {
-                policy.strategy = RetryStrategy::ExponentialBackoff;
-                DeliverySemantic::AtLeastOnce(policy)
-            }
-            DeliverySemanticStrategy::AtLeastOnceFibonacci => {
-                policy.strategy = RetryStrategy::FibonacciBackoff;
-                DeliverySemantic::AtLeastOnce(policy)
-            }
-            DeliverySemanticStrategy::AtLeastOnceCustom(policy) => {
-                DeliverySemantic::AtLeastOnce(policy)
-            }
+            DeliverySemanticStrategy::AtLeastOnce(strategy) => match strategy {
+                AtLeastOnceStrategy::Fixed => {
+                    policy.strategy = RetryStrategy::FixedDelay;
+                    DeliverySemantic::AtLeastOnce(policy)
+                }
+                AtLeastOnceStrategy::Exponential => {
+                    policy.strategy = RetryStrategy::ExponentialBackoff;
+                    DeliverySemantic::AtLeastOnce(policy)
+                }
+                AtLeastOnceStrategy::Fibonacci => {
+                    policy.strategy = RetryStrategy::FibonacciBackoff;
+                    DeliverySemantic::AtLeastOnce(policy)
+                }
+                AtLeastOnceStrategy::Custom(policy) => DeliverySemantic::AtLeastOnce(policy),
+            },
         }
     }
 }

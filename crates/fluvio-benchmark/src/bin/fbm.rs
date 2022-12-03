@@ -16,7 +16,7 @@ use fluvio_benchmark::{
         benchmark_matrix::{
             BenchmarkMatrix, RecordKeyAllocationStrategy, get_config_from_file, SharedConfig,
             FluvioProducerConfig, FluvioConsumerConfig, FluvioTopicConfig, BenchmarkLoadConfig,
-            DeliverySemanticStrategy,
+            DeliverySemanticStrategy, AtLeastOnceStrategy,
         },
         Seconds, Millis,
     },
@@ -200,9 +200,9 @@ fn test_configs() -> Vec<BenchmarkMatrix> {
     let mut delivery_semantic = BenchmarkMatrix::new("Test DeliverySemantic");
     delivery_semantic.producer_config.delivery_semantic = vec![
         DeliverySemanticStrategy::AtMostOnce,
-        DeliverySemanticStrategy::AtLeastOnceExponential,
-        DeliverySemanticStrategy::AtLeastOnceFixed,
-        DeliverySemanticStrategy::AtLeastOnceFibonacci,
+        DeliverySemanticStrategy::AtLeastOnce(AtLeastOnceStrategy::Exponential),
+        DeliverySemanticStrategy::AtLeastOnce(AtLeastOnceStrategy::Fixed),
+        DeliverySemanticStrategy::AtLeastOnce(AtLeastOnceStrategy::Fibonacci),
     ];
     vec![
         compression,
@@ -228,7 +228,9 @@ fn default_configs() -> Vec<BenchmarkMatrix> {
             server_timeout_millis: vec![Millis::new(5000)],
             compression: vec![Compression::None],
             isolation: vec![Isolation::ReadUncommitted],
-            delivery_semantic: vec![DeliverySemanticStrategy::AtLeastOnceExponential],
+            delivery_semantic: vec![DeliverySemanticStrategy::AtLeastOnce(
+                AtLeastOnceStrategy::Exponential,
+            )],
         },
         consumer_config: FluvioConsumerConfig {
             max_bytes: vec![64000],
