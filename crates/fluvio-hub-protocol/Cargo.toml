@@ -1,0 +1,23 @@
+[package]
+name = "fluvio-hub-protocol"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Hub's Shared Resources"
+authors = ["fluvio.io"]
+repository = "https://github.com/infinyon/fluvio"
+publish = false
+
+[dependencies]
+cargo_toml = "0.11"
+const_format = "0.2"
+dirs = "4.0.0"
+serde = { version="1.0", features=["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.8"
+toml = "0.5.9"
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
+fluvio-types = { path = "../fluvio-types" }

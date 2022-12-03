@@ -768,7 +768,6 @@ dependencies = [
  "convert_case",
  "derive_builder",
  "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -2245,7 +2244,6 @@ dependencies = [
  "statrs",
  "thiserror",
  "tracing",
- "walkdir",
 ]
 
 [[package]]
@@ -2444,6 +2442,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-connector-package"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "fluvio-controlplane-metadata",
+ "serde",
+ "tempfile",
+ "toml",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-controlplane"
 version = "0.0.0"
 dependencies = [
@@ -2539,6 +2549,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-hub-protocol"
+version = "0.0.0"
+dependencies = [
+ "cargo_toml",
+ "const_format",
+ "dirs",
+ "fluvio-controlplane-metadata",
+ "fluvio-types",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "thiserror",
+ "toml",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-hub-util"
 version = "0.0.0"
 dependencies = [
@@ -2548,6 +2575,7 @@ dependencies = [
  "ed25519-dalek",
  "flate2",
  "fluvio-controlplane-metadata",
+ "fluvio-hub-protocol",
  "fluvio-types",
  "hex",
  "http-client",

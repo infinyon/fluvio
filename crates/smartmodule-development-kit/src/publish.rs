@@ -6,7 +6,9 @@ use clap::Parser;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
 use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
-use hubutil::{DEF_HUB_INIT_DIR, DEF_HUB_PKG_META, HubAccess, PackageMeta, PkgVisibility};
+use hubutil::{
+    DEF_HUB_INIT_DIR, DEF_HUB_PKG_META, HubAccess, PackageMeta, PkgVisibility, PackageMetaExt,
+};
 use tracing::debug;
 
 pub const SMARTMODULE_TOML: &str = "SmartModule.toml";
