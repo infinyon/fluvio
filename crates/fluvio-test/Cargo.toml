@@ -12,6 +12,7 @@ publish = false
 [dependencies]
 tracing = { workspace = true }
 bytes = { workspace = true }
+nix = { workspace = true }
 futures-lite = "1.11.0"
 futures = "0.3"
 clap = { workspace = true , features = [
@@ -32,7 +33,6 @@ comfy-table = "6.0.0"
 hdrhistogram = "7.3.0"
 crc = "3.0"
 fork = "0.1"
-nix = "0.25"
 crossbeam-channel = "0.5"
 sysinfo = { version = "0.26.0" }
 signal-hook = "0.3.13"
