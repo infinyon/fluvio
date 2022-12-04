@@ -72,7 +72,7 @@ fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false
 
 [dev-dependencies]
 once_cell = "1.5.2"
-derive_builder = { version = "0.11.0" }
+derive_builder =  { workspace = true }
 serde_json = "1"
 flate2 = "1.0.22"
 portpicker = "0.1.1"
