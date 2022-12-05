@@ -1,15 +1,12 @@
-use std::thread::sleep;
-use std::time::Duration;
-
 use clap::Parser;
 use colored::Colorize;
-use fluvio::{Fluvio, FluvioAdmin, ConsumerConfig};
+use fluvio::{Fluvio, FluvioAdmin, FluvioConfig};
 use fluvio::config::ConfigFile;
-use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec, partition::PartitionSpec};
-use fluvio_future::io::StreamExt;
+use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec};
+use fluvio_sc_schema::objects::Metadata;
 use tracing::debug;
 
-use crate::{ClusterChecker, CheckStatus};
+use crate::CheckStatus;
 use crate::check::{ActiveKubernetesCluster, ClusterCheck};
 use crate::render::ProgressRenderer;
 use crate::{cli::ClusterCliError, cli::ClusterTarget};
@@ -28,6 +25,7 @@ impl StatusOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
         let pb_factory = ProgressBarFactory::new(false);
         pb_factory.println("📝 Running cluster status checks");
+
         let pb = match pb_factory.create() {
             Ok(pb) => pb,
             Err(_) => {
@@ -36,10 +34,14 @@ impl StatusOpt {
                 ))
             }
         };
-        let fluvio_config = target.load()?;
-        let file_config = ConfigFile::load_default_or_new()?;
 
-        Self::check_k8s_cluster(&pb).await;
+        let fluvio_config = target.load()?;
+        let config_file = ConfigFile::load_default_or_new()?;
+
+        Self::check_k8s_cluster(&pb).await?;
+        Self::check_sc(&pb, &fluvio_config, &config_file).await?;
+        Self::check_spus(&pb, &fluvio_config).await?;
+        Self::check_topics(&pb, &fluvio_config).await?;
 
         pb.finish_and_clear();
 
@@ -48,19 +50,18 @@ impl StatusOpt {
 
     async fn check_k8s_cluster(pb: &ProgressRenderer) -> Result<(), ClusterCliError> {
         let k8s_cluster_check = Box::new(ActiveKubernetesCluster);
+
         pb.set_message(pad_format!(format!(
             "{} Checking {}",
             "📝".bold(),
             k8s_cluster_check.label()
         )));
-        sleep(Duration::from_millis(1000)); // dummy delay for debugging
-        let k8s_check_result = k8s_cluster_check.perform_check(&pb).await?;
 
-        match k8s_check_result {
+        match k8s_cluster_check.perform_check(&pb).await? {
             CheckStatus::Pass(status) => {
                 pb.println(pad_format!(format!("{} {}", "✅".bold(), status)));
-                return Ok(())
-            },
+                return Ok(());
+            }
             CheckStatus::Unrecoverable(err) => {
                 debug!("failed: {}", err);
 
@@ -71,133 +72,165 @@ impl StatusOpt {
                     err.to_string().red()
                 )));
 
-                return Err(ClusterCliError::Other(err.to_string()))
+                return Err(ClusterCliError::Other(err.to_string()));
             }
-            _ => return Err(ClusterCliError::Other("should be unreachable".to_string()))
+            _ => return Err(ClusterCliError::Other("Should not be reachable".to_string())),
         }
     }
 
-    // let fluvio = match Fluvio::connect_with_config(&fluvio_config).await {
-    //     Ok(fluvio) => {
-    //         println!("Cluster Running {}", Self::cluster_location_descriptor()?);
+    async fn check_sc(
+        pb: &ProgressRenderer,
+        fluvio_config: &FluvioConfig,
+        config_file: &ConfigFile,
+    ) -> Result<(), ClusterCliError> {
+        pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SC")));
 
-    //         fluvio
-    //     }
-    //     Err(err) => {
-    //         debug!("Error when trying to reach cluster: {}", err);
 
-    //         println!("none");
+        match Fluvio::connect_with_config(&fluvio_config).await {
+            Ok(_fluvio) => {
+                pb.println(pad_format!(format!("{} {}", "✅".bold(), "SC is ok")));
 
-    //         return Ok(());
-    //     }
-    // };
+                Ok(())
+            }
+            Err(err) => {
+                pb.println(pad_format!(format!(
+                    "{} Unable to reach cluster on profile {}, error: {}",
+                    "❌",
+                    Self::profile_name(config_file).italic(),
+                    err.to_string().red()
+                )));
 
-    // let admin = FluvioAdmin::connect_with_config(&fluvio_config).await;
-    // match admin {
-    //     Ok(admin) => {
-    //         if Self::spus_running(&admin).await {
-    //             Self::check_spus_for_data(&fluvio, &admin).await
-    //         } else {
-    //             println!("no spus running");
-    //         }
-    //     }
-    //     Err(e) => {
-    //         debug!("unable to connect to admin: {}", e);
+                Err(ClusterCliError::Other(err.to_string()))
+            }
+        }
+    }
 
-    //         return Err(e.into());
-    //     }
-    // };
+    async fn check_spus(
+        pb: &ProgressRenderer,
+        fluvio_config: &FluvioConfig,
+    ) -> Result<(), ClusterCliError> {
+        pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SPUs")));
 
-    //     Ok(())
-    // }
+        match FluvioAdmin::connect_with_config(&fluvio_config).await {
+            Ok(admin) => {
+                let filters: Vec<String> = vec![];
+                let spus = admin.list::<SpuSpec, _>(filters).await?;
+                let spu_count = spus.len();
+                let online_spu_count = spus.iter().filter(|spu| spu.status.is_online()).count();
 
-    // fn cluster_location_descriptor() -> Result<String, ClusterCliError> {
-    //     let config = ConfigFile::load_default_or_new()?;
+                if online_spu_count == 0 {
+                    pb.println(pad_format!(format!("{} No SPUs are online", "❌".red())));
 
-    //     match config.config().current_profile_name() {
-    //         Some("local") => Ok("locally".to_string()),
-    //         // Cloud cluster
-    //         Some(other) if other.contains("cloud") => Ok("on cloud based k8s".to_string()),
-    //         _ => Ok("on local k8s".to_string()),
-    //     }
-    // }
+                    Err(ClusterCliError::Other("No SPUs are online".to_string()))
+                } else if online_spu_count < spu_count {
+                    pb.println(pad_format!(format!(
+                        "{} ({}/{}) SPUs are online",
+                        "🟡".yellow(),
+                        online_spu_count,
+                        spu_count
+                    )));
 
-    // async fn spus_running(admin: &FluvioAdmin) -> bool {
-    //     let filters: Vec<String> = vec![];
-    //     let spus = admin.list::<SpuSpec, _>(filters).await;
+                    Ok(())
+                } else {
+                    pb.println(pad_format!(format!(
+                        "{} ({}/{}) SPUs are online",
+                        "✅".bold(),
+                        spu_count,
+                        spu_count
+                    )));
 
-    //     match spus {
-    //         Ok(spus) => spus.iter().any(|spu| spu.status.is_online()),
-    //         Err(_) => false,
-    //     }
-    // }
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                pb.println(pad_format!(format!(
+                    "{} Unable to connect to SPUs: {}",
+                    "❌".bold(),
+                    e.to_string().red()
+                )));
 
-    // async fn check_spus_for_data(fluvio: &Fluvio, admin: &FluvioAdmin) {
-    //     if !Self::cluster_has_data(fluvio, admin).await {
-    //         println!("spus have no data");
-    //     }
-    // }
+                Err(ClusterCliError::Other(e.to_string()))
+            }
+        }
+    }
 
-    // /// Check if any topic in the cluster has data in any partitions.
-    // async fn cluster_has_data(fluvio: &Fluvio, admin: &FluvioAdmin) -> bool {
-    //     let topics = Self::topics(admin).await;
+    fn profile_name(config_file: &ConfigFile) -> String {
+        config_file
+            .config()
+            .current_profile_name()
+            .unwrap()
+            .to_string()
+    }
 
-    //     for topic in topics {
-    //         let partitions = match Self::num_partitions(admin, &topic).await {
-    //             Ok(partitions) => partitions,
-    //             Err(_) => return false,
-    //         };
+    async fn check_topics(
+        pb: &ProgressRenderer,
+        fluvio_config: &FluvioConfig,
+    ) -> Result<(), ClusterCliError> {
+        pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "Topics")));
 
-    //         for partition in 0..partitions {
-    //             if let Ok(Some(_record)) = Self::last_record(fluvio, &topic, partition as u32).await
-    //             {
-    //                 return true;
-    //             }
-    //         }
-    //     }
+        match FluvioAdmin::connect_with_config(&fluvio_config).await {
+            Ok(admin) => {
+                let topics = Self::topics(&admin).await?;
 
-    //     false
-    // }
+                if topics.len() == 0 {
+                    pb.println(pad_format!(format!("{} No topics present", "🟡".yellow(),)));
 
-    // /// All the topics served by the cluster
-    // async fn topics(admin: &FluvioAdmin) -> Vec<String> {
-    //     let filters: Vec<String> = vec![];
-    //     let topics = admin.list::<TopicSpec, _>(filters).await;
+                    return Ok(());
+                }
 
-    //     match topics {
-    //         Ok(topics) => topics.iter().map(|t| t.name.to_string()).collect(),
-    //         Err(_) => vec![],
-    //     }
-    // }
+                pb.println(pad_format!(format!(
+                    "{} {} topics using {}",
+                    "✅".bold(),
+                    topics.len(),
+                    Self::human_readable_size(Self::total_usage_bytes(topics))
+                )));
 
-    // /// Get the number of partiitions for a given topic
-    // async fn num_partitions(admin: &FluvioAdmin, topic: &str) -> Result<usize, ClusterCliError> {
-    //     let partitions = admin
-    //         .list::<PartitionSpec, _>(vec![topic.to_string()])
-    //         .await;
+                Ok(())
+            }
+            Err(e) => {
+                pb.println(pad_format!(format!(
+                    "{} Unable to retrieve topics: {}",
+                    "❌".bold(),
+                    e.to_string().red()
+                )));
 
-    //     Ok(partitions?.len())
-    // }
+                Err(ClusterCliError::Other(e.to_string()))
+            }
+        }
+    }
 
-    // /// Get the last record in a given partition of a given topic
-    // async fn last_record(
-    //     fluvio: &Fluvio,
-    //     topic: &str,
-    //     partition: u32,
-    // ) -> Result<Option<String>, ClusterCliError> {
-    //     let consumer = fluvio.partition_consumer(topic, partition).await?;
+    fn total_usage_bytes(topics: Vec<Metadata<TopicSpec>>) -> u64 {
+        topics.iter().map(|topic: &Metadata<TopicSpec>| {
+            let replications = topic.spec.replication_factor().unwrap() as u64;
+            let partitions = topic.spec.partitions() as u64;
 
-    //     let consumer_config = ConsumerConfig::builder().disable_continuous(true).build()?;
+            let mut partition_size = 0;
+            if let Some(storage) = topic.spec.get_storage() {
+                partition_size = storage.max_partition_size.unwrap();
+            }
 
-    //     let mut stream = consumer
-    //         .stream_with_config(fluvio::Offset::from_end(1), consumer_config)
-    //         .await?;
+            replications * partitions * partition_size
+        }).sum()
+    }
 
-    //     if let Some(Ok(record)) = stream.next().await {
-    //         let string = String::from_utf8_lossy(record.value());
-    //         return Ok(Some(string.to_string()));
-    //     }
+    fn human_readable_size(size: u64) -> String {
+        if size < 1024 {
+            "0 KB".to_string()
+        } else if size < 1024 * 1024 {
+            format!("{} KB", size / 1024)
+        } else if size < 1024 * 1024 * 1024 {
+            format!("{} MB", size / (1024 * 1024))
+        } else {
+            format!("{} GB", size / (1024 * 1024 * 1024))
+        }
+    }
 
-    //     Ok(None)
-    // }
+    async fn topics(admin: &FluvioAdmin) -> Result<Vec<Metadata<TopicSpec>>, ClusterCliError> {
+        let filters: Vec<String> = vec![];
+
+        match admin.list::<TopicSpec, _>(filters).await {
+            Ok(topics) => Ok(topics),
+            Err(e) => Err(ClusterCliError::Other(e.to_string())),
+        }
+    }
 }
