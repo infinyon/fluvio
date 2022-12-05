@@ -16,7 +16,6 @@ use bytesize::ByteSize;
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_compression::Compression;
 
-
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct ConnectorConfig {
@@ -84,9 +83,8 @@ impl ConnectorConfig {
         if let Some(ref mut producer) = &mut connector_config.producer {
             if let Some(batch_size_string) = &producer.batch_size_string {
                 let batch_size = batch_size_string
-                    .parse::<ByteSize>().map_err(|err| {
-                        anyhow::anyhow!("Fail to parse byte size {}", err)
-                    })?;
+                    .parse::<ByteSize>()
+                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
                 producer.batch_size = Some(batch_size);
             }
         }
