@@ -16,6 +16,9 @@ use bytesize::ByteSize;
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_compression::Compression;
 
+const SOURCE_SUFFIX: &str = "-source";
+const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
+
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct ConnectorConfig {
@@ -120,6 +123,14 @@ impl ConnectorConfig {
             }
         }
         params
+    }
+
+    pub fn is_source(&self) -> bool {
+        self.type_.ends_with(SOURCE_SUFFIX)
+    }
+
+    pub fn image(&self) -> String {
+        format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
     }
 }
 

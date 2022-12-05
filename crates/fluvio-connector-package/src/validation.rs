@@ -18,7 +18,7 @@ pub fn validate_config(
 
 fn validate_direction(direction: &Direction, config: &ConnectorConfig) -> anyhow::Result<()> {
     let meta_is_source = direction.is_source();
-    let cfg_is_source = config.type_.ends_with("source");
+    let cfg_is_source = config.is_source();
     if meta_is_source != cfg_is_source {
         let (meta_dir, cfg_dir) = if meta_is_source {
             ("source", "sink")
@@ -35,15 +35,12 @@ fn validate_direction(direction: &Direction, config: &ConnectorConfig) -> anyhow
 }
 
 fn validate_deployment(deployment: &Deployment, config: &ConnectorConfig) -> anyhow::Result<()> {
-    let image = format!(
-        "infinyon/fluvio-connect-{}:{}",
-        config.type_, config.version
-    );
-    if !deployment.image.eq(&image) {
+    let cfg_image = config.image();
+    if !deployment.image.eq(&cfg_image) {
         return Err(anyhow!(
             "deployment image in metadata: '{}' mismatches image in config: '{}'",
             &deployment.image,
-            image
+            cfg_image
         ));
     }
     Ok(())
@@ -98,11 +95,11 @@ mod tests {
         let source = Direction::source();
         let dest = Direction::dest();
         let source_config = ConnectorConfig {
-            type_: "http_source".into(),
+            type_: "http-source".into(),
             ..Default::default()
         };
         let sink_config = ConnectorConfig {
-            type_: "http_sink".into(),
+            type_: "http-sink".into(),
             ..Default::default()
         };
 
