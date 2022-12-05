@@ -50,7 +50,6 @@ fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
 ] }
 
 [dev-dependencies]
-derive_builder = { worksapce = true }
 fluvio-future = { version = "0.4.0", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
