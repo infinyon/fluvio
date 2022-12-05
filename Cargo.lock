@@ -2433,6 +2433,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-connector-deployer"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-connector-package"
 version = "0.0.0"
 dependencies = [
