@@ -388,24 +388,30 @@ mod tests {
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-linger.yaml")
             .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!("Yaml(Message(\"invalid value: string \\\"1\\\", expected a duration\", Some(Pos { marker: Marker { index: 100, line: 7, col: 10 }, path: \"producer.linger\" })))", format!("{:?}", connector_cfg));
+        assert_eq!(
+            "producer.linger: invalid value: string \"1\", expected a duration at line 7 column 11",
+            format!("{:?}", connector_cfg)
+        );
         let connector_cfg =
             ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!("Yaml(Message(\"unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`\", Some(Pos { marker: Marker { index: 105, line: 7, col: 15 }, path: \"producer.compression\" })))", format!("{:?}", connector_cfg));
+        assert_eq!("producer.compression: unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4` at line 7 column 16", format!("{:?}", connector_cfg));
 
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "ByteSizeParse(\"couldn't parse \\\"aoeu\\\" into a known SI unit, couldn't parse unit of \\\"aoeu\\\"\")",
+            "Fail to parse byte size couldn't parse \"aoeu\" into a known SI unit, couldn't parse unit of \"aoeu\"",
             format!("{:?}", connector_cfg)
         );
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
             .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!("Yaml(Message(\"missing field `version`\", Some(Pos { marker: Marker { index: 4, line: 1, col: 4 }, path: \".\" })))", format!("{:?}", connector_cfg));
+        assert_eq!(
+            "missing field `version` at line 1 column 5",
+            format!("{:?}", connector_cfg)
+        );
     }
 
     #[test]

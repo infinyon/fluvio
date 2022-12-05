@@ -2444,7 +2444,7 @@ dependencies = [
  "humantime-serde",
  "pretty_assertions",
  "serde",
- "serde_yaml 0.9.14",
+ "serde_yaml 0.8.26",
  "tempfile",
  "toml",
  "tracing",
