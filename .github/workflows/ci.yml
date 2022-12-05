@@ -376,7 +376,7 @@ jobs:
         run: cargo run --manifest-path release-tools/check-crate-version/Cargo.toml -- --crates-dir crates --publish-list-path release-tools/check-crate-version/publish-list.toml
       - name: Audit crate licenses + advisories
         if: matrix.check == 'crate-audit'
-        continue-on-error: true
+        continue-on-error: false
         uses: EmbarkStudios/cargo-deny-action@v1
       - name: Crate version check
         if: matrix.check == 'crate-publish-check'
