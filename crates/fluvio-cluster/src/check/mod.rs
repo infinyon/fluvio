@@ -790,14 +790,6 @@ impl ClusterChecker {
         self
     }
 
-    pub fn with_status_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
-            Box::new(ActiveKubernetesCluster),
-        ];
-        self.checks.extend(checks);
-        self
-    }
-
     /// Performs checks and fixes as required.
     pub async fn run(
         self,
