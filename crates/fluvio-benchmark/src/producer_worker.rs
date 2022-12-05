@@ -32,8 +32,8 @@ impl ProducerWorker {
             // todo allow alternate partitioner
             .compression(config.producer_compression)
             .timeout(config.producer_server_timeout)
-            // todo producer isolation
-            // todo producer delivery_semantic
+            .isolation(config.producer_isolation)
+            .delivery_semantic(config.producer_delivery_semantic)
             .build()
             .map_err(|e| {
                 BenchmarkError::ErrorWithExplanation(format!("Fluvio topic config error: {:?}", e))

@@ -77,7 +77,7 @@ impl AllStats {
             md.push_str(&mk_md_table_from_yaml(&latency_yaml, &None));
             let mut throughput_yaml = String::new();
             for (variable, description) in [
-                (Variable::ProducerThroughput, "First Produced Message <-> Last Produced Message"),
+                (Variable::ProducerThroughput, "First Produced Message <-> Producer Flush Complete"),
                 (Variable::ConsumerThroughput, "First Consumed Message (First Time Consumed) <-> Last Consumed Message (First Time Consumed)"),
                 (Variable::CombinedThroughput, "First Produced Message <-> Last Consumed Message (First Time Consumed)"),
             ] {

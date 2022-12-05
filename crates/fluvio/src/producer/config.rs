@@ -7,6 +7,7 @@ use derive_builder::Builder;
 use fluvio_future::retry::{ExponentialBackoff, FibonacciBackoff, FixedDelay};
 use fluvio_spu_schema::Isolation;
 use fluvio_compression::Compression;
+use serde::{Serialize, Deserialize};
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 #[cfg(feature = "stats")]
@@ -126,7 +127,7 @@ impl Default for TopicProducerConfig {
 }
 
 /// Defines guarantees that Producer must follow delivering records to SPU.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub enum DeliverySemantic {
     /// Send records without waiting for the response. `Fire and forget` approach.
     AtMostOnce,
@@ -136,7 +137,7 @@ pub enum DeliverySemantic {
 }
 
 /// Defines parameters of retries in [`DeliverySemantic::AtLeastOnce`] delivery semantic.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub struct RetryPolicy {
     /// Max amount of retries. If `0`, no retries will be performed.
     pub max_retries: usize,
@@ -192,7 +193,7 @@ impl Default for RetryPolicy {
 }
 
 /// Strategy of delays distribution.
-#[derive(Default, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub enum RetryStrategy {
     /// A retry strategy is driven by a fixed interval between retries.
     FixedDelay,

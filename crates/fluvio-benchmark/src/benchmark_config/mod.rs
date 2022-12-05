@@ -6,7 +6,7 @@ use derive_builder::Builder;
 use chrono::{DateTime, Utc};
 use rand::{Rng, thread_rng, distributions::Uniform};
 use serde::{Serialize, Deserialize};
-use fluvio::Compression;
+use fluvio::{Compression, Isolation, DeliverySemantic};
 
 use self::benchmark_matrix::{RecordKeyAllocationStrategy, SharedConfig};
 
@@ -58,13 +58,10 @@ pub struct BenchmarkConfig {
     pub producer_linger: Duration,
     pub producer_server_timeout: Duration,
     pub producer_compression: Compression,
-    // TODO
-    // pub producer_isolation:...,
-    // TODO
-    // pub producer_delivery_semantic,
+    pub producer_isolation: Isolation,
+    pub producer_delivery_semantic: DeliverySemantic,
     pub consumer_max_bytes: u64,
-    // TODO
-    // pub consumer_isolation:...,
+    pub consumer_isolation: Isolation,
     pub num_concurrent_producer_workers: u64,
     /// Total number of concurrent consumers equals num_concurrent_consumers_per_partition * num_partitions
     pub num_concurrent_consumers_per_partition: u64,
@@ -90,7 +87,10 @@ impl PartialEq for BenchmarkConfig {
             && self.producer_linger == other.producer_linger
             && self.producer_server_timeout == other.producer_server_timeout
             && self.producer_compression == other.producer_compression
+            && self.producer_delivery_semantic == other.producer_delivery_semantic
+            && self.producer_isolation == other.producer_isolation
             && self.consumer_max_bytes == other.consumer_max_bytes
+            && self.consumer_isolation == other.consumer_isolation
             && self.num_concurrent_producer_workers == other.num_concurrent_producer_workers
             && self.num_concurrent_consumers_per_partition
                 == other.num_concurrent_consumers_per_partition
@@ -113,7 +113,10 @@ impl Hash for BenchmarkConfig {
         self.producer_linger.hash(state);
         self.producer_server_timeout.hash(state);
         self.producer_compression.hash(state);
+        self.producer_isolation.hash(state);
+        self.producer_delivery_semantic.hash(state);
         self.consumer_max_bytes.hash(state);
+        self.consumer_isolation.hash(state);
         self.num_concurrent_producer_workers.hash(state);
         self.num_concurrent_consumers_per_partition.hash(state);
         self.num_partitions.hash(state);
