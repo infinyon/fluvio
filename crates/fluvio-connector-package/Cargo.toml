@@ -11,12 +11,18 @@ description = "Fluvio Connector Package"
 default = ["toml"]
 
 [dependencies]
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata/", default-features = false, features = ["use_serde"] }
+bytesize = "1.1.0"
 serde = { version = "1.0", default-features = false, features = ["derive"]}
+serde_yaml = "0.9.0"
+humantime-serde = "1.1.1"
 toml = { version = "0.5", default-features = false, optional = true}
+fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata/", default-features = false, features = ["use_serde"] }
+fluvio-smartengine = { path = "../fluvio-smartengine", default-features = false, features = ["transformation"]}
+fluvio-compression = { path = "../fluvio-compression" }
 
 tracing = { workspace = true }
 anyhow = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.3"
+pretty_assertions = "1.3.0"
