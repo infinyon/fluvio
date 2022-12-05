@@ -2437,6 +2437,7 @@ name = "fluvio-connector-deployer"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "derive_builder",
  "tracing",
 ]
 
