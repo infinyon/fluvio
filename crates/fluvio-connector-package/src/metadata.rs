@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::BTreeMap, ops::Deref};
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use serde::{Serialize, Deserialize};
@@ -8,7 +8,7 @@ pub struct ConnectorMetadata {
     pub package: ConnectorPackage,
     pub direction: Direction,
     pub deployment: Deployment,
-    #[serde(rename = "secret", default, skip_serializing_if = "HashMap::is_empty")]
+    #[serde(rename = "secret", default, skip_serializing_if = "BTreeMap::is_empty")]
     pub secrets: Secrets,
     #[serde(rename = "params", default, skip_serializing_if = "Vec::is_empty")]
     pub parameters: Parameters,
@@ -59,7 +59,7 @@ pub enum ParameterType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
-pub struct Secrets(HashMap<String, Secret>);
+pub struct Secrets(BTreeMap<String, Secret>);
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Secret {
@@ -98,7 +98,7 @@ impl Default for ConnectorMetadata {
                 description: Some("description text".into()),
                 ty: ParameterType::String,
             }]),
-            secrets: Secrets::from(HashMap::from([(
+            secrets: Secrets::from(BTreeMap::from([(
                 "secret_name".into(),
                 Secret {
                     ty: SecretType::Env,
@@ -123,6 +123,10 @@ impl Direction {
             dest: Some(true),
         }
     }
+
+    pub fn is_source(&self) -> bool {
+        self.source.unwrap_or(false)
+    }
 }
 
 impl Default for Direction {
@@ -140,7 +144,7 @@ impl Deref for Parameters {
 }
 
 impl Deref for Secrets {
-    type Target = HashMap<String, Secret>;
+    type Target = BTreeMap<String, Secret>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -153,8 +157,8 @@ impl From<Vec<Parameter>> for Parameters {
     }
 }
 
-impl From<HashMap<String, Secret>> for Secrets {
-    fn from(secrets: HashMap<String, Secret>) -> Self {
+impl From<BTreeMap<String, Secret>> for Secrets {
+    fn from(secrets: BTreeMap<String, Secret>) -> Self {
         Self(secrets)
     }
 }
@@ -256,7 +260,7 @@ mod tests {
                     description: Some("description".into()),
                     ty: ParameterType::Integer
                 }]),
-                secrets: Secrets(HashMap::from([
+                secrets: Secrets(BTreeMap::from([
                     (
                         "password".into(),
                         Secret {
