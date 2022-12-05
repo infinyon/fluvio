@@ -1,0 +1,14 @@
+version: 0.1.0
+name: my-test-mqtt
+type: mqtt
+topic: my-mqtt
+create_topic: false
+transforms:
+  - uses: infinyon/json-sql
+    with:
+      mapping:
+        table: "topic_message"
+  - uses: infinyon/avro-sql
+  - uses: infinyon/regex-filter
+    with:
+      regex: "\\w"
