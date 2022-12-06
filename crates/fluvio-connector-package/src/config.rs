@@ -125,8 +125,12 @@ impl ConnectorConfig {
         params
     }
 
-    pub fn is_source(&self) -> bool {
-        self.type_.ends_with(SOURCE_SUFFIX)
+    pub fn direction(&self) -> Direction {
+        if self.type_.ends_with(SOURCE_SUFFIX) {
+            Direction::source()
+        } else {
+            Direction::dest()
+        }
     }
 
     pub fn image(&self) -> String {
@@ -215,6 +219,8 @@ impl From<BTreeMap<String, String>> for ManagedConnectorParameterValue {
 
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::Deserializer;
+
+use crate::metadata::Direction;
 struct ParameterValueVisitor;
 impl<'de> Deserialize<'de> for ManagedConnectorParameterValue {
     fn deserialize<D>(deserializer: D) -> Result<ManagedConnectorParameterValue, D::Error>
