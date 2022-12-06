@@ -881,6 +881,7 @@ dependencies = [
  "cargo-builder",
  "clap 4.0.29",
  "convert_case",
+ "fluvio-connector-deployer",
  "fluvio-future",
  "thiserror",
  "tracing",

@@ -26,6 +26,12 @@ pub struct Deployment {
     pub deployment_type: DeploymentType, // deployment type
 }
 
+impl Deployment {
+    pub fn builder() -> DeploymentBuilder {
+        DeploymentBuilder::default()
+    }
+}
+
 impl DeploymentBuilder {
     pub fn deploy(self) -> Result<()> {
         let deployment = self.build()?;
