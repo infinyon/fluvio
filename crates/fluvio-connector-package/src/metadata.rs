@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::Deref};
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone,Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ConnectorMetadata {
     pub package: ConnectorPackage,
     pub direction: Direction,
@@ -50,7 +50,7 @@ pub struct Parameter {
     pub ty: ParameterType,
 }
 
-#[derive(Debug, Clone,Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ParameterType {
     #[default]
@@ -58,7 +58,7 @@ pub enum ParameterType {
     Integer,
 }
 
-#[derive(Debug, Clone,Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Secrets(HashMap<String, Secret>);
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
