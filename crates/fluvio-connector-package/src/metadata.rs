@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::Deref};
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ConnectorMetadata {
     pub package: ConnectorPackage,
     pub direction: Direction,
@@ -14,7 +14,7 @@ pub struct ConnectorMetadata {
     pub parameters: Parameters,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct ConnectorPackage {
     pub name: String,
     pub group: String,
@@ -26,7 +26,7 @@ pub struct ConnectorPackage {
     pub license: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Direction {
     #[serde(skip_serializing_if = "Option::is_none")]
     source: Option<bool>,
@@ -34,15 +34,15 @@ pub struct Direction {
     dest: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Deployment {
     pub image: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Parameters(Vec<Parameter>);
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Parameter {
     pub name: String,
     pub description: Option<String>,
@@ -50,7 +50,7 @@ pub struct Parameter {
     pub ty: ParameterType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ParameterType {
     #[default]
@@ -58,10 +58,10 @@ pub enum ParameterType {
     Integer,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Secrets(HashMap<String, Secret>);
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Secret {
     #[serde(rename = "type")]
     pub ty: SecretType,
@@ -69,7 +69,7 @@ pub struct Secret {
     pub mount: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum SecretType {
     #[default]

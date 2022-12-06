@@ -1,0 +1,17 @@
+[package]
+name = "fluvio-connector-deployer"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Deployer Fluvio Connector"
+
+
+
+[dependencies]
+tracing = { workspace = true }
+anyhow = { workspace = true }
+derive_builder = { workspace = true }
+
+fluvio-connector-package = { path = "../fluvio-connector-package" }

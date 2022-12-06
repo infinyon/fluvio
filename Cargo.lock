@@ -881,6 +881,7 @@ dependencies = [
  "cargo-builder",
  "clap 4.0.29",
  "convert_case",
+ "fluvio-connector-deployer",
  "fluvio-future",
  "thiserror",
  "tracing",
@@ -2430,6 +2431,16 @@ dependencies = [
  "serde",
  "snap",
  "thiserror",
+]
+
+[[package]]
+name = "fluvio-connector-deployer"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "derive_builder",
+ "fluvio-connector-package",
+ "tracing",
 ]
 
 [[package]]
