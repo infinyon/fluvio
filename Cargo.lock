@@ -2438,6 +2438,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "derive_builder",
+ "fluvio-connector-package",
  "tracing",
 ]
 

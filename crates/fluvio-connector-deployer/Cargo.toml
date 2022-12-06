@@ -12,4 +12,6 @@ description = "Deployer Fluvio Connector"
 [dependencies]
 tracing = { workspace = true }
 anyhow = { workspace = true }
-derive_builder = "0.11.0"
+derive_builder = { workspace = true }
+
+fluvio-connector-package = { path = "../fluvio-connector-package" }
