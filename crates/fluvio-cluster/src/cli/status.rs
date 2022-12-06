@@ -2,6 +2,7 @@ use clap::Parser;
 use colored::Colorize;
 use fluvio::{Fluvio, FluvioAdmin, FluvioConfig};
 use fluvio::config::ConfigFile;
+use fluvio_controlplane_metadata::partition::{PartitionSpec, PartitionStatus};
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec};
 use fluvio_sc_schema::objects::Metadata;
 use tracing::debug;
@@ -173,12 +174,16 @@ impl StatusOpt {
         pb: &ProgressRenderer,
         fluvio_config: &FluvioConfig,
     ) -> Result<(), ClusterCliError> {
-        pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "Topics")));
+        pb.set_message(pad_format!(format!(
+            "{} Checking {}",
+            "📝".bold(),
+            "Topics"
+        )));
 
         match FluvioAdmin::connect_with_config(&fluvio_config).await {
             Ok(admin) => {
-                let topics = Self::topics(&admin).await?;
-
+                let partitions = admin.all::<PartitionSpec>().await?;
+                let topics = admin.all::<TopicSpec>().await?;
                 if topics.len() == 0 {
                     pb.println(pad_format!(format!("{} No topics present", "🟡".yellow(),)));
 
@@ -186,10 +191,11 @@ impl StatusOpt {
                 }
 
                 pb.println(pad_format!(format!(
-                    "{} {} topics using {}",
+                    "{} {} topic{} using {}",
                     "✅".bold(),
                     topics.len(),
-                    Self::human_readable_size(Self::total_usage_bytes(topics))
+                    if topics.len() == 1 { "" } else { "s" },
+                    Self::human_readable_size(Self::total_partition_usage(&partitions).await)
                 )));
 
                 Ok(())
@@ -201,43 +207,30 @@ impl StatusOpt {
                     e.to_string().red()
                 )));
 
-                Err(ClusterCliError::Other(e.to_string()))
+                Err(ClusterCliError::ClientError(e))
             }
         }
     }
 
-    fn total_usage_bytes(topics: Vec<Metadata<TopicSpec>>) -> u64 {
-        topics.iter().map(|topic: &Metadata<TopicSpec>| {
-            let replications = topic.spec.replication_factor().unwrap() as u64;
-            let partitions = topic.spec.partitions() as u64;
+    /// The number of bytes a partition is using across all replicas
+    async fn total_partition_usage(partitions: &Vec<Metadata<PartitionSpec>>) -> i64 {
+        partitions
+            .iter()
+            .map(|partition| {
+                let partition_size = std::cmp::max(partition.status.size, 0);
+                let follower_count = partition.status.replicas.len() as i64;
 
-            let mut partition_size = 0;
-            if let Some(storage) = topic.spec.get_storage() {
-                partition_size = storage.max_partition_size.unwrap();
-            }
-
-            replications * partitions * partition_size
-        }).sum()
+                // add one for the leader
+                (1 + follower_count) * partition_size
+            })
+            .sum()
     }
 
-    fn human_readable_size(size: u64) -> String {
-        if size < 1024 {
-            "0 KB".to_string()
-        } else if size < 1024 * 1024 {
-            format!("{} KB", size / 1024)
-        } else if size < 1024 * 1024 * 1024 {
-            format!("{} MB", size / (1024 * 1024))
-        } else {
-            format!("{} GB", size / (1024 * 1024 * 1024))
-        }
-    }
-
-    async fn topics(admin: &FluvioAdmin) -> Result<Vec<Metadata<TopicSpec>>, ClusterCliError> {
-        let filters: Vec<String> = vec![];
-
-        match admin.list::<TopicSpec, _>(filters).await {
-            Ok(topics) => Ok(topics),
-            Err(e) => Err(ClusterCliError::Other(e.to_string())),
+    fn human_readable_size(size: i64) -> String {
+        match size {
+            PartitionStatus::SIZE_NOT_SUPPORTED => "NA".to_string(),
+            PartitionStatus::SIZE_ERROR => "ERROR".to_string(),
+            _ => bytesize::ByteSize::b(size as u64).to_string(),
         }
     }
 }
