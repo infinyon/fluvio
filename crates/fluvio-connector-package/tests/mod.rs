@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use fluvio_connector_package::metadata::*;
@@ -33,7 +33,7 @@ fn test_read_from_toml_file() {
                 description: Some("JSON template".into()),
                 ty: ParameterType::String
             }]),
-            secrets: Secrets::from(HashMap::from([
+            secrets: Secrets::from(BTreeMap::from([
                 (
                     "password".into(),
                     Secret {
@@ -83,12 +83,12 @@ source = true
 
 [deployment]
 image = "fluvio/json-test-connector:0.1.0"
-[secret.password]
-type = "env"
-
 [secret.my_cert]
 type = "file"
 mount = "/mydata/secret1"
+
+[secret.password]
+type = "env"
 
 [[params]]
 name = "template"

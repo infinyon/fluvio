@@ -15,6 +15,10 @@ use bytesize::ByteSize;
 
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_compression::Compression;
+use crate::metadata::Direction;
+
+const SOURCE_SUFFIX: &str = "-source";
+const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
@@ -121,6 +125,18 @@ impl ConnectorConfig {
         }
         params
     }
+
+    pub fn direction(&self) -> Direction {
+        if self.type_.ends_with(SOURCE_SUFFIX) {
+            Direction::source()
+        } else {
+            Direction::dest()
+        }
+    }
+
+    pub fn image(&self) -> String {
+        format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
+    }
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -204,6 +220,7 @@ impl From<BTreeMap<String, String>> for ManagedConnectorParameterValue {
 
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::Deserializer;
+
 struct ParameterValueVisitor;
 impl<'de> Deserialize<'de> for ManagedConnectorParameterValue {
     fn deserialize<D>(deserializer: D) -> Result<ManagedConnectorParameterValue, D::Error>
