@@ -24,7 +24,6 @@ macro_rules! pad_format {
 impl StatusOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
         let pb_factory = ProgressBarFactory::new(false);
-        pb_factory.println("📝 Running cluster status checks");
 
         let pb = match pb_factory.create() {
             Ok(pb) => pb,
@@ -37,6 +36,11 @@ impl StatusOpt {
 
         let fluvio_config = target.load()?;
         let config_file = ConfigFile::load_default_or_new()?;
+
+        pb_factory.println(format!(
+            "📝 Running cluster status checks with profile {}",
+            Self::profile_name(&config_file).italic()
+        ));
 
         Self::check_k8s_cluster(&pb).await?;
         Self::check_sc(&pb, &fluvio_config, &config_file).await?;
@@ -74,7 +78,11 @@ impl StatusOpt {
 
                 return Err(ClusterCliError::Other(err.to_string()));
             }
-            _ => return Err(ClusterCliError::Other("Should not be reachable".to_string())),
+            _ => {
+                return Err(ClusterCliError::Other(
+                    "Should not be reachable".to_string(),
+                ))
+            }
         }
     }
 
@@ -85,10 +93,9 @@ impl StatusOpt {
     ) -> Result<(), ClusterCliError> {
         pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SC")));
 
-
         match Fluvio::connect_with_config(&fluvio_config).await {
             Ok(_fluvio) => {
-                pb.println(pad_format!(format!("{} {}", "✅".bold(), "SC is ok")));
+                pb.println(pad_format!(format!("{} SC is ok", "✅".bold())));
 
                 Ok(())
             }
@@ -149,7 +156,7 @@ impl StatusOpt {
                     e.to_string().red()
                 )));
 
-                Err(ClusterCliError::Other(e.to_string()))
+                Err(ClusterCliError::ClientError(e))
             }
         }
     }
