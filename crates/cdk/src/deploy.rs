@@ -1,4 +1,4 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Debug};
 
 use anyhow::{Result};
 use clap::Parser;
