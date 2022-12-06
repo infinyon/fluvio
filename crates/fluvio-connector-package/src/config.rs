@@ -15,6 +15,7 @@ use bytesize::ByteSize;
 
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_compression::Compression;
+use crate::metadata::Direction;
 
 const SOURCE_SUFFIX: &str = "-source";
 const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
@@ -220,7 +221,6 @@ impl From<BTreeMap<String, String>> for ManagedConnectorParameterValue {
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::Deserializer;
 
-use crate::metadata::Direction;
 struct ParameterValueVisitor;
 impl<'de> Deserialize<'de> for ManagedConnectorParameterValue {
     fn deserialize<D>(deserializer: D) -> Result<ManagedConnectorParameterValue, D::Error>

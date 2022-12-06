@@ -262,7 +262,7 @@ fn validate_parameters(parameters: &Parameters, config: &ConnectorConfig) -> any
 }
 
 fn is_false(value: &bool) -> bool {
-    *value == false
+    !(*value)
 }
 
 #[cfg(feature = "toml")]
