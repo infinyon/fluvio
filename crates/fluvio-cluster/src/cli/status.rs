@@ -71,10 +71,9 @@ impl StatusOpt {
                 debug!("failed: {}", err);
 
                 pb.println(pad_format!(format!(
-                    "{} Check {} failed {}",
+                    "{} Check {} failed",
                     "❌",
                     k8s_cluster_check.label().italic(),
-                    err.to_string().red()
                 )));
 
                 return Err(ClusterCliError::Other(err.to_string()));
@@ -101,10 +100,9 @@ impl StatusOpt {
             }
             Err(err) => {
                 pb.println(pad_format!(format!(
-                    "{} Unable to reach cluster on profile {}, error: {}",
+                    "{} Unable to reach cluster on profile {}",
                     "❌",
                     Self::profile_name(config_file).italic(),
-                    err.to_string().red()
                 )));
 
                 Err(ClusterCliError::Other(err.to_string()))
@@ -128,7 +126,7 @@ impl StatusOpt {
                 if online_spu_count == 0 {
                     pb.println(pad_format!(format!("{} No SPUs are online", "❌".red())));
 
-                    Err(ClusterCliError::Other("No SPUs are online".to_string()))
+                    Ok(())
                 } else if online_spu_count < spu_count {
                     pb.println(pad_format!(format!(
                         "{} ({}/{}) SPUs are online",
@@ -151,9 +149,8 @@ impl StatusOpt {
             }
             Err(e) => {
                 pb.println(pad_format!(format!(
-                    "{} Unable to connect to SPUs: {}",
+                    "{} Unable to connect to SPUs",
                     "❌".bold(),
-                    e.to_string().red()
                 )));
 
                 Err(ClusterCliError::ClientError(e))
@@ -202,9 +199,8 @@ impl StatusOpt {
             }
             Err(e) => {
                 pb.println(pad_format!(format!(
-                    "{} Unable to retrieve topics: {}",
+                    "{} Unable to retrieve topics",
                     "❌".bold(),
-                    e.to_string().red()
                 )));
 
                 Err(ClusterCliError::ClientError(e))
