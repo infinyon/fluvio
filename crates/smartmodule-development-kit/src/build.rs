@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::str;
 
-use anyhow::{Result};
+use anyhow::Result;
 use clap::Parser;
 
 use cargo_builder::package::{PackageInfo, PackageOption};
@@ -23,12 +23,12 @@ pub struct BuildCmd {
 impl BuildCmd {
     pub(crate) fn process(self) -> Result<()> {
         let opt = self.package.as_opt();
-        let p = PackageInfo::from_options(&opt).map_err(|e| anyhow::anyhow!(e))?;
+        let p = PackageInfo::from_options(&opt)?;
 
         let cargo = Cargo::build()
             .profile(opt.release)
             .lib(true)
-            .package(p.package)
+            .package(p.package_name())
             .target(BUILD_TARGET)
             .extra_arguments(self.extra_arguments)
             .build()?;

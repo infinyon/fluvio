@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
-use anyhow::{Result};
+use anyhow::Result;
 use clap::Parser;
 
-use cargo_builder::package::{PackageInfo, PackageOption};
-use cargo_builder::cargo::Cargo;
+use cargo_builder::{package::PackageInfo, cargo::Cargo};
+
+use crate::cmd::PackageCmd;
 
 /// Builds the Connector in the current working directory
 #[derive(Debug, Parser)]
@@ -25,30 +26,10 @@ impl BuildCmd {
         let cargo = Cargo::build()
             .profile(opt.release)
             .lib(false)
-            .package(p.package)
+            .package(p.package_name())
             .extra_arguments(self.extra_arguments)
             .build()?;
 
         cargo.run()
-    }
-}
-
-#[derive(Debug, Parser)]
-pub struct PackageCmd {
-    /// Release profile name
-    #[clap(long, default_value = "release")]
-    pub release: String,
-
-    /// Optional package/project name
-    #[clap(long, short)]
-    pub package_name: Option<String>,
-}
-
-impl PackageCmd {
-    pub(crate) fn as_opt(&self) -> PackageOption {
-        PackageOption {
-            release: self.release.clone(),
-            package_name: self.package_name.clone(),
-        }
     }
 }

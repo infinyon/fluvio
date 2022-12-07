@@ -880,8 +880,8 @@ dependencies = [
  "anyhow",
  "cargo-builder",
  "clap 4.0.29",
- "convert_case",
  "fluvio-connector-deployer",
+ "fluvio-connector-package",
  "fluvio-future",
  "thiserror",
  "tracing",
@@ -2440,6 +2440,7 @@ dependencies = [
  "anyhow",
  "derive_builder",
  "fluvio-connector-package",
+ "tempfile",
  "tracing",
 ]
 
@@ -4169,6 +4170,10 @@ dependencies = [
 [[package]]
 name = "json-test-connector"
 version = "0.0.0"
+dependencies = [
+ "clap 4.0.29",
+ "fluvio-connector-package",
+]
 
 [[package]]
 name = "k8-client"

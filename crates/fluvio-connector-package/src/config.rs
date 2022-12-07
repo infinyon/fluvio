@@ -4,7 +4,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -94,6 +94,11 @@ impl ConnectorConfig {
         }
         debug!("Using connector config {connector_config:#?}");
         Ok(connector_config)
+    }
+
+    pub fn write_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        std::fs::write(path, serde_yaml::to_vec(self)?)?;
+        Ok(())
     }
 
     pub fn consumer_parameters(&self) -> Vec<String> {

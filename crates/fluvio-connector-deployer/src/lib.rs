@@ -1,5 +1,6 @@
+mod local;
+
 use std::path::PathBuf;
-use std::process::Command;
 
 use anyhow::Result;
 use derive_builder::Builder;
@@ -19,10 +20,11 @@ pub enum DeploymentType {
 /// Describe deployment configuration
 #[derive(Builder)]
 pub struct Deployment {
-    pub executable: PathBuf,             // path to executable
-    pub secrets: Vec<Secret>,            // List of Secrets
-    pub config: ConnectorConfig,         // Configuration to pass along,
-    pub pkg: ConnectorMetadata,          // Connector pkg definition
+    pub executable: PathBuf, // path to executable
+    #[builder(default)]
+    pub secrets: Vec<Secret>, // List of Secrets
+    pub config: ConnectorConfig, // Configuration to pass along,
+    pub pkg: ConnectorMetadata, // Connector pkg definition
     pub deployment_type: DeploymentType, // deployment type
 }
 
@@ -35,13 +37,12 @@ impl Deployment {
 impl DeploymentBuilder {
     pub fn deploy(self) -> Result<()> {
         let deployment = self.build()?;
+        deployment.pkg.validate_config(&deployment.config)?;
         match deployment.deployment_type {
-            DeploymentType::Local => {
-                let mut cmd = Command::new(deployment.executable);
-
-                cmd.spawn()?;
+            DeploymentType::Local => local::deploy_local(&deployment)?,
+            DeploymentType::K8 => {
+                unimplemented!()
             }
-            DeploymentType::K8 => {}
         }
 
         Ok(())
