@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::Colorize;
 use fluvio::{Fluvio, FluvioAdmin, FluvioConfig};
 use fluvio::config::ConfigFile;
-use fluvio_controlplane_metadata::partition::{PartitionSpec, PartitionStatus};
+use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec};
 use fluvio_sc_schema::objects::Metadata;
 use tracing::debug;
@@ -97,7 +97,6 @@ impl StatusOpt {
         match Fluvio::connect_with_config(&fluvio_config).await {
             Ok(_fluvio) => {
                 pb.println(pad_format!(format!("{} SC is ok", "✅".bold())));
-
                 Ok(())
             }
             Err(err) => {
@@ -190,12 +189,13 @@ impl StatusOpt {
                     return Ok(());
                 }
 
+                let size = Self::total_cluster_storage(&partitions).await?;
                 pb.println(pad_format!(format!(
                     "{} {} topic{} using {}",
                     "✅".bold(),
                     topics.len(),
                     if topics.len() == 1 { "" } else { "s" },
-                    Self::human_readable_size(Self::total_partition_usage(&partitions).await)
+                    bytesize::ByteSize::b(size as u64).to_string(),
                 )));
 
                 Ok(())
@@ -212,25 +212,29 @@ impl StatusOpt {
         }
     }
 
-    /// The number of bytes a partition is using across all replicas
-    async fn total_partition_usage(partitions: &Vec<Metadata<PartitionSpec>>) -> i64 {
-        partitions
-            .iter()
-            .map(|partition| {
-                let partition_size = std::cmp::max(partition.status.size, 0);
-                let follower_count = partition.status.replicas.len() as i64;
+    async fn total_cluster_storage(
+        partitions: &Vec<Metadata<PartitionSpec>>,
+    ) -> Result<i64, ClusterCliError> {
+        let mut cluster_total = 0;
+        for partition in partitions {
+            let follower_count = partition.status.replicas.len() as i64;
 
-                // add one for the leader
-                (1 + follower_count) * partition_size
-            })
-            .sum()
+            // add one for the leader
+            let partition_total = (1 + follower_count) * Self::partition_size(partition)?;
+
+            cluster_total = cluster_total + partition_total;
+        }
+
+        Ok(cluster_total)
     }
 
-    fn human_readable_size(size: i64) -> String {
-        match size {
-            PartitionStatus::SIZE_NOT_SUPPORTED => "NA".to_string(),
-            PartitionStatus::SIZE_ERROR => "ERROR".to_string(),
-            _ => bytesize::ByteSize::b(size as u64).to_string(),
+    fn partition_size(partition: &Metadata<PartitionSpec>) -> Result<i64, ClusterCliError> {
+        match partition.status.size {
+            size if size < 0 => Err(ClusterCliError::Other(format!(
+                "A partition has an invalid size: {}",
+                size
+            ))),
+            size => Ok(size),
         }
     }
 }
