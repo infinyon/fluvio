@@ -78,11 +78,9 @@ impl StatusOpt {
 
                 Err(ClusterCliError::Other(err.to_string()))
             }
-            _ => {
-                Err(ClusterCliError::Other(
-                    "Should not be reachable".to_string(),
-                ))
-            }
+            _ => Err(ClusterCliError::Other(
+                "Should not be reachable".to_string(),
+            )),
         }
     }
 
