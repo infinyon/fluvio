@@ -2366,6 +2366,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-trait",
+ "bytesize",
  "chrono",
  "clap 4.0.29",
  "color-eyre",
