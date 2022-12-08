@@ -10,5 +10,8 @@ publish = false
 
 [dependencies]
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
 
 fluvio-connector-package = { path = "../../crates/fluvio-connector-package/" }

@@ -4171,8 +4171,11 @@ dependencies = [
 name = "json-test-connector"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "clap 4.0.29",
  "fluvio-connector-package",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

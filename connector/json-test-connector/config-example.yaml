@@ -3,6 +3,6 @@ name: my-json-test-connector
 type: json-test-source
 topic: test-topic
 parameters:
-  interval: 10s  
+  interval: 10  
   template: ""  
  

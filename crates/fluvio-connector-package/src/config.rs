@@ -193,6 +193,21 @@ pub enum ManagedConnectorParameterValue {
     String(String),
 }
 
+impl ManagedConnectorParameterValue {
+    pub fn as_string(&self) -> Result<String> {
+        match self {
+            Self::String(str) => Ok(str.to_owned()),
+            _ => anyhow::bail!("Parameter value is not a string"),
+        }
+    }
+
+    pub fn as_u32(&self) -> Result<u32> {
+        self.as_string()?
+            .parse::<u32>()
+            .map_err(|err| anyhow::anyhow!("Fail to parse u32 {}", err))
+    }
+}
+
 impl Default for ManagedConnectorParameterValue {
     fn default() -> Self {
         Self::Vec(Vec::new())

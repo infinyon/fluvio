@@ -20,3 +20,8 @@ image = "infinyon/fluvio-connect-json-test-source:0.1.0"
 name = "template"
 description = "JSON template"
 type = "string"
+
+[[params]]
+name = "interval"
+description = "Interval in seconds"
+type = "number"
