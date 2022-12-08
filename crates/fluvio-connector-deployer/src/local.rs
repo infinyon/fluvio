@@ -15,7 +15,8 @@ pub(crate) fn deploy_local(deployment: &Deployment) -> Result<()> {
 
     let mut cmd = Command::new(&deployment.executable);
     cmd.stdin(Stdio::null());
-    cmd.stdout(log_file);
+    cmd.stdout(log_file.try_clone()?);
+    cmd.stderr(log_file);
     cmd.arg("--config");
     cmd.arg(
         config_path

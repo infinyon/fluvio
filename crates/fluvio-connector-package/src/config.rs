@@ -60,10 +60,10 @@ pub struct ConsumerParameters {
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    linger: Option<Duration>,
+    pub linger: Option<Duration>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    compression: Option<Compression>,
+    pub compression: Option<Compression>,
 
     // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
     // feature to populate `batch_size`.
@@ -72,7 +72,7 @@ pub struct ProducerParameters {
     batch_size_string: Option<String>,
 
     #[serde(skip)]
-    batch_size: Option<ByteSize>,
+    pub batch_size: Option<ByteSize>,
 }
 
 impl ConnectorConfig {
@@ -220,6 +220,21 @@ impl From<Vec<String>> for ManagedConnectorParameterValue {
 impl From<BTreeMap<String, String>> for ManagedConnectorParameterValue {
     fn from(map: BTreeMap<String, String>) -> Self {
         Self::Map(map)
+    }
+}
+
+impl ManagedConnectorParameterValue {
+    pub fn as_string(&self) -> Result<String> {
+        match self {
+            Self::String(str) => Ok(str.to_owned()),
+            _ => anyhow::bail!("Parameter value is not a string"),
+        }
+    }
+
+    pub fn as_u32(&self) -> Result<u32> {
+        self.as_string()?
+            .parse::<u32>()
+            .map_err(|err| anyhow::anyhow!("Fail to parse u32 {}", err))
     }
 }
 
