@@ -1,0 +1,8 @@
+version: 0.1.0
+name: my-json-test-connector
+type: json-test-source
+topic: test-topic
+parameters:
+  interval: 10s  
+  template: ""  
+ 

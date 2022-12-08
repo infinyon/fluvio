@@ -90,13 +90,9 @@ impl TestCmd {
         } else if let Some(wasm_file) = self.wasm_file {
             build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, self.params)?
         } else {
-            let opt = self.package.as_opt();
-            build_chain_ad_hoc(
-                PackageInfo::from_options(&opt)
-                    .map_err(|e| anyhow::anyhow!(e))?
-                    .read_bytes()?,
-                self.params,
-            )?
+            let package_info = PackageInfo::from_options(&self.package.as_opt())?;
+            let wasm_file = package_info.target_wasm32_path()?;
+            build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, self.params)?
         };
 
         let engine = SmartEngine::new();

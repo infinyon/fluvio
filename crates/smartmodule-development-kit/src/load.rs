@@ -7,7 +7,7 @@ use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio::Fluvio;
 use fluvio_future::task::run_block_on;
-use cargo_builder::package::{PackageInfo};
+use cargo_builder::package::PackageInfo;
 
 use crate::build::PackageCmd;
 
@@ -48,12 +48,11 @@ impl LoadCmd {
 
         let opt = self.package.as_opt();
         // resolve the current cargo project
-        let package_info = PackageInfo::from_options(&opt).map_err(|e| anyhow::anyhow!(e))?;
+        let package_info = PackageInfo::from_options(&opt)?;
 
         // load ./SmartModule.toml relative to the project root
-        let mut sm_toml = package_info.package_path.clone();
-        sm_toml.push(DEFAULT_META_LOCATION);
-        let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml.clone())?;
+        let sm_toml = package_info.package_relative_path(DEFAULT_META_LOCATION);
+        let pkg_metadata = SmartModuleMetadata::from_toml(sm_toml.as_path())?;
         println!("Found SmartModule package: {}", pkg_metadata.package.name);
 
         // Check for empty group
@@ -65,7 +64,7 @@ impl LoadCmd {
         let sm_id = pkg_metadata.package.name.clone(); // pass anything, this should be overriden by SC
         let raw_bytes = match &self.wasm_file {
             Some(wasm_file) => crate::read_bytes_from_path(wasm_file)?,
-            None => package_info.read_bytes()?,
+            None => crate::read_bytes_from_path(&package_info.target_wasm32_path()?)?,
         };
 
         let spec = SmartModuleSpec {
