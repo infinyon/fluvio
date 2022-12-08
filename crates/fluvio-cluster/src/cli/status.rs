@@ -62,10 +62,10 @@ impl StatusOpt {
             k8s_cluster_check.label()
         )));
 
-        match k8s_cluster_check.perform_check(&pb).await? {
+        match k8s_cluster_check.perform_check(pb).await? {
             CheckStatus::Pass(status) => {
                 pb.println(pad_format!(format!("{} {}", "✅".bold(), status)));
-                return Ok(());
+                Ok(())
             }
             CheckStatus::Unrecoverable(err) => {
                 debug!("failed: {}", err);
@@ -76,10 +76,10 @@ impl StatusOpt {
                     k8s_cluster_check.label().italic(),
                 )));
 
-                return Err(ClusterCliError::Other(err.to_string()));
+                Err(ClusterCliError::Other(err.to_string()))
             }
             _ => {
-                return Err(ClusterCliError::Other(
+                Err(ClusterCliError::Other(
                     "Should not be reachable".to_string(),
                 ))
             }
@@ -93,7 +93,7 @@ impl StatusOpt {
     ) -> Result<(), ClusterCliError> {
         pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SC")));
 
-        match Fluvio::connect_with_config(&fluvio_config).await {
+        match Fluvio::connect_with_config(fluvio_config).await {
             Ok(_fluvio) => {
                 pb.println(pad_format!(format!("{} SC is ok", "✅".bold())));
                 Ok(())
@@ -116,7 +116,7 @@ impl StatusOpt {
     ) -> Result<(), ClusterCliError> {
         pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SPUs")));
 
-        match FluvioAdmin::connect_with_config(&fluvio_config).await {
+        match FluvioAdmin::connect_with_config(fluvio_config).await {
             Ok(admin) => {
                 let filters: Vec<String> = vec![];
                 let spus = admin.list::<SpuSpec, _>(filters).await?;
@@ -176,11 +176,11 @@ impl StatusOpt {
             "Topics"
         )));
 
-        match FluvioAdmin::connect_with_config(&fluvio_config).await {
+        match FluvioAdmin::connect_with_config(fluvio_config).await {
             Ok(admin) => {
                 let partitions = admin.all::<PartitionSpec>().await?;
                 let topics = admin.all::<TopicSpec>().await?;
-                if topics.len() == 0 {
+                if topics.is_empty() {
                     pb.println(pad_format!(format!("{} No topics present", "🟡".yellow(),)));
 
                     return Ok(());
@@ -192,7 +192,7 @@ impl StatusOpt {
                     "✅".bold(),
                     topics.len(),
                     if topics.len() == 1 { "" } else { "s" },
-                    bytesize::ByteSize::b(size as u64).to_string(),
+                    bytesize::ByteSize::b(size as u64),
                 )));
 
                 Ok(())
@@ -218,7 +218,7 @@ impl StatusOpt {
             // add one for the leader
             let partition_total = (1 + follower_count) * Self::partition_size(partition)?;
 
-            cluster_total = cluster_total + partition_total;
+            cluster_total += partition_total;
         }
 
         Ok(cluster_total)
