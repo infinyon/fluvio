@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use fluvio_smartengine::{SmartModuleChainInstance};
+use fluvio_smartengine::SmartModuleChainInstance;
 use tracing::{debug, error, instrument, trace, warn};
 use futures_util::StreamExt;
 use tokio::select;
@@ -27,7 +27,7 @@ use fluvio_spu_schema::{
 use fluvio_types::event::offsets::OffsetChangeListener;
 use fluvio_protocol::record::Batch;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::{DefaultSharedGlobalContext, metrics::IncreaseValue};
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::conn_context::ConnectionContext;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
@@ -407,12 +407,6 @@ impl StreamFetchHandler {
                 file_partition_response.log_start_offset = slice.start;
 
                 if let Some(file_slice) = slice.file_slice {
-                    self.metrics.outbound.increase(
-                        self.header.is_connector(),
-                        (slice.end.hw - slice.start) as u64,
-                        file_slice.len(),
-                    );
-
                     file_partition_response.records = file_slice.into();
                 }
                 slice.end
@@ -441,7 +435,7 @@ impl StreamFetchHandler {
             return Ok((starting_offset, false));
         }
 
-        let output = match sm_chain {
+        let (offset, wait, metrics_update) = match sm_chain {
             Some(chain) => {
                 // If a SmartModule is provided, we need to read records from file to memory
                 // In-memory records are then processed by SmartModule and returned to consumer
@@ -463,18 +457,22 @@ impl StreamFetchHandler {
                             err
                         )))
                     })?;
+                let metrics_update = IncreaseValue::from(&batch);
 
-                self.send_processed_response(
-                    file_partition_response,
-                    next_offset,
-                    batch,
-                    smartmodule_error,
-                )
-                .await?
+                let (offset, wait) = self
+                    .send_processed_response(
+                        file_partition_response,
+                        next_offset,
+                        batch,
+                        smartmodule_error,
+                    )
+                    .await?;
+                (offset, wait, metrics_update)
             }
             None => {
                 // If no SmartModule is provided, respond using raw file records
                 debug!("No SmartModule, sending back entire log");
+                let metrics_update = IncreaseValue::from(&file_partition_response);
 
                 let response = StreamFetchResponse {
                     topic: self.replica.topic.clone(),
@@ -498,10 +496,17 @@ impl StreamFetchHandler {
 
                 debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
 
-                (read_end_offset.isolation(&self.isolation), true)
+                (
+                    read_end_offset.isolation(&self.isolation),
+                    true,
+                    metrics_update,
+                )
             }
         };
-        Ok(output)
+        self.metrics
+            .outbound
+            .increase_by_value(self.header.is_connector(), metrics_update);
+        Ok((offset, wait))
     }
 
     #[instrument(skip(self, file_partition_response, batch, smartmodule_error))]
@@ -639,7 +644,7 @@ pub mod publishers {
     use std::fmt::Debug;
     use std::ops::AddAssign;
 
-    use super::{OffsetPublisher};
+    use super::OffsetPublisher;
 
     pub const INIT_OFFSET: i64 = -1;
 
