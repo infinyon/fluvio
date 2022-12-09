@@ -50,8 +50,10 @@ pub(crate) async fn create_producer(
 }
 pub(crate) async fn ensure_topic_exists(config: &ConnectorConfig) -> anyhow::Result<()> {
     let admin = fluvio::FluvioAdmin::connect().await?;
-    let topics = admin.list::<TopicSpec, String>(vec![]).await?;
-    let topic_exists = topics.iter().any(|t| t.name == config.topic.clone());
+    let topics = admin
+        .list::<TopicSpec, String>(vec![config.topic.clone()])
+        .await?;
+    let topic_exists = topics.iter().any(|t| t.name.eq(&config.topic));
     if !topic_exists {
         let _ = admin
             .create(
