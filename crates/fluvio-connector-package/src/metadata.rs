@@ -366,7 +366,7 @@ mod tests {
 
     use crate::{
         metadata::{Secret, SecretType, Parameter, ParameterType},
-        config::{SecretString, ManagedConnectorParameterValue},
+        config::{SecretString, ConnectorParameterValue},
     };
 
     use super::*;
@@ -493,7 +493,7 @@ mod tests {
             version: "latest".into(),
             parameters: BTreeMap::from([(
                 "param_name".into(),
-                ManagedConnectorParameterValue::from("param_value"),
+                ConnectorParameterValue::from("param_value"),
             )]),
             secrets: BTreeMap::from([("secret_name".into(), SecretString::from_str("").unwrap())]),
             ..Default::default()

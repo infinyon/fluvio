@@ -33,7 +33,7 @@ pub struct ConnectorConfig {
     pub version: String,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub parameters: BTreeMap<String, ManagedConnectorParameterValue>,
+    pub parameters: BTreeMap<String, ConnectorParameterValue>,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub secrets: BTreeMap<String, SecretString>,
@@ -60,10 +60,10 @@ pub struct ConsumerParameters {
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    linger: Option<Duration>,
+    pub linger: Option<Duration>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    compression: Option<Compression>,
+    pub compression: Option<Compression>,
 
     // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
     // feature to populate `batch_size`.
@@ -72,7 +72,7 @@ pub struct ProducerParameters {
     batch_size_string: Option<String>,
 
     #[serde(skip)]
-    batch_size: Option<ByteSize>,
+    pub batch_size: Option<ByteSize>,
 }
 
 impl ConnectorConfig {
@@ -187,39 +187,54 @@ impl Deref for SecretString {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase", untagged)]
-pub enum ManagedConnectorParameterValue {
+pub enum ConnectorParameterValue {
     Vec(Vec<String>),
     Map(BTreeMap<String, String>),
     String(String),
 }
 
-impl Default for ManagedConnectorParameterValue {
+impl Default for ConnectorParameterValue {
     fn default() -> Self {
         Self::Vec(Vec::new())
     }
 }
 
-impl From<String> for ManagedConnectorParameterValue {
+impl From<String> for ConnectorParameterValue {
     fn from(str: String) -> Self {
         Self::String(str)
     }
 }
 
-impl From<&str> for ManagedConnectorParameterValue {
+impl From<&str> for ConnectorParameterValue {
     fn from(str: &str) -> Self {
         Self::String(str.to_string())
     }
 }
 
-impl From<Vec<String>> for ManagedConnectorParameterValue {
+impl From<Vec<String>> for ConnectorParameterValue {
     fn from(vec: Vec<String>) -> Self {
         Self::Vec(vec)
     }
 }
 
-impl From<BTreeMap<String, String>> for ManagedConnectorParameterValue {
+impl From<BTreeMap<String, String>> for ConnectorParameterValue {
     fn from(map: BTreeMap<String, String>) -> Self {
         Self::Map(map)
+    }
+}
+
+impl ConnectorParameterValue {
+    pub fn as_string(&self) -> Result<String> {
+        match self {
+            Self::String(str) => Ok(str.to_owned()),
+            _ => anyhow::bail!("Parameter value is not a string"),
+        }
+    }
+
+    pub fn as_u32(&self) -> Result<u32> {
+        self.as_string()?
+            .parse::<u32>()
+            .map_err(|err| anyhow::anyhow!("Fail to parse u32 {}", err))
     }
 }
 
@@ -227,8 +242,8 @@ use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::Deserializer;
 
 struct ParameterValueVisitor;
-impl<'de> Deserialize<'de> for ManagedConnectorParameterValue {
-    fn deserialize<D>(deserializer: D) -> Result<ManagedConnectorParameterValue, D::Error>
+impl<'de> Deserialize<'de> for ConnectorParameterValue {
+    fn deserialize<D>(deserializer: D) -> Result<ConnectorParameterValue, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -237,7 +252,7 @@ impl<'de> Deserialize<'de> for ManagedConnectorParameterValue {
 }
 
 impl<'de> Visitor<'de> for ParameterValueVisitor {
-    type Value = ManagedConnectorParameterValue;
+    type Value = ConnectorParameterValue;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("string, map or sequence")
@@ -287,7 +302,7 @@ impl<'de> Visitor<'de> for ParameterValueVisitor {
     where
         E: de::Error,
     {
-        Ok(ManagedConnectorParameterValue::String(value.to_string()))
+        Ok(ConnectorParameterValue::String(value.to_string()))
     }
 
     fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
@@ -299,7 +314,7 @@ impl<'de> Visitor<'de> for ParameterValueVisitor {
             inner.insert(key.clone(), value.clone());
         }
 
-        Ok(ManagedConnectorParameterValue::Map(inner))
+        Ok(ConnectorParameterValue::Map(inner))
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -310,7 +325,7 @@ impl<'de> Visitor<'de> for ParameterValueVisitor {
         while let Some(param) = seq.next_element::<String>()? {
             vec_inner.push(param);
         }
-        Ok(ManagedConnectorParameterValue::Vec(vec_inner))
+        Ok(ConnectorParameterValue::Vec(vec_inner))
     }
 }
 
