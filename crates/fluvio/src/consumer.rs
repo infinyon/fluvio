@@ -73,6 +73,11 @@ where
         self.partition
     }
 
+    /// Return a shared instance of `ClientMetrics`
+    pub fn metrics(&self) -> Arc<ClientMetrics> {
+        self.metrics.clone()
+    }
+
     /// Continuously streams events from a particular offset in the consumer's partition
     ///
     /// Streaming is one of the two ways to consume events in Fluvio.
