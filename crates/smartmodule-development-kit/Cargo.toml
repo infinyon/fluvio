@@ -19,7 +19,6 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 bytes = { workspace = true }
 clap = { workspace = true,features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
-convert_case = { workspace = true }
 dirs = "4.0.0"
 toml = { version = "0.5.9" }
 cargo-generate = "0.17.0"
