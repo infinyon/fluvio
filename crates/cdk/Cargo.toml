@@ -20,6 +20,8 @@ anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 cargo-builder = { path = "../cargo-builder"}
 
-fluvio-future = { version = "0.4.0", features = ["subscriber"]}
+fluvio = { path = "../fluvio", default-features = false }
 fluvio-connector-deployer = { path = "../fluvio-connector-deployer"}
 fluvio-connector-package = { path = "../fluvio-connector-package", features = ["toml"]}
+fluvio-future = { workspace = true, features = ["subscriber"]}
+fluvio-hub-util = { path = "../fluvio-hub-util" }

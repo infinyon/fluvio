@@ -4,12 +4,14 @@ use anyhow::Result;
 
 use crate::build::BuildCmd;
 use crate::deploy::DeployCmd;
+use crate::publish::PublishCmd;
 
 /// Connector Development Kit
 #[derive(Debug, Parser)]
 pub enum CdkCommand {
     Build(BuildCmd),
     Deploy(DeployCmd),
+    Publish(PublishCmd),
     Test,
 }
 
@@ -19,6 +21,7 @@ impl CdkCommand {
             CdkCommand::Build(opt) => opt.process(),
             CdkCommand::Test => todo!(),
             CdkCommand::Deploy(opt) => opt.process(),
+            CdkCommand::Publish(opt) => opt.process(),
         }
     }
 }
