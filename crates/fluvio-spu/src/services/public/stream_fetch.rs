@@ -504,7 +504,7 @@ impl StreamFetchHandler {
             }
         };
         self.metrics
-            .outbound
+            .outbound()
             .increase_by_value(self.header.is_connector(), metrics_update);
         Ok((offset, wait))
     }

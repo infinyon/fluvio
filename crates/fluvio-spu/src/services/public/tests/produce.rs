@@ -394,3 +394,101 @@ async fn test_produce_waiting_replication() {
     private_server_end_event.notify();
     debug!("terminated controller");
 }
+
+#[fluvio_future::test(ignore)]
+async fn test_produce_metrics() {
+    let test_path = temp_dir().join("produce_basic_metrics");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{}", port);
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let topic = "test_produce";
+    let test = Replica::new((topic, 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    ctx.replica_localstore().sync_all(vec![test.clone()]);
+
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
+
+    assert_eq!(ctx.metrics().inbound().client_bytes(), 0);
+    assert_eq!(ctx.metrics().inbound().client_records(), 0);
+    assert_eq!(ctx.metrics().inbound().connector_bytes(), 0);
+    assert_eq!(ctx.metrics().inbound().connector_records(), 0);
+
+    {
+        let records = create_filter_records(10)
+            .try_into()
+            .expect("filter records");
+
+        let mut produce_request = DefaultProduceRequest {
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records,
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let _ = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        assert_eq!(ctx.metrics().inbound().client_bytes(), 1151);
+        assert_eq!(ctx.metrics().inbound().client_records(), 10);
+        assert_eq!(ctx.metrics().inbound().connector_bytes(), 0);
+        assert_eq!(ctx.metrics().inbound().connector_records(), 0);
+    }
+    {
+        let records = create_filter_records(5).try_into().expect("filter records");
+        let mut produce_request = DefaultProduceRequest {
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records,
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let _ = client_socket
+            .send_and_receive(
+                RequestMessage::new_request(produce_request).set_client_id("fluvio_connector"),
+            )
+            .await
+            .expect("send offset");
+
+        assert_eq!(ctx.metrics().inbound().client_bytes(), 1151);
+        assert_eq!(ctx.metrics().inbound().client_records(), 10);
+        assert_eq!(ctx.metrics().inbound().connector_bytes(), 606);
+        assert_eq!(ctx.metrics().inbound().connector_records(), 5);
+    }
+    server_end_event.notify();
+    debug!("terminated controller");
+}
