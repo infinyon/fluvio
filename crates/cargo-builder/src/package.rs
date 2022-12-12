@@ -33,6 +33,7 @@ impl PackageInfo {
         let metadata = MetadataCommand::new()
             .manifest_path(&current_project)
             .features(CargoOpt::AllFeatures)
+            .verbose(true)
             .exec()
             .context(format!(
                 "Failed to load cargo project at {}",
