@@ -26,7 +26,7 @@ setup_file() {
 
 ### Using crates.io dependency for `fluvio-smartmodule`
 
-@test "Generate and build filter - (stable fluvio-smartmodule / no params)" {
+@test "Generate and test filter - (stable fluvio-smartmodule / no params)" {
     LABEL=default
     SMDK_SM_TYPE=filter
     PARAMS_FLAG=--no-params
@@ -56,9 +56,14 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text 'a'
+    assert_output --partial "1 records outputed"
+    assert_success
 }
 
-@test "Generate and build map - (stable fluvio-smartmodule / no params)" {
+@test "Generate and test map - (stable fluvio-smartmodule / no params)" {
     LABEL=default
     SMDK_SM_TYPE=map
     PARAMS_FLAG=--no-params
@@ -88,9 +93,15 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text '2'
+    assert_output --partial "1 records outputed"
+    assert_output --partial "4"
+    assert_success
 }
 
-@test "Generate and build array-map - (stable fluvio-smartmodule / no params)" {
+@test "Generate and test array-map - (stable fluvio-smartmodule / no params)" {
     LABEL=default
     SMDK_SM_TYPE=array-map
     PARAMS_FLAG=--no-params
@@ -119,10 +130,17 @@ setup_file() {
     # Load
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success    
+
+    # Test
+    run $SMDK_BIN test --text '["foo", "bar"]'
+    assert_output --partial "2 records outputed"
+    assert_output --partial "foo"
+    assert_output --partial "bar"
     assert_success
 }
 
-@test "Generate and build filter-map - (stable fluvio-smartmodule / no params)" {
+@test "Generate and test filter-map - (stable fluvio-smartmodule / no params)" {
     LABEL=default
     SMDK_SM_TYPE=filter-map
     PARAMS_FLAG=--no-params
@@ -152,9 +170,15 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text '2'
+    assert_output --partial "1 records outputed"
+    assert_output --partial "2"
+    assert_success
 }
 
-@test "Generate and build aggregate - (stable fluvio-smartmodule / no params)" {
+@test "Generate and test aggregate - (stable fluvio-smartmodule / no params)" {
     LABEL=default
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--no-params
@@ -184,11 +208,17 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text '2'
+    assert_output --partial "1 records outputed"
+    assert_output --partial "2"
+    assert_success
 }
 
 ### Using crates.io dependency for `fluvio-smartmodule` with params
 
-@test "Generate and build filter - (stable fluvio-smartmodule / with params)" {
+@test "Generate and test filter - (stable fluvio-smartmodule / with params)" {
     LABEL=default-params
     SMDK_SM_TYPE=filter
     PARAMS_FLAG=--with-params
@@ -217,6 +247,11 @@ setup_file() {
     # Load
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
+
+    # Test
+    run $SMDK_BIN test --text 'a' -e key=value
+    assert_output --partial "1 records outputed"
     assert_success
 }
 
@@ -350,7 +385,7 @@ setup_file() {
 
 #### Using current repo path for `fluvio-smartmodule`
 
-@test "Generate and build filter - (current repo fluvio-smartmodule / no params)" {
+@test "Generate and test filter - (current repo fluvio-smartmodule / no params)" {
     LABEL=repo
     SMDK_SM_TYPE=filter
     PARAMS_FLAG=--no-params
@@ -380,9 +415,14 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text 'a'
+    assert_output --partial "1 records outputed"
+    assert_success
 }
 
-@test "Generate and build map - (current repo fluvio-smartmodule / no params)" {
+@test "Generate and test map - (current repo fluvio-smartmodule / no params)" {
     LABEL=repo
     SMDK_SM_TYPE=map
     PARAMS_FLAG=--no-params
@@ -412,9 +452,15 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text '2'
+    assert_output --partial "1 records outputed"
+    assert_output --partial "4"
+    assert_success
 }
 
-@test "Generate and build array-map - (current repo fluvio-smartmodule / no params)" {
+@test "Generate and test array-map - (current repo fluvio-smartmodule / no params)" {
     LABEL=repo
     SMDK_SM_TYPE=array-map
     PARAMS_FLAG=--no-params
@@ -444,9 +490,16 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text '["foo", "bar"]'
+    assert_output --partial "2 records outputed"
+    assert_output --partial "foo"
+    assert_output --partial "bar"
+    assert_success
 }
 
-@test "Generate and build filter-map - (current repo fluvio-smartmodule / no params)" {
+@test "Generate and test filter-map - (current repo fluvio-smartmodule / no params)" {
     LABEL=repo
     SMDK_SM_TYPE=filter-map
     PARAMS_FLAG=--no-params
@@ -476,9 +529,15 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text '2'
+    assert_output --partial "1 records outputed"
+    assert_output --partial "2"
+    assert_success
 }
 
-@test "Generate and build aggregate - (current repo fluvio-smartmodule / no params)" {
+@test "Generate and test aggregate - (current repo fluvio-smartmodule / no params)" {
     LABEL=repo
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--no-params
@@ -508,11 +567,17 @@ setup_file() {
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
+
+    # Test
+    run $SMDK_BIN test --text '2'
+    assert_output --partial "1 records outputed"
+    assert_output --partial "2"
+    assert_success
 }
 
 ### Using current repo path for `fluvio-smartmodule` with params
 
-@test "Generate and build filter - (current repo fluvio-smartmodule / with params)" {
+@test "Generate and test filter - (current repo fluvio-smartmodule / with params)" {
     LABEL=repo-params
     SMDK_SM_TYPE=filter
     PARAMS_FLAG=--with-params
@@ -541,6 +606,11 @@ setup_file() {
     # Load
     run $SMDK_BIN load
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
+
+    # Test
+    run $SMDK_BIN test --text 'a' -e key=value
+    assert_output --partial "1 records outputed"
     assert_success
 }
 
