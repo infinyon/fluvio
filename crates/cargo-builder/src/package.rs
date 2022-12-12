@@ -113,13 +113,12 @@ impl PackageInfo {
         Ok(path)
     }
 
-    pub fn target_name(&self) -> anyhow::Result<&str> {
-        Ok(&self
-            .package
+    pub fn target_name(&self) -> anyhow::Result<String> {
+        self.package
             .targets
             .get(0)
-            .ok_or_else(|| anyhow!("package does not have any targets"))?
-            .name)
+            .map(|target| target.name.replace('-', "_"))
+            .ok_or_else(|| anyhow!("package does not have any targets"))
     }
 }
 /// Finds the closest Cargo.toml in the tree, starting from the current directory

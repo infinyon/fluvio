@@ -27,7 +27,6 @@ setup_file() {
 ### Using crates.io dependency for `fluvio-smartmodule`
 
 @test "Generate and build filter - (stable fluvio-smartmodule / no params)" {
-    skip "Enable after next release"
     LABEL=default
     SMDK_SM_TYPE=filter
     PARAMS_FLAG=--no-params
@@ -52,10 +51,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build map - (stable fluvio-smartmodule / no params)" {
-    skip "Enable after next release"
     LABEL=default
     SMDK_SM_TYPE=map
     PARAMS_FLAG=--no-params
@@ -80,10 +83,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build array-map - (stable fluvio-smartmodule / no params)" {
-    skip "Enable after next release"
     LABEL=default
     SMDK_SM_TYPE=array-map
     PARAMS_FLAG=--no-params
@@ -108,10 +115,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build filter-map - (stable fluvio-smartmodule / no params)" {
-    skip "Enable after next release"
     LABEL=default
     SMDK_SM_TYPE=filter-map
     PARAMS_FLAG=--no-params
@@ -136,10 +147,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build aggregate - (stable fluvio-smartmodule / no params)" {
-    skip "Enable after next release"
     LABEL=default
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--no-params
@@ -164,12 +179,16 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 ### Using crates.io dependency for `fluvio-smartmodule` with params
 
 @test "Generate and build filter - (stable fluvio-smartmodule / with params)" {
-    skip "Enable after next release"
     LABEL=default-params
     SMDK_SM_TYPE=filter
     PARAMS_FLAG=--with-params
@@ -194,10 +213,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build map - (stable fluvio-smartmodule / with params)" {
-    skip "Enable after next release"
     LABEL=default-params
     SMDK_SM_TYPE=map
     PARAMS_FLAG=--with-params
@@ -222,10 +245,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build array-map - (stable fluvio-smartmodule / with params)" {
-    skip "Enable after next release"
     LABEL=default-params
     SMDK_SM_TYPE=array-map
     PARAMS_FLAG=--with-params
@@ -250,10 +277,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build filter-map - (stable fluvio-smartmodule / with params)" {
-    skip "Enable after next release"
     LABEL=default-params
     SMDK_SM_TYPE=filter-map
     PARAMS_FLAG=--with-params
@@ -278,10 +309,14 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build aggregate - (stable fluvio-smartmodule / with params)" {
-    skip "Enable after next release"
     LABEL=default-params
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--with-params
@@ -306,6 +341,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 #### Using current repo path for `fluvio-smartmodule`
@@ -335,6 +375,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build map - (current repo fluvio-smartmodule / no params)" {
@@ -362,6 +407,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build array-map - (current repo fluvio-smartmodule / no params)" {
@@ -389,6 +439,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build filter-map - (current repo fluvio-smartmodule / no params)" {
@@ -416,6 +471,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build aggregate - (current repo fluvio-smartmodule / no params)" {
@@ -443,6 +503,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 ### Using current repo path for `fluvio-smartmodule` with params
@@ -472,6 +537,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build map - (current repo fluvio-smartmodule / with params)" {
@@ -499,6 +569,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build array-map - (current repo fluvio-smartmodule / with params)" {
@@ -526,6 +601,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build filter-map - (current repo fluvio-smartmodule / with params)" {
@@ -553,6 +633,11 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
 
 @test "Generate and build aggregate - (current repo fluvio-smartmodule / with params)" {
@@ -580,4 +665,9 @@ setup_file() {
     cd $SM_PACKAGE_NAME
     run $SMDK_BIN build
     refute_output --partial "could not compile"
+    
+    # Load
+    run $SMDK_BIN load
+    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+    assert_success
 }
