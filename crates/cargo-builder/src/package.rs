@@ -108,18 +108,17 @@ impl PackageInfo {
         let mut path = self.target_dir.clone();
         path.push("wasm32-unknown-unknown");
         path.push(&self.profile);
-        path.push(self.target_name()?);
+        path.push(self.target_name()?.replace('-', "_"));
         path.set_extension("wasm");
         Ok(path)
     }
 
     pub fn target_name(&self) -> anyhow::Result<&str> {
-        Ok(&self
-            .package
+        self.package
             .targets
             .get(0)
-            .ok_or_else(|| anyhow!("package does not have any targets"))?
-            .name)
+            .map(|target| target.name.as_str())
+            .ok_or_else(|| anyhow!("package does not have any targets"))
     }
 }
 /// Finds the closest Cargo.toml in the tree, starting from the current directory
@@ -168,6 +167,6 @@ mod tests {
         assert!(package_info
             .target_wasm32_path()
             .unwrap()
-            .ends_with("wasm32-unknown-unknown/release-lto/cargo-builder.wasm"));
+            .ends_with("wasm32-unknown-unknown/release-lto/cargo_builder.wasm"));
     }
 }
