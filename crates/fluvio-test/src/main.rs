@@ -378,7 +378,7 @@ mod tests {
 
     #[test]
     fn timeout() {
-        let args = BaseCli::parse_from(vec!["fluvio-test", "smoke", "--timeout", "9000"]);
+        let args = BaseCli::parse_from(vec!["fluvio-test", "smoke", "--timeout", "9000s"]);
 
         assert_eq!(args.environment.timeout(), Duration::from_secs(9000));
     }

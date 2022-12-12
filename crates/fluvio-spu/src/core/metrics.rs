@@ -10,8 +10,8 @@ use serde::Serialize;
 
 #[derive(Default, Debug, Serialize)]
 pub(crate) struct SpuMetrics {
-    pub(crate) inbound: Activity,
-    pub(crate) outbound: Activity,
+    inbound: Activity,
+    outbound: Activity,
     smartmodule: SmartModuleChainMetrics,
 }
 
@@ -20,7 +20,15 @@ impl SpuMetrics {
         Self::default()
     }
 
-    pub(crate) fn chain_metrics(&self) -> &SmartModuleChainMetrics {
+    pub fn inbound(&self) -> &Activity {
+        &self.inbound
+    }
+
+    pub fn outbound(&self) -> &Activity {
+        &self.outbound
+    }
+
+    pub fn chain_metrics(&self) -> &SmartModuleChainMetrics {
         &self.smartmodule
     }
 }
@@ -39,7 +47,7 @@ impl Record {
 }
 
 #[derive(Default, Debug, Serialize)]
-pub(crate) struct Activity {
+pub struct Activity {
     connector: Record,
     client: Record,
 }
@@ -62,6 +70,22 @@ impl Activity {
     pub(crate) fn increase_by_value(&self, connector: bool, value: IncreaseValue) {
         let IncreaseValue { records, bytes } = value;
         self.increase(connector, records, bytes)
+    }
+}
+
+#[cfg(test)]
+impl Activity {
+    pub fn connector_records(&self) -> u64 {
+        self.connector.records.load(Ordering::SeqCst)
+    }
+    pub fn connector_bytes(&self) -> u64 {
+        self.connector.bytes.load(Ordering::SeqCst)
+    }
+    pub fn client_records(&self) -> u64 {
+        self.client.records.load(Ordering::SeqCst)
+    }
+    pub fn client_bytes(&self) -> u64 {
+        self.client.bytes.load(Ordering::SeqCst)
     }
 }
 

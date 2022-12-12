@@ -26,7 +26,7 @@ use fluvio_spu_schema::{
 };
 use fluvio_protocol::{
     fixture::BatchProducer,
-    record::{RecordData, Record},
+    record::{RecordData, Record, Batch},
     link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
     ByteBuf,
 };
@@ -2566,4 +2566,145 @@ async fn test_stream_fetch_join_generic() {
         test_stream_fetch_join,
     )
     .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_metrics() {
+    let test_path = temp_dir().join("test_stream_metrics");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{}", port);
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    let topic = "test_topic";
+    let test = Replica::new((topic.to_string(), 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
+
+    assert_eq!(ctx.metrics().outbound().client_bytes(), 0);
+    assert_eq!(ctx.metrics().outbound().client_records(), 0);
+    assert_eq!(ctx.metrics().outbound().connector_bytes(), 0);
+    assert_eq!(ctx.metrics().outbound().connector_records(), 0);
+
+    assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 0);
+    assert_eq!(ctx.metrics().chain_metrics().records_out(), 0);
+    assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 0);
+
+    let batch = Batch::from(vec![
+        Record::new(RecordData::from("foo")),
+        Record::new(RecordData::from("bar")),
+    ]);
+    let mut records = RecordSet::default().add(batch);
+    // write records, base offset = 0 since we are starting from 0
+    replica
+        .write_record_set(&mut records, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    {
+        let mut stream = client_socket
+            .create_stream(
+                RequestMessage::new_request(DefaultStreamFetchRequest {
+                    topic: topic.to_string(),
+                    max_bytes: 1000,
+                    ..Default::default()
+                }),
+                10,
+            )
+            .await
+            .expect("create stream");
+        let response = stream.next().await.expect("first").expect("response");
+        let partition = &response.partition;
+        assert_eq!(partition.error_code, ErrorCode::None);
+        assert_eq!(partition.records.batches.len(), 1);
+        let batch = &partition.records.batches[0];
+        assert_eq!(batch.memory_records().expect("records").len(), 2);
+
+        assert_eq!(ctx.metrics().outbound().client_bytes(), 81);
+        assert_eq!(ctx.metrics().outbound().client_records(), 2);
+        assert_eq!(ctx.metrics().outbound().connector_bytes(), 0);
+        assert_eq!(ctx.metrics().outbound().connector_records(), 0);
+
+        assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 0);
+        assert_eq!(ctx.metrics().chain_metrics().records_out(), 0);
+        assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 0);
+    }
+    {
+        let mut request = RequestMessage::new_request(DefaultStreamFetchRequest {
+            topic: topic.to_string(),
+            max_bytes: 1000,
+            ..Default::default()
+        });
+        request.header.set_client_id("fluvio_connector");
+        let mut stream = client_socket
+            .create_stream(request, 10)
+            .await
+            .expect("create stream");
+        let response = stream.next().await.expect("second").expect("response");
+        let partition = &response.partition;
+        assert_eq!(partition.error_code, ErrorCode::None);
+        assert_eq!(partition.records.batches.len(), 1);
+        let batch = &partition.records.batches[0];
+        assert_eq!(batch.memory_records().expect("records").len(), 2);
+
+        assert_eq!(ctx.metrics().outbound().client_bytes(), 81);
+        assert_eq!(ctx.metrics().outbound().client_records(), 2);
+        assert_eq!(ctx.metrics().outbound().connector_bytes(), 81);
+        assert_eq!(ctx.metrics().outbound().connector_records(), 2);
+
+        assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 0);
+        assert_eq!(ctx.metrics().chain_metrics().records_out(), 0);
+        assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 0);
+    }
+    {
+        let wasm = zip(read_wasm_module(FLUVIO_WASM_FILTER));
+        let smartmodule = SmartModuleInvocation {
+            wasm: SmartModuleInvocationWasm::AdHoc(wasm),
+            kind: SmartModuleKind::Filter,
+            ..Default::default()
+        };
+        let mut request = RequestMessage::new_request(DefaultStreamFetchRequest {
+            topic: topic.to_string(),
+            max_bytes: 1000,
+            smartmodules: vec![smartmodule],
+            ..Default::default()
+        });
+        request.header.set_client_id("fluvio_connector2");
+        let mut stream = client_socket
+            .create_stream(request, 10)
+            .await
+            .expect("create stream");
+        let response = stream.next().await.expect("third").expect("response");
+        let partition = &response.partition;
+        assert_eq!(partition.error_code, ErrorCode::None);
+        assert_eq!(partition.records.batches.len(), 1);
+        let batch = &partition.records.batches[0];
+        assert_eq!(batch.memory_records().expect("records").len(), 1);
+
+        assert_eq!(ctx.metrics().outbound().client_bytes(), 81);
+        assert_eq!(ctx.metrics().outbound().client_records(), 2);
+        assert_eq!(ctx.metrics().outbound().connector_bytes(), 84); // if records went through smartengine we calculate size of deserialized data, so it's +3 bytes here
+        assert_eq!(ctx.metrics().outbound().connector_records(), 3); // one records passed, one filtered out
+
+        assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 24);
+        assert_eq!(ctx.metrics().chain_metrics().records_out(), 1);
+        assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 1); // one invocation per batch
+    }
+
+    server_end_event.notify();
+    debug!("terminated controller");
 }
