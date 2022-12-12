@@ -1,8 +1,8 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct SmartModuleChainMetrics {
     bytes_in: AtomicU64,
     records_out: AtomicU64,

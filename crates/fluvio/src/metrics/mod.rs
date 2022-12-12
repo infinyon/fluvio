@@ -1,8 +1,8 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
-#[derive(Default, Debug, Serialize)]
+#[derive(Default, Debug, Deserialize, Serialize)]
 pub struct ClientMetrics {
     consumer: RecordCounter,
     producer_connector: RecordCounter,
@@ -42,7 +42,7 @@ impl ClientMetrics {
 cfg_if::cfg_if! {
     if #[cfg(any(target_arch = "wasm32", target_arch = "arm"))] {
 
-        #[derive(Default, Debug, Serialize)]
+        #[derive(Default, Debug, Deserialize, Serialize)]
         pub struct RecordCounter {
 
         }
@@ -60,7 +60,7 @@ cfg_if::cfg_if! {
     } else {
 
 
-        #[derive(Default, Debug, Serialize)]
+        #[derive(Default, Debug, Serialize, Deserialize)]
         pub struct RecordCounter {
             pub records: AtomicU64,
             pub bytes: AtomicU64,
