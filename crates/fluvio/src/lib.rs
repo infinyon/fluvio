@@ -170,6 +170,8 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 /// Fluvio batches records by default, so it's important to flush the producer before terminating.
 ///
 /// ```no_run
+///     # use fluvio::FluvioError;
+///     # use fluvio_protocol::record::RecordKey;
 ///     # async fn produce_records() -> Result<(), FluvioError> {
 ///     let producer = fluvio::producer("echo").await?;
 ///     for i in 0..10u8 {
