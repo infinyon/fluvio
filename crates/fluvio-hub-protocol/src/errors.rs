@@ -1,7 +1,7 @@
 use crate::infinyon_tok::InfinyonCredentialError;
 
 #[derive(thiserror::Error, Debug)]
-pub enum HubUtilError {
+pub enum HubError {
     #[error(transparent)]
     CargoReadError(#[from] cargo_toml::Error),
 
@@ -75,4 +75,4 @@ pub enum HubUtilError {
     SemVerError(String),
 }
 
-pub type Result<T> = std::result::Result<T, HubUtilError>;
+pub type Result<T> = std::result::Result<T, HubError>;

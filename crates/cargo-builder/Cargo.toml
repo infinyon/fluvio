@@ -11,9 +11,7 @@ publish = false
 
 
 [dependencies]
-tracing = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-convert_case = { workspace = true }
 derive_builder = { workspace = true }
 cargo_metadata = "0.15.0"

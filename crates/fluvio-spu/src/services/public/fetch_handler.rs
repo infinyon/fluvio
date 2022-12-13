@@ -126,7 +126,7 @@ async fn handle_fetch_partition(
             partition_response.log_start_offset = slice.start;
 
             if let Some(file_slice) = slice.file_slice {
-                metrics.outbound.increase(
+                metrics.outbound().increase(
                     is_connector,
                     (slice.end.hw - slice.start) as u64,
                     file_slice.len(),

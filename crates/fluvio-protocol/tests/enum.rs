@@ -217,23 +217,23 @@ fn test_multi_unnamed_decode() {
 #[derive(Debug, Encoder, Decoder)]
 enum MultiUnnamedCustomTag {
     #[fluvio(tag = 7)]
-    RGB(u8, u8, u8),
+    Rgb(u8, u8, u8),
     #[fluvio(tag = 70)]
-    HSV(u8, u8, u8),
+    Hsv(u8, u8, u8),
     #[fluvio(tag = 77)]
     ColorName(String),
 }
 
 impl Default for MultiUnnamedCustomTag {
     fn default() -> Self {
-        Self::RGB(0, 0, 0)
+        Self::Rgb(0, 0, 0)
     }
 }
 
 #[test]
 fn test_multi_unnamed_custom_tag_encode() {
     let mut dest = vec![];
-    let value = MultiUnnamedCustomTag::HSV(22, 33, 44);
+    let value = MultiUnnamedCustomTag::Hsv(22, 33, 44);
     value.encode(&mut dest, 0).unwrap();
 
     let expected = vec![0x46, 0x16, 0x21, 0x2c];
@@ -247,7 +247,7 @@ fn test_multi_unnamed_custom_tag_decode() {
     value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
 
     match value {
-        MultiUnnamedCustomTag::HSV(22, 33, 44) => (),
+        MultiUnnamedCustomTag::Hsv(22, 33, 44) => (),
         _ => panic!("failed decode"),
     }
 }

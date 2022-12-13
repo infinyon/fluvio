@@ -20,8 +20,10 @@ fixture = []
 
 [dependencies]
 tracing = { workspace = true }
-libc = "0.2.116"
+derive_builder = { workspace = true}
 bytes = { workspace = true }
+nix = { workspace = true }
+libc = "0.2.116"
 futures-lite = "1.7.0"
 pin-utils = "0.1.0-alpha.4"
 async-channel = "1.5.1"
@@ -29,12 +31,12 @@ async-trait = "0.1.18"
 clap = { version = "4.0.9", features = ["std", "derive", "help", "usage", "error-context"], default-features = false, optional = true }
 serde = { version = "1.0.103", features = ['derive'] }
 async-lock = "2.4.0"
-derive_builder = "0.11.0"
+
 thiserror = "1"
 memmap = { version = "0.7.0" }
 tokio = { version = "1.3.0", features = ["macros"] }
 blocking = "1.1.0"
-nix = "0.25.0"
+
 
 # Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", features = [
@@ -48,7 +50,6 @@ fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
 ] }
 
 [dev-dependencies]
-derive_builder = { version = "0.11.0" }
 fluvio-future = { version = "0.4.0", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { path = "../fluvio-socket", features = ["file"] }

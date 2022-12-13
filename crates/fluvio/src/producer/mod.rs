@@ -483,6 +483,11 @@ impl TopicProducer {
         self.inner.clear_errors().await;
     }
 
+    /// Return a shared instance of `ClientMetrics`
+    pub fn metrics(&self) -> Arc<ClientMetrics> {
+        self.metrics.clone()
+    }
+
     #[cfg(feature = "stats")]
     /// Return a `ClientStatsDataFrame` to represent the current recorded client stats
     pub fn stats(&self) -> Option<ClientStatsDataFrame> {

@@ -23,6 +23,8 @@ anyhow = { workspace = true }
 tracing = { workspace = true }
 bytes = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "env"], default-features = false }
+thiserror = { workspace = true }
+nix = { workspace = true }
 toml = "0.5.5"
 futures-util = { version = "0.3.5", features = ["sink"] }
 async-trait = "0.1.51"
@@ -38,10 +40,9 @@ event-listener = "2.4.0"
 async-io = "1.3.0"
 async-net = "1.7.0"
 adaptive_backoff = "0.2.1"
-thiserror = { workspace = true }
 once_cell = "1.5"
 sysinfo = "0.26.0"
-nix = { version = "0.25"}
+
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }
@@ -72,7 +73,7 @@ fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false
 
 [dev-dependencies]
 once_cell = "1.5.2"
-derive_builder = { version = "0.11.0" }
+derive_builder =  { workspace = true }
 serde_json = "1"
 flate2 = "1.0.22"
 portpicker = "0.1.1"

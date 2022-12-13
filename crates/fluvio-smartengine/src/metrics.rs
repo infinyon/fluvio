@@ -1,10 +1,8 @@
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-};
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct SmartModuleChainMetrics {
     bytes_in: AtomicU64,
     records_out: AtomicU64,
@@ -19,5 +17,17 @@ impl SmartModuleChainMetrics {
 
     pub fn add_records_out(&self, value: u64) {
         self.records_out.fetch_add(value, Ordering::SeqCst);
+    }
+
+    pub fn bytes_in(&self) -> u64 {
+        self.bytes_in.load(Ordering::SeqCst)
+    }
+
+    pub fn records_out(&self) -> u64 {
+        self.records_out.load(Ordering::SeqCst)
+    }
+
+    pub fn invocation_count(&self) -> u64 {
+        self.invocation_count.load(Ordering::SeqCst)
     }
 }
