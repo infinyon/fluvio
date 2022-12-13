@@ -90,7 +90,6 @@ jobs:
 
   start_cluster:
     name: Start cluster test
-    needs: installer_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -136,7 +135,6 @@ jobs:
 
   upgrade_prev_stable:
     name: Upgrade cluster test
-    needs: installer_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
