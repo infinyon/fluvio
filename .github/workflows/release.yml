@@ -55,8 +55,6 @@ jobs:
     outputs:
       VERSION: ${{ steps.version_step.outputs.VERSION }}
       TARGET_SHA: ${{ steps.version_step.outputs.GIT_SHA }}
-      LATEST_TAG: ${{ steps.docker_step.outputs.LATEST_TAG }}
-      RELEASE_TAG: ${{ steps.docker_step.outputs.RELEASE_TAG }}
       INSTALLER_URL: ${{ steps.installer_step.outputs.INSTALLER_URL }}
     steps:
       - name: Set target sha and Fluvio version
@@ -75,11 +73,6 @@ jobs:
             echo "GIT_SHA=${{ github.event.inputs.commit }}" | tee -a $GITHUB_ENV
             echo "::set-output name=GIT_SHA::${{ github.event.inputs.commit }}"
           fi
-      - name: Set Docker tag related env vars
-        id: docker_step
-        run: |
-          echo "::set-output name=LATEST_TAG::infinyon/fluvio:${{ env.VERSION }}-${{ env.GIT_SHA }}"
-          echo "::set-output name=RELEASE_TAG::infinyon/fluvio:${{ env.VERSION }}"
       - name: Set Installer URL
         id: installer_step
         run: |
@@ -163,9 +156,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
-      RELEASE_TAG: ${{ needs.setup_job.outputs.RELEASE_TAG }}
-      LATEST_TAG: ${{ needs.setup_job.outputs.LATEST_TAG }}
-      DEV_VERSION_TAG: ${{ needs.setup_job.outputs.VERSION }}-${{ github.event.inputs.commit }}
     steps:
       - uses: actions/checkout@v3
       - name: Attempt to pull image tag in docker registry
@@ -173,6 +163,7 @@ jobs:
         continue-on-error: true
         env:
           DOCKER_IMAGE_TAG: ${{ env.VERSION }}
+          TARGET_SHA: ${{ env.TARGET_SHA }}
         run: |
           make docker-hub-check-image-exists
 
@@ -184,6 +175,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_IMAGE_TAG: ${{ env.VERSION }}
           CHANNEL_TAG: stable
+          DEV_VERSION_TAG: ${{ env.VERSION }}-${{ env.TARGET_SHA }}
         run: |
           make docker-push-manifest
 
