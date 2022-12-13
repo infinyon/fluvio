@@ -165,6 +165,7 @@ jobs:
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
       RELEASE_TAG: ${{ needs.setup_job.outputs.RELEASE_TAG }}
       LATEST_TAG: ${{ needs.setup_job.outputs.LATEST_TAG }}
+      DEV_VERSION_TAG: ${{ needs.setup_job.outputs.VERSION }}-${{ github.event.inputs.commit }}
     steps:
       - uses: actions/checkout@v3
       - name: Attempt to pull image tag in docker registry
