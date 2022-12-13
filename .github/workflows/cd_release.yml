@@ -113,8 +113,8 @@ jobs:
             echo "EXPECTED_VERSION=${{ github.event.inputs.alt_version }}" | tee -a $GITHUB_ENV
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
-          echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
-
+          
+      - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install Fluvio
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
@@ -182,8 +182,8 @@ jobs:
             echo "EXPECTED_VERSION=${{ github.event.inputs.alt_version }}" | tee -a $GITHUB_ENV
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
-          echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
 
+      - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install current stable Fluvio CLI and upgrade cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
