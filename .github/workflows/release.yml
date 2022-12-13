@@ -247,12 +247,17 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
+  publish_crates:
+    name: Publish Crates
+    if: ${{ !github.event.inputs.pre_release }}
+    uses: ./.github/workflows/publish_crates.yml
+
   bump_stable_fluvio:
     name: Bump stable Fluvio
     needs: [setup_job, release_github, release_docker, release_fluvio]
     #permissions: write-all
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.pre_release }}
+    if: ${{ !github.event.inputs.pre_release }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
