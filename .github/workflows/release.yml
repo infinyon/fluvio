@@ -144,6 +144,7 @@ jobs:
         if: ${{ steps.release_check.outcome == 'failure' }}
         env:
           CHANNEL_TAG: ${{ env.VERSION }}
+          PRE_RELEASE: ${{ github.event.inputs.pre_release }}
         run: make create-gh-release
 
       - name: Slack Notification
@@ -251,6 +252,7 @@ jobs:
     name: Publish Crates
     if: ${{ !github.event.inputs.pre_release }}
     uses: ./.github/workflows/publish_crates.yml
+    secrets: inherit
 
   bump_stable_fluvio:
     name: Bump stable Fluvio
