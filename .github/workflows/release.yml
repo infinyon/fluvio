@@ -156,6 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
+      TARGET_SHA: ${{ env.TARGET_SHA }}
     steps:
       - uses: actions/checkout@v3
       - name: Attempt to pull image tag in docker registry
@@ -163,7 +164,6 @@ jobs:
         continue-on-error: true
         env:
           DOCKER_IMAGE_TAG: ${{ env.VERSION }}
-          TARGET_SHA: ${{ env.TARGET_SHA }}
         run: |
           make docker-hub-check-image-exists
 
