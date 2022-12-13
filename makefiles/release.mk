@@ -122,7 +122,7 @@ install-fluvio-package:
 
 # Requires GH_TOKEN set or `gh auth login`
 download-fluvio-release:
-	gh release download $(GH_RELEASE_TAG) -R infinyon/fluvio --skip-existing
+	$(DRY_RUN_ECHO) gh release download $(GH_RELEASE_TAG) -R infinyon/fluvio --skip-existing
 
 unzip-gh-release-artifacts: download-fluvio-release
 	@echo "unzip stuff"

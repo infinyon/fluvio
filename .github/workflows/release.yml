@@ -34,7 +34,6 @@ on:
         default: 'stable'
 
 env:
-  USE_COMMIT: ${{ github.event.inputs.commit }}
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   RELEASE: true # Needed so `make` targets make public changes
 
@@ -63,7 +62,7 @@ jobs:
       - name: Set target sha and Fluvio version
         id: version_step
         run: |
-          if [[ -z "${{ env.USE_COMMIT }}" ]]; then
+          if [[ -z "${{ github.event.inputs.commit }}" ]]; then
             export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
             echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
             echo "::set-output name=VERSION::${GITHUB_VERSION}"
@@ -252,6 +251,8 @@ jobs:
     name: Publish Crates
     if: ${{ !github.event.inputs.pre_release }}
     uses: ./.github/workflows/publish_crates.yml
+    with:
+      commit: ${{ github.event.inputs.commit }}
     secrets: inherit
 
   bump_stable_fluvio:
