@@ -4,13 +4,12 @@ use std::fmt::Debug;
 use clap::Parser;
 
 use fluvio_extension_common::Terminal;
+use fluvio_hub_util::HUB_API_LIST_META;
 
 use crate::Result;
 use crate::common::OutputFormat;
 
 use super::get_pkg_list;
-
-const API_LIST_META: &str = "hub/v0/list_with_meta";
 
 /// List available SmartModules in the hub
 #[derive(Debug, Parser)]
@@ -24,7 +23,7 @@ pub struct ListHubOpt {
 
 impl ListHubOpt {
     pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
-        let pl = get_pkg_list(API_LIST_META, &self.remote).await?;
+        let pl = get_pkg_list(HUB_API_LIST_META, &self.remote).await?;
         output::smartmodules_response_to_output(out, pl.packages, self.output.format)?;
         Ok(())
     }

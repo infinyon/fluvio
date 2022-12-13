@@ -4,13 +4,12 @@ use std::fmt::Debug;
 use clap::Parser;
 
 use fluvio_extension_common::Terminal;
+use fluvio_hub_util::HUB_API_CONN_LIST;
 
 use crate::Result;
 use crate::common::OutputFormat;
 
 use super::get_pkg_list;
-
-const API_LIST_CONNECTORS: &str = "hub/v0/connector/list";
 
 /// List available Connectors in the hub
 #[derive(Debug, Parser)]
@@ -38,7 +37,7 @@ pub struct ConnectorHubListOpts {
 
 impl ConnectorHubListOpts {
     pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
-        let pl = get_pkg_list(API_LIST_CONNECTORS, &self.remote).await?;
+        let pl = get_pkg_list(HUB_API_CONN_LIST, &self.remote).await?;
         output::tableformat(out, pl.packages, self.output.format)?;
         Ok(())
     }
