@@ -28,10 +28,6 @@ jobs:
             source: ./dev-tools/process-diagrams/pr-merge.excalidraw
             output: ./dev-tools/process-diagrams/pr-merge-process.svg
     steps:
-      - uses: 8BitJonny/gh-get-current-pr@2.2.0
-        id: PR
-        with:
-          sha: ${{ github.event.pull_request.head.sha }}
       - name: Checkout source code
         uses: actions/checkout@v3
         with:
@@ -41,10 +37,9 @@ jobs:
           #ref: ${{ github.head.ref }}
           #token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout Pull Request
-        run: hub pr checkout ${PR}
+        run: hub pr checkout ${{ github.event.pull_request.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ steps.PR.outputs.number }}
 
       - name: Start Kroki
         run: |
