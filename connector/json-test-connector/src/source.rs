@@ -8,9 +8,8 @@ use anyhow::Result;
 
 use async_trait::async_trait;
 use fluvio::Offset;
-use fluvio_connector_package::config::ConnectorConfig;
+use fluvio_connector_common::{Source, ConnectorConfig};
 use futures::{stream::LocalBoxStream, Stream, StreamExt};
-use crate::common::Source;
 
 use tokio::time::Interval;
 

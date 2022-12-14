@@ -1,0 +1,11 @@
+error: Connector function must have two input arguments
+ --> tests/ui/wrong_input_len.rs:4:1
+  |
+4 | async fn start_fn() {}
+  | ^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/wrong_input_len.rs:4:23
+  |
+4 | async fn start_fn() {}
+  |                       ^ consider adding a `main` function to `$DIR/tests/ui/wrong_input_len.rs`

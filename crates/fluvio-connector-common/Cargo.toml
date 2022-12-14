@@ -1,0 +1,27 @@
+[package]
+name = "fluvio-connector-common"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio Connector Common SDK"
+
+[features]
+default = []
+derive = ["fluvio-connector-derive"]
+
+[dependencies]
+anyhow = { workspace = true }
+tracing = { workspace = true }
+fluvio-future = { workspace = true, features = ["subscriber"] }
+futures = { version = "0.3", default-features = false }
+async-trait = { version = "0.1", default-features = false}
+
+fluvio = { path = "../fluvio/", features = ["smartengine"]}
+fluvio-connector-package = { path = "../fluvio-connector-package/" }
+fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true}
+fluvio-sc-schema = { path = "../fluvio-sc-schema/"}
+fluvio-smartengine = { path = "../fluvio-smartengine/", default-features = false, features = [
+    "transformation",
+] }

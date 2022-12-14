@@ -1,0 +1,23 @@
+[package]
+name = "fluvio-connector-derive"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio SmartConnector procedural macro"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "1.0", default-features = false, features = ["full", "parsing", "proc-macro", "derive", "printing"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
+
+[dev-dependencies]
+trybuild = { version = "1.0" }
+fluvio = {version = "0.15", default-features = false}
+fluvio-connector-common = { path = "../fluvio-connector-common/", features = ["derive"] }
+
