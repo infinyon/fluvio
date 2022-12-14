@@ -4,8 +4,8 @@ permissions:
   contents: write
 
 on:
-  workflow_dispatch:
-  workflow_call:
+  #workflow_dispatch:
+  #workflow_call:
   pull_request:
     types:
       - opened
@@ -28,14 +28,19 @@ jobs:
             source: ./dev-tools/process-diagrams/pr-merge.excalidraw
             output: ./dev-tools/process-diagrams/pr-merge-process.svg
     steps:
-      - name: Checkout
+      - name: Checkout source code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           #repository: ${{ github.event.pull_request.head.repo.full_name }}
           #ref: ${{ github.event.pull_request.head.ref }}
-          ref: ${{ github.head.ref }}
+          #ref: ${{ github.head.ref }}
           #token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout Pull Request
+        run: hub pr checkout ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Start Kroki
         run: |
           cd ci/docker/kroki
@@ -48,18 +53,18 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Run Rust script with list of paths
         run: cargo run --bin ci-kroki -- ${{ matrix.diagram.source }} --out-file ${{ matrix.diagram.output }}
-      #- uses: EndBug/add-and-commit@v9
-      #  with:
-      #    #default_author: github_actions
-      #    #committer_name: GitHub Actions
-      #    #committer_email: actions@github.com
-      #    message: Update rendered diagram(s)
-      - name: Commit files
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git commit -a -m "Update rendered diagram(s)"
-      - name: Push changes
-        uses: ad-m/github-push-action@master
+      - uses: EndBug/add-and-commit@v9
         with:
-          branch: ${{ github.head_ref }}
+          #default_author: github_actions
+          #committer_name: GitHub Actions
+          #committer_email: actions@github.com
+          message: Update rendered diagram(s)
+      #- name: Commit files
+      #  run: |
+      #    git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #    git config --local user.name "github-actions[bot]"
+      #    git commit -a -m "Update rendered diagram(s)"
+      #- name: Push changes
+      #  uses: ad-m/github-push-action@master
+      #  with:
+      #    branch: ${{ github.head_ref }}
