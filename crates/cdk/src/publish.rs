@@ -1,12 +1,14 @@
 //!
 //! Command for hub publishing
 
+
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
 
 use fluvio_connector_package::metadata::ConnectorMetadata;
+use fluvio_connector_package::metadata::ConnectorVisibility;
 use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{
@@ -138,11 +140,10 @@ pub fn init_package_template() -> Result<()> {
 
 fn check_package_meta_visiblity() -> Result<()> {
     let cmeta_toml_file = find_connector_toml()?;
-    let _spkg = ConnectorMetadata::from_toml_file(cmeta_toml_file)?;
-    // let spkg_vis = PkgVisibility::from(&spkg.package.visibility);
-    let spkg_vis = PkgVisibility::Private;
+    let mpkg = ConnectorMetadata::from_toml_file(cmeta_toml_file)?;
+    let mpkg_vis = from_connectorvis(&mpkg.package.visibility);
     let mut pm = PackageMeta::read_from_file(DEF_HUB_PKG_META)?;
-    if spkg_vis == PkgVisibility::Public && spkg_vis != pm.visibility {
+    if mpkg_vis == PkgVisibility::Public && mpkg_vis != pm.visibility {
         println!("Package visibility changing from private to public!");
         verify_public_or_exit()?;
         // writeout package metadata visibility change
@@ -150,6 +151,13 @@ fn check_package_meta_visiblity() -> Result<()> {
         pm.write(DEF_HUB_PKG_META)?;
     }
     Ok(())
+}
+
+fn from_connectorvis(cv: &ConnectorVisibility) -> PkgVisibility {
+    match cv {
+        ConnectorVisibility::Public => PkgVisibility::Public,
+        ConnectorVisibility::Private => PkgVisibility::Private,
+    }
 }
 
 pub(crate) fn find_connector_toml() -> Result<PathBuf> {
@@ -196,8 +204,7 @@ impl PackageMetaConnectorExt for PackageMeta {
         self.group = cpk.group.clone();
         self.version = cpk.version.to_string();
         self.description = cpk.description.clone().unwrap_or_default();
-        //self.visibility = PkgVisibility::from(&cpk.visibility);
-        self.visibility = PkgVisibility::Private;
+        self.visibility = from_connectorvis(&cpk.visibility);
 
         // needed for fluvio sm download
         self.manifest.push(fpath.into());
