@@ -1,0 +1,12 @@
+[package]
+name = "ci-kroki"
+authors.workspace = true
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+clap = { workspace = true }
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+parse-display = "0.7.0"
+color-eyre = "0.6"

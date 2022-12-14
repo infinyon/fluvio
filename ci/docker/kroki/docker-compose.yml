@@ -1,0 +1,14 @@
+version: "3"
+services:
+  kroki:
+    image: yuzutech/kroki
+    depends_on:
+      - excalidraw
+    environment:
+      - KROKI_EXCALIDRAW_HOST=excalidraw
+    ports:
+      - "8000:8000"
+  excalidraw:
+    image: yuzutech/kroki-excalidraw:0.17.2
+    expose:
+      - "8004"

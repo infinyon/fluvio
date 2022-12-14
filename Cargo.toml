@@ -49,11 +49,15 @@ members = [
     "crates/smartmodule-development-kit",
     "crates/cdk",
     "crates/cargo-builder",
-    "connector/json-test-connector"
+    "connector/json-test-connector",
+    "ci/crates/ci-kroki",
 ]
 
 exclude = ["smartmodule/regex-filter"]
 resolver = "2"
+
+[workspace.package]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 
 [workspace.dependencies]
 anyhow = "1.0.38" 
