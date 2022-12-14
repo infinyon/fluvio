@@ -951,8 +951,10 @@ version = "0.0.0"
 dependencies = [
  "clap 4.0.29",
  "color-eyre",
+ "fluvio-future",
  "parse-display",
  "reqwest",
+ "tracing",
 ]
 
 [[package]]

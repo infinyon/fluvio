@@ -17,15 +17,15 @@ on:
   pull_request:
     branches: [master]
     paths:
-      - "**"
-      - "!/*.md"
-      - "!/**.md"
+      - '**'
+      - '!/*.md'
+      - '!/**.md'
   workflow_dispatch:
     inputs:
       verbose:
-        description: "Set --verbose to get verbose build output"
+        description: 'Set --verbose to get verbose build output'
         required: false
-        default: ""
+        default: ''
 
 env:
   CARGO_TERM_COLOR: always
@@ -39,13 +39,17 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  diagram-test:
+    uses: ./github/workflows/update-diagram.yml
+    secrets: inherit
+
   # this job set up dynamic configuration shared among jobs
   config:
     name: Set up Config
     runs-on: ubuntu-latest
     env:
       ENABLE_CHECK: true
-      TEST_RUNS: "[r1]" # default runs
+      TEST_RUNS: '[r1]' # default runs
     outputs:
       check: ${{ steps.check.outputs.check }}
       runs: ${{ steps.runs.outputs.runs }}
@@ -89,7 +93,7 @@ jobs:
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
-          version: "14.0"
+          version: '14.0'
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
@@ -612,7 +616,7 @@ jobs:
       - name: Validate test harness
         if: matrix.test == 'validate-test-harness'
         timeout-minutes: 10
-        run : |
+        run: |
           make validate-test-harness
       - name: Run smoke-test
         if: matrix.test == 'smoke-test'
@@ -726,14 +730,9 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test:
-          [
-            smoke-test-k8,
-            smoke-test-k8-tls,
-            smoke-test-k8-tls-root-unclean,
-          ]
+        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
         k8: [k3d]
-        spu: [1,2]
+        spu: [1, 2]
     steps:
       - uses: actions/checkout@v3
       # Download artifacts
@@ -788,8 +787,8 @@ jobs:
         if: matrix.k8 == 'minikube'
         uses: manusa/actions-setup-minikube@v2.4.3
         with:
-          minikube version: "v1.24.0"
-          kubernetes version: "v1.22.8"
+          minikube version: 'v1.24.0'
+          kubernetes version: 'v1.22.8'
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
       - name: Load image to minikube
@@ -837,7 +836,7 @@ jobs:
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
- #     fail-fast: false
+      #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         run: [r1]
@@ -901,7 +900,7 @@ jobs:
     #if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
-  #    fail-fast: true
+      #    fail-fast: true
       matrix:
         os: [ubuntu-latest]
         cli: [fluvio, smdk]
@@ -991,7 +990,7 @@ jobs:
     #if: false
     runs-on: ${{ matrix.os }}
     strategy:
-  #    fail-fast: false
+      #    fail-fast: false
       matrix:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
