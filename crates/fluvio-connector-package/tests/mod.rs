@@ -16,9 +16,7 @@ fn test_read_from_toml_file() {
         metadata,
         ConnectorMetadata {
             direction: Direction::source(),
-            deployment: Deployment {
-                image: "fluvio/json-test-connector:0.1.0".to_string()
-            },
+            deployment: Deployment::from_binary_name("json-test-connector"),
             package: ConnectorPackage {
                 name: "json-test-connector".into(),
                 group: "fluvio".into(),
@@ -26,7 +24,8 @@ fn test_read_from_toml_file() {
                 fluvio: FluvioSemVersion::parse("0.10.0").unwrap(),
                 api_version: FluvioSemVersion::parse("0.1.0").unwrap(),
                 description: Some("Generate JSON generator".into()),
-                license: Some("Apache-2.0".into())
+                license: Some("Apache-2.0".into()),
+                visibility: ConnectorVisibility::Public,
             },
             parameters: Parameters::from(vec![Parameter {
                 name: "template".into(),
@@ -77,12 +76,13 @@ fluvio = "0.10.0"
 apiVersion = "0.1.0"
 description = "Generate JSON generator"
 license = "Apache-2.0"
+visibility = "public"
 
 [direction]
 source = true
 
 [deployment]
-image = "fluvio/json-test-connector:0.1.0"
+binary = "json-test-connector"
 [secret.my_cert]
 type = "file"
 mount = "/mydata/secret1"

@@ -6,12 +6,13 @@ apiVersion = "0.1.0"
 fluvio = "0.10.0"
 description = "Generate JSON generator"
 license = "Apache-2.0"
+visibility = "public"
 
 [direction]
 source = true
 
 [deployment]
-image = "fluvio/json-test-connector:0.1.0"
+binary = "json-test-connector"
 
 [secret.password]
 type = "env"

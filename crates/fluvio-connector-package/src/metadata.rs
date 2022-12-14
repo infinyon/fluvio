@@ -27,6 +27,16 @@ pub struct ConnectorPackage {
     pub api_version: FluvioSemVersion,
     pub description: Option<String>,
     pub license: Option<String>,
+    #[serde(default)]
+    pub visibility: ConnectorVisibility,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ConnectorVisibility {
+    #[default]
+    Private,
+    Public,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -39,7 +49,8 @@ pub struct Direction {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 pub struct Deployment {
-    pub image: String,
+    pub image: Option<String>,
+    pub binary: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
@@ -84,9 +95,7 @@ impl Default for ConnectorMetadata {
     fn default() -> Self {
         Self {
             direction: Direction::source(),
-            deployment: Deployment {
-                image: "group/connector_image@0.0.0".into(),
-            },
+            deployment: Deployment::from_image_name("group/connector_image@0.0.0"),
             package: ConnectorPackage {
                 name: "NameOfConnector".into(),
                 group: "GroupOfConnector".into(),
@@ -95,6 +104,7 @@ impl Default for ConnectorMetadata {
                 api_version: FluvioSemVersion::parse("0.0.0").expect("invalid SemVer"),
                 description: Some("description text".into()),
                 license: Some("e.g. Apache 2.0".into()),
+                visibility: Default::default(),
             },
             parameters: Parameters::from(vec![Parameter {
                 name: "param_name".into(),
@@ -173,6 +183,22 @@ impl From<BTreeMap<String, Secret>> for Secrets {
     }
 }
 
+impl Deployment {
+    pub fn from_image_name<T: Into<String>>(image: T) -> Self {
+        Self {
+            image: Some(image.into()),
+            binary: None,
+        }
+    }
+
+    pub fn from_binary_name<T: Into<String>>(binary: T) -> Self {
+        Self {
+            image: None,
+            binary: Some(binary.into()),
+        }
+    }
+}
+
 #[cfg(feature = "toml")]
 impl ConnectorMetadata {
     pub fn from_toml_str(input: &str) -> anyhow::Result<Self> {
@@ -218,14 +244,24 @@ fn validate_direction(meta_direction: &Direction, config: &ConnectorConfig) -> a
 }
 
 fn validate_deployment(deployment: &Deployment, config: &ConnectorConfig) -> anyhow::Result<()> {
-    let cfg_image = config.image();
-    if !deployment.image.eq(&cfg_image) {
-        return Err(anyhow!(
-            "deployment image in metadata: '{}' mismatches image in config: '{}'",
-            &deployment.image,
-            cfg_image
-        ));
-    }
+    match (&deployment.image, &deployment.binary) {
+        (None, None) => anyhow::bail!("deployment in metadata is not specified"),
+        (None, Some(_)) => {}
+        (Some(deployment_image), None) => {
+            let cfg_image = config.image();
+            if !deployment_image.eq(&cfg_image) {
+                anyhow::bail!(
+                    "deployment image in metadata: '{}' mismatches image in config: '{}'",
+                    &deployment_image,
+                    cfg_image
+                );
+            }
+        }
+        (Some(_), Some(_)) => {
+            anyhow::bail!("deployment contains both 'image' and 'binary' section")
+        }
+    };
+
     Ok(())
 }
 
@@ -308,6 +344,7 @@ mod tests_toml {
             apiVersion = "0.1.3"
             description = "descr"
             license = "license"
+            visibility = "public"
 
             [[params]]
             name = "int_param"
@@ -323,9 +360,7 @@ mod tests_toml {
             metadata,
             ConnectorMetadata {
                 direction: Direction::dest(),
-                deployment: Deployment {
-                    image: "image_url".to_string()
-                },
+                deployment: Deployment::from_image_name("image_url"),
                 package: ConnectorPackage {
                     name: "p_name".into(),
                     group: "p_group".into(),
@@ -333,7 +368,8 @@ mod tests_toml {
                     fluvio: FluvioSemVersion::parse("0.1.2").unwrap(),
                     api_version: FluvioSemVersion::parse("0.1.3").unwrap(),
                     description: Some("descr".into()),
-                    license: Some("license".into())
+                    license: Some("license".into()),
+                    visibility: ConnectorVisibility::Public,
                 },
                 parameters: Parameters(vec![Parameter {
                     name: "int_param".into(),
@@ -410,16 +446,14 @@ mod tests {
             version: "latest".into(),
             ..Default::default()
         };
-        let deployment1 = Deployment {
-            image: "infinyon/fluvio-connect-http_source:latest".into(),
-        };
-        let deployment2 = Deployment {
-            image: "infinyon/fluvio-connect-http_sink:latest".into(),
-        };
+        let deployment1 = Deployment::from_image_name("infinyon/fluvio-connect-http_source:latest");
+        let deployment2 = Deployment::from_image_name("infinyon/fluvio-connect-http_sink:latest");
+        let deployment3 = Deployment::from_binary_name("http_sink_bin");
 
         //when
         validate_deployment(&deployment1, &config).unwrap();
         let res = validate_deployment(&deployment2, &config);
+        validate_deployment(&deployment3, &config).unwrap();
 
         //then
         assert_eq!(res.unwrap_err().to_string(), "deployment image in metadata: 'infinyon/fluvio-connect-http_sink:latest' mismatches image in config: 'infinyon/fluvio-connect-http_source:latest'");
@@ -500,9 +534,7 @@ mod tests {
         };
         let metadata = ConnectorMetadata {
             direction: Direction::source(),
-            deployment: Deployment {
-                image: "infinyon/fluvio-connect-http-source:latest".into(),
-            },
+            deployment: Deployment::from_image_name("infinyon/fluvio-connect-http-source:latest"),
             secrets: Secrets::from(BTreeMap::from([(
                 "secret_name".into(),
                 Secret {
