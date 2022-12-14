@@ -28,6 +28,15 @@ jobs:
             source: ./dev-tools/process-diagrams/pr-merge.excalidraw
             output: ./dev-tools/process-diagrams/pr-merge-process.svg
     steps:
+      - uses: jwalton/gh-find-current-pr@v1
+        id: findPr
+        with:
+          state: open
+      - run: echo "Your PR is ${PR}"
+        if: success() && steps.findPr.outputs.number
+        env:
+          PR: ${{ steps.findPr.outputs.pr }}
+
       - name: Checkout source code
         uses: actions/checkout@v3
         with:
@@ -37,9 +46,10 @@ jobs:
           #ref: ${{ github.head.ref }}
           #token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout Pull Request
-        run: hub pr checkout ${{ github.event.issue.number }}
+        run: hub pr checkout ${PR}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.findPr.outputs.pr }}
 
       - name: Start Kroki
         run: |
@@ -59,12 +69,3 @@ jobs:
           #committer_name: GitHub Actions
           #committer_email: actions@github.com
           message: Update rendered diagram(s)
-      #- name: Commit files
-      #  run: |
-      #    git config --local user.email "github-actions[bot]@users.noreply.github.com"
-      #    git config --local user.name "github-actions[bot]"
-      #    git commit -a -m "Update rendered diagram(s)"
-      #- name: Push changes
-      #  uses: ad-m/github-push-action@master
-      #  with:
-      #    branch: ${{ github.head_ref }}
