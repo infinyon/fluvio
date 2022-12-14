@@ -40,7 +40,7 @@ env:
 
 jobs:
   diagram-test:
-    uses: ./github/workflows/update-diagram.yml
+    uses: ./.github/workflows/update-diagram.yml
     secrets: inherit
 
   # this job set up dynamic configuration shared among jobs
