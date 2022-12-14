@@ -7,7 +7,7 @@ permissions:
 on:
   #workflow_dispatch:
   #workflow_call:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - synchronize
@@ -34,9 +34,9 @@ jobs:
         with:
           fetch-depth: 0
           #repository: ${{ github.event.pull_request.head.repo.full_name }}
-          #ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.ref }}
           #ref: ${{ github.head.ref }}
-          #token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout Pull Request
         run: hub pr checkout ${{ github.event.pull_request.number }}
         env:
@@ -56,6 +56,7 @@ jobs:
         run: cargo run --bin ci-kroki -- ${{ matrix.diagram.source }} --out-file ${{ matrix.diagram.output }}
       - uses: EndBug/add-and-commit@v9
         with:
+          default_author: user_info
           #default_author: github_actions
           #committer_name: GitHub Actions
           #committer_email: actions@github.com
