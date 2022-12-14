@@ -39,10 +39,6 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  diagram-test:
-    uses: ./.github/workflows/update-diagram.yml
-    secrets: inherit
-
   # this job set up dynamic configuration shared among jobs
   config:
     name: Set up Config
