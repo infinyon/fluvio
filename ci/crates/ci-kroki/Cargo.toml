@@ -6,7 +6,10 @@ edition = "2021"
 publish = false
 
 [dependencies]
-clap = { workspace = true }
+clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"], default-features = false }
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 parse-display = "0.7.0"
 color-eyre = "0.6"
+tracing = { workspace = true } 
+
+fluvio-future = { version = "0.4.0", features = ["subscriber", "task"]}
