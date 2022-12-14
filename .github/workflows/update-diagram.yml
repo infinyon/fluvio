@@ -2,6 +2,7 @@ name: Build diagrams with Kroki
 
 permissions:
   contents: write
+  pull-requests: write
 
 on:
   #workflow_dispatch:
