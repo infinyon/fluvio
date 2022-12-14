@@ -5,8 +5,11 @@ permissions:
 
 on:
   workflow_dispatch:
-  #workflow_call:
+  workflow_call:
   pull_request:
+    types:
+      - opened
+      - synchronize
     paths:
       - '**.excalidraw'
 
