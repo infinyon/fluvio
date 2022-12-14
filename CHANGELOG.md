@@ -1,5 +1,4 @@
 # Release Notes
-## Platform Version 0.10.4 - Unreleased
 
 ## Platform Version 0.10.3 - 2022-12-16
 * Add `fluvio cluster status` ([#2824](https://github.com/infinyon/fluvio/issues/2824))
