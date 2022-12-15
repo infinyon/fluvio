@@ -259,7 +259,6 @@ impl Segment<LogIndex, FileRecordsSlice> {
         let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
         let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
-        let end_offset = msg_log.validate(&index, false, false).await?;
         match msg_log.validate(&index, false, false).await {
             Ok(end_offset) => {
                 debug!(end_offset, base_offset, "base offset from msg_log");
