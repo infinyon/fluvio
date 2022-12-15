@@ -83,6 +83,7 @@ impl<'a> TomlDiff<'a> {
                     let mut a_pairs_it = a_pairs.into_iter().peekable();
                     let mut b_pairs_it = b_pairs.into_iter().peekable();
 
+                    #[allow(clippy::needless_borrowed_reference)]
                     while let (Some((&ref a_key, &ref a_val)), Some((&ref b_key, &ref b_val))) =
                         (a_pairs_it.peek(), b_pairs_it.peek())
                     {
