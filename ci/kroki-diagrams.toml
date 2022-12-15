@@ -1,0 +1,9 @@
+# Paths are relative to repo root to support how CI runs this process
+
+[[diagram]]
+source = "./dev-tools/process-diagrams/pr-merge.excalidraw"
+destination = "./dev-tools/process-diagrams/pr-merge-process.svg"
+
+[[diagram]]
+source = "./dev-tools/process-diagrams/release.excalidraw"
+destination = "./dev-tools/process-diagrams/release-process.svg"

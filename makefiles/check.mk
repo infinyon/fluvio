@@ -67,3 +67,16 @@ run-client-doc-test: install_rustup_target
 
 fluvio_run_bin: install_rustup_target
 	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) --target $(TARGET) $(DEBUG_SMARTMODULE_FLAG)
+
+
+start-kroki:
+	cd ci/docker/kroki && docker compose up -d
+
+stop-kroki:
+	cd ci/docker/kroki && docker compose down 
+
+update-diagrams:
+	cargo run --bin ci-kroki -- --batch ./ci/kroki-diagrams.toml
+
+check-diagrams:
+	cargo run --bin ci-kroki -- --batch ./ci/kroki-diagrams.toml --diff-fail

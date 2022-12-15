@@ -11,5 +11,8 @@ reqwest = { version = "0.11", features = ["blocking", "json"] }
 parse-display = "0.7.0"
 color-eyre = "0.6"
 tracing = { workspace = true } 
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.5"
+
 
 fluvio-future = { version = "0.4.0", features = ["subscriber", "task"]}
