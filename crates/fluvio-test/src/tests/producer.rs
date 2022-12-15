@@ -141,7 +141,7 @@ async fn producer_work(
                 producer_id,
                 record_tag,
                 record_size,
-                format_args!("{:?}", Duration::from_nanos(send_latency)),
+                format!("{:?}", Duration::from_nanos(send_latency)),
                 throughput_kbps,
             );
         }

@@ -275,7 +275,7 @@ mod tests {
         let mut out = vec![];
         let len: i32 = TEXT_LEN as i32 + 2; // msg plus file
         len.encode(&mut out, 0).expect("encode"); // codec len
-        out.put_u16(TEXT_LEN as u16); // string message len
+        out.put_u16(TEXT_LEN); // string message len
 
         raw_tcp_sink.get_mut().get_mut().write_all(&out).await?;
 

@@ -172,7 +172,7 @@ async fn consume_work<S: ?Sized>(
                                 record_raw.offset(),
                                 record_size,
                                 test_record.crc,
-                                format_args!("{:?}", Duration::from_nanos(consume_latency)),
+                                format!("{:?}", Duration::from_nanos(consume_latency)),
                                 (consume_throughput / 1_000)
                             );
                         }

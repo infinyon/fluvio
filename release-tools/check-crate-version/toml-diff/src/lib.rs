@@ -47,7 +47,7 @@ impl<'a> TomlDiff<'a> {
                     let mut a = a.into_iter().peekable();
                     let mut b = b.into_iter().peekable();
 
-                    while let (Some((&ref a_elem, a_toml)), Some((&ref b_elem, b_toml))) =
+                    while let (Some((a_elem, a_toml)), Some((b_elem, b_toml))) =
                         (a.peek(), b.peek())
                     {
                         // Toml values are sorted low to high, so if the values are different, that
