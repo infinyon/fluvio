@@ -83,10 +83,9 @@ impl<'a> TomlDiff<'a> {
                     let mut a_pairs_it = a_pairs.into_iter().peekable();
                     let mut b_pairs_it = b_pairs.into_iter().peekable();
 
-                    #[allow(clippy::needless_borrowed_reference)]
-                    while let (Some((&ref a_key, &ref a_val)), Some((&ref b_key, &ref b_val))) =
-                        (a_pairs_it.peek(), b_pairs_it.peek())
-                    {
+                    while let (Some(a), Some(b)) = (a_pairs_it.peek(), b_pairs_it.peek()) {
+                        let (a_key, a_val) = *a;
+                        let (b_key, b_val) = *b;
                         // Keys are sorted low to high, so if the keys are different, that means
                         // that the lesser key is missing from the other table.
                         match a_key.cmp(b_key) {
