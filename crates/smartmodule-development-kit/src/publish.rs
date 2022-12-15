@@ -181,7 +181,7 @@ fn build_sm_toml() {
     let smart_toml = SmartModuleMetadata::default();
     let smart_toml_str = toml::to_string(&smart_toml);
     assert!(smart_toml_str.is_ok());
-    std::fs::write(fpath, &smart_toml_str.unwrap()).expect("couldn't write testfile");
+    std::fs::write(fpath, smart_toml_str.unwrap()).expect("couldn't write testfile");
 }
 
 // the smartmodule has template patterns that don't parse unless we apply

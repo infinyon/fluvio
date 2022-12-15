@@ -191,7 +191,7 @@ impl BenchmarkStats {
                     let other_samples: Vec<f64> = other_samples.iter().map(|x| *x as f64).collect();
                     (samples, other_samples)
                 } else {
-                    let items_per_sample = samples.len() / config.num_samples as usize;
+                    let items_per_sample = samples.len() / config.num_samples;
                     let samples: Vec<f64> = (0..config.num_samples)
                         .map(|i| {
                             *samples[i * items_per_sample..(i + 1) * items_per_sample]

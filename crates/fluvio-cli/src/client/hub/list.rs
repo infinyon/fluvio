@@ -110,7 +110,7 @@ mod output {
                 .iter()
                 .map(|e| {
                     Row::from([
-                        Cell::new(&e.pkg_name()).set_alignment(CellAlignment::Left),
+                        Cell::new(e.pkg_name()).set_alignment(CellAlignment::Left),
                         Cell::new(&e.visibility).set_alignment(CellAlignment::Left),
                     ])
                 })

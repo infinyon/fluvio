@@ -84,7 +84,7 @@ async fn download_local(pkgname: &str, access: &HubAccess) -> Result<String> {
         .await
         .map_err(|err| CliError::HubError(format!("downloading {pkgname}\nServer: {err}")))?;
 
-    std::fs::write(&fname, &data)?;
+    std::fs::write(&fname, data)?;
     println!("... downloading complete");
     Ok(fname)
 }

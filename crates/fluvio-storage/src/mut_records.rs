@@ -83,7 +83,7 @@ impl MutFileRecords {
         option: Arc<SharedReplicaConfig>,
     ) -> Result<MutFileRecords, BoundedFileSinkError> {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        let max_len = option.segment_max_bytes.get() as u32;
+        let max_len = option.segment_max_bytes.get();
         debug!(log_path = ?log_path, max_len = "creating log at");
         let file = fluvio_future::fs::util::open_read_append(log_path.clone()).await?;
         let metadata = file.metadata().await?;
@@ -315,7 +315,7 @@ impl FileRecords for MutFileRecords {
         let reslice = AsyncFileSlice::new(
             self.file.as_raw_fd(),
             start as u64,
-            (self.len - start as u32) as u64,
+            (self.len - start) as u64,
         );
         Ok(reslice)
     }

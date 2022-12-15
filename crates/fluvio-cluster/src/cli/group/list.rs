@@ -100,12 +100,12 @@ mod output {
                     let storage_config = spec.spu_config.real_storage_config();
                     Row::from([
                         Cell::new(&r.name).set_alignment(CellAlignment::Right),
-                        Cell::new(&spec.replicas.to_string()).set_alignment(CellAlignment::Center),
-                        Cell::new(&r.spec.min_id.to_string()).set_alignment(CellAlignment::Right),
-                        Cell::new(&spec.spu_config.rack.clone().unwrap_or_default())
+                        Cell::new(spec.replicas.to_string()).set_alignment(CellAlignment::Center),
+                        Cell::new(r.spec.min_id.to_string()).set_alignment(CellAlignment::Right),
+                        Cell::new(spec.spu_config.rack.clone().unwrap_or_default())
                             .set_alignment(CellAlignment::Right),
-                        Cell::new(&storage_config.size).set_alignment(CellAlignment::Right),
-                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
+                        Cell::new(storage_config.size).set_alignment(CellAlignment::Right),
+                        Cell::new(r.status.to_string()).set_alignment(CellAlignment::Right),
                     ])
                 })
                 .collect()

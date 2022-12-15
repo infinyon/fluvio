@@ -70,7 +70,7 @@ pub fn set_hubid(hubid: &str, access: &mut HubAccess) -> Result<()> {
     access.hubid = hubid.to_string();
 
     let cfgpath = def_hub_cfg_path()?;
-    access.write_hash(&cfgpath)?;
+    access.write_hash(cfgpath)?;
     print!("hubid set to {hubid}");
     Ok(())
 }

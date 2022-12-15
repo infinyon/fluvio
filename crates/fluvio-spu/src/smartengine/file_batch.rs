@@ -88,7 +88,7 @@ impl Iterator for FileBatchIterator {
             )));
         }
 
-        let remainder = batch.batch_len as usize - BATCH_HEADER_SIZE as usize;
+        let remainder = batch.batch_len as usize - BATCH_HEADER_SIZE;
 
         debug!(
             file_offset = self.offset,

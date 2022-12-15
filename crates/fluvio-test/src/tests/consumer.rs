@@ -162,7 +162,7 @@ async fn consume_work<S: ?Sized>(
                         // Converting from nanoseconds to seconds, to store (bytes per second) in histogram
                         let consume_throughput =
                             (((record_size as f32) / (consume_latency as f32)) * 1_000_000_000.0) as u64;
-                        throughput_histogram.record(consume_throughput as u64).unwrap();
+                        throughput_histogram.record(consume_throughput).unwrap();
 
                         if test_case.option.verbose {
                             println!(

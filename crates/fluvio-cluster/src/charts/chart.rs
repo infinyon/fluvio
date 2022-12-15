@@ -155,7 +155,7 @@ impl ChartInstaller {
             .location
             .setup(&self.config.name, &self.helm_client)?;
 
-        let mut args = InstallArg::new(&self.config.name, &chart_setup.location())
+        let mut args = InstallArg::new(&self.config.name, chart_setup.location())
             .namespace(&self.config.namespace)
             .opts(self.config.string_values.to_owned())
             .values(self.config.values.to_owned())

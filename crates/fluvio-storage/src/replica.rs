@@ -62,7 +62,7 @@ impl ReplicaStorage for FileReplica {
 
         Self::create_or_load(
             replica.topic.clone(),
-            replica.partition as u32,
+            replica.partition,
             0,
             replica_config,
             Arc::new(storage_config),
@@ -273,7 +273,7 @@ impl FileReplica {
     pub async fn clear(replica: &ReplicaKey, option: &SharedReplicaConfig) {
         let replica_dir = option
             .base_dir
-            .join(replica_dir_name(&replica.topic, replica.partition as u32));
+            .join(replica_dir_name(&replica.topic, replica.partition));
 
         info!("removing dir: {}", replica_dir.display());
         if let Err(err) = remove_dir_all(&replica_dir).await {
@@ -660,7 +660,7 @@ mod tests {
         assert_eq!(dir_contents.count(), 5, "should be 5 files");
 
         let seg2_file = replica_dir.join(TEST_SE2_NAME);
-        let bytes = read_bytes_from_file(&seg2_file).expect("file read");
+        let bytes = read_bytes_from_file(seg2_file).expect("file read");
 
         let batch =
             Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");

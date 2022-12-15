@@ -149,7 +149,7 @@ impl DiagnosticsOpt {
             let file_name = entry.file_name();
             if file_name == "flv_sc.log" || file_name.to_string_lossy().starts_with("spu_log") {
                 println!("copying local log file: {:?}", entry.path());
-                copy(entry.path(), &to)?;
+                copy(entry.path(), to)?;
             } else {
                 println!("skipping {:?}", file_name);
             }

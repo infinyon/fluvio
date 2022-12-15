@@ -35,7 +35,7 @@ pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
     }
     let cfgpath = default_file_path();
     // this will read the indirection file to resolve the profile
-    let cred = Credentials::try_load(&cfgpath)?;
+    let cred = Credentials::try_load(cfgpath)?;
     Ok(cred.token)
 }
 

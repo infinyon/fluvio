@@ -218,7 +218,7 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
     })?;
     let signame = format!("{HUB_SIGNFILE_BASE}.{sig_number}");
     let tmpsigfile = tempdir.path().join(&signame);
-    std::fs::write(&tmpsigfile, &buf)?;
+    std::fs::write(&tmpsigfile, buf)?;
     signedpkg.append_path_with_name(&tmpsigfile, &signame)?;
     signedpkg.finish()?;
     drop(signedpkg);
@@ -261,7 +261,7 @@ pub fn package_getsigs_with_readio<R: std::io::Read>(
             .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
         if fh.unpack_in(tempdir.path())? {
             let tmpfile = tempdir.path().join(file_name);
-            let buf = std::fs::read(&tmpfile)?;
+            let buf = std::fs::read(tmpfile)?;
             if file_base == HUB_SIGNFILE_BASE {
                 // unpack the file, check if the signing key matches and validate it
                 let ps: PackageSignature = serde_json::from_slice(&buf).map_err(|_| {
@@ -426,7 +426,7 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
             .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
         if vers.contains_key(&fnamestr) && fh.unpack_in(tempdir.path())? {
             let tmpfile = tempdir.path().join(file_name);
-            let buf = std::fs::read(&tmpfile)?;
+            let buf = std::fs::read(tmpfile)?;
 
             let mut iv = vers
                 .get_mut(&fnamestr)

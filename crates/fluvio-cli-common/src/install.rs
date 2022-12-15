@@ -61,7 +61,7 @@ pub fn get_extensions() -> Result<Vec<PathBuf>> {
     use std::fs;
     let mut extensions = Vec::new();
     let fluvio_dir = fluvio_extensions_dir()?;
-    if let Ok(entries) = fs::read_dir(&fluvio_dir) {
+    if let Ok(entries) = fs::read_dir(fluvio_dir) {
         for entry in entries.flatten() {
             let is_plugin = entry.file_name().to_string_lossy().starts_with("fluvio-");
             if is_plugin {
