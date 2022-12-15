@@ -275,6 +275,7 @@ impl Segment<LogIndex, FileRecordsSlice> {
                 batch_file_pos,
                 index_position,
                 diff_position,
+                previous_batch_end_offset,
             }) => {
                 error!(
                     offset,
@@ -286,7 +287,20 @@ impl Segment<LogIndex, FileRecordsSlice> {
                     index,
                     option,
                     base_offset,
-                    end_offset,
+                    end_offset: previous_batch_end_offset,
+                })
+            }
+            Err(LogValidationError::InvalidBatch {
+                inner,
+                previous_batch_end_offset,
+            }) => {
+                error!(?inner, "validation error");
+                Ok(Segment {
+                    msg_log,
+                    index,
+                    option,
+                    base_offset,
+                    end_offset: previous_batch_end_offset,
                 })
             }
             Err(err) => {

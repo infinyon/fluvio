@@ -44,6 +44,13 @@ pub enum LogValidationError {
         batch_file_pos: u32,
         index_position: u32,
         diff_position: u32,
+        previous_batch_end_offset: Offset,
+    },
+
+    #[error("Invalid batch, previous end offset: {previous_batch_end_offset}")]
+    InvalidBatch {
+        inner: IoError,
+        previous_batch_end_offset: Offset,
     },
 }
 
@@ -161,6 +168,7 @@ where
                                     batch_file_pos: batch_pos.get_pos(),
                                     index_position: index_pos,
                                     diff_position: index_pos - batch_pos.get_pos(),
+                                    previous_batch_end_offset: self.last_offset,
                                 });
                             }
                         } else {
@@ -220,7 +228,10 @@ where
         }
 
         if let Some(err) = batch_stream.invalid() {
-            return Err(err.into());
+            return Err(LogValidationError::InvalidBatch {
+                inner: err,
+                previous_batch_end_offset: self.last_offset,
+            });
         }
 
         debug!(self.last_offset, "found last offset");
