@@ -5,6 +5,7 @@ use anyhow::Result;
 use crate::build::BuildCmd;
 use crate::deploy::DeployCmd;
 use crate::publish::PublishCmd;
+use crate::set_public::SetPublicCmd;
 
 /// Connector Development Kit
 #[derive(Debug, Parser)]
@@ -12,6 +13,9 @@ pub enum CdkCommand {
     Build(BuildCmd),
     Deploy(DeployCmd),
     Publish(PublishCmd),
+
+    #[clap(name = "set-public")]
+    SetPublic(SetPublicCmd),
     Test,
 }
 
@@ -22,6 +26,7 @@ impl CdkCommand {
             CdkCommand::Test => todo!(),
             CdkCommand::Deploy(opt) => opt.process(),
             CdkCommand::Publish(opt) => opt.process(),
+            CdkCommand::SetPublic(opt) => opt.process(),
         }
     }
 }

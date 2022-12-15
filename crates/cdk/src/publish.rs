@@ -1,7 +1,6 @@
 //!
 //! Command for hub publishing
 
-
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
