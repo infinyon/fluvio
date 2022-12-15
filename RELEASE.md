@@ -1,5 +1,7 @@
 # Release process
 
+![](./dev-tools/process-diagrams/release-process.svg)
+
 The full process for releasing Fluvio consists of 3 separate workflows, which are detailed below in their own sections:
 
 1. [Pre-release workflow](#pre-release-workflow)

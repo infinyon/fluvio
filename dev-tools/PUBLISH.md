@@ -1,11 +1,7 @@
-# Steps to publish
+# PR Merge process 
 
-bump up top level `VERSION`
+![](./process-diagrams/pr-merge-process.svg)
 
-run: `make updatee_version
+# Release process 
 
-publish all crates
-
-# run CI workflow
-
-Run `Release` dispatch workflow
+![](./process-diagrams/release-process.svg)

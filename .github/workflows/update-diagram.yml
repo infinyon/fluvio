@@ -1,20 +1,19 @@
-name: Build diagrams with Kroki
+name: Check for diagram updates
 
 permissions:
   contents: write
-  pull-requests: write
 
 on:
-  #workflow_dispatch:
-  #workflow_call:
+  workflow_dispatch:
+  workflow_call: # This needs some configuration to checkout infinyon/fluvio from callers
   pull_request:
     branches:
       - master
     types:
       - opened
       - synchronize
-    #paths:
-    #  - '**.excalidraw'
+    paths:
+      - '**.excalidraw'
 
 concurrency:
   group: diagrams-${{ github.ref }}
@@ -24,42 +23,16 @@ jobs:
   kroki:
     name: 'Build images from text diagrams'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        diagram:
-          - name: 'PR Merge'
-            source: ./dev-tools/process-diagrams/pr-merge.excalidraw
-            output: ./dev-tools/process-diagrams/pr-merge-process.svg
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          #repository: ${{ github.event.pull_request.head.repo.full_name }}
-          #ref: ${{ github.event.pull_request.head.ref }}
-          #ref: ${{ github.head.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout Pull Request
-        run: hub pr checkout ${{ github.event.pull_request.number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Start Kroki
-        run: |
-          cd ci/docker/kroki
-          docker compose up -d
+        run: make start-kroki
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
       - uses: Swatinem/rust-cache@v2
-      - name: Run Rust script with list of paths
-        run: cargo run --bin ci-kroki -- ${{ matrix.diagram.source }} --out-file ${{ matrix.diagram.output }}
-      - uses: EndBug/add-and-commit@v9
-        with:
-          default_author: user_info
-          #default_author: github_actions
-          #committer_name: GitHub Actions
-          #committer_email: actions@github.com
-          message: Update rendered diagram(s)
+      - name: Check if diagrams need to be updated
+        run: make check-diagrams
