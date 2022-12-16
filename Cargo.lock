@@ -880,9 +880,11 @@ dependencies = [
  "anyhow",
  "cargo-builder",
  "clap 4.0.29",
+ "fluvio",
  "fluvio-connector-deployer",
  "fluvio-connector-package",
  "fluvio-future",
+ "fluvio-hub-util",
  "thiserror",
  "tracing",
 ]

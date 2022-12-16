@@ -4,16 +4,30 @@ use std::fmt::Debug;
 use clap::Parser;
 
 use fluvio_extension_common::Terminal;
-use fluvio_hub_util::HUB_API_LIST_META;
+use fluvio_hub_util::HUB_API_CONN_LIST;
 
 use crate::Result;
 use crate::common::OutputFormat;
 
 use super::get_pkg_list;
 
-/// List available SmartModules in the hub
+/// List available Connectors in the hub
 #[derive(Debug, Parser)]
-pub struct ListHubOpt {
+pub enum ConnectorHubSubCmd {
+    #[clap(name = "list")]
+    List(ConnectorHubListOpts),
+}
+
+impl ConnectorHubSubCmd {
+    pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
+        match self {
+            ConnectorHubSubCmd::List(opts) => opts.process(out).await,
+        }
+    }
+}
+
+#[derive(Debug, Parser)]
+pub struct ConnectorHubListOpts {
     #[clap(flatten)]
     output: OutputFormat,
 
@@ -21,15 +35,15 @@ pub struct ListHubOpt {
     remote: Option<String>,
 }
 
-impl ListHubOpt {
+impl ConnectorHubListOpts {
     pub async fn process<O: Terminal + Debug + Send + Sync>(self, out: Arc<O>) -> Result<()> {
-        let pl = get_pkg_list(HUB_API_LIST_META, &self.remote).await?;
-        output::smartmodules_response_to_output(out, pl.packages, self.output.format)?;
+        let pl = get_pkg_list(HUB_API_CONN_LIST, &self.remote).await?;
+        output::tableformat(out, pl.packages, self.output.format)?;
         Ok(())
     }
 }
 
-#[allow(dead_code)]
+// #[allow(dead_code)]
 mod output {
 
     //!
@@ -50,26 +64,26 @@ mod output {
     use crate::CliError;
 
     #[derive(Serialize)]
-    struct ListSmartModules(Vec<PackageMeta>);
+    struct ListConnectors(Vec<PackageMeta>);
 
     // -----------------------------------
     // Format Output
     // -----------------------------------
 
     /// Format SmartModules based on output type
-    pub fn smartmodules_response_to_output<O: Terminal>(
+    pub fn tableformat<O: Terminal>(
         out: std::sync::Arc<O>,
-        list_smartmodules: Vec<PackageMeta>,
+        list_pkgs: Vec<PackageMeta>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
-        debug!("smart modules: {:#?}", list_smartmodules);
+        debug!("connectors: {:#?}", list_pkgs);
 
-        if !list_smartmodules.is_empty() {
-            let smartmodules = ListSmartModules(list_smartmodules);
-            out.render_list(&smartmodules, output_type)?;
+        if !list_pkgs.is_empty() {
+            let connectors = ListConnectors(list_pkgs);
+            out.render_list(&connectors, output_type)?;
             Ok(())
         } else {
-            t_println!(out, "no smart modules");
+            t_println!(out, "no connectors");
             Ok(())
         }
     }
@@ -77,10 +91,10 @@ mod output {
     // -----------------------------------
     // Output Handlers
     // -----------------------------------
-    impl TableOutputHandler for ListSmartModules {
+    impl TableOutputHandler for ListConnectors {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["SMARTMODULE", "Visibility"])
+            Row::from(["CONNECTOR", "Visibility"])
         }
 
         /// return errors in string format

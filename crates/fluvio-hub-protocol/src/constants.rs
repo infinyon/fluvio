@@ -4,10 +4,17 @@ pub const CLI_CONFIG_HUB: &str = "hub";
 
 /// HUB API URL chunks
 pub const HUB_API_V: &str = "hub/v0";
-pub const HUB_API_SM: &str = concatcp!(HUB_API_V, "/pkg/pub");
 pub const HUB_API_ACT: &str = concatcp!(HUB_API_V, "/action");
 pub const HUB_API_HUBID: &str = concatcp!(HUB_API_V, "/hubid");
+
+// sm specific api
+pub const HUB_API_SM: &str = concatcp!(HUB_API_V, "/pkg/pub");
 pub const HUB_API_LIST: &str = concatcp!(HUB_API_V, "/list");
+pub const HUB_API_LIST_META: &str = concatcp!(HUB_API_V, "/list_with_meta");
+
+// connector specific api
+pub const HUB_API_CONN_PKG: &str = concatcp!(HUB_API_V, "/connector/pkg");
+pub const HUB_API_CONN_LIST: &str = concatcp!(HUB_API_V, "/connector/list");
 
 pub const HUB_MANIFEST_BLOB: &str = "manifest.tar.gz";
 pub const HUB_PACKAGE_EXT: &str = "ipkg";

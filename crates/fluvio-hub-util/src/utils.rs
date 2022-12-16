@@ -9,7 +9,7 @@ use fluvio_hub_protocol::{PackageMeta, Result, HubError};
 use fluvio_hub_protocol::constants::HUB_PACKAGE_EXT;
 
 use crate::HubAccess;
-use crate::HUB_API_SM;
+use crate::{HUB_API_SM, HUB_API_CONN_PKG};
 use crate::{package_get_meta, packagename_validate};
 
 /// Used by hub server web api and cli exchange package lists
@@ -125,7 +125,29 @@ pub fn make_filename(org: &str, pkg: &str, ver: &str) -> String {
     }
 }
 
+/// legacy name for pushing smartmodule package
 pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
+    let pm = package_get_meta(pkgpath)?;
+    let host = &access.remote;
+    let url = format!(
+        "{host}/{HUB_API_SM}/{}/{}/{}",
+        pm.group, pm.name, pm.version
+    );
+    push_package_api(&url, pkgpath, access).await
+}
+
+/// push package to connector api
+pub async fn push_package_conn(pkgpath: &str, access: &HubAccess) -> Result<()> {
+    let pm = package_get_meta(pkgpath)?;
+    let host = &access.remote;
+    let url = format!(
+        "{host}/{HUB_API_CONN_PKG}/{}/{}/{}",
+        pm.group, pm.name, pm.version
+    );
+    push_package_api(&url, pkgpath, access).await
+}
+
+async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) -> Result<()> {
     let pm = package_get_meta(pkgpath)?;
     packagename_validate(&pm.name)?;
 
@@ -143,11 +165,7 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
 
     let pkg_bytes = std::fs::read(pkgpath)?;
     let actiontoken = access.get_publish_token().await?;
-
-    let host = &access.remote;
-    let api_url = "hub/v0/pkg/pub";
-    let url = format!("{host}/{api_url}/{}/{}/{}", pm.group, pm.name, pm.version);
-    let req = surf::put(url)
+    let req = surf::put(put_url)
         .content_type(mime::BYTE_STREAM)
         .body_bytes(pkg_bytes)
         .header("Authorization", &actiontoken);
