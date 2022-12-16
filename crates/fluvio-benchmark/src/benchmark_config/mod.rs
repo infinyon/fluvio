@@ -128,8 +128,7 @@ impl Hash for BenchmarkConfig {
 
 impl BenchmarkConfig {
     pub fn total_number_of_messages_produced_per_batch(&self) -> u64 {
-        self.num_records_per_producer_worker_per_batch as u64
-            * self.num_concurrent_producer_workers as u64
+        self.num_records_per_producer_worker_per_batch * self.num_concurrent_producer_workers
     }
 
     pub fn number_of_expected_times_each_message_consumed(&self) -> u64 {

@@ -48,7 +48,7 @@ impl HubAccess {
     pub fn default_load(remote: &Option<String>) -> Result<Self> {
         let cfgpath = default_cfg_path()?;
         let profileopt = std::env::var(FLUVIO_HUB_PROFILE_ENV).ok();
-        HubAccess::load_path(&cfgpath, profileopt, remote)
+        HubAccess::load_path(cfgpath, profileopt, remote)
     }
 
     pub async fn create_hubid(&self, hubid: &str) -> Result<()> {
@@ -231,7 +231,7 @@ impl HubAccess {
     pub fn write_file<P: AsRef<Path>>(&self, fname: P) -> Result<()> {
         debug!("writing HubAccess data to {}", fname.as_ref().display());
         let buf = serde_yaml::to_string(self)?;
-        std::fs::write(fname, &buf)?;
+        std::fs::write(fname, buf)?;
         Ok(())
     }
 

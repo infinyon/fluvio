@@ -92,9 +92,9 @@ mod output {
 
                     Row::from([
                         Cell::new(&r.name).set_alignment(CellAlignment::Right),
-                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
-                        Cell::new(&spec.input.to_string()).set_alignment(CellAlignment::Right),
-                        Cell::new(&spec.steps.to_string()).set_alignment(CellAlignment::Right),
+                        Cell::new(r.status.to_string()).set_alignment(CellAlignment::Right),
+                        Cell::new(spec.input.to_string()).set_alignment(CellAlignment::Right),
+                        Cell::new(spec.steps.to_string()).set_alignment(CellAlignment::Right),
                     ])
                 })
                 .collect()

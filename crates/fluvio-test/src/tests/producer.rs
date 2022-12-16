@@ -130,7 +130,7 @@ async fn producer_work(
         // Converting from nanoseconds to seconds, to store (bytes per second) in histogram
         let send_throughput =
             (((record_size as f32) / (send_latency as f32)) * 1_000_000_000.0) as u64;
-        throughput_histogram.record(send_throughput as u64).unwrap();
+        throughput_histogram.record(send_throughput).unwrap();
 
         if test_case.option.verbose {
             // Convert bytes per second to kilobytes per second
@@ -141,7 +141,7 @@ async fn producer_work(
                 producer_id,
                 record_tag,
                 record_size,
-                format_args!("{:?}", Duration::from_nanos(send_latency)),
+                format!("{:?}", Duration::from_nanos(send_latency)),
                 throughput_kbps,
             );
         }

@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn test_file_generation() {
         let dir = temp_dir();
-        let path = generate_file_name(&dir, 5, "log");
+        let path = generate_file_name(dir, 5, "log");
         assert_eq!(
             path.file_name(),
             Some(OsStr::new("00000000000000000005.log"))

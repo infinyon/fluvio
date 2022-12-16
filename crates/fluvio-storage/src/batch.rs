@@ -110,7 +110,7 @@ where
 
         let mut batch_position = FileBatchPos::new(batch, pos);
 
-        let remainder = batch_position.len() as usize - BATCH_HEADER_SIZE as usize;
+        let remainder = batch_position.len() as usize - BATCH_HEADER_SIZE;
         trace!(
             last_offset = batch_position.get_batch().get_last_offset(),
             remainder,

@@ -18,7 +18,7 @@ use crate::stores::spu::*;
 ///
 pub fn validate_assigned_topic_parameters(partition_map: &PartitionMaps) -> TopicNextState {
     if let Err(err) = partition_map.valid_partition_map() {
-        TopicStatus::next_resolution_invalid_config(&err.to_string()).into()
+        TopicStatus::next_resolution_invalid_config(err.to_string()).into()
     } else {
         TopicStatus::next_resolution_pending().into()
     }
@@ -30,9 +30,9 @@ pub fn validate_assigned_topic_parameters(partition_map: &PartitionMaps) -> Topi
 ///
 pub fn validate_computed_topic_parameters(param: &TopicReplicaParam) -> TopicNextState {
     if let Err(err) = ReplicaSpec::valid_partition(&param.partitions) {
-        TopicStatus::next_resolution_invalid_config(&err.to_string()).into()
+        TopicStatus::next_resolution_invalid_config(err.to_string()).into()
     } else if let Err(err) = ReplicaSpec::valid_replication_factor(&param.replication_factor) {
-        TopicStatus::next_resolution_invalid_config(&err.to_string()).into()
+        TopicStatus::next_resolution_invalid_config(err.to_string()).into()
     } else {
         TopicStatus::next_resolution_pending().into()
     }

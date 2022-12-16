@@ -224,7 +224,7 @@ where
     }
 
     pub(crate) fn occupied_memory(&self) -> Size64 {
-        self.index.len() as u64 + self.msg_log.len()
+        self.index.len() + self.msg_log.len()
     }
 }
 
@@ -515,7 +515,7 @@ mod tests {
         assert_eq!(active_segment.get_end_offset(), 21);
 
         // check to see if batch is written
-        let bytes = read_bytes_from_file(&test_dir.join(TEST_FILE_NAME)).expect("read bytes");
+        let bytes = read_bytes_from_file(test_dir.join(TEST_FILE_NAME)).expect("read bytes");
         debug!("read {} bytes", bytes.len());
 
         // read batches from raw bytes to see if it can be parsed
@@ -563,7 +563,7 @@ mod tests {
         // each record contains 9 bytes
 
         // check to see if batch is written
-        let bytes = read_bytes_from_file(&test_dir.join(TEST_FILE_NAME)).expect("read");
+        let bytes = read_bytes_from_file(test_dir.join(TEST_FILE_NAME)).expect("read");
         debug!("read {} bytes", bytes.len());
 
         let batch =
@@ -618,7 +618,7 @@ mod tests {
         let index = seg_sink.get_index();
         assert_eq!(index[0].to_be(), (2, 79));
 
-        let bytes = read_bytes_from_file(&test_dir.join(TEST2_FILE_NAME)).expect("read");
+        let bytes = read_bytes_from_file(test_dir.join(TEST2_FILE_NAME)).expect("read");
         debug!("read {} bytes", bytes.len());
 
         let cursor = &mut Cursor::new(bytes);

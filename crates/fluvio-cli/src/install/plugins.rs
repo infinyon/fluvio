@@ -133,8 +133,8 @@ impl InstallOpt {
         } else {
             id.name().to_string()
         };
-        let package_path = fluvio_dir.join(&package_filename);
-        install_bin(&package_path, &package_file)?;
+        let package_path = fluvio_dir.join(package_filename);
+        install_bin(package_path, package_file)?;
 
         Ok(())
     }

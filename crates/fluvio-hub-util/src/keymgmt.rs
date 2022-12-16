@@ -75,7 +75,7 @@ impl Keypair {
     /// read private key and derive public to populate keypair
     pub fn read_from_file(fname: &str) -> Result<Keypair> {
         let buf = std::fs::read(fname)?;
-        let pem = pem::parse(&buf).map_err(|_| HubError::InvalidKeyPairFile(fname.into()))?;
+        let pem = pem::parse(buf).map_err(|_| HubError::InvalidKeyPairFile(fname.into()))?;
         if pem.tag != "PRIVATE KEY" {
             return Err(HubError::InvalidKeyPairFile(fname.into()));
         }
@@ -132,7 +132,7 @@ impl Keypair {
 impl PublicKey {
     pub fn read_from_file(fname: &str) -> Result<PublicKey> {
         let buf = std::fs::read(fname)?;
-        let pem = pem::parse(&buf).map_err(|_| HubError::InvalidPublicKeyFile(fname.into()))?;
+        let pem = pem::parse(buf).map_err(|_| HubError::InvalidPublicKeyFile(fname.into()))?;
         if pem.tag != "PUBLIC KEY" {
             return Err(HubError::InvalidPublicKeyFile(fname.into()));
         }
@@ -151,7 +151,7 @@ impl PublicKey {
             contents: self.to_bytes().to_vec(),
         };
         let buf = pem::encode(&pubpem);
-        std::fs::write(fname, &buf)?;
+        std::fs::write(fname, buf)?;
         Ok(())
     }
 

@@ -70,7 +70,7 @@ pub async fn install_channel_fluvio_bin(
         return Err(eyre!("Channel binary location not found".to_string(),));
     };
 
-    install_bin(&fluvio_path, &package_file)?;
+    install_bin(&fluvio_path, package_file)?;
     install_println(format!(
         "✅ Successfully updated {}",
         &fluvio_path.display(),

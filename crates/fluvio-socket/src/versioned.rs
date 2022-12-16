@@ -122,6 +122,7 @@ impl ClientConfig {
         }
     }
 
+    #[allow(clippy::box_default)]
     pub fn with_addr(addr: String) -> Self {
         Self::new(addr, Box::new(DefaultDomainConnector::default()), false)
     }

@@ -26,7 +26,7 @@ impl SetPublicOpt {
         }
         sm.package.visibility = SmartModuleVisibility::Public;
         let tomlstr = toml::to_string(&sm)?;
-        std::fs::write(SMARTMODULE_TOML, &tomlstr)?;
+        std::fs::write(SMARTMODULE_TOML, tomlstr)?;
         Ok(())
     }
 }

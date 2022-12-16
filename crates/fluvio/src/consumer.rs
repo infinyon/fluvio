@@ -334,7 +334,7 @@ where
         let stream_fetch_version = serial_socket
             .versions()
             .lookup_version::<DefaultStreamFetchRequest>()
-            .unwrap_or((CHAIN_SMARTMODULE_API - 1) as i16);
+            .unwrap_or(CHAIN_SMARTMODULE_API - 1);
         debug!(%stream_fetch_version, "stream_fetch_version");
         if stream_fetch_version < CHAIN_SMARTMODULE_API {
             warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");

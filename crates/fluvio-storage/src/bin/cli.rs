@@ -112,7 +112,7 @@ async fn dump_index(opt: IndexOpt) -> Result<(), StorageError> {
     let mut count: usize = 0;
     let mut display: usize = 0;
     for i in opt.min..max_entries {
-        let (offset, pos) = log[i as usize].to_be();
+        let (offset, pos) = log[i].to_be();
         if offset > 0 && pos > 0 {
             count += 1;
             if count < opt.max {

@@ -124,7 +124,7 @@ impl UpdateOpt {
         let fluvio_cli_path = std::env::current_exe()?;
 
         if !self.dry_run {
-            install_bin(&fluvio_cli_path, &package_file)?;
+            install_bin(&fluvio_cli_path, package_file)?;
 
             install_println(format!(
                 "✅ Successfully updated {}",
@@ -179,7 +179,7 @@ impl UpdateOpt {
         fluvio_channel_path.set_file_name("fluvio");
 
         if !self.dry_run {
-            install_bin(&fluvio_channel_path, &package_file)?;
+            install_bin(&fluvio_channel_path, package_file)?;
             install_println(format!(
                 "✅ Successfully updated {}",
                 &fluvio_channel_path.display(),
@@ -210,7 +210,7 @@ impl UpdateOpt {
         println!("🔑 Downloaded and verified package file");
 
         if !self.dry_run {
-            install_bin(path, &package_file)?;
+            install_bin(path, package_file)?;
             println!("✅ Successfully updated {} at ({})", id, path.display());
         } else {
             println!(

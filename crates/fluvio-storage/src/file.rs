@@ -105,7 +105,7 @@ impl ReadOutput {
 #[instrument(level = "trace", fields(fd, offset, len))]
 fn pread(fd: RawFd, offset: i64, len: usize) -> NixResult<ReadOutput> {
     let mut eof = false;
-    let mut buf = BytesMut::with_capacity(len as usize);
+    let mut buf = BytesMut::with_capacity(len);
     let mut buf_len = len;
     let mut buf_offset = 0;
     let mut total_read = 0;
@@ -119,7 +119,7 @@ fn pread(fd: RawFd, offset: i64, len: usize) -> NixResult<ReadOutput> {
                 offset + total_read as i64,
             )
         };
-        let read = Errno::result(res).map(|r| r as isize)?;
+        let read = Errno::result(res)?;
         if read == 0 {
             trace!(fd, total_read, "end of file");
             if total_read == 0 {

@@ -182,7 +182,7 @@ impl Manifests {
 
         let local_text = fs::read_to_string(&local_path)
             .unwrap_or_else(|_| panic!("{} not found", local_path.display()));
-        let crates_io_text = fs::read_to_string(&crates_io_path).unwrap();
+        let crates_io_text = fs::read_to_string(crates_io_path).unwrap();
 
         let local = toml::from_str::<toml::Value>(&local_text).unwrap();
         let crates_io = toml::from_str::<toml::Value>(&crates_io_text).unwrap();

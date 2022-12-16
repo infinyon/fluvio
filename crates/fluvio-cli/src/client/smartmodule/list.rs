@@ -110,7 +110,7 @@ mod output {
                     let _spec = &r.spec;
 
                     Row::from([
-                        Cell::new(&r.spec.fqdn(&r.name)).set_alignment(CellAlignment::Left),
+                        Cell::new(r.spec.fqdn(&r.name)).set_alignment(CellAlignment::Left),
                         Cell::new(
                             bytesize::ByteSize::b(
                                 r.spec.summary.clone().unwrap_or_default().wasm_length as u64,

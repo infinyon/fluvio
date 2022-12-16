@@ -165,7 +165,7 @@ impl MutLogIndex {
         for i in 0..entries {
             if self[i as usize].position() == 0 {
                 debug!(i, "found empty slot");
-                return Ok(i as u32);
+                return Ok(i);
             }
         }
 
