@@ -949,6 +949,7 @@ dependencies = [
 name = "ci-kroki"
 version = "0.0.0"
 dependencies = [
+ "bytes 1.3.0",
  "clap 4.0.29",
  "color-eyre",
  "fluvio-future",

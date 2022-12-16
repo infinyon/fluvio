@@ -65,11 +65,15 @@ tracing = "0.1.19"
 thiserror = "1.0.20"
 clap = "4.0.10"
 bytes = "1"
-fluvio-future = "0.4.0"
 convert_case = "0.6.0"
 derive_builder = "0.12.0"
 portpicker = "0.1.1"
 nix = "0.26.0"
+toml = "0.5.9"
+tempfile = "3.3"
+rand = "0.8.4"
+
+fluvio-future = "0.4.0"
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

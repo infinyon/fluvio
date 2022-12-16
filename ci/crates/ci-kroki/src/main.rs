@@ -4,6 +4,9 @@
 //!
 //! This CLI takes in a text-based diagram, and uses a local host Kroki instance (by default)
 //! to generate an output image and save it to disk.
+//!
+//! Use `--diff-check` in CI to only compare rendered output with existing diagram on disk
+//!
 
 use std::{path::PathBuf};
 use std::collections::HashMap;
@@ -16,6 +19,7 @@ use parse_display::{Display, FromStr};
 use color_eyre::eyre::{eyre, Result};
 use tracing::{debug, error};
 use serde::Deserialize;
+use bytes::Bytes;
 
 const KROKI_PUBLIC_URL: &str = "https://kroki.io";
 
@@ -27,6 +31,8 @@ struct DiagramBatch {
 
 #[derive(PartialEq, Debug, Clone, Default, Deserialize)]
 struct DiagramIo {
+    pub input_format: KrokiInputFormat,
+    pub output_format: KrokiOutputFormat,
     pub source: PathBuf,
     pub destination: PathBuf,
 }
@@ -39,8 +45,9 @@ impl DiagramBatch {
     }
 }
 
-#[derive(Display, FromStr, PartialEq, Debug, Clone, Default, ValueEnum)]
+#[derive(Display, FromStr, PartialEq, Debug, Clone, Default, ValueEnum, Deserialize)]
 #[display(style = "lowercase")]
+#[serde(rename_all = "lowercase")]
 enum KrokiOutputFormat {
     #[default]
     Svg,
@@ -49,26 +56,27 @@ enum KrokiOutputFormat {
     Pdf,
 }
 
-#[derive(Display, FromStr, PartialEq, Debug, Clone, Default, ValueEnum)]
+#[derive(Display, FromStr, PartialEq, Debug, Clone, Default, ValueEnum, Deserialize)]
 #[display(style = "lowercase")]
+#[serde(rename_all = "lowercase")]
 enum KrokiInputFormat {
-    //Actdiag,
-    //Blockdiag,
-    //C4plantuml,
-    //Ditaa,
-    //Dot,
-    //Erd,
+    Actdiag,
+    Blockdiag,
+    C4plantuml,
+    Ditaa,
+    Dot,
+    Erd,
     #[default]
     Excalidraw,
-    //Graphviz,
-    //Nomnoml,
-    //Nwdiag,
-    //Plantuml,
-    //Seqdiag,
-    //Svgbob,
-    //Umlet,
-    //Vega,
-    //Vegalite
+    Graphviz,
+    Nomnoml,
+    Nwdiag,
+    Plantuml,
+    Seqdiag,
+    Svgbob,
+    Umlet,
+    Vega,
+    Vegalite,
 }
 
 #[derive(Parser, Debug)]
@@ -108,6 +116,7 @@ struct Args {
 }
 
 impl Args {
+    // This is to support 1+ diagrams depending on entrypoint
     fn get_batch(&self) -> Result<DiagramBatch> {
         if self.source.is_none() && self.batch.is_none() {
             return Err(eyre!("`--source` or `--batch` required"));
@@ -122,6 +131,8 @@ impl Args {
             debug!(?source, "Reading diagram from path");
 
             let diagram = DiagramIo {
+                input_format: self.r#type.clone(),
+                output_format: self.format.clone(),
                 source: source.clone(),
                 destination: self
                     .out_file
@@ -147,13 +158,13 @@ fn main() -> Result<()> {
     let args = Args::parse();
     debug!(?args);
 
-    // Check if Kroki instance is reachable
     let kroki_host = if !args.use_public {
         args.kroki_url.to_string()
     } else {
         KROKI_PUBLIC_URL.to_string()
     };
 
+    // Check if Kroki instance is reachable
     let client = reqwest::blocking::Client::new();
     if client.get(&kroki_host).send()?.error_for_status().is_err() {
         return Err(eyre!("Unable to connect to Kroki host: {kroki_host}"));
@@ -168,101 +179,55 @@ fn main() -> Result<()> {
     let mut err_found = false;
 
     for d in batch.diagrams.iter() {
-        // Read in source file name w/o the extension
-        let input_filestem = &d
-            .source
-            .file_stem()
-            .ok_or_else(|| eyre!("Unable to read file-stem from input path"))?
-            .to_str()
-            .ok_or_else(|| eyre!("Unable to convert input file-stem to str"))?
-            .to_string();
-
-        debug!(?input_filestem);
-
-        let input_extension = &d
-            .source
-            .extension()
-            .ok_or_else(|| eyre!("Unable to read extension from input path"))?
-            .to_str()
-            .ok_or_else(|| eyre!("Unable to convert extension to str"))?
-            .to_string();
-
-        debug!(?input_extension);
-
-        let output_filestem = &d.destination.file_stem();
-        debug!(?output_filestem);
-
-        let output_extension = &d.destination.extension();
-        debug!(?output_extension);
-
         let diagram_data = fs::read_to_string(&d.source)?;
 
-        let input_type_str = args.r#type.to_string();
-
-        let (output_path_str, output_format_str) = match (output_filestem, output_extension) {
-            (Some(_), Some(exe)) => (
-                d.destination.display().to_string(),
-                exe.to_str()
-                    .ok_or_else(|| eyre!("Unable to convert output file-stem to str"))?
-                    .to_string(),
-            ),
-            // Default to args.format if not part of filename
-            (Some(stem), None) => (
-                format!(
-                    "{}.{}",
-                    stem.to_str()
-                        .ok_or_else(|| eyre!("Unable to convert output file-stem to str"))?,
-                    args.format
-                ),
-                args.format.to_string(),
-            ),
-            // Use input file name, and args.format if we only have a path
-            _ => (
-                format!("{}.{}", input_filestem, args.format),
-                args.format.to_string(),
-            ),
-        };
-
-        debug!(?output_path_str);
-        debug!(?output_format_str);
+        let input_format = d.input_format.clone().to_string();
+        let output_format = d.output_format.clone().to_string();
 
         let postdata = HashMap::from([
             ("diagram_source", &diagram_data),
-            ("diagram_type", &input_type_str),
-            ("output_format", &output_format_str),
+            ("diagram_type", &input_format),
+            ("output_format", &output_format),
         ]);
 
         let res = client.post(&kroki_host).json(&postdata).send()?;
 
         if res.status().is_success() {
+            let render = res.bytes()?;
+
+            // This is our idempotency key
+            let is_update = !is_render_match(&d, &render)?;
+
             if args.diff_fail {
-                debug!("Compare output with filesystem");
-                match fs::read_to_string(&output_path_str) {
-                    Ok(file) => {
-                        if file.as_bytes() == res.bytes()? {
-                            println!(
-                                "✅ Render of {} and {output_path_str} match",
-                                d.source.display()
-                            );
-                        } else {
-                            err_found = true;
-                            eprintln!(
-                                "⛔ Render of {} and {output_path_str} differ",
-                                d.source.display()
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        debug!("Output file doesn't exist at expected location");
-                        err_found = true;
-                        eprintln!("⛔ {}", e)
-                    }
+                // No file changes in this arm
+                if is_update {
+                    eprintln!(
+                        "⛔ Render of {} and {} differ",
+                        d.source.display(),
+                        d.destination.display()
+                    );
+                    err_found = true;
+                } else {
+                    println!(
+                        "✅ Render of {} and {} match",
+                        d.source.display(),
+                        d.destination.display()
+                    );
                 }
             } else {
-                debug!("Writing response to file");
-                let mut output_file = File::create(&output_path_str)?;
-                output_file.write_all(&res.bytes()?)?;
-                println!("✅ {} -> {output_path_str}", d.source.display())
+                // File changes in this arm
+                if is_update {
+                    debug!("Writing response to file");
+                    let mut output_file = File::create(&d.destination)?;
+                    output_file.write_all(&render)?;
+                    println!("✅ {} -> {}", d.source.display(), d.destination.display())
+                } else {
+                    println!(
+                        "✅ Render of {} and {} match - No changes made",
+                        d.source.display(),
+                        d.destination.display()
+                    );
+                }
             }
         } else {
             error!("There was an error creating image");
@@ -280,4 +245,21 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn is_render_match(diagram: &DiagramIo, render: &Bytes) -> Result<bool, color_eyre::Report> {
+    match fs::read_to_string(&diagram.destination) {
+        Ok(file) => {
+            if file.as_bytes() == render {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }
+        Err(e) => {
+            debug!("Output file doesn't exist at expected location");
+            eprintln!("⛔ {}", e);
+            Ok(false)
+        }
+    }
 }
