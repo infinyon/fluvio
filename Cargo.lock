@@ -954,8 +954,10 @@ dependencies = [
  "color-eyre",
  "fluvio-future",
  "parse-display",
+ "rand 0.8.5",
  "reqwest",
  "serde",
+ "tempfile",
  "toml",
  "tracing",
 ]

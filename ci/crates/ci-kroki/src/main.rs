@@ -196,7 +196,7 @@ fn main() -> Result<()> {
             let render = res.bytes()?;
 
             // This is our idempotency key
-            let is_update = !is_render_match(&d, &render)?;
+            let is_update = !is_render_match(d, &render)?;
 
             if args.diff_fail {
                 // No file changes in this arm
@@ -261,5 +261,88 @@ fn is_render_match(diagram: &DiagramIo, render: &Bytes) -> Result<bool, color_ey
             eprintln!("⛔ {}", e);
             Ok(false)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    use std::io::Write;
+    use std::iter;
+
+    use tempfile::NamedTempFile;
+    use rand::{Rng, thread_rng};
+    use rand::distributions::Alphanumeric;
+    use bytes::{BytesMut, BufMut};
+
+    #[test]
+    fn batch_config_parse() {
+        let config = r#"
+        # This is a toml comment
+
+        [[diagram]]
+        input_format = "excalidraw"
+        output_format = "svg"
+        source = "./my/source/diagram.excalidraw"
+        destination = "./my/destination/diagram.svg"
+        "#;
+
+        let parsed: DiagramBatch = toml::from_str(config).unwrap();
+        let diagram = &parsed.diagrams[0];
+
+        assert_eq!(diagram.input_format, KrokiInputFormat::Excalidraw);
+        assert_eq!(diagram.output_format, KrokiOutputFormat::Svg);
+        assert_eq!(
+            diagram.source,
+            PathBuf::from("./my/source/diagram.excalidraw")
+        );
+        assert_eq!(
+            diagram.destination,
+            PathBuf::from("./my/destination/diagram.svg")
+        );
+    }
+
+    #[test]
+    fn file_match() {
+        let mut rng = thread_rng();
+        let write_1: String = iter::repeat(())
+            .map(|()| rng.sample(Alphanumeric))
+            .map(char::from)
+            .take(10)
+            .collect();
+        let write_2: String = iter::repeat(())
+            .map(|()| rng.sample(Alphanumeric))
+            .map(char::from)
+            .take(10)
+            .collect();
+
+        let mut test_render = NamedTempFile::new().expect("Unable to create temp file");
+        let mut compare = BytesMut::new();
+
+        let test_diagram = DiagramIo {
+            destination: test_render.path().to_path_buf(),
+            ..Default::default()
+        };
+
+        // empty
+        assert!(is_render_match(&test_diagram, &compare.to_vec().into()).unwrap());
+
+        // Negative test
+        test_render.write_all(write_1.clone().as_bytes()).unwrap();
+        assert!(!is_render_match(&test_diagram, &compare.to_vec().into()).unwrap());
+
+        // Positive test
+        compare.put(write_1.as_bytes());
+        assert!(is_render_match(&test_diagram, &compare.to_vec().into()).unwrap());
+
+        // Negative test
+        test_render.write_all(write_2.clone().as_bytes()).unwrap();
+        assert!(!is_render_match(&test_diagram, &compare.to_vec().into()).unwrap());
+
+        // Positive test
+        compare.put(write_2.as_bytes());
+        assert!(is_render_match(&test_diagram, &compare.to_vec().into()).unwrap());
     }
 }
