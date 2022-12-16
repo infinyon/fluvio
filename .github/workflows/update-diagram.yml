@@ -60,9 +60,13 @@ jobs:
         if: github.repository == 'infinyon/fluvio'
         run: make check-diagrams
 
-      - name: Check if diagrams need to be updated for workflow_call
+      - name: Set location for kroki config for workflow_call
         if: github.repository != 'infinyon/fluvio'
         run: |
           echo "KROKI_CONFIG=${{ inputs.config-path }}" >> $GITHUB_ENV
+
+      - name: Check if diagrams need to be updated for workflow_call
+        if: github.repository != 'infinyon/fluvio'
+        run: |
           cd fluvio-repo
           make check-diagrams
