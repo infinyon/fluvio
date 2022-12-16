@@ -33,8 +33,11 @@ jobs:
         if: github.repository != 'infinyon/fluvio'
         uses: actions/checkout@v3
         with:
-          repository: infinyon/fluvio
+          #repository: infinyon/fluvio
           path: fluvio-repo
+          # These two are only for testing
+          repository: tjtelan/fluvio
+          branch: ci-diagrams
 
       - name: Start Kroki
         if: github.repository == 'infinyon/fluvio'
