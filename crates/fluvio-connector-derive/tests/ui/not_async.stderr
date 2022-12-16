@@ -1,0 +1,11 @@
+error: Connector function must be async
+ --> tests/ui/not_async.rs:4:1
+  |
+4 | fn start_fn() {}
+  | ^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/not_async.rs:4:17
+  |
+4 | fn start_fn() {}
+  |                 ^ consider adding a `main` function to `$DIR/tests/ui/not_async.rs`

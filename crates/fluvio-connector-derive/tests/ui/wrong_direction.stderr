@@ -1,0 +1,11 @@
+error: Missing Connector type. Supported: '#[connector(source)]' and '#[connector(sink)]'
+ --> tests/ui/wrong_direction.rs:3:13
+  |
+3 | #[connector(wrong)]
+  |             ^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/wrong_direction.rs:4:17
+  |
+4 | fn start_fn() {}
+  |                 ^ consider adding a `main` function to `$DIR/tests/ui/wrong_direction.rs`

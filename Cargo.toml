@@ -43,6 +43,8 @@ members = [
     "crates/fluvio-types",
     "crates/fluvio-connector-package",
     "crates/fluvio-connector-deployer",
+    "crates/fluvio-connector-common",
+    "crates/fluvio-connector-derive",
     "release-tools/check-crate-version",
     "crates/smartmodule-development-kit",
     "crates/cdk",
