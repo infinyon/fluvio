@@ -41,7 +41,6 @@ jobs:
 
       - name: Start Kroki
         if: github.event_name != 'workflow_call'
-        uses: actions/checkout@v3
         run: make start-kroki
 
       - name: Start Kroki for workflow_call
