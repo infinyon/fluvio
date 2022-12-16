@@ -2531,6 +2531,7 @@ name = "fluvio-connector-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-net",
  "async-trait",
  "fluvio 0.15.2",
  "fluvio-connector-derive",
@@ -2539,6 +2540,9 @@ dependencies = [
  "fluvio-sc-schema 0.15.2",
  "fluvio-smartengine",
  "futures 0.3.25",
+ "futures-util",
+ "serde",
+ "serde_json",
  "tracing",
 ]
 

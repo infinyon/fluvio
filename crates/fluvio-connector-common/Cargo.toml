@@ -17,6 +17,10 @@ tracing = { workspace = true }
 fluvio-future = { workspace = true, features = ["subscriber"] }
 futures = { version = "0.3", default-features = false }
 async-trait = { version = "0.1", default-features = false}
+async-net = { version = "1.7", default-features = false }
+futures-util = { version = "0.3", features = ["sink"], default-features = false }
+serde = { version = "1", features = ["derive", "rc"], default-features = false }
+serde_json = { version = "1" }
 
 fluvio = { path = "../fluvio/", features = ["smartengine"]}
 fluvio-connector-package = { path = "../fluvio-connector-package/" }

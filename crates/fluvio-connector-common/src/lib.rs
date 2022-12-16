@@ -1,5 +1,6 @@
 pub mod producer;
 pub mod smartmodule;
+pub mod monitoring;
 
 #[cfg(feature = "derive")]
 pub use fluvio_connector_derive::connector;
