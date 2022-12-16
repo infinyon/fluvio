@@ -1,8 +1,5 @@
 name: Check for diagram updates
 
-permissions:
-  contents: write
-
 on:
   workflow_dispatch:
   workflow_call:
@@ -29,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        if: github.event_name != 'workflow_call'
+        #if: github.event_name != 'workflow_call'
         uses: actions/checkout@v3
 
       - name: Checkout Fluvio repo for workflow_call
