@@ -37,7 +37,7 @@ jobs:
           path: fluvio-repo
           # These two are only for testing
           repository: tjtelan/fluvio
-          branch: ci-diagrams
+          ref: ci-diagrams
 
       - name: Start Kroki
         if: github.repository == 'infinyon/fluvio'
