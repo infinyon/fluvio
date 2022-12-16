@@ -5,7 +5,11 @@ permissions:
 
 on:
   workflow_dispatch:
-  workflow_call: # This needs some configuration to checkout infinyon/fluvio from callers
+  workflow_call:
+    inputs:
+      config-path:
+        required: true
+        type: string
   pull_request:
     branches:
       - master
@@ -25,14 +29,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
+        if: github.event_name != 'workflow_call'
         uses: actions/checkout@v3
+
+      - name: Checkout Fluvio repo for workflow_call
+        if: github.event_name == 'workflow_call'
+        uses: actions/checkout@v3
+        with:
+          repository: infinyon/fluvio
+          path: fluvio-repo
+
       - name: Start Kroki
+        if: github.event_name != 'workflow_call'
+        uses: actions/checkout@v3
         run: make start-kroki
+
+      - name: Start Kroki for workflow_call
+        if: github.event_name == 'workflow_call'
+        run: |
+          cd fluvio-repo
+          make start-kroki
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
       - uses: Swatinem/rust-cache@v2
+
       - name: Check if diagrams need to be updated
+        if: github.event_name != 'workflow_call'
         run: make check-diagrams
+
+      - name: Check if diagrams need to be updated for workflow_call
+        if: github.event_name == 'workflow_call'
+        run: |
+          echo "KROKI_CONFIG=${{ inputs.config-path }}" >> $GITHUB_ENV
+          cd fluvio-repo
+          make check-diagrams

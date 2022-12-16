@@ -1,3 +1,5 @@
+KROKI_CONFIG?=./ci/kroki-diagrams.toml
+
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)
 
@@ -76,7 +78,7 @@ stop-kroki:
 	cd ci/docker/kroki && docker compose down 
 
 update-diagrams:
-	cargo run --bin ci-kroki -- --batch ./ci/kroki-diagrams.toml
+	cargo run --bin ci-kroki -- --batch $(KROKI_CONFIG)
 
 check-diagrams:
-	cargo run --bin ci-kroki -- --batch ./ci/kroki-diagrams.toml --diff-fail
+	cargo run --bin ci-kroki -- --batch $(KROKI_CONFIG) --diff-fail
