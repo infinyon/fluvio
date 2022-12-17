@@ -13,8 +13,10 @@ use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::Write;
 use std::process::exit;
+use std::env::current_dir;
 
 use clap::{Parser, ValueEnum};
+use color_eyre::{Help, SectionExt};
 use parse_display::{Display, FromStr};
 use color_eyre::eyre::{eyre, Result};
 use tracing::{debug, error};
@@ -39,7 +41,8 @@ struct DiagramIo {
 
 impl DiagramBatch {
     fn open(config: &PathBuf) -> Result<Self> {
-        let toml_data = fs::read_to_string(config)?;
+        let toml_data = fs::read_to_string(config)
+            .with_section(|| format!("{}", config.display()).header("Config path:"))?;
         let files: DiagramBatch = toml::from_str(&toml_data)?;
         Ok(files)
     }
@@ -126,7 +129,15 @@ impl Args {
             debug!(?batch_config, "Reading diagram list from config");
 
             // read file to string
-            DiagramBatch::open(batch_config)?
+            DiagramBatch::open(batch_config).with_section(|| {
+                format!(
+                    "{}",
+                    current_dir()
+                        .expect("Unable to get current directory:")
+                        .display()
+                )
+                .header("Current working directory")
+            })?
         } else if let Some(source) = &self.source {
             debug!(?source, "Reading diagram from path");
 
@@ -153,7 +164,7 @@ impl Args {
 
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
-    color_eyre::config::HookBuilder::blank();
+    color_eyre::install()?;
 
     let args = Args::parse();
     debug!(?args);
@@ -218,7 +229,9 @@ fn main() -> Result<()> {
                 // File changes in this arm
                 if is_update {
                     debug!("Writing response to file");
-                    let mut output_file = File::create(&d.destination)?;
+                    let mut output_file = File::create(&d.destination).with_section(|| {
+                        format!("{}", &d.destination.display()).header("Destination:")
+                    })?;
                     output_file.write_all(&render)?;
                     println!("✅ {} -> {}", d.source.display(), d.destination.display())
                 } else {
