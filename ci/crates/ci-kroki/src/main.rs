@@ -191,7 +191,14 @@ fn main() -> Result<()> {
 
     for d in batch.diagrams.iter() {
         let diagram_data = fs::read_to_string(&d.source)
-            .with_section(|| format!("{}", &d.source.display()).header("Source:"))?;
+            .with_section(|| format!("{}", &d.source.display()).header("Source:"))
+            .with_section(|| {
+                format!(
+                    "{:?}",
+                    current_dir().expect("Unable to get current directory")
+                )
+                .header("Current directory:")
+            })?;
 
         let input_format = d.input_format.clone().to_string();
         let output_format = d.output_format.clone().to_string();
