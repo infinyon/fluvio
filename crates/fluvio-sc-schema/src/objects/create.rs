@@ -13,7 +13,7 @@ use crate::customspu::CustomSpuSpec;
 use crate::smartmodule::SmartModuleSpec;
 use crate::tableformat::TableFormatSpec;
 use crate::spg::SpuGroupSpec;
-use crate::connector::ManagedConnectorSpec;
+
 
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
 
@@ -49,8 +49,6 @@ pub enum ObjectCreateRequest {
     Topic(TopicSpec),
     CustomSpu(CustomSpuSpec),
     SmartModule(SmartModuleSpec),
-    // SmartModuleDownload(SmartModuleDownloadSpec),
-    ManagedConnector(ManagedConnectorSpec),
     SpuGroup(SpuGroupSpec),
     TableFormat(TableFormatSpec),
     DerivedStream(DerivedStreamSpec),
@@ -68,7 +66,6 @@ impl ObjectCreateRequest {
             Self::Topic(_) => TopicSpec::CREATE_TYPE,
             Self::CustomSpu(_) => CustomSpuSpec::CREATE_TYPE,
             Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
-            Self::ManagedConnector(_) => ManagedConnectorSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
             Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
             Self::DerivedStream(_) => DerivedStreamSpec::CREATE_TYPE,
@@ -85,7 +82,6 @@ impl Encoder for ObjectCreateRequest {
                 Self::Topic(s) => s.write_size(version),
                 Self::CustomSpu(s) => s.write_size(version),
                 Self::SmartModule(s) => s.write_size(version),
-                Self::ManagedConnector(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
                 Self::TableFormat(s) => s.write_size(version),
                 Self::DerivedStream(s) => s.write_size(version),
@@ -100,7 +96,6 @@ impl Encoder for ObjectCreateRequest {
         match self {
             Self::Topic(s) => s.encode(dest, version)?,
             Self::CustomSpu(s) => s.encode(dest, version)?,
-            Self::ManagedConnector(s) => s.encode(dest, version)?,
             Self::SmartModule(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
             Self::TableFormat(s) => s.encode(dest, version)?,
@@ -161,14 +156,6 @@ impl Decoder for ObjectCreateRequest {
                 let mut request = SmartModuleSpec::default();
                 request.decode(src, version)?;
                 *self = Self::SmartModule(request);
-                Ok(())
-            }
-
-            ManagedConnectorSpec::CREATE_TYPE => {
-                tracing::trace!("detected connector");
-                let mut request = ManagedConnectorSpec::default();
-                request.decode(src, version)?;
-                *self = Self::ManagedConnector(request);
                 Ok(())
             }
 

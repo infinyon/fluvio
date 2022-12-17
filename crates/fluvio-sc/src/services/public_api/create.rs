@@ -35,10 +35,6 @@ pub async fn handle_create_request<AC: AuthContext>(
             )
             .await
         }
-        ObjectCreateRequest::ManagedConnector(create) => {
-            super::connector::handle_create_managed_connector_request(common, create, auth_context)
-                .await?
-        }
         ObjectCreateRequest::SmartModule(create) => {
             super::smartmodule::handle_create_smartmodule_request(common, create, auth_context)
                 .await?

@@ -120,7 +120,6 @@ mod object_macro {
                     CustomSpu($api<crate::customspu::CustomSpuSpec>),
                     SmartModule($api<crate::smartmodule::SmartModuleSpec>),
                     Partition($api<crate::partition::PartitionSpec>),
-                    ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     TableFormat($api<crate::tableformat::TableFormatSpec>),
                     DerivedStream($api<crate::derivedstream::DerivedStreamSpec>),
@@ -141,7 +140,6 @@ mod object_macro {
                             Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
                             Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
                             Self::Partition(_) => crate::partition::PartitionSpec::LABEL,
-                            Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
                             Self::DerivedStream(_) => crate::derivedstream::DerivedStreamSpec::LABEL,
@@ -162,7 +160,6 @@ mod object_macro {
                                 Self::CustomSpu(s) => s.write_size(version),
                                 Self::Partition(s) => s.write_size(version),
                                 Self::SmartModule(s) => s.write_size(version),
-                                Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::TableFormat(s) => s.write_size(version),
                                 Self::DerivedStream(s) => s.write_size(version),
@@ -184,7 +181,6 @@ mod object_macro {
                             Self::SpuGroup(s) => s.encode(dest, version)?,
                             Self::Spu(s) => s.encode(dest, version)?,
                             Self::Partition(s) => s.encode(dest, version)?,
-                            Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
                             Self::TableFormat(s) => s.encode(dest, version)?,
                             Self::DerivedStream(s) => s.encode(dest, version)?,
@@ -265,13 +261,6 @@ mod object_macro {
                                 Ok(())
                             }
 
-                            crate::connector::ManagedConnectorSpec::LABEL => {
-                                tracing::trace!("detected connector");
-                                let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::ManagedConnector(request);
-                                Ok(())
-                            },
 
                             crate::derivedstream::DerivedStreamSpec::LABEL => {
                                 tracing::trace!("detected derivedstream");
@@ -360,7 +349,6 @@ mod delete_macro {
                     Topic($api<crate::topic::TopicSpec>),
                     CustomSpu($api<crate::customspu::CustomSpuSpec>),
                     SmartModule($api<crate::smartmodule::SmartModuleSpec>),
-                    ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     TableFormat($api<crate::tableformat::TableFormatSpec>),
                     DerivedStream($api<crate::derivedstream::DerivedStreamSpec>),
@@ -379,7 +367,6 @@ mod delete_macro {
                             Self::Topic(_) => crate::topic::TopicSpec::LABEL,
                             Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
                             Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
-                            Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
                             Self::DerivedStream(_) => crate::derivedstream::DerivedStreamSpec::LABEL,
@@ -397,7 +384,6 @@ mod delete_macro {
                                 Self::Topic(s) => s.write_size(version),
                                 Self::CustomSpu(s) => s.write_size(version),
                                 Self::SmartModule(s) => s.write_size(version),
-                                Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::TableFormat(s) => s.write_size(version),
                                 Self::DerivedStream(s) => s.write_size(version),
@@ -417,7 +403,6 @@ mod delete_macro {
                             Self::Topic(s) => s.encode(dest, version)?,
                             Self::CustomSpu(s) => s.encode(dest, version)?,
                             Self::SpuGroup(s) => s.encode(dest, version)?,
-                            Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
                             Self::TableFormat(s) => s.encode(dest, version)?,
                             Self::DerivedStream(s) => s.encode(dest, version)?,
@@ -473,15 +458,6 @@ mod delete_macro {
                                 *self = Self::SpuGroup(request);
                                 return Ok(())
                             }
-
-
-                            crate::connector::ManagedConnectorSpec::LABEL => {
-                                tracing::trace!("detected connector");
-                                let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::ManagedConnector(request);
-                                Ok(())
-                            },
 
                             crate::smartmodule::SmartModuleSpec::LABEL => {
                                 tracing::trace!("detected smartmodule");
