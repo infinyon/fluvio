@@ -18,7 +18,7 @@ use std::env::current_dir;
 use clap::{Parser, ValueEnum};
 use color_eyre::{Help, SectionExt};
 use parse_display::{Display, FromStr};
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, Result, Context};
 use tracing::{debug, error};
 use serde::Deserialize;
 use bytes::Bytes;
@@ -90,8 +90,12 @@ struct Args {
     source: Option<PathBuf>,
 
     /// Path to output
-    #[arg(long, default_value = ".")]
+    #[arg(long)]
     out_file: Option<PathBuf>,
+
+    /// Base filesystem path for relative --source and --out-file paths
+    #[arg(long)]
+    base_path: Option<PathBuf>,
 
     // Specify the format to render. Not all choices available for very input
     #[arg(long, default_value = "svg")]
@@ -129,15 +133,17 @@ impl Args {
             debug!(?batch_config, "Reading diagram list from config");
 
             // read file to string
-            DiagramBatch::open(batch_config).with_section(|| {
-                format!(
-                    "{}",
-                    current_dir()
-                        .expect("Unable to get current directory:")
-                        .display()
-                )
-                .header("Current working directory")
-            })?
+            DiagramBatch::open(&resolve_path(self.base_path.as_ref(), batch_config)?).with_section(
+                || {
+                    format!(
+                        "{}",
+                        current_dir()
+                            .expect("Unable to get current directory:")
+                            .display()
+                    )
+                    .header("Current working directory")
+                },
+            )?
         } else if let Some(source) = &self.source {
             debug!(?source, "Reading diagram from path");
 
@@ -190,7 +196,7 @@ fn main() -> Result<()> {
     let mut err_found = false;
 
     for d in batch.diagrams.iter() {
-        let diagram_data = fs::read_to_string(&d.source)
+        let diagram_data = fs::read_to_string(resolve_path(args.base_path.as_ref(), &d.source)?)
             .with_section(|| format!("{}", &d.source.display()).header("Source:"))
             .with_section(|| {
                 format!(
@@ -237,9 +243,18 @@ fn main() -> Result<()> {
                 // File changes in this arm
                 if is_update {
                     debug!("Writing response to file");
-                    let mut output_file = File::create(&d.destination).with_section(|| {
-                        format!("{}", &d.destination.display()).header("Destination:")
-                    })?;
+                    let mut output_file =
+                        File::create(resolve_path(args.base_path.as_ref(), &d.destination)?)
+                            .with_section(|| {
+                                format!("{}", &d.destination.display()).header("Destination:")
+                            })
+                            .with_section(|| {
+                                format!(
+                                    "{:?}",
+                                    current_dir().expect("Unable to get current directory")
+                                )
+                                .header("Current directory:")
+                            })?;
                     output_file.write_all(&render)?;
                     println!("✅ {} -> {}", d.source.display(), d.destination.display())
                 } else {
@@ -266,6 +281,24 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn resolve_path(base: Option<&PathBuf>, path: &PathBuf) -> Result<PathBuf> {
+    let p = if let Some(b) = base {
+        if path.is_relative() {
+            [b.to_path_buf().as_path(), path.to_path_buf().as_path()]
+                .iter()
+                .collect()
+        } else {
+            path.to_path_buf()
+        }
+    } else {
+        path.to_path_buf()
+    };
+
+    fs::canonicalize(p)
+        .with_context(|| format!("{base:#?}").header("base:"))
+        .with_context(|| format!("{path:#?}").header("path:"))
 }
 
 fn is_render_match(diagram: &DiagramIo, render: &Bytes) -> Result<bool, color_eyre::Report> {

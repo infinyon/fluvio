@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   workflow_call:
     inputs:
+      base-path:
+        required: false
+        type: string
       config-path:
         required: true
         type: string
@@ -63,6 +66,7 @@ jobs:
       - name: Set location for kroki config for workflow_call
         if: github.repository != 'infinyon/fluvio'
         run: |
+          echo "KROKI_CHECK_BASE=${{ inputs.base-path }}" >> $GITHUB_ENV
           echo "KROKI_CONFIG=${{ inputs.config-path }}" >> $GITHUB_ENV
 
       - name: Check if diagrams need to be updated for workflow_call

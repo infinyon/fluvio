@@ -1,4 +1,5 @@
 KROKI_CONFIG?=./ci/kroki-diagrams.toml
+KROKI_BASE_FLAG=$(if $(KROKI_CHECK_BASE),--base-path $(KROKI_CHECK_BASE),)
 
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)
@@ -78,7 +79,7 @@ stop-kroki:
 	cd ci/docker/kroki && docker compose down 
 
 update-diagrams:
-	cargo run --bin ci-kroki -- --batch $(KROKI_CONFIG)
+	cargo run --bin ci-kroki -- $(KROKI_BASE_FLAG) --batch $(KROKI_CONFIG)
 
 check-diagrams:
-	cargo run --bin ci-kroki -- --batch $(KROKI_CONFIG) --diff-fail
+	cargo run --bin ci-kroki -- $(KROKI_BASE_FLAG) --batch $(KROKI_CONFIG) --diff-fail
