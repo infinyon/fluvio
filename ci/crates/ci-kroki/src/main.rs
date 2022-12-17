@@ -39,7 +39,19 @@ struct DiagramIo {
     pub destination: PathBuf,
 }
 
+// TODO: Maybe move fs::cannonize here
 impl DiagramBatch {
+    fn open_check(base: &Option<PathBuf>, config: &PathBuf) -> Result<Self> {
+        let mut config = DiagramBatch::open(config)?;
+
+        for d in config.diagrams.iter_mut() {
+            d.source = resolve_path(base.as_ref(), &d.source)?;
+            d.destination = resolve_path(base.as_ref(), &d.destination)?;
+        }
+
+        Ok(config)
+    }
+
     fn open(config: &PathBuf) -> Result<Self> {
         let toml_data = fs::read_to_string(config)
             .with_section(|| format!("{}", config.display()).header("Config path:"))?;
@@ -133,8 +145,8 @@ impl Args {
             debug!(?batch_config, "Reading diagram list from config");
 
             // read file to string
-            DiagramBatch::open(&resolve_path(self.base_path.as_ref(), batch_config)?).with_section(
-                || {
+            let file_batch =
+                DiagramBatch::open_check(&self.base_path, batch_config).with_section(|| {
                     format!(
                         "{}",
                         current_dir()
@@ -142,19 +154,23 @@ impl Args {
                             .display()
                     )
                     .header("Current working directory")
-                },
-            )?
+                })?;
+
+            file_batch
         } else if let Some(source) = &self.source {
             debug!(?source, "Reading diagram from path");
 
             let diagram = DiagramIo {
                 input_format: self.r#type.clone(),
                 output_format: self.format.clone(),
-                source: source.clone(),
-                destination: self
-                    .out_file
-                    .clone()
-                    .expect("CLI parse should have caught this"),
+                source: resolve_path(self.base_path.as_ref(), &source.clone())?,
+                destination: resolve_path(
+                    self.base_path.as_ref(),
+                    &self
+                        .out_file
+                        .clone()
+                        .expect("CLI parse should have caught this"),
+                )?,
             };
 
             DiagramBatch {
@@ -196,7 +212,7 @@ fn main() -> Result<()> {
     let mut err_found = false;
 
     for d in batch.diagrams.iter() {
-        let diagram_data = fs::read_to_string(resolve_path(args.base_path.as_ref(), &d.source)?)
+        let diagram_data = fs::read_to_string(&d.source)
             .with_section(|| format!("{}", &d.source.display()).header("Source:"))
             .with_section(|| {
                 format!(
@@ -243,18 +259,17 @@ fn main() -> Result<()> {
                 // File changes in this arm
                 if is_update {
                     debug!("Writing response to file");
-                    let mut output_file =
-                        File::create(resolve_path(args.base_path.as_ref(), &d.destination)?)
-                            .with_section(|| {
-                                format!("{}", &d.destination.display()).header("Destination:")
-                            })
-                            .with_section(|| {
-                                format!(
-                                    "{:?}",
-                                    current_dir().expect("Unable to get current directory")
-                                )
-                                .header("Current directory:")
-                            })?;
+                    let mut output_file = File::create(&d.destination)
+                        .with_section(|| {
+                            format!("{}", &d.destination.display()).header("Destination:")
+                        })
+                        .with_section(|| {
+                            format!(
+                                "{:?}",
+                                current_dir().expect("Unable to get current directory")
+                            )
+                            .header("Current directory:")
+                        })?;
                     output_file.write_all(&render)?;
                     println!("✅ {} -> {}", d.source.display(), d.destination.display())
                 } else {
@@ -286,13 +301,18 @@ fn main() -> Result<()> {
 fn resolve_path(base: Option<&PathBuf>, path: &PathBuf) -> Result<PathBuf> {
     let p = if let Some(b) = base {
         if path.is_relative() {
-            [b.to_path_buf().as_path(), path.to_path_buf().as_path()]
+            debug!("Path is relative");
+            let abs_path = [b.to_path_buf().as_path(), path.to_path_buf().as_path()]
                 .iter()
-                .collect()
+                .collect();
+            debug!(?abs_path);
+            abs_path
         } else {
+            debug!("Path absolute - {}", path.display());
             path.to_path_buf()
         }
     } else {
+        debug!("No base path. Using {}", path.display());
         path.to_path_buf()
     };
 
@@ -311,7 +331,10 @@ fn is_render_match(diagram: &DiagramIo, render: &Bytes) -> Result<bool, color_ey
             }
         }
         Err(e) => {
-            debug!("Output file doesn't exist at expected location");
+            debug!(
+                "Output file doesn't exist at expected location - {}",
+                &diagram.destination.display()
+            );
             eprintln!("⛔ {}", e);
             Ok(false)
         }
