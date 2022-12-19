@@ -14,7 +14,6 @@ use crate::smartmodule::SmartModuleSpec;
 use crate::tableformat::TableFormatSpec;
 use crate::spg::SpuGroupSpec;
 
-
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
 
 #[derive(Encoder, Decoder, Default, Debug)]

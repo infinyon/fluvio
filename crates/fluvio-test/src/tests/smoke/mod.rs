@@ -8,9 +8,7 @@ use std::any::Any;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
-
 use clap::Parser;
-
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
@@ -83,8 +81,6 @@ impl TestOption for SmokeTestOption {
 #[fluvio_test(topic = "test")]
 pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let smoke_test_case: SmokeTestCase = test_case.into();
-
-    
 
     // TableFormat test
     let maybe_table_format =
@@ -178,7 +174,6 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         let _ = consumer_wait.join();
     }
     let _ = producer_wait.join();
-
 
     if let Some(table_format_wait) = maybe_table_format {
         let _ = table_format_wait.join();
