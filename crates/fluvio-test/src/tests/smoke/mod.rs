@@ -5,16 +5,12 @@ pub mod offsets;
 use crate::tests::smoke::consume::validate_consume_message_api;
 
 use std::any::Any;
-use std::fmt;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
-use std::fs::File;
-use std::io::Read;
-use std::collections::BTreeMap;
+
 
 use clap::Parser;
-use tracing::debug;
-use serde::{Deserialize};
+
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
@@ -23,9 +19,7 @@ use fluvio_test_util::async_process;
 
 use fluvio_cli::TableFormatConfig;
 use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
-use fluvio::metadata::{
-    topic::{TopicSpec, TopicReplicaParam, ReplicaSpec},
-};
+
 use fluvio_future::timer::sleep;
 
 #[derive(Debug, Clone)]
