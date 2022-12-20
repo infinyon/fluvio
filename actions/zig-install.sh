@@ -2,7 +2,7 @@
 # set up sccache
 set -e
 MATRIX_OS=${1}
-ZIG_VER=0.9.1
+ZIG_VER=0.10.0
 LLVM_VER=14
 ARCH=x86_64
 echo "installing zig matrix.os=$MATRIX_OS version=$ZIG_VER"
@@ -16,7 +16,7 @@ if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     pushd /usr/local/bin && \
     sudo ln -s ../zig-linux-$ARCH-$ZIG_VER/zig . && \
     popd && \
-    rm zig-linux-x86_64-0.9.1.tar.* && \
+    rm zig-linux-$ARCH-$ZIG_VER.tar.* && \
     echo "FLUVIO_BUILD_LLD=$LLVM_PATH/bin/lld" | tee -a $GITHUB_ENV
 fi
 
