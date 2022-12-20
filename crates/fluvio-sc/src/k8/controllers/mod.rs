@@ -1,7 +1,6 @@
 pub mod spg_stateful;
 pub mod spu_service;
 pub mod spu_controller;
-pub mod managed_connector_deployment;
 
 pub use k8_operator::run_k8_operators;
 
@@ -19,12 +18,10 @@ mod k8_operator {
     use crate::k8::objects::statefulset::StatefulsetSpec;
     use crate::k8::objects::spg_service::SpgServiceSpec;
     use crate::k8::objects::spu_k8_config::ScK8Config;
-    use crate::k8::objects::managed_connector_deployment::ManagedConnectorDeploymentSpec;
 
     use crate::k8::controllers::spg_stateful::SpgStatefulSetController;
     use crate::k8::controllers::spu_service::SpuServiceController;
     use crate::k8::controllers::spu_controller::K8SpuController;
-    use crate::k8::controllers::managed_connector_deployment::ManagedConnectorDeploymentController;
 
     pub async fn run_k8_operators(
         namespace: String,
@@ -37,8 +34,6 @@ mod k8_operator {
         let spu_service_ctx: StoreContext<SpuServiceSpec> = StoreContext::new();
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
-        let managed_connector_deployments_ctx: StoreContext<ManagedConnectorDeploymentSpec> =
-            StoreContext::new();
 
         let config_ctx: StoreContext<ScK8Config> = StoreContext::new();
 
@@ -62,12 +57,6 @@ mod k8_operator {
             spg_service_ctx.clone(),
         );
 
-        K8ClusterStateDispatcher::<_, _>::start(
-            namespace.clone(),
-            k8_client.clone(),
-            managed_connector_deployments_ctx.clone(),
-        );
-
         K8ClusterStateDispatcher::<_, _>::start(namespace.clone(), k8_client, config_ctx.clone());
 
         whitelist!(config, "k8_spg", {
@@ -78,7 +67,7 @@ mod k8_operator {
                 statefulset_ctx,
                 global_ctx.spus().clone(),
                 spg_service_ctx,
-                tls.clone(),
+                tls,
             );
         });
 
@@ -91,19 +80,7 @@ mod k8_operator {
         });
 
         whitelist!(config, "k8_spu_service", {
-            SpuServiceController::start(
-                config_ctx.clone(),
-                spu_service_ctx,
-                global_ctx.spgs().clone(),
-            );
-        });
-        whitelist!(config, "k8_managed_connector_delpoyment", {
-            ManagedConnectorDeploymentController::start(
-                global_ctx.managed_connectors().clone(),
-                managed_connector_deployments_ctx,
-                tls,
-                config_ctx,
-            );
+            SpuServiceController::start(config_ctx, spu_service_ctx, global_ctx.spgs().clone());
         });
     }
 }

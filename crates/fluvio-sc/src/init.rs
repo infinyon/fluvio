@@ -31,7 +31,6 @@ where
     use crate::stores::topic::TopicSpec;
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
-    use crate::stores::connector::ManagedConnectorSpec;
     use crate::stores::tableformat::TableFormatSpec;
     use crate::stores::smartmodule::SmartModuleSpec;
     use crate::stores::derivedstream::DerivedStreamSpec;
@@ -64,12 +63,6 @@ where
         namespace.clone(),
         metadata_client.clone(),
         ctx.spgs().clone(),
-    );
-
-    K8ClusterStateDispatcher::<ManagedConnectorSpec, C>::start(
-        namespace.clone(),
-        metadata_client.clone(),
-        ctx.managed_connectors().clone(),
     );
 
     K8ClusterStateDispatcher::<TableFormatSpec, C>::start(
