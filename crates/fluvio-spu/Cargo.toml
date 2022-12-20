@@ -41,7 +41,7 @@ async-io = "1.3.0"
 async-net = "1.7.0"
 adaptive_backoff = "0.2.1"
 once_cell = "1.5"
-sysinfo = "0.26.0"
+sysinfo = { workspace = true }
 
 
 # Fluvio dependencies
