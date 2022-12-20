@@ -16,7 +16,6 @@ use fluvio_sc_schema::objects::{
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane_metadata::topic::TopicSpec;
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
@@ -64,15 +63,6 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         ),
-        ObjectApiWatchRequest::ManagedConnector(_) => {
-            WatchController::<ManagedConnectorSpec>::update(
-                sink,
-                end_event,
-                auth_ctx.global_ctx.managed_connectors().clone(),
-                header,
-                false,
-            )
-        }
         ObjectApiWatchRequest::SmartModule(sm_req) => WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,

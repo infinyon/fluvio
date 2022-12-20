@@ -3,7 +3,6 @@ pub mod topic;
 pub mod partition;
 pub mod spg;
 pub mod message;
-pub mod connector;
 pub mod smartmodule;
 pub mod tableformat;
 pub mod derivedstream;

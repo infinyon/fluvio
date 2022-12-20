@@ -35,9 +35,6 @@ pub async fn handle_delete_request<AC: AuthContext>(
         ObjectApiDeleteRequest::SpuGroup(req) => {
             super::spg::handle_delete_spu_group(req.key(), auth_ctx).await?
         }
-        ObjectApiDeleteRequest::ManagedConnector(req) => {
-            super::connector::handle_delete_managed_connector(req.key(), auth_ctx).await?
-        }
         ObjectApiDeleteRequest::SmartModule(req) => {
             super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
         }

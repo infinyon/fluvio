@@ -2,7 +2,6 @@ pub mod topic;
 pub mod spu;
 pub mod customspu;
 pub mod spg;
-pub mod connector;
 pub mod smartmodule;
 pub mod partition;
 pub mod versions;
