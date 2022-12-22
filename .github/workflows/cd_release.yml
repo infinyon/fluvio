@@ -90,7 +90,6 @@ jobs:
 
   start_cluster:
     name: Start cluster test
-    needs: installer_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -105,6 +104,17 @@ jobs:
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
+
+      - name: Set the expected fluvio version
+        run: |
+          if [[ -z "${{ env.USE_VERSION }}" ]]; then
+            echo "EXPECTED_VERSION=$(cat VERSION)" | tee -a $GITHUB_ENV
+          else
+            echo "EXPECTED_VERSION=${{ github.event.inputs.alt_version }}" | tee -a $GITHUB_ENV
+          fi
+          echo "EXPECTED_VERSION: $EXPECTED_VERSION"
+          
+      - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install Fluvio
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
@@ -136,7 +146,6 @@ jobs:
 
   upgrade_prev_stable:
     name: Upgrade cluster test
-    needs: installer_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -174,6 +183,7 @@ jobs:
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
 
+      - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install current stable Fluvio CLI and upgrade cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash

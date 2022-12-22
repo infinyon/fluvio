@@ -5,10 +5,19 @@ permissions:
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Release]
-    branches: [master]
-    types: [completed]
+    inputs:
+      commit:
+        required: false
+        type: string
+        description: 'Fluvio git commit override (latest `master` by default)'
+        default: ''
+  workflow_call:
+    inputs:
+      commit:
+        required: false
+        type: string
+        description: 'Fluvio git commit override (latest `master` by default)'
+        default: ''
 #env:
 #  USE_COMMIT: ${{ github.event.inputs.commit }}
 #  FORCE_RELEASE: ${{ github.event.inputs.force }}
@@ -51,6 +60,8 @@ jobs:
           override: true
 
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.commit }}
 
       - name: Run publish script
         env:

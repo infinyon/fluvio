@@ -39,6 +39,12 @@ DOCKER_IMAGE_TAG?=$(REPO_VERSION)
 GH_TOKEN?=
 GH_RELEASE_TAG?=dev
 
+ifeq ($(PRE_RELEASE),true)
+GH_PRE_RELEASE_FLAG=--prerelease
+else
+GH_PRE_RELEASE_FLAG=
+endif
+
 # Allow using local `gh` auth token for local testing
 #ifeq ($(CI), true)
 #ifndef GH_TOKEN
@@ -116,7 +122,7 @@ install-fluvio-package:
 
 # Requires GH_TOKEN set or `gh auth login`
 download-fluvio-release:
-	gh release download $(GH_RELEASE_TAG) -R infinyon/fluvio --skip-existing
+	$(DRY_RUN_ECHO) gh release download $(GH_RELEASE_TAG) -R infinyon/fluvio --skip-existing
 
 unzip-gh-release-artifacts: download-fluvio-release
 	@echo "unzip stuff"
@@ -223,6 +229,7 @@ build-release-notes:
 
 create-gh-release: download-fluvio-release build-release-notes
 	$(DRY_RUN_ECHO) gh release create -R infinyon/fluvio \
+		$(GH_PRE_RELEASE_FLAG) \
 		--title="v$(VERSION)" \
 		-F /tmp/release_notes \
 		"v$(VERSION)" \
