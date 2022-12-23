@@ -26,3 +26,11 @@ For more detail, refer to [`RELEASE.md`](https://github.com/infinyon/fluvio/blob
 - [ ] Create a PR for post release updates and use `release_template.md` close this issue
   - Add form data `template=release_template.md` to the PR URL while creating in order to use template
   - e.g. https://github.com/infinyon/fluvio/compare/master...username:your-branch?expand=1&template=release_template.md
+
+### Generating Release notes
+
+To get a starting point for generating release notes
+
+```bash
+git cliff 673e60c0..HEAD > changes.md
+```
