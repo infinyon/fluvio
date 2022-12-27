@@ -26,7 +26,7 @@ pub struct FileBytesIterator {
 #[async_trait]
 impl StorageBytesIterator for FileBytesIterator {
     async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
-        debug!(path = ?path.as_ref().display(),"open file");
+        debug!(path = ?path.as_ref().display(),"opening log file for iteration");
         let file = File::open(path).await?;
         Self::from_file(file).await
     }

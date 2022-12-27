@@ -68,6 +68,7 @@ where
         file: &mut S,
     ) -> Result<Option<FileBatchPos<R>>, IoError> {
         let pos = file.get_pos();
+        trace!(pos, "reading from pos");
         let bytes = match file.read_bytes(BATCH_FILE_HEADER_SIZE as u32).await? {
             Some(bytes) => bytes,
 
@@ -226,9 +227,9 @@ where
         })
     }
 
+    /// next batch position
     #[instrument(skip(self))]
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
-        trace!(pos = self.get_pos(), "reading next from");
         match FileBatchPos::read_from(&mut self.byte_iterator).await {
             Ok(batch_res) => batch_res,
             Err(err) => {

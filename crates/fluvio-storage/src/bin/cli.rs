@@ -19,6 +19,7 @@ use fluvio_storage::records::FileRecords;
 #[derive(Debug, Parser)]
 #[clap(name = "storage", about = "Flavio Storage CLI")]
 enum Main {
+    /// dump offsets
     #[clap(name = "log")]
     Log(LogOpt),
 
@@ -51,17 +52,23 @@ pub(crate) struct LogOpt {
     #[clap(value_parser)]
     file_name: PathBuf,
 
-    #[clap(long, default_value = "100")]
-    max: usize,
+    #[clap(long)]
+    max: Option<usize>,
 
-    #[clap(long, default_value = "0")]
-    min: usize,
+    #[clap(long)]
+    min: Option<usize>,
 }
 
 async fn dump_log(opt: LogOpt) -> Result<(), StorageError> {
-    if opt.min > opt.max {
-        return Err(StorageError::Other("min > max".to_string()));
+    if let Some(max) = opt.max {
+        if let Some(min) = opt.min {
+            if min > max {
+                return Err(StorageError::Other("min > max".to_string()));
+            }
+        }
     }
+
+    println!("opening: {:#?}", opt.file_name);
 
     let mut header = BatchHeaderStream::open(opt.file_name).await?;
 
@@ -69,14 +76,24 @@ async fn dump_log(opt: LogOpt) -> Result<(), StorageError> {
 
     while let Some(batch_pos) = header.next().await {
         let base_offset = batch_pos.get_batch().get_base_offset();
-        if base_offset as usize >= opt.min && base_offset as usize <= opt.max {
-            println!(
-                "batch offset: {}, pos: {}, len: {}, ",
-                base_offset,
-                batch_pos.get_pos(),
-                batch_pos.len(),
-            );
+
+        if let Some(min) = opt.min {
+            if (base_offset as usize) < min {
+                continue;
+            }
         }
+        if let Some(max) = opt.max {
+            if (base_offset as usize) > max {
+                break;
+            }
+        }
+
+        println!(
+            "batch offset: {}, pos: {}, len: {}, ",
+            base_offset,
+            batch_pos.get_pos(),
+            batch_pos.len(),
+        );
     }
 
     if let Some(invalid) = header.invalid() {
