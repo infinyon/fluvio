@@ -31,6 +31,7 @@ impl<'a> ConnectorFn<'a> {
     pub fn from_ast(func: &'a ItemFn) -> Result<Self> {
         func.sig
             .asyncness
+            .as_ref()
             .ok_or_else(|| Error::new(func.span(), "Connector function must be async"))?;
         if func.sig.inputs.len() != 2 {
             return Err(Error::new(

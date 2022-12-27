@@ -700,9 +700,9 @@ dependencies = [
 
 [[package]]
 name = "cap-fs-ext"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15ed685fe2949d035b080fbe7536b944efffb648af1d34630aa887ca2b132d2b"
+checksum = "0f8079425cfd20227020f2bff1320710ca68d6eddb4f64aba8e2741b2b4d8133"
 dependencies = [
  "cap-primitives",
  "cap-std",
@@ -712,9 +712,9 @@ dependencies = [
 
 [[package]]
 name = "cap-primitives"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0315442c0232cb9a1c2be55ee289a0e9bf5fd0b0f162be8e7f16673e095f5e09"
+checksum = "84bf8faa0b6397a4e26082818be03641a40e3aba1afc4ec44cbd6228c73c3a61"
 dependencies = [
  "ambient-authority",
  "fs-set-times",
@@ -729,9 +729,9 @@ dependencies = [
 
 [[package]]
 name = "cap-rand"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b78d30c0b3c656f6193bef0697cff6bd903d9b2b1437c7af3d35a6a9d1a7af2e"
+checksum = "53df044ddcb88611e19b712211b342ab106105cf658406f5ed4ee09ab10ed727"
 dependencies = [
  "ambient-authority",
  "rand 0.8.5",
@@ -739,9 +739,9 @@ dependencies = [
 
 [[package]]
 name = "cap-std"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e9256648eae510b29aae4d52ed71877239a61f9a2494d23ddad7fb6f50e5de8"
+checksum = "e4ad2b9e262a5c3b67ee92e4b9607ace704384c50c32aa6017a9282ddf15df20"
 dependencies = [
  "cap-primitives",
  "io-extras",
@@ -752,9 +752,9 @@ dependencies = [
 
 [[package]]
 name = "cap-time-ext"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "384a81c0fb05dbd361f157fd2c822e3d16709540e49300d26a27d3d57f02e8cb"
+checksum = "6dcbdbcced5c88b20f27c637faaed5dd283898cbefea48d2d8f3dcfaf048e5cc"
 dependencies = [
  "cap-primitives",
  "once_cell",
@@ -888,6 +888,7 @@ dependencies = [
  "anyhow",
  "cargo-builder",
  "clap 4.0.32",
+ "fluvio",
  "fluvio-connector-deployer",
  "fluvio-connector-package",
  "fluvio-future",
@@ -2478,6 +2479,8 @@ dependencies = [
 name = "fluvio-connector-derive"
 version = "0.0.0"
 dependencies = [
+ "fluvio",
+ "fluvio-connector-common",
  "proc-macro2",
  "quote",
  "syn",
@@ -4068,9 +4071,9 @@ dependencies = [
 
 [[package]]
 name = "io-extras"
-version = "0.17.0"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ad797ac2cd70ff82f6d9246d36762b41c1db15b439fd48bcb70914269642354"
+checksum = "b87bc110777311d7832025f38c4ab0f089f764644009edef3b5cbadfedee8c40"
 dependencies = [
  "io-lifetimes",
  "windows-sys 0.42.0",
@@ -5024,9 +5027,9 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "owo-colors"
-version = "3.5.0"
+version = "3.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
+checksum = "69dc4ec9e7e12502579e09e8a53c6a305b3aceb62ad5c307a62f7c3eada78324"
 
 [[package]]
 name = "parking"
@@ -5277,9 +5280,9 @@ dependencies = [
 
 [[package]]
 name = "portable-atomic"
-version = "0.3.18"
+version = "0.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81bdd679d533107e090c2704a35982fc06302e30898e63ffa26a81155c012e92"
+checksum = "26f6a7b87c2e435a3241addceeeff740ff8b7e76b74c13bf9acb17fa454ea00b"
 
 [[package]]
 name = "portpicker"
@@ -5809,9 +5812,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.36.5"
+version = "0.36.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3807b5d10909833d3e9acd1eb5fb988f79376ff10fce42937de71a449c4c588"
+checksum = "4feacf7db682c6c329c4ede12649cd36ecab0f3be5b7d74e6a20304725db4549"
 dependencies = [
  "bitflags",
  "errno",
@@ -6028,9 +6031,9 @@ checksum = "930c0acf610d3fdb5e2ab6213019aaa04e227ebe9547b0649ba599b16d788bd7"
 
 [[package]]
 name = "serde"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fed41fc1a24994d044e6db6935e69511a1153b52c15eb42493b26fa87feba0"
+checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
 dependencies = [
  "serde_derive",
 ]
@@ -6046,9 +6049,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "255abe9a125a985c05190d687b320c12f9b1f0b99445e608c21ba0782c719ad8"
+checksum = "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6576,9 +6579,9 @@ dependencies = [
 
 [[package]]
 name = "system-interface"
-version = "0.25.1"
+version = "0.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49cb2a7dd0bd450ea3d8c8cfb9e2e68dc5f73049c6eb55d1b15ce4984d04d23d"
+checksum = "c76db7161a415be430c1bd4d2d0c83aaeeded6f009f6d56da242a67747282f6c"
 dependencies = [
  "bitflags",
  "cap-fs-ext",
