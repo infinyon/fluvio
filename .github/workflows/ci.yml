@@ -66,7 +66,7 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -115,6 +115,10 @@ jobs:
       - name: Build smdk
         if: matrix.binary == 'smdk'
         run: make build-smdk
+      
+      - name: Build cdk
+        if: matrix.binary == 'cdk'
+        run: make build-cdk
 
       - name: Build fbm
         if: matrix.binary == 'fbm'
@@ -200,6 +204,16 @@ jobs:
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: smdk
+          
+          # cdk
+          - os: macos-12
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: cdk
+          - os: macos-12
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: cdk
 
           # fbm
           - os: ubuntu-latest
@@ -298,6 +312,11 @@ jobs:
         timeout-minutes: 30
         if: matrix.binary == 'smdk.exe'
         run: make build-smdk
+      
+      - name: Build cdk
+        timeout-minutes: 30
+        if: matrix.binary == 'cdk'
+        run: make build-cdk
 
       - name: Build fbm
         timeout-minutes: 30
