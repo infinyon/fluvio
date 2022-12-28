@@ -165,7 +165,7 @@ mod root {
 
                     let version = crate::VERSION
                         .strip_suffix("\r\n")
-                        .or(crate::VERSION.strip_suffix("\n"))
+                        .or_else(|| crate::VERSION.strip_suffix('\n'))
                         .unwrap_or(crate::VERSION);
                     let version = semver::Version::parse(version).unwrap();
                     cluster.process(out, version, root.target).await?;
