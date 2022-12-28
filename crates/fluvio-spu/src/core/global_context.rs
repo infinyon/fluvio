@@ -167,7 +167,7 @@ where
 mod file_replica {
 
     use fluvio_controlplane::{ReplicaRemovedRequest, UpdateReplicaRequest};
-    use fluvio_storage::{FileReplica, StorageError};
+    use fluvio_storage::{FileReplica};
     use flv_util::actions::Actions;
     use tracing::{trace, warn};
 
@@ -178,7 +178,7 @@ mod file_replica {
     #[derive(Debug)]
     pub enum ReplicaChange {
         Remove(ReplicaRemovedRequest),
-        StorageError(StorageError),
+        StorageError(anyhow::Error),
     }
 
     impl GlobalContext<FileReplica> {

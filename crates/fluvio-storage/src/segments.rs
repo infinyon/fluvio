@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tracing::{debug, trace, error, instrument, info};
+use anyhow::Result;
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Size64;
@@ -15,7 +16,6 @@ use fluvio_future::file_slice::AsyncFileSlice;
 
 use crate::config::SharedReplicaConfig;
 use crate::segment::ReadSegment;
-use crate::StorageError;
 use crate::util::log_path_get_offset;
 
 const MEM_ORDER: std::sync::atomic::Ordering = std::sync::atomic::Ordering::SeqCst;
@@ -39,7 +39,7 @@ impl SharedSegments {
 
     pub async fn from_dir(
         option: Arc<SharedReplicaConfig>,
-    ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
+    ) -> Result<(Arc<SharedSegments>, Option<Offset>)> {
         let dirs = option.base_dir.read_dir()?;
         debug!("reading segments at: {:#?}", dirs);
         let files: Vec<_> = dirs.filter_map(|entry| entry.ok()).collect();

@@ -74,14 +74,15 @@ mod tests {
 
         let mut stream = BatchHeaderStream::open(log_path).await.expect("open");
 
-        let file_pos = stream.next().await.expect("some");
+        let file_pos = stream.try_next().await.expect("ok").expect("some");
         assert_eq!(stream.get_pos(), 79);
         assert_eq!(file_pos.get_pos(), 0);
-        let batch = file_pos.get_batch();
+        let batch = file_pos.inner();
+
         assert_eq!(batch.get_header().producer_id, 12);
         assert_eq!(batch.get_base_offset(), BASE_OFFSET);
         assert_eq!(batch.get_last_offset(), BASE_OFFSET + 1);
-        assert!((stream.next().await).is_none());
+        assert!((stream.try_next().await.expect("ok")).is_none());
     }
 
     #[fluvio_future::test]
@@ -118,21 +119,23 @@ mod tests {
 
         let mut stream = BatchHeaderStream::open(log_path).await.expect("open");
 
-        let batch_pos1 = stream.next().await.expect("batch");
+        let batch_pos1 = stream.try_next().await.expect("ok").expect("batch");
         assert_eq!(stream.get_pos(), 79);
         assert_eq!(batch_pos1.get_pos(), 0);
-        let batch1 = batch_pos1.get_batch();
+        let batch1 = batch_pos1.inner();
+
         assert_eq!(batch1.get_base_offset(), BASE_OFFSET);
         assert_eq!(batch1.get_header().producer_id, PRODUCER_ID);
 
-        let batch_pos2 = stream.next().await.expect("batch");
+        let batch_pos2 = stream.try_next().await.expect("ok").expect("batch");
         assert_eq!(stream.get_pos(), 158);
         assert_eq!(batch_pos2.get_pos(), 79);
-        let batch2 = batch_pos2.get_batch();
+        let batch2 = batch_pos2.inner();
+
         assert_eq!(batch2.get_base_offset(), BASE_OFFSET + 2);
         assert_eq!(batch2.get_header().producer_id, PRODUCER_ID);
 
-        assert!((stream.next().await).is_none());
+        assert!((stream.try_next().await.expect("ok")).is_none());
     }
 
     //#[fluvio_future::test]
@@ -149,7 +152,7 @@ mod tests {
         let write_time = Instant::now();
         let mut last_base_offset = 0;
         // let mut records: i32 = 0;
-        while let Some(batch) = stream.next().await {
+        while let Some(batch) = stream.try_next().await.expect("ok") {
             counter += 1;
             //   println!("offset delta: {}",batch.get_batch().get_last_offset());
             //  records += batch.get_batch().get_records().len() as i32;
@@ -158,7 +161,7 @@ mod tests {
             //   }
             //  println!("pos: {}",stream.get_pos());
             //  println!("base_offset: {}",batch.get_batch().get_base_offset());
-            last_base_offset = batch.get_batch().get_base_offset();
+            last_base_offset = batch.inner().get_base_offset();
         }
 
         let time = write_time.elapsed();
@@ -183,15 +186,16 @@ mod tests {
         let offset_seek = 46612;
 
         let mut found = true;
-        while let Some(batch_pos) = header_stream.next().await {
+        while let Some(batch_pos) = header_stream.try_next().await.expect("ok") {
+            let pos = batch_pos.get_pos();
+            let batch = batch_pos.inner();
             debug!(
-                pos = batch_pos.get_pos(),
-                base_offset = batch_pos.get_batch().base_offset,
-                batch_len = batch_pos.get_batch().batch_len,
-                last_offset = batch_pos.get_batch().get_last_offset(),
+                base_offset = batch.base_offset,
+                batch_len = batch.batch_len,
+                last_offset = batch.get_last_offset(),
                 "batch_pos"
             );
-            let last_offset = batch_pos.get_batch().get_last_offset();
+            let last_offset = batch.get_last_offset();
             if last_offset >= offset_seek {
                 debug!(last_offset, "found batch last offset");
                 found = true;

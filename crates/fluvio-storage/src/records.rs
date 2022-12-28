@@ -12,6 +12,7 @@ use std::time::SystemTimeError;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
+use anyhow::Result;
 
 use fluvio_future::fs::File;
 use fluvio_future::fs::remove_file;
@@ -24,7 +25,6 @@ use crate::LogIndex;
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
 use crate::validator::validate;
-use crate::validator::LogValidationError;
 use crate::StorageError;
 
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
@@ -93,7 +93,7 @@ impl FileRecordsSlice {
         index: &LogIndex,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<Offset, LogValidationError> {
+    ) -> Result<Offset> {
         validate(&self.path, Some(index), skip_errors, verbose).await
     }
 

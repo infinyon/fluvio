@@ -1,11 +1,12 @@
 use std::{path::PathBuf};
 
 use clap::Parser;
+use anyhow::{Result, anyhow};
 
 use fluvio_protocol::record::Offset;
 use fluvio_future::task::run_block_on;
 use fluvio_storage::{
-    LogIndex, StorageError, OffsetPosition,
+    LogIndex,  OffsetPosition,
     batch_header::BatchHeaderStream,
     segment::{MutableSegment},
     config::{ReplicaConfig},
@@ -19,7 +20,7 @@ use fluvio_storage::records::FileRecords;
 #[derive(Debug, Parser)]
 #[clap(name = "storage", about = "Flavio Storage CLI")]
 enum Main {
-    /// dump offsets
+    /// validate log
     #[clap(name = "log")]
     Log(LogOpt),
 
@@ -57,25 +58,37 @@ pub(crate) struct LogOpt {
 
     #[clap(long)]
     min: Option<usize>,
+
+    /// write offsets
+    #[clap(long)]
+    print: bool,
+
+    /// set position
+    #[clap(long, default_value = "0")]
+    position: u32,
 }
 
-async fn dump_log(opt: LogOpt) -> Result<(), StorageError> {
+async fn dump_log(opt: LogOpt) -> Result<()> {
     if let Some(max) = opt.max {
         if let Some(min) = opt.min {
             if min > max {
-                return Err(StorageError::Other("min > max".to_string()));
+                return Err(anyhow!("min > max"));
             }
         }
     }
 
-    println!("opening: {:#?}", opt.file_name);
+    println!("opening: {:#?} position: {}", opt.file_name, opt.position);
 
-    let mut header = BatchHeaderStream::open(opt.file_name).await?;
+    let mut header_stream = BatchHeaderStream::open(opt.file_name).await?;
+    header_stream.set_absolute(opt.position).await?;
 
     //  println!("base offset: {}",batch_stream.get_base_offset());
 
-    while let Some(batch_pos) = header.next().await {
-        let base_offset = batch_pos.get_batch().get_base_offset();
+    while let Some(batch_pos) = header_stream.try_next().await? {
+        let pos = batch_pos.get_pos();
+        let batch = batch_pos.inner();
+
+        let base_offset = batch.get_base_offset();
 
         if let Some(min) = opt.min {
             if (base_offset as usize) < min {
@@ -88,19 +101,15 @@ async fn dump_log(opt: LogOpt) -> Result<(), StorageError> {
             }
         }
 
-        println!(
-            "batch offset: {}, pos: {}, len: {}, ",
-            base_offset,
-            batch_pos.get_pos(),
-            batch_pos.len(),
-        );
+        if opt.print {
+            println!(
+                "batch offset: {}, pos: {}, len: {}, ",
+                base_offset, pos, batch.batch_len,
+            );
+        }
     }
 
-    if let Some(invalid) = header.invalid() {
-        println!("invalid: {:#?}", invalid);
-    } else {
-        println!("all checked");
-    }
+    println!("all checked");
 
     Ok(())
 }
@@ -117,9 +126,9 @@ pub(crate) struct IndexOpt {
     min: usize,
 }
 
-async fn dump_index(opt: IndexOpt) -> Result<(), StorageError> {
+async fn dump_index(opt: IndexOpt) -> Result<()> {
     if opt.min > opt.max {
-        return Err(StorageError::Other("min > max".to_string()));
+        return Err(anyhow!("min > max"));
     }
 
     let log = LogIndex::open_from_path(opt.file_name).await?;
@@ -162,7 +171,7 @@ pub(crate) struct SegmentValidateOpt {
     verbose: bool,
 }
 
-pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), StorageError> {
+pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<()> {
     let file_path = opt.file_name;
 
     let option = ReplicaConfig::builder()

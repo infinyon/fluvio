@@ -5,9 +5,10 @@ use async_lock::RwLock;
 use std::collections::HashMap;
 
 use tracing::{error, instrument};
+use anyhow::Result;
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
-use fluvio_storage::{FileReplica, StorageError};
+use fluvio_storage::{FileReplica};
 
 use crate::{
     control_plane::SharedStatusUpdate,
@@ -77,7 +78,7 @@ impl ReplicaLeadersState<FileReplica> {
         ctx: &GlobalContext<FileReplica>,
         replica: Replica,
         status_update: SharedStatusUpdate,
-    ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
+    ) -> Result<LeaderReplicaState<FileReplica>> {
         let replica_id = replica.id.clone();
 
         let leader_replica =
