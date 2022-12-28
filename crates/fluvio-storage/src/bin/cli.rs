@@ -84,6 +84,8 @@ async fn dump_log(opt: LogOpt) -> Result<()> {
 
     //  println!("base offset: {}",batch_stream.get_base_offset());
 
+    let mut count: usize = 0;
+    let time = std::time::Instant::now();
     while let Some(batch_pos) = header_stream.try_next().await? {
         let pos = batch_pos.get_pos();
         let batch = batch_pos.inner();
@@ -107,9 +109,15 @@ async fn dump_log(opt: LogOpt) -> Result<()> {
                 base_offset, pos, batch.batch_len,
             );
         }
+
+        count += 1;
     }
 
-    println!("all checked");
+    println!(
+        "{} records checked in {} millsecs",
+        count,
+        time.elapsed().as_millis()
+    );
 
     Ok(())
 }
