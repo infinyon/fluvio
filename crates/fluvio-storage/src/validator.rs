@@ -34,7 +34,7 @@ pub enum LogValidationError {
     #[error("Batch already exists")]
     ExistingBatch,
     #[error("Empty file: {0}")]
-    Empty(i64)
+    Empty(i64),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -45,8 +45,6 @@ pub struct InvalidIndexError {
     pub index_position: u32,
     pub diff_position: u32,
 }
-
-
 
 /// Validation Log file is consistent with index file
 #[derive(Debug)]
@@ -292,7 +290,6 @@ mod tests {
 
     use std::env::temp_dir;
 
-
     use flv_util::fixture::ensure_new_dir;
     use futures_lite::io::AsyncWriteExt;
 
@@ -409,7 +406,9 @@ mod tests {
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
-        assert!(validate::<_, LogIndex>(&test_file, None, false, false).await.is_err());
+        assert!(validate::<_, LogIndex>(&test_file, None, false, false)
+            .await
+            .is_err());
     }
 }
 

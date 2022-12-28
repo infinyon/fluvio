@@ -6,7 +6,7 @@ use anyhow::{Result, anyhow};
 use fluvio_protocol::record::Offset;
 use fluvio_future::task::run_block_on;
 use fluvio_storage::{
-    LogIndex,  OffsetPosition,
+    LogIndex, OffsetPosition,
     batch_header::BatchHeaderStream,
     segment::{MutableSegment},
     config::{ReplicaConfig},
