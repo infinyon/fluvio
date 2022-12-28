@@ -24,7 +24,7 @@ use fluvio_protocol::record::{Offset, Size, Size64};
 use crate::LogIndex;
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
-use crate::validator::validate;
+use crate::validator::LogValidator;
 use crate::StorageError;
 
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
@@ -93,8 +93,8 @@ impl FileRecordsSlice {
         index: &LogIndex,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<Offset> {
-        validate(&self.path, Some(index), skip_errors, verbose).await
+    ) -> Result<LogValidator> {
+        LogValidator::validate(&self.path, Some(index), skip_errors, verbose).await
     }
 
     pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {

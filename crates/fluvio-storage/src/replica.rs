@@ -131,7 +131,7 @@ impl ReplicaStorage for FileReplica {
         &mut self,
         records: &mut RecordSet<R>,
         update_highwatermark: bool,
-    ) -> Result<usize, StorageError> {
+    ) -> Result<usize> {
         let max_batch_size = self.option.max_batch_size.get() as usize;
         let mut total_size = 0;
         // check if any of the records's batch exceed max length
@@ -139,7 +139,7 @@ impl ReplicaStorage for FileReplica {
             let batch_size = batch.write_size(0);
             total_size += batch_size;
             if batch_size > max_batch_size {
-                return Err(StorageError::BatchTooBig(max_batch_size));
+                return Err(StorageError::BatchTooBig(max_batch_size).into());
             }
         }
 
@@ -369,10 +369,7 @@ impl FileReplica {
     }
 
     #[instrument(skip(self, item))]
-    async fn write_batch<R: BatchRecords>(
-        &mut self,
-        item: &mut Batch<R>,
-    ) -> Result<(), StorageError> {
+    async fn write_batch<R: BatchRecords>(&mut self, item: &mut Batch<R>) -> Result<()> {
         if !(self.active_segment.append_batch(item).await?) {
             info!(
                 partition = self.partition,
@@ -850,11 +847,12 @@ mod tests {
             .expect("batch")
             .records();
         assert!(largest_batch.write_size(0) > 100); // ensure we are writing more than 100
+        let err = replica
+            .write_recordset(&mut largest_batch, true)
+            .await
+            .unwrap_err();
         assert!(matches!(
-            replica
-                .write_recordset(&mut largest_batch, true)
-                .await
-                .unwrap_err(),
+            err.downcast_ref::<StorageError>().expect("downcast"),
             StorageError::BatchTooBig(_)
         ));
     }

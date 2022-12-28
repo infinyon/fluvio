@@ -26,10 +26,9 @@ use fluvio_protocol::Encoder;
 use crate::config::SharedReplicaConfig;
 use crate::mut_index::MutLogIndex;
 use crate::util::generate_file_name;
-use crate::validator::validate;
 use crate::validator::LogValidationError;
-use crate::StorageError;
 use crate::records::FileRecords;
+use crate::validator::LogValidator;
 
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
 
@@ -112,8 +111,8 @@ impl MutFileRecords {
         index: &MutLogIndex,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<Offset> {
-        validate(&self.path, Some(index), skip_errors, verbose).await
+    ) -> Result<LogValidator> {
+        LogValidator::validate(&self.path, Some(index), skip_errors, verbose).await
     }
 
     /// get current file position
@@ -128,10 +127,13 @@ impl MutFileRecords {
     pub async fn write_batch<R: BatchRecords>(
         &mut self,
         batch: &Batch<R>,
-    ) -> Result<(bool, usize, u32), StorageError> {
+    ) -> Result<(bool, usize, u32)> {
         trace!("start sending using batch {:#?}", batch.get_header());
         if batch.base_offset < self.base_offset {
-            return Err(StorageError::LogValidation(LogValidationError::BaseOff));
+            return Err(LogValidationError::InvalidBaseOffsetMinimum {
+                invalid_batch_offset: batch.base_offset,
+            }
+            .into());
         }
 
         let batch_len = batch.write_size(0);

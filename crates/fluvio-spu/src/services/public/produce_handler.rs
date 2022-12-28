@@ -144,14 +144,16 @@ async fn handle_produce_partition<R: BatchRecords>(
 
             PartitionWriteResult::ok(replica_id, base_offset, leo)
         }
-        Err(err @ StorageError::BatchTooBig(_)) => {
-            error!(%replica_id, "Batch is too big: {:#?}", err);
-            PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
-        }
-        Err(err) => {
-            error!(%replica_id, "Error writing to replica: {:#?}", err);
-            PartitionWriteResult::error(replica_id, ErrorCode::StorageError)
-        }
+        Err(err) => match err.downcast_ref::<StorageError>() {
+            Some(StorageError::BatchTooBig(_)) => {
+                error!(%replica_id, "Batch is too big: {:#?}", err);
+                PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
+            }
+            _ => {
+                error!(%replica_id, "Error writing to replica: {:#?}", err);
+                PartitionWriteResult::error(replica_id, ErrorCode::StorageError)
+            }
+        },
     }
 }
 

@@ -12,7 +12,7 @@ use fluvio_storage::config::ReplicaConfig;
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_protocol::record::RecordSet;
 use fluvio_protocol::record::Offset;
-use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, ReplicaStorageConfig};
+use fluvio_storage::{FileReplica, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 
 use crate::replication::leader::ReplicaOffsetRequest;
@@ -209,7 +209,7 @@ where
         &self,
         records: &mut RecordSet<R>,
         leader_hw: Offset,
-    ) -> Result<bool, StorageError> {
+    ) -> Result<bool> {
         let mut changes = false;
 
         if records.total_records() > 0 {
@@ -245,10 +245,7 @@ where
 
     /// try to write records
     /// ensure records has correct baseoffset
-    async fn write_recordsets<R: BatchRecords>(
-        &self,
-        records: &mut RecordSet<R>,
-    ) -> Result<bool, StorageError> {
+    async fn write_recordsets<R: BatchRecords>(&self, records: &mut RecordSet<R>) -> Result<bool> {
         let storage_leo = self.leo();
         if records.base_offset() != storage_leo {
             // this could happened if records were sent from leader before hw was sync

@@ -21,7 +21,6 @@ use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
 use crate::config::{SharedReplicaConfig};
-use crate::validator::{InvalidIndexError};
 use crate::StorageError;
 use crate::batch::{FileBatchStream};
 use crate::index::OffsetPosition;
@@ -233,7 +232,7 @@ impl Segment<LogIndex, FileRecordsSlice> {
         base_offset: Offset,
         end_offset: Offset,
         option: Arc<SharedReplicaConfig>,
-    ) -> Result<Self, StorageError> {
+    ) -> Result<Self> {
         debug!(base_offset, end_offset, ?option, "open for read");
         let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
@@ -258,40 +257,26 @@ impl Segment<LogIndex, FileRecordsSlice> {
         let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
         let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
-        let end_offset = msg_log.validate(&index, false, false).await?;
         match msg_log.validate(&index, false, false).await {
-            Ok(end_offset) => {
-                debug!(end_offset, base_offset, "base offset from msg_log");
+            Ok(val) => {
+                // check if validation is successful
+                if let Some(err) = val.error {
+                    error!(err = ?err, "segment validation failed");
+                    return Err(err.into());
+                }
+
+                info!(end_offset = val.last_valid_offset, base_offset = val.base_offset, time_ms = %val.duration.as_millis(), "segment validated");
                 Ok(Segment {
                     msg_log,
                     index,
                     option,
                     base_offset,
-                    end_offset,
+                    end_offset: val.last_valid_offset,
                 })
             }
             Err(err) => {
-                // try to downcast
-                if let Some(index_error) = err.downcast_ref::<InvalidIndexError>() {
-                    error!(
-                        offset = index_error.offset,
-                        batch_file_pos = index_error.batch_file_pos,
-                        index_position = index_error.index_position,
-                        diff_position = index_error.diff_position,
-                        "invalid index, rebuilding"
-                    );
-                    //  let index = msg_log.generate_index().await?;
-                    Ok(Segment {
-                        msg_log,
-                        index,
-                        option,
-                        base_offset,
-                        end_offset,
-                    })
-                } else {
-                    error!(?err, "validation error");
-                    Err(err)
-                }
+                error!(?err, "segment validation encountered fail error");
+                Err(err)
             }
         }
     }
@@ -364,7 +349,8 @@ impl Segment<MutLogIndex, MutFileRecords> {
         self.end_offset = self
             .msg_log
             .validate(&self.index, skip_errors, verbose)
-            .await?;
+            .await?
+            .last_valid_offset;
         Ok(self.end_offset)
     }
 
@@ -381,13 +367,13 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
     /// convert to immutable segment
     #[allow(clippy::wrong_self_convention)]
-    pub async fn as_segment(self) -> Result<ReadSegment, StorageError> {
+    pub async fn as_segment(self) -> Result<ReadSegment> {
         Segment::open_for_read(self.get_base_offset(), self.end_offset, self.option.clone()).await
     }
 
     /// use only in test
     #[cfg(test)]
-    pub async fn convert_to_segment(mut self) -> Result<ReadSegment, StorageError> {
+    pub async fn convert_to_segment(mut self) -> Result<ReadSegment> {
         self.shrink_index().await?;
         Segment::open_for_read(self.get_base_offset(), self.end_offset, self.option.clone()).await
     }
@@ -398,14 +384,11 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// 2. Append batch to msg log
     /// 3. Write batch location to index
     #[instrument(skip(batch))]
-    pub async fn append_batch<R: BatchRecords>(
-        &mut self,
-        batch: &mut Batch<R>,
-    ) -> Result<bool, StorageError> {
+    pub async fn append_batch<R: BatchRecords>(&mut self, batch: &mut Batch<R>) -> Result<bool> {
         // adjust base offset and offset delta
         // reject if batch len is 0
         if batch.records_len() == 0 {
-            return Err(StorageError::EmptyBatch);
+            return Err(StorageError::EmptyBatch.into());
         }
 
         batch.set_base_offset(self.end_offset);
