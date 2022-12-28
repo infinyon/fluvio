@@ -2496,6 +2496,7 @@ dependencies = [
  "fluvio-compression",
  "fluvio-controlplane-metadata",
  "fluvio-smartengine",
+ "fluvio-types",
  "humantime-serde",
  "pretty_assertions",
  "serde",
@@ -6284,6 +6285,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38aabbeafa6f6dead8cebf246fe9fae1f9215c8d29b3a69f93bd62a9e4a3dcd6"
 dependencies = [
  "event-listener",
+]
+
+[[package]]
+name = "sink-test-connector"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "async-trait",
+ "fluvio",
+ "fluvio-connector-common",
+ "futures 0.3.25",
 ]
 
 [[package]]

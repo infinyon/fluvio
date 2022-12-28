@@ -1,0 +1,19 @@
+[package]
+name = "sink-test-connector"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Connector that reads data from a topic and prints to stdout"
+edition = "2021"
+publish = false
+
+
+
+[dependencies]
+async-trait = { version = "0.1", default-features = false}
+futures = { version = "0.3", default-features = false }
+anyhow = { workspace = true}
+async-std = { version = "1.12",  default-features = false, features = ["attributes"]}
+
+fluvio = { path = "../../crates/fluvio/", features = ["smartengine"]}
+fluvio-connector-common = { path = "../../crates/fluvio-connector-common/", features = ["derive"] }
+

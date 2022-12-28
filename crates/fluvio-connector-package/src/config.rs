@@ -8,6 +8,7 @@ use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::time::Duration;
 
+use fluvio_types::PartitionId;
 use tracing::debug;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -52,7 +53,7 @@ pub struct ConnectorConfig {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    partition: Option<i32>,
+    pub partition: Option<PartitionId>,
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
