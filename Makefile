@@ -20,6 +20,7 @@ include makefiles/build.mk
 include makefiles/test.mk
 include makefiles/check.mk
 include makefiles/release.mk
+include crates/fluvio-storage/Makefile
 
 
 # misc stuff

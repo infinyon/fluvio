@@ -28,6 +28,7 @@ pub use inner::*;
 mod inner {
 
     use async_trait::async_trait;
+    use anyhow::Result;
 
     use fluvio_protocol::record::BatchRecords;
     use fluvio_protocol::link::ErrorCode;
@@ -132,7 +133,7 @@ mod inner {
         async fn create_or_load(
             replica: &ReplicaKey,
             replica_config: Self::ReplicaConfig,
-        ) -> Result<Self, StorageError>;
+        ) -> Result<Self>;
 
         /// high water mark offset (records that has been replicated)
         fn get_hw(&self) -> Offset;

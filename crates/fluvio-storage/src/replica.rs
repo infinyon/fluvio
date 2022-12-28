@@ -3,11 +3,12 @@ use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_protocol::Encoder;
 use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
+use anyhow::Result;
 
+use fluvio_future::file_slice::AsyncFileSlice;
+use fluvio_protocol::Encoder;
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
 use fluvio_protocol::link::ErrorCode;
 use fluvio_spu_schema::Isolation;
@@ -55,7 +56,7 @@ impl ReplicaStorage for FileReplica {
     async fn create_or_load(
         replica: &ReplicaKey,
         replica_config: Self::ReplicaConfig,
-    ) -> Result<Self, StorageError> {
+    ) -> Result<Self> {
         let storage_config = StorageConfig::builder().build().map_err(|err| {
             StorageError::Other(format!("failed to build cleaner config: {}", err))
         })?;
@@ -209,7 +210,7 @@ impl FileReplica {
         base_offset: Offset,
         replica_config: ReplicaConfig,
         storage_config: Arc<StorageConfig>,
-    ) -> Result<FileReplica, StorageError>
+    ) -> Result<FileReplica>
     where
         S: AsRef<str> + Send + 'static,
     {

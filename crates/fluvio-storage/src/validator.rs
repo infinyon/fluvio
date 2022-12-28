@@ -1,4 +1,3 @@
-use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::marker::PhantomData;
 use std::path::Path;
@@ -7,7 +6,8 @@ use std::path::PathBuf;
 use fluvio_protocol::record::BatchRecords;
 use tracing::error;
 use tracing::instrument;
-use tracing::{debug, warn};
+use tracing::{debug};
+use anyhow::{Result, anyhow};
 
 use fluvio_protocol::record::Offset;
 
@@ -21,8 +21,6 @@ use crate::util::OffsetError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LogValidationError {
-    #[error(transparent)]
-    Io(#[from] IoError),
     #[error("Invalid extension")]
     InvalidExtension,
     #[error("Invalid log name")]
@@ -37,17 +35,18 @@ pub enum LogValidationError {
     ExistingBatch,
     #[error("Empty file: {0}")]
     Empty(i64),
-
-    #[error("Invalid Index: {offset} pos: {batch_file_pos} offset: {index_position}")]
-    InvalidIndex {
-        offset: Offset,
-        batch_file_pos: u32,
-        index_position: u32,
-        diff_position: u32,
-    },
 }
 
-/// Validation Log file
+#[derive(Debug, thiserror::Error)]
+#[error("Invalid Index: {offset} pos: {batch_file_pos} offset: {index_position}")]
+pub struct InvalidIndexError {
+    pub offset: Offset,
+    pub batch_file_pos: u32,
+    pub index_position: u32,
+    pub diff_position: u32,
+}
+
+/// Validation Log file is consistent with index file
 #[derive(Debug)]
 pub struct LogValidator<P, R, I, S = FileBytesIterator> {
     pub base_offset: Offset,
@@ -74,7 +73,7 @@ where
         index: Option<&I>,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<Self, LogValidationError> {
+    ) -> Result<Self> {
         let file_path = path.as_ref().to_path_buf();
         let mut val = Self {
             base_offset: log_path_get_offset(&file_path)?,
@@ -99,7 +98,9 @@ where
         {
             Ok(batch_stream) => batch_stream,
             Err(err) => match err.kind() {
-                ErrorKind::UnexpectedEof => return Err(LogValidationError::Empty(val.base_offset)),
+                ErrorKind::UnexpectedEof => {
+                    return Err(anyhow!("empty file with base offset: {}", val.base_offset))
+                }
                 _ => return Err(err.into()),
             },
         };
@@ -109,7 +110,7 @@ where
         Ok(val)
     }
 
-    /// open validator on the log file path
+    /// validate log file
     #[instrument(skip(self, index, skip_errors, verbose, batch_stream))]
     pub async fn validate_with_stream(
         &mut self,
@@ -117,15 +118,21 @@ where
         index: Option<&I>,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<(), LogValidationError> {
+    ) -> Result<()> {
         let mut last_index_pos = 0;
         let mut last_batch_pos = 0;
 
-        while let Some(batch_pos) = batch_stream.next().await {
-            let batch_offset = batch_pos.get_batch().get_base_offset();
-            let pos = batch_pos.get_pos();
+        if batch_stream.is_invalid() {
+            return Err(anyhow!("invalid batch stream"));
+        }
 
-            let header = batch_pos.get_batch().get_header();
+        while let Some(batch_pos) = batch_stream.try_next().await? {
+            let pos = batch_pos.get_pos();
+            let batch = batch_pos.inner();
+
+            let batch_offset = batch.get_base_offset();
+
+            let header = batch.get_header();
             let offset_delta = header.last_offset_delta;
 
             if verbose {
@@ -142,8 +149,8 @@ where
                         if verbose {
                             let diff_pos = index_pos - last_index_pos;
                             println!(
-                                "index offset = {offset}, idx_pos = {index_pos}, diff_pos={diff_pos}"
-                            );
+                                        "index offset = {offset}, idx_pos = {index_pos}, diff_pos={diff_pos}"
+                                    );
                         }
 
                         if index_pos != pos {
@@ -151,17 +158,18 @@ where
                                 let diff_index_batch_pos = index_pos - pos;
                                 let diff_index_pos = index_pos - last_index_pos;
                                 println!(
-                                    "-- index mismatch: diff pos = {diff_index_batch_pos}, diff from prev index pos={diff_index_pos}"
-                                );
+                                            "-- index mismatch: diff pos = {diff_index_batch_pos}, diff from prev index pos={diff_index_pos}"
+                                        );
                             }
 
                             if !skip_errors {
-                                return Err(LogValidationError::InvalidIndex {
-                                    offset: batch_offset,
-                                    batch_file_pos: batch_pos.get_pos(),
-                                    index_position: index_pos,
-                                    diff_position: index_pos - batch_pos.get_pos(),
-                                });
+                                return Err(anyhow!(
+                                    "Invalid Index: {} pos: {} index_position: {}, diff: {}",
+                                    batch_offset,
+                                    pos,
+                                    index_pos,
+                                    index_pos - pos
+                                ));
                             }
                         } else {
                             last_index_pos = index_pos;
@@ -182,16 +190,15 @@ where
             }
 
             if batch_offset < self.base_offset {
-                warn!(
+                return Err(anyhow!(
                     "batch base offset: {} is less than base offset: {} path: {:#?}",
                     batch_offset,
                     self.base_offset,
                     self.file_path.display()
-                );
-                return Err(LogValidationError::BaseOff);
+                ));
             }
 
-            last_batch_pos = batch_pos.get_pos();
+            last_batch_pos = pos;
 
             /*
             // test converting batch to slice
@@ -217,10 +224,6 @@ where
             // perform a simple json decoding
 
             self.batches += 1;
-        }
-
-        if let Some(err) = batch_stream.invalid() {
-            return Err(err.into());
         }
 
         debug!(self.last_offset, "found last offset");
@@ -250,10 +253,9 @@ where
         index: Option<&I>,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<Offset, LogValidationError> {
+    ) -> Result<Offset> {
         match Self::validate_core(path, index, skip_errors, verbose).await {
             Ok(val) => Ok(val.next_offset()),
-            Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
             Err(err) => Err(err),
         }
     }
@@ -266,7 +268,7 @@ pub async fn validate<P, I>(
     index: Option<&I>,
     skip_errors: bool,
     verbose: bool,
-) -> Result<Offset, LogValidationError>
+) -> Result<Offset>
 where
     P: AsRef<Path>,
     I: Index,
@@ -287,7 +289,6 @@ where
 mod tests {
 
     use std::env::temp_dir;
-    use std::io::ErrorKind;
 
     use flv_util::fixture::ensure_new_dir;
     use futures_lite::io::AsyncWriteExt;
@@ -301,7 +302,6 @@ mod tests {
     use crate::mut_records::MutFileRecords;
     use crate::config::ReplicaConfig;
     use crate::records::FileRecords;
-    use crate::validator::LogValidationError;
 
     use super::*;
 
@@ -406,15 +406,9 @@ mod tests {
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
-        match validate::<_, LogIndex>(&test_file, None, false, false).await {
-            Err(err) => match err {
-                LogValidationError::Io(io_err) => {
-                    assert!(matches!(io_err.kind(), ErrorKind::UnexpectedEof));
-                }
-                _ => panic!("unexpected error"),
-            },
-            Ok(_) => panic!("should have failed"),
-        };
+        assert!(validate::<_, LogIndex>(&test_file, None, false, false)
+            .await
+            .is_err());
     }
 }
 

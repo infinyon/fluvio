@@ -2,11 +2,17 @@
 
 From root of the project
 ```
-cargo build --features=cli --manifest-path crates/fluvio-storage/Cargo.toml 
+make build-storage-cli 
 ```
+
+and set  alias for storage-cli
+```
+alias scli=$(PWD)/target/release/storage-cli
+```
+
 
 # Running storage cli
 
 ```
-./target/debug/storage-cli log /tmp/fluvio/spu-logs-5001/t1-0/00000000000000000000.log 
+scli log /tmp/fluvio/spu-logs-5001/t1-0/00000000000000000000.log 
 ```

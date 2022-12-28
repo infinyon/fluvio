@@ -5,6 +5,7 @@ use std::ops::{Deref, DerefMut};
 
 use tracing::{debug, warn, instrument};
 use async_rwlock::{RwLock};
+use anyhow::Result;
 
 use fluvio_protocol::record::BatchRecords;
 use fluvio_storage::config::ReplicaConfig;
@@ -77,7 +78,7 @@ impl FollowersState<FileReplica> {
         self: Arc<Self>,
         ctx: &FileGlobalContext,
         replica: Replica,
-    ) -> Result<Option<FollowerReplicaState<FileReplica>>, StorageError> {
+    ) -> Result<Option<FollowerReplicaState<FileReplica>>> {
         let leader = replica.leader;
 
         let mut writer = self.write().await;
@@ -180,7 +181,7 @@ where
         leader: SpuId,
         replica_key: ReplicaKey,
         config: S::ReplicaConfig,
-    ) -> Result<Self, StorageError>
+    ) -> Result<Self>
     where
         S::ReplicaConfig: Display,
     {

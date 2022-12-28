@@ -13,6 +13,7 @@ use tracing::instrument;
 use tracing::{debug, trace};
 use futures_lite::io::AsyncWriteExt;
 use async_channel::Sender;
+use anyhow::Result;
 
 use fluvio_protocol::record::BatchRecords;
 use fluvio_future::fs::File;
@@ -111,7 +112,7 @@ impl MutFileRecords {
         index: &MutLogIndex,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<Offset, LogValidationError> {
+    ) -> Result<Offset> {
         validate(&self.path, Some(index), skip_errors, verbose).await
     }
 

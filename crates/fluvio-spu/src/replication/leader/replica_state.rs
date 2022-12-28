@@ -10,6 +10,7 @@ use std::fmt;
 use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
+use anyhow::Result;
 
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, BatchRecords};
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
@@ -125,7 +126,7 @@ where
         replica: Replica,
         config: &'a C,
         status_update: SharedStatusUpdate,
-    ) -> Result<LeaderReplicaState<S>, StorageError>
+    ) -> Result<LeaderReplicaState<S>>
     where
         ReplicationConfig: From<&'a C>,
         S::ReplicaConfig: From<&'a C>,
@@ -710,7 +711,7 @@ mod test_leader {
         async fn create_or_load(
             _replica: &ReplicaKey,
             _config: Self::ReplicaConfig,
-        ) -> Result<Self, fluvio_storage::StorageError> {
+        ) -> Result<Self> {
             Ok(MockStorage {
                 pos: OffsetInfo { leo: 0, hw: 0 },
             })
