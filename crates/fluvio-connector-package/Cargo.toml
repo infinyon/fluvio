@@ -23,6 +23,7 @@ fluvio-smartengine = { path = "../fluvio-smartengine", default-features = false,
     "transformation",
 ] }
 fluvio-compression = { path = "../fluvio-compression" }
+fluvio-types = { path = "../fluvio-types" }
 
 tracing = { workspace = true }
 anyhow = { workspace = true }

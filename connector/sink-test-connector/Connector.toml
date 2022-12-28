@@ -1,0 +1,16 @@
+[package]
+name = "sink-test-connector"
+group = "fluvio"
+version = "0.1.0"
+apiVersion = "0.1.0"
+fluvio = "0.10.0"
+description = "Test Sink Connector"
+license = "Apache-2.0"
+
+
+[direction]
+dest = true
+
+[deployment]
+binary = "sink-test-connector"
+
