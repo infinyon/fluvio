@@ -226,17 +226,9 @@ impl LogValidator {
         Ok(())
     }
 
-    fn next_offset(&self) -> Offset {
-        if self.last_valid_offset == -1 {
-            return self.base_offset;
-        }
-
-        self.last_valid_offset + 1
-    }
-
-    /// generalized validation using byte iterator
+    /// used by test
     #[instrument(skip(index, path))]
-    pub(crate) async fn validate_segment<I, S>(
+    async fn validate_segment<I, S>(
         path: impl AsRef<Path>,
         index: Option<&I>,
         skip_errors: bool,
@@ -248,7 +240,13 @@ impl LogValidator {
     {
         match Self::validate_core::<I, S, FileEmptyRecords>(path, index, skip_errors, verbose).await
         {
-            Ok(val) => Ok(val.next_offset()),
+            Ok(val) => {
+                if val.last_valid_offset == -1 {
+                    Ok(val.base_offset)
+                } else {
+                    Ok(val.last_valid_offset + 1)
+                }
+            }
             Err(err) => Err(err),
         }
     }
