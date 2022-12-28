@@ -290,7 +290,7 @@ impl Segment<LogIndex, FileRecordsSlice> {
                     })
                 } else {
                     error!(?err, "validation error");
-                    Err(err.into())
+                    Err(err)
                 }
             }
         }
