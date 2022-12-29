@@ -247,7 +247,7 @@ impl From<ReplicaConfig> for SharedReplicaConfig {
     }
 }
 
-/// Storage wide configuration
+/// Storage wide configuration independent of replica
 #[derive(Builder, Debug, Clone)]
 pub struct StorageConfig {
     #[builder(default = "10000")] // 10 seconds

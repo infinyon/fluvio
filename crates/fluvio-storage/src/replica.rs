@@ -61,7 +61,7 @@ impl ReplicaStorage for FileReplica {
             StorageError::Other(format!("failed to build cleaner config: {}", err))
         })?;
 
-        Self::create_or_load(
+        Self::create_or_load_with_storage(
             replica.topic.clone(),
             replica.partition,
             0,
@@ -204,7 +204,7 @@ impl FileReplica {
     /// The logs will be validated to ensure it's safe to use it.
     /// It is possible logs can't be used because they may be corrupted.
     #[instrument(skip(topic, partition, base_offset, replica_config, storage_config))]
-    pub async fn create_or_load<S>(
+    pub async fn create_or_load_with_storage<S>(
         topic: S,
         partition: Size,
         base_offset: Offset,
@@ -466,7 +466,7 @@ mod tests {
         base_offset: Offset,
         config: ReplicaConfig,
     ) -> FileReplica {
-        FileReplica::create_or_load(topic, 0, base_offset, config, storage_config())
+        FileReplica::create_or_load_with_storage(topic, 0, base_offset, config, storage_config())
             .await
             .expect("replica")
     }
@@ -638,10 +638,15 @@ mod tests {
     async fn test_rep_log_roll_over() {
         let option = rollover_option(TEST_REPLICA_DIR);
 
-        let mut replica =
-            FileReplica::create_or_load("test", 1, START_OFFSET, option.clone(), storage_config())
-                .await
-                .expect("create rep");
+        let mut replica = FileReplica::create_or_load_with_storage(
+            "test",
+            1,
+            START_OFFSET,
+            option.clone(),
+            storage_config(),
+        )
+        .await
+        .expect("create rep");
 
         // first batch
         debug!(">>>> sending first batch");
@@ -943,10 +948,15 @@ mod tests {
             .build()
             .expect("batch");
 
-        let mut new_replica =
-            FileReplica::create_or_load("test", 0, 0, option.clone(), Arc::new(storage_config))
-                .await
-                .expect("create");
+        let mut new_replica = FileReplica::create_or_load_with_storage(
+            "test",
+            0,
+            0,
+            option.clone(),
+            Arc::new(storage_config),
+        )
+        .await
+        .expect("create");
         let reader = new_replica.prev_segments.read().await;
         assert!(reader.len() == 0);
         drop(reader);
@@ -1002,7 +1012,7 @@ mod tests {
         option.max_partition_size = max_partition_size;
         option.segment_max_bytes = max_segment_size;
 
-        let mut replica = FileReplica::create_or_load(
+        let mut replica = FileReplica::create_or_load_with_storage(
             "test",
             0,
             START_OFFSET,

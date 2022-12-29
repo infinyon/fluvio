@@ -3,6 +3,7 @@ use std::{path::PathBuf};
 use clap::Parser;
 use anyhow::{Result, anyhow};
 
+use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_protocol::record::Offset;
 use fluvio_future::task::run_block_on;
 use fluvio_storage::{
@@ -10,6 +11,7 @@ use fluvio_storage::{
     batch_header::BatchHeaderStream,
     segment::{MutableSegment},
     config::{ReplicaConfig},
+    FileReplica, ReplicaStorage,
 };
 use fluvio_storage::records::FileRecords;
 
@@ -29,18 +31,23 @@ enum Main {
 
     #[clap(name = "validate")]
     ValidateSegment(SegmentValidateOpt),
+
+    /// show information about replica
+    #[clap(name = "replica")]
+    Replica(ReplicaOpt),
 }
 
 fn main() {
     fluvio_future::subscriber::init_logger();
 
-    let opt = Main::parse();
+    let main_opt = Main::parse();
 
     let result = run_block_on(async {
-        match opt {
+        match main_opt {
             Main::Log(opt) => dump_log(opt).await,
             Main::Index(opt) => dump_index(opt).await,
             Main::ValidateSegment(opt) => validate_segment(opt).await,
+            Main::Replica(opt) => replica_info(opt).await,
         }
     });
     if let Err(err) = result {
@@ -209,6 +216,36 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<()> {
     let duration = start.elapsed().as_secs_f32();
 
     println!("completed, last offset = {last_offset}, took: {duration} seconds");
+
+    Ok(())
+}
+
+#[derive(Debug, Parser)]
+pub(crate) struct ReplicaOpt {
+    /// base data directory
+    #[clap(value_parser)]
+    replica_dir: PathBuf,
+
+    #[clap(long)]
+    topic: String,
+
+    #[clap(long, default_value = "0")]
+    partition: u32,
+}
+
+pub(crate) async fn replica_info(opt: ReplicaOpt) -> Result<()> {
+    let replica_dir = opt.replica_dir;
+
+    println!("opening replica dir: {:#?}", replica_dir);
+    let option = ReplicaConfig::builder()
+        .base_dir(replica_dir.clone())
+        .build();
+
+    let replica = ReplicaKey::new(opt.topic, opt.partition);
+    let replica = FileReplica::create_or_load(&replica, option).await?;
+
+    println!("hw: {:#?}", replica.get_hw());
+    println!("leo: {:#?}", replica.get_leo());
 
     Ok(())
 }
