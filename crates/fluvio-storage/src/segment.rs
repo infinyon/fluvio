@@ -360,6 +360,10 @@ impl Segment<MutLogIndex, MutFileRecords> {
                     );
                     // for decoding batch error, we can readjust
                     self.msg_log.set_len(validation.last_valid_file_pos).await?;
+                    info!(
+                        len = validation.last_valid_file_pos,
+                        "readjust segment length"
+                    );
                 }
                 _ => {
                     // for other error, we can't recover

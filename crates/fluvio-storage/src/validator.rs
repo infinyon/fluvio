@@ -352,7 +352,7 @@ mod tests {
     }
 
     #[fluvio_future::test]
-    async fn test_fix_invalid_contents() {
+    async fn test_validating_invalid_contents() {
         const OFFSET: i64 = 501;
 
         let test_dir = temp_dir().join("validate_invalid_contents");

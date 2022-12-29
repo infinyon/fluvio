@@ -428,7 +428,9 @@ mod tests {
 
     use fluvio_future::fs::remove_dir_all;
     use fluvio_future::timer::sleep;
+    use futures_lite::AsyncWriteExt;
     use tracing::debug;
+    use tracing::info;
     use std::env::temp_dir;
     use std::fs;
     use std::fs::metadata;
@@ -1033,5 +1035,74 @@ mod tests {
             "segments must be removed to enforce size. Was {}",
             prev_segments
         );
+    }
+
+    /// fix bad segment
+    #[fluvio_future::test]
+    async fn test_replica_repair_bad_header() {
+        let option = base_option("test_replica_repair_bad_header");
+
+        let mut replica = create_replica("test", START_OFFSET, option.clone()).await;
+
+        // write 2 batches
+        replica
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
+        replica
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
+
+        // make sure we can read
+        let orig_slice = replica
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN)
+            .await
+            .expect("read");
+        let orig_slice_len = orig_slice.file_slice.unwrap().len();
+        info!(orig_slice_len, "original file slice len");
+        drop(replica);
+
+        let test_fs_path = option.base_dir.join("test-0").join(TEST_SEG_NAME);
+        debug!("using test  logfile: {:#?}", test_fs_path);
+
+        let original_fs_len = std::fs::metadata(&test_fs_path)
+            .expect("get metadata")
+            .len();
+
+        info!(original_fs_len, "original fs len");
+
+        let mut file = fluvio_future::fs::util::open_read_append(&test_fs_path)
+            .await
+            .expect("opening log file");
+        // add some junk
+        let bytes = vec![0x01, 0x02, 0x03];
+        file.write_all(&bytes).await.expect("write some junk");
+        file.flush().await.expect("flush");
+        drop(file);
+
+        let invalid_fs_len = std::fs::metadata(&test_fs_path)
+            .expect("get metadata")
+            .len();
+        assert_eq!(invalid_fs_len, original_fs_len + 3);
+
+        // reopen replica
+        let replica2 = create_replica("test", START_OFFSET, option.clone()).await;
+
+        // make sure we can read original batches
+        let slice = replica2
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN)
+            .await
+            .expect("read");
+        assert_eq!(slice.file_slice.unwrap().len(), orig_slice_len);
+
+        drop(replica2);
+
+        let repaird_fs_len = std::fs::metadata(&test_fs_path)
+            .expect("get metadata")
+            .len();
+        assert_eq!(repaird_fs_len, original_fs_len);
+
+        // reopen replica
     }
 }
