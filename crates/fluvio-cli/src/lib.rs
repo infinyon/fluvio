@@ -163,10 +163,7 @@ mod root {
                         println!("Current channel: {}", &channel_name);
                     };
 
-                    let version = crate::VERSION
-                        .strip_suffix("\r\n")
-                        .or_else(|| crate::VERSION.strip_suffix('\n'))
-                        .unwrap_or(crate::VERSION);
+                    let version = crate::VERSION.trim_end();
                     let version = semver::Version::parse(version).unwrap();
                     cluster.process(out, version, root.target).await?;
                 }
