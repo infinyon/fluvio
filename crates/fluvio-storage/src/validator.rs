@@ -56,6 +56,7 @@ pub struct LogValidator {
     file_path: PathBuf,
     pub batches: u32,
     last_valid_offset: Offset,
+    pub last_valid_batch_pos: u32,
     pub last_valid_file_pos: u32,
     pub duration: Duration,
     pub error: Option<LogValidationError>,
@@ -142,7 +143,7 @@ impl LogValidator {
             if current_batch_offset < self.base_offset {
                 error!(
                     last_valid_offset = self.last_valid_offset,
-                    last_valid_pos = self.last_valid_file_pos,
+                    last_valid_pos = self.last_valid_batch_pos,
                     current_batch_offset,
                     base_offset = self.base_offset,
                     "found offset less than base offset,aborting"
@@ -155,7 +156,8 @@ impl LogValidator {
 
             // set high watermark for validating batches
             self.last_valid_offset = current_batch_offset + offset_delta as Offset;
-            self.last_valid_file_pos = current_batch_pos;
+            self.last_valid_batch_pos = current_batch_pos;
+            self.last_valid_file_pos = batch_stream.get_pos();
             self.batches += 1;
 
             // self.last_valid_file_pos = file
@@ -163,7 +165,7 @@ impl LogValidator {
             // perform index validation
             if self.index_error.is_none() {
                 trace!(
-                    diff_pos = current_batch_pos - self.last_valid_file_pos,
+                    diff_pos = current_batch_pos - self.last_valid_batch_pos,
                     "found batch offset"
                 );
 
@@ -348,10 +350,14 @@ mod tests {
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
+        let original_fs_len = std::fs::metadata(&log_path).expect("get metadata").len();
+
         let validator = LogValidator::default_validate::<LogIndex>(&log_path, None)
             .await
             .expect("validate");
         assert_eq!(validator.leo(), BASE_OFFSET + 5);
+        assert_eq!(validator.last_valid_file_pos as u64, original_fs_len);
+        assert_eq!(validator.batches, 2);
     }
 
     #[fluvio_future::test]
@@ -419,20 +425,19 @@ mod tests {
         let invalid_fs_len = std::fs::metadata(&test_fs_path)
             .expect("get metadata")
             .len();
-        // assert_eq!(invalid_fs_len, original_fs_len + 3);
+        assert_eq!(invalid_fs_len, original_fs_len + 3);
 
-        /*
         debug!("checking invalid contents");
-        let validator =
-            LogValidator::default_validate::<LogIndex>(&test_fs_path, None, false, false)
-                .await
-                .expect("validate");
+        let validator = LogValidator::default_validate::<LogIndex>(&test_fs_path, None)
+            .await
+            .expect("validate");
 
-        assert_eq!(validator.leo(), OFFSET + 6);  // should have same leo as successfull validation
-        assert_eq!(validator.last_valid_file_pos, original_fs_len);
+        // stats for validated offets should be original contents
+        assert_eq!(validator.leo(), OFFSET + 6); // should have same leo as successfull validation
+        assert_eq!(validator.last_valid_file_pos as u64, original_fs_len);
+        assert_eq!(validator.batches, 2);
         let err = validator.error.expect("error");
         assert!(matches!(err, LogValidationError::BatchDecoding(_)));
-        */
     }
 }
 
