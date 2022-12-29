@@ -20,7 +20,6 @@ use crate::batch_header::FileEmptyRecords;
 use crate::file::FileBytesIterator;
 use crate::index::Index;
 use crate::util::log_path_get_offset;
-use crate::util::OffsetError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LogValidationError {
@@ -28,17 +27,11 @@ pub enum LogValidationError {
     InvalidExtension,
     #[error("Batch decoding error: {0}")]
     BatchDecoding(#[from] BatchHeaderError),
-    #[error("Invalid log name")]
-    LogName(#[from] OffsetError),
     #[error("batch offset is less than base offset: {invalid_batch_offset}")]
     InvalidBaseOffsetMinimum { invalid_batch_offset: Offset },
-    #[error("Offset not ordered")]
-    OffsetNotOrdered,
-    #[error("No batches")]
-    NoBatches,
-    #[error("Batch already exists")]
-    ExistingBatch,
 }
+
+impl LogValidationError {}
 
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid Index: {offset} pos: {batch_file_pos} offset: {index_position}")]
