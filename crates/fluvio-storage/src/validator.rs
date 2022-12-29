@@ -31,8 +31,6 @@ pub enum LogValidationError {
     InvalidBaseOffsetMinimum { invalid_batch_offset: Offset },
 }
 
-impl LogValidationError {}
-
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid Index: {offset} pos: {batch_file_pos} offset: {index_position}")]
 pub struct InvalidIndexError {

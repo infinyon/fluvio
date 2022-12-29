@@ -106,7 +106,14 @@ impl MutFileRecords {
         self.base_offset
     }
 
-    pub async fn validate(&mut self, index: &MutLogIndex) -> Result<LogValidator> {
+    /// readjust to new length
+    pub(crate) async fn set_len(&mut self, len: u32) -> Result<()> {
+        self.file.set_len(len as u64).await?;
+        self.len = len;
+        Ok(())
+    }
+
+    pub(crate) async fn validate(&mut self, index: &MutLogIndex) -> Result<LogValidator> {
         LogValidator::default_validate(&self.path, Some(index)).await
     }
 

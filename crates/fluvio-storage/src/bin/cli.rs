@@ -190,7 +190,7 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<()> {
     );
 
     let start = std::time::Instant::now();
-    let last_offset = active_segment.validate().await?;
+    let last_offset = active_segment.validate_and_repair().await?;
 
     let duration = start.elapsed().as_secs_f32();
 

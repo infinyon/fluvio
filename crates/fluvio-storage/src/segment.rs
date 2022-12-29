@@ -24,6 +24,7 @@ use crate::config::{SharedReplicaConfig};
 use crate::StorageError;
 use crate::batch::{FileBatchStream};
 use crate::index::OffsetPosition;
+use crate::validator::LogValidationError;
 
 pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
 pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
@@ -344,9 +345,29 @@ impl Segment<MutLogIndex, MutFileRecords> {
         self.msg_log.get_pos()
     }
 
-    /// validate the segment and load last offset
-    pub async fn validate(&mut self) -> Result<Offset> {
-        self.end_offset = self.msg_log.validate(&self.index).await?.leo();
+    /// validate and repair if necessary
+    pub async fn validate_and_repair(&mut self) -> Result<Offset> {
+        let validation = self.msg_log.validate(&self.index).await?;
+        let leo = validation.leo();
+        // check for error and see if it's recoverable
+        if let Some(err) = validation.error {
+            error!(err = ?err, "log validation failed");
+            match err {
+                LogValidationError::BatchDecoding(_header_error) => {
+                    info!(
+                        len = validation.last_valid_file_pos,
+                        "batch decoding error, trying to recover"
+                    );
+                    // for decoding batch error, we can readjust
+                    self.msg_log.set_len(validation.last_valid_file_pos).await?;
+                }
+                _ => {
+                    // for other error, we can't recover
+                    return Err(err.into());
+                }
+            }
+        }
+        self.end_offset = leo;
         Ok(self.end_offset)
     }
 
