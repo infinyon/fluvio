@@ -15,8 +15,3 @@ source = true
 image = "infinyon/fluvio-connect-json-test-source:0.1.0"
 
 
-
-[[params]]
-name = "template"
-description = "JSON template"
-type = "string"

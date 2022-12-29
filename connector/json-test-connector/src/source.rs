@@ -8,10 +8,12 @@ use anyhow::Result;
 
 use async_trait::async_trait;
 use fluvio::Offset;
-use fluvio_connector_common::{Source, ConnectorConfig};
+use fluvio_connector_common::Source;
 use futures::{stream::LocalBoxStream, Stream, StreamExt};
 
 use tokio::time::Interval;
+
+use crate::CustomConfig;
 
 #[derive(Debug)]
 pub(crate) struct TestJsonSource {
@@ -20,18 +22,11 @@ pub(crate) struct TestJsonSource {
 }
 
 impl TestJsonSource {
-    pub(crate) fn new(config: &ConnectorConfig) -> Result<Self> {
-        let interval = match config.parameters.get("interval") {
-            Some(value) => value.as_u32()?,
-            None => anyhow::bail!("interval not found"),
-        };
-        let template = match config.parameters.get("template") {
-            Some(value) => value.as_string()?,
-            None => anyhow::bail!("template not found"),
-        };
+    pub(crate) fn new(config: &CustomConfig) -> Result<Self> {
+        let CustomConfig { interval, template } = config;
         Ok(Self {
-            interval: tokio::time::interval(Duration::from_secs(interval as u64)),
-            template,
+            interval: tokio::time::interval(Duration::from_secs(*interval)),
+            template: template.clone(),
         })
     }
 }

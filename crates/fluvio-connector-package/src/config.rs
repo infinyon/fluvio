@@ -82,17 +82,16 @@ impl ConnectorConfig {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let mut connector_config: Self = serde_yaml::from_str(&contents)?;
+        connector_config.normalize_batch_size()?;
 
-        // This is needed because we want to use a human readable version of `BatchSize` but the
-        // serde support for BatchSize serializes and deserializes as bytes.
-        if let Some(ref mut producer) = &mut connector_config.producer {
-            if let Some(batch_size_string) = &producer.batch_size_string {
-                let batch_size = batch_size_string
-                    .parse::<ByteSize>()
-                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
-                producer.batch_size = Some(batch_size);
-            }
-        }
+        debug!("Using connector config {connector_config:#?}");
+        Ok(connector_config)
+    }
+
+    pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
+        let mut connector_config: Self = serde_yaml::from_value(value)?;
+        connector_config.normalize_batch_size()?;
+
         debug!("Using connector config {connector_config:#?}");
         Ok(connector_config)
     }
@@ -142,6 +141,20 @@ impl ConnectorConfig {
 
     pub fn image(&self) -> String {
         format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
+    }
+
+    fn normalize_batch_size(&mut self) -> Result<()> {
+        // This is needed because we want to use a human readable version of `BatchSize` but the
+        // serde support for BatchSize serializes and deserializes as bytes.
+        if let Some(ref mut producer) = &mut self.producer {
+            if let Some(batch_size_string) = &producer.batch_size_string {
+                let batch_size = batch_size_string
+                    .parse::<ByteSize>()
+                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
+                producer.batch_size = Some(batch_size);
+            }
+        };
+        Ok(())
     }
 }
 

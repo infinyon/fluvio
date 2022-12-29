@@ -1,0 +1,11 @@
+error: config type must valid path of owned type
+ --> tests/ui/invalid_config_type.rs:4:19
+  |
+4 | async fn start_fn(config: &[i32], producer: ()) {}
+  |                   ^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/invalid_config_type.rs:4:51
+  |
+4 | async fn start_fn(config: &[i32], producer: ()) {}
+  |                                                   ^ consider adding a `main` function to `$DIR/tests/ui/invalid_config_type.rs`

@@ -1,5 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
+use syn::Path;
 
 use crate::ast::{ConnectorFn, ConnectorDirection};
 
@@ -14,19 +15,19 @@ fn generate_source(func: &ConnectorFn) -> TokenStream {
     let user_fn = &func.name;
     let user_code = &func.func;
 
-    let init_and_parse_config = init_and_parse_config();
+    let init_and_parse_config = init_and_parse_config(func.config_type_path);
     quote! {
 
         fn main() -> ::fluvio_connector_common::Result<()> {
             #init_and_parse_config
 
             ::fluvio_connector_common::future::run_block_on(async {
-                let (fluvio, producer) = ::fluvio_connector_common::producer::producer_from_config(&config).await?;
+                let (fluvio, producer) = ::fluvio_connector_common::producer::producer_from_config(&common_config).await?;
 
                 let metrics = ::std::sync::Arc::new(::fluvio_connector_common::monitoring::ConnectorMetrics::new(fluvio.metrics()));
                 ::fluvio_connector_common::monitoring::init_monitoring(metrics);
 
-                #user_fn(config, producer).await
+                #user_fn(user_config, producer).await
             })?;
 
             Ok(())
@@ -40,19 +41,19 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
     let user_fn = &func.name;
     let user_code = &func.func;
 
-    let init_and_parse_config = init_and_parse_config();
+    let init_and_parse_config = init_and_parse_config(func.config_type_path);
     quote! {
 
         fn main() -> ::fluvio_connector_common::Result<()> {
             #init_and_parse_config
 
             ::fluvio_connector_common::future::run_block_on(async {
-                let (fluvio, stream) = ::fluvio_connector_common::consumer::consumer_stream_from_config(&config).await?;
+                let (fluvio, stream) = ::fluvio_connector_common::consumer::consumer_stream_from_config(&common_config).await?;
 
                 let metrics = ::std::sync::Arc::new(::fluvio_connector_common::monitoring::ConnectorMetrics::new(fluvio.metrics()));
                 ::fluvio_connector_common::monitoring::init_monitoring(metrics);
 
-                #user_fn(config, stream).await
+                #user_fn(user_config, stream).await
             })?;
 
             Ok(())
@@ -62,7 +63,7 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
     }
 }
 
-fn init_and_parse_config() -> TokenStream {
+fn init_and_parse_config(config_type_path: &Path) -> TokenStream {
     quote! {
         #[derive(Debug)]
         pub struct ConnectorOpt {
@@ -91,8 +92,13 @@ fn init_and_parse_config() -> TokenStream {
         let opts = ConnectorOpt::parse();
         ::fluvio_connector_common::tracing::info!("Reading config file from: {}", opts.config.to_string_lossy());
 
-        let config = ::fluvio_connector_common::ConnectorConfig::from_file(opts.config.as_path())?;
-        ::fluvio_connector_common::tracing::debug!("{:#?}", config);
+        let config_value = ::fluvio_connector_common::config::value_from_file(opts.config.as_path())?;
+        ::fluvio_connector_common::tracing::trace!("{:#?}", config_value);
+
+        let common_config = ::fluvio_connector_common::config::ConnectorConfig::from_value(config_value.clone())?;
+        ::fluvio_connector_common::tracing::debug!("{:#?}", common_config);
+
+        let user_config: #config_type_path = ::fluvio_connector_common::config::from_value(config_value)?;
 
         ::fluvio_connector_common::tracing::info!("starting processing");
     }

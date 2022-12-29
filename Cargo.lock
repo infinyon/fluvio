@@ -2461,6 +2461,7 @@ dependencies = [
  "futures-util",
  "serde",
  "serde_json",
+ "serde_yaml 0.8.26",
  "tracing",
 ]
 
@@ -2471,7 +2472,6 @@ dependencies = [
  "anyhow",
  "derive_builder",
  "fluvio-connector-package",
- "tempfile",
  "tracing",
 ]
 
@@ -4206,6 +4206,7 @@ dependencies = [
  "fluvio",
  "fluvio-connector-common",
  "futures 0.3.25",
+ "serde",
  "tokio",
 ]
 
