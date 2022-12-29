@@ -625,7 +625,7 @@ mod tests {
 
         // open replica
         let replica2 = create_replica("test", 0, option).await;
-        assert_eq!(replica2.get_leo(), START_OFFSET + 4);
+        assert_eq!(replica2.get_leo(), START_OFFSET + 4); // should be 24 since we added 4 records
     }
 
     const TEST_REPLICA_DIR: &str = "test_replica";

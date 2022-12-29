@@ -265,13 +265,13 @@ impl Segment<LogIndex, FileRecordsSlice> {
                     return Err(err.into());
                 }
 
-                info!(end_offset = val.last_valid_offset, base_offset = val.base_offset, time_ms = %val.duration.as_millis(), "segment validated");
+                info!(end_offset = val.leo(), base_offset = val.base_offset, time_ms = %val.duration.as_millis(), "segment validated");
                 Ok(Segment {
                     msg_log,
                     index,
                     option,
                     base_offset,
-                    end_offset: val.last_valid_offset,
+                    end_offset: val.leo(),
                 })
             }
             Err(err) => {
@@ -350,7 +350,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
             .msg_log
             .validate(&self.index, skip_errors, verbose)
             .await?
-            .last_valid_offset;
+            .leo();
         Ok(self.end_offset)
     }
 
