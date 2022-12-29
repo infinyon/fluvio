@@ -23,7 +23,6 @@ use fluvio_protocol::record::{Offset, Size, Size64};
 
 use crate::LogIndex;
 use crate::config::SharedReplicaConfig;
-use crate::file::FileBytesIterator;
 use crate::util::generate_file_name;
 use crate::validator::LogValidator;
 use crate::StorageError;
@@ -95,13 +94,7 @@ impl FileRecordsSlice {
         skip_errors: bool,
         verbose: bool,
     ) -> Result<LogValidator> {
-        LogValidator::validate::<_, FileBytesIterator>(
-            &self.path,
-            Some(index),
-            skip_errors,
-            verbose,
-        )
-        .await
+        LogValidator::default_validate(&self.path, Some(index), skip_errors, verbose).await
     }
 
     pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {

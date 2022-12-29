@@ -24,7 +24,6 @@ use fluvio_protocol::record::{Offset, Size, Size64};
 use fluvio_protocol::Encoder;
 
 use crate::config::SharedReplicaConfig;
-use crate::file::FileBytesIterator;
 use crate::mut_index::MutLogIndex;
 use crate::util::generate_file_name;
 use crate::validator::LogValidationError;
@@ -113,13 +112,7 @@ impl MutFileRecords {
         skip_errors: bool,
         verbose: bool,
     ) -> Result<LogValidator> {
-        LogValidator::validate::<_, FileBytesIterator>(
-            &self.path,
-            Some(index),
-            skip_errors,
-            verbose,
-        )
-        .await
+        LogValidator::default_validate(&self.path, Some(index), skip_errors, verbose).await
     }
 
     /// get current file position

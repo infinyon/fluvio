@@ -15,6 +15,7 @@ use fluvio_protocol::record::Offset;
 use crate::batch::FileBatchStream;
 use crate::batch::StorageBytesIterator;
 use crate::batch_header::FileEmptyRecords;
+use crate::file::FileBytesIterator;
 use crate::index::Index;
 use crate::util::log_path_get_offset;
 use crate::util::OffsetError;
@@ -248,6 +249,19 @@ impl LogValidator {
     {
         Self::validate_core::<I, S, FileEmptyRecords>(path, index, skip_errors, verbose).await
     }
+
+    #[instrument(skip(index, path))]
+    pub(crate) async fn default_validate<I>(
+        path: impl AsRef<Path>,
+        index: Option<&I>,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<Self>
+    where
+        I: Index,
+    {
+        Self::validate::<I, FileBytesIterator>(path, index, skip_errors, verbose).await
+    }
 }
 
 /// validate the file and find last offset
@@ -266,7 +280,6 @@ mod tests {
     use fluvio_protocol::record::Offset;
 
     use crate::LogIndex;
-    use crate::file::FileBytesIterator;
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
     use crate::config::ReplicaConfig;
@@ -294,10 +307,9 @@ mod tests {
         let log_path = log_records.get_path().to_owned();
         drop(log_records);
 
-        let validator =
-            LogValidator::validate::<LogIndex, FileBytesIterator>(&log_path, None, false, false)
-                .await
-                .expect("validate");
+        let validator = LogValidator::default_validate::<LogIndex>(&log_path, None, false, false)
+            .await
+            .expect("validate");
         assert_eq!(validator.last_valid_offset, BASE_OFFSET);
     }
 
@@ -333,10 +345,9 @@ mod tests {
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
-        let validator =
-            LogValidator::validate::<LogIndex, FileBytesIterator>(&log_path, None, false, true)
-                .await
-                .expect("validate");
+        let validator = LogValidator::default_validate::<LogIndex>(&log_path, None, false, true)
+            .await
+            .expect("validate");
         assert_eq!(validator.last_valid_offset, BASE_OFFSET + 5);
     }
 
@@ -377,11 +388,11 @@ mod tests {
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
-        assert!(LogValidator::validate::<LogIndex, FileBytesIterator>(
-            &test_file, None, false, false
-        )
-        .await
-        .is_err());
+        assert!(
+            LogValidator::default_validate::<LogIndex>(&test_file, None, false, false)
+                .await
+                .is_err()
+        );
     }
 }
 
@@ -390,7 +401,7 @@ mod perf {
 
     use std::time::Instant;
 
-    use crate::{LogIndex, file::FileBytesIterator};
+    use crate::{LogIndex};
 
     use super::*;
 
@@ -402,10 +413,9 @@ mod perf {
 
         println!("starting test");
         let header_time = Instant::now();
-        let msm_result =
-            LogValidator::validate::<LogIndex, FileBytesIterator>(TEST_PATH, None, false, false)
-                .await
-                .expect("validate");
+        let msm_result = LogValidator::default_validate::<LogIndex>(TEST_PATH, None, false, false)
+            .await
+            .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
         println!("validator: {:#?}", msm_result);
 
