@@ -56,8 +56,8 @@ pub struct LogValidator {
     file_path: PathBuf,
     pub batches: u32,
     last_valid_offset: Offset,
-    pub last_valid_batch_pos: u32,
-    pub last_valid_file_pos: u32,
+    pub last_valid_batch_pos: u32, // starting position of last successful batch
+    pub last_valid_file_pos: u32,  // end position of last successful batch
     pub duration: Duration,
     pub error: Option<LogValidationError>,
     pub index_error: Option<InvalidIndexError>,
@@ -108,7 +108,7 @@ impl LogValidator {
                     val.error = Some(LogValidationError::BatchDecoding(header_error.clone()));
                     Ok(val)
                 }
-                _ => Err(err.into()),
+                _ => Err(err),
             }
         } else {
             val.duration = start_time.elapsed();
