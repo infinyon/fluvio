@@ -5,9 +5,9 @@ use std::marker::PhantomData;
 use std::path::Path;
 
 use fluvio_protocol::record::BatchHeader;
+use tracing::error;
 use tracing::instrument;
 use tracing::trace;
-use tracing::debug;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -20,7 +20,7 @@ use fluvio_protocol::record::Size;
 
 use crate::file::FileBytesIterator;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 /// Outer batch representation
 /// It's either sucessfully decoded into actual batch or not enough bytes to decode
 pub enum BatchHeaderError {
@@ -228,9 +228,9 @@ where
         match FileBatchPos::read_from(&mut self.byte_iterator).await {
             Ok(batch_res) => Ok(batch_res),
             Err(err) => {
-                debug!("error getting batch: {}", err);
+                error!("error getting batch: {}, invalidating", err);
                 self.invalid = true;
-                Err(anyhow!("error decoding batch: {}", err))
+                Err(err)
             }
         }
     }

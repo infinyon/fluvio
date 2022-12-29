@@ -171,12 +171,6 @@ pub(crate) struct SegmentValidateOpt {
 
     #[clap(long, default_value = "0")]
     base_offset: Offset,
-
-    #[clap(long)]
-    skip_errors: bool,
-
-    #[clap(long)]
-    verbose: bool,
 }
 
 pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<()> {
@@ -196,9 +190,7 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<()> {
     );
 
     let start = std::time::Instant::now();
-    let last_offset = active_segment
-        .validate(opt.skip_errors, opt.verbose)
-        .await?;
+    let last_offset = active_segment.validate().await?;
 
     let duration = start.elapsed().as_secs_f32();
 

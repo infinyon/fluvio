@@ -257,7 +257,7 @@ impl Segment<LogIndex, FileRecordsSlice> {
         let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
         let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
-        match msg_log.validate(&index, false, false).await {
+        match msg_log.validate(&index).await {
             Ok(val) => {
                 // check if validation is successful
                 if let Some(err) = val.error {
@@ -345,12 +345,8 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 
     /// validate the segment and load last offset
-    pub async fn validate(&mut self, skip_errors: bool, verbose: bool) -> Result<Offset> {
-        self.end_offset = self
-            .msg_log
-            .validate(&self.index, skip_errors, verbose)
-            .await?
-            .leo();
+    pub async fn validate(&mut self) -> Result<Offset> {
+        self.end_offset = self.msg_log.validate(&self.index).await?.leo();
         Ok(self.end_offset)
     }
 
