@@ -86,31 +86,45 @@ async fn dump_log(opt: LogOpt) -> Result<()> {
 
     let mut count: usize = 0;
     let time = std::time::Instant::now();
-    while let Some(batch_pos) = header_stream.try_next().await? {
-        let pos = batch_pos.get_pos();
-        let batch = batch_pos.inner();
+    let mut last_batch_offset = 0;
+    loop {
+        match header_stream.try_next().await {
+            Ok(Some(batch_pos)) => {
+                let pos = batch_pos.get_pos();
+                let batch = batch_pos.inner();
 
-        let base_offset = batch.get_base_offset();
+                let base_offset = batch.get_base_offset();
 
-        if let Some(min) = opt.min {
-            if (base_offset as usize) < min {
-                continue;
+                if let Some(min) = opt.min {
+                    if (base_offset as usize) < min {
+                        continue;
+                    }
+                }
+                if let Some(max) = opt.max {
+                    if (base_offset as usize) > max {
+                        break;
+                    }
+                }
+
+                if opt.print {
+                    println!(
+                        "batch offset: {}, pos: {}, len: {}, ",
+                        base_offset, pos, batch.batch_len,
+                    );
+                }
+
+                count += 1;
+                last_batch_offset = base_offset;
             }
-        }
-        if let Some(max) = opt.max {
-            if (base_offset as usize) > max {
+            Ok(None) => {
+                break;
+            }
+            Err(err) => {
+                println!("encountered error: {:#?}", err);
+                println!("last batch offset: {}", last_batch_offset);
                 break;
             }
         }
-
-        if opt.print {
-            println!(
-                "batch offset: {}, pos: {}, len: {}, ",
-                base_offset, pos, batch.batch_len,
-            );
-        }
-
-        count += 1;
     }
 
     println!(

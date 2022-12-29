@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 
 use fluvio_protocol::record::BatchHeader;
+use fluvio_protocol::record::Offset;
 use tracing::error;
 use tracing::instrument;
 use tracing::trace;
@@ -24,14 +25,17 @@ use crate::file::FileBytesIterator;
 /// Outer batch representation
 /// It's either sucessfully decoded into actual batch or not enough bytes to decode
 pub enum BatchHeaderError {
-    #[error("Not Enough Header{actual_len} {expected_len}")]
+    #[error("Not Enough Header {pos}, {actual_len} {expected_len}")]
     NotEnoughHeader {
+        pos: u32,
         actual_len: usize,
         expected_len: usize,
     },
-    #[error("Not Enough Content {actual_len} {expected_len}")]
+    #[error("Not Enough Content {pos} {base_offset} {actual_len} {expected_len}")]
     NotEnoughContent {
         header: BatchHeader,
+        base_offset: Offset,
+        pos: u32,
         actual_len: usize,
         expected_len: usize,
     },
@@ -80,6 +84,7 @@ where
             return Err(BatchHeaderError::NotEnoughHeader {
                 actual_len: read_len,
                 expected_len: BATCH_FILE_HEADER_SIZE,
+                pos,
             }
             .into());
         }
@@ -110,9 +115,11 @@ where
             Some(bytes) => bytes,
             None => {
                 return Err(BatchHeaderError::NotEnoughContent {
+                    base_offset: batch.get_base_offset(),
                     header: batch.header,
                     actual_len: 0,
                     expected_len: content_len,
+                    pos,
                 }
                 .into())
             }
@@ -129,9 +136,11 @@ where
 
         if read_len < content_len {
             return Err(BatchHeaderError::NotEnoughContent {
+                base_offset: batch.get_base_offset(),
                 header: batch.header,
                 actual_len: read_len,
                 expected_len: content_len,
+                pos,
             }
             .into());
         }
