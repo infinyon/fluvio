@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use fluvio_protocol::record::BatchHeader;
 use tracing::instrument;
 use tracing::trace;
 use tracing::debug;
@@ -22,9 +23,7 @@ use crate::file::FileBytesIterator;
 #[derive(Debug, thiserror::Error)]
 /// Outer batch representation
 /// It's either sucessfully decoded into actual batch or not enough bytes to decode
-pub enum BatchHeaderError<R> {
-    #[error(transparent)]
-    Io(#[from] IoError),
+pub enum BatchHeaderError {
     #[error("Not Enough Header{actual_len} {expected_len}")]
     NotEnoughHeader {
         actual_len: usize,
@@ -32,7 +31,7 @@ pub enum BatchHeaderError<R> {
     },
     #[error("Not Enough Content {actual_len} {expected_len}")]
     NotEnoughContent {
-        header: Batch<R>, // decoded header
+        header: BatchHeader,
         actual_len: usize,
         expected_len: usize,
     },
@@ -57,7 +56,7 @@ where
     #[instrument(skip(file))]
     pub(crate) async fn read_from<S: StorageBytesIterator>(
         file: &mut S,
-    ) -> Result<Option<FileBatchPos<R>>, BatchHeaderError<R>> {
+    ) -> Result<Option<FileBatchPos<R>>> {
         let pos = file.get_pos();
         trace!(pos, "reading from pos");
         let bytes = match file.read_bytes(BATCH_FILE_HEADER_SIZE as u32).await? {
@@ -81,7 +80,8 @@ where
             return Err(BatchHeaderError::NotEnoughHeader {
                 actual_len: read_len,
                 expected_len: BATCH_FILE_HEADER_SIZE,
-            });
+            }
+            .into());
         }
 
         let mut cursor = Cursor::new(bytes);
@@ -110,10 +110,11 @@ where
             Some(bytes) => bytes,
             None => {
                 return Err(BatchHeaderError::NotEnoughContent {
-                    header: batch,
+                    header: batch.header,
                     actual_len: 0,
                     expected_len: content_len,
-                })
+                }
+                .into())
             }
         };
 
@@ -128,10 +129,11 @@ where
 
         if read_len < content_len {
             return Err(BatchHeaderError::NotEnoughContent {
-                header: batch,
+                header: batch.header,
                 actual_len: read_len,
                 expected_len: content_len,
-            });
+            }
+            .into());
         }
 
         let mut cursor = Cursor::new(bytes);

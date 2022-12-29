@@ -310,7 +310,7 @@ mod tests {
         let validator = LogValidator::default_validate::<LogIndex>(&log_path, None, false, false)
             .await
             .expect("validate");
-        assert_eq!(validator.last_valid_offset, BASE_OFFSET);
+        assert_eq!(validator.leo(), BASE_OFFSET);
     }
 
     #[fluvio_future::test]
@@ -348,7 +348,7 @@ mod tests {
         let validator = LogValidator::default_validate::<LogIndex>(&log_path, None, false, true)
             .await
             .expect("validate");
-        assert_eq!(validator.last_valid_offset, BASE_OFFSET + 5);
+        assert_eq!(validator.leo(), BASE_OFFSET + 5);
     }
 
     #[fluvio_future::test]
