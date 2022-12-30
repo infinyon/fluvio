@@ -133,7 +133,7 @@ where
         &self,
         records: &mut RecordSet<R>,
         hw_update: bool,
-    ) -> Result<(Offset, Offset, usize), StorageError> {
+    ) -> Result<(Offset, Offset, usize)> {
         debug!(
             replica = %self.id,
             leo = self.leo(),

@@ -4,9 +4,11 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use fluvio_protocol::record::BatchHeader;
+use fluvio_protocol::record::Offset;
+use tracing::error;
 use tracing::instrument;
 use tracing::trace;
-use tracing::debug;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -19,20 +21,21 @@ use fluvio_protocol::record::Size;
 
 use crate::file::FileBytesIterator;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 /// Outer batch representation
 /// It's either sucessfully decoded into actual batch or not enough bytes to decode
-pub enum BatchHeaderError<R> {
-    #[error(transparent)]
-    Io(#[from] IoError),
-    #[error("Not Enough Header{actual_len} {expected_len}")]
+pub enum BatchHeaderError {
+    #[error("Not Enough Header {pos}, {actual_len} {expected_len}")]
     NotEnoughHeader {
+        pos: u32,
         actual_len: usize,
         expected_len: usize,
     },
-    #[error("Not Enough Content {actual_len} {expected_len}")]
+    #[error("Not Enough Content {pos} {base_offset} {actual_len} {expected_len}")]
     NotEnoughContent {
-        header: Batch<R>, // decoded header
+        header: BatchHeader,
+        base_offset: Offset,
+        pos: u32,
         actual_len: usize,
         expected_len: usize,
     },
@@ -57,7 +60,7 @@ where
     #[instrument(skip(file))]
     pub(crate) async fn read_from<S: StorageBytesIterator>(
         file: &mut S,
-    ) -> Result<Option<FileBatchPos<R>>, BatchHeaderError<R>> {
+    ) -> Result<Option<FileBatchPos<R>>> {
         let pos = file.get_pos();
         trace!(pos, "reading from pos");
         let bytes = match file.read_bytes(BATCH_FILE_HEADER_SIZE as u32).await? {
@@ -81,7 +84,9 @@ where
             return Err(BatchHeaderError::NotEnoughHeader {
                 actual_len: read_len,
                 expected_len: BATCH_FILE_HEADER_SIZE,
-            });
+                pos,
+            }
+            .into());
         }
 
         let mut cursor = Cursor::new(bytes);
@@ -110,10 +115,13 @@ where
             Some(bytes) => bytes,
             None => {
                 return Err(BatchHeaderError::NotEnoughContent {
-                    header: batch,
+                    base_offset: batch.get_base_offset(),
+                    header: batch.header,
                     actual_len: 0,
                     expected_len: content_len,
-                })
+                    pos,
+                }
+                .into())
             }
         };
 
@@ -128,10 +136,13 @@ where
 
         if read_len < content_len {
             return Err(BatchHeaderError::NotEnoughContent {
-                header: batch,
+                base_offset: batch.get_base_offset(),
+                header: batch.header,
                 actual_len: read_len,
                 expected_len: content_len,
-            });
+                pos,
+            }
+            .into());
         }
 
         let mut cursor = Cursor::new(bytes);
@@ -226,9 +237,9 @@ where
         match FileBatchPos::read_from(&mut self.byte_iterator).await {
             Ok(batch_res) => Ok(batch_res),
             Err(err) => {
-                debug!("error getting batch: {}", err);
+                error!("error getting batch: {}, invalidating", err);
                 self.invalid = true;
-                Err(anyhow!("error decoding batch: {}", err))
+                Err(err)
             }
         }
     }

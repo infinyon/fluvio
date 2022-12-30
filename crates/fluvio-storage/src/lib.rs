@@ -159,7 +159,7 @@ mod inner {
             &mut self,
             records: &mut RecordSet<R>,
             update_highwatermark: bool,
-        ) -> Result<usize, StorageError>;
+        ) -> Result<usize>;
 
         async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError>;
 
