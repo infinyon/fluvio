@@ -15,7 +15,7 @@ use anyhow::Result;
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, BatchRecords};
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
+use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{SpuId};
 use fluvio_spu_schema::Isolation;
 
@@ -315,7 +315,7 @@ where
         &self,
         records: &mut RecordSet<R>,
         notifiers: &FollowerNotifier,
-    ) -> Result<(Offset, Offset, usize), StorageError> {
+    ) -> Result<(Offset, Offset, usize)> {
         let offsets = self
             .storage
             .write_record_set(records, self.in_sync_replica == 1)
@@ -742,7 +742,7 @@ mod test_leader {
             &mut self,
             records: &mut fluvio_protocol::record::RecordSet<R>,
             update_highwatermark: bool,
-        ) -> Result<usize, fluvio_storage::StorageError> {
+        ) -> Result<usize> {
             self.pos.leo = records.last_offset().unwrap();
             if update_highwatermark {
                 self.pos.hw = self.pos.leo;

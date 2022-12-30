@@ -1,99 +1,81 @@
 use std::io::ErrorKind;
-use std::marker::PhantomData;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use fluvio_protocol::record::BatchRecords;
 use tracing::error;
+use tracing::info;
 use tracing::instrument;
+use tracing::trace;
 use tracing::{debug};
 use anyhow::{Result, anyhow};
 
 use fluvio_protocol::record::Offset;
 
+use crate::batch::BatchHeaderError;
 use crate::batch::FileBatchStream;
 use crate::batch::StorageBytesIterator;
 use crate::batch_header::FileEmptyRecords;
 use crate::file::FileBytesIterator;
 use crate::index::Index;
 use crate::util::log_path_get_offset;
-use crate::util::OffsetError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LogValidationError {
     #[error("Invalid extension")]
     InvalidExtension,
-    #[error("Invalid log name")]
-    LogName(#[from] OffsetError),
-    #[error("Base off error")]
-    BaseOff,
-    #[error("Offset not ordered")]
-    OffsetNotOrdered,
-    #[error("No batches")]
-    NoBatches,
-    #[error("Batch already exists")]
-    ExistingBatch,
-    #[error("Empty file: {0}")]
-    Empty(i64),
+    #[error("Batch decoding error: {0}")]
+    BatchDecoding(#[from] BatchHeaderError),
+    #[error("batch offset is less than base offset: {invalid_batch_offset}")]
+    InvalidBaseOffsetMinimum { invalid_batch_offset: Offset },
 }
 
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid Index: {offset} pos: {batch_file_pos} offset: {index_position}")]
 pub struct InvalidIndexError {
-    pub offset: Offset,
-    pub batch_file_pos: u32,
-    pub index_position: u32,
-    pub diff_position: u32,
+    offset: Offset,
+    batch_file_pos: u32,
+    index_position: u32,
+    diff_position: u32,
 }
 
 /// Validation Log file is consistent with index file
-#[derive(Debug)]
-pub struct LogValidator<P, R, I, S = FileBytesIterator> {
+#[derive(Debug, Default)]
+pub struct LogValidator {
     pub base_offset: Offset,
     file_path: PathBuf,
     pub batches: u32,
-    pub last_offset: Offset,
-    pub success: u32,
-    pub failed: u32,
-    data1: PhantomData<P>,
-    data2: PhantomData<R>,
-    data3: PhantomData<I>,
-    data4: PhantomData<S>,
+    last_valid_offset: Offset,
+    pub last_valid_batch_pos: u32, // starting position of last successful batch
+    pub last_valid_file_pos: u32,  // end position of last successful batch
+    pub duration: Duration,
+    pub error: Option<LogValidationError>,
+    pub index_error: Option<InvalidIndexError>,
 }
 
-impl<P, R, I, S> LogValidator<P, R, I, S>
-where
-    P: AsRef<Path>,
-    I: Index,
-    S: StorageBytesIterator,
-    R: BatchRecords + Default + std::fmt::Debug,
-{
-    async fn validate_core(
-        path: P,
-        index: Option<&I>,
-        skip_errors: bool,
-        verbose: bool,
-    ) -> Result<Self> {
+impl LogValidator {
+    async fn validate_core<I, S, R>(path: impl AsRef<Path>, index: Option<&I>) -> Result<Self>
+    where
+        I: Index,
+        S: StorageBytesIterator,
+        R: BatchRecords + Default + std::fmt::Debug,
+    {
         let file_path = path.as_ref().to_path_buf();
         let mut val = Self {
             base_offset: log_path_get_offset(&file_path)?,
-            last_offset: -1,
+            last_valid_offset: -1,
             file_path,
-            batches: 0,
-            success: 0,
-            failed: 0,
-            data1: PhantomData,
-            data2: PhantomData,
-            data3: PhantomData,
-            data4: PhantomData,
+            ..Default::default()
         };
 
-        debug!(
+        info!(
             file_name = %val.file_path.display(),
             val.base_offset,
-            "validating",
+            "validating log segment",
         );
 
+        let start_time = std::time::Instant::now();
         let batch_stream: FileBatchStream<R, S> = match FileBatchStream::open(&val.file_path).await
         {
             Ok(batch_stream) => batch_stream,
@@ -105,100 +87,119 @@ where
             },
         };
 
-        val.validate_with_stream(batch_stream, index, skip_errors, verbose)
-            .await?;
-        Ok(val)
+        // find recoverable error
+
+        if let Err(err) = val.validate_with_stream(batch_stream, index).await {
+            error!(%err, "found error from stream");
+            error!("{:#?} debug", err);
+            val.duration = start_time.elapsed();
+            match err.downcast_ref::<BatchHeaderError>() {
+                Some(header_error) => {
+                    error!(%header_error, "found batch header error, turn into recoverable error");
+                    val.error = Some(LogValidationError::BatchDecoding(header_error.clone()));
+                    Ok(val)
+                }
+                _ => Err(err),
+            }
+        } else {
+            val.duration = start_time.elapsed();
+            Ok(val)
+        }
     }
 
     /// validate log file
-    #[instrument(skip(self, index, skip_errors, verbose, batch_stream))]
-    pub async fn validate_with_stream(
+    #[instrument(skip(self, index, batch_stream))]
+    async fn validate_with_stream<I, R, S>(
         &mut self,
         mut batch_stream: FileBatchStream<R, S>,
         index: Option<&I>,
-        skip_errors: bool,
-        verbose: bool,
-    ) -> Result<()> {
+    ) -> Result<()>
+    where
+        I: Index,
+        S: StorageBytesIterator,
+        R: BatchRecords + Default + std::fmt::Debug,
+    {
         let mut last_index_pos = 0;
-        let mut last_batch_pos = 0;
-
-        if batch_stream.is_invalid() {
-            return Err(anyhow!("invalid batch stream"));
-        }
 
         while let Some(batch_pos) = batch_stream.try_next().await? {
-            let pos = batch_pos.get_pos();
-            let batch = batch_pos.inner();
+            let current_batch_pos = batch_pos.get_pos();
+            let current_batch = batch_pos.inner();
 
-            let batch_offset = batch.get_base_offset();
+            let current_batch_offset = current_batch.get_base_offset();
 
-            let header = batch.get_header();
+            let header = current_batch.get_header();
             let offset_delta = header.last_offset_delta;
 
-            if verbose {
-                let diff_pos = pos - last_batch_pos;
-                println!("found batch offset = {batch_offset}, pos = {pos}, diff_pos = {diff_pos}");
+            // if current batch offset is less than base offset, it's invalid, we abort
+            if current_batch_offset < self.base_offset {
+                error!(
+                    last_valid_offset = self.last_valid_offset,
+                    last_valid_pos = self.last_valid_batch_pos,
+                    current_batch_offset,
+                    base_offset = self.base_offset,
+                    "found offset less than base offset,aborting"
+                );
+                self.error = Some(LogValidationError::InvalidBaseOffsetMinimum {
+                    invalid_batch_offset: current_batch_offset,
+                });
+                return Ok(());
             }
 
-            // offset relative to segment
-            let delta_offset = batch_offset - self.base_offset;
+            // set high watermark for validating batches
+            self.last_valid_offset = current_batch_offset + offset_delta as Offset;
+            self.last_valid_batch_pos = current_batch_pos;
+            self.last_valid_file_pos = batch_stream.get_pos();
+            self.batches += 1;
 
-            if let Some(index) = index {
-                if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
-                    if offset == delta_offset as u32 {
-                        if verbose {
-                            let diff_pos = index_pos - last_index_pos;
-                            println!(
-                                        "index offset = {offset}, idx_pos = {index_pos}, diff_pos={diff_pos}"
-                                    );
-                        }
+            // self.last_valid_file_pos = file
 
-                        if index_pos != pos {
-                            if verbose {
-                                let diff_index_batch_pos = index_pos - pos;
-                                let diff_index_pos = index_pos - last_index_pos;
-                                println!(
-                                            "-- index mismatch: diff pos = {diff_index_batch_pos}, diff from prev index pos={diff_index_pos}"
-                                        );
-                            }
+            // perform index validation
+            if self.index_error.is_none() {
+                trace!(
+                    diff_pos = current_batch_pos - self.last_valid_batch_pos,
+                    "found batch offset"
+                );
 
-                            if !skip_errors {
-                                return Err(anyhow!(
-                                    "Invalid Index: {} pos: {} index_position: {}, diff: {}",
-                                    batch_offset,
-                                    pos,
-                                    index_pos,
-                                    index_pos - pos
-                                ));
+                // offset relative to segment
+                let delta_offset = current_batch_offset - self.base_offset;
+
+                if let Some(index) = index {
+                    if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
+                        if offset == delta_offset as u32 {
+                            trace!(diff_pos = index_pos - last_index_pos, "found index offset");
+
+                            if index_pos != current_batch_pos {
+                                error!(
+                                    diff_index_batch_pos = index_pos - current_batch_pos,
+                                    diff_index_pos = index_pos - last_index_pos,
+                                    "index mismatch"
+                                );
+
+                                // found index error
+                                self.index_error = Some(InvalidIndexError {
+                                    offset: current_batch_offset,
+                                    batch_file_pos: current_batch_pos,
+                                    index_position: index_pos,
+                                    diff_position: index_pos - current_batch_pos,
+                                });
+                            } else {
+                                last_index_pos = index_pos;
                             }
                         } else {
-                            last_index_pos = index_pos;
+                            /*
+                            trace!(
+                                delta_offset,
+                                offset,
+                                index_pos,
+                                "- different offset from index, skipping"
+                            );
+                            */
                         }
                     } else {
-                        /*
-                        trace!(
-                            delta_offset,
-                            offset,
-                            index_pos,
-                            "- different offset from index, skipping"
-                        );
-                        */
+                        //  trace!(delta_offset, "no index found");
                     }
-                } else {
-                    //  trace!(delta_offset, "no index found");
                 }
             }
-
-            if batch_offset < self.base_offset {
-                return Err(anyhow!(
-                    "batch base offset: {} is less than base offset: {} path: {:#?}",
-                    batch_offset,
-                    self.base_offset,
-                    self.file_path.display()
-                ));
-            }
-
-            last_batch_pos = pos;
 
             /*
             // test converting batch to slice
@@ -218,68 +219,45 @@ where
                 }
             }
             */
-
-            self.last_offset = batch_offset + offset_delta as Offset;
-
-            // perform a simple json decoding
-
-            self.batches += 1;
         }
 
-        debug!(self.last_offset, "found last offset");
+        debug!(
+            self.last_valid_offset,
+            "validation completed, found last offset"
+        );
 
         Ok(())
     }
 
-    fn next_offset(&self) -> Offset {
-        if self.last_offset == -1 {
+    /// return leo
+    pub(crate) fn leo(&self) -> Offset {
+        if self.last_valid_offset == -1 {
             return self.base_offset;
         }
 
-        self.last_offset + 1
+        self.last_valid_offset + 1
     }
-}
 
-impl<P, I, S> LogValidator<P, FileEmptyRecords, I, S>
-where
-    P: AsRef<Path>,
-    I: Index,
-    S: StorageBytesIterator,
-{
-    /// generalized validation using byte iterator
+    /// public facing entry point
     #[instrument(skip(index, path))]
-    async fn validate_segment(
-        path: P,
-        index: Option<&I>,
-        skip_errors: bool,
-        verbose: bool,
-    ) -> Result<Offset> {
-        match Self::validate_core(path, index, skip_errors, verbose).await {
-            Ok(val) => Ok(val.next_offset()),
-            Err(err) => Err(err),
-        }
+    pub(crate) async fn validate<I, S>(path: impl AsRef<Path>, index: Option<&I>) -> Result<Self>
+    where
+        I: Index,
+        S: StorageBytesIterator,
+    {
+        Self::validate_core::<I, S, FileEmptyRecords>(path, index).await
     }
-}
 
-/// Default validation using FileBytesIterator
-#[instrument(skip(index, path))]
-pub async fn validate<P, I>(
-    path: P,
-    index: Option<&I>,
-    skip_errors: bool,
-    verbose: bool,
-) -> Result<Offset>
-where
-    P: AsRef<Path>,
-    I: Index,
-{
-    LogValidator::<P, FileEmptyRecords, I, FileBytesIterator>::validate_segment(
-        path,
-        index,
-        skip_errors,
-        verbose,
-    )
-    .await
+    #[instrument(skip(index, path))]
+    pub(crate) async fn default_validate<I>(
+        path: impl AsRef<Path>,
+        index: Option<&I>,
+    ) -> Result<Self>
+    where
+        I: Index,
+    {
+        Self::validate::<I, FileBytesIterator>(path, index).await
+    }
 }
 
 /// validate the file and find last offset
@@ -293,8 +271,6 @@ mod tests {
     use flv_util::fixture::ensure_new_dir;
     use futures_lite::io::AsyncWriteExt;
 
-    use fluvio_future::fs::BoundedFileSink;
-    use fluvio_future::fs::BoundedFileOption;
     use fluvio_protocol::record::Offset;
 
     use crate::LogIndex;
@@ -325,10 +301,10 @@ mod tests {
         let log_path = log_records.get_path().to_owned();
         drop(log_records);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None, false, false)
+        let validator = LogValidator::default_validate::<LogIndex>(&log_path, None)
             .await
             .expect("validate");
-        assert_eq!(next_offset, BASE_OFFSET);
+        assert_eq!(validator.leo(), BASE_OFFSET);
     }
 
     #[fluvio_future::test]
@@ -360,17 +336,23 @@ mod tests {
             .await
             .expect("write");
 
+        // at this point, we have written 5 records
+
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None, false, true)
+        let original_fs_len = std::fs::metadata(&log_path).expect("get metadata").len();
+
+        let validator = LogValidator::default_validate::<LogIndex>(&log_path, None)
             .await
             .expect("validate");
-        assert_eq!(next_offset, BASE_OFFSET + 5);
+        assert_eq!(validator.leo(), BASE_OFFSET + 5);
+        assert_eq!(validator.last_valid_file_pos as u64, original_fs_len);
+        assert_eq!(validator.batches, 2);
     }
 
     #[fluvio_future::test]
-    async fn test_validate_invalid_contents() {
+    async fn test_validating_invalid_contents() {
         const OFFSET: i64 = 501;
 
         let test_dir = temp_dir().join("validate_invalid_contents");
@@ -392,23 +374,61 @@ mod tests {
             .build()
             .expect("build");
 
+        // write a batch with 3 records
+        // each batch is 88 bytes long
         msg_sink
-            .write_batch(&builder.batch())
+            .write_batch(&builder.batch_records(3))
             .await
-            .expect("create batch");
+            .expect("write");
 
-        let test_file = msg_sink.get_path().to_owned();
-
-        // add some junk
-        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default())
+        // write a batch with 3 records
+        msg_sink
+            .write_batch(&builder.batch_records(3))
             .await
-            .expect("open batch file");
+            .expect("write");
+
+        msg_sink.flush().await.expect("flush");
+        let test_fs_path = msg_sink.get_path().to_owned();
+        drop(msg_sink);
+
+        let validator = LogValidator::default_validate::<LogIndex>(&test_fs_path, None)
+            .await
+            .expect("validate");
+
+        // we have written 3 records, leo = 3 + 1
+        assert_eq!(validator.leo(), OFFSET + 6);
+        drop(validator);
+
+        // get size of the file
+        let original_fs_len = std::fs::metadata(&test_fs_path)
+            .expect("get metadata")
+            .len();
+
+        // append some junk
+        let mut file = fluvio_future::fs::util::open_read_append(&test_fs_path)
+            .await
+            .expect("opening log file");
         let bytes = vec![0x01, 0x02, 0x03];
-        f_sink.write_all(&bytes).await.expect("write some junk");
-        f_sink.flush().await.expect("flush");
-        assert!(validate::<_, LogIndex>(&test_file, None, false, false)
+        file.write_all(&bytes).await.expect("write some junk");
+        file.flush().await.expect("flush");
+        drop(file);
+
+        let invalid_fs_len = std::fs::metadata(&test_fs_path)
+            .expect("get metadata")
+            .len();
+        assert_eq!(invalid_fs_len, original_fs_len + 3);
+
+        debug!("checking invalid contents");
+        let validator = LogValidator::default_validate::<LogIndex>(&test_fs_path, None)
             .await
-            .is_err());
+            .expect("validate");
+
+        // stats for validated offets should be original contents
+        assert_eq!(validator.leo(), OFFSET + 6); // should have same leo as successfull validation
+        assert_eq!(validator.last_valid_file_pos as u64, original_fs_len);
+        assert_eq!(validator.batches, 2);
+        let err = validator.error.expect("error");
+        assert!(matches!(err, LogValidationError::BatchDecoding(_)));
     }
 }
 
@@ -417,7 +437,7 @@ mod perf {
 
     use std::time::Instant;
 
-    use crate::{batch_header::FileEmptyRecords, LogIndex};
+    use crate::{LogIndex};
 
     use super::*;
 
@@ -429,11 +449,9 @@ mod perf {
 
         println!("starting test");
         let header_time = Instant::now();
-        let msm_result = LogValidator::<_, FileEmptyRecords, LogIndex>::validate_segment(
-            TEST_PATH, None, false, false,
-        )
-        .await
-        .expect("validate");
+        let msm_result = LogValidator::default_validate::<LogIndex>(TEST_PATH, None)
+            .await
+            .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
         println!("validator: {:#?}", msm_result);
 

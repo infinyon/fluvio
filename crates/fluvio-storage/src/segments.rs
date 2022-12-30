@@ -274,11 +274,12 @@ mod tests {
     use std::path::PathBuf;
     use std::sync::Arc;
 
+    use anyhow::Result;
+
     use flv_util::fixture::ensure_new_dir;
     use fluvio_protocol::fixture::create_batch;
     use fluvio_protocol::record::Offset;
 
-    use crate::StorageError;
     use crate::config::SharedReplicaConfig;
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
@@ -291,7 +292,7 @@ mod tests {
         option: Arc<SharedReplicaConfig>,
         start: Offset,
         end_offset: Offset,
-    ) -> Result<ReadSegment, StorageError> {
+    ) -> Result<ReadSegment> {
         let mut mut_segment = MutableSegment::create(start, option).await?;
         mut_segment.append_batch(&mut create_batch()).await?;
         mut_segment.set_end_offset(end_offset); // only used for testing

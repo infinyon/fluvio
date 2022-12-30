@@ -12,6 +12,7 @@ use futures_lite::io::AsyncReadExt;
 use futures_lite::io::AsyncWriteExt;
 use futures_lite::io::AsyncSeekExt;
 use tracing::debug;
+use tracing::info;
 use tracing::trace;
 
 use fluvio_future::fs::File;
@@ -84,7 +85,7 @@ where
 
         match metadata(&checkpoint_path).await {
             Ok(_) => {
-                trace!("checkpoint {:#?} exists, reading", checkpoint_path);
+                info!("checkpoint {:#?} exists, reading", checkpoint_path);
                 let file = util::open_read_write(&checkpoint_path).await?;
                 let mut checkpoint = CheckPoint {
                     option: option.clone(),
@@ -96,7 +97,7 @@ where
                 Ok(checkpoint)
             }
             Err(_) => {
-                debug!(
+                info!(
                     "no existing creating checkpoint {}, creating",
                     checkpoint_path.display()
                 );
@@ -139,6 +140,7 @@ where
 
         let mut buf = Cursor::new(contents);
         self.offset = ReadToBuf::read_from(&mut buf);
+        info!(offset = %self.offset,"checkpoint offset read");
         Ok(())
     }
 
