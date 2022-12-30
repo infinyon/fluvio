@@ -246,8 +246,19 @@ impl FileReplica {
 
         let last_base_offset = active_segment.get_base_offset();
 
-        let commit_checkpoint: CheckPoint<Offset> =
+        let mut commit_checkpoint: CheckPoint<Offset> =
             CheckPoint::create(shared_config.clone(), "replication.chk", last_base_offset).await?;
+
+        // ensure checkpoint is valid
+        let hw = *commit_checkpoint.get_offset();
+        let leo = active_segment.get_end_offset();
+        if hw > leo {
+            info!(
+                hw,
+                leo, "high watermark is greater than log end offset, resetting to leo"
+            );
+            commit_checkpoint.write(leo).await?;
+        }
 
         let size = Arc::new(ReplicaSize::default());
         let cleaner = Cleaner::start_new(
