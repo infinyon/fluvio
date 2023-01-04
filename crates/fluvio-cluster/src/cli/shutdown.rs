@@ -36,7 +36,7 @@ impl ShutdownOpt {
         let config_file = ConfigFile::load_default_or_new()?;
 
         let profile_name = Self::profile_name(&config_file);
-        if profile_name != "local".to_string() {
+        if profile_name != "local" {
             pb.println(format!(
                 "{} Profile {} found, shutdown is only implemented for profile \"local\"",
                 "❌",
@@ -48,13 +48,7 @@ impl ShutdownOpt {
 
         // Notify the k8s cluster we have removed the spus so that
         // `fluvio cluster start --local --develop` can be used to restart the cluster
-        let _ = self.remove_custom_objects(
-            "spus",
-            &DEFAULT_NAMESPACE.to_string(),
-            None,
-            false,
-            &pb
-        );
+        let _ = self.remove_custom_objects("spus", DEFAULT_NAMESPACE, None, false, &pb);
 
         Ok(())
     }
