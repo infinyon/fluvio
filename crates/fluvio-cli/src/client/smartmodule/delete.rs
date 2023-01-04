@@ -20,7 +20,7 @@ pub struct DeleteSmartModuleOpt {
     /// Continue deleting in case of an error
     #[clap(short, long, action, required = false)]
     continue_on_error: bool,
-    /// One or more name(s) of the smart module(s) to be deleted
+    /// One or more name(s) of the smartmodule(s) to be deleted
     #[clap(value_name = "name", required = true)]
     names: Vec<String>,
 }
@@ -35,7 +35,7 @@ impl ClientCmd for DeleteSmartModuleOpt {
         let admin = fluvio.admin().await;
         let mut err_happened = false;
         for name in self.names.iter() {
-            debug!(name, "deleting smart module");
+            debug!(name, "deleting smartmodule");
             if let Err(error) = admin.delete::<SmartModuleSpec, _>(name).await {
                 let error = CliError::from(error);
                 err_happened = true;
@@ -45,19 +45,19 @@ impl ClientCmd for DeleteSmartModuleOpt {
                         Err(err) => format!("{}", err),
                     };
                     println!(
-                        "smart module \"{}\" delete failed with: {}",
+                        "smartmodule \"{}\" delete failed with: {}",
                         name, user_error
                     );
                 } else {
                     return Err(error);
                 }
             } else {
-                println!("smart module \"{}\" deleted", name);
+                println!("smartmodule \"{}\" deleted", name);
             }
         }
         if err_happened {
             Err(CliError::CollectedError(
-                "Failed deleting smart module(s). Check previous errors.".to_string(),
+                "Failed deleting smartmodule(s). Check previous errors.".to_string(),
             ))
         } else {
             Ok(())
