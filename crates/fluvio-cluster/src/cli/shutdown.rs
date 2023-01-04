@@ -1,9 +1,11 @@
 use std::fs::{remove_file};
+use std::process::Command;
 
 use clap::Parser;
 use colored::Colorize;
 use fluvio::config::ConfigFile;
-use tracing::debug;
+use fluvio_command::CommandExt;
+use tracing::{info, debug};
 use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
@@ -12,6 +14,8 @@ use crate::render::ProgressRenderer;
 use crate::{cli::ClusterCliError};
 use crate::progress::ProgressBarFactory;
 use crate::ClusterError;
+use crate::error::UninstallError;
+use crate::{DEFAULT_NAMESPACE};
 
 #[derive(Debug, Parser)]
 pub struct ShutdownOpt {}
@@ -41,6 +45,16 @@ impl ShutdownOpt {
         }
 
         Self::kill_local_processes(&self, &pb).await?;
+
+        // Notify the k8s cluster we have removed the spus so that
+        // `fluvio cluster start --local --develop` can be used to restart the cluster
+        let _ = self.remove_custom_objects(
+            "spus",
+            &DEFAULT_NAMESPACE.to_string(),
+            None,
+            false,
+            &pb
+        );
 
         Ok(())
     }
@@ -105,5 +119,38 @@ impl ShutdownOpt {
             .current_profile_name()
             .unwrap()
             .to_string()
+    }
+
+    /// Remove objects of specified type, namespace
+    fn remove_custom_objects(
+        &self,
+        object_type: &str,
+        namespace: &str,
+        selector: Option<&str>,
+        force: bool,
+        pb: &ProgressRenderer,
+    ) -> Result<(), UninstallError> {
+        pb.set_message(format!("Removing {} objects", object_type));
+        let mut cmd = Command::new("kubectl");
+        cmd.arg("delete");
+        cmd.arg(object_type);
+        cmd.arg("--namespace");
+        cmd.arg(namespace);
+        if force {
+            cmd.arg("--force");
+        }
+        if let Some(label) = selector {
+            info!(
+                "deleting label '{}' object {} in: {}",
+                label, object_type, namespace
+            );
+            cmd.arg("--selector").arg(label);
+        } else {
+            info!("deleting all {} in: {}", object_type, namespace);
+            cmd.arg("--all");
+        }
+        cmd.result()?;
+
+        Ok(())
     }
 }
