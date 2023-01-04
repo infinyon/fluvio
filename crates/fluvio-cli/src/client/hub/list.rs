@@ -62,14 +62,14 @@ mod output {
         list_smartmodules: Vec<PackageMeta>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
-        debug!("smart modules: {:#?}", list_smartmodules);
+        debug!("smartmodules: {:#?}", list_smartmodules);
 
         if !list_smartmodules.is_empty() {
             let smartmodules = ListSmartModules(list_smartmodules);
             out.render_list(&smartmodules, output_type)?;
             Ok(())
         } else {
-            t_println!(out, "no smart modules");
+            t_println!(out, "no smartmodules");
             Ok(())
         }
     }

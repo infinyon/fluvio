@@ -15,7 +15,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
     filters: Vec<NameFilter>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse<SmartModuleSpec>, Error> {
-    trace!("fetching smart modules");
+    trace!("fetching smartmodules");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -23,7 +23,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .await
     {
         if !authorized {
-            debug!("fetch smart module authorization failed");
+            debug!("fetch smartmodule authorization failed");
             // If permission denied, return empty list;
             return Ok(ListResponse::new(vec![]));
         }
@@ -47,10 +47,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         })
         .collect();
 
-    debug!(
-        "flv fetch smartmodules resp: {} items",
-        smartmodules.len()
-    );
+    debug!("flv fetch smartmodules resp: {} items", smartmodules.len());
     trace!("flv fetch smartmodules resp {:#?}", smartmodules);
 
     Ok(ListResponse::new(smartmodules))

@@ -73,7 +73,7 @@
 
 ## Platform Version 0.9.33 - 2022-08-10
 * Added `DeliverySemantic` to `fluvio-cli`. ([#2508](https://github.com/infinyon/fluvio/pull/2508))
-* CLI: Added ability to delete multiple connectors, smart modules and topics with one command. ([#2427](https://github.com/infinyon/fluvio/issues/2427))
+* CLI: Added ability to delete multiple connectors, smartmodules and topics with one command. ([#2427](https://github.com/infinyon/fluvio/issues/2427))
 * Added `--use-k8-port-forwarding` option to `fluvio cluster start`. ([#2516](https://github.com/infinyon/fluvio/pull/2516))
 * SmartModule package: add missing metadata ([#2532](https://github.com/infinyon/fluvio/pull/2532))
 * Adds feedback and debug info to 'smart-module create' ([#2513](https://github.com/infinyon/fluvio/pull/2513))

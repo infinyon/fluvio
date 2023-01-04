@@ -77,7 +77,7 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
 
 impl TestCmd {
     pub(crate) fn process(self) -> Result<()> {
-        debug!("starting smart module test");
+        debug!("starting smartmodule test");
 
         let chain_builder = if let Some(transforms_file) = self.transforms_file {
             let config = TransformationConfig::from_file(transforms_file)

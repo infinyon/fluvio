@@ -25,7 +25,7 @@ where
     AC: AuthContext,
     M: MetadataItem + Debug,
 {
-    debug!("fetching list of smart modules");
+    debug!("fetching list of smartmodules");
 
     if let Ok(authorized) = auth
         .allow_type_action(SmartModuleSpec::OBJECT_TYPE, TypeAction::Read)
@@ -63,7 +63,7 @@ where
                     .count()
                     > 0
             {
-                debug!("found matching smart module: {:#?}", value.spec);
+                debug!("found matching smartmodule: {:#?}", value.spec);
                 if summary {
                     Some(Metadata {
                         name: value.key().clone(),
