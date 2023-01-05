@@ -11,7 +11,13 @@ use std::time::Duration;
 use std::env;
 use std::time::SystemTime;
 
+use anyhow::{anyhow, Result};
 use derive_builder::Builder;
+use tracing::{info, warn, debug, instrument};
+use once_cell::sync::Lazy;
+use tempfile::NamedTempFile;
+use semver::Version;
+
 use fluvio::FluvioAdmin;
 use fluvio_controlplane_metadata::spg::SpuConfig;
 use fluvio_sc_schema::objects::CommonCreateRequest;
@@ -22,11 +28,6 @@ use k8_client::load_and_share;
 use k8_metadata_client::NameSpace;
 use k8_types::K8Obj;
 use k8_types::app::deployment::DeploymentSpec;
-use tracing::{info, warn, debug, instrument};
-use once_cell::sync::Lazy;
-use tempfile::NamedTempFile;
-use semver::Version;
-
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
@@ -648,7 +649,7 @@ impl ClusterInstaller {
         skip(self),
         fields(namespace = &*self.config.namespace),
     )]
-    pub async fn install_fluvio(&self) -> Result<StartStatus, K8InstallError> {
+    pub async fn install_fluvio(&self) -> Result<StartStatus> {
         if !self.config.skip_checks {
             self.preflight_check(true).await?;
         }
@@ -687,7 +688,7 @@ impl ClusterInstaller {
         let fluvio =
             match try_connect_to_sc(&cluster_config, &self.config.platform_version, &pb).await {
                 Some(fluvio) => fluvio,
-                None => return Err(K8InstallError::SCServiceTimeout),
+                None => return Err(K8InstallError::SCServiceTimeout.into()),
             };
         pb.println(format!("✅ Connected to SC: {}", install_host_and_port));
         pb.finish_and_clear();
@@ -718,7 +719,7 @@ impl ClusterInstaller {
 
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
-    async fn install_app(&self) -> Result<(), K8InstallError> {
+    async fn install_app(&self) -> Result<()> {
         debug!(
             "Installing fluvio with the following configuration: {:#?}",
             &self.config
@@ -800,11 +801,7 @@ impl ClusterInstaller {
                         node_addr
                             .iter()
                             .find(|a| a.r#type == "InternalIP")
-                            .ok_or_else(|| {
-                                K8InstallError::Other(
-                                    "No nodes with ExternalIP or InternalIP set".into(),
-                                )
-                            })?
+                            .ok_or_else(|| anyhow!("No nodes with ExternalIP or InternalIP set"))?
                     }
                 };
                 anode.address.clone()
@@ -822,8 +819,7 @@ impl ClusterInstaller {
 
             debug!(?helm_lb_config, "helm_lb_config");
 
-            serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
-                .map_err(|err| K8InstallError::Other(err.to_string()))?;
+            serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)?;
             Some((np_addr_fd, np_conf_path))
         } else {
             None
@@ -888,11 +884,7 @@ impl ClusterInstaller {
     }
 
     /// Uploads TLS secrets to Kubernetes
-    fn upload_tls_secrets(
-        &self,
-        server_tls: &TlsConfig,
-        client_tls: &TlsConfig,
-    ) -> Result<(), K8InstallError> {
+    fn upload_tls_secrets(&self, server_tls: &TlsConfig, client_tls: &TlsConfig) -> Result<()> {
         let server_paths: Cow<TlsPaths> = tls_config_to_cert_paths(server_tls)?;
         let client_paths: Cow<TlsPaths> = tls_config_to_cert_paths(client_tls)?;
         self.upload_tls_secrets_from_files(server_paths.as_ref(), client_paths.as_ref())?;
@@ -905,7 +897,7 @@ impl ClusterInstaller {
         &self,
         service: &K8Obj<ServiceSpec>,
         pb: &ProgressRenderer,
-    ) -> Result<(String, u16, Child), K8InstallError> {
+    ) -> Result<(String, u16, Child)> {
         let pf_host_name = "localhost";
 
         let pf_port = portpicker::pick_unused_port().expect("No local ports available");
@@ -937,7 +929,7 @@ impl ClusterInstaller {
                 let error_msg = format!("kubectl port-forward error: {}", buf);
                 pb.println(error_msg);
 
-                return Err(K8InstallError::PortForwardingFailed(status));
+                return Err(K8InstallError::PortForwardingFailed(status).into());
             }
             None => {
                 info!("Port forwarding process started");
@@ -1051,7 +1043,7 @@ impl ClusterInstaller {
     async fn discover_sc_external_host_and_port(
         &self,
         service: &K8Obj<ServiceSpec>,
-    ) -> Result<(String, u16), K8InstallError> {
+    ) -> Result<(String, u16)> {
         let target_port = ClusterInstaller::target_port_for_service(service)?;
 
         let node_port = service
@@ -1069,13 +1061,12 @@ impl ClusterInstaller {
             .spec
             .r#type
             .as_ref()
-            .ok_or_else(|| K8InstallError::Other("Load Balancer Type".into()))?;
+            .ok_or_else(|| anyhow!("Load Balancer Type"))?;
 
         match k8_load_balancer_type {
             LoadBalancerType::ClusterIP => Ok((service.spec.cluster_ip.clone(), target_port)),
             LoadBalancerType::NodePort => {
-                let node_port = node_port
-                    .ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
+                let node_port = node_port.ok_or_else(|| anyhow!("Expecting a NodePort port"))?;
 
                 let host_addr = if let Some(addr) = &self.config.proxy_addr {
                     debug!(?addr, "using proxy");
@@ -1102,9 +1093,7 @@ impl ClusterInstaller {
                                 .iter()
                                 .find(|a| a.r#type == "InternalIP")
                                 .ok_or_else(|| {
-                                    K8InstallError::Other(
-                                        "No nodes with ExternalIP or InternalIP set".into(),
-                                    )
+                                    anyhow!("No nodes with ExternalIP or InternalIP set",)
                                 })?
                                 .address
                         }
@@ -1127,7 +1116,7 @@ impl ClusterInstaller {
                     debug!(%ingress_host,"found lb address");
                     Ok((ingress_host.to_owned(), target_port))
                 } else {
-                    Err(K8InstallError::SCIngressNotValid)
+                    Err(K8InstallError::SCIngressNotValid.into())
                 }
             }
             LoadBalancerType::ExternalName => {
@@ -1136,7 +1125,7 @@ impl ClusterInstaller {
         }
     }
 
-    fn target_port_for_service(service: &K8Obj<ServiceSpec>) -> Result<u16, K8InstallError> {
+    fn target_port_for_service(service: &K8Obj<ServiceSpec>) -> Result<u16> {
         service
             .spec
             .ports
@@ -1147,16 +1136,12 @@ impl ClusterInstaller {
                 None => None,
             })
             .next()
-            .ok_or_else(|| K8InstallError::Other("target port should be there".into()))
+            .ok_or_else(|| anyhow!("target port should be there"))
     }
 
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, admin))]
-    async fn wait_for_spu(
-        &self,
-        admin: &FluvioAdmin,
-        pb: &ProgressRenderer,
-    ) -> Result<bool, K8InstallError> {
+    async fn wait_for_spu(&self, admin: &FluvioAdmin, pb: &ProgressRenderer) -> Result<bool> {
         let expected_spu = self.config.spu_replicas as usize;
         let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
         let time = SystemTime::now();
@@ -1200,7 +1185,7 @@ impl ClusterInstaller {
             }
         }
 
-        Err(K8InstallError::SPUTimeout)
+        Err(K8InstallError::SPUTimeout.into())
     }
 
     /// Install server-side TLS by uploading secrets to kubernetes
@@ -1209,7 +1194,7 @@ impl ClusterInstaller {
         &self,
         server_paths: &TlsPaths,
         client_paths: &TlsPaths,
-    ) -> Result<(), K8InstallError> {
+    ) -> Result<()> {
         let ca_cert = server_paths
             .ca_cert
             .to_str()
@@ -1296,7 +1281,7 @@ impl ClusterInstaller {
     }
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
-    fn update_profile(&self, external_addr: &str) -> Result<(), K8InstallError> {
+    fn update_profile(&self, external_addr: &str) -> Result<()> {
         let pb = self.pb_factory.create()?;
         pb.set_message(format!("Creating K8 profile for: {}", external_addr));
 
@@ -1313,14 +1298,12 @@ impl ClusterInstaller {
     }
 
     /// Determines a profile name from the name of the active Kubernetes context
-    fn compute_profile_name(&self) -> Result<String, K8InstallError> {
+    fn compute_profile_name(&self) -> Result<String> {
         let k8_config = K8Config::load()?;
 
         let kc_config = match k8_config {
             K8Config::Pod(_) => {
-                return Err(K8InstallError::Other(
-                    "Pod config is not valid here".to_owned(),
-                ));
+                return Err(anyhow!("Pod config is not valid here"));
             }
             K8Config::KubeConfig(config) => config,
         };
@@ -1328,13 +1311,13 @@ impl ClusterInstaller {
         kc_config
             .config
             .current_context()
-            .ok_or_else(|| K8InstallError::Other("No context fount".to_owned()))
+            .ok_or_else(|| anyhow!("No context fount"))
             .map(|ctx| ctx.name.to_owned())
     }
 
     /// Provisions a SPU group for the given cluster according to internal config
     #[instrument(skip(self, fluvio))]
-    async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<(), K8InstallError> {
+    async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<()> {
         let pb = self.pb_factory.create()?;
         let spg_name = self.config.group_name.clone();
         pb.set_message(format!("📝 Checking for existing SPU Group: {}", spg_name));

@@ -1,15 +1,17 @@
 use clap::Parser;
-use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
-use super::error_convert;
-use super::update::should_always_print_available_update;
 use tracing::debug;
+use anyhow::Result;
 
-use crate::Result;
+use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
+
+use super::update::should_always_print_available_update;
+
 use fluvio_cli_common::error::CliError as CommonCliError;
 use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
     fluvio_bin_dir,
 };
+use crate::error::CliError;
 use crate::install::update::{
     check_update_required, prompt_required_update, check_update_available, prompt_available_update,
 };
@@ -43,23 +45,24 @@ impl InstallOpt {
             return Ok(());
         }
 
-        let result = self.install_plugin(&agent).await;
-        match result {
+        match self.install_plugin(&agent).await {
             Ok(_) => (),
-            Err(crate::CliError::IndexError(fluvio_index::Error::MissingTarget(target))) => {
-                install_println(format!(
-                    "❕ Package '{}' is not available for target {}, skipping",
-                    self.package.name(),
-                    target
-                ));
-                install_println("❕ Consider filing an issue to add support for this platform using the link below! 👇");
-                install_println(format!(
-                    "❕   https://github.com/infinyon/fluvio/issues/new?title=Support+fluvio-cloud+on+target+{}",
-                    target
-                ));
-                return Ok(());
-            }
-            Err(e) => return Err(e),
+            Err(err) => match err.downcast_ref::<CliError>() {
+                Some(crate::CliError::IndexError(fluvio_index::Error::MissingTarget(target))) => {
+                    install_println(format!(
+                        "❕ Package '{}' is not available for target {}, skipping",
+                        self.package.name(),
+                        target
+                    ));
+                    install_println("❕ Consider filing an issue to add support for this platform using the link below! 👇");
+                    install_println(format!(
+                            "❕   https://github.com/infinyon/fluvio/issues/new?title=Support+fluvio-cloud+on+target+{}",
+                            target
+                        ));
+                    return Ok(());
+                }
+                _ => return Err(err),
+            },
         }
 
         // After any "install" command, check if the CLI has an available update,
@@ -115,7 +118,7 @@ impl InstallOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(error_convert(other)),
+            Err(other) => return Err(other.into()),
         };
         install_println("🔑 Downloaded and verified package file");
 

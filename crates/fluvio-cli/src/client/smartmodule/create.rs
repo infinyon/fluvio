@@ -5,12 +5,12 @@ use std::sync::Arc;
 use tracing::debug;
 use async_trait::async_trait;
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use fluvio_extension_common::Terminal;
 
-use crate::Result;
 use crate::client::cmd::ClientCmd;
 
 /// Create a new SmartModule with a given name

@@ -6,11 +6,10 @@
 
 use tracing::debug;
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::spg::*;
-
-use crate::cli::ClusterCliError;
 
 // -----------------------------------
 // CLI Options
@@ -40,7 +39,7 @@ pub struct CreateManagedSpuGroupOpt {
 }
 
 impl CreateManagedSpuGroupOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let (name, spec) = self.validate();
         debug!("creating spg: {}, spec: {:#?}", name, spec);
 

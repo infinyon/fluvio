@@ -1,6 +1,6 @@
 use std::{
     convert::Infallible,
-    io::{Error as IoError, ErrorKind},
+    io::{ErrorKind},
 };
 
 use semver::Version;
@@ -22,8 +22,6 @@ pub type Result<T, E = CliError> = core::result::Result<T, E>;
 #[derive(thiserror::Error, Debug)]
 #[allow(clippy::enum_variant_names)]
 pub enum CliError {
-    #[error(transparent)]
-    IoError(#[from] IoError),
     #[error(transparent)]
     OutputError(#[from] OutputError),
     #[error("Failed to parse format string")]

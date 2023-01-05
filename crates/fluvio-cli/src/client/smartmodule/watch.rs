@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 use clap::Parser;
 use tokio::select;
+use anyhow::Result;
 
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
@@ -12,7 +13,6 @@ use fluvio_future::io::StreamExt;
 use crate::client::cmd::ClientCmd;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
-use crate::Result;
 
 /// List all existing SmartModules
 #[derive(Debug, Parser)]

@@ -2175,6 +2175,7 @@ dependencies = [
 name = "fluvio"
 version = "0.16.0"
 dependencies = [
+ "anyhow",
  "async-channel",
  "async-lock",
  "async-rwlock",
@@ -2234,6 +2235,7 @@ dependencies = [
 name = "fluvio-benchmark"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-channel",
  "bincode",
  "chrono",
@@ -2293,6 +2295,7 @@ dependencies = [
 name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-net",
  "async-trait",
  "atty",

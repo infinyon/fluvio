@@ -4,6 +4,8 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use clap::Parser;
+use tracing::info;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::FluvioConfig;
@@ -13,9 +15,8 @@ use fluvio_extension_common::Terminal;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_hub_util as hubutil;
 use hubutil::HubAccess;
-use tracing::info;
 
-use crate::{CliError, Result};
+use crate::{CliError};
 use crate::client::cmd::ClientCmd;
 use crate::client::hub::get_hub_access;
 

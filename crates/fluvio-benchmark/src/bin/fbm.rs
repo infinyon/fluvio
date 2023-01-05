@@ -6,7 +6,10 @@ use std::{
     mem,
     time::Duration,
 };
+
 use clap::{arg, Parser};
+use anyhow::Result;
+
 use fluvio_cli_common::install::fluvio_base_dir;
 use fluvio_future::{task::run_block_on, sync::Mutex, future::timeout};
 use futures_util::FutureExt;
@@ -25,7 +28,7 @@ use fluvio_benchmark::{
     BenchmarkError,
 };
 
-fn main() -> Result<(), BenchmarkError> {
+fn main() -> Result<()> {
     fluvio_future::subscriber::init_logger();
     let args = Args::parse();
 
@@ -108,7 +111,7 @@ fn load_previous_stats() -> Option<AllStats> {
     AllStats::decode(&buffer).ok()
 }
 
-fn write_stats(stats: AllStats) -> Result<(), BenchmarkError> {
+fn write_stats(stats: AllStats) -> Result<()> {
     let encoded = stats.encode();
 
     let mut file = std::fs::OpenOptions::new()

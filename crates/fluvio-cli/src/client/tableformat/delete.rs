@@ -4,11 +4,10 @@
 //! CLI tree to generate Delete TableFormat spec
 //!
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::tableformat::TableFormatSpec;
-
-use crate::CliError;
 
 // -----------------------------------
 // CLI Options
@@ -21,7 +20,7 @@ pub struct DeleteTableFormatOpt {
 }
 
 impl DeleteTableFormatOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
         admin.delete::<TableFormatSpec, _>(&self.name).await?;
         Ok(())

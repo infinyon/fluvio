@@ -4,11 +4,11 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::derivedstream::{DerivedStreamSpec};
 
-use crate::Result;
 use crate::error::CliError;
 
 /// Create a new SmartModule with a given name
@@ -41,7 +41,7 @@ pub struct DerivedStreamCreateConfig {
 }
 
 impl DerivedStreamCreateConfig {
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;

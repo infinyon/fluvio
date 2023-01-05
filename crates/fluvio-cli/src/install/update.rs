@@ -1,18 +1,19 @@
 use std::path::{Path, PathBuf};
+
 use clap::Parser;
+use tracing::{debug, instrument};
+use semver::Version;
+use anyhow::Result;
+
 use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_cli_common::FLUVIO_ALWAYS_CHECK_UPDATES;
-use tracing::{debug, instrument};
-
-use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
-use crate::Result;
 use fluvio_cli_common::error::CliError as CommonCliError;
 use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 };
+
 use crate::metadata::subcommand_metadata;
-use super::error_convert;
 
 const FLUVIO_CLI_PACKAGE_ID: &str = "fluvio/fluvio";
 const FLUVIO_CHANNEL_PACKAGE_ID: &str = "fluvio/fluvio-channel";
@@ -116,7 +117,7 @@ impl UpdateOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(error_convert(other)),
+            Err(other) => return Err(other.into()),
         };
         install_println("🔑 Downloaded and verified package file");
 
@@ -168,7 +169,7 @@ impl UpdateOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(error_convert(other)),
+            Err(other) => return Err(other.into()),
         };
         install_println("🔑 Downloaded and verified package file");
 

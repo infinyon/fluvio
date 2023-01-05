@@ -4,9 +4,6 @@
 //! CLI command for Profile operation
 //!
 
-use std::sync::Arc;
-use clap::Parser;
-
 mod sync;
 mod current;
 mod switch;
@@ -16,7 +13,11 @@ mod delete_cluster;
 mod list;
 mod export;
 
-use crate::Result;
+use std::sync::Arc;
+
+use clap::Parser;
+use anyhow::Result;
+
 use crate::common::output::Terminal;
 use crate::profile::current::CurrentOpt;
 use crate::profile::delete_cluster::DeleteClusterOpt;

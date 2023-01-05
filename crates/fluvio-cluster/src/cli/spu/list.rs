@@ -5,14 +5,15 @@
 //!
 
 use std::sync::Arc;
+
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio::metadata::customspu::CustomSpuSpec;
 use fluvio::metadata::objects::Metadata;
 
-use crate::cli::ClusterCliError;
 use crate::cli::common::output::Terminal;
 use crate::cli::common::OutputFormat;
 use crate::cli::spu::display::format_spu_response_output;
@@ -29,11 +30,7 @@ pub struct ListSpusOpt {
 
 impl ListSpusOpt {
     /// Process list spus cli request
-    pub async fn process<O: Terminal>(
-        self,
-        out: Arc<O>,
-        fluvio: &Fluvio,
-    ) -> Result<(), ClusterCliError> {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
 
         let spus = if self.custom {

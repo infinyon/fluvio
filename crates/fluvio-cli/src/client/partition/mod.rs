@@ -9,10 +9,10 @@ mod cmd {
 
     use async_trait::async_trait;
     use clap::Parser;
+    use anyhow::Result;
 
     use fluvio::Fluvio;
 
-    use crate::Result;
     use crate::client::cmd::ClientCmd;
     use crate::common::output::Terminal;
     use crate::common::FluvioExtensionMetadata;

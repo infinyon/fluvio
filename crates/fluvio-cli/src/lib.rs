@@ -33,6 +33,7 @@ mod root {
     use clap::{Parser, Command as ClapCommand, CommandFactory};
     use clap_complete::{generate, Shell};
     use tracing::debug;
+    use anyhow::Result;
 
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
@@ -48,8 +49,6 @@ mod root {
     use crate::common::target::ClusterTarget;
     use crate::common::COMMAND_TEMPLATE;
     use crate::common::PrintTerminal;
-
-    use super::Result;
 
     /// Fluvio Command Line Interface
     #[derive(Parser, Debug)]
