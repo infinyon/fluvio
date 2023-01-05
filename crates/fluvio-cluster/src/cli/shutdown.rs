@@ -1,11 +1,7 @@
 use std::fs::{remove_file};
-use std::process::Command;
 
 use clap::Parser;
-use colored::Colorize;
-use fluvio::config::ConfigFile;
-use fluvio_command::CommandExt;
-use tracing::{info, debug};
+use tracing::debug;
 use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
@@ -14,11 +10,13 @@ use crate::render::ProgressRenderer;
 use crate::{cli::ClusterCliError};
 use crate::progress::ProgressBarFactory;
 use crate::ClusterError;
-use crate::error::UninstallError;
-use crate::{DEFAULT_NAMESPACE};
 
 #[derive(Debug, Parser)]
-pub struct ShutdownOpt {}
+pub struct ShutdownOpt {
+    /// shutdown local spu/sc
+    #[clap(long)]
+    local: bool,
+}
 
 impl ShutdownOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
@@ -33,23 +31,14 @@ impl ShutdownOpt {
             }
         };
 
-        let config_file = ConfigFile::load_default_or_new()?;
-
-        let profile_name = Self::profile_name(&config_file);
-        if profile_name != "local" {
-            pb.println(format!(
-                "{} Profile {} found, shutdown is only implemented for profile \"local\"",
-                "❌",
-                profile_name.italic(),
+        if self.local {
+            Self::kill_local_processes(&self, &pb).await?;
+        } else {
+            pb.println(concat!(
+                "❌ Shutdown is only implemented for local development.\n",
+                "   Please provide '--local' to shutdown the local cluster.",
             ));
         }
-
-        Self::kill_local_processes(&self, &pb).await?;
-
-        // Notify the k8s cluster we have removed the spus so that
-        // `fluvio cluster start --local --develop` can be used to restart the cluster
-        let _ = self.remove_custom_objects("spus", DEFAULT_NAMESPACE, None, false, &pb);
-
         Ok(())
     }
 
@@ -103,47 +92,6 @@ impl ShutdownOpt {
 
         pb.println("Uninstalled fluvio local components");
         pb.finish_and_clear();
-
-        Ok(())
-    }
-
-    fn profile_name(config_file: &ConfigFile) -> String {
-        config_file
-            .config()
-            .current_profile_name()
-            .unwrap()
-            .to_string()
-    }
-
-    /// Remove objects of specified type, namespace
-    fn remove_custom_objects(
-        &self,
-        object_type: &str,
-        namespace: &str,
-        selector: Option<&str>,
-        force: bool,
-        pb: &ProgressRenderer,
-    ) -> Result<(), UninstallError> {
-        pb.set_message(format!("Removing {} objects", object_type));
-        let mut cmd = Command::new("kubectl");
-        cmd.arg("delete");
-        cmd.arg(object_type);
-        cmd.arg("--namespace");
-        cmd.arg(namespace);
-        if force {
-            cmd.arg("--force");
-        }
-        if let Some(label) = selector {
-            info!(
-                "deleting label '{}' object {} in: {}",
-                label, object_type, namespace
-            );
-            cmd.arg("--selector").arg(label);
-        } else {
-            info!("deleting all {} in: {}", object_type, namespace);
-            cmd.arg("--all");
-        }
-        cmd.result()?;
 
         Ok(())
     }
