@@ -1,5 +1,5 @@
 use fluvio::{FluvioConfig, SmartModuleInvocation, SmartModuleKind};
-use crate::{ConnectorConfig, Result};
+use crate::{config::ConnectorConfig, Result};
 use fluvio_smartengine::transformation::TransformationConfig;
 
 pub async fn smartmodule_chain_from_config(

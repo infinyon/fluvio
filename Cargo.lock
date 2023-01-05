@@ -2461,6 +2461,7 @@ dependencies = [
  "futures-util",
  "serde",
  "serde_json",
+ "serde_yaml 0.8.26",
  "tracing",
 ]
 
@@ -2471,7 +2472,6 @@ dependencies = [
  "anyhow",
  "derive_builder",
  "fluvio-connector-package",
- "tempfile",
  "tracing",
 ]
 
@@ -2498,6 +2498,7 @@ dependencies = [
  "fluvio-smartengine",
  "fluvio-types",
  "humantime-serde",
+ "openapiv3",
  "pretty_assertions",
  "serde",
  "serde_yaml 0.8.26",
@@ -4206,6 +4207,7 @@ dependencies = [
  "fluvio",
  "fluvio-connector-common",
  "futures 0.3.25",
+ "serde",
  "tokio",
 ]
 
@@ -4940,6 +4942,16 @@ name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
+
+[[package]]
+name = "openapiv3"
+version = "1.0.2"
+source = "git+https://github.com/galibey/openapiv3?rev=bdd22f046d2bc19ede257504645d31f835545222#bdd22f046d2bc19ede257504645d31f835545222"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "openssl"
@@ -6911,6 +6923,7 @@ version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1333c76748e868a4d9d1017b5ab53171dfd095f70c712fdb4653a406547f598f"
 dependencies = [
+ "indexmap",
  "serde",
 ]
 

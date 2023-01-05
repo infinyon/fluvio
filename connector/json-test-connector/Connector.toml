@@ -15,8 +15,16 @@ source = true
 image = "infinyon/fluvio-connect-json-test-source:0.1.0"
 
 
+[custom]
+required = ["template", "interval"]
 
-[[params]]
-name = "template"
+[custom.properties.template]
+title = "template"
 description = "JSON template"
 type = "string"
+
+[custom.properties.interval]
+title = "Interval"
+description = "Interval of producing value"
+type = "integer"
+

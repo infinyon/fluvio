@@ -2,9 +2,8 @@ version: 0.1.0
 name: my-json-test-connector
 type: json-test-source
 topic: test-topic
-parameters:
-  interval: 10  
-  template: '{"template":"test"}'  
+interval: 10  
+template: '{"template":"test"}'  
 transforms:
   - uses: infinyon/jolt@0.1.0
     with:

@@ -2,7 +2,7 @@ use fluvio::{FluvioConfig, Fluvio};
 use fluvio::dataplane::record::ConsumerRecord;
 use fluvio_sc_schema::errors::ErrorCode;
 use futures::StreamExt;
-use crate::{ConnectorConfig, Result};
+use crate::{config::ConnectorConfig, Result};
 use crate::ensure_topic_exists;
 use crate::smartmodule::smartmodule_vec_from_config;
 

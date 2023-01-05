@@ -1,4 +1,5 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
+use openapiv3::{Schema, AnySchema, ReferenceOr, Type, SchemaKind};
 use std::{collections::BTreeMap, ops::Deref, fmt::Display};
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
@@ -6,18 +7,18 @@ use serde::{Serialize, Deserialize};
 
 use crate::config::ConnectorConfig;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ConnectorMetadata {
     pub package: ConnectorPackage,
     pub direction: Direction,
     pub deployment: Deployment,
     #[serde(rename = "secret", default, skip_serializing_if = "BTreeMap::is_empty")]
     pub secrets: Secrets,
-    #[serde(rename = "params", default, skip_serializing_if = "Vec::is_empty")]
-    pub parameters: Parameters,
+    #[serde(rename = "custom", default, skip_serializing_if = "Option::is_none")]
+    pub custom_config: CustomConfigSchema,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct ConnectorPackage {
     pub name: String,
     pub group: String,
@@ -31,7 +32,7 @@ pub struct ConnectorPackage {
     pub visibility: ConnectorVisibility,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ConnectorVisibility {
     #[default]
@@ -39,7 +40,7 @@ pub enum ConnectorVisibility {
     Public,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Direction {
     #[serde(default, skip_serializing_if = "is_false")]
     source: bool,
@@ -47,35 +48,19 @@ pub struct Direction {
     dest: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Deployment {
     pub image: Option<String>,
     pub binary: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
-pub struct Parameters(Vec<Parameter>);
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct CustomConfigSchema(Option<openapiv3::Schema>);
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
-pub struct Parameter {
-    pub name: String,
-    pub description: Option<String>,
-    #[serde(rename = "type")]
-    pub ty: ParameterType,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum ParameterType {
-    #[default]
-    String,
-    Integer,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Secrets(BTreeMap<String, Secret>);
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Secret {
     #[serde(rename = "type")]
     pub ty: SecretType,
@@ -83,7 +68,7 @@ pub struct Secret {
     pub mount: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum SecretType {
     #[default]
@@ -106,11 +91,10 @@ impl Default for ConnectorMetadata {
                 license: Some("e.g. Apache 2.0".into()),
                 visibility: Default::default(),
             },
-            parameters: Parameters::from(vec![Parameter {
-                name: "param_name".into(),
-                description: Some("description text".into()),
-                ty: ParameterType::String,
-            }]),
+            custom_config: CustomConfigSchema::new(
+                [("prop1", Type::String(Default::default()))],
+                [],
+            ),
             secrets: Secrets::from(BTreeMap::from([(
                 "secret_name".into(),
                 Secret {
@@ -155,14 +139,6 @@ impl Display for Direction {
     }
 }
 
-impl Deref for Parameters {
-    type Target = Vec<Parameter>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 impl Deref for Secrets {
     type Target = BTreeMap<String, Secret>;
 
@@ -171,9 +147,11 @@ impl Deref for Secrets {
     }
 }
 
-impl From<Vec<Parameter>> for Parameters {
-    fn from(params: Vec<Parameter>) -> Self {
-        Self(params)
+impl Deref for CustomConfigSchema {
+    type Target = Option<openapiv3::Schema>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -199,6 +177,55 @@ impl Deployment {
     }
 }
 
+impl CustomConfigSchema {
+    pub fn new<S, P, R>(properties: P, required: R) -> Self
+    where
+        S: Into<String>,
+        P: IntoIterator<Item = (S, Type)>,
+        R: IntoIterator<Item = S>,
+    {
+        Self::with(
+            properties.into_iter().map(|(n, t)| {
+                (
+                    n,
+                    Schema {
+                        schema_data: Default::default(),
+                        schema_kind: SchemaKind::Type(t),
+                    },
+                )
+            }),
+            required,
+        )
+    }
+
+    pub fn with<S, P, R>(properties: P, required: R) -> Self
+    where
+        S: Into<String>,
+        P: IntoIterator<Item = (S, Schema)>,
+        R: IntoIterator<Item = S>,
+    {
+        let schema = Schema {
+            schema_data: Default::default(),
+            schema_kind: SchemaKind::Any(AnySchema {
+                properties: FromIterator::from_iter(
+                    properties
+                        .into_iter()
+                        .map(|(n, schema)| (n.into(), ReferenceOr::Item(Box::new(schema)))),
+                ),
+                required: required.into_iter().map(Into::into).collect(),
+                ..Default::default()
+            }),
+        };
+        Self(Some(schema))
+    }
+}
+
+impl From<Schema> for CustomConfigSchema {
+    fn from(value: Schema) -> Self {
+        Self(Some(value))
+    }
+}
+
 #[cfg(feature = "toml")]
 impl ConnectorMetadata {
     pub fn from_toml_str(input: &str) -> anyhow::Result<Self> {
@@ -211,22 +238,27 @@ impl ConnectorMetadata {
     }
 
     pub fn to_toml_string(&self) -> anyhow::Result<String> {
-        Ok(toml::to_string(self)?)
+        let value = toml::Value::try_from(self)?; // serializing to Value first helps with ValueAfterTable error
+        Ok(toml::to_string(&value)?)
     }
 
     pub fn to_toml_file<P: AsRef<std::path::Path>>(&self, path: P) -> anyhow::Result<()> {
-        let content = toml::to_vec(&self)?;
-        std::fs::write(path, content.as_slice())?;
+        std::fs::write(path, self.to_toml_string()?)?;
         Ok(())
     }
 }
 
 impl ConnectorMetadata {
-    pub fn validate_config(&self, config: &ConnectorConfig) -> anyhow::Result<()> {
-        validate_direction(&self.direction, config)?;
-        validate_deployment(&self.deployment, config)?;
-        validate_secrets(&self.secrets, config)?;
-        validate_parameters(&self.parameters, config)?;
+    pub fn validate_config<R: std::io::Read>(&self, reader: R) -> anyhow::Result<()> {
+        let value =
+            serde_yaml::from_reader(reader).context("unable to parse config into YAML format")?;
+        validate_custom_config(&self.custom_config, &value)
+            .context("custom config validation failed")?;
+        let config = ConnectorConfig::from_value(value)
+            .context("unable to parse common connector config")?;
+        validate_direction(&self.direction, &config)?;
+        validate_deployment(&self.deployment, &config)?;
+        validate_secrets(&self.secrets, &config)?;
         Ok(())
     }
 }
@@ -285,15 +317,51 @@ fn validate_secrets(secrets: &Secrets, config: &ConnectorConfig) -> anyhow::Resu
     Ok(())
 }
 
-fn validate_parameters(parameters: &Parameters, config: &ConnectorConfig) -> anyhow::Result<()> {
-    for meta_param in parameters.iter() {
-        if !config.parameters.contains_key(&meta_param.name) {
-            return Err(anyhow!(
-                "missing required parameter '{}' in config",
-                &meta_param.name
-            ));
-        }
+fn validate_custom_config(
+    config_schema: &CustomConfigSchema,
+    config: &serde_yaml::Value,
+) -> anyhow::Result<()> {
+    if let Some(schema) = config_schema.deref() {
+        validate_schema_object(&schema.schema_kind, config)?;
     }
+    Ok(())
+}
+
+fn validate_schema_object(kind: &SchemaKind, value: &serde_yaml::Value) -> anyhow::Result<()> {
+    let (properties, required) = match kind {
+        SchemaKind::Type(Type::Object(object)) => (&object.properties, object.required.as_slice()),
+        SchemaKind::Any(schema) => (&schema.properties, schema.required.as_slice()),
+        _ => return Ok(()),
+    };
+
+    if required.is_empty() {
+        return Ok(());
+    }
+
+    if let serde_yaml::Value::Mapping(map) = value {
+        for required_prop in required {
+            match (
+                properties.get(required_prop),
+                map.get(&serde_yaml::Value::String(required_prop.clone())),
+            ) {
+                (None, _) => anyhow::bail!("required property is missing in the config schema"),
+                (Some(ReferenceOr::Item(present_schema)), Some(present)) => {
+                    validate_schema_object(&present_schema.as_ref().schema_kind, present)
+                        .context(format!("validation failed for object '{}'", required_prop))?
+                }
+                (_, None) => anyhow::bail!(
+                    "required property '{}' is not found in the config",
+                    required_prop
+                ),
+                _ => {}
+            }
+        }
+    } else {
+        anyhow::bail!(
+            "required config properties '{}' are not found in the config file",
+            required.join(",")
+        )
+    };
     Ok(())
 }
 
@@ -346,10 +414,14 @@ mod tests_toml {
             license = "license"
             visibility = "public"
 
-            [[params]]
-            name = "int_param"
-            description = "description"
+            [custom]
+            required = ["prop1"]
+
+            [custom.properties.prop1]
             type = "integer"
+            
+            [custom.properties.prop2]
+            type = "string"
         "#;
 
         //when
@@ -371,11 +443,13 @@ mod tests_toml {
                     license: Some("license".into()),
                     visibility: ConnectorVisibility::Public,
                 },
-                parameters: Parameters(vec![Parameter {
-                    name: "int_param".into(),
-                    description: Some("description".into()),
-                    ty: ParameterType::Integer
-                }]),
+                custom_config: CustomConfigSchema::new(
+                    [
+                        ("prop1", Type::Integer(Default::default())),
+                        ("prop2", Type::String(Default::default()))
+                    ],
+                    ["prop1"]
+                ),
                 secrets: Secrets(BTreeMap::from([
                     (
                         "password".into(),
@@ -398,11 +472,13 @@ mod tests_toml {
 }
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, str::FromStr};
+    use std::{collections::BTreeMap, str::FromStr, io::Cursor};
+
+    use openapiv3::ObjectType;
 
     use crate::{
-        metadata::{Secret, SecretType, Parameter, ParameterType},
-        config::{SecretString, ConnectorParameterValue},
+        metadata::{Secret, SecretType},
+        config::SecretString,
     };
 
     use super::*;
@@ -500,38 +576,192 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_parameters_missing() {
+    fn test_validate_custom_config_empty() {
         //given
-        let config = ConnectorConfig::default();
-        let meta_params = Parameters::from(vec![Parameter {
-            name: "param_name".into(),
-            description: None,
-            ty: ParameterType::String,
-        }]);
+        let config = serde_yaml::from_str(r#"key: value"#).unwrap();
+        let config_schema = CustomConfigSchema::default();
 
         //when
-        let res = validate_parameters(&meta_params, &config);
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_validate_custom_config_no_required_fields() {
+        //given
+        let config = serde_yaml::from_str(r#"key: value"#).unwrap();
+        let config_schema =
+            CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], []);
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_validate_custom_config_with_required_fields_missing() {
+        //given
+        let config = serde_yaml::from_str(r#"key: value"#).unwrap();
+        let config_schema =
+            CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], ["prop1"]);
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
 
         //then
         assert_eq!(
             res.unwrap_err().to_string(),
-            "missing required parameter 'param_name' in config"
+            "required property 'prop1' is not found in the config"
+        );
+    }
+
+    #[test]
+    fn test_validate_custom_config_required_field_missing_in_schema() {
+        //given
+        let config = serde_yaml::from_str(r#"prop2: value"#).unwrap();
+        let config_schema =
+            CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], ["prop2"]);
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "required property is missing in the config schema"
+        );
+    }
+
+    #[test]
+    fn test_validate_custom_config_all_required_fields_missing() {
+        //given
+        let config = serde_yaml::Value::Null;
+        let config_schema = CustomConfigSchema::new(
+            [
+                ("prop1", Type::Integer(Default::default())),
+                ("prop2", Type::Integer(Default::default())),
+            ],
+            ["prop1", "prop2"],
+        );
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "required config properties 'prop1,prop2' are not found in the config file"
+        );
+    }
+
+    #[test]
+    fn test_validate_custom_config_with_required_fields_present() {
+        //given
+        let config = serde_yaml::from_str(
+            r#"
+                key: value
+                prop1: 1
+                "#,
+        )
+        .unwrap();
+        let config_schema =
+            CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], ["prop1"]);
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_validate_custom_config_with_complex_required_fields_present() {
+        //given
+        let config = serde_yaml::from_str(
+            r#"
+                key: value
+                prop1:
+                    prop2: value
+                "#,
+        )
+        .unwrap();
+
+        let object_type = ObjectType {
+            properties: [(
+                "prop2".to_owned(),
+                ReferenceOr::Item(Box::new(Schema {
+                    schema_data: Default::default(),
+                    schema_kind: SchemaKind::Type(Type::Integer(Default::default())),
+                })),
+            )]
+            .into(),
+            required: vec!["prop2".to_owned()],
+            ..Default::default()
+        };
+        let config_schema =
+            CustomConfigSchema::new([("prop1", Type::Object(object_type))], ["prop1"]);
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_validate_custom_config_with_complex_required_fields_missing() {
+        //given
+        let config = serde_yaml::from_str(
+            r#"
+                key: value
+                prop1:
+                    another: value
+                "#,
+        )
+        .unwrap();
+
+        let object_type = ObjectType {
+            properties: [(
+                "prop2".to_owned(),
+                ReferenceOr::Item(Box::new(Schema {
+                    schema_data: Default::default(),
+                    schema_kind: SchemaKind::Type(Type::Integer(Default::default())),
+                })),
+            )]
+            .into(),
+            required: vec!["prop2".to_owned()],
+            ..Default::default()
+        };
+        let config_schema =
+            CustomConfigSchema::new([("prop1", Type::Object(object_type))], ["prop1"]);
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "validation failed for object 'prop1'"
         );
     }
 
     #[test]
     fn test_validate_config() {
         //given
-        let config = ConnectorConfig {
-            type_: "http-source".into(),
-            version: "latest".into(),
-            parameters: BTreeMap::from([(
-                "param_name".into(),
-                ConnectorParameterValue::from("param_value"),
-            )]),
-            secrets: BTreeMap::from([("secret_name".into(), SecretString::from_str("").unwrap())]),
-            ..Default::default()
-        };
+        let config = r#"
+                name: my-http-source
+                topic: test-topic
+                type: http-source
+                version: latest
+                param-name: param-value
+                secrets:
+                    secret_name: ""
+                "#;
+
         let metadata = ConnectorMetadata {
             direction: Direction::source(),
             deployment: Deployment::from_image_name("infinyon/fluvio-connect-http-source:latest"),
@@ -542,17 +772,13 @@ mod tests {
                     mount: None,
                 },
             )])),
-            parameters: Parameters::from(vec![Parameter {
-                name: "param_name".into(),
-                description: None,
-                ty: ParameterType::String,
-            }]),
             ..Default::default()
         };
 
         //when
-        metadata.validate_config(&config).unwrap();
+        let res = metadata.validate_config(Cursor::new(config.as_bytes()));
 
         //then
+        assert!(res.is_ok());
     }
 }
