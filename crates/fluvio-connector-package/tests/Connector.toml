@@ -21,7 +21,10 @@ type = "env"
 type = "file"
 mount = "/mydata/secret1"
 
-[[params]]
-name = "template"
+[custom]
+required = ["template"]
+
+[custom.properties.template]
+title = "template"
 description = "JSON template"
 type = "string"
