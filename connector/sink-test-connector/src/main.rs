@@ -1,6 +1,8 @@
 mod sink;
 
-use fluvio_connector_common::{connector, ConnectorConfig, Result, consumer::ConsumerStream, Sink};
+use fluvio_connector_common::{
+    connector, config::ConnectorConfig, Result, consumer::ConsumerStream, Sink,
+};
 use futures::SinkExt;
 use sink::TestSink;
 

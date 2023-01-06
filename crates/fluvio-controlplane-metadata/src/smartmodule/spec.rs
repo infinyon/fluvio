@@ -29,7 +29,7 @@ pub struct SmartModuleSpec {
 impl Encoder for SmartModuleSpec {
     fn write_size(&self, version: Version) -> usize {
         if version < V2_FORMAT {
-            //trace!("computing size for smart module spec v1");
+            //trace!("computing size for smartmodule spec v1");
             // just used for computing size
             let spec_v1 = SmartModuleSpecV1::default();
             let mut size = 0;
@@ -53,7 +53,7 @@ impl Encoder for SmartModuleSpec {
         T: BufMut,
     {
         if version < V2_FORMAT {
-            debug!("encoding for smart module spec v1");
+            debug!("encoding for smartmodule spec v1");
             let spec_v1 = SmartModuleSpecV1::default();
             spec_v1.input_kind.encode(dest, version)?;
             spec_v1.output_kind.encode(dest, version)?;
@@ -75,7 +75,7 @@ impl Decoder for SmartModuleSpec {
         T: bytes::Buf,
     {
         if version < V2_FORMAT {
-            debug!("decoding for smart module spec v1");
+            debug!("decoding for smartmodule spec v1");
             let mut spec_v1 = SmartModuleSpecV1::default();
             spec_v1.decode(src, version)?;
             self.wasm = spec_v1.wasm;
@@ -200,11 +200,12 @@ mod base64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[cfg(feature = "smartmodule")]
     #[test]
     fn test_wasm_zip_unzip() {
+        use super::*;
+
         //given
         let payload = b"test wasm";
 

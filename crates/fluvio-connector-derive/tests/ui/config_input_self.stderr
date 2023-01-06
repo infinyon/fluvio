@@ -1,0 +1,11 @@
+error: config input argument must not be self
+ --> tests/ui/config_input_self.rs:4:19
+  |
+4 | async fn start_fn(self, producer: ()) {}
+  |                   ^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/config_input_self.rs:4:41
+  |
+4 | async fn start_fn(self, producer: ()) {}
+  |                                         ^ consider adding a `main` function to `$DIR/tests/ui/config_input_self.rs`

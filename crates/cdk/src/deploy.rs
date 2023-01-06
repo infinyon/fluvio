@@ -1,14 +1,11 @@
-use std::{
-    fmt::Debug,
-    path::{PathBuf, Path},
-};
+use std::{fmt::Debug, path::PathBuf};
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use cargo_builder::package::PackageInfo;
 use fluvio_connector_deployer::{Deployment, DeploymentType};
-use fluvio_connector_package::{config::ConnectorConfig, metadata::ConnectorMetadata};
+use fluvio_connector_package::metadata::ConnectorMetadata;
 
 use crate::cmd::PackageCmd;
 
@@ -47,7 +44,7 @@ impl DeployCmd {
         let mut builder = Deployment::builder();
         builder
             .executable(p.target_bin_path()?)
-            .config(ConnectorConfig::from_file(self.config())?)
+            .config(self.config())
             .pkg(connector_metadata)
             .deployment_type(self.deployment_type.into());
         builder.deploy()?;
@@ -55,9 +52,9 @@ impl DeployCmd {
         Ok(())
     }
 
-    fn config(&self) -> &Path {
+    fn config(&self) -> PathBuf {
         match &self.deployment_type {
-            DeploymentTypeCmd::Local { config } => config.as_path(),
+            DeploymentTypeCmd::Local { config } => config.clone(),
         }
     }
 }

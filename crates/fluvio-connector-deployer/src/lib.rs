@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 use derive_builder::Builder;
 
-use fluvio_connector_package::config::ConnectorConfig;
 use fluvio_connector_package::metadata::ConnectorMetadata;
 
 #[derive(Clone)]
@@ -23,7 +22,7 @@ pub struct Deployment {
     pub executable: PathBuf, // path to executable
     #[builder(default)]
     pub secrets: Vec<Secret>, // List of Secrets
-    pub config: ConnectorConfig, // Configuration to pass along,
+    pub config: PathBuf,     // Configuration to pass along,
     pub pkg: ConnectorMetadata, // Connector pkg definition
     pub deployment_type: DeploymentType, // deployment type
 }
@@ -37,7 +36,8 @@ impl Deployment {
 impl DeploymentBuilder {
     pub fn deploy(self) -> Result<()> {
         let deployment = self.build()?;
-        deployment.pkg.validate_config(&deployment.config)?;
+        let config_file = std::fs::File::open(&deployment.config)?;
+        deployment.pkg.validate_config(config_file)?;
         match deployment.deployment_type {
             DeploymentType::Local => local::deploy_local(&deployment)?,
             DeploymentType::K8 => {

@@ -14,6 +14,7 @@ futures = { version = "0.3", default-features = false }
 anyhow = { workspace = true}
 async-std = { version = "1.12",  default-features = false, features = ["attributes", "tokio1"]}
 tokio = { version = "1.23", default-features = false, features = ["time"]}
+serde = { version = "1.0", default-features = false, features = ["derive"]}
 
 fluvio = { path = "../../crates/fluvio/", features = ["smartengine"]}
 fluvio-connector-common = { path = "../../crates/fluvio-connector-common/", features = ["derive"] }

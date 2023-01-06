@@ -50,7 +50,7 @@ impl SmartModuleChainBuilder {
         self.smart_modules.push((config, bytes))
     }
 
-    /// stop adding smart module and return SmartModuleChain that can be executed
+    /// stop adding smartmodule and return SmartModuleChain that can be executed
     pub fn initialize(self, engine: &SmartEngine) -> Result<SmartModuleChainInstance> {
         let mut instances = Vec::with_capacity(self.smart_modules.len());
         let mut state = engine.new_state();
@@ -102,10 +102,10 @@ impl SmartModuleChainInstance {
         &self.instances
     }
 
-    /// A single record is processed thru all smart modules in the chain.
-    /// The output of one smart module is the input of the next smart module.
+    /// A single record is processed thru all smartmodules in the chain.
+    /// The output of one smartmodule is the input of the next smartmodule.
     /// A single record may result in multiple records.
-    /// The output of the last smart module is added to the output of the chain.
+    /// The output of the last smartmodule is added to the output of the chain.
     pub fn process(
         &mut self,
         input: SmartModuleInput,

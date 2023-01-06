@@ -10,7 +10,7 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
-/// Handler for delete smart module request
+/// Handler for delete smartmodule request
 #[instrument(skip(name, auth_ctx))]
 pub async fn handle_delete_smartmodule<AC: AuthContext>(
     name: String,

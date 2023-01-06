@@ -1,5 +1,5 @@
 use fluvio::{FluvioConfig, Fluvio, TopicProducer, TopicProducerConfigBuilder};
-use crate::{ConnectorConfig, Result};
+use crate::{config::ConnectorConfig, Result};
 
 use crate::{ensure_topic_exists, smartmodule::smartmodule_chain_from_config};
 

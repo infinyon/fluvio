@@ -2,11 +2,10 @@ pub mod producer;
 pub mod smartmodule;
 pub mod monitoring;
 pub mod consumer;
+pub mod config;
 
 #[cfg(feature = "derive")]
 pub use fluvio_connector_derive::connector;
-
-pub use fluvio_connector_package::config::ConnectorConfig;
 
 use fluvio::{Offset, metadata::topic::TopicSpec};
 use futures::stream::LocalBoxStream;
@@ -36,7 +35,7 @@ pub trait Sink<I> {
     async fn connect(self, offset: Option<Offset>) -> Result<LocalBoxSink<I>>;
 }
 
-pub async fn ensure_topic_exists(config: &ConnectorConfig) -> Result<()> {
+pub async fn ensure_topic_exists(config: &config::ConnectorConfig) -> Result<()> {
     let admin = fluvio::FluvioAdmin::connect().await?;
     let topics = admin
         .list::<TopicSpec, String>(vec![config.topic.clone()])

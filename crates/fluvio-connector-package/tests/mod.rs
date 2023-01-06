@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use fluvio_connector_package::metadata::*;
+use openapiv3::SchemaData;
 
 #[test]
 fn test_read_from_toml_file() {
@@ -27,11 +28,22 @@ fn test_read_from_toml_file() {
                 license: Some("Apache-2.0".into()),
                 visibility: ConnectorVisibility::Public,
             },
-            parameters: Parameters::from(vec![Parameter {
-                name: "template".into(),
-                description: Some("JSON template".into()),
-                ty: ParameterType::String
-            }]),
+            custom_config: CustomConfigSchema::with(
+                [(
+                    "template",
+                    openapiv3::Schema {
+                        schema_data: SchemaData {
+                            title: Some("template".to_owned()),
+                            description: Some("JSON template".to_owned()),
+                            ..Default::default()
+                        },
+                        schema_kind: openapiv3::SchemaKind::Type(openapiv3::Type::String(
+                            Default::default()
+                        ))
+                    }
+                )],
+                ["template"]
+            ),
             secrets: Secrets::from(BTreeMap::from([
                 (
                     "password".into(),
@@ -90,8 +102,10 @@ mount = "/mydata/secret1"
 [secret.password]
 type = "env"
 
-[[params]]
-name = "template"
+[custom]
+required = ["template"]
+[custom.properties.template]
+title = "template"
 description = "JSON template"
 type = "string"
 "#

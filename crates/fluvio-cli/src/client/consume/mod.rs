@@ -155,7 +155,7 @@ mod cmd {
         )]
         pub output: Option<ConsumeOutputType>,
 
-        /// Name of the smart module
+        /// Name of the smartmodule
         #[clap(
             long,
             group("smartmodule_group"),

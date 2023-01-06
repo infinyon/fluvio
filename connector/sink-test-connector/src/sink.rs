@@ -3,7 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use fluvio::Offset;
-use fluvio_connector_common::{ConnectorConfig, Sink, LocalBoxSink};
+use fluvio_connector_common::{config::ConnectorConfig, Sink, LocalBoxSink};
 
 #[derive(Debug)]
 pub(crate) struct TestSink {}

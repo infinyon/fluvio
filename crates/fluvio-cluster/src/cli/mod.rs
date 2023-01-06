@@ -14,6 +14,7 @@ mod check;
 mod error;
 mod diagnostics;
 mod status;
+mod shutdown;
 
 use start::StartOpt;
 use start::UpgradeOpt;
@@ -23,6 +24,7 @@ use group::SpuGroupCmd;
 use spu::SpuCmd;
 use diagnostics::DiagnosticsOpt;
 use status::StatusOpt;
+use shutdown::ShutdownOpt;
 
 pub use self::error::ClusterCliError;
 
@@ -79,6 +81,10 @@ pub enum ClusterCmd {
     /// Check the status of a Fluvio cluster
     #[clap(name = "status")]
     Status(StatusOpt),
+
+    /// Shutdown cluster processes without deleting data
+    #[clap(name = "shutdown")]
+    Shutdown(ShutdownOpt),
 }
 
 impl ClusterCmd {
@@ -147,6 +153,9 @@ impl ClusterCmd {
             }
             Self::Status(status) => {
                 status.process(target).await?;
+            }
+            Self::Shutdown(opt) => {
+                opt.process().await?;
             }
         }
 

@@ -1,4 +1,7 @@
-use syn::{AttributeArgs, Result, Error, NestedMeta, Meta, spanned::Spanned, ItemFn, Ident};
+use syn::{
+    AttributeArgs, Result, Error, NestedMeta, Meta, spanned::Spanned, ItemFn, Ident, FnArg, Path,
+    Type,
+};
 
 pub(crate) enum ConnectorDirection {
     Source,
@@ -25,6 +28,7 @@ impl ConnectorDirection {
 pub struct ConnectorFn<'a> {
     pub name: &'a Ident,
     pub func: &'a ItemFn,
+    pub config_type_path: &'a Path,
 }
 
 impl<'a> ConnectorFn<'a> {
@@ -39,7 +43,28 @@ impl<'a> ConnectorFn<'a> {
                 "Connector function must have two input arguments",
             ));
         };
+        let config_type_path = config_type_path(&func.sig.inputs[0])?;
         let name = &func.sig.ident;
-        Ok(Self { name, func })
+        Ok(Self {
+            name,
+            func,
+            config_type_path,
+        })
+    }
+}
+
+fn config_type_path(arg: &FnArg) -> Result<&Path> {
+    match arg {
+        FnArg::Receiver(_) => Err(Error::new(
+            arg.span(),
+            "config input argument must not be self",
+        )),
+        FnArg::Typed(pat_type) => match pat_type.ty.as_ref() {
+            Type::Path(type_path) => Ok(&type_path.path),
+            _ => Err(Error::new(
+                arg.span(),
+                "config type must valid path of owned type",
+            )),
+        },
     }
 }
