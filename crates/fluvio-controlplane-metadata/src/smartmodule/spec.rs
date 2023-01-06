@@ -200,11 +200,12 @@ mod base64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[cfg(feature = "smartmodule")]
     #[test]
     fn test_wasm_zip_unzip() {
+        use super::*;
+
         //given
         let payload = b"test wasm";
 
