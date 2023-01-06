@@ -544,6 +544,8 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
+      - name: Rust version 
+        run: rustc --version
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.crate }}-check-windows
