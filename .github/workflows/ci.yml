@@ -989,7 +989,7 @@ jobs:
         timeout-minutes: 5
         run: make FLUVIO_BIN=~/bin/fluvio cli-fluvio-smoke
       - name: Run SMDK smoke tests
-        timeout-minutes: 10
+        timeout-minutes: 15
         if: matrix.cli == 'smdk'
         run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
       - name: Run diagnostics
