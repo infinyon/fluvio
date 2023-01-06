@@ -553,8 +553,8 @@ impl ClusterConfigBuilder {
 /// # Example
 ///
 /// ```
-/// # use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
-/// # async fn example() -> Result<(), ClusterError> {
+/// # use fluvio_cluster::{ClusterInstaller, ClusterConfig};
+/// # async fn example() -> anyhow::Result<()> {
 /// use semver::Version;
 /// let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap()).build()?;
 /// let installer = ClusterInstaller::from_config(config)?;

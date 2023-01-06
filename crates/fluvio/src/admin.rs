@@ -80,8 +80,8 @@ impl FluvioAdmin {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{FluvioAdmin, FluvioError};
-    /// # async fn do_connect() -> Result<(), FluvioError> {
+    /// # use fluvio::FluvioAdmin;
+    /// # async fn do_connect() -> anyhow::Result<()> {
     /// let admin = FluvioAdmin::connect().await?;
     /// # Ok(())
     /// # }
@@ -104,9 +104,9 @@ impl FluvioAdmin {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{FluvioAdmin, FluvioError};
+    /// # use fluvio::FluvioAdmin;
     /// use fluvio::config::ConfigFile;
-    /// #  async fn do_connect_with_config() -> Result<(), FluvioError> {
+    /// #  async fn do_connect_with_config() -> anyhow::Result<()> {
     /// let config_file = ConfigFile::load_default_or_new()?;
     /// let fluvio_config = config_file.config().current_cluster().unwrap();
     /// let admin = FluvioAdmin::connect_with_config(fluvio_config).await?;
