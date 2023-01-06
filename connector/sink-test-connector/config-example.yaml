@@ -1,9 +1,8 @@
-version: 0.1.0
-name: my-sink-test-connector
-type: test-sink
-topic: test-topic
-parameters:
-  interval: 10  
+meta:
+  version: 0.1.0
+  name: my-sink-test-connector
+  type: test-sink
+  topic: test-topic
 transforms:
   - uses: infinyon/jolt@0.1.0
     with:

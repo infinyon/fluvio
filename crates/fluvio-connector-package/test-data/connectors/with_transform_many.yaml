@@ -1,8 +1,9 @@
-version: 0.1.0
-name: my-test-mqtt
-type: mqtt
-topic: my-mqtt
-create_topic: false
+meta:
+  version: 0.1.0
+  name: my-test-mqtt
+  type: mqtt
+  topic: my-mqtt
+  create_topic: false
 transforms:
   - uses: infinyon/json-sql
     with:

@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::Path;
 
-use crate::ast::{ConnectorFn, ConnectorDirection};
+use crate::ast::{ConnectorFn, ConnectorDirection, ConnectorConfigStruct};
 
 pub(crate) fn generate_connector(direction: ConnectorDirection, func: &ConnectorFn) -> TokenStream {
     match direction {
@@ -98,8 +98,24 @@ fn init_and_parse_config(config_type_path: &Path) -> TokenStream {
         let common_config = ::fluvio_connector_common::config::ConnectorConfig::from_value(config_value.clone())?;
         ::fluvio_connector_common::tracing::debug!("{:#?}", common_config);
 
-        let user_config: #config_type_path = ::fluvio_connector_common::config::from_value(config_value)?;
+        let user_config: #config_type_path = ::fluvio_connector_common::config::from_value(config_value, Some(#config_type_path::__config_name()))?;
 
         ::fluvio_connector_common::tracing::info!("starting processing");
+    }
+}
+
+pub(crate) fn generate_connector_config(item: &ConnectorConfigStruct) -> TokenStream {
+    let config_struct = item.item_struct;
+    let ident = &item.item_struct.ident;
+    let config_name = &item.config_name;
+    quote! {
+        #[derive(serde::Deserialize)]
+        #config_struct
+
+        impl #ident {
+            fn __config_name() -> &'static str {
+                #config_name
+            }
+        }
     }
 }

@@ -3,7 +3,6 @@ mod source;
 use fluvio::{TopicProducer, RecordKey};
 use fluvio_connector_common::{Source, connector, Result};
 use futures::StreamExt;
-use serde::Deserialize;
 
 use crate::source::TestJsonSource;
 
@@ -18,7 +17,7 @@ async fn start(config: CustomConfig, producer: TopicProducer) -> Result<()> {
     Ok(())
 }
 
-#[derive(Deserialize)]
+#[connector(config, name = "json")]
 pub(crate) struct CustomConfig {
     pub interval: u64,
     pub template: String,

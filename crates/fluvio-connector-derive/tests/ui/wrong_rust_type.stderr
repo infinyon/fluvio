@@ -1,0 +1,11 @@
+error: macro supports only functions and structs
+ --> tests/ui/wrong_rust_type.rs:4:1
+  |
+4 | mod start {}
+  | ^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/wrong_rust_type.rs:4:13
+  |
+4 | mod start {}
+  |             ^ consider adding a `main` function to `$DIR/tests/ui/wrong_rust_type.rs`

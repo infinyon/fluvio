@@ -3,13 +3,15 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use fluvio::Offset;
-use fluvio_connector_common::{config::ConnectorConfig, Sink, LocalBoxSink};
+use fluvio_connector_common::{Sink, LocalBoxSink};
+
+use crate::CustomConfig;
 
 #[derive(Debug)]
 pub(crate) struct TestSink {}
 
 impl TestSink {
-    pub(crate) fn new(_config: &ConnectorConfig) -> Result<Self> {
+    pub(crate) fn new(_config: &CustomConfig) -> Result<Self> {
         Ok(Self {})
     }
 }

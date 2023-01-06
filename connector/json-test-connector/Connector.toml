@@ -16,6 +16,7 @@ image = "infinyon/fluvio-connect-json-test-source:0.1.0"
 
 
 [custom]
+name = "json"
 required = ["template", "interval"]
 
 [custom.properties.template]

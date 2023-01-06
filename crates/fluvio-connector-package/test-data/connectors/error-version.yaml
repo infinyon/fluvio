@@ -1,4 +1,5 @@
-name: my-test-mqtt
-type: mqtt
-topic: my-mqtt
-create_topic: false
+meta:
+  name: my-test-mqtt
+  type: mqtt
+  topic: my-mqtt
+  create_topic: false

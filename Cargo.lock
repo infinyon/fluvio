@@ -2488,6 +2488,7 @@ dependencies = [
  "fluvio-connector-common",
  "proc-macro2",
  "quote",
+ "serde",
  "syn",
  "trybuild 1.0.74",
 ]
@@ -6314,6 +6315,7 @@ dependencies = [
  "fluvio",
  "fluvio-connector-common",
  "futures 0.3.25",
+ "serde",
 ]
 
 [[package]]
