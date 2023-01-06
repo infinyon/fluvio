@@ -1,4 +1,5 @@
 pub use fluvio_connector_package::config::ConnectorConfig;
+use tracing::trace;
 
 use std::{path::PathBuf, fs::File};
 
@@ -11,6 +12,14 @@ pub fn value_from_file<P: Into<PathBuf>>(path: P) -> Result<Value> {
     serde_yaml::from_reader(file).context("unable to parse config file into YAML")
 }
 
-pub fn from_value<T: DeserializeOwned>(value: Value) -> Result<T> {
+pub fn from_value<T: DeserializeOwned>(value: Value, root: Option<&str>) -> Result<T> {
+    let value = match root {
+        Some(root) => value
+            .get(root)
+            .cloned()
+            .unwrap_or(Value::Mapping(Default::default())),
+        None => value,
+    };
+    trace!("{:#?}", value);
     serde_yaml::from_value(value).context("unable to parse custom config type from YAML")
 }

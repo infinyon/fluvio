@@ -1,13 +1,11 @@
 mod sink;
 
-use fluvio_connector_common::{
-    connector, config::ConnectorConfig, Result, consumer::ConsumerStream, Sink,
-};
+use fluvio_connector_common::{connector, Result, consumer::ConsumerStream, Sink};
 use futures::SinkExt;
 use sink::TestSink;
 
 #[connector(sink)]
-async fn start(config: ConnectorConfig, mut stream: impl ConsumerStream) -> Result<()> {
+async fn start(config: CustomConfig, mut stream: impl ConsumerStream) -> Result<()> {
     let sink = TestSink::new(&config)?;
     let mut sink = sink.connect(None).await?;
     while let Some(item) = stream.next().await {
@@ -16,3 +14,6 @@ async fn start(config: ConnectorConfig, mut stream: impl ConsumerStream) -> Resu
     }
     Ok(())
 }
+
+#[connector(config)]
+struct CustomConfig {}

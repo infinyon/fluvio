@@ -55,7 +55,12 @@ pub struct Deployment {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub struct CustomConfigSchema(Option<openapiv3::Schema>);
+pub struct CustomConfigSchema {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(flatten)]
+    pub schema: Option<openapiv3::Schema>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Secrets(BTreeMap<String, Secret>);
@@ -151,7 +156,7 @@ impl Deref for CustomConfigSchema {
     type Target = Option<openapiv3::Schema>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.schema
     }
 }
 
@@ -216,13 +221,19 @@ impl CustomConfigSchema {
                 ..Default::default()
             }),
         };
-        Self(Some(schema))
+        Self {
+            name: None,
+            schema: Some(schema),
+        }
     }
 }
 
 impl From<Schema> for CustomConfigSchema {
     fn from(value: Schema) -> Self {
-        Self(Some(value))
+        Self {
+            name: None,
+            schema: Some(value),
+        }
     }
 }
 
@@ -299,14 +310,14 @@ fn validate_deployment(deployment: &Deployment, config: &ConnectorConfig) -> any
 
 fn validate_secrets(secrets: &Secrets, config: &ConnectorConfig) -> anyhow::Result<()> {
     for meta_secret in secrets.keys() {
-        if !config.secrets.contains_key(meta_secret) {
+        if !config.meta.secrets.contains_key(meta_secret) {
             return Err(anyhow!(
                 "missing required secret '{}' in config",
                 meta_secret
             ));
         }
     }
-    for cfg_secret in config.secrets.keys() {
+    for cfg_secret in config.meta.secrets.keys() {
         if !secrets.contains_key(cfg_secret) {
             return Err(anyhow!(
                 "config secret '{}' is not defined in package metadata",
@@ -322,7 +333,12 @@ fn validate_custom_config(
     config: &serde_yaml::Value,
 ) -> anyhow::Result<()> {
     if let Some(schema) = config_schema.deref() {
-        validate_schema_object(&schema.schema_kind, config)?;
+        validate_schema_object(
+            &schema.schema_kind,
+            config
+                .get(config_schema.name.as_deref().unwrap_or("custom"))
+                .unwrap_or(&serde_yaml::Value::Mapping(Default::default())),
+        )?;
     }
     Ok(())
 }
@@ -478,7 +494,7 @@ mod tests {
 
     use crate::{
         metadata::{Secret, SecretType},
-        config::SecretString,
+        config::{SecretString, MetaConfig},
     };
 
     use super::*;
@@ -489,11 +505,17 @@ mod tests {
         let source = Direction::source();
         let dest = Direction::dest();
         let source_config = ConnectorConfig {
-            type_: "http-source".into(),
+            meta: MetaConfig {
+                type_: "http-source".into(),
+                ..Default::default()
+            },
             ..Default::default()
         };
         let sink_config = ConnectorConfig {
-            type_: "http-sink".into(),
+            meta: MetaConfig {
+                type_: "http-sink".into(),
+                ..Default::default()
+            },
             ..Default::default()
         };
 
@@ -518,8 +540,11 @@ mod tests {
     fn test_validate_deployment() {
         //given
         let config = ConnectorConfig {
-            type_: "http_source".into(),
-            version: "latest".into(),
+            meta: MetaConfig {
+                type_: "http_source".into(),
+                version: "latest".into(),
+                ..Default::default()
+            },
             ..Default::default()
         };
         let deployment1 = Deployment::from_image_name("infinyon/fluvio-connect-http_source:latest");
@@ -561,7 +586,13 @@ mod tests {
     fn test_validate_secrets_undefined() {
         //given
         let config = ConnectorConfig {
-            secrets: BTreeMap::from([("secret_name".into(), SecretString::from_str("").unwrap())]),
+            meta: MetaConfig {
+                secrets: BTreeMap::from([(
+                    "secret_name".into(),
+                    SecretString::from_str("").unwrap(),
+                )]),
+                ..Default::default()
+            },
             ..Default::default()
         };
 
@@ -578,7 +609,13 @@ mod tests {
     #[test]
     fn test_validate_custom_config_empty() {
         //given
-        let config = serde_yaml::from_str(r#"key: value"#).unwrap();
+        let config = serde_yaml::from_str(
+            r#"
+                                          custom:
+                                            key: value
+                                          "#,
+        )
+        .unwrap();
         let config_schema = CustomConfigSchema::default();
 
         //when
@@ -591,7 +628,13 @@ mod tests {
     #[test]
     fn test_validate_custom_config_no_required_fields() {
         //given
-        let config = serde_yaml::from_str(r#"key: value"#).unwrap();
+        let config = serde_yaml::from_str(
+            r#"
+                                          custom:
+                                            key: value
+                                          "#,
+        )
+        .unwrap();
         let config_schema =
             CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], []);
 
@@ -605,7 +648,13 @@ mod tests {
     #[test]
     fn test_validate_custom_config_with_required_fields_missing() {
         //given
-        let config = serde_yaml::from_str(r#"key: value"#).unwrap();
+        let config = serde_yaml::from_str(
+            r#"
+                                          custom:
+                                            key: value
+                                          "#,
+        )
+        .unwrap();
         let config_schema =
             CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], ["prop1"]);
 
@@ -622,7 +671,12 @@ mod tests {
     #[test]
     fn test_validate_custom_config_required_field_missing_in_schema() {
         //given
-        let config = serde_yaml::from_str(r#"prop2: value"#).unwrap();
+        let config = serde_yaml::from_str(
+            r#"
+                                        custom:
+                                          prop2: value"#,
+        )
+        .unwrap();
         let config_schema =
             CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], ["prop2"]);
 
@@ -639,7 +693,7 @@ mod tests {
     #[test]
     fn test_validate_custom_config_all_required_fields_missing() {
         //given
-        let config = serde_yaml::Value::Null;
+        let config = serde_yaml::from_str("custom:").unwrap();
         let config_schema = CustomConfigSchema::new(
             [
                 ("prop1", Type::Integer(Default::default())),
@@ -663,8 +717,9 @@ mod tests {
         //given
         let config = serde_yaml::from_str(
             r#"
-                key: value
-                prop1: 1
+                custom:
+                    key: value
+                    prop1: 1
                 "#,
         )
         .unwrap();
@@ -679,13 +734,36 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_custom_config_with_required_fields_present_overriden_name() {
+        //given
+        let config = serde_yaml::from_str(
+            r#"
+                json:
+                    key: value
+                    prop1: 1
+                "#,
+        )
+        .unwrap();
+        let mut config_schema =
+            CustomConfigSchema::new([("prop1", Type::Integer(Default::default()))], ["prop1"]);
+        config_schema.name = Some("json".into());
+
+        //when
+        let res = validate_custom_config(&config_schema, &config);
+
+        //then
+        assert!(res.is_ok());
+    }
+
+    #[test]
     fn test_validate_custom_config_with_complex_required_fields_present() {
         //given
         let config = serde_yaml::from_str(
             r#"
-                key: value
-                prop1:
-                    prop2: value
+                custom:
+                    key: value
+                    prop1:
+                        prop2: value
                 "#,
         )
         .unwrap();
@@ -717,9 +795,10 @@ mod tests {
         //given
         let config = serde_yaml::from_str(
             r#"
-                key: value
-                prop1:
-                    another: value
+                custom:
+                    key: value
+                    prop1:
+                        another: value
                 "#,
         )
         .unwrap();
@@ -753,13 +832,16 @@ mod tests {
     fn test_validate_config() {
         //given
         let config = r#"
-                name: my-http-source
-                topic: test-topic
-                type: http-source
-                version: latest
-                param-name: param-value
-                secrets:
-                    secret_name: ""
+                meta:
+                    name: my-http-source
+                    topic: test-topic
+                    type: http-source
+                    version: latest
+                    param-name: param-value
+                    secrets:
+                        secret_name: ""
+                custom:
+                    prop1: 1
                 "#;
 
         let metadata = ConnectorMetadata {
@@ -772,6 +854,10 @@ mod tests {
                     mount: None,
                 },
             )])),
+            custom_config: CustomConfigSchema::new(
+                [("prop1", Type::Integer(Default::default()))],
+                ["prop1"],
+            ),
             ..Default::default()
         };
 

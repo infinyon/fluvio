@@ -1,6 +1,6 @@
 use syn::{
     AttributeArgs, Result, Error, NestedMeta, Meta, spanned::Spanned, ItemFn, Ident, FnArg, Path,
-    Type,
+    Type, Lit, ItemStruct,
 };
 
 pub(crate) enum ConnectorDirection {
@@ -53,6 +53,38 @@ impl<'a> ConnectorFn<'a> {
     }
 }
 
+pub struct ConnectorConfigStruct<'a> {
+    pub item_struct: &'a ItemStruct,
+    pub config_name: String,
+}
+
+impl<'a> ConnectorConfigStruct<'a> {
+    pub fn from_ast(args: &AttributeArgs, item_struct: &'a ItemStruct) -> Result<Self> {
+        args.iter()
+            .find(|item| match item {
+                NestedMeta::Meta(Meta::Path(p)) => p.is_ident("config"),
+                _ => false,
+            })
+            .ok_or_else(|| {
+                Error::new(
+                    item_struct.span(),
+                    "struct must be annotated as config, e.g. '#[connector(config)]'",
+                )
+            })?;
+        let config_name = config_name(args)?;
+        if config_name.eq("transforms") | config_name.eq("meta") {
+            return Err(Error::new(
+                item_struct.span(),
+                "Custom config name conflicts with reserved names: 'meta' and 'transforms'",
+            ));
+        }
+        Ok(Self {
+            item_struct,
+            config_name,
+        })
+    }
+}
+
 fn config_type_path(arg: &FnArg) -> Result<&Path> {
     match arg {
         FnArg::Receiver(_) => Err(Error::new(
@@ -67,4 +99,18 @@ fn config_type_path(arg: &FnArg) -> Result<&Path> {
             )),
         },
     }
+}
+
+fn config_name(args: &AttributeArgs) -> Result<String> {
+    for arg in args {
+        match arg {
+            NestedMeta::Meta(Meta::NameValue(name_value)) if name_value.path.is_ident("name") => {
+                if let Lit::Str(lit_str) = &name_value.lit {
+                    return Ok(lit_str.value());
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok("custom".to_owned())
 }

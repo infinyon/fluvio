@@ -24,6 +24,14 @@ const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct ConnectorConfig {
+    pub meta: MetaConfig,
+
+    #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
+    pub transforms: Option<TransformationConfig>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+pub struct MetaConfig {
     pub name: String,
 
     #[serde(rename = "type")]
@@ -44,9 +52,6 @@ pub struct ConnectorConfig {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub consumer: Option<ConsumerParameters>,
-
-    #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-    pub transforms: Option<TransformationConfig>,
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -103,7 +108,7 @@ impl ConnectorConfig {
 
     pub fn consumer_parameters(&self) -> Vec<String> {
         let mut params = Vec::new();
-        if let Some(consumer) = self.consumer.as_ref() {
+        if let Some(consumer) = self.meta.consumer.as_ref() {
             if let Some(partition) = consumer.partition {
                 params.push("--consumer-partition".to_string());
                 params.push(format!("{}", partition));
@@ -113,7 +118,7 @@ impl ConnectorConfig {
     }
     pub fn producer_parameters(&self) -> Vec<String> {
         let mut params = Vec::new();
-        if let Some(producer) = self.producer.as_ref() {
+        if let Some(producer) = self.meta.producer.as_ref() {
             if let Some(linger) = producer.linger {
                 params.push("--producer-linger".to_string());
 
@@ -132,7 +137,7 @@ impl ConnectorConfig {
     }
 
     pub fn direction(&self) -> Direction {
-        if self.type_.ends_with(SOURCE_SUFFIX) {
+        if self.meta.type_.ends_with(SOURCE_SUFFIX) {
             Direction::source()
         } else {
             Direction::dest()
@@ -140,13 +145,16 @@ impl ConnectorConfig {
     }
 
     pub fn image(&self) -> String {
-        format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
+        format!(
+            "{}-{}:{}",
+            IMAGE_PREFFIX, self.meta.type_, self.meta.version
+        )
     }
 
     fn normalize_batch_size(&mut self) -> Result<()> {
         // This is needed because we want to use a human readable version of `BatchSize` but the
         // serde support for BatchSize serializes and deserializes as bytes.
-        if let Some(ref mut producer) = &mut self.producer {
+        if let Some(ref mut producer) = &mut self.meta.producer {
             if let Some(batch_size_string) = &producer.batch_size_string {
                 let batch_size = batch_size_string
                     .parse::<ByteSize>()
@@ -353,42 +361,44 @@ mod tests {
     fn full_yaml_test() {
         //given
         let expected = ConnectorConfig {
-            name: "my-test-mqtt".to_string(),
-            type_: "mqtt".to_string(),
-            topic: "my-mqtt".to_string(),
-            version: "0.1.0".to_string(),
-            parameters: BTreeMap::from([
-                ("param_1".to_string(), "mqtt.hsl.fi".to_string().into()),
-                (
-                    "param_2".to_string(),
-                    vec!["foo:baz".to_string(), "bar".to_string()].into(),
-                ),
-                (
-                    "param_3".to_string(),
-                    BTreeMap::from([
-                        ("bar".to_string(), "10.0".to_string()),
-                        ("foo".to_string(), "bar".to_string()),
-                        ("linger.ms".to_string(), "10".to_string()),
-                    ])
-                    .into(),
-                ),
-                ("param_4".to_string(), "true".to_string().into()),
-                ("param_5".to_string(), "10".to_string().into()),
-                (
-                    "param_6".to_string(),
-                    vec!["-10".to_string(), "-10.0".to_string()].into(),
-                ),
-            ]),
-            secrets: BTreeMap::from([("foo".to_string(), SecretString("bar".to_string()))]),
-            producer: Some(ProducerParameters {
-                linger: Some(Duration::from_millis(1)),
-                compression: Some(Compression::Gzip),
-                batch_size_string: Some("44.0 MB".to_string()),
-                batch_size: Some(ByteSize::mb(44)),
-            }),
-            consumer: Some(ConsumerParameters {
-                partition: Some(10),
-            }),
+            meta: MetaConfig {
+                name: "my-test-mqtt".to_string(),
+                type_: "mqtt".to_string(),
+                topic: "my-mqtt".to_string(),
+                version: "0.1.0".to_string(),
+                parameters: BTreeMap::from([
+                    ("param_1".to_string(), "mqtt.hsl.fi".to_string().into()),
+                    (
+                        "param_2".to_string(),
+                        vec!["foo:baz".to_string(), "bar".to_string()].into(),
+                    ),
+                    (
+                        "param_3".to_string(),
+                        BTreeMap::from([
+                            ("bar".to_string(), "10.0".to_string()),
+                            ("foo".to_string(), "bar".to_string()),
+                            ("linger.ms".to_string(), "10".to_string()),
+                        ])
+                        .into(),
+                    ),
+                    ("param_4".to_string(), "true".to_string().into()),
+                    ("param_5".to_string(), "10".to_string().into()),
+                    (
+                        "param_6".to_string(),
+                        vec!["-10".to_string(), "-10.0".to_string()].into(),
+                    ),
+                ]),
+                secrets: BTreeMap::from([("foo".to_string(), SecretString("bar".to_string()))]),
+                producer: Some(ProducerParameters {
+                    linger: Some(Duration::from_millis(1)),
+                    compression: Some(Compression::Gzip),
+                    batch_size_string: Some("44.0 MB".to_string()),
+                    batch_size: Some(ByteSize::mb(44)),
+                }),
+                consumer: Some(ConsumerParameters {
+                    partition: Some(10),
+                }),
+            },
             transforms: Some(
                 TransformationStep {
                     uses: "infinyon/json-sql".to_string(),
@@ -415,14 +425,16 @@ mod tests {
     fn simple_yaml_test() {
         //given
         let expected = ConnectorConfig {
-            name: "my-test-mqtt".to_string(),
-            type_: "mqtt".to_string(),
-            topic: "my-mqtt".to_string(),
-            version: "0.1.0".to_string(),
-            parameters: BTreeMap::new(),
-            secrets: BTreeMap::new(),
-            producer: None,
-            consumer: None,
+            meta: MetaConfig {
+                name: "my-test-mqtt".to_string(),
+                type_: "mqtt".to_string(),
+                topic: "my-mqtt".to_string(),
+                version: "0.1.0".to_string(),
+                parameters: BTreeMap::new(),
+                secrets: BTreeMap::new(),
+                producer: None,
+                consumer: None,
+            },
             transforms: None,
         };
 
@@ -440,14 +452,14 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "producer.linger: invalid value: string \"1\", expected a duration at line 7 column 11",
+            "meta.producer.linger: invalid value: string \"1\", expected a duration at line 8 column 13",
             format!("{:?}", connector_cfg)
         );
         let connector_cfg =
             ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!("producer.compression: unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4` at line 7 column 16", format!("{:?}", connector_cfg));
+        assert_eq!("meta.producer.compression: unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4` at line 8 column 18", format!("{:?}", connector_cfg));
 
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
             .expect_err("This yaml should error");
@@ -460,7 +472,7 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "missing field `version` at line 1 column 5",
+            "meta: missing field `version` at line 2 column 7",
             format!("{:?}", connector_cfg)
         );
     }
@@ -469,93 +481,96 @@ mod tests {
     fn deserialize_test() {
         //given
         let yaml = r#"
-            name: kafka-out
-            parameters:
-              param_1: "param_str"
-              param_2:
-               - item_1
-               - item_2
-               - 10
-               - 10.0
-               - true
-               - On
-               - Off
-               - null
-              param_3:
-                arg1: val1
-                arg2: 10
-                arg3: -10
-                arg4: false
-                arg5: 1.0
-                arg6: null
-                arg7: On
-                arg8: Off
-              param_4: 10
-              param_5: 10.0
-              param_6: -10
-              param_7: True
-              param_8: 0xf1
-              param_9: null
-              param_10: 12.3015e+05
-              param_11: [On, Off]
-              param_12: true
-            secrets: {}
-            topic: poc1
-            type: kafka-sink
-            version: latest
+            meta:
+                name: kafka-out
+                parameters:
+                  param_1: "param_str"
+                  param_2:
+                   - item_1
+                   - item_2
+                   - 10
+                   - 10.0
+                   - true
+                   - On
+                   - Off
+                   - null
+                  param_3:
+                    arg1: val1
+                    arg2: 10
+                    arg3: -10
+                    arg4: false
+                    arg5: 1.0
+                    arg6: null
+                    arg7: On
+                    arg8: Off
+                  param_4: 10
+                  param_5: 10.0
+                  param_6: -10
+                  param_7: True
+                  param_8: 0xf1
+                  param_9: null
+                  param_10: 12.3015e+05
+                  param_11: [On, Off]
+                  param_12: true
+                secrets: {}
+                topic: poc1
+                type: kafka-sink
+                version: latest
             "#;
 
         let expected = ConnectorConfig {
-            name: "kafka-out".to_string(),
-            type_: "kafka-sink".to_string(),
-            topic: "poc1".to_string(),
-            version: "latest".to_string(),
-            parameters: BTreeMap::from([
-                ("param_1".to_string(), "param_str".into()),
-                ("param_10".to_string(), "1230150".into()),
-                (
-                    "param_11".to_string(),
-                    vec!["On".to_string(), "Off".to_string()].into(),
-                ),
-                ("param_12".to_string(), "true".into()),
-                (
-                    "param_2".to_string(),
-                    vec![
-                        "item_1".to_string(),
-                        "item_2".to_string(),
-                        "10".to_string(),
-                        "10.0".to_string(),
-                        "true".to_string(),
-                        "On".to_string(),
-                        "Off".to_string(),
-                        "null".to_string(),
-                    ]
-                    .into(),
-                ),
-                (
-                    "param_3".to_string(),
-                    BTreeMap::from([
-                        ("arg1".to_string(), "val1".to_string()),
-                        ("arg2".to_string(), "10".to_string()),
-                        ("arg3".to_string(), "-10".to_string()),
-                        ("arg4".to_string(), "false".to_string()),
-                        ("arg5".to_string(), "1.0".to_string()),
-                        ("arg6".to_string(), "null".to_string()),
-                        ("arg7".to_string(), "On".to_string()),
-                        ("arg8".to_string(), "Off".to_string()),
-                    ])
-                    .into(),
-                ),
-                ("param_4".to_string(), "10".into()),
-                ("param_5".to_string(), "10".into()),
-                ("param_6".to_string(), "-10".into()),
-                ("param_7".to_string(), "True".into()),
-                ("param_8".to_string(), "241".into()),
-                ("param_9".to_string(), "null".into()),
-            ]),
-            secrets: BTreeMap::new(),
-            producer: None,
-            consumer: None,
+            meta: MetaConfig {
+                name: "kafka-out".to_string(),
+                type_: "kafka-sink".to_string(),
+                topic: "poc1".to_string(),
+                version: "latest".to_string(),
+                parameters: BTreeMap::from([
+                    ("param_1".to_string(), "param_str".into()),
+                    ("param_10".to_string(), "1230150".into()),
+                    (
+                        "param_11".to_string(),
+                        vec!["On".to_string(), "Off".to_string()].into(),
+                    ),
+                    ("param_12".to_string(), "true".into()),
+                    (
+                        "param_2".to_string(),
+                        vec![
+                            "item_1".to_string(),
+                            "item_2".to_string(),
+                            "10".to_string(),
+                            "10.0".to_string(),
+                            "true".to_string(),
+                            "On".to_string(),
+                            "Off".to_string(),
+                            "null".to_string(),
+                        ]
+                        .into(),
+                    ),
+                    (
+                        "param_3".to_string(),
+                        BTreeMap::from([
+                            ("arg1".to_string(), "val1".to_string()),
+                            ("arg2".to_string(), "10".to_string()),
+                            ("arg3".to_string(), "-10".to_string()),
+                            ("arg4".to_string(), "false".to_string()),
+                            ("arg5".to_string(), "1.0".to_string()),
+                            ("arg6".to_string(), "null".to_string()),
+                            ("arg7".to_string(), "On".to_string()),
+                            ("arg8".to_string(), "Off".to_string()),
+                        ])
+                        .into(),
+                    ),
+                    ("param_4".to_string(), "10".into()),
+                    ("param_5".to_string(), "10".into()),
+                    ("param_6".to_string(), "-10".into()),
+                    ("param_7".to_string(), "True".into()),
+                    ("param_8".to_string(), "241".into()),
+                    ("param_9".to_string(), "null".into()),
+                ]),
+                secrets: BTreeMap::new(),
+                producer: None,
+                consumer: None,
+            },
             transforms: None,
         };
 
