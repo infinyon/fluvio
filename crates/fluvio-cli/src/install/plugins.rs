@@ -1,11 +1,9 @@
 use clap::Parser;
 use tracing::debug;
 use anyhow::Result;
-
-use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
+use current_platform::CURRENT_PLATFORM;
 
 use super::update::should_always_print_available_update;
-
 use fluvio_cli_common::error::CliError as CommonCliError;
 use fluvio_cli_common::error::HttpError;
 use fluvio_cli_common::install::{
@@ -16,6 +14,13 @@ use crate::error::CliError;
 use crate::install::update::{
     check_update_required, prompt_required_update, check_update_available, prompt_available_update,
 };
+use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
+use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
+use fluvio_hub_util as hubutil;
+use hubutil::http;
+use hubutil::http::StatusCode;
+use hubutil::HubAccess;
+pub const HUB_API_BPKG_AUTH: &str = "hub/v0/bpkg-auth"; // copied from hub-tool
 
 #[derive(Parser, Debug)]
 pub struct InstallOpt {
@@ -31,56 +36,16 @@ pub struct InstallOpt {
     pub develop: bool,
 
     /// When this flag is provided, use the hub. Dev-only
-    #[clap(long)]
+    #[clap(long, hide_short_help = true)]
     pub hub: bool,
-}
 
-// Copied from hub-tool (rough hacks to error handling to make this work)
-use fluvio_hub_util as hubutil;
-use hubutil::http;
-use hubutil::http::StatusCode;
-use hubutil::HubAccess;
-pub const HUB_API_BPKG_AUTH: &str = "hub/v0/bpkg-auth"; // copied from hub-tool
-async fn get_binary(
-    channel: &str,
-    systuple: &str,
-    binname: &str,
-    access: &HubAccess,
-) -> Result<Vec<u8>> {
-    let actiontoken = access.get_download_token().await.map_err(|_| {
-        CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into()))
-    })?;
+    /// When this flag is provided, use the hub. Dev-only
+    #[clap(long, hide_short_help = true)]
+    pub channel: Option<String>,
 
-    let binurl = format!(
-        "{}/{HUB_API_BPKG_AUTH}/{channel}/{systuple}/{binname}",
-        access.remote
-    );
-    debug!("accessing url: {binurl}");
-    let mut resp = http::get(binurl)
-        .header("Authorization", actiontoken)
-        .await
-        .map_err(|_| {
-            CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into()))
-        })?;
-
-    match resp.status() {
-        StatusCode::Ok => {}
-        code => {
-            let body_err_message = resp
-                .body_string()
-                .await
-                .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
-            let msg = format!("Status({code}) {body_err_message}");
-            return Err(crate::CliError::HubError(msg).into());
-            //return Err(HubCliError::Cmd(msg));
-            //return Err(CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into())));
-        }
-    }
-    let data = resp
-        .body_bytes()
-        .await
-        .map_err(|_| crate::CliError::HubError("Data unpack failure".into()))?;
-    Ok(data)
+    /// When this flag is provided, use the hub. Dev-only
+    #[clap(long, hide_short_help = true)]
+    pub target: Option<String>,
 }
 
 impl InstallOpt {
@@ -88,9 +53,20 @@ impl InstallOpt {
         if self.hub {
             debug!("Using the hub to install");
 
-            let channel = "latest";
-            let systuple = "aarch64-apple-darwin";
-            let binname = "sample-bin-script";
+            let mut homedir_path = fluvio_bin_dir()?;
+            let package_name;
+            //let binpath = "sample-bin-script";
+            let bin_install_path = if let Some(ref p) = self.package {
+                let package = p;
+                package_name = package.name().to_string();
+                homedir_path.push(package_name.clone());
+                homedir_path.to_str().ok_or(crate::CliError::Other(
+                    "Unable to render path to fluvio bin dir".to_string(),
+                ))?
+            } else {
+                return Err(crate::CliError::Other("No package name provided".to_string()).into());
+            };
+            debug!(?bin_install_path, "Install path");
 
             let access =
                 HubAccess::default_load(&Some("https://hub-dev.infinyon.cloud".to_string()))
@@ -99,8 +75,10 @@ impl InstallOpt {
                             "Something happened getting hub dev info".to_string(),
                         )
                     })?;
-            let data = get_binary(channel, systuple, binname, &access).await?;
-            std::fs::write(binname, data)?;
+            let data = self.get_binary(&package_name, &access).await?;
+
+            debug!(?bin_install_path, "Writing binary to fs");
+            install_bin(bin_install_path, data)?;
         } else {
             let agent = match &self.prefix {
                 Some(prefix) => HttpAgent::with_prefix(prefix)?,
@@ -235,5 +213,62 @@ impl InstallOpt {
         install_bin(package_path, package_file)?;
 
         Ok(())
+    }
+
+    fn get_channel(&self) -> String {
+        if let Some(user_override) = &self.channel {
+            user_override.to_string()
+        } else if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+            channel_name
+        } else {
+            LATEST_CHANNEL_NAME.to_string()
+        }
+    }
+
+    fn get_target(&self) -> String {
+        if let Some(user_override) = &self.target {
+            user_override.to_string()
+        } else {
+            CURRENT_PLATFORM.to_string()
+        }
+    }
+
+    async fn get_binary(&self, bin_name: &str, access: &HubAccess) -> Result<Vec<u8>> {
+        let actiontoken = access.get_download_token().await.map_err(|_| {
+            CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into()))
+        })?;
+
+        let binurl = format!(
+            "{}/{HUB_API_BPKG_AUTH}/{channel}/{systuple}/{bin_name}",
+            access.remote,
+            channel = self.get_channel(),
+            systuple = self.get_target(),
+        );
+        debug!("accessing url: {binurl}");
+        let mut resp = http::get(binurl)
+            .header("Authorization", actiontoken)
+            .await
+            .map_err(|_| {
+                CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into()))
+            })?;
+
+        match resp.status() {
+            StatusCode::Ok => {}
+            code => {
+                let body_err_message = resp
+                    .body_string()
+                    .await
+                    .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
+                let msg = format!("Status({code}) {body_err_message}");
+                return Err(crate::CliError::HubError(msg).into());
+                //return Err(HubCliError::Cmd(msg));
+                //return Err(CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into())));
+            }
+        }
+        let data = resp
+            .body_bytes()
+            .await
+            .map_err(|_| crate::CliError::HubError("Data unpack failure".into()))?;
+        Ok(data)
     }
 }
