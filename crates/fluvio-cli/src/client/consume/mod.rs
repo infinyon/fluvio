@@ -164,7 +164,7 @@ mod cmd {
         )]
         pub smartmodule: Option<String>,
 
-        /// Path to the stmart module
+        /// Path to the smart module
         #[clap(
             long,
             group("smartmodule_group"),
