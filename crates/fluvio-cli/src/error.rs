@@ -105,16 +105,6 @@ impl CliError {
         Self::InvalidArg(reason.into())
     }
 
-    pub fn into_report(self) -> color_eyre::Report {
-        use color_eyre::Report;
-
-        match self {
-            #[cfg(feature = "k8s")]
-            CliError::ClusterCliError(cluster) => cluster.into_report(),
-            _ => Report::from(self),
-        }
-    }
-
     /// Looks at the error value and attempts to create a user facing error message
     ///
     /// Sometimes, specific errors require specific user-facing error messages.

@@ -2302,7 +2302,6 @@ dependencies = [
  "bytesize",
  "clap 4.0.32",
  "clap_complete",
- "color-eyre",
  "colored",
  "comfy-table",
  "content_inspector",

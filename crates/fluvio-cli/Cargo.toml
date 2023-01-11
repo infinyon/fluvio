@@ -46,7 +46,6 @@ clap_complete = "4.0.2"
 dirs = "4.0.0"
 thiserror = { workspace = true }
 eyre = "0.6.1"
-color-eyre = { version = "0.6.0", default-features = false }
 which = "4.0.2"
 sha2 = "0.10.0"
 hex = "0.4.2"
