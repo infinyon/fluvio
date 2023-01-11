@@ -25,14 +25,60 @@ pub mod errors {
 pub use fluvio_controlplane_metadata::core;
 pub use fluvio_controlplane_metadata::store;
 pub use fluvio_controlplane_metadata::message;
+pub use error::ApiError;
+mod error {
 
-/// Error from api call
-#[derive(thiserror::Error, Debug)]
-pub enum ApiError {
-    #[error("Received error code: {0:#?} ({1:?})")]
-    Code(crate::errors::ErrorCode, Option<String>),
-    #[error("No resource found: {0}")]
-    NoResourceFound(String),
+    use std::fmt::Display;
+    use std::fmt::Formatter;
+
+    use super::errors::ErrorCode;
+
+    /// Error from api call
+    #[derive(thiserror::Error, Debug)]
+    pub enum ApiError {
+        Code(crate::errors::ErrorCode, Option<String>),
+        NoResourceFound(String),
+    }
+
+    impl Display for ApiError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
+                    write!(f, "Topic already exists")
+                }
+                ApiError::Code(ErrorCode::ManagedConnectorAlreadyExists, _) => {
+                    write!(f, "Connector already exists")
+                }
+                ApiError::Code(ErrorCode::TopicNotFound, _) => {
+                    write!(f, "Topic not found")
+                }
+                ApiError::Code(ErrorCode::SmartModuleNotFound { name: _ }, _) => {
+                    write!(f, "SmartModule not found")
+                }
+                ApiError::Code(ErrorCode::ManagedConnectorNotFound, _) => {
+                    write!(f, "Connector not found")
+                }
+                ApiError::Code(ErrorCode::TopicInvalidName, _) => {
+                    write!(f,"Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).")
+                }
+                ApiError::Code(ErrorCode::TableFormatAlreadyExists, _) => {
+                    write!(f, "TableFormat already exists")
+                }
+                ApiError::Code(ErrorCode::TableFormatNotFound, _) => {
+                    write!(f, "TableFormat not found")
+                }
+                ApiError::Code(_, Some(msg)) => {
+                    write!(f, "{}", msg)
+                }
+                ApiError::Code(code, None) => {
+                    write!(f, "{}", code)
+                }
+                ApiError::NoResourceFound(name) => {
+                    write!(f, "No resource found: {}", name)
+                }
+            }
+        }
+    }
 }
 
 mod admin {
