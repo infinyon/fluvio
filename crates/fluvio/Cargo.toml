@@ -14,9 +14,11 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = []
+default = ["openssl_tls"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
+openssl_tls = ["fluvio-future/openssl_tls"]
+rust_tls = ["fluvio-future/rust_tls"]
 unstable = []
 
 [dependencies]
@@ -45,7 +47,6 @@ anyhow = "1.0.38"
 # Fluvio dependencies
 fluvio-future = { version = "0.4.2", features = [
     "task",
-    "openssl_tls",
     "task_unstable",
     "retry",
     "sync"
