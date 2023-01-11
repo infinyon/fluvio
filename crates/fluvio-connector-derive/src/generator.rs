@@ -113,7 +113,7 @@ pub(crate) fn generate_connector_config(item: &ConnectorConfigStruct) -> TokenSt
         #config_struct
 
         impl #ident {
-            fn __config_name() -> &'static str {
+            pub fn __config_name() -> &'static str {
                 #config_name
             }
         }
