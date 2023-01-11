@@ -1,6 +1,9 @@
 use std::time::Instant;
+
+use anyhow::Result;
 use async_channel::{unbounded, Sender, Receiver};
 use tracing::{debug, info};
+
 use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
@@ -127,10 +130,7 @@ impl BenchmarkDriver {
 
         Ok(())
     }
-    pub async fn run_benchmark(
-        config: BenchmarkConfig,
-        all_stats: AllStatsSync,
-    ) -> Result<(), BenchmarkError> {
+    pub async fn run_benchmark(config: BenchmarkConfig, all_stats: AllStatsSync) -> Result<()> {
         // Create topic for this run
 
         let new_topic = TopicSpec::new_computed(config.num_partitions as u32, 1, None);

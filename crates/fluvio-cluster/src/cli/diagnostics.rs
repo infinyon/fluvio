@@ -7,6 +7,7 @@ use serde::Serialize;
 use duct::cmd;
 use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt, PidExt};
 use which::which;
+use anyhow::Result;
 
 use fluvio::config::ConfigFile;
 use fluvio::metadata::{topic::TopicSpec, partition::PartitionSpec, spg::SpuGroupSpec, spu::SpuSpec};
@@ -15,8 +16,6 @@ use fluvio_sc_schema::objects::Metadata;
 use crate::cli::ClusterCliError;
 use crate::cli::start::get_log_directory;
 use crate::start::local::DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR;
-
-type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 
 #[derive(Debug)]
 enum ProfileType {

@@ -6,9 +6,11 @@
 
 use tracing::debug;
 use clap::Parser;
+use anyhow::Result;
+
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::Result;
+
 use crate::error::CliError;
 
 #[derive(Debug, Parser)]
@@ -28,14 +30,9 @@ impl DeleteTopicOpt {
         for name in self.names.iter() {
             debug!(name, "deleting topic");
             if let Err(error) = admin.delete::<TopicSpec, _>(name).await {
-                let error = CliError::from(error);
                 err_happened = true;
                 if self.continue_on_error {
-                    let user_error = match error.get_user_error() {
-                        Ok(usr_err) => usr_err.to_string(),
-                        Err(err) => format!("{}", err),
-                    };
-                    println!("topic \"{}\" delete failed with: {}", name, user_error);
+                    println!("topic \"{}\" delete failed with: {}", name, error);
                 } else {
                     return Err(error);
                 }
@@ -46,7 +43,8 @@ impl DeleteTopicOpt {
         if err_happened {
             Err(CliError::CollectedError(
                 "Failed deleting topic(s). Check previous errors.".to_string(),
-            ))
+            )
+            .into())
         } else {
             Ok(())
         }

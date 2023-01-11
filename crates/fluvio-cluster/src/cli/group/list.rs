@@ -4,14 +4,15 @@
 //!
 
 use std::sync::Arc;
+
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 use crate::cli::common::output::Terminal;
 use crate::cli::common::OutputFormat;
-use crate::cli::ClusterCliError;
 
 #[derive(Debug, Parser)]
 pub struct ListManagedSpuGroupsOpt {
@@ -21,11 +22,7 @@ pub struct ListManagedSpuGroupsOpt {
 
 impl ListManagedSpuGroupsOpt {
     /// Process list spus cli request
-    pub async fn process<O: Terminal>(
-        self,
-        out: Arc<O>,
-        fluvio: &Fluvio,
-    ) -> Result<(), ClusterCliError> {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
         let lists = admin.all::<SpuGroupSpec>().await?;
 
@@ -44,11 +41,11 @@ mod output {
     use comfy_table::CellAlignment;
     use tracing::debug;
     use serde::Serialize;
+    use anyhow::Result;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
-    use crate::cli::ClusterCliError;
     use crate::cli::common::output::{OutputType, TableOutputHandler, Terminal};
     use crate::cli::common::t_println;
 
@@ -64,7 +61,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_spu_groups: Vec<Metadata<SpuGroupSpec>>,
         output_type: OutputType,
-    ) -> Result<(), ClusterCliError> {
+    ) -> Result<()> {
         debug!("groups: {:#?}", list_spu_groups);
 
         if !list_spu_groups.is_empty() {

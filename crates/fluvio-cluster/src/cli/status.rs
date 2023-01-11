@@ -1,5 +1,7 @@
 use clap::Parser;
 use colored::Colorize;
+use anyhow::{Result, anyhow};
+
 use fluvio::{Fluvio, FluvioAdmin, FluvioConfig};
 use fluvio::config::ConfigFile;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -23,16 +25,12 @@ macro_rules! pad_format {
 }
 
 impl StatusOpt {
-    pub async fn process(self, target: ClusterTarget) -> Result<(), ClusterCliError> {
+    pub async fn process(self, target: ClusterTarget) -> Result<()> {
         let pb_factory = ProgressBarFactory::new(false);
 
         let pb = match pb_factory.create() {
             Ok(pb) => pb,
-            Err(_) => {
-                return Err(ClusterCliError::Other(
-                    "Failed to create progress bar".to_string(),
-                ))
-            }
+            Err(_) => return Err(anyhow!("Failed to create progress bar")),
         };
 
         let fluvio_config = target.load()?;
@@ -108,10 +106,7 @@ impl StatusOpt {
         }
     }
 
-    async fn check_spus(
-        pb: &ProgressRenderer,
-        fluvio_config: &FluvioConfig,
-    ) -> Result<(), ClusterCliError> {
+    async fn check_spus(pb: &ProgressRenderer, fluvio_config: &FluvioConfig) -> Result<()> {
         pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SPUs")));
 
         match FluvioAdmin::connect_with_config(fluvio_config).await {
@@ -151,7 +146,7 @@ impl StatusOpt {
                     "❌".bold(),
                 )));
 
-                Err(ClusterCliError::ClientError(e))
+                Err(e)
             }
         }
     }
@@ -164,10 +159,7 @@ impl StatusOpt {
             .to_string()
     }
 
-    async fn check_topics(
-        pb: &ProgressRenderer,
-        fluvio_config: &FluvioConfig,
-    ) -> Result<(), ClusterCliError> {
+    async fn check_topics(pb: &ProgressRenderer, fluvio_config: &FluvioConfig) -> Result<()> {
         pb.set_message(pad_format!(format!(
             "{} Checking {}",
             "📝".bold(),
@@ -201,7 +193,7 @@ impl StatusOpt {
                     "❌".bold(),
                 )));
 
-                Err(ClusterCliError::ClientError(e))
+                Err(e)
             }
         }
     }

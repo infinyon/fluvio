@@ -5,6 +5,8 @@
 //!
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+
+use anyhow::Result;
 use clap::Parser;
 
 use fluvio::Fluvio;
@@ -33,7 +35,7 @@ pub struct UnregisterCustomSpuOpt {
 }
 
 impl UnregisterCustomSpuOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let delete_key = self.validate()?;
         let admin = fluvio.admin().await;
         admin.delete::<CustomSpuSpec, _>(delete_key).await?;

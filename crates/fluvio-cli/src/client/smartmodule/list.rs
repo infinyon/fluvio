@@ -3,6 +3,7 @@ use std::fmt::Debug;
 
 use async_trait::async_trait;
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
@@ -10,7 +11,6 @@ use fluvio::Fluvio;
 use crate::client::cmd::ClientCmd;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
-use crate::Result;
 
 /// List all existing SmartModules
 #[derive(Debug, Parser)]
@@ -50,16 +50,16 @@ mod output {
 
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
-
     use tracing::debug;
     use serde::Serialize;
+    use anyhow::Result;
+
     use fluvio_extension_common::output::OutputType;
     use fluvio_extension_common::Terminal;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::smartmodule::SmartModuleSpec;
 
-    use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
@@ -75,8 +75,8 @@ mod output {
         out: std::sync::Arc<O>,
         list_smartmodules: Vec<Metadata<SmartModuleSpec>>,
         output_type: OutputType,
-    ) -> Result<(), CliError> {
-        debug!("smartmodules: {:#?}", list_smartmodules);
+    ) -> Result<()> {
+        debug!("smart modules: {:#?}", list_smartmodules);
 
         if !list_smartmodules.is_empty() {
             let smartmodules = ListSmartModules(list_smartmodules);

@@ -32,7 +32,6 @@ async-trait = "0.1.21"
 colored = "2.0.0"
 semver = "1.0.3"
 url = "2.1.1"
-
 serde = "1.0.115"
 serde_json = "1.0.57"
 serde_yaml = "0.9.0"
@@ -46,7 +45,7 @@ directories = "4.0.0"
 tempfile = "3.2"
 include_dir = "0.7.2"
 tempdir = "0.3.7"
-anyhow = "1.0.44"
+anyhow = { workspace = true }
 async-channel = "1.6.1"
 bytesize = { version = "1.1.0", features = ['serde'] }
 indicatif = "0.17.0"

@@ -5,7 +5,9 @@
 //!
 
 use std::convert::TryFrom;
+
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::customspu::CustomSpuSpec;
@@ -36,7 +38,7 @@ pub struct RegisterCustomSpuOpt {
 }
 
 impl RegisterCustomSpuOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let (name, spec) = self.validate()?;
         let admin = fluvio.admin().await;
         admin.create(name, false, spec).await?;

@@ -4,11 +4,10 @@
 //! CLI tree to generate Delete Managed SPU Groups
 //!
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::spg::SpuGroupSpec;
-
-use crate::cli::ClusterCliError;
 
 // -----------------------------------
 // CLI Options
@@ -22,7 +21,7 @@ pub struct DeleteManagedSpuGroupOpt {
 }
 
 impl DeleteManagedSpuGroupOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
         admin.delete::<SpuGroupSpec, _>(&self.name).await?;
         Ok(())

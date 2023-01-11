@@ -1,9 +1,11 @@
 use std::convert::TryInto;
+
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::FluvioConfig;
 use fluvio::config::{ConfigFile, LOCAL_PROFILE, Profile};
-use crate::Result;
+
 use crate::common::tls::TlsClientOpt;
 
 #[derive(Debug, Default, Parser)]

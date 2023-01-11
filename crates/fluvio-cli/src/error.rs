@@ -1,6 +1,6 @@
 use std::{
     convert::Infallible,
-    io::{Error as IoError, ErrorKind},
+    io::{ErrorKind},
 };
 
 use semver::Version;
@@ -22,8 +22,6 @@ pub type Result<T, E = CliError> = core::result::Result<T, E>;
 #[derive(thiserror::Error, Debug)]
 #[allow(clippy::enum_variant_names)]
 pub enum CliError {
-    #[error(transparent)]
-    IoError(#[from] IoError),
     #[error(transparent)]
     OutputError(#[from] OutputError),
     #[error("Failed to parse format string")]
@@ -105,16 +103,6 @@ pub enum CliError {
 impl CliError {
     pub fn invalid_arg<M: Into<String>>(reason: M) -> Self {
         Self::InvalidArg(reason.into())
-    }
-
-    pub fn into_report(self) -> color_eyre::Report {
-        use color_eyre::Report;
-
-        match self {
-            #[cfg(feature = "k8s")]
-            CliError::ClusterCliError(cluster) => cluster.into_report(),
-            _ => Report::from(self),
-        }
     }
 
     /// Looks at the error value and attempts to create a user facing error message

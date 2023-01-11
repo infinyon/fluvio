@@ -5,12 +5,12 @@ use async_trait::async_trait;
 
 use tracing::debug;
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio_extension_common::Terminal;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 
-use crate::Result;
 use crate::client::cmd::ClientCmd;
 use crate::error::CliError;
 
@@ -37,17 +37,9 @@ impl ClientCmd for DeleteSmartModuleOpt {
         for name in self.names.iter() {
             debug!(name, "deleting smartmodule");
             if let Err(error) = admin.delete::<SmartModuleSpec, _>(name).await {
-                let error = CliError::from(error);
                 err_happened = true;
                 if self.continue_on_error {
-                    let user_error = match error.get_user_error() {
-                        Ok(usr_err) => usr_err.to_string(),
-                        Err(err) => format!("{}", err),
-                    };
-                    println!(
-                        "smartmodule \"{}\" delete failed with: {}",
-                        name, user_error
-                    );
+                    println!("smart module \"{}\" delete failed with: {}", name, error);
                 } else {
                     return Err(error);
                 }
@@ -57,8 +49,9 @@ impl ClientCmd for DeleteSmartModuleOpt {
         }
         if err_happened {
             Err(CliError::CollectedError(
-                "Failed deleting smartmodule(s). Check previous errors.".to_string(),
-            ))
+                "Failed deleting smart module(s). Check previous errors.".to_string(),
+            )
+            .into())
         } else {
             Ok(())
         }

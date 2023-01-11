@@ -36,12 +36,6 @@ pub enum ClusterError {
 /// Errors that may occur while trying to install Fluvio on Kubernetes
 #[derive(thiserror::Error, Debug)]
 pub enum K8InstallError {
-    /// An IO error occurred, such as opening a file or running a command.
-    #[error(transparent)]
-    IoError(#[from] IoError),
-    /// An error occurred with the Fluvio client.
-    #[error("Fluvio client error")]
-    FluvioError(#[from] FluvioError),
     /// An error occurred with the Kubernetes config.
     #[error("Kubernetes config error")]
     K8ConfigError(#[from] K8ConfigError),
@@ -93,11 +87,6 @@ pub enum K8InstallError {
     /// Attempted to construct a Config object without all required fields
     #[error("Missing required config option {0}")]
     MissingRequiredConfig(String),
-    /// A different kind of error occurred.
-    #[error("An unknown error occurred: {0}")]
-    Other(String),
-    #[error(transparent)]
-    ClusterCheckError(#[from] ClusterCheckError),
     /// Kubectl not found
     #[error("kubectl not found")]
     KubectlNotFoundError(IoError),

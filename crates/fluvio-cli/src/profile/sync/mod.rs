@@ -1,10 +1,10 @@
-use clap::Parser;
-
 #[cfg(feature = "k8s")]
 mod k8;
 mod local;
 
-use crate::Result;
+use clap::Parser;
+use anyhow::Result;
+
 use crate::common::COMMAND_TEMPLATE;
 use crate::profile::sync::local::LocalOpt;
 #[cfg(feature = "k8s")]

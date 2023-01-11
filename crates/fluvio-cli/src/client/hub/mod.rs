@@ -10,13 +10,13 @@ mod cmd {
 
     use async_trait::async_trait;
     use clap::Parser;
+    use anyhow::Result;
 
     use fluvio::Fluvio;
     use fluvio_extension_common::target::ClusterTarget;
 
     use crate::client::cmd::ClientCmd;
     use crate::common::output::Terminal;
-    use crate::Result;
 
     use super::connector::ConnectorHubSubCmd;
     use super::download::DownloadHubOpt;

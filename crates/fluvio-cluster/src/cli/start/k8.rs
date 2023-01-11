@@ -1,17 +1,14 @@
 use std::convert::TryInto;
+
+use anyhow::Result;
 use fluvio::config::TlsPolicy;
 use semver::Version;
 use tracing::debug;
 
-use crate::{ClusterInstaller, K8InstallError, ClusterConfig, ClusterError};
-use crate::cli::ClusterCliError;
+use crate::{ClusterInstaller, ClusterConfig};
 use crate::cli::start::StartOpt;
 
-pub async fn process_k8(
-    opt: StartOpt,
-    platform_version: Version,
-    upgrade: bool,
-) -> Result<(), ClusterCliError> {
+pub async fn process_k8(opt: StartOpt, platform_version: Version, upgrade: bool) -> Result<()> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
     let mut builder = ClusterConfig::builder(platform_version);
@@ -74,20 +71,18 @@ pub async fn process_k8(
     if opt.setup {
         setup_k8(&installer).await?;
     } else {
-        let k8_install: Result<_, ClusterError> =
-            start_k8(&installer).await.map_err(|err| err.into());
-        k8_install?
+        start_k8(&installer).await?;
     }
 
     Ok(())
 }
 
-pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), K8InstallError> {
+pub async fn start_k8(installer: &ClusterInstaller) -> Result<()> {
     installer.install_fluvio().await?;
     Ok(())
 }
 
-pub async fn setup_k8(installer: &ClusterInstaller) -> Result<(), ClusterCliError> {
+pub async fn setup_k8(installer: &ClusterInstaller) -> Result<()> {
     installer.preflight_check(false).await?;
     Ok(())
 }

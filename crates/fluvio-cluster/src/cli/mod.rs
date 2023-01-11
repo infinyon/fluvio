@@ -28,6 +28,8 @@ use shutdown::ShutdownOpt;
 
 pub use self::error::ClusterCliError;
 
+use anyhow::Result;
+
 use fluvio_extension_common as common;
 use common::target::ClusterTarget;
 use common::output::Terminal;
@@ -94,7 +96,7 @@ impl ClusterCmd {
         out: Arc<O>,
         platform_version: Version,
         target: ClusterTarget,
-    ) -> Result<(), ClusterCliError> {
+    ) -> Result<()> {
         match self {
             Self::Start(mut start) => {
                 if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {

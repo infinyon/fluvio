@@ -38,12 +38,12 @@ mod cmd {
 
     use clap::{Parser};
     use async_trait::async_trait;
+    use anyhow::Result;
 
     use fluvio::Fluvio;
 
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
-    use crate::Result;
 
     use super::derivedstream::DerivedStreamCmd;
     use super::smartmodule::SmartModuleCmd;

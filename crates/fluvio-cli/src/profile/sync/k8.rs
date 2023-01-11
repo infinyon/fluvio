@@ -1,6 +1,8 @@
 use std::convert::TryInto;
+
 use clap::Parser;
 use tracing::debug;
+use anyhow::{Result, anyhow};
 
 use fluvio::config::{Profile, ConfigFile};
 use fluvio::FluvioConfig;
@@ -10,7 +12,6 @@ use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::ServiceSpec;
 use k8_types::InputObjectMeta;
 
-use crate::{Result, CliError};
 use crate::common::tls::TlsClientOpt;
 
 #[derive(Debug, Parser, Default)]
@@ -31,11 +32,7 @@ impl K8Opt {
     pub async fn process(self) -> Result<()> {
         let external_addr = match discover_fluvio_addr(self.namespace.as_deref()).await? {
             Some(sc_addr) => sc_addr,
-            None => {
-                return Err(CliError::Other(
-                    "fluvio service is not deployed".to_string(),
-                ))
-            }
+            None => return Err(anyhow!("fluvio service is not deployed")),
         };
 
         match set_k8_context(self, external_addr).await {
@@ -56,14 +53,14 @@ fn compute_profile_name() -> Result<String> {
     let k8_config = K8Config::load()?;
 
     let kc_config = match k8_config {
-        K8Config::Pod(_) => return Err(CliError::Other("Pod config is not valid here".to_owned())),
+        K8Config::Pod(_) => return Err(anyhow!("Pod config is not valid here")),
         K8Config::KubeConfig(config) => config,
     };
 
     if let Some(ctx) = kc_config.config.current_context() {
         Ok(ctx.name.to_owned())
     } else {
-        Err(CliError::Other("no context found".to_owned()))
+        Err(anyhow!("no context found"))
     }
 }
 
@@ -129,12 +126,7 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
             {
                 return Ok(None)
             }
-            _ => {
-                return Err(CliError::Other(format!(
-                    "unable to look up fluvio service in k8: {}",
-                    err
-                )))
-            }
+            _ => return Err(anyhow!("unable to look up fluvio service in k8: {}", err)),
         },
     };
 

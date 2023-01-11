@@ -1,16 +1,18 @@
 use std::{fmt, str::FromStr};
 use std::path::PathBuf;
-use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
+
 use clap::Parser;
-use fluvio_types::defaults::{TLS_SERVER_SECRET_NAME, TLS_CLIENT_SECRET_NAME};
 use semver::Version;
+use anyhow::Result;
+
+use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
+use fluvio_types::defaults::{TLS_SERVER_SECRET_NAME, TLS_CLIENT_SECRET_NAME};
 
 mod local;
 mod k8;
 mod sys;
 mod tls;
 
-use crate::cli::ClusterCliError;
 use tls::TlsOpt;
 
 #[cfg(target_os = "macos")]
@@ -174,11 +176,7 @@ pub struct StartOpt {
 }
 
 impl StartOpt {
-    pub async fn process(
-        self,
-        platform_version: Version,
-        upgrade: bool,
-    ) -> Result<(), ClusterCliError> {
+    pub async fn process(self, platform_version: Version, upgrade: bool) -> Result<()> {
         use crate::cli::start::local::process_local;
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
@@ -202,7 +200,7 @@ pub struct UpgradeOpt {
 }
 
 impl UpgradeOpt {
-    pub async fn process(self, platform_version: Version) -> Result<(), ClusterCliError> {
+    pub async fn process(self, platform_version: Version) -> Result<()> {
         self.start.process(platform_version, true).await?;
         Ok(())
     }

@@ -9,12 +9,13 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use fluvio_types::PartitionCount;
-use fluvio_types::ReplicationFactor;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
+use anyhow::Result;
 
+use fluvio_types::PartitionCount;
+use fluvio_types::ReplicationFactor;
 use fluvio::metadata::topic::CleanupPolicy;
 use fluvio::metadata::topic::ReplicaSpec;
 use fluvio::metadata::topic::SegmentBasedPolicy;
@@ -25,7 +26,7 @@ use fluvio_sc_schema::topic::validate::valid_topic_name;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::{Result, CliError};
+use crate::{CliError};
 
 #[derive(Debug, Parser)]
 pub struct CreateTopicOpt {
@@ -137,7 +138,8 @@ impl CreateTopicOpt {
             return Err(CliError::InvalidArg(
                 "Topic name must only contain lowercase alphanumeric characters or '-'."
                     .to_string(),
-            ));
+            )
+            .into());
         }
 
         let mut topic_spec: TopicSpec = replica_spec.into();

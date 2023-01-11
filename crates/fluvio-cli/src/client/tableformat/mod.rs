@@ -15,15 +15,14 @@ mod cmd {
     use async_trait::async_trait;
     use serde::Deserialize;
     use clap::Parser;
+    use anyhow::Result;
 
     use fluvio::Fluvio;
     use fluvio::metadata::tableformat::{DataFormat, TableFormatSpec, TableFormatColumnConfig};
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::COMMAND_TEMPLATE;
 
-    use crate::CliError;
     use crate::client::cmd::ClientCmd;
-    use crate::Result;
 
     use super::create::CreateTableFormatOpt;
     use super::delete::DeleteTableFormatOpt;
@@ -84,7 +83,7 @@ mod cmd {
     }
 
     impl TableFormatConfig {
-        pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<TableFormatConfig, CliError> {
+        pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<TableFormatConfig> {
             let mut file = File::open(path.into())?;
             let mut contents = String::new();
             file.read_to_string(&mut contents)?;

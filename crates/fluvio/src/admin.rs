@@ -3,12 +3,13 @@ use std::fmt::{Display, Debug};
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
+use futures_util::{Stream, StreamExt};
+use tracing::{debug, trace, instrument};
+use anyhow::{Result, anyhow};
+
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_future::net::DomainConnector;
-use futures_util::{Stream, StreamExt};
-use tracing::{debug, trace, instrument};
-
 use fluvio_sc_schema::objects::{
     CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
     ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter,
@@ -17,7 +18,7 @@ use fluvio_sc_schema::objects::{
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
 
-use crate::{FluvioError, FluvioConfig};
+use crate::FluvioConfig;
 use crate::metadata::objects::{ListResponse, ListRequest};
 use crate::config::ConfigFile;
 use crate::sync::MetadataStores;
@@ -79,8 +80,8 @@ impl FluvioAdmin {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{FluvioAdmin, FluvioError};
-    /// # async fn do_connect() -> Result<(), FluvioError> {
+    /// # use fluvio::FluvioAdmin;
+    /// # async fn do_connect() -> anyhow::Result<()> {
     /// let admin = FluvioAdmin::connect().await?;
     /// # Ok(())
     /// # }
@@ -88,7 +89,7 @@ impl FluvioAdmin {
     ///
     /// [`connect_with_config`]: ./struct.FluvioAdmin.html#method.connect_with_config
     #[instrument]
-    pub async fn connect() -> Result<Self, FluvioError> {
+    pub async fn connect() -> Result<Self> {
         let config_file = ConfigFile::load_default_or_new()?;
         let cluster_config = config_file.config().current_cluster()?;
         Self::connect_with_config(cluster_config).await
@@ -103,9 +104,9 @@ impl FluvioAdmin {
     /// # Example
     ///
     /// ```no_run
-    /// # use fluvio::{FluvioAdmin, FluvioError};
+    /// # use fluvio::FluvioAdmin;
     /// use fluvio::config::ConfigFile;
-    /// #  async fn do_connect_with_config() -> Result<(), FluvioError> {
+    /// #  async fn do_connect_with_config() -> anyhow::Result<()> {
     /// let config_file = ConfigFile::load_default_or_new()?;
     /// let fluvio_config = config_file.config().current_cluster().unwrap();
     /// let admin = FluvioAdmin::connect_with_config(fluvio_config).await?;
@@ -113,7 +114,7 @@ impl FluvioAdmin {
     /// # }
     /// ```
     #[instrument(skip(config))]
-    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
+    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         let client_config =
             ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
@@ -131,7 +132,7 @@ impl FluvioAdmin {
                 metadata,
             })
         } else {
-            Err(FluvioError::Other("WatchApi version not found".to_string()))
+            Err(anyhow!("WatchApi version not found"))
         }
     }
 
@@ -145,7 +146,7 @@ impl FluvioAdmin {
 
     /// Create new object
     #[instrument(skip(self, name, dry_run, spec))]
-    pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
+    pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<()>
     where
         S: CreatableAdminSpec + Sync + Send,
         ObjectApiCreateRequest: From<(CommonCreateRequest, S)>,
@@ -160,11 +161,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, config, spec))]
-    pub async fn create_with_config<S>(
-        &self,
-        config: CommonCreateRequest,
-        spec: S,
-    ) -> Result<(), FluvioError>
+    pub async fn create_with_config<S>(&self, config: CommonCreateRequest, spec: S) -> Result<()>
     where
         S: CreatableAdminSpec + Sync + Send,
         ObjectApiCreateRequest: From<(CommonCreateRequest, S)>,
@@ -181,7 +178,7 @@ impl FluvioAdmin {
     /// Delete object by key
     /// key is depend on spec, most are string but some allow multiple types
     #[instrument(skip(self, key))]
-    pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
+    pub async fn delete<S, K>(&self, key: K) -> Result<()>
     where
         S: DeletableAdminSpec + Sync + Send,
         K: Into<S::DeleteKey>,
@@ -198,7 +195,7 @@ impl FluvioAdmin {
 
     /// return all instance of this spec
     #[instrument(skip(self))]
-    pub async fn all<S>(&self) -> Result<Vec<Metadata<S>>, FluvioError>
+    pub async fn all<S>(&self) -> Result<Vec<Metadata<S>>>
     where
         S: AdminSpec,
         ObjectApiListRequest: From<ListRequest<S>>,
@@ -211,7 +208,7 @@ impl FluvioAdmin {
 
     /// return all instance of this spec by filter
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<Metadata<S>>, FluvioError>
+    pub async fn list<S, F>(&self, filters: Vec<F>) -> Result<Vec<Metadata<S>>>
     where
         S: AdminSpec,
         ListFilter: From<F>,
@@ -228,7 +225,7 @@ impl FluvioAdmin {
         &self,
         filters: Vec<F>,
         summary: bool,
-    ) -> Result<Vec<Metadata<S>>, FluvioError>
+    ) -> Result<Vec<Metadata<S>>>
     where
         S: AdminSpec,
         ListFilter: From<F>,
@@ -255,9 +252,7 @@ impl FluvioAdmin {
     /// Watch stream of changes for metadata
     /// There is caching, this is just pass through
     #[instrument(skip(self))]
-    pub async fn watch<S>(
-        &self,
-    ) -> Result<impl Stream<Item = Result<WatchResponse<S>, IoError>>, FluvioError>
+    pub async fn watch<S>(&self) -> Result<impl Stream<Item = Result<WatchResponse<S>, IoError>>>
     where
         S: AdminSpec,
         ObjectApiWatchRequest: From<WatchRequest<S>>,

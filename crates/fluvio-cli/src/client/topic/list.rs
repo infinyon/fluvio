@@ -8,13 +8,13 @@ use std::sync::Arc;
 
 use clap::Parser;
 use tracing::debug;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
-use crate::Result;
 
 // -----------------------------------
 // CLI Options

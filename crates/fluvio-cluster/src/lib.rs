@@ -9,9 +9,9 @@
 //! To install a basic Fluvio cluster, just do the following:
 //!
 //! ```
-//! use fluvio_cluster::{ClusterInstaller, ClusterConfig, ClusterError};
+//! use fluvio_cluster::{ClusterInstaller, ClusterConfig};
 //! use semver::Version;
-//! # async fn example() -> Result<(), ClusterError> {
+//! # async fn example() -> anyhow::Result<()> {
 //! let config = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap()).build()?;
 //! let installer = ClusterInstaller::from_config(config)?;
 //! installer.install_fluvio().await?;

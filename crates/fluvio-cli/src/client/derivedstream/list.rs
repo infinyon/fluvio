@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::metadata::derivedstream::DerivedStreamSpec;
 use fluvio::Fluvio;
 
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
-use crate::Result;
 
 /// List all existing SmartModules
 #[derive(Debug, Parser)]
@@ -31,17 +31,15 @@ mod output {
     //! Format Smart Stream response based on output type
 
     use comfy_table::{Row, Cell};
-
     use comfy_table::CellAlignment;
     use tracing::debug;
     use serde::Serialize;
+    use anyhow::Result;
+
     use fluvio_extension_common::output::OutputType;
     use fluvio_extension_common::Terminal;
-
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::derivedstream::DerivedStreamSpec;
-
-    use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
@@ -56,7 +54,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_smart_streams: Vec<Metadata<DerivedStreamSpec>>,
         output_type: OutputType,
-    ) -> Result<(), CliError> {
+    ) -> Result<()> {
         debug!("derived streams: {:#?}", list_smart_streams);
 
         if !list_smart_streams.is_empty() {

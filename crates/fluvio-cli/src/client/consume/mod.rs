@@ -21,7 +21,6 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
-    use fluvio_types::PartitionId;
     use tracing::{debug, trace, instrument};
     use flate2::Compression;
     use flate2::bufread::GzEncoder;
@@ -37,7 +36,9 @@ mod cmd {
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     };
     use handlebars::{self, Handlebars};
+    use anyhow::Result;
 
+    use fluvio_types::PartitionId;
     use fluvio_spu_schema::server::smartmodule::{
         SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
     };
@@ -50,7 +51,7 @@ mod cmd {
 
     use crate::monitoring::init_monitoring;
     use crate::render::ProgressRenderer;
-    use crate::{CliError, Result};
+    use crate::{CliError};
     use crate::common::FluvioExtensionMetadata;
     use crate::util::parse_isolation;
     use crate::common::Terminal;
@@ -246,12 +247,14 @@ mod cmd {
                     }
 
                     if found.is_none() {
-                        return Err(CliError::TableFormatNotFound(tableformat_name.to_string()));
+                        return Err(
+                            CliError::TableFormatNotFound(tableformat_name.to_string()).into()
+                        );
                     }
 
                     found
                 } else {
-                    return Err(CliError::TableFormatNotFound(tableformat_name.to_string()));
+                    return Err(CliError::TableFormatNotFound(tableformat_name.to_string()).into());
                 }
             } else {
                 None
@@ -363,7 +366,8 @@ mod cmd {
                         return Err(CliError::from(FluvioError::CrossingOffsets(
                             start_offset,
                             end_offset,
-                        )));
+                        ))
+                        .into());
                     }
                 }
             }

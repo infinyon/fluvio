@@ -20,6 +20,7 @@ mod cmd {
     use clap::Parser;
     use tracing::{error, warn};
     use humantime::parse_duration;
+    use anyhow::Result;
 
     use fluvio::{
         Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
@@ -38,7 +39,6 @@ mod cmd {
 
     use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
-    use crate::Result;
     use crate::monitoring::init_monitoring;
     use crate::util::parse_isolation;
 

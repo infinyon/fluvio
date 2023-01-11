@@ -5,13 +5,14 @@
 //!
 
 use std::sync::Arc;
+
 use tracing::debug;
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 
-use crate::Result;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
