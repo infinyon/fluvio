@@ -14,7 +14,7 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = ["openssl_tls"]
+default = ["rust_tls"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 openssl_tls = ["fluvio-future/openssl_tls"]
