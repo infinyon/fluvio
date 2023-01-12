@@ -4,8 +4,6 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::fmt::{Debug, self};
 
-use fluvio_future::rust_tls::TlsAnonymousConnector;
-use fluvio_future::rust_tls::TlsDomainConnector;
 use tracing::info;
 use serde::{Deserialize, Serialize};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
@@ -277,7 +275,8 @@ cfg_if::cfg_if! {
 
 
                 use fluvio_future::rust_tls:: ConnectorBuilder;
-
+                use fluvio_future::rust_tls::TlsAnonymousConnector;
+                use fluvio_future::rust_tls::TlsDomainConnector;
 
                 match config {
                     TlsPolicy::Disabled => Ok(Box::new(DefaultDomainConnector::new())),
@@ -292,6 +291,9 @@ cfg_if::cfg_if! {
                     TlsPolicy::Verified(TlsConfig::Files(tls)) => {
                         info!(
                             domain = &*tls.domain,
+                            ca_cert_path = ?tls.ca_cert,
+                            client.cert = ?tls.cert,
+                            client.key = ?tls.key,
                             "Using verified TLS with certificates from paths"
                         );
 
