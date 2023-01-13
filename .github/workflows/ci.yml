@@ -135,7 +135,7 @@ jobs:
   # build other binaries which doesn't need test
   build_binaries:
     name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
-#    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
       #    fail-fast: false
@@ -249,7 +249,7 @@ jobs:
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
       - name: Set RELEASE mode
-     #   if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
