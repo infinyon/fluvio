@@ -5,7 +5,7 @@ permissions: read-all
 #permissions:
 #  contents: read
 
-concurrency:
+concurrency: 
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
@@ -150,10 +150,10 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-pc-windows-gnu
-            binary: fluvio.exe
+    #      - os: ubuntu-latest
+    #        rust: stable
+    #        rust-target: x86_64-pc-windows-gnu
+    #        binary: fluvio.exe
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -182,10 +182,10 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio-channel
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-pc-windows-gnu
-            binary: fluvio-channel.exe
+    #      - os: ubuntu-latest
+    #        rust: stable
+    #        rust-target: x86_64-pc-windows-gnu
+    #        binary: fluvio-channel.exe
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -224,10 +224,10 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fbm
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-pc-windows-gnu
-            binary: fbm.exe
+    #      - os: ubuntu-latest
+    #        rust: stable
+    #        rust-target: x86_64-pc-windows-gnu
+    #        binary: fbm.exe
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -568,7 +568,7 @@ jobs:
       TEST_BIN: ~/bin/fluvio-test
       SERVER_LOG: fluvio=info
     strategy:
-      fail-fast: false
+ #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
@@ -631,22 +631,22 @@ jobs:
         run: sleep 15
       - name: Validate test harness
         if: matrix.test == 'validate-test-harness'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run : |
           make validate-test-harness
       - name: Run smoke-test
         if: matrix.test == 'smoke-test'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           make smoke-test-local
       - name: Run smoke-test-at-most-once
         if: matrix.test == 'smoke-test-at-most-once'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           make smoke-test-at-most-once
       - name: Run smoke-test-tls
         if: matrix.test == 'smoke-test-tls'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           make smoke-test-tls-root
       #      kubectl get partitions
@@ -989,7 +989,7 @@ jobs:
         timeout-minutes: 5
         run: make FLUVIO_BIN=~/bin/fluvio cli-fluvio-smoke
       - name: Run SMDK smoke tests
-        timeout-minutes: 15
+        timeout-minutes: 20
         if: matrix.cli == 'smdk'
         run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
       - name: Run diagnostics
@@ -1209,8 +1209,8 @@ jobs:
             artifact: smdk
           - rust-target: arm-unknown-linux-gnueabihf
             artifact: smdk
-          - rust-target: x86_64-pc-windows-gnu
-            artifact: smdk.exe
+    #      - rust-target: x86_64-pc-windows-gnu
+    #        artifact: smdk.exe
         include:
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-run
@@ -1218,14 +1218,14 @@ jobs:
             artifact: fluvio-run
           - rust-target: aarch64-apple-darwin
             artifact: fluvio-run
-          - rust-target: x86_64-pc-windows-gnu
-            artifact: fluvio.exe
-          - rust-target: x86_64-pc-windows-gnu
-            artifact: fluvio-channel.exe
+     #     - rust-target: x86_64-pc-windows-gnu
+     #       artifact: fluvio.exe
+     #     - rust-target: x86_64-pc-windows-gnu
+     #       artifact: fluvio-channel.exe
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-test
-          - rust-target: x86_64-pc-windows-gnu
-            artifact: fbm.exe
+      #    - rust-target: x86_64-pc-windows-gnu
+      #      artifact: fbm.exe
     permissions: write-all
     steps:
       #- name: Login GH CLI

@@ -183,7 +183,7 @@ cfg_if::cfg_if! {
             }
         }
 
-    } else {
+    } else if #[cfg(feature = "openssl_tls")] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
             type Error = IoError;
@@ -266,6 +266,78 @@ cfg_if::cfg_if! {
                 }
             }
         }
+    }  else if #[cfg(feature = "rust_tls")] {
+
+        impl TryFrom<TlsPolicy> for DomainConnector {
+            type Error = IoError;
+
+            fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
+
+
+                use fluvio_future::rust_tls:: ConnectorBuilder;
+                use fluvio_future::rust_tls::TlsAnonymousConnector;
+                use fluvio_future::rust_tls::TlsDomainConnector;
+
+                match config {
+                    TlsPolicy::Disabled => Ok(Box::new(DefaultDomainConnector::new())),
+                    TlsPolicy::Anonymous => {
+                        info!("Using anonymous TLS");
+                        let rust_tls_connnector: TlsAnonymousConnector = ConnectorBuilder::with_safe_defaults()
+                        .no_cert_verification()
+                        .build().into();
+                        Ok(Box::new(rust_tls_connnector))
+
+                    }
+                    TlsPolicy::Verified(TlsConfig::Files(tls)) => {
+                        info!(
+                            domain = &*tls.domain,
+                            ca_cert_path = ?tls.ca_cert,
+                            client.cert = ?tls.cert,
+                            client.key = ?tls.key,
+                            "Using verified TLS with certificates from paths"
+                        );
+
+                        let connector = ConnectorBuilder::with_safe_defaults()
+                        .load_ca_cert(&tls.ca_cert)?
+                        .load_client_certs(&tls.cert, &tls.key)?
+                        .build();
+
+
+                        Ok(Box::new(TlsDomainConnector::new(
+                            connector,
+                            tls.domain
+                        )))
+                    }
+                    TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
+                        info!(
+                            domain = &*tls.domain,
+                            "Using verified TLS with inline certificates"
+                        );
+                        let connector = ConnectorBuilder::with_safe_defaults()
+                        .load_ca_cert_from_bytes(tls.ca_cert.as_bytes())?
+                        .load_client_certs_from_bytes(tls.cert.as_bytes(),tls.key.as_bytes())?
+                        .build();
+
+
+                        Ok(Box::new(TlsDomainConnector::new(
+                            connector,
+                            tls.domain
+                        )))
+                    }
+                }
+            }
+        }
+    } else {
+        // by default, no TLS
+        impl TryFrom<TlsPolicy> for DomainConnector {
+            type Error = IoError;
+
+            fn try_from(_config: TlsPolicy) -> Result<Self, Self::Error> {
+                info!("Using Default Domain connector for wasm");
+                Ok(Box::new(DefaultDomainConnector::new()))
+            }
+        }
+
     }
 
 }

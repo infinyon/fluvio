@@ -2213,6 +2213,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-async-tls"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aab83884d2a39e57047387dc20a62cf6e28d1e3212591ad64826c4dbb5dfa76"
+dependencies = [
+ "futures-core",
+ "futures-io",
+ "rustls 0.20.7",
+ "rustls-pemfile",
+ "webpki 0.22.0",
+ "webpki-roots 0.22.6",
+]
+
+[[package]]
 name = "fluvio-auth"
 version = "0.0.0"
 dependencies = [
@@ -2579,6 +2593,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "cfg-if",
+ "fluvio-async-tls",
  "fluvio-test-derive 0.1.1",
  "fluvio-wasm-timer",
  "futures-lite",
@@ -2591,9 +2606,12 @@ dependencies = [
  "openssl-sys",
  "pin-project",
  "pin-utils",
+ "rustls 0.20.7",
+ "rustls-pemfile",
  "thiserror",
  "tracing",
  "tracing-subscriber",
+ "webpki 0.22.0",
  "ws_stream_wasm",
 ]
 
