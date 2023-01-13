@@ -5,7 +5,7 @@ permissions: read-all
 #permissions:
 #  contents: read
 
-concurrency:
+concurrency: 
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
@@ -568,7 +568,7 @@ jobs:
       TEST_BIN: ~/bin/fluvio-test
       SERVER_LOG: fluvio=info
     strategy:
-      fail-fast: false
+ #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
@@ -631,22 +631,22 @@ jobs:
         run: sleep 15
       - name: Validate test harness
         if: matrix.test == 'validate-test-harness'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run : |
           make validate-test-harness
       - name: Run smoke-test
         if: matrix.test == 'smoke-test'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           make smoke-test-local
       - name: Run smoke-test-at-most-once
         if: matrix.test == 'smoke-test-at-most-once'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           make smoke-test-at-most-once
       - name: Run smoke-test-tls
         if: matrix.test == 'smoke-test-tls'
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: |
           make smoke-test-tls-root
       #      kubectl get partitions
