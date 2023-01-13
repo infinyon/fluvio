@@ -150,10 +150,10 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
-    #      - os: ubuntu-latest
-    #        rust: stable
-    #        rust-target: x86_64-pc-windows-gnu
-    #        binary: fluvio.exe
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: fluvio.exe
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -182,10 +182,10 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio-channel
-    #      - os: ubuntu-latest
-    #        rust: stable
-    #        rust-target: x86_64-pc-windows-gnu
-    #        binary: fluvio-channel.exe
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: fluvio-channel.exe
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -224,10 +224,10 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fbm
-    #      - os: ubuntu-latest
-    #        rust: stable
-    #        rust-target: x86_64-pc-windows-gnu
-    #        binary: fbm.exe
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: fbm.exe
           - os: macos-12
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -281,7 +281,9 @@ jobs:
 
       - name: Install mingw gcc
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
-        run: sudo apt-get install gcc-mingw-w64-x86-64
+        run: |
+          sudo apt-get update -o="APT::Acquire::Retries=3"
+          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64  
 
       - name: Build fluvio.exe
         timeout-minutes: 30
@@ -1209,8 +1211,8 @@ jobs:
             artifact: smdk
           - rust-target: arm-unknown-linux-gnueabihf
             artifact: smdk
-    #      - rust-target: x86_64-pc-windows-gnu
-    #        artifact: smdk.exe
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: smdk.exe
         include:
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-run
@@ -1218,14 +1220,14 @@ jobs:
             artifact: fluvio-run
           - rust-target: aarch64-apple-darwin
             artifact: fluvio-run
-     #     - rust-target: x86_64-pc-windows-gnu
-     #       artifact: fluvio.exe
-     #     - rust-target: x86_64-pc-windows-gnu
-     #       artifact: fluvio-channel.exe
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: fluvio.exe
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: fluvio-channel.exe
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-test
-      #    - rust-target: x86_64-pc-windows-gnu
-      #      artifact: fbm.exe
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: fbm.exe
     permissions: write-all
     steps:
       #- name: Login GH CLI
