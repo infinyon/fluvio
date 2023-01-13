@@ -182,7 +182,7 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio-channel
-          - os: ubuntu-20.04
+          - os: ubuntu-18.04
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio-channel.exe
