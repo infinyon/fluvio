@@ -183,7 +183,7 @@ cfg_if::cfg_if! {
             }
         }
 
-    } else if #[cfg(feature = "openssl_tls")] {
+    } else if #[cfg(feature = "openssl")] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
             type Error = IoError;
@@ -266,7 +266,7 @@ cfg_if::cfg_if! {
                 }
             }
         }
-    }  else if #[cfg(feature = "rust_tls")] {
+    }  else if #[cfg(feature = "rustls")] {
 
         impl TryFrom<TlsPolicy> for DomainConnector {
             type Error = IoError;
