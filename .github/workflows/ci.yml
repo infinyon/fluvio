@@ -1243,10 +1243,28 @@ jobs:
 
   # Job that follows the success of all required jobs in this workflow.
   # Used by Bors to detect that all required jobs have completed successfully
-  done:
+  done_bors:
     name: Done
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs: [publish_github_binaries, publish_github_helm_pkg]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done
+        run: echo "Done!"
+
+  done_pr:
+    name: Done
+    if: github.ref != 'refs/heads/staging'
+    needs:
+      - check
+      - check_wasm
+      - check_windows
+      - check_integration
+      - local_cluster_test
+      - k8_cluster_test
+      - k8_upgrade_test
+      - k8_cli_smoke
+      - k8_cli_cross_compat
     runs-on: ubuntu-latest
     steps:
       - name: Done
