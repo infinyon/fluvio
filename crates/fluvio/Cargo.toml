@@ -14,11 +14,11 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = ["openssl_tls"]
+default = ["openssl"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
-openssl_tls = ["fluvio-future/openssl_tls"]
-rust_tls = ["fluvio-future/rust_tls"]
+openssl = ["fluvio-future/openssl_tls"]
+rustls = ["fluvio-future/rust_tls"]
 unstable = []
 
 [dependencies]
