@@ -441,8 +441,9 @@ impl TopicProducer {
                     smart_chain_ref
                 ) = &self.sm_chain {
                     let mut sm_chain = smart_chain_ref.write().await;
+                    let num_records = entries.len() as u64;
 
-                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?,metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?, num_records, metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;
                 }
             } else {

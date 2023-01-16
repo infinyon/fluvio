@@ -407,6 +407,10 @@ impl BatchHeader {
         let compression_bits = compression as i16 & COMPRESSION_CODEC_MASK;
         self.attributes = (self.attributes & !COMPRESSION_CODEC_MASK) | compression_bits;
     }
+
+    pub fn num_records_in_batch(&self) -> u64 {
+        (self.last_offset_delta + 1) as u64
+    }
 }
 impl Default for BatchHeader {
     fn default() -> Self {
@@ -795,5 +799,19 @@ mod test {
 
         assert_ne!(not_compressed.batch_len(), compressed.batch_len());
         assert!(not_compressed.batch_len() > compressed.batch_len());
+    }
+
+    #[test]
+    fn test_batch_num_records() {
+        let batch_created = Batch::from(vec![
+            Record::default(),
+            Record::default(),
+            Record::default(),
+        ]);
+
+        assert_eq!(batch_created.header.num_records_in_batch(), 3);
+        let batch_created = Batch::from(vec![]);
+
+        assert_eq!(batch_created.header.num_records_in_batch(), 0);
     }
 }
