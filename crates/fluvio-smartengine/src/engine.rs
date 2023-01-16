@@ -125,6 +125,9 @@ impl SmartModuleChainInstance {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
                 let output = instance.process(next_input, &mut self.store)?;
+                let records_out = output.successes.len();
+                metric.add_records_out(records_out as u64);
+                debug!(records_out, "sm records out intermediate step");
 
                 if output.error.is_some() {
                     // encountered error, we stop processing and return partial output
@@ -138,7 +141,8 @@ impl SmartModuleChainInstance {
             let output = last.process(next_input, &mut self.store)?;
             let records_out = output.successes.len();
             metric.add_records_out(records_out as u64);
-            debug!(records_out, "sm records out");
+            debug!(records_out, "sm records out last step");
+
             Ok(output)
         } else {
             Ok(SmartModuleOutput::new(input.try_into()?))
