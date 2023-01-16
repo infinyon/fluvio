@@ -1,7 +1,12 @@
 use std::process::Command;
 
 fn main() {
-    println!("cargo:rerun-if-changed=../../VERSION");
+    if let Ok(verpath) = std::fs::canonicalize("../../VERSION") {
+        if verpath.exists() {
+            println!("cargo:rerun-if-changed=../../VERSION");
+        }
+    }
+    println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=../../k8-util/helm/pkg_sys/fluvio-chart-sys.tgz");
     println!("cargo:rerun-if-changed=../../k8-util/helm/pkg_app/fluvio-chart-app.tgz");
 
