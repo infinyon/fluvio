@@ -67,10 +67,11 @@ impl BatchSmartEngine for SmartModuleChainInstance {
             //  let mut join_record = vec![];
             //  join_last_record.encode(&mut join_record, 0)?;
 
+            let num_records = file_batch.batch.header.num_records_in_batch();
             let input =
                 SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
 
-            let output = self.process(input, metric)?;
+            let output = self.process(input, num_records, metric)?;
             debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;
