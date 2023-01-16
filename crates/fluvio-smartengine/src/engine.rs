@@ -109,6 +109,7 @@ impl SmartModuleChainInstance {
     pub fn process(
         &mut self,
         input: SmartModuleInput,
+        number_of_records: u64,
         metric: &SmartModuleChainMetrics,
     ) -> Result<SmartModuleOutput> {
         let raw_len = input.raw_bytes().len();
@@ -277,7 +278,11 @@ mod chaining_test {
 
         let input = vec![Record::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from(input).expect("input"),
+                1,
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
@@ -287,7 +292,11 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from(input).expect("input"),
+                3,
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
@@ -332,7 +341,11 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from(input).expect("input"),
+                3,
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
@@ -340,13 +353,21 @@ mod chaining_test {
 
         let input = vec![Record::new("nothing")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from(input).expect("input"),
+                3,
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![Record::new("elephant")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from(input).expect("input"),
+                1,
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
@@ -367,7 +388,7 @@ mod chaining_test {
         let input = SmartModuleInput::try_from(record).expect("valid input record");
         let metrics = SmartModuleChainMetrics::default();
         //when
-        let output = chain.process(input, &metrics).expect("process failed");
+        let output = chain.process(input, 1, &metrics).expect("process failed");
 
         //then
         assert_eq!(output.successes.len(), 1);
