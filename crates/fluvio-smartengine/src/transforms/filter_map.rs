@@ -108,7 +108,11 @@ mod test {
         let metrics = SmartModuleChainMetrics::default();
         let input = vec![Record::new("10"), Record::new("11")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from(input).expect("input"),
+                2,
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"5");

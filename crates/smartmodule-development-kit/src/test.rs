@@ -123,7 +123,8 @@ impl TestCmd {
 
         let test_records: Vec<Record> = test_data.into();
 
-        let output = chain.process(SmartModuleInput::try_from(test_records)?, &metrics)?;
+        let num_records = test_records.len() as u64;
+        let output = chain.process(SmartModuleInput::try_from(test_records)?, num_records, &metrics)?;
 
         println!("{:?} records outputed", output.successes.len());
         for output_record in output.successes {

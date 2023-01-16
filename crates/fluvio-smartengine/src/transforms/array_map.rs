@@ -108,7 +108,11 @@ mod test {
 
         let input = vec![Record::new("[\"Apple\",\"Banana\",\"Cranberry\"]")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from(input).expect("input"),
+                3,
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 3); // generate 3 records
         assert_eq!(output.successes[0].value.as_ref(), b"\"Apple\"");
