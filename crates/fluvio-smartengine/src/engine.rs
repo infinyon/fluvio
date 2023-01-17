@@ -119,7 +119,6 @@ impl SmartModuleChainInstance {
 
         let base_offset = input.base_offset();
         let mut smartmodule_usage_in = number_of_records;
-        let mut smartmodule_usage_out = 0;
         if let Some((last, instances)) = self.instances.split_last_mut() {
             metric.add_records_in(number_of_records);
             let mut next_input = input;
@@ -128,7 +127,6 @@ impl SmartModuleChainInstance {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
                 let output = instance.process(next_input, &mut self.store)?;
-                smartmodule_usage_out += output.successes.len() as u64;
                 smartmodule_usage_in += output.successes.len() as u64;
 
                 if output.error.is_some() {
@@ -142,10 +140,9 @@ impl SmartModuleChainInstance {
 
             let output = last.process(next_input, &mut self.store)?;
             let records_out = output.successes.len();
-            smartmodule_usage_out += output.successes.len() as u64;
             metric.add_records_out(records_out as u64);
             debug!(records_out, "sm records out");
-            metric.add_smartmodule_usage(max(smartmodule_usage_in, smartmodule_usage_out));
+            metric.add_records_processed(smartmodule_usage_in);
 
             Ok(output)
         } else {
@@ -294,7 +291,7 @@ mod chaining_test {
             .expect("process");
         assert_eq!(metrics.records_in(), 1);
         assert_eq!(metrics.records_out(), 0);
-        assert_eq!(metrics.smartmodule_usage(), 1);
+        assert_eq!(metrics.records_processed(), 1);
         assert_eq!(output.successes.len(), 0); // no records passed
 
         let input = vec![
@@ -311,7 +308,7 @@ mod chaining_test {
             .expect("process");
         assert_eq!(metrics.records_in(), 4);
         assert_eq!(metrics.records_out(), 2);
-        assert_eq!(metrics.smartmodule_usage(), 6);
+        assert_eq!(metrics.records_processed(), 6);
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
@@ -363,7 +360,7 @@ mod chaining_test {
             .expect("process");
         assert_eq!(metrics.records_in(), 3);
         assert_eq!(metrics.records_out(), 2);
-        assert_eq!(metrics.smartmodule_usage(), 5);
+        assert_eq!(metrics.records_processed(), 5);
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
         assert_eq!(output.successes[1].value().to_string(), "zeroapplebanana");
@@ -378,7 +375,7 @@ mod chaining_test {
             .expect("process");
         assert_eq!(metrics.records_in(), 4);
         assert_eq!(metrics.records_out(), 2);
-        assert_eq!(metrics.smartmodule_usage(), 6);
+        assert_eq!(metrics.records_processed(), 6);
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![Record::new("elephant")];
@@ -391,7 +388,7 @@ mod chaining_test {
             .expect("process");
         assert_eq!(metrics.records_in(), 5);
         assert_eq!(metrics.records_out(), 3);
-        assert_eq!(metrics.smartmodule_usage(), 8);
+        assert_eq!(metrics.records_processed(), 8);
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
             output.successes[0].value().to_string(),
@@ -416,7 +413,7 @@ mod chaining_test {
         //then
         assert_eq!(metrics.records_in(), 0);
         assert_eq!(metrics.records_out(), 0);
-        assert_eq!(metrics.smartmodule_usage(), 0);
+        assert_eq!(metrics.records_processed(), 0);
         assert_eq!(output.successes.len(), 1);
         assert_eq!(output.successes[0].value().to_string(), "input");
     }
