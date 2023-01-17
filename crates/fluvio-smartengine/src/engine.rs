@@ -292,6 +292,9 @@ mod chaining_test {
                 &metrics,
             )
             .expect("process");
+        assert_eq!(metrics.records_in(), 1);
+        assert_eq!(metrics.records_out(), 0);
+        assert_eq!(metrics.smartmodule_usage(), 1);
         assert_eq!(output.successes.len(), 0); // no records passed
 
         let input = vec![
@@ -306,6 +309,9 @@ mod chaining_test {
                 &metrics,
             )
             .expect("process");
+        assert_eq!(metrics.records_in(), 4);
+        assert_eq!(metrics.records_out(), 2);
+        assert_eq!(metrics.smartmodule_usage(), 6);
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
@@ -355,6 +361,9 @@ mod chaining_test {
                 &metrics,
             )
             .expect("process");
+        assert_eq!(metrics.records_in(), 3);
+        assert_eq!(metrics.records_out(), 2);
+        assert_eq!(metrics.smartmodule_usage(), 5);
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
         assert_eq!(output.successes[1].value().to_string(), "zeroapplebanana");
@@ -367,6 +376,9 @@ mod chaining_test {
                 &metrics,
             )
             .expect("process");
+        assert_eq!(metrics.records_in(), 1);
+        assert_eq!(metrics.records_out(), 0);
+        assert_eq!(metrics.smartmodule_usage(), 1);
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![Record::new("elephant")];
@@ -377,6 +389,9 @@ mod chaining_test {
                 &metrics,
             )
             .expect("process");
+        assert_eq!(metrics.records_in(), 1);
+        assert_eq!(metrics.records_out(), 1);
+        assert_eq!(metrics.smartmodule_usage(), 1);
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
             output.successes[0].value().to_string(),
@@ -399,6 +414,9 @@ mod chaining_test {
         let output = chain.process(input, 1, &metrics).expect("process failed");
 
         //then
+        assert_eq!(metrics.records_in(), 0);
+        assert_eq!(metrics.records_out(), 0);
+        assert_eq!(metrics.smartmodule_usage(), 0);
         assert_eq!(output.successes.len(), 1);
         assert_eq!(output.successes[0].value().to_string(), "input");
     }
