@@ -1,6 +1,7 @@
 use std::process::{Command, Stdio};
 
 use anyhow::{Result, anyhow};
+use tracing::debug;
 use crate::Deployment;
 
 pub(crate) fn deploy_local(deployment: &Deployment) -> Result<()> {
@@ -9,6 +10,10 @@ pub(crate) fn deploy_local(deployment: &Deployment) -> Result<()> {
     log_path.set_extension("log");
     let log_file = std::fs::File::create(log_path.as_path())?;
 
+    debug!(
+        "running executable: {}",
+        &deployment.executable.to_string_lossy()
+    );
     let mut cmd = Command::new(&deployment.executable);
     cmd.stdin(Stdio::null());
     cmd.stdout(log_file.try_clone()?);
