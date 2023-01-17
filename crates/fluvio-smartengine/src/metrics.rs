@@ -47,20 +47,10 @@ impl SmartModuleChainMetrics {
     pub fn invocation_count(&self) -> u64 {
         self.invocation_count.load(Ordering::SeqCst)
     }
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
     /// Aggregation of `usage = max(total_records_in, total_records_out)` where
     /// total_records_in = Number of records passed to each smartmodule in the chain.
     /// total_records_out =Number of records returned from each smartmodule in the chain.
     pub fn smartmodule_usage(&self) -> u64 {
         self.smartmodule_usage.load(Ordering::SeqCst)
     }
->>>>>>> Stashed changes
-=======
-
-    pub fn smartmodule_usage(&self) -> u64 {
-        self.smartmodule_usage.load(Ordering::SeqCst)
-    }
->>>>>>> 95efb6e2e1e1d98dcf5ec01ffeb97b777e2d3d32
 }
