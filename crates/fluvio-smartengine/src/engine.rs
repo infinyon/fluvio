@@ -125,7 +125,11 @@ impl SmartModuleChainInstance {
             for instance in instances {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
+                self.store.top_up_fuel();
                 let output = instance.process(next_input, &mut self.store)?;
+                let fuel_used = self.store.get_used_fuel();
+                debug!(fuel_used, "fuel used");
+                metric.add_fuel_used(fuel_used);
 
                 if output.error.is_some() {
                     // encountered error, we stop processing and return partial output
@@ -136,7 +140,11 @@ impl SmartModuleChainInstance {
                 }
             }
 
+            self.store.top_up_fuel();
             let output = last.process(next_input, &mut self.store)?;
+            let fuel_used = self.store.get_used_fuel();
+            debug!(fuel_used, "fuel used");
+            metric.add_fuel_used(fuel_used);
             let records_out = output.successes.len();
             metric.add_records_out(records_out as u64);
             debug!(records_out, "sm records out");
@@ -291,6 +299,7 @@ mod chaining_test {
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
+        assert!(metrics.fuel_used() > 0);
     }
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
