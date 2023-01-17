@@ -52,7 +52,6 @@ impl SmartModuleInstance {
         input: SmartModuleInput,
         store: &mut WasmState,
     ) -> Result<SmartModuleOutput> {
-        store.top_up_fuel();
         self.transform.process(input, &mut self.ctx, store)
     }
 

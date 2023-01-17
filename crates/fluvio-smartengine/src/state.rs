@@ -39,6 +39,15 @@ impl WasmState {
             let _ = self.0.add_fuel(amount_to_add);
         }
     }
+
+    // Get amount of fuel used since last top up
+    pub fn get_used_fuel(&mut self) -> u64 {
+        if let Ok(current_fuel) = self.0.consume_fuel(0) {
+            max(DEFAULT_FUEL - current_fuel, 0)
+        } else {
+            0
+        }
+    }
 }
 
 #[cfg(not(feature = "wasi"))]
