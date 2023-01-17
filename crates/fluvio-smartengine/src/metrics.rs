@@ -36,6 +36,14 @@ impl SmartModuleChainMetrics {
         self.bytes_in.load(Ordering::SeqCst)
     }
 
+    pub fn records_in(&self) -> u64 {
+        self.records_in.load(Ordering::SeqCst)
+    }
+
+    pub fn smartmodule_usage(&self) -> u64 {
+        self.smartmodule_usage.load(Ordering::SeqCst)
+    }
+
     pub fn records_out(&self) -> u64 {
         self.records_out.load(Ordering::SeqCst)
     }

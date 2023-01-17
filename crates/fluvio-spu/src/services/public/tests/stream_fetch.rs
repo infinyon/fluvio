@@ -2601,6 +2601,8 @@ async fn test_stream_metrics() {
     assert_eq!(ctx.metrics().outbound().connector_records(), 0);
 
     assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 0);
+    assert_eq!(ctx.metrics().chain_metrics().records_in(), 0);
+    assert_eq!(ctx.metrics().chain_metrics().smartmodule_usage(), 0);
     assert_eq!(ctx.metrics().chain_metrics().records_out(), 0);
     assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 0);
 
@@ -2639,6 +2641,8 @@ async fn test_stream_metrics() {
         assert_eq!(ctx.metrics().outbound().connector_bytes(), 0);
         assert_eq!(ctx.metrics().outbound().connector_records(), 0);
 
+        assert_eq!(ctx.metrics().chain_metrics().records_in(), 0);
+        assert_eq!(ctx.metrics().chain_metrics().smartmodule_usage(), 0);
         assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 0);
         assert_eq!(ctx.metrics().chain_metrics().records_out(), 0);
         assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 0);
@@ -2667,6 +2671,8 @@ async fn test_stream_metrics() {
         assert_eq!(ctx.metrics().outbound().connector_records(), 2);
 
         assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 0);
+        assert_eq!(ctx.metrics().chain_metrics().records_in(), 0);
+        assert_eq!(ctx.metrics().chain_metrics().smartmodule_usage(), 0);
         assert_eq!(ctx.metrics().chain_metrics().records_out(), 0);
         assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 0);
     }
@@ -2702,6 +2708,9 @@ async fn test_stream_metrics() {
 
         assert_eq!(ctx.metrics().chain_metrics().bytes_in(), 24);
         assert_eq!(ctx.metrics().chain_metrics().records_out(), 1);
+        assert_eq!(ctx.metrics().chain_metrics().records_in(), 2);
+        assert_eq!(ctx.metrics().chain_metrics().smartmodule_usage(), 2); //should be max between records_in and out
+
         assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 1); // one invocation per batch
     }
 
