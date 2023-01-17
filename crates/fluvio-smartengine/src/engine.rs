@@ -372,13 +372,13 @@ mod chaining_test {
         let output = chain
             .process(
                 SmartModuleInput::try_from(input).expect("input"),
-                3,
+                1,
                 &metrics,
             )
             .expect("process");
-        assert_eq!(metrics.records_in(), 1);
-        assert_eq!(metrics.records_out(), 0);
-        assert_eq!(metrics.smartmodule_usage(), 1);
+        assert_eq!(metrics.records_in(), 4);
+        assert_eq!(metrics.records_out(), 2);
+        assert_eq!(metrics.smartmodule_usage(), 6);
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![Record::new("elephant")];
@@ -389,9 +389,9 @@ mod chaining_test {
                 &metrics,
             )
             .expect("process");
-        assert_eq!(metrics.records_in(), 1);
-        assert_eq!(metrics.records_out(), 1);
-        assert_eq!(metrics.smartmodule_usage(), 1);
+        assert_eq!(metrics.records_in(), 5);
+        assert_eq!(metrics.records_out(), 3);
+        assert_eq!(metrics.smartmodule_usage(), 7);
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
             output.successes[0].value().to_string(),
