@@ -372,10 +372,4 @@ mod chaining_test {
         assert_eq!(output.successes.len(), 1);
         assert_eq!(output.successes[0].value().to_string(), "input");
     }
-
-    #[test]
-    fn test_fuel_behaviour() {
-        let engine = SmartEngine::new();
-        todo!();
-    }
 }
