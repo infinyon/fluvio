@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::fmt::{self, Debug};
 
 use anyhow::Result;
@@ -118,6 +119,8 @@ impl SmartModuleChainInstance {
 
         let base_offset = input.base_offset();
 
+        let mut total_records_in = number_of_records;
+        let mut total_records_out = 0;
         if let Some((last, instances)) = self.instances.split_last_mut() {
             let mut next_input = input;
 
@@ -125,9 +128,8 @@ impl SmartModuleChainInstance {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
                 let output = instance.process(next_input, &mut self.store)?;
-                let records_out = output.successes.len();
-                metric.add_records_out(records_out as u64);
-                debug!(records_out, "sm records out intermediate step");
+                total_records_out += output.successes.len() as u64;
+                total_records_in += output.successes.len() as u64;
 
                 if output.error.is_some() {
                     // encountered error, we stop processing and return partial output
@@ -140,8 +142,10 @@ impl SmartModuleChainInstance {
 
             let output = last.process(next_input, &mut self.store)?;
             let records_out = output.successes.len();
+            total_records_out += output.successes.len() as u64;
             metric.add_records_out(records_out as u64);
             debug!(records_out, "sm records out last step");
+            metric.add_records_processed(max(total_records_in, total_records_out));
 
             Ok(output)
         } else {

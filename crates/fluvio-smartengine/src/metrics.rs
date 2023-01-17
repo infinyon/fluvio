@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct SmartModuleChainMetrics {
     bytes_in: AtomicU64,
     records_out: AtomicU64,
+    records_processed: AtomicU64,
     invocation_count: AtomicU64,
 }
 
@@ -17,6 +18,10 @@ impl SmartModuleChainMetrics {
 
     pub fn add_records_out(&self, value: u64) {
         self.records_out.fetch_add(value, Ordering::SeqCst);
+    }
+
+    pub fn add_records_processed(&self, value: u64) {
+        self.records_processed.fetch_add(value, Ordering::SeqCst);
     }
 
     pub fn bytes_in(&self) -> u64 {
