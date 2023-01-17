@@ -243,6 +243,10 @@ impl ConnectorMetadata {
         Ok(toml::from_str(input)?)
     }
 
+    pub fn from_toml_slice(input: &[u8]) -> anyhow::Result<Self> {
+        Ok(toml::from_slice(input)?)
+    }
+
     pub fn from_toml_file<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
         let content = std::fs::read(path)?;
         Ok(toml::from_slice(content.as_slice())?)
