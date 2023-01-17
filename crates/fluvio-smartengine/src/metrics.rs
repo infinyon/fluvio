@@ -40,10 +40,6 @@ impl SmartModuleChainMetrics {
         self.records_in.load(Ordering::SeqCst)
     }
 
-    pub fn smartmodule_usage(&self) -> u64 {
-        self.smartmodule_usage.load(Ordering::SeqCst)
-    }
-
     pub fn records_out(&self) -> u64 {
         self.records_out.load(Ordering::SeqCst)
     }
@@ -51,6 +47,7 @@ impl SmartModuleChainMetrics {
     pub fn invocation_count(&self) -> u64 {
         self.invocation_count.load(Ordering::SeqCst)
     }
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
     /// Aggregation of `usage = max(total_records_in, total_records_out)` where
@@ -60,4 +57,10 @@ impl SmartModuleChainMetrics {
         self.smartmodule_usage.load(Ordering::SeqCst)
     }
 >>>>>>> Stashed changes
+=======
+
+    pub fn smartmodule_usage(&self) -> u64 {
+        self.smartmodule_usage.load(Ordering::SeqCst)
+    }
+>>>>>>> 95efb6e2e1e1d98dcf5ec01ffeb97b777e2d3d32
 }
