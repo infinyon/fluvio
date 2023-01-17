@@ -391,7 +391,7 @@ mod chaining_test {
             .expect("process");
         assert_eq!(metrics.records_in(), 5);
         assert_eq!(metrics.records_out(), 3);
-        assert_eq!(metrics.smartmodule_usage(), 7);
+        assert_eq!(metrics.smartmodule_usage(), 8);
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
             output.successes[0].value().to_string(),
