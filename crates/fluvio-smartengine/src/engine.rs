@@ -118,18 +118,18 @@ impl SmartModuleChainInstance {
         metric.add_bytes_in(raw_len as u64);
 
         let base_offset = input.base_offset();
-
-        let mut total_records_in = number_of_records;
-        let mut total_records_out = 0;
+        let mut smartmodule_usage_in = number_of_records;
+        let mut smartmodule_usage_out = 0;
         if let Some((last, instances)) = self.instances.split_last_mut() {
+            metric.add_records_in(number_of_records);
             let mut next_input = input;
 
             for instance in instances {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
                 let output = instance.process(next_input, &mut self.store)?;
-                total_records_out += output.successes.len() as u64;
-                total_records_in += output.successes.len() as u64;
+                smartmodule_usage_out += output.successes.len() as u64;
+                smartmodule_usage_in += output.successes.len() as u64;
 
                 if output.error.is_some() {
                     // encountered error, we stop processing and return partial output
@@ -142,10 +142,10 @@ impl SmartModuleChainInstance {
 
             let output = last.process(next_input, &mut self.store)?;
             let records_out = output.successes.len();
-            total_records_out += output.successes.len() as u64;
+            smartmodule_usage_out += output.successes.len() as u64;
             metric.add_records_out(records_out as u64);
-            debug!(records_out, "sm records out last step");
-            metric.add_records_processed(max(total_records_in, total_records_out));
+            debug!(records_out, "sm records out");
+            metric.add_smartmodule_usage(max(smartmodule_usage_in, smartmodule_usage_out));
 
             Ok(output)
         } else {
