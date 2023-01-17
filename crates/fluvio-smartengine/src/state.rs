@@ -1,8 +1,12 @@
+use std::cmp::max;
+
 use anyhow::Error;
 use wasmtime::{
     AsContext, AsContextMut, Engine, Instance, IntoFunc, Module, Store, StoreContext,
     StoreContextMut,
 };
+
+const DEFAULT_FUEL: u64 = u64::MAX;
 
 #[cfg(not(feature = "wasi"))]
 pub type WasmState = WasmStore<()>;
@@ -27,10 +31,22 @@ impl<T> AsContextMut for WasmStore<T> {
     }
 }
 
+impl WasmState {
+    // If current fuel is less than DEFAULT_FUEL, tops up fuel to DEFAULT_FUEL
+    pub fn top_up_fuel(&mut self) {
+        if let Ok(current_fuel) = self.0.consume_fuel(0) {
+            let amount_to_add = max(DEFAULT_FUEL - current_fuel, 0);
+            let _ = self.0.add_fuel(amount_to_add);
+        }
+    }
+}
+
 #[cfg(not(feature = "wasi"))]
 impl WasmStore<()> {
     pub(crate) fn new(engine: &Engine) -> Self {
-        Self(Store::new(engine, ()))
+        let mut s = Self(Store::new(engine, ()));
+        s.top_up_fuel();
+        s
     }
 
     pub(crate) fn instantiate<Params, Args>(
@@ -52,7 +68,9 @@ impl WasmStore<wasmtime_wasi::WasiCtx> {
             .inherit_stderr()
             .inherit_stdout()
             .build();
-        Self(Store::new(engine, wasi))
+        let mut s = Self(Store::new(engine, wasi));
+        s.top_up_fuel();
+        s
     }
 
     pub(crate) fn instantiate<Params, Args>(

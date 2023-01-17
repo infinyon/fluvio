@@ -24,7 +24,9 @@ pub struct SmartEngine(Engine);
 #[allow(clippy::new_without_default)]
 impl SmartEngine {
     pub fn new() -> Self {
-        Self(Engine::default())
+        let mut config = wasmtime::Config::default();
+        config.consume_fuel(true);
+        Self(Engine::new(&config).expect("Config is static"))
     }
 
     pub(crate) fn new_state(&self) -> WasmState {
@@ -233,12 +235,9 @@ mod test {
 #[cfg(test)]
 mod chaining_test {
 
-    use std::{convert::TryFrom};
+    use std::convert::TryFrom;
 
-    use fluvio_smartmodule::{
-        dataplane::smartmodule::{SmartModuleInput},
-        Record,
-    };
+    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
     use crate::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
@@ -372,5 +371,11 @@ mod chaining_test {
         //then
         assert_eq!(output.successes.len(), 1);
         assert_eq!(output.successes[0].value().to_string(), "input");
+    }
+
+    #[test]
+    fn test_fuel_behaviour() {
+        let engine = SmartEngine::new();
+        todo!();
     }
 }
