@@ -133,7 +133,6 @@ impl InstallOpt {
         Ok(())
     }
 
-    // Error handling hacked together
     async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
         let target = fluvio_index::package_target()?;
 
@@ -244,7 +243,7 @@ impl InstallOpt {
             channel = self.get_channel(),
             systuple = self.get_target(),
         );
-        debug!("accessing url: {binurl}");
+        debug!("Downloading binary from hub: {binurl}");
         let mut resp = http::get(binurl)
             .header("Authorization", actiontoken)
             .await
@@ -261,8 +260,6 @@ impl InstallOpt {
                     .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
                 let msg = format!("Status({code}) {body_err_message}");
                 return Err(crate::CliError::HubError(msg).into());
-                //return Err(HubCliError::Cmd(msg));
-                //return Err(CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into())));
             }
         }
         let data = resp
