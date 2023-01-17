@@ -27,8 +27,8 @@ use crate::HubAccess;
 /// # Arguments
 /// * pkgmeta: package-meta.yaml path
 /// * outdir: optional output directory
-pub fn package_assemble_and_sign(
-    pkgmeta: &str,
+pub fn package_assemble_and_sign<P: AsRef<Path>>(
+    pkgmeta: P,
     access: &HubAccess,
     outdir: Option<&str>,
 ) -> Result<String> {
@@ -53,7 +53,7 @@ fn tar_to_ipkg(fname: &str) -> String {
 /// * outdir: optional output directory
 ///
 /// # Returns: staging tarfilename
-fn package_assemble(pkgmeta: &str, outdir: Option<&str>) -> Result<String> {
+fn package_assemble<P: AsRef<Path>>(pkgmeta: P, outdir: Option<&str>) -> Result<String> {
     debug!(target: "package_assemble", "opening");
     let pm = PackageMeta::read_from_file(pkgmeta)?;
     let mut pm_clean = pm.clone();
@@ -275,17 +275,20 @@ pub fn package_getsigs_with_readio<R: std::io::Read>(
 }
 
 // get a top level file from a package file
-pub fn package_get_topfile(pkgfile: &str, topfile: &str) -> Result<Vec<u8>> {
+pub fn package_get_topfile<P: AsRef<Path>, T: AsRef<Path>>(
+    pkgfile: P,
+    topfile: T,
+) -> Result<Vec<u8>> {
     let mut file = std::fs::File::open(pkgfile)?;
     package_get_topfile_with_readio(&mut file, topfile)
 }
 
 // get a top level file a generic reader trait obj
-pub fn package_get_topfile_with_readio<R: std::io::Read>(
+pub fn package_get_topfile_with_readio<R: std::io::Read, P: AsRef<Path>>(
     readio: &mut R,
-    topfile: &str,
+    topfile: P,
 ) -> Result<Vec<u8>> {
-    let topfile_p = Path::new(topfile);
+    let topfile_p = topfile.as_ref();
     let mut ar = tar::Archive::new(readio);
     let entries = ar.entries()?;
     for file in entries {
@@ -298,18 +301,24 @@ pub fn package_get_topfile_with_readio<R: std::io::Read>(
                 continue;
             }
             let mut buf: Vec<u8> = Vec::new();
-            f.read_to_end(&mut buf)
-                .map_err(|_| HubError::PackageMissingFile(topfile.into()))?;
+            f.read_to_end(&mut buf).map_err(|_| {
+                HubError::PackageMissingFile(topfile_p.to_string_lossy().to_string())
+            })?;
             return Ok(buf);
         }
     }
-    Err(HubError::PackageMissingFile(topfile.into()))
+    Err(HubError::PackageMissingFile(
+        topfile_p.to_string_lossy().to_string(),
+    ))
 }
 
 /// extract files out of the package manifest
 /// pkgfile: pkg-0.0.1.ipkg
 /// filename: file in manifest
-pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8>> {
+pub fn package_get_manifest_file<P: AsRef<Path>, T: AsRef<Path>>(
+    pkgfile: P,
+    filename: T,
+) -> Result<Vec<u8>> {
     let mut file = std::fs::File::open(pkgfile)?;
     package_get_manifest_file_with_readio(&mut file, filename)
 }
@@ -317,16 +326,16 @@ pub fn package_get_manifest_file(pkgfile: &str, filename: &str) -> Result<Vec<u8
 /// extract files out of the package manifest
 /// pkgfile: pkg-0.0.1.ipkg
 /// filename: file in manifest
-pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
+pub fn package_get_manifest_file_with_readio<R: std::io::Read, P: AsRef<Path>>(
     readio: &mut R,
-    filename: &str,
+    filename: P,
 ) -> Result<Vec<u8>> {
     let manifest_buf = package_get_topfile_with_readio(readio, HUB_MANIFEST_BLOB)?;
     let manifest_io = std::io::Cursor::new(&manifest_buf);
     let gzio = GzDecoder::new(manifest_io);
     let mut ar = tar::Archive::new(gzio);
     let entries = ar.entries()?;
-    let manifile = Path::new(filename);
+    let manifile = filename.as_ref();
     for file in entries {
         if file.is_err() {
             continue;
@@ -337,19 +346,22 @@ pub fn package_get_manifest_file_with_readio<R: std::io::Read>(
                 continue;
             }
             let mut buf: Vec<u8> = Vec::new();
-            f.read_to_end(&mut buf)
-                .map_err(|_| HubError::PackageMissingFile(filename.into()))?;
+            f.read_to_end(&mut buf).map_err(|_| {
+                HubError::PackageMissingFile(manifile.to_string_lossy().to_string())
+            })?;
             return Ok(buf);
         }
     }
-    Err(HubError::PackageMissingFile(filename.into()))
+    Err(HubError::PackageMissingFile(
+        manifile.to_string_lossy().to_string(),
+    ))
 }
 
 /// Extracts WASM files from the package manifest ensuring these are valid
 /// WASM files by parsing until encountering a discrepancy.
-pub fn package_get_wasmfile_with_readio<R: std::io::Read>(
+pub fn package_get_wasmfile_with_readio<R: std::io::Read, P: AsRef<Path>>(
     readio: &mut R,
-    filename: &str,
+    filename: P,
 ) -> Result<Vec<u8>> {
     let wasm_bytes = package_get_manifest_file_with_readio(readio, filename)?;
 
@@ -516,7 +528,7 @@ mod tests {
             package_assemble(testfile, Some("tests/apackage")).expect("package assemble fail");
 
         let pm_from_inner =
-            package_get_meta(&pkgfile).expect("couldn't get meta file from package file");
+            package_get_meta(pkgfile).expect("couldn't get meta file from package file");
 
         // we expect pm_from_file manifest paths to be source paths
         // but inside the package they're stripped. So remap to strip

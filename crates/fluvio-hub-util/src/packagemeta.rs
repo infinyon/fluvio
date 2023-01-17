@@ -13,25 +13,25 @@ use crate::package_get_topfile;
 type Result<T> = std::result::Result<T, HubError>;
 
 pub trait PackageMetaExt {
-    fn read_from_file(filename: &str) -> Result<PackageMeta>;
-    fn manifest_paths(&self, pkgpath_in: &str) -> Result<Vec<String>>;
+    fn read_from_file<P: AsRef<Path>>(filename: P) -> Result<PackageMeta>;
+    fn manifest_paths<P: AsRef<Path>>(&self, pkgpath_in: P) -> Result<Vec<String>>;
     fn write<P: AsRef<Path>>(&self, pmetapath: P) -> Result<()>;
     fn update_from_cargo_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()>;
-    fn update_from_smartmodule_toml(&mut self, fpath: &str) -> Result<()>;
+    fn update_from_smartmodule_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()>;
 }
 
 impl PackageMetaExt for PackageMeta {
     /// read package-meta file (not a package.tar file, just the meta file)
-    fn read_from_file(filename: &str) -> Result<Self> {
-        let pm_raw: Vec<u8> = fs::read(filename)?;
+    fn read_from_file<P: AsRef<Path>>(filename: P) -> Result<Self> {
+        let pm_raw: Vec<u8> = fs::read(filename.as_ref())?;
         let pm_read: PackageMeta = serde_yaml::from_slice(&pm_raw)?;
-        debug!(target: "package-meta", "read_from_file {}, {:?}", &filename, &pm_read);
+        debug!(target: "package-meta", "read_from_file {}, {:?}", filename.as_ref().to_string_lossy(), &pm_read);
         Ok(pm_read)
     }
 
     /// provide the manifest list with full paths to manifest files
-    fn manifest_paths(&self, pkgpath_in: &str) -> Result<Vec<String>> {
-        let base_dir = Path::new(pkgpath_in);
+    fn manifest_paths<P: AsRef<Path>>(&self, pkgpath_in: P) -> Result<Vec<String>> {
+        let base_dir = pkgpath_in.as_ref();
         let full_mf_iter = self.manifest.iter().map(|relname| {
             let pb = base_dir.join(relname);
             pb.to_string_lossy().to_string()
@@ -59,8 +59,9 @@ impl PackageMetaExt for PackageMeta {
     }
 
     /// Pull package-meta info from smartmodule meta toml
-    fn update_from_smartmodule_toml(&mut self, fpath: &str) -> Result<()> {
-        info!(fpath, "opening smartmodule toml");
+    fn update_from_smartmodule_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()> {
+        let fpath_str = fpath.as_ref().to_string_lossy().to_string();
+        info!(fpath_str, "opening smartmodule toml");
         let spkg = smpkg::SmartModuleMetadata::from_toml(fpath)?;
         let spk = &spkg.package;
 
@@ -73,7 +74,7 @@ impl PackageMetaExt for PackageMeta {
         self.visibility = PkgVisibility::from(&spk.visibility);
 
         // needed for fluvio sm download
-        self.manifest.push(fpath.into());
+        self.manifest.push(fpath_str);
         Ok(())
     }
 }
@@ -130,10 +131,11 @@ pub fn packagename_transform(pkgname: &str) -> Result<String> {
 }
 
 /// given a package.tar file get the package-meta data
-pub fn package_get_meta(pkgfile: &str) -> Result<PackageMeta> {
-    let buf = package_get_topfile(pkgfile, HUB_PACKAGE_META)?;
-    let strbuf =
-        std::str::from_utf8(&buf).map_err(|_| HubError::UnableGetPackageMeta(pkgfile.into()))?;
+pub fn package_get_meta<P: AsRef<Path>>(pkgfile: P) -> Result<PackageMeta> {
+    let buf = package_get_topfile(pkgfile.as_ref(), HUB_PACKAGE_META)?;
+    let strbuf = std::str::from_utf8(&buf).map_err(|_| {
+        HubError::UnableGetPackageMeta(pkgfile.as_ref().to_string_lossy().to_string())
+    })?;
     let pm: PackageMeta = serde_yaml::from_str(strbuf)?;
     Ok(pm)
 }
@@ -243,7 +245,7 @@ fn hub_package_meta_t_read() {
         ..PackageMeta::default()
     };
 
-    let pm_read = PackageMeta::read_from_file(&testfile).expect("error reading package file");
+    let pm_read = PackageMeta::read_from_file(testfile).expect("error reading package file");
 
     assert_eq!(pm, pm_read);
 }
