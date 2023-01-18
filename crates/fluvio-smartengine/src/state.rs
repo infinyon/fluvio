@@ -6,7 +6,10 @@ use wasmtime::{
     StoreContextMut,
 };
 
-const DEFAULT_FUEL: u64 = u64::MAX;
+// DO NOT INCREASE THIS VALUE HIGHER THAN i64::MAX / 2.
+// WASMTIME keeps fuel as i64 and has some strange behavior with `add_fuel` if trying to top fuel
+// up to a values close to i64:MAX
+const DEFAULT_FUEL: u64 = i64::MAX as u64 / 2;
 
 #[cfg(not(feature = "wasi"))]
 pub type WasmState = WasmStore<()>;
@@ -43,6 +46,7 @@ impl WasmState {
     // Get amount of fuel used since last top up
     pub fn get_used_fuel(&mut self) -> u64 {
         if let Ok(current_fuel) = self.0.consume_fuel(0) {
+            println!("Current fuel is {current_fuel}");
             max(DEFAULT_FUEL - current_fuel, 0)
         } else {
             0
