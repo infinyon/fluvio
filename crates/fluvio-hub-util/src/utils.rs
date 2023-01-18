@@ -52,6 +52,18 @@ pub fn cli_pkgname_to_url(pkgname: &str, remote: &str) -> Result<String> {
     Ok(urlstring)
 }
 
+/// Returns url string on sucess or Err(InvalidPackageName)
+pub fn cli_conn_pkgname_to_url(pkgname: &str, remote: &str) -> Result<String> {
+    let (org, pkg, ver) = cli_pkgname_split(pkgname)?;
+    // buildup something like: https://hub.infinyon.cloud/connector/pkg/v0/sm/example/0.0.1
+    let urlstring = if org.is_empty() {
+        format!("{remote}/{HUB_API_CONN_PKG}/{pkg}/{ver}")
+    } else {
+        format!("{remote}/{HUB_API_CONN_PKG}/{org}/{pkg}/{ver}")
+    };
+    Ok(urlstring)
+}
+
 /// Returns filename on sucess or Err(InvalidPackageName)
 pub fn cli_pkgname_to_filename(pkgname: &str) -> Result<String> {
     let (org, pkg, ver) = cli_pkgname_split(pkgname)?;

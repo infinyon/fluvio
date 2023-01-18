@@ -16,7 +16,7 @@ use fluvio_extension_common::target::ClusterTarget;
 use fluvio_hub_util as hubutil;
 use hubutil::HubAccess;
 
-use crate::{CliError};
+use crate::CliError;
 use crate::client::cmd::ClientCmd;
 use crate::client::hub::get_hub_access;
 
