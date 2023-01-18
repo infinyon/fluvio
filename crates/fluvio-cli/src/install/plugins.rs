@@ -17,9 +17,8 @@ use crate::install::update::{
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_hub_util as hubutil;
-use hubutil::http;
+use hubutil::{http, HubAccess, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
 use hubutil::http::StatusCode;
-use hubutil::HubAccess;
 pub const HUB_API_BPKG_AUTH: &str = "hub/v0/bpkg-auth"; // copied from hub-tool
 
 #[derive(Parser, Debug)]
@@ -38,6 +37,12 @@ pub struct InstallOpt {
     /// When this flag is provided, use the hub. Dev-only
     #[clap(long, hide_short_help = true)]
     pub hub: bool,
+
+    /// Use local hub defaults.
+    /// Implied if INFINYON_HUB_REMOTE or FLUVIO_CLOUD_PROFILE env vars are set
+    /// - Dev-only
+    #[clap(long, hide_short_help = true)]
+    pub use_hub_defaults: bool,
 
     /// When this flag is provided, use the hub. Dev-only
     #[clap(long, hide_short_help = true)]
@@ -68,13 +73,18 @@ impl InstallOpt {
             };
             debug!(?bin_install_path, "Install path");
 
-            let access =
-                HubAccess::default_load(&Some("https://hub-dev.infinyon.cloud".to_string()))
-                    .map_err(|_| {
-                        crate::CliError::Other(
-                            "Something happened getting hub dev info".to_string(),
-                        )
-                    })?;
+            let access_remote = if std::env::var(INFINYON_HUB_REMOTE).is_ok()
+                || std::env::var(FLUVIO_HUB_PROFILE_ENV).is_ok()
+                || self.use_hub_defaults
+            {
+                None
+            } else {
+                Some("https://hub-dev.infinyon.cloud".to_string())
+            };
+
+            let access = HubAccess::default_load(&access_remote).map_err(|_| {
+                crate::CliError::Other("Something happened getting hub dev info".to_string())
+            })?;
             let data = self.get_binary(&package_name, &access).await?;
 
             debug!(?bin_install_path, "Writing binary to fs");

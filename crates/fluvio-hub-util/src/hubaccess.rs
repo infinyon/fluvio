@@ -23,8 +23,8 @@ pub const ACTION_CREATE_HUBID: &str = "chid";
 pub const ACTION_DOWNLOAD: &str = "dl";
 pub const ACTION_PUBLISH: &str = "pbl";
 
-const INFINYON_HUB_REMOTE: &str = "INFINYON_HUB_REMOTE";
-const FLUVIO_HUB_PROFILE_ENV: &str = "FLUVIO_HUB_PROFILE";
+pub const INFINYON_HUB_REMOTE: &str = "INFINYON_HUB_REMOTE";
+pub const FLUVIO_HUB_PROFILE_ENV: &str = "FLUVIO_HUB_PROFILE";
 
 #[derive(Serialize, Deserialize)]
 pub struct HubAccess {
