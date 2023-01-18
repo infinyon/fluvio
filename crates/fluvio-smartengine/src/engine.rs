@@ -300,7 +300,6 @@ mod chaining_test {
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
         assert!(metrics.fuel_used() > 0);
-        assert_eq!(metrics.fuel_used(), 0);
     }
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
