@@ -46,7 +46,6 @@ impl WasmState {
     // Get amount of fuel used since last top up
     pub fn get_used_fuel(&mut self) -> u64 {
         if let Ok(current_fuel) = self.0.consume_fuel(0) {
-            println!("Current fuel is {current_fuel}");
             max(DEFAULT_FUEL - current_fuel, 0)
         } else {
             0
