@@ -222,6 +222,9 @@ stats-test:
 cli-smdk-basic-test:
 	SMDK_BIN=$(shell readlink -f $(SMDK_BIN)) bats   ./tests/cli/smdk_smoke_tests/smdk-basic.bats
 
+cli-cdk-basic-test:
+	CDK_BIN=$(shell readlink -f $(CDK_BIN)) bats   ./tests/cli/cdk_smoke_tests/cdk-basic.bats
+
 # test rbac
 #
 #

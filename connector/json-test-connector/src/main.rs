@@ -20,5 +20,6 @@ async fn start(config: CustomConfig, producer: TopicProducer) -> Result<()> {
 #[connector(config, name = "json")]
 pub(crate) struct CustomConfig {
     pub interval: u64,
+    pub timeout: Option<u64>,
     pub template: String,
 }

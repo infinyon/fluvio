@@ -1,15 +1,12 @@
-use std::{
-    fmt::Debug,
-    path::PathBuf,
-    process::{Command, Stdio},
-};
+use std::{fmt::Debug, path::PathBuf};
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, Context};
 use clap::Parser;
 
 use cargo_builder::{package::PackageInfo, cargo::Cargo};
+use fluvio_connector_deployer::{Deployment, DeploymentType};
 
-use crate::cmd::PackageCmd;
+use crate::{cmd::PackageCmd, deploy::from_cargo_package};
 
 /// Builds and runs the Connector in the current working directory
 #[derive(Debug, Parser)]
@@ -39,17 +36,15 @@ impl TestCmd {
 
         cargo.run()?;
 
-        let status = Command::new(p.target_bin_path()?)
-            .current_dir(std::env::current_dir()?)
-            .arg("--config")
-            .arg(self.config)
-            .stdin(Stdio::null())
-            .status()?;
+        let (executable, connector_metadata) = from_cargo_package(self.package)
+            .context("Failed to deploy from within cargo package directory")?;
 
-        match status.code() {
-            Some(0) => Ok(()),
-            Some(code) => Err(anyhow!("Connector process returned status {}", code)),
-            None => Err(anyhow!("Connector terminated by signal")),
-        }
+        let mut builder = Deployment::builder();
+        builder
+            .executable(executable)
+            .config(self.config)
+            .pkg(connector_metadata)
+            .deployment_type(DeploymentType::Local { output_file: None });
+        builder.deploy()
     }
 }

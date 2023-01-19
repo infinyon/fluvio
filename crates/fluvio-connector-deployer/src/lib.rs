@@ -12,7 +12,7 @@ pub struct Secret(String);
 
 #[derive(Clone)]
 pub enum DeploymentType {
-    Local,
+    Local { output_file: Option<PathBuf> },
     K8,
 }
 
@@ -38,8 +38,10 @@ impl DeploymentBuilder {
         let deployment = self.build()?;
         let config_file = std::fs::File::open(&deployment.config)?;
         deployment.pkg.validate_config(config_file)?;
-        match deployment.deployment_type {
-            DeploymentType::Local => local::deploy_local(&deployment)?,
+        match &deployment.deployment_type {
+            DeploymentType::Local { output_file } => {
+                local::deploy_local(&deployment, output_file.as_ref())?
+            }
             DeploymentType::K8 => {
                 unimplemented!()
             }
