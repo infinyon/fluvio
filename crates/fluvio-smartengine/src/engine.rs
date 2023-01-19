@@ -125,9 +125,9 @@ impl SmartModuleChainInstance {
             for instance in instances {
                 // pass raw inputs to transform instance
                 // each raw input may result in multiple records
-                let starting_fuel = self.store.get_current_fuel();
+                self.store.top_up_fuel();
                 let output = instance.process(next_input, &mut self.store)?;
-                let fuel_used = starting_fuel - self.store.get_current_fuel();
+                let fuel_used = self.store.get_used_fuel();
                 debug!(fuel_used, "fuel used");
                 metric.add_fuel_used(fuel_used);
 
@@ -140,9 +140,9 @@ impl SmartModuleChainInstance {
                 }
             }
 
-            let starting_fuel = self.store.get_current_fuel();
+            self.store.top_up_fuel();
             let output = last.process(next_input, &mut self.store)?;
-            let fuel_used = starting_fuel - self.store.get_current_fuel();
+            let fuel_used = self.store.get_used_fuel();
             debug!(fuel_used, "fuel used");
             metric.add_fuel_used(fuel_used);
             let records_out = output.successes.len();
@@ -300,6 +300,8 @@ mod chaining_test {
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
         assert!(metrics.fuel_used() > 0);
+        chain.store.top_up_fuel();
+        assert_eq!(chain.store.get_used_fuel(), 0);
     }
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
@@ -371,6 +373,9 @@ mod chaining_test {
         let mut chain = chain_builder
             .initialize(&engine)
             .expect("failed to build chain");
+
+        assert_eq!(chain.store.get_used_fuel(), 0);
+
         let record = vec![Record::new("input")];
         let input = SmartModuleInput::try_from(record).expect("valid input record");
         let metrics = SmartModuleChainMetrics::default();
