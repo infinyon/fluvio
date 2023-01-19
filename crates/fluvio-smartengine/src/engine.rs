@@ -300,6 +300,8 @@ mod chaining_test {
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
         assert_eq!(output.successes[1].value.as_ref(), b"BANANA");
         assert!(metrics.fuel_used() > 0);
+        chain.store.top_up_fuel();
+        assert_eq!(chain.store.get_used_fuel(), 0);
     }
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
@@ -371,6 +373,9 @@ mod chaining_test {
         let mut chain = chain_builder
             .initialize(&engine)
             .expect("failed to build chain");
+
+        assert_eq!(chain.store.get_used_fuel(), 0);
+
         let record = vec![Record::new("input")];
         let input = SmartModuleInput::try_from(record).expect("valid input record");
         let metrics = SmartModuleChainMetrics::default();
