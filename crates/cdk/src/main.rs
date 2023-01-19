@@ -1,5 +1,6 @@
 mod cmd;
 mod build;
+mod test;
 mod deploy;
 mod publish;
 mod set_public;

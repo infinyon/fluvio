@@ -21,7 +21,7 @@ pub struct BuildCmd {
 impl BuildCmd {
     pub(crate) fn process(self) -> Result<()> {
         let opt = self.package.as_opt();
-        let p = PackageInfo::from_options(&opt).map_err(|e| anyhow::anyhow!(e))?;
+        let p = PackageInfo::from_options(&opt)?;
 
         let cargo = Cargo::build()
             .profile(opt.release)
