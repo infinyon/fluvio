@@ -984,6 +984,7 @@ jobs:
         run: |
           chmod +x ~/bin/fluvio && ~/bin/fluvio version
           chmod +x ~/bin/smdk
+          chmod +x ~/bin/cdk
           echo "~/bin" >> $GITHUB_PATH
       - name: Start cluster
         timeout-minutes: 10
@@ -1214,7 +1215,7 @@ jobs:
           - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
-        artifact: [fluvio, fluvio-channel, smdk, fbm]
+        artifact: [fluvio, fluvio-channel, smdk, fbm, cdk]
         exclude:
           - rust-target: armv7-unknown-linux-gnueabihf
             artifact: smdk
@@ -1222,6 +1223,12 @@ jobs:
             artifact: smdk
           - rust-target: x86_64-pc-windows-gnu
             artifact: smdk.exe
+          - rust-target: armv7-unknown-linux-gnueabihf
+            artifact: cdk
+          - rust-target: arm-unknown-linux-gnueabihf
+            artifact: cdk
+          - rust-target: x86_64-pc-windows-gnu
+            artifact: cdk.exe
         include:
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-run
