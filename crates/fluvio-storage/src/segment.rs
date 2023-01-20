@@ -133,6 +133,7 @@ where
                 );
                 match max_offset_opt {
                     Some(max_offset) => {
+                        let max_offset = std::cmp::min(max_offset, self.get_end_offset());
                         // check if max offset same as segment end
                         if max_offset == self.get_end_offset() {
                             debug!("max offset is same as end offset, reading to end");
