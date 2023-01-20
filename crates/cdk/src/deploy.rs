@@ -67,18 +67,25 @@ fn deploy_local(
     let (executable, connector_metadata) = match ipkg_file {
         Some(ipkg_file) => from_ipkg_file(ipkg_file).context("Failed to deploy from ipkg file")?,
         None => from_cargo_package(package_cmd)
-            .context("Failed to deploy from with cargo package directory")?,
+            .context("Failed to deploy from within cargo package directory")?,
     };
+
+    let mut log_path = std::env::current_dir()?;
+    log_path.push(&connector_metadata.package.name);
+    log_path.set_extension("log");
+
     let mut builder = Deployment::builder();
     builder
         .executable(executable)
         .config(config)
         .pkg(connector_metadata)
-        .deployment_type(DeploymentType::Local);
+        .deployment_type(DeploymentType::Local {
+            output_file: Some(log_path),
+        });
     builder.deploy()
 }
 
-fn from_cargo_package(package_cmd: PackageCmd) -> Result<(PathBuf, ConnectorMetadata)> {
+pub(crate) fn from_cargo_package(package_cmd: PackageCmd) -> Result<(PathBuf, ConnectorMetadata)> {
     debug!("reading connector metadata from cargo package");
     let opt = package_cmd.as_opt();
     let p = PackageInfo::from_options(&opt)?;

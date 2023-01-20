@@ -121,10 +121,6 @@ pub fn init_package_template() -> Result<()> {
     println!("Creating package {}", pm.pkg_name());
     pm.naming_check()?;
 
-    // let wasmout = hubutil::packagename_transform(&pm.name)? + ".wasm";
-    // let wasmpath = format!("target/wasm32-unknown-unknown/release-lto/{wasmout}");
-    // pm.manifest.push(wasmpath);
-
     // create directoy name pkgname
     let pkgdir = Path::new(hubutil::DEF_HUB_INIT_DIR);
     if pkgdir.exists() {
@@ -210,31 +206,3 @@ impl PackageMetaConnectorExt for PackageMeta {
         Ok(())
     }
 }
-
-// #[ignore]
-// #[test]
-// fn build_sm_toml() {
-//     use fluvio_connector_package::metadata::ConnectorMetadata;
-
-//     let fpath = "test_Smart.toml";
-//     let smart_toml = ConnectorMetadata::default();
-//     let smart_toml_str = toml::to_string(&smart_toml);
-//     assert!(smart_toml_str.is_ok());
-//     std::fs::write(fpath, &smart_toml_str.unwrap()).expect("couldn't write testfile");
-// }
-
-// // the smartmodule has template patterns that don't parse unless we apply
-// // the template...
-// #[ignore]
-// #[test]
-// fn reference_sm_toml() {
-//     use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
-
-//     let fpath = format!("../../smartmodule/cargo_template/{}", SMARTMODULE_TOML);
-//     let smart_toml = SmartModuleMetadata::from_toml(fpath);
-//     assert!(
-//         smart_toml.is_ok(),
-//         "cargo Smart.toml template incompatible {smart_toml:?}"
-//     );
-//     let _smart_toml = smart_toml.unwrap();
-// }

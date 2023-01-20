@@ -4,13 +4,6 @@ meta:
   type: json-test-source
   topic: test-topic
 json:
-  interval: 10  
+  interval: 5  
+  timeout: 15
   template: '{"template":"test"}'  
-transforms:
-  - uses: infinyon/jolt@0.1.0
-    with:
-      spec:
-        - operation: default
-          spec:
-            data:
-              source: "json-test-connector"

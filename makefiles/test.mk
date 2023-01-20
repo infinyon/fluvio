@@ -203,6 +203,9 @@ cli-fluvio-smoke:
 cli-smdk-smoke:
 	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
 
+cli-cdk-smoke:
+	bats $(shell ls -1 ./tests/cli/cdk_smoke_tests/*.bats | sort -R)
+
 cli-basic-test:
 	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 
@@ -221,6 +224,9 @@ stats-test:
 
 cli-smdk-basic-test:
 	SMDK_BIN=$(shell readlink -f $(SMDK_BIN)) bats   ./tests/cli/smdk_smoke_tests/smdk-basic.bats
+
+cli-cdk-basic-test:
+	CDK_BIN=$(shell readlink -f $(CDK_BIN)) bats   ./tests/cli/cdk_smoke_tests/cdk-basic.bats
 
 # test rbac
 #
