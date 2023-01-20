@@ -926,7 +926,7 @@ jobs:
   #    fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        cli: [fluvio, smdk]
+        cli: [fluvio, smdk, cdk]
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
@@ -959,6 +959,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: smdk-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: Download artifact - cdk
+        uses: actions/download-artifact@v3
+        with:
+          name: cdk-x86_64-unknown-linux-musl
           path: ~/bin
 
       # Retag image to remove arch from tag
@@ -994,6 +999,10 @@ jobs:
         timeout-minutes: 20
         if: matrix.cli == 'smdk'
         run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
+      - name: Run CDK smoke tests
+        timeout-minutes: 20
+        if: matrix.cli == 'cdk'
+        run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5

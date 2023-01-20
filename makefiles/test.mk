@@ -203,6 +203,9 @@ cli-fluvio-smoke:
 cli-smdk-smoke:
 	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
 
+cli-cdk-smoke:
+	bats $(shell ls -1 ./tests/cli/cdk_smoke_tests/*.bats | sort -R)
+
 cli-basic-test:
 	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 
