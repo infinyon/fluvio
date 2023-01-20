@@ -133,17 +133,22 @@ where
                 );
                 match max_offset_opt {
                     Some(max_offset) => {
+                        // max_offset comes from HW, which could be greater than current segment end.
+                        let effective_max_offset = std::cmp::min(max_offset, self.get_end_offset());
                         // check if max offset same as segment end
-                        if max_offset == self.get_end_offset() {
-                            debug!("max offset is same as end offset, reading to end");
+                        if effective_max_offset == self.get_end_offset() {
+                            debug!("effective max offset is same as end offset, reading to end");
                             Ok(Some(self.msg_log.as_file_slice(pos).map_err(|err| {
                                 ErrorCode::Other(format!("msg as file slice: {:#?}", err))
                             })?))
                         } else {
-                            debug!(max_offset);
-                            match self.find_offset_position(max_offset).await.map_err(|err| {
-                                ErrorCode::Other(format!("offset error: {:#?}", err))
-                            })? {
+                            debug!(effective_max_offset, max_offset);
+                            match self
+                                .find_offset_position(effective_max_offset)
+                                .await
+                                .map_err(|err| {
+                                    ErrorCode::Other(format!("offset error: {:#?}", err))
+                                })? {
                                 Some(end_pos) => Ok(Some(
                                     self.msg_log
                                         .as_file_slice_from_to(pos, end_pos.pos - pos)
@@ -153,7 +158,7 @@ where
                                 )),
                                 None => Err(ErrorCode::Other(format!(
                                     "max offset position: {} not found",
-                                    max_offset
+                                    effective_max_offset
                                 ))),
                             }
                         }
@@ -667,5 +672,13 @@ mod tests {
         next_batch.base_offset = 1000;
         assert!(seg_sink.append_batch(&mut next_batch).await.is_ok());
         assert_eq!(seg_sink.get_end_offset(), 50);
+
+        let _records = seg_sink
+            .records_slice(44, Some(52))
+            .await
+            .expect(
+                "failed to get records using max offset larger than current end offset in segment",
+            )
+            .expect("failed to get records");
     }
 }
