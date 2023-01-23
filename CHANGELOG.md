@@ -1,7 +1,25 @@
 # Release Notes
 
-## Platform Version 0.10.4 - UNRELEASED
+## Platform Version 0.10.5 - UNRELEASED
 
+## Platform Version 0.10.4 - 2022-01-23
+* Add 'cdk test' command ([#2948](https://github.com/infinyon/fluvio/issues/2948))
+* Add download connector package command ([#2944](https://github.com/infinyon/fluvio/issues/2944))
+* Add Hub support for installing binary packages ([#2942](https://github.com/infinyon/fluvio/issues/2942))
+* Add support for OpenSSL as an optional dependency for Fluvio ([#2923](https://github.com/infinyon/fluvio/issues/2923))
+* Add support for local deploy from `ipkg` file for Connector Development Kit (CDK) ([#2939](https://github.com/infinyon/fluvio/issues/2939))
+* Add support custom configs in connector SDK ([#2910](https://github.com/infinyon/fluvio/issues/2910))
+* Add cluster shutdown support ([#2912](https://github.com/infinyon/fluvio/issues/2912))
+* Add sink connector support to SDK ([#2906](https://github.com/infinyon/fluvio/issues/2906))
+* Fix `read_records` to truncate `max_offset` to `end_offset` of current segment if it is larger than that so we can read records of that segment without failures ([#2950](https://github.com/infinyon/fluvio/issues/2950))
+* Fix use `i64` over `u64` for fuel measure to align with wasmtime ([#2945](https://github.com/infinyon/fluvio/issues/2945))
+* Fix use `anyhow` over `thiserror` ([#2916](https://github.com/infinyon/fluvio/issues/2916))
+* Fix CLI help text typo ([#2918](https://github.com/infinyon/fluvio/issues/2918))
+* Fix replace `Smart Module` ocurrences with `SmartModule` ([#2913](https://github.com/infinyon/fluvio/issues/2913))
+* Fix split _Custom Config_ and _Common Config_ Separate custom config from common config ([#2917](https://github.com/infinyon/fluvio/issues/2917))
+* Fix exposes `retry` function by re-exporting for common connector crate ([#2922](https://github.com/infinyon/fluvio/issues/2922))
+* Fix recover from invalid segments ([#2909](https://github.com/infinyon/fluvio/issues/2909))
+* Fix remove connector metadata and API ([#2887](https://github.com/infinyon/fluvio/issues/2887))
 
 ## Platform Version 0.10.3 - 2022-12-16
 * Add `fluvio cluster status` ([#2824](https://github.com/infinyon/fluvio/issues/2824))
