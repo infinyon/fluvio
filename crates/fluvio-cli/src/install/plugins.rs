@@ -79,7 +79,7 @@ impl InstallOpt {
             {
                 None
             } else {
-                Some("https://hub-dev.infinyon.cloud".to_string())
+                Some("https://hub.infinyon.cloud".to_string())
             };
 
             let access = HubAccess::default_load(&access_remote).map_err(|_| {
@@ -243,7 +243,7 @@ impl InstallOpt {
     }
 
     async fn get_binary(&self, bin_name: &str, access: &HubAccess) -> Result<Vec<u8>> {
-        let actiontoken = access.get_download_token().await.map_err(|_| {
+        let actiontoken = access.get_bpkg_get_token().await.map_err(|_| {
             CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into()))
         })?;
 
