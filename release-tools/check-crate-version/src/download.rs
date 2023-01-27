@@ -30,7 +30,7 @@ async fn get_latest_version(crate_name: &str) -> Version {
                 .filter_map(|v| Version::parse(v).ok())
                 .collect::<Vec<_>>()
         })
-        .ok_or_else(|| format!("malformed response from {}", url))
+        .ok_or_else(|| format!("malformed response from {url}"))
         .unwrap();
 
     versions

@@ -203,13 +203,13 @@ where
                 }
                 Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
                     ErrorKind::InvalidData,
-                    format!("error converting metadata: {:#?}", err),
+                    format!("error converting metadata: {err:#?}"),
                 ))),
             }
         }
         Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
             ErrorKind::InvalidData,
-            format!("error converting key: {:#?}", err),
+            format!("error converting key: {err:#?}"),
         ))),
     }
 }

@@ -72,7 +72,7 @@ impl Default for SmartModuleInvocationWasm {
 impl Debug for SmartModuleInvocationWasm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Predefined(module) => write!(f, "Predefined{}", module),
+            Self::Predefined(module) => write!(f, "Predefined{module}"),
             Self::AdHoc(bytes) => f
                 .debug_tuple("Adhoc")
                 .field(&format!("{} bytes", bytes.len()))

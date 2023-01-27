@@ -65,7 +65,7 @@ impl fmt::Display for PartitionStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:#?} Leader: {} [", self.resolution, self.leader)?;
         for replica in &self.replicas {
-            write!(f, "{},", replica)?;
+            write!(f, "{replica},")?;
         }
         write!(f, "]")
     }

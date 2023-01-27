@@ -58,7 +58,7 @@ impl ReplicaStorage for FileReplica {
         replica_config: Self::ReplicaConfig,
     ) -> Result<Self> {
         let storage_config = StorageConfig::builder().build().map_err(|err| {
-            StorageError::Other(format!("failed to build cleaner config: {}", err))
+            StorageError::Other(format!("failed to build cleaner config: {err}"))
         })?;
 
         Self::create_or_load_with_storage(
@@ -340,8 +340,7 @@ impl FileReplica {
                 return Ok(slice);
             } else if start_offset > leo {
                 return Err(ErrorCode::Other(format!(
-                    "start offset: {} is greater than leo: {}",
-                    start_offset, leo
+                    "start offset: {start_offset} is greater than leo: {leo}"
                 )));
             } else if let Some(slice) = self
                 .active_segment

@@ -103,8 +103,8 @@ mod custom_metadata {
     impl fmt::Display for CustomSpuKey {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match self {
-                Self::Name(name) => write!(f, "{}", name),
-                Self::Id(id) => write!(f, "{}", id),
+                Self::Name(name) => write!(f, "{name}"),
+                Self::Id(id) => write!(f, "{id}"),
             }
         }
     }
@@ -187,7 +187,7 @@ mod custom_metadata {
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,
-                    format!("invalid spec type {}", typ),
+                    format!("invalid spec type {typ}"),
                 )),
             }
         }

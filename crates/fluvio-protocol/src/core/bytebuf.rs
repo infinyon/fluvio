@@ -75,8 +75,7 @@ impl Encoder for ByteBuf {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
                 format!(
-                    "Not enough capacity for ByteBuf. Expected: {}, Remaining: {}",
-                    expected, remaining
+                    "Not enough capacity for ByteBuf. Expected: {expected}, Remaining: {remaining}"
                 ),
             ));
         }

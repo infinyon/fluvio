@@ -92,7 +92,7 @@ mod metadata {
                 key: value.name.try_into().map_err(|err| {
                     IoError::new(
                         ErrorKind::InvalidData,
-                        format!("problem converting: {}", err),
+                        format!("problem converting: {err}"),
                     )
                 })?,
                 ctx: MetadataContext::default(),

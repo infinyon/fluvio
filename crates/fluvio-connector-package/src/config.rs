@@ -111,7 +111,7 @@ impl ConnectorConfig {
         if let Some(consumer) = self.meta.consumer.as_ref() {
             if let Some(partition) = consumer.partition {
                 params.push("--consumer-partition".to_string());
-                params.push(format!("{}", partition));
+                params.push(format!("{partition}"));
             }
         }
         params
@@ -453,27 +453,27 @@ mod tests {
         #[cfg(unix)]
         assert_eq!(
             "meta.producer.linger: invalid value: string \"1\", expected a duration at line 8 column 13",
-            format!("{:?}", connector_cfg)
+            format!("{connector_cfg:?}")
         );
         let connector_cfg =
             ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!("meta.producer.compression: unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4` at line 8 column 18", format!("{:?}", connector_cfg));
+        assert_eq!("meta.producer.compression: unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4` at line 8 column 18", format!("{connector_cfg:?}"));
 
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "Fail to parse byte size couldn't parse \"aoeu\" into a known SI unit, couldn't parse unit of \"aoeu\"",
-            format!("{:?}", connector_cfg)
+            format!("{connector_cfg:?}")
         );
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "meta: missing field `version` at line 2 column 7",
-            format!("{:?}", connector_cfg)
+            format!("{connector_cfg:?}")
         );
     }
 

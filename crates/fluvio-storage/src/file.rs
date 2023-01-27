@@ -52,7 +52,7 @@ impl StorageBytesIterator for FileBytesIterator {
         let file_pos = self.pos as i64;
         match unblock(move || pread(fd, file_pos, len as usize))
             .await
-            .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?
+            .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {e:#?}")))?
         {
             ReadOutput::Some { buffer, eof } => {
                 trace!(len = buffer.len(), "read bytes");

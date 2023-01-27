@@ -49,7 +49,7 @@ impl SmartModuleApiClient {
         response
             .try_into()
             .map_err(|err| {
-                std::io::Error::new(std::io::ErrorKind::Other, format!("can't convert: {}", err))
+                std::io::Error::new(std::io::ErrorKind::Other, format!("can't convert: {err}"))
                     .into()
             })
             .map(|out: ListResponse<SmartModuleSpec>| out.inner())

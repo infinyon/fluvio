@@ -18,9 +18,9 @@ pub enum StoreError {
 impl fmt::Display for StoreError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::IoError(err) => write!(f, "{}", err),
-            Self::SendError(err) => write!(f, "{}", err),
-            Self::PartitionError(err) => write!(f, "{}", err),
+            Self::IoError(err) => write!(f, "{err}"),
+            Self::SendError(err) => write!(f, "{err}"),
+            Self::PartitionError(err) => write!(f, "{err}"),
         }
     }
 }

@@ -234,15 +234,15 @@ impl FluvioChannelInfo {
         let extensions_dir_name = if channel_name == "stable" {
             "extensions".to_string()
         } else {
-            format!("extensions-{}", channel_name)
+            format!("extensions-{channel_name}")
         };
 
         // This is to handle windows binaries, which should end in `.exe`
         cfg_if! {
             if #[cfg(not(target_os = "windows"))] {
-                let fluvio_bin_name = format!("fluvio-{}", channel_name);
+                let fluvio_bin_name = format!("fluvio-{channel_name}");
             } else {
-                let fluvio_bin_name = format!("fluvio-{}.exe", channel_name);
+                let fluvio_bin_name = format!("fluvio-{channel_name}.exe");
             }
         }
 
@@ -263,9 +263,8 @@ impl FluvioChannelInfo {
             (binary_location, extensions)
         } else {
             // No home directory
-            let binary_location =
-                PathBuf::from(format!("{}/bin/{}", CLI_CONFIG_PATH, fluvio_bin_name));
-            let extensions = PathBuf::from(format!("{}/{}", CLI_CONFIG_PATH, extensions_dir_name));
+            let binary_location = PathBuf::from(format!("{CLI_CONFIG_PATH}/bin/{fluvio_bin_name}"));
+            let extensions = PathBuf::from(format!("{CLI_CONFIG_PATH}/{extensions_dir_name}"));
 
             (binary_location, extensions)
         };
@@ -342,7 +341,7 @@ impl ChannelConfig {
         let path_ref = path.as_ref();
         debug!("saving config: {:#?} to: {:#?}", self, path_ref);
         let toml =
-            toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{}", err)))?;
+            toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
 
         let mut file = File::create(path_ref)?;
         file.write_all(&toml)?;

@@ -61,9 +61,9 @@ impl Default for DerivedStreamInputRef {
 impl Display for DerivedStreamInputRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DerivedStreamInputRef::Topic(ref topic) => write!(f, "Topic({})", topic),
+            DerivedStreamInputRef::Topic(ref topic) => write!(f, "Topic({topic})"),
             DerivedStreamInputRef::DerivedStream(ref stream) => {
-                write!(f, "DerivedStream({})", stream)
+                write!(f, "DerivedStream({stream})")
             }
         }
     }
@@ -174,7 +174,7 @@ pub struct DerivedStreamSteps {
 impl Display for DerivedStreamSteps {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let modules: String = self.steps.iter().map(|t| t.to_string()).collect();
-        write!(f, "{}", modules)
+        write!(f, "{modules}")
     }
 }
 
@@ -223,11 +223,11 @@ impl Default for DerivedStreamStep {
 impl Display for DerivedStreamStep {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DerivedStreamStep::Filter(module) => write!(f, "Filter({})", module),
-            DerivedStreamStep::Map(module) => write!(f, "Map({})", module),
-            DerivedStreamStep::FilterMap(module) => write!(f, "FilterMap({})", module),
-            DerivedStreamStep::Aggregate(module) => write!(f, "Aggregate({})", module),
-            DerivedStreamStep::Join(module) => write!(f, "Join({})", module),
+            DerivedStreamStep::Filter(module) => write!(f, "Filter({module})"),
+            DerivedStreamStep::Map(module) => write!(f, "Map({module})"),
+            DerivedStreamStep::FilterMap(module) => write!(f, "FilterMap({module})"),
+            DerivedStreamStep::Aggregate(module) => write!(f, "Aggregate({module})"),
+            DerivedStreamStep::Join(module) => write!(f, "Join({module})"),
         }
     }
 }

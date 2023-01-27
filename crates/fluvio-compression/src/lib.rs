@@ -36,8 +36,7 @@ impl TryFrom<i8> for Compression {
             2 => Ok(Compression::Snappy),
             3 => Ok(Compression::Lz4),
             _ => Err(CompressionError::UnknownCompressionFormat(format!(
-                "i8 representation: {}",
-                v
+                "i8 representation: {v}"
             ))),
         }
     }

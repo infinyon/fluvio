@@ -29,7 +29,7 @@ impl SmartModuleTransformRuntimeError {
         kind: SmartModuleKind,
         error: eyre::Error,
     ) -> Self {
-        let hint = format!("{:?}", error);
+        let hint = format!("{error:?}");
         let offset = base_offset + record.preamble.offset_delta();
         let record_key = record.key.clone();
         let record_value = record.value.clone();
@@ -126,7 +126,7 @@ pub struct SmartModuleInitRuntimeError {
 
 impl SmartModuleInitRuntimeError {
     pub fn new(error: eyre::Error) -> Self {
-        let hint = format!("{:?}", error);
+        let hint = format!("{error:?}");
         Self { hint }
     }
 }

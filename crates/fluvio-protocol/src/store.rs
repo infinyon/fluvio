@@ -20,7 +20,7 @@ impl std::fmt::Debug for StoreValue {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             StoreValue::Bytes(bytes) => write!(f, "StoreValue:Bytes with len: {}", bytes.len()),
-            StoreValue::FileSlice(slice) => write!(f, "StoreValue:FileSlice: {:#?}", slice),
+            StoreValue::FileSlice(slice) => write!(f, "StoreValue:FileSlice: {slice:#?}"),
         }
     }
 }

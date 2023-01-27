@@ -174,7 +174,7 @@ impl TopicStatus {
     pub fn replica_map_cnt_str(&self) -> String {
         let map_rows = self.replica_map_cnt();
         if map_rows > 0 {
-            format!("{}", map_rows)
+            format!("{map_rows}")
         } else {
             "-".to_owned()
         }

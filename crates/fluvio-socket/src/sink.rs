@@ -164,7 +164,7 @@ mod file {
                                 writer.copy_slice(&f_slice).await.map_err(|err| {
                                     IoError::new(
                                         ErrorKind::Other,
-                                        format!("zero copy failed: {}", err),
+                                        format!("zero copy failed: {err}"),
                                     )
                                 })?;
                             trace!("finish writing file slice with {bytes_written} bytes");

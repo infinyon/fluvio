@@ -255,17 +255,17 @@ pub fn package_getsigs_with_readio<R: std::io::Read>(
         let fnamestr = fp.to_string_lossy().to_string();
         let file_base = fp
             .file_stem()
-            .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
+            .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} bad filename")))?;
         let file_name = fp
             .file_name()
-            .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
+            .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} bad filename")))?;
         if fh.unpack_in(tempdir.path())? {
             let tmpfile = tempdir.path().join(file_name);
             let buf = std::fs::read(tmpfile)?;
             if file_base == HUB_SIGNFILE_BASE {
                 // unpack the file, check if the signing key matches and validate it
                 let ps: PackageSignature = serde_json::from_slice(&buf).map_err(|_| {
-                    HubError::PackageVerify(format!("{} could not decode sig", pkgfile))
+                    HubError::PackageVerify(format!("{pkgfile} could not decode sig"))
                 })?;
                 sigs.insert(fnamestr.to_string(), ps);
             }
@@ -435,19 +435,19 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
         let fnamestr = fp.to_string_lossy().to_string();
         let file_name = fp
             .file_name()
-            .ok_or_else(|| HubError::PackageVerify(format!("{} bad filename", pkgfile)))?;
+            .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} bad filename")))?;
         if vers.contains_key(&fnamestr) && fh.unpack_in(tempdir.path())? {
             let tmpfile = tempdir.path().join(file_name);
             let buf = std::fs::read(tmpfile)?;
 
             let mut iv = vers
                 .get_mut(&fnamestr)
-                .ok_or_else(|| HubError::PackageVerify(format!("{} verify error", pkgfile)))?;
+                .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} verify error" )))?;
             iv.seen = true;
             let sigbytes = hex::decode(&iv.fsig.sig)
-                .map_err(|_| HubError::PackageVerify(format!("{} key decode error", pkgfile)))?;
+                .map_err(|_| HubError::PackageVerify(format!("{pkgfile} key decode error")))?;
             let signature = Signature::from_bytes(&sigbytes)
-                .map_err(|_| HubError::PackageVerify(format!("{} key decode error", pkgfile)))?;
+                .map_err(|_| HubError::PackageVerify(format!("{pkgfile} key decode error")))?;
             iv.verify_ok = pubkey.verify(&buf, &signature).is_ok();
         }
     }
