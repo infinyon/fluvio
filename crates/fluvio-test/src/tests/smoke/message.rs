@@ -40,11 +40,7 @@ pub fn validate_message(iter: u32, offset: i64, test_case: &SmokeTestCase, data:
     let producer_record_size = test_case.option.producer_record_size as usize;
 
     let message_len = producer_record_size + prefix_len;
-    assert_eq!(
-        data.len(),
-        message_len,
-        "message should be: {message_len}"
-    );
+    assert_eq!(data.len(), message_len, "message should be: {message_len}");
 
     // check prefix
     for i in 0..prefix_len {

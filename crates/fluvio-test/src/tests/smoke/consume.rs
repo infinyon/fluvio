@@ -169,9 +169,7 @@ pub async fn validate_consume_message_api(
             let wait_value = std::env::var("FLV_SHORT_RECONCILLATION").unwrap_or_default();
             let wait_delay_sec: u64 = wait_value.parse().unwrap_or(30);
 
-            println!(
-                "waiting {wait_delay_sec} seconds to verify replication status..."
-            );
+            println!("waiting {wait_delay_sec} seconds to verify replication status...");
             // wait 5 seconds to get status and ensure replication is done
             sleep(Duration::from_secs(wait_delay_sec)).await;
 

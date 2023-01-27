@@ -1,23 +1,24 @@
 use std::env;
 use std::str::FromStr;
-use color_eyre::eyre::{Result, eyre};
-use colored::Colorize;
-use clap::{Parser, CommandFactory};
-
-use fluvio_future::task::run_block_on;
 use std::env::current_exe;
 use std::ffi::OsString;
-use tracing::debug;
 use std::process::Stdio;
-use fluvio_channel::{
-    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, DEV_CHANNEL_NAME, STABLE_CHANNEL_NAME,
-};
-use fluvio_channel::ImageTagStrategy;
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
 use std::io::{self, Write};
+
+use colored::Colorize;
+use clap::{Parser, CommandFactory};
+use tracing::debug;
 use cfg_if::cfg_if;
+use anyhow::{anyhow, Result};
+
+use fluvio_future::task::run_block_on;
+use fluvio_channel::{
+    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, DEV_CHANNEL_NAME, STABLE_CHANNEL_NAME,
+};
+use fluvio_channel::ImageTagStrategy;
 use fluvio_cli_common::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
 use fluvio_channel_cli::cli::create::CreateOpt;
@@ -238,7 +239,7 @@ fn main() -> Result<()> {
                 .config()
                 .channel()
                 .get(&channel)
-                .ok_or_else(|| eyre!("Channel info not found"))?
+                .ok_or_else(|| anyhow!("Channel info not found"))?
                 .to_owned();
 
             (channel, channel_info)

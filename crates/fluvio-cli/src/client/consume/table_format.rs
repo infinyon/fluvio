@@ -14,10 +14,9 @@ use tui::{
     Frame, Terminal,
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
+use anyhow::Result;
 
 use fluvio::metadata::tableformat::{TableFormatColumnConfig, TableFormatSpec, DataFormat};
-
-use crate::Result;
 
 #[derive(Debug, Default, Clone)]
 pub struct TableModel {

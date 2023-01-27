@@ -90,7 +90,7 @@ async fn take_stats(all_stats: AllStatsSync) -> AllStats {
     let mut guard = all_stats.lock().await;
     mem::take(&mut *guard)
 }
-fn benchmarking_dir() -> Result<PathBuf, BenchmarkError> {
+fn benchmarking_dir() -> Result<PathBuf> {
     let dir_path = fluvio_base_dir()?.join("benchmarks");
     if !dir_path.exists() {
         std::fs::create_dir_all(&dir_path)?;
@@ -98,7 +98,7 @@ fn benchmarking_dir() -> Result<PathBuf, BenchmarkError> {
     Ok(dir_path)
 }
 
-fn historic_run_path() -> Result<PathBuf, BenchmarkError> {
+fn historic_run_path() -> Result<PathBuf> {
     let mut path = benchmarking_dir()?;
     path.push("previous");
     Ok(path)

@@ -674,10 +674,7 @@ impl ClusterInstaller {
             pb.println("Using K8 port forwarding for install".to_string());
             let (install_host, install_port, pf_process) =
                 self.start_sc_port_forwarding(&sc_service, &pb).await?;
-            (
-                format!("{install_host}:{install_port}" ),
-                Some(pf_process),
-            )
+            (format!("{install_host}:{install_port}"), Some(pf_process))
         } else {
             (external_host_and_port.clone(), None)
         };
@@ -908,7 +905,7 @@ impl ClusterInstaller {
             .arg(&service.metadata.namespace)
             .arg("port-forward")
             .arg(format!("service/{FLUVIO_SC_SERVICE}"))
-            .arg(format!("{pf_port}:{target_port}" ))
+            .arg(format!("{pf_port}:{target_port}"))
             .stderr(std::process::Stdio::piped())
             .stdin(std::process::Stdio::null())
             .spawn()

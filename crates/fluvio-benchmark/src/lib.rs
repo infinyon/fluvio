@@ -1,8 +1,9 @@
 use std::hash::{Hasher, Hash};
 use std::collections::hash_map::DefaultHasher;
 use std::io::Error as IoError;
+
 use async_channel::{SendError, RecvError};
-use fluvio_cli_common::error::CliError;
+
 use rand::{distributions::Alphanumeric, Rng};
 use fluvio_future::future::TimeoutError;
 use fluvio::{RecordKey, FluvioError};
@@ -35,8 +36,6 @@ pub fn hash_record(data: &str) -> u64 {
 
 #[derive(thiserror::Error, Debug)]
 pub enum BenchmarkError {
-    #[error(transparent)]
-    CliError(#[from] CliError),
     #[error(transparent)]
     IoError(#[from] IoError),
     #[error("{0}")]

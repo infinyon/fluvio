@@ -451,9 +451,7 @@ impl StreamFetchHandler {
                         self.metrics.chain_metrics(),
                     )
                     .map_err(|err| {
-                        StreamFetchError::Fetch(ErrorCode::Other(format!(
-                            "SmartModule err {err}"
-                        )))
+                        StreamFetchError::Fetch(ErrorCode::Other(format!("SmartModule err {err}")))
                     })?;
                 let metrics_update = IncreaseValue::from(&batch);
 

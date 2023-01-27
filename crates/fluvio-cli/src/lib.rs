@@ -11,7 +11,7 @@ mod metadata;
 mod render;
 pub(crate) mod monitoring;
 
-pub(crate) use error::{Result, CliError};
+pub(crate) use error::{CliError};
 use fluvio_extension_common as common;
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
 

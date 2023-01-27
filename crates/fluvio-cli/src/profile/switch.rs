@@ -1,7 +1,10 @@
 use std::sync::Arc;
+
 use clap::Parser;
+use anyhow::Result;
+
 use fluvio::config::ConfigFile;
-use crate::Result;
+
 use crate::common::output::Terminal;
 use crate::common::{t_println, t_print_cli_err};
 

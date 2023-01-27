@@ -1,9 +1,10 @@
 use std::sync::Arc;
+
 use serde::Serialize;
 use comfy_table::Row;
 use clap::Parser;
+use anyhow::Result;
 
-use crate::Result;
 use fluvio::config::{ConfigFile, Config, TlsPolicy};
 use fluvio_extension_common::{Terminal, OutputFormat};
 use fluvio_extension_common::output::{TableOutputHandler, OutputType};

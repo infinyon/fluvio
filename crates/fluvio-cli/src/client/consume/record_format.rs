@@ -6,10 +6,10 @@
 use std::collections::BTreeMap;
 
 use comfy_table::Table;
+use anyhow::{anyhow, Result};
 
 use fluvio::{metadata::tableformat::TableFormatColumnConfig};
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
-use crate::{CliError, Result};
 
 use super::TableModel;
 
@@ -241,9 +241,7 @@ fn flatten_json_array_updates(
             vec_json_objs.push(obj);
             continue;
         } else {
-            return Err(CliError::Other(
-                "Expected all values in json array to be objects".to_string(),
-            ));
+            return Err(anyhow!("Expected all values in json array to be objects"));
         }
     }
     Ok(vec_json_objs)

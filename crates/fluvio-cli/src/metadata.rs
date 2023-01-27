@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 use std::process::Command;
+
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio_command::CommandExt;
 use fluvio_extension_common::FluvioExtensionMetadata;
 
-use crate::Result;
 use crate::client::client_metadata;
 
 #[derive(Debug, Parser)]

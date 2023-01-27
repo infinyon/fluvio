@@ -167,9 +167,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let producers = if total_records > test_case.option.producers {
         test_case.option.producers
     } else {
-        println!(
-            "More producers than records to split. Reducing number to {total_records}"
-        );
+        println!("More producers than records to split. Reducing number to {total_records}");
         total_records
     };
 

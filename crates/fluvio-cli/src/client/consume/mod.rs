@@ -333,9 +333,7 @@ mod cmd {
             } else if !self.transform.is_empty() {
                 let config =
                     TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
-                        CliError::InvalidArg(format!(
-                            "unable to parse `transform` argument: {err}"
-                        ))
+                        CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
                     })?;
                 create_smartmodule_list(config)?
             } else if let Some(transforms_file) = &self.transforms_file {

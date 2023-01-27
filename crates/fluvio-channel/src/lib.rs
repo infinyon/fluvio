@@ -3,9 +3,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all, read_to_string};
 use std::io::{ErrorKind, Error as IoError, Write};
-use color_eyre::Result;
-use color_eyre::eyre::eyre;
-use fluvio_types::defaults::CLI_CONFIG_PATH;
+
 use clap::{Parser, ValueEnum};
 use dirs::home_dir;
 use serde::{Serialize, Deserialize};
@@ -13,6 +11,9 @@ use tracing::debug;
 use semver::Version;
 use cfg_if::cfg_if;
 use thiserror::Error;
+use anyhow::{anyhow, Result};
+
+use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 // Default channels
 pub const DEV_CHANNEL_NAME: &str = "dev";
@@ -23,12 +24,6 @@ pub const LATEST_CHANNEL_NAME: &str = "latest";
 pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";
 pub const FLUVIO_EXTENSIONS_DIR: &str = "FLUVIO_EXTENSIONS_DIR";
 pub const FLUVIO_IMAGE_TAG_STRATEGY: &str = "FLUVIO_IMAGE_TAG_STRATEGY";
-
-#[derive(Error, Debug)]
-pub enum FluvioChannelError {
-    #[error(transparent)]
-    ConfigError(#[from] ChannelConfigError),
-}
 
 #[derive(Error, Debug)]
 pub enum ChannelConfigError {
@@ -366,7 +361,7 @@ impl FluvioBinVersion {
             let semver = if let Ok(semver) = Version::parse(version_str) {
                 semver
             } else {
-                return Err(eyre!("Unable to resolve version".to_string()));
+                return Err(anyhow!("Unable to resolve version"));
             };
             Ok(Self::Tag(semver))
         }

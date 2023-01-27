@@ -2284,9 +2284,9 @@ dependencies = [
 name = "fluvio-channel"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "cfg-if",
  "clap 4.1.0",
- "color-eyre",
  "dirs",
  "fluvio-types",
  "semver 1.0.16",
@@ -2300,10 +2300,10 @@ dependencies = [
 name = "fluvio-channel-cli"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "assert_cmd",
  "cfg-if",
  "clap 4.1.0",
- "color-eyre",
  "colored",
  "dirs",
  "fluvio-channel",

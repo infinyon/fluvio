@@ -1,7 +1,10 @@
 use std::fmt::Debug;
+
 use http::uri::Scheme;
 use isahc::{AsyncBody, Request, Response};
 use tracing::{debug, error, instrument};
+use anyhow::Result;
+
 use crate::error::HttpError;
 
 #[instrument(
@@ -10,12 +13,12 @@ use crate::error::HttpError;
 )]
 pub async fn execute<B: Into<AsyncBody> + Debug>(
     request: Request<B>,
-) -> Result<Response<AsyncBody>, HttpError> {
+) -> Result<Response<AsyncBody>> {
     debug!(?request, "Executing http request:");
 
     if request.uri().scheme() != Some(&Scheme::HTTPS) {
         error!("CLI http executor only accepts https!");
-        return Err(HttpError::InvalidInput("Must use https".to_string()));
+        return Err(HttpError::InvalidInput("Must use https".to_string()).into());
     }
 
     let host = request

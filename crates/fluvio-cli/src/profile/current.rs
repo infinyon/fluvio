@@ -1,6 +1,7 @@
 use clap::Parser;
+use anyhow::Result;
+
 use fluvio::config::ConfigFile;
-use crate::Result;
 
 #[derive(Debug, Parser)]
 pub struct CurrentOpt {}

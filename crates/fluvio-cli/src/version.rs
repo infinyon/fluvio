@@ -1,12 +1,12 @@
 use sha2::{Digest, Sha256};
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_channel::FLUVIO_RELEASE_CHANNEL;
 
-use crate::Result;
 use crate::metadata::subcommand_metadata;
 
 #[derive(Debug, Parser)]
