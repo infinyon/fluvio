@@ -19,7 +19,7 @@ impl SwitchOpt {
                 if !config_file.mut_config().set_current_profile(&profile_name) {
                     println!("profile {} not found", &profile_name);
                 } else if let Err(err) = config_file.save() {
-                    println!("unable to save profile: {}", err);
+                    println!("unable to save profile: {err}");
                 }
             }
             Err(_) => t_print_cli_err!(out, "no profile can be found"),

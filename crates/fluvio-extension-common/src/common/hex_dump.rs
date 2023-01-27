@@ -17,7 +17,7 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
     for row_idx in 0..record_cnt {
         // column index
         if row_idx % cols == 0 {
-            write!(result, "{:08x}", row_idx).unwrap();
+            write!(result, "{row_idx:08x}").unwrap();
         }
 
         // spacing half way
@@ -33,7 +33,7 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
 
         // push characters
         if (row_idx + 1) % cols == 0 {
-            writeln!(result, "  |{}|", collector).unwrap();
+            writeln!(result, "  |{collector}|").unwrap();
             collector = String::new();
         }
     }
@@ -49,7 +49,7 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
             result.push_str("   ");
         }
 
-        writeln!(result, "  |{}|", collector).unwrap();
+        writeln!(result, "  |{collector}|").unwrap();
     }
 
     result

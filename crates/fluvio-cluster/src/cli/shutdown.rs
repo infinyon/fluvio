@@ -78,14 +78,12 @@ impl ShutdownOpt {
         match remove_file(SPU_MONITORING_UNIX_SOCKET) {
             Ok(_) => {
                 pb.println(format!(
-                    "Removed spu monitoring socket: {}",
-                    SPU_MONITORING_UNIX_SOCKET
+                    "Removed spu monitoring socket: {SPU_MONITORING_UNIX_SOCKET}"
                 ));
             }
             Err(err) => {
                 pb.println(format!(
-                    "SPU monitoring socket  {}, can't be removed: {}",
-                    SPU_MONITORING_UNIX_SOCKET, err
+                    "SPU monitoring socket  {SPU_MONITORING_UNIX_SOCKET}, can't be removed: {err}"
                 ));
             }
         }

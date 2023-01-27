@@ -30,7 +30,7 @@ async fn test_produce_basic() {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
@@ -140,7 +140,7 @@ async fn test_produce_invalid_compression() {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
@@ -401,7 +401,7 @@ async fn test_produce_metrics() {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);

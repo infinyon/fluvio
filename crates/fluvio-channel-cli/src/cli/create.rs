@@ -80,7 +80,7 @@ impl CreateOpt {
                 // Default to ~/.fluvio/bin/fluvio-<channel>
                 let mut p = home.clone();
                 p.push("bin");
-                p.push(format!("fluvio-{}", channel_name));
+                p.push(format!("fluvio-{channel_name}"));
                 p
             };
 
@@ -90,7 +90,7 @@ impl CreateOpt {
                 // Default to ~/.fluvio/bin/extensions-<channel>
                 let mut p = home.clone();
                 p.push("bin");
-                p.push(format!("extensions-{}", channel_name));
+                p.push(format!("extensions-{channel_name}"));
                 p
             };
 

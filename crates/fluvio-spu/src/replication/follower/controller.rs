@@ -365,7 +365,7 @@ mod inner {
             let mut message = RequestMessage::new_request(fetch_request);
             message
                 .get_mut_header()
-                .set_client_id(format!("peer spu: {}", local_spu_id));
+                .set_client_id(format!("peer spu: {local_spu_id}"));
 
             let response = socket.send(&message).await?;
             trace!(?response, "follower: fetch stream response",);
@@ -392,7 +392,7 @@ mod inner {
             let local_spu = self.config.id();
             debug!(local_spu, "sending offsets to leader");
             let req_msg = RequestMessage::new_request(offsets)
-                .set_client_id(format!("follower spu: {}", local_spu));
+                .set_client_id(format!("follower spu: {local_spu}"));
 
             sink.send_request(&req_msg).await
         }

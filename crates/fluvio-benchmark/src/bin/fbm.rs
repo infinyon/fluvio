@@ -118,9 +118,9 @@ fn write_stats(stats: AllStats) -> Result<()> {
         .write(true)
         .create(true)
         .open(historic_run_path()?)
-        .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{:?}", e)))?;
+        .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{e:?}")))?;
     file.write(&encoded)
-        .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{:?}", e)))?;
+        .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{e:?}")))?;
     Ok(())
 }
 

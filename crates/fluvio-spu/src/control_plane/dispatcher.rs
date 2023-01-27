@@ -73,8 +73,7 @@ impl ScDispatcher<FileReplica> {
                 Ok(status) => status,
                 Err(err) => {
                     print_cli_err!(format!(
-                        "spu registration failed with sc due to error: {}",
-                        err
+                        "spu registration failed with sc due to error: {err}"
                     ));
                     false
                 }
@@ -224,7 +223,7 @@ impl ScDispatcher<FileReplica> {
         let mut message = RequestMessage::new_request(register_req);
         message
             .get_mut_header()
-            .set_client_id(format!("spu: {}", local_spu_id));
+            .set_client_id(format!("spu: {local_spu_id}"));
 
         let response = socket.send(&message).await?;
 

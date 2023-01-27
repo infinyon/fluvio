@@ -51,7 +51,7 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
 
     // find leader spu
     let leader = test_topic.spec.leader;
-    println!("leader was: {}", leader);
+    println!("leader was: {leader}");
 
     println!("terminating leader and waiting for election..");
 

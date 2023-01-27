@@ -53,7 +53,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         let msg = output.stdout.as_slice();
         validate_message(i as u32, *offset, test_case, &msg[0..msg.len() - 1]);
 
-        println!("topic: {}, consume message validated!", topic_name);
+        println!("topic: {topic_name}, consume message validated!");
     }
 }
 
@@ -73,12 +73,11 @@ pub async fn validate_consume_message_api(
     let topic_name = test_case.environment.base_topic_name();
     let base_offset = offsets.get(&topic_name).expect("offsets");
 
-    println!(">> starting consume validation topic: {}", topic_name);
+    println!(">> starting consume validation topic: {topic_name}");
 
     for i in 0..partition {
         println!(
-            "starting fetch stream for: {} base offset: {}, expected new records: {}",
-            topic_name, base_offset, producer_iteration
+            "starting fetch stream for: {topic_name} base offset: {base_offset}, expected new records: {producer_iteration}"
         );
 
         let consumer = test_driver.get_consumer(&topic_name, 0).await;
@@ -86,7 +85,7 @@ pub async fn validate_consume_message_api(
         let mut stream = consumer
             .stream(
                 Offset::absolute(*base_offset)
-                    .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
+                    .unwrap_or_else(|_| panic!("creating stream for iteration: {i}")),
             )
             .await
             .expect("stream");
@@ -141,13 +140,13 @@ pub async fn validate_consume_message_api(
                         // for each
                         if total_records % 100 == 0 {
                             let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
-                            println!("total processed records: {} chunk time: {:.1} secs",total_records,elapsed_chunk_time);
+                            println!("total processed records: {total_records} chunk time: {elapsed_chunk_time:.1} secs");
                             info!(total_records,"processed records");
                             chunk_time = SystemTime::now();
                         }
 
                         if total_records == producer_iteration {
-                            println!("consume message validated!, records: {}",total_records);
+                            println!("consume message validated!, records: {total_records}");
                             break;
                         }
 
@@ -171,8 +170,7 @@ pub async fn validate_consume_message_api(
             let wait_delay_sec: u64 = wait_value.parse().unwrap_or(30);
 
             println!(
-                "waiting {} seconds to verify replication status...",
-                wait_delay_sec
+                "waiting {wait_delay_sec} seconds to verify replication status..."
             );
             // wait 5 seconds to get status and ensure replication is done
             sleep(Duration::from_secs(wait_delay_sec)).await;
@@ -180,7 +178,7 @@ pub async fn validate_consume_message_api(
             let admin = test_driver.client().admin().await;
             let partitions = admin.all::<PartitionSpec>().await.expect("partitions");
 
-            println!("partitions: {:#?}", partitions);
+            println!("partitions: {partitions:#?}");
 
             assert_eq!(partitions.len(), 1);
 
@@ -207,8 +205,7 @@ pub async fn validate_consume_message_api(
 
     for i in 0..partition {
         println!(
-            "performing complete  fetch stream for: {} base offset: {}, expected new records: {}",
-            topic_name, base_offset, producer_iteration
+            "performing complete  fetch stream for: {topic_name} base offset: {base_offset}, expected new records: {producer_iteration}"
         );
 
         let consumer = test_driver.get_consumer(&topic_name, 0).await;
@@ -216,7 +213,7 @@ pub async fn validate_consume_message_api(
         let mut stream = consumer
             .stream(
                 Offset::absolute(*base_offset)
-                    .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
+                    .unwrap_or_else(|_| panic!("creating stream for iteration: {i}")),
             )
             .await
             .expect("stream");
@@ -264,5 +261,5 @@ pub async fn validate_consume_message_api(
         }
     }
 
-    println!("full <<consume test done for: {} >>>>", topic_name);
+    println!("full <<consume test done for: {topic_name} >>>>");
 }

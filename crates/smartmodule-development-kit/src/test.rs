@@ -71,7 +71,7 @@ pub struct TestCmd {
 fn parse_key_val(s: &str) -> Result<(String, String)> {
     let pos = s
         .find('=')
-        .ok_or_else(|| anyhow::anyhow!(format!("invalid KEY=value: no `=` found in `{}`", s)))?;
+        .ok_or_else(|| anyhow::anyhow!(format!("invalid KEY=value: no `=` found in `{s}`")))?;
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
@@ -128,7 +128,7 @@ impl TestCmd {
         println!("{:?} records outputed", output.successes.len());
         for output_record in output.successes {
             let output_value = output_record.value.as_str()?;
-            println!("{}", output_value);
+            println!("{output_value}");
         }
 
         Ok(())

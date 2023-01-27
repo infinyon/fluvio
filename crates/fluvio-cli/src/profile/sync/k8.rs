@@ -37,10 +37,10 @@ impl K8Opt {
 
         match set_k8_context(self, external_addr).await {
             Ok(profile) => {
-                println!("updated profile: {:#?}", profile);
+                println!("updated profile: {profile:#?}");
             }
             Err(err) => {
-                eprintln!("config creation failed: {}", err);
+                eprintln!("config creation failed: {err}");
             }
         }
         Ok(())
@@ -146,7 +146,7 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
         .and_then(|port| port.target_port.as_ref());
 
     let address = match (ingress_addr, target_port) {
-        (Some(addr), Some(port)) => Some(format!("{}:{}", addr, port)),
+        (Some(addr), Some(port)) => Some(format!("{addr}:{port}")),
         _ => None,
     };
 

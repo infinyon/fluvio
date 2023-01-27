@@ -99,8 +99,7 @@ impl ConnectorHubDownloadOpts {
 
         std::fs::write(file_path, data).map_err(|err| {
             CliError::Other(format!(
-                "unable to write downloaded package to the disk: {}",
-                err
+                "unable to write downloaded package to the disk: {err}"
             ))
         })?;
         println!("... downloading complete");

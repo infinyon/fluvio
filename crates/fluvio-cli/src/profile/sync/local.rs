@@ -21,10 +21,10 @@ impl LocalOpt {
     pub async fn process(self) -> Result<()> {
         match set_local_context(self) {
             Ok(msg) => {
-                println!("{}", msg);
+                println!("{msg}");
             }
             Err(err) => {
-                eprintln!("config creation failed: {}", err);
+                eprintln!("config creation failed: {err}");
             }
         }
         Ok(())
@@ -67,5 +67,5 @@ pub fn set_local_context(local_config: LocalOpt) -> Result<String> {
 
     config_file.save()?;
 
-    Ok(format!("local context is set to: {}", local_addr))
+    Ok(format!("local context is set to: {local_addr}"))
 }

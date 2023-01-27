@@ -14,7 +14,7 @@ impl MetadataOpt {
     pub fn process(self) -> Result<()> {
         let metadata = Self::metadata();
         if let Ok(out) = serde_json::to_string(&metadata) {
-            println!("{}", out);
+            println!("{out}");
         }
 
         Ok(())

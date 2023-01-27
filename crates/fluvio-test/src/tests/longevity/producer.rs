@@ -44,7 +44,7 @@ pub async fn producer(test_driver: TestDriver, option: MyTestCase, producer_id: 
     debug!("About to start producer loop");
     while test_start.elapsed().unwrap() <= option.environment.timeout {
         let record = TestRecordBuilder::new()
-            .with_tag(format!("{}", records_sent))
+            .with_tag(format!("{records_sent}"))
             .with_random_data(option.environment.producer_record_size)
             .build();
         let record_json = serde_json::to_string(&record)

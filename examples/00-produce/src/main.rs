@@ -27,7 +27,7 @@ use fluvio::RecordKey;
 #[async_std::main]
 async fn main() {
     if let Err(e) = produce().await {
-        println!("Produce error: {:?}", e);
+        println!("Produce error: {e:?}");
     }
 }
 
@@ -37,7 +37,7 @@ async fn produce() -> Result<(), fluvio::FluvioError> {
     let value = "Hello, Fluvio!";
     producer.send(RecordKey::NULL, value).await?;
     producer.flush().await?;
-    println!("{}", value);
+    println!("{value}");
 
     Ok(())
 }

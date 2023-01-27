@@ -227,8 +227,7 @@ impl StreamFetchHandler {
             // we wait for at least one record
             join_stream.next().await.transpose().map_err(|err| {
                 StreamFetchError::Fetch(ErrorCode::Other(format!(
-                    "failed to get record from join stream {}",
-                    err
+                    "failed to get record from join stream {err}"
                 )))
             })?
         } else {
@@ -272,7 +271,7 @@ impl StreamFetchHandler {
                         Some(rec) => {
                             join_record = Some(rec.map_err(|err|
                                StreamFetchError::Fetch(ErrorCode::Other(
-                                    format!("failed to get record from join stream {}", err),
+                                    format!("failed to get record from join stream {err}"),
                                 ))
                             )?);
                         },
@@ -453,8 +452,7 @@ impl StreamFetchHandler {
                     )
                     .map_err(|err| {
                         StreamFetchError::Fetch(ErrorCode::Other(format!(
-                            "SmartModule err {}",
-                            err
+                            "SmartModule err {err}"
                         )))
                     })?;
                 let metrics_update = IncreaseValue::from(&batch);

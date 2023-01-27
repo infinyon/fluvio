@@ -298,7 +298,7 @@ mod root {
         let cmd = args.remove(0);
 
         // Check for a matching external command in the environment
-        let subcommand = format!("fluvio-{}", cmd);
+        let subcommand = format!("fluvio-{cmd}");
         let subcommand_path = match find_plugin(&subcommand) {
             Some(path) => path,
             None => {
@@ -342,7 +342,7 @@ mod root {
             // https://doc.rust-lang.org/std/os/unix/process/trait.ExitStatusExt.html
             use std::os::unix::process::ExitStatusExt;
             if let Some(signal) = status.signal() {
-                println!("Extension killed via {} signal", signal);
+                println!("Extension killed via {signal} signal");
                 std::process::exit(signal);
             }
         }
@@ -394,7 +394,7 @@ mod util {
         match s {
             "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
             "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
-            _ => Err(format!("unrecognized isolation: {}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)", s)),
+            _ => Err(format!("unrecognized isolation: {s}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)")),
         }
     }
 }

@@ -10,7 +10,7 @@ impl CurrentOpt {
         match ConfigFile::load(None) {
             Ok(config_file) => {
                 if let Some(profile) = config_file.config().current_profile_name() {
-                    println!("{}", profile);
+                    println!("{profile}");
                 } else {
                     println!("no current profile set");
                 }

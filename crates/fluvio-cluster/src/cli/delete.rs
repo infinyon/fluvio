@@ -50,7 +50,7 @@ impl DeleteOpt {
 
         let uninstaller = builder
             .build()
-            .map_err(|err| ClusterCliError::Other(format!("builder error: {:#?}", err)))?
+            .map_err(|err| ClusterCliError::Other(format!("builder error: {err:#?}")))?
             .uninstaller()?;
 
         uninstaller.uninstall().await?;

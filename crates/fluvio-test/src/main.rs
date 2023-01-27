@@ -65,7 +65,7 @@ fn main() {
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 
     cluster_cleanup(option.environment);
-    println!("{}", test_result);
+    println!("{test_result}");
 
     if test_result.success {
         exit(0)
@@ -120,7 +120,7 @@ fn run_test(
                 if environment.expect_fail {
                     println!("test failed as expected, signaling parent");
                 } else {
-                    println!("test failed {:#?}, signaling parent", err);
+                    println!("test failed {err:#?}, signaling parent");
                 }
                 // This doesn't actually kill root_process, just sends it the signal
                 root_process.kill_with(Signal::User2);

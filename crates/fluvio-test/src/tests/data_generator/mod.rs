@@ -31,7 +31,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
         "forever".to_string()
     };
 
-    println!("Expected runtime: {:?}", expected_runtime);
+    println!("Expected runtime: {expected_runtime:?}");
 
     println!("# Producers: {}", option.environment.producer);
 
@@ -47,7 +47,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     );
 
     let sync_topic = if let Some(run_id) = &option.environment.topic_salt {
-        format!("sync-{}", run_id)
+        format!("sync-{run_id}")
     } else {
         "sync".to_string()
     };
@@ -81,7 +81,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     // Pass run id to producers, so they can select the correct topics
     let mut producer_wait = Vec::new();
     for i in 0..option.environment.producer {
-        println!("Starting Producer #{}", i);
+        println!("Starting Producer #{i}");
         let producer = async_process!(
             async {
                 producer::producer(
@@ -92,7 +92,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                 )
                 .await
             },
-            format!("producer-{}", i)
+            format!("producer-{i}")
         );
 
         producer_wait.push(producer);

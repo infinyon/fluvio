@@ -39,7 +39,7 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
 
     let test_topic = &partitions[0];
     let leader = test_topic.spec.leader;
-    println!("spu id is: {}", leader);
+    println!("spu id is: {leader}");
 
     let cluster_manager = test_driver
         .get_cluster()

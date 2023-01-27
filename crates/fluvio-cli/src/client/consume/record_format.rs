@@ -21,7 +21,7 @@ pub fn format_json(value: &[u8], suppress: bool) -> Option<String> {
     let maybe_json = match serde_json::from_slice(value) {
         Ok(value) => Some(value),
         Err(e) if !suppress => Some(serde_json::json!({
-            "error": format!("{}", e),
+            "error": format!("{e}"),
         })),
         _ => None,
     };
@@ -89,7 +89,7 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
         Err(e) => {
-            println!("error parsing record as json: {}", e);
+            println!("error parsing record as json: {e}");
             return None;
         }
     };
@@ -149,7 +149,7 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
         Err(e) => {
-            println!("error parsing record as json: {}", e);
+            println!("error parsing record as json: {e}");
             return None;
         }
     };

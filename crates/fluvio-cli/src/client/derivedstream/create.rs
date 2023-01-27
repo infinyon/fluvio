@@ -26,7 +26,7 @@ impl CreateDerivedStreamOpt {
 
         let admin = fluvio.admin().await;
         admin.create(name.clone(), false, spec).await?;
-        println!("derived-stream \"{}\" created", name);
+        println!("derived-stream \"{name}\" created");
 
         Ok(())
     }
@@ -46,7 +46,7 @@ impl DerivedStreamCreateConfig {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let config: Self = serde_yaml::from_str(&contents).map_err(|e| {
-            CliError::Other(format!("failed to parse derived-stream config: {:#?}", e))
+            CliError::Other(format!("failed to parse derived-stream config: {e:#?}"))
         })?;
         Ok(config)
     }

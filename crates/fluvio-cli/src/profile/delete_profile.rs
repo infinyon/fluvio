@@ -20,7 +20,7 @@ impl DeleteProfileOpt {
                 if !config_file.mut_config().delete_profile(&profile_name) {
                     println!("profile {} not found", &profile_name);
                 } else if let Err(err) = config_file.save() {
-                    println!("unable to save profile: {}", err);
+                    println!("unable to save profile: {err}");
                 } else {
                     println!("profile {} deleted", &profile_name);
                     if config_file.config().current_profile_name().is_none() {

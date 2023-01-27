@@ -42,14 +42,14 @@ pub struct DiagnosticsOpt {
 impl DiagnosticsOpt {
     pub async fn process(self) -> Result<()> {
         let profile_ty = self.get_profile_ty()?;
-        println!("Using profile type: {:#?}", profile_ty);
+        println!("Using profile type: {profile_ty:#?}");
         let temp_dir = tempdir::TempDir::new("fluvio-diagnostics")?;
         let temp_path = temp_dir.path();
 
         let spu_specs = match self.copy_fluvio_specs(temp_path).await {
             Ok(specs) => specs,
             Err(err) => {
-                eprintln!("error copying fluivo specs: {:#?}", err);
+                eprintln!("error copying fluivo specs: {err:#?}");
                 vec![]
             }
         };
@@ -99,10 +99,10 @@ impl DiagnosticsOpt {
         self.write_system_info(temp_path)?;
 
         let time = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
-        let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.tar.gz", time));
+        let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{time}.tar.gz"));
         let mut diagnostic_file = std::fs::File::create(&diagnostic_path)?;
         self.zip_files(temp_path, &mut diagnostic_file)
-            .map_err(|e| ClusterCliError::Other(format!("failed to zip diagnostics: {}", e)))?;
+            .map_err(|e| ClusterCliError::Other(format!("failed to zip diagnostics: {e}")))?;
 
         println!("Wrote diagnostics to {}", diagnostic_path.display());
         Ok(())
@@ -142,7 +142,7 @@ impl DiagnosticsOpt {
     // copy logs from spu
     fn copy_local_logs(&self, dest_dir: &Path) -> Result<()> {
         let logs_dir = std::fs::read_dir(get_log_directory())?;
-        println!("reading local logs from {:?}", logs_dir);
+        println!("reading local logs from {logs_dir:?}");
         for entry in logs_dir.flat_map(|it| it.ok()) {
             let to = dest_dir.join(entry.file_name());
             let file_name = entry.file_name();
@@ -150,7 +150,7 @@ impl DiagnosticsOpt {
                 println!("copying local log file: {:?}", entry.path());
                 copy(entry.path(), to)?;
             } else {
-                println!("skipping {:?}", file_name);
+                println!("skipping {file_name:?}");
             }
         }
         Ok(())
@@ -184,7 +184,7 @@ impl DiagnosticsOpt {
                 }
             };
 
-            let dest_path = dest_dir.join(format!("pod-{}.log", pod));
+            let dest_path = dest_dir.join(format!("pod-{pod}.log"));
             write(dest_path, log)?;
         }
 
@@ -219,7 +219,7 @@ impl DiagnosticsOpt {
             let result = cmd!(kubectl, "get", ty, obj, "-o", "yaml")
                 .stderr_capture()
                 .read();
-            let dest = dest.join(format!("{}-{}.yaml", ty, obj));
+            let dest = dest.join(format!("{ty}-{obj}.yaml"));
             self.dump(&format!("k8: {ty}"), dest, result)?;
         }
         Ok(())
@@ -233,7 +233,7 @@ impl DiagnosticsOpt {
         let admin = fluvio.admin().await;
 
         let write_spec = |yaml, name| -> Result<()> {
-            let path = dest.join(format!("admin-spec-{}.yml", name));
+            let path = dest.join(format!("admin-spec-{name}.yml"));
             self.dump(name, path, Ok(yaml))?;
             Ok(())
         };
@@ -271,7 +271,7 @@ impl DiagnosticsOpt {
 
     fn write_system_info(&self, dest: &Path) -> Result<()> {
         let write = |yaml, name| -> Result<()> {
-            let path = dest.join(format!("system-{}.yml", name));
+            let path = dest.join(format!("system-{name}.yml"));
             self.dump(name, path, Ok(yaml))?;
             Ok(())
         };
@@ -326,7 +326,7 @@ impl DiagnosticsOpt {
                 let log_dir = (DEFAULT_LOCAL_DIR.to_owned())
                     .unwrap()
                     .join(format!("spu-logs-{spu}"));
-                println!("retrieved local spu disk log {:?}", log_dir);
+                println!("retrieved local spu disk log {log_dir:?}");
                 cmd!("ls", "-lh", "-R", log_dir)
             }
         };
@@ -355,9 +355,9 @@ impl DiagnosticsOpt {
                 write(path, output)?;
             }
             Err(err) => {
-                let output_err = format!("Failed to collect {label} list: {:#?}", err);
+                let output_err = format!("Failed to collect {label} list: {err:#?}");
                 if !self.quiet {
-                    println!("{}", output_err);
+                    println!("{output_err}");
                 }
                 write(path, &output_err)?;
             }

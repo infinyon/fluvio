@@ -112,8 +112,7 @@ impl UpdateOpt {
                 version, target, ..
             }) => {
                 install_println(format!(
-                    "❕ Fluvio is not published at version {} for {}, skipping self-update",
-                    version, target
+                    "❕ Fluvio is not published at version {version} for {target}, skipping self-update"
                 ));
                 return Ok(());
             }
@@ -164,8 +163,7 @@ impl UpdateOpt {
                 version, target, ..
             }) => {
                 install_println(format!(
-                    "❕ fluvio-channel is not published at version {} for {}, skipping self-update",
-                    version, target
+                    "❕ fluvio-channel is not published at version {version} for {target}, skipping self-update"
                 ));
                 return Ok(());
             }

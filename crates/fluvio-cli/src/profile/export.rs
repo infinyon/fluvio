@@ -66,7 +66,7 @@ impl ExportOpt {
                         ca_cert: tls_certs.ca_cert.to_owned(),
                     },
                     TlsConfig::Files(_) => {
-                        return Err(CliError::Other(format!("Cluster {} uses externals TLS certs. Only inline TLS certs are supported.", cluster_name)));
+                        return Err(CliError::Other(format!("Cluster {cluster_name} uses externals TLS certs. Only inline TLS certs are supported.")));
                     }
                 }),
             };

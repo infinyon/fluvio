@@ -12,7 +12,7 @@ async fn main() {
     async_std::task::spawn(async move {
         let mut topic_stream = admin1.watch_topics();
         while let Some(thing) = topic_stream.next().await {
-            println!("Got Topic update: {:#?}", thing);
+            println!("Got Topic update: {thing:#?}");
         }
     });
 
@@ -20,12 +20,12 @@ async fn main() {
     async_std::task::spawn(async move {
         let mut partition_stream = admin2.watch_partitions();
         while let Some(thing) = partition_stream.next().await {
-            println!("Got Partition update: {:#?}", thing);
+            println!("Got Partition update: {thing:#?}");
         }
     });
 
     let mut spu_stream = admin.watch_spus();
     while let Some(thing) = spu_stream.next().await {
-        println!("Got SPU update: {:#?}", thing);
+        println!("Got SPU update: {thing:#?}");
     }
 }

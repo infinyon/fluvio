@@ -111,23 +111,23 @@ async fn main() {
     let (produce_result, consume_result) = match timed_result {
         Ok(results) => results,
         Err(_) => {
-            println!("Echo timed out after {}ms", TIMEOUT_MS);
+            println!("Echo timed out after {TIMEOUT_MS}ms");
             std::process::exit(1);
         }
     };
 
     match (produce_result, consume_result) {
         (Err(produce_err), Err(consume_err)) => {
-            println!("Echo produce error: {:?}", produce_err);
-            println!("Echo consume error: {:?}", consume_err);
+            println!("Echo produce error: {produce_err:?}");
+            println!("Echo consume error: {consume_err:?}");
             std::process::exit(1);
         }
         (Err(produce_err), _) => {
-            println!("Echo produce error: {:?}", produce_err);
+            println!("Echo produce error: {produce_err:?}");
             std::process::exit(1);
         }
         (_, Err(consume_err)) => {
-            println!("Echo consume error: {:?}", consume_err);
+            println!("Echo consume error: {consume_err:?}");
             std::process::exit(1);
         }
         _ => (),
@@ -139,9 +139,9 @@ async fn produce() -> Result<(), FluvioError> {
     let producer = fluvio::producer(TOPIC).await?;
 
     for i in 0..10u32 {
-        println!("Sending record {}", i);
+        println!("Sending record {i}");
         producer
-            .send(format!("Key {}", i), format!("Value {}", i))
+            .send(format!("Key {i}"), format!("Value {i}"))
             .await?;
     }
     producer.send(RecordKey::NULL, "Done!").await?;
@@ -162,7 +162,7 @@ async fn consume() -> Result<(), FluvioError> {
             .key()
             .map(|key| String::from_utf8_lossy(key).to_string());
         let value = String::from_utf8_lossy(record.value()).to_string();
-        println!("Got record: key={:?}, value={}", key, value);
+        println!("Got record: key={key:?}, value={value}");
         if value == "Done!" {
             return Ok(());
         }

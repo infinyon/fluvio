@@ -32,12 +32,12 @@ impl DeleteTopicOpt {
             if let Err(error) = admin.delete::<TopicSpec, _>(name).await {
                 err_happened = true;
                 if self.continue_on_error {
-                    println!("topic \"{}\" delete failed with: {}", name, error);
+                    println!("topic \"{name}\" delete failed with: {error}");
                 } else {
                     return Err(error);
                 }
             } else {
-                println!("topic \"{}\" deleted", name);
+                println!("topic \"{name}\" deleted");
             }
         }
         if err_happened {

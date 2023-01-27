@@ -19,7 +19,7 @@ impl DeleteClusterOpt {
         let mut config_file = match ConfigFile::load(None) {
             Ok(config_file) => config_file,
             Err(e) => {
-                println!("No config can be found: {}", e);
+                println!("No config can be found: {e}");
                 return Ok(());
             }
         };
@@ -41,7 +41,7 @@ impl DeleteClusterOpt {
                     &cluster_name
                 );
                 for profile in profile_conflicts.iter() {
-                    println!("  {}", profile);
+                    println!("  {profile}");
                 }
                 println!("If you would still like to delete the cluster, use --force");
                 return Ok(());
@@ -61,7 +61,7 @@ impl DeleteClusterOpt {
                 println!("Cluster {} deleted", &cluster_name);
             }
             Err(e) => {
-                println!("Unable to save config file: {}", e);
+                println!("Unable to save config file: {e}");
             }
         }
         Ok(())

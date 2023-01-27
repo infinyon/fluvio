@@ -161,7 +161,7 @@ impl Display for TestResult {
         //    ["Consumer", consumer_latency_avg, consumer_latency_p50, consumer_latency_p90, consumer_latency_p99, consumer_latency_p999]
         //);
 
-        write!(f, "{}", basic_results_table)
+        write!(f, "{basic_results_table}")
         //write!(f, "\n{}", perf_results_header)?;
         //write!(f, "\n{}", perf_created_table)?;
         //write!(f, "\n{}", perf_latency_table)

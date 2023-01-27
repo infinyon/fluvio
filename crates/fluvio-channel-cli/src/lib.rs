@@ -29,8 +29,7 @@ pub async fn install_channel_fluvio_bin(
 
     // Find the latest version of this package
     install_println(format!(
-        "🎣 Fetching '{}' channel binary for fluvio...",
-        current_channel
+        "🎣 Fetching '{current_channel}' channel binary for fluvio..."
     ));
 
     let install_version = match version {

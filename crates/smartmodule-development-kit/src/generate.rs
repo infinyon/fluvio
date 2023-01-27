@@ -190,7 +190,7 @@ impl GenerateCmd {
     pub(crate) fn process(self) -> Result<()> {
         // If a name isn't specified, you'll get prompted in wizard
         if let Some(ref name) = self.name {
-            println!("Generating new SmartModule project: {}", name);
+            println!("Generating new SmartModule project: {name}");
         }
 
         // Figure out if there's a Hub ID set
@@ -335,19 +335,19 @@ impl std::fmt::Display for SmdkTemplateValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SmdkTemplateValue::SmCargoDependency(dependency) => {
-                write!(f, "fluvio-smartmodule-cargo-dependency={}", dependency)
+                write!(f, "fluvio-smartmodule-cargo-dependency={dependency}")
             }
             SmdkTemplateValue::SmType(sm_type) => {
-                write!(f, "smartmodule-type={}", sm_type)
+                write!(f, "smartmodule-type={sm_type}")
             }
             SmdkTemplateValue::UseParams(sm_params) => {
-                write!(f, "smartmodule-params={}", sm_params)
+                write!(f, "smartmodule-params={sm_params}")
             }
             SmdkTemplateValue::ProjectGroup(group) => {
-                write!(f, "project-group={}", group)
+                write!(f, "project-group={group}")
             }
             SmdkTemplateValue::SmPublic(public) => {
-                write!(f, "smartmodule-public={}", public)
+                write!(f, "smartmodule-public={public}")
             }
         }
     }
@@ -553,17 +553,17 @@ impl std::fmt::Display for CargoSmDependSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CargoSmDependSource::CratesIo(version) => {
-                write!(f, "\"{}\"", version)
+                write!(f, "\"{version}\"")
             }
-            CargoSmDependSource::Git(url) => write!(f, "{{ git = \"{}\" }}", url),
+            CargoSmDependSource::Git(url) => write!(f, "{{ git = \"{url}\" }}"),
             CargoSmDependSource::GitBranch { url, branch } => {
-                write!(f, "{{ git = \"{}\", branch = \"{}\" }}", url, branch)
+                write!(f, "{{ git = \"{url}\", branch = \"{branch}\" }}")
             }
             CargoSmDependSource::GitTag { url, tag } => {
-                write!(f, "{{ git = \"{}\", tag = \"{}\" }}", url, tag)
+                write!(f, "{{ git = \"{url}\", tag = \"{tag}\" }}")
             }
             CargoSmDependSource::GitRev { url, rev } => {
-                write!(f, "{{ git = \"{}\", rev = \"{}\" }}", url, rev)
+                write!(f, "{{ git = \"{url}\", rev = \"{rev}\" }}")
             }
             CargoSmDependSource::Path(path) => {
                 write!(f, "{{ path = \"{}\" }}", path.as_path().display())
@@ -630,27 +630,27 @@ mod test {
         for value in test_template_values {
             match &value {
                 CargoSmDependSource::CratesIo(version) => {
-                    assert_eq!(value.to_string(), format!("\"{}\"", version))
+                    assert_eq!(value.to_string(), format!("\"{version}\""))
                 }
                 CargoSmDependSource::Git(url) => {
-                    assert_eq!(value.to_string(), format!("{{ git = \"{}\" }}", url))
+                    assert_eq!(value.to_string(), format!("{{ git = \"{url}\" }}"))
                 }
                 CargoSmDependSource::GitBranch { url, branch } => {
                     assert_eq!(
                         value.to_string(),
-                        format!("{{ git = \"{}\", branch = \"{}\" }}", url, branch)
+                        format!("{{ git = \"{url}\", branch = \"{branch}\" }}")
                     )
                 }
                 CargoSmDependSource::GitTag { url, tag } => {
                     assert_eq!(
                         value.to_string(),
-                        format!("{{ git = \"{}\", tag = \"{}\" }}", url, tag)
+                        format!("{{ git = \"{url}\", tag = \"{tag}\" }}")
                     )
                 }
                 CargoSmDependSource::GitRev { url, rev } => {
                     assert_eq!(
                         value.to_string(),
-                        format!("{{ git = \"{}\", rev = \"{}\" }}", url, rev)
+                        format!("{{ git = \"{url}\", rev = \"{rev}\" }}")
                     )
                 }
                 CargoSmDependSource::Path(path) => {

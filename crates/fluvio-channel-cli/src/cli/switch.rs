@@ -121,7 +121,7 @@ impl SwitchOpt {
             new_config.save()?;
 
             debug!("channel config: {:?}", channel_name.clone());
-            println!("Switched to release channel \"{}\"", channel_name);
+            println!("Switched to release channel \"{channel_name}\"");
 
             Ok(())
         } else {

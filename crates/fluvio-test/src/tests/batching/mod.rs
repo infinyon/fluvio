@@ -32,7 +32,7 @@ pub async fn batching(
         test_topic.spec.leader
     };
 
-    println!("Found leader {}", leader);
+    println!("Found leader {leader}");
 
     let consumer = test_driver.get_consumer(&topic_name, 0).await;
     let mut stream = consumer

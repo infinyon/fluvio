@@ -53,7 +53,7 @@ pub struct MetadataOpt {}
 impl MetadataOpt {
     pub fn process(self) -> Result<()> {
         if let Ok(metadata) = serde_json::to_string(&Self::metadata()) {
-            println!("{}", metadata);
+            println!("{metadata}");
         }
         Ok(())
     }
@@ -74,7 +74,7 @@ pub struct VersionOpt {}
 impl VersionOpt {
     pub fn process(self) -> Result<()> {
         println!("Git Commit: {}", env!("GIT_HASH"));
-        println!("Platform Version: {}", VERSION);
+        println!("Platform Version: {VERSION}");
 
         Ok(())
     }

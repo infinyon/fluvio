@@ -122,7 +122,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: MyTestCase, consum
                             raw.offset(),
                         );
 
-                    panic!("Consumer {consumer_id} failed to consume record: {:?}", err);
+                    panic!("Consumer {consumer_id} failed to consume record: {err:?}");
                 }
 
             } else {

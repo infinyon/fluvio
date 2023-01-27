@@ -6,7 +6,7 @@ const VALUE: u8 = 65;
 /// each message has prefix
 fn generate_pre_fix(topic: &str, offset: i64) -> String {
     //  format!("{}:{}", topic, offset)
-    format!("topic-{} offset: {}", topic, offset)
+    format!("topic-{topic} offset: {offset}")
 }
 
 /// generate test data based on iteration and option
@@ -43,8 +43,7 @@ pub fn validate_message(iter: u32, offset: i64, test_case: &SmokeTestCase, data:
     assert_eq!(
         data.len(),
         message_len,
-        "message should be: {}",
-        message_len
+        "message should be: {message_len}"
     );
 
     // check prefix

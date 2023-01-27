@@ -28,7 +28,7 @@ mod monitor_impl {
     pub(crate) fn init_monitoring(metrics: Arc<ClientMetrics>) {
         spawn(async move {
             if let Err(err) = start_monitoring(metrics).await {
-                println!("error running monitoring: {}", err);
+                println!("error running monitoring: {err}");
             }
         });
     }
@@ -37,7 +37,7 @@ mod monitor_impl {
     async fn start_monitoring(metrics: Arc<ClientMetrics>) -> Result<(), IoError> {
         let metric_out_dir = match std::env::var("FLUVIO_METRIC_CLIENT_DIR") {
             Ok(path) => {
-                println!("using metric dir: {}", path);
+                println!("using metric dir: {path}");
                 path
             }
             Err(_) => {
@@ -48,17 +48,17 @@ mod monitor_impl {
 
         // create unique file name which is pid
         let pid = std::process::id();
-        let metric_out_path = format!("{}/fluvio-client-{}.sock", metric_out_dir, pid);
+        let metric_out_path = format!("{metric_out_dir}/fluvio-client-{pid}.sock");
 
-        println!("using metric path: {}", metric_out_path);
+        println!("using metric path: {metric_out_path}");
 
         // check if file exists
         if let Ok(_metadata) = std::fs::metadata(&metric_out_path) {
-            println!("metric file already exists, deleting: {}", metric_out_path);
+            println!("metric file already exists, deleting: {metric_out_path}");
             match std::fs::remove_file(&metric_out_path) {
                 Ok(_) => {}
                 Err(err) => {
-                    println!("error deleting metric file: {}", err);
+                    println!("error deleting metric file: {err}");
                     return Err(err);
                 }
             }
