@@ -67,7 +67,13 @@ mod tests {
         let result = execute(request).await;
 
         //then
-        assert!(matches!(result, Err(HttpError::InvalidInput(_))));
+        match result {
+            Err(err) => match err.downcast_ref::<HttpError>() {
+                Some(HttpError::InvalidInput(_)) => {}
+                None => panic!("Expected invalid input error"),
+            },
+            Ok(_) => panic!("Expected error"),
+        }
     }
 
     #[fluvio_future::test]

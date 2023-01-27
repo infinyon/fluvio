@@ -117,16 +117,15 @@ mod output {
     //! Format SmartModules response based on output type
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
-
     use tracing::debug;
     use serde::Serialize;
+    use anyhow::Result;
+
     use fluvio_extension_common::output::OutputType;
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
     use fluvio_hub_util::PackageMeta;
-
-    use crate::CliError;
 
     #[derive(Serialize)]
     struct ListConnectors(Vec<PackageMeta>);
@@ -140,7 +139,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_pkgs: Vec<PackageMeta>,
         output_type: OutputType,
-    ) -> Result<(), CliError> {
+    ) -> Result<()> {
         debug!("connectors: {:#?}", list_pkgs);
 
         if !list_pkgs.is_empty() {
