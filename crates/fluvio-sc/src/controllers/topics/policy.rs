@@ -84,7 +84,7 @@ pub async fn update_replica_map_for_assigned_topic(
     // ensure spu exists
     for spu in &partition_map_spus {
         if !spus_id.contains(spu) {
-            return TopicStatus::next_resolution_invalid_config(format!("invalid spu id: {}", spu))
+            return TopicStatus::next_resolution_invalid_config(format!("invalid spu id: {spu}"))
                 .into();
         }
     }

@@ -85,7 +85,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         return Status::new(
             name.to_string(),
             ErrorCode::TopicInvalidName,
-            Some(format!("Invalid topic name: '{}'. Topic name can contain only lowercase alphanumeric characters or '-'.", name)),
+            Some(format!("Invalid topic name: '{name}'. Topic name can contain only lowercase alphanumeric characters or '-'.")),
         );
     }
 
@@ -97,7 +97,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         return Status::new(
             name.to_string(),
             ErrorCode::TopicAlreadyExists,
-            Some(format!("Topic '{}' already exists", name)),
+            Some(format!("Topic '{name}' already exists")),
         );
     }
 
@@ -191,7 +191,7 @@ async fn process_topic_request<AC: AuthContext>(
             return Status::new(
                 name.clone(),
                 ErrorCode::TopicNotProvisioned,
-                Some(format!("error: {}", err)),
+                Some(format!("error: {err}")),
             )
         }
     };
@@ -234,7 +234,7 @@ async fn process_topic_request<AC: AuthContext>(
         select! {
             _ = &mut timer  => {
                 debug!("timer expired waiting for topic: {} provisioning",name);
-                return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("only {} out of {} provisioned",provisioned_count,partition_count)));
+                return Status::new(name, ErrorCode::TopicNotProvisioned, Some(format!("only {provisioned_count} out of {partition_count} provisioned")));
             },
             _ = partition_listener.listen() => {
                 debug!("partition changed");

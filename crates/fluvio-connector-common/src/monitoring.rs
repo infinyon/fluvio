@@ -50,7 +50,7 @@ async fn start_monitoring(metrics: Arc<ConnectorMetrics>) -> Result<(), IoError>
         match std::fs::remove_file(&metric_out_path) {
             Ok(_) => {}
             Err(err) => {
-                println!("error deleting metric file: {}", err);
+                println!("error deleting metric file: {err}");
                 return Err(err);
             }
         }

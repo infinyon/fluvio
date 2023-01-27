@@ -658,9 +658,7 @@ impl PartitionMaps {
             if partition.replicas.len() != unique_count {
                 return Err(Error::new(
                     ErrorKind::InvalidInput,
-                    format!(
-                        "duplicate spu ids found in assigned partition with id: {id}"
-                    ),
+                    format!("duplicate spu ids found in assigned partition with id: {id}"),
                 ));
             }
 
@@ -669,9 +667,7 @@ impl PartitionMaps {
                 if *spu_id < 0 {
                     return Err(Error::new(
                         ErrorKind::InvalidInput,
-                        format!(
-                            "invalid spu id: {spu_id} in assigned partition with id: {id}"
-                        ),
+                        format!("invalid spu id: {spu_id} in assigned partition with id: {id}"),
                     ));
                 }
             }
@@ -998,7 +994,7 @@ pub mod test {
                     .into()
                 );
             }
-            _ => panic!("expect assigned topic spec, found {:?}", topic_spec_decoded),
+            _ => panic!("expect assigned topic spec, found {topic_spec_decoded:?}"),
         }
     }
 
@@ -1030,7 +1026,7 @@ pub mod test {
                 assert_eq!(param.replication_factor, 3);
                 assert!(param.ignore_rack_assignment);
             }
-            _ => panic!("expect computed topic spec, found {:?}", topic_spec_decoded),
+            _ => panic!("expect computed topic spec, found {topic_spec_decoded:?}"),
         }
     }
 

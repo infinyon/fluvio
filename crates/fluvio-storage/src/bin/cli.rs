@@ -51,7 +51,7 @@ fn main() {
         }
     });
     if let Err(err) = result {
-        println!("error in async: {:#?}", err)
+        println!("error in async: {err:#?}")
     };
 }
 
@@ -127,16 +127,15 @@ async fn dump_log(opt: LogOpt) -> Result<()> {
                 break;
             }
             Err(err) => {
-                println!("encountered error: {:#?}", err);
-                println!("last batch offset: {}", last_batch_offset);
+                println!("encountered error: {err:#?}");
+                println!("last batch offset: {last_batch_offset}");
                 break;
             }
         }
     }
 
     println!(
-        "{} records checked in {} millsecs",
-        count,
+        "{count} records checked in {} millsecs",
         time.elapsed().as_millis()
     );
 
@@ -171,15 +170,15 @@ async fn dump_index(opt: IndexOpt) -> Result<()> {
         if offset > 0 && pos > 0 {
             count += 1;
             if count < opt.max {
-                println!("i: {} offset: {}  pos: {}", i, offset, pos);
+                println!("i: {i} offset: {offset}  pos: {pos}");
                 display += 1;
             }
         }
     }
     if count > opt.max {
-        println!("there was {} entries only {} was displayed", count, display);
+        println!("there was {count} entries only {display} was displayed");
     } else {
-        println!("there was {} entries:", count);
+        println!("there was {count} entries:");
     }
 
     Ok(())
@@ -236,7 +235,7 @@ pub(crate) struct ReplicaOpt {
 pub(crate) async fn replica_info(opt: ReplicaOpt) -> Result<()> {
     let replica_dir = opt.replica_dir;
 
-    println!("opening replica dir: {:#?}", replica_dir);
+    println!("opening replica dir: {replica_dir:#?}");
     let option = ReplicaConfig::builder()
         .base_dir(replica_dir.clone())
         .build();

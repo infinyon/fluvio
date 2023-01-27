@@ -330,7 +330,7 @@ mod tests {
         let option = default_option(rep_dir).shared();
 
         list.add_segment(create_segment(option, 0, 500).await.expect("create"));
-        println!("segments: {:#?}", list);
+        println!("segments: {list:#?}");
         assert_eq!(list.min_offset, 0);
         assert_eq!(list.max_offset, 500);
         assert!(list.find_segment(-1).is_none());
@@ -350,7 +350,7 @@ mod tests {
         let option = default_option(rep_dir).shared();
 
         list.add_segment(create_segment(option, 100, 500).await.expect("create"));
-        println!("segments: {:#?}", list);
+        println!("segments: {list:#?}");
 
         assert!(list.find_segment(50).is_none());
         assert!(list.find_segment(99).is_none());
@@ -388,7 +388,7 @@ mod tests {
                 .expect("create"),
         );
 
-        println!("segments: {:#?}", list);
+        println!("segments: {list:#?}");
 
         assert_eq!(list.min_offset, 0);
         assert_eq!(list.max_offset, 4000);
@@ -428,7 +428,7 @@ mod tests {
                 .expect("create"),
         );
 
-        println!("segments: {:#?}", list);
+        println!("segments: {list:#?}");
 
         assert_eq!(list.min_offset, 100);
         assert_eq!(list.max_offset, 9000);

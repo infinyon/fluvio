@@ -134,7 +134,7 @@ mod inline {
         }
 
         /// find a single chart and return it's physical path
-        pub fn unpack<'a>(inline: &Dir<'a>, base_dir: &Path) -> Result<PathBuf, IoError> {
+        pub fn unpack(inline: &Dir, base_dir: &Path) -> Result<PathBuf, IoError> {
             debug!(?base_dir, "unpacking inline at base");
 
             // there should be only 1 chart file in the directory

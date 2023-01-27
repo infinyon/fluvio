@@ -234,7 +234,7 @@ impl Config {
         let path_ref = path.as_ref();
         debug!("saving config: {:#?} to: {:#?}", self, path_ref);
         let toml =
-            toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{}", err)))?;
+            toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
 
         let mut file = File::create(path_ref)?;
         file.write_all(&toml)?;

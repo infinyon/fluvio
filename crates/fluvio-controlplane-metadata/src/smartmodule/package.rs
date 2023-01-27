@@ -480,7 +480,7 @@ mod test {
         };
 
         let toml = toml::to_string(&metadata).expect("toml");
-        println!("{}", toml);
+        println!("{toml}");
         assert!(toml.contains("param1"));
     }
 

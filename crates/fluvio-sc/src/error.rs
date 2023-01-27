@@ -22,12 +22,12 @@ pub enum ScError {
 impl fmt::Display for ScError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Io(err) => write!(f, "{}", err),
+            Self::Io(err) => write!(f, "{err}"),
             //    Self::SendError(err) => write!(f, "{}", err),
-            Self::Client(err) => write!(f, "{}", err),
-            Self::Socket(err) => write!(f, "{}", err),
-            Self::Partition(err) => write!(f, "{}", err),
-            Self::Auth(err) => write!(f, "{}", err),
+            Self::Client(err) => write!(f, "{err}"),
+            Self::Socket(err) => write!(f, "{err}"),
+            Self::Partition(err) => write!(f, "{err}"),
+            Self::Auth(err) => write!(f, "{err}"),
         }
     }
 }

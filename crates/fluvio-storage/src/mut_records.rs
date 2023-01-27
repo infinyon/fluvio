@@ -560,7 +560,7 @@ mod tests {
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
         let nbytes = write_size * NUM_WRITES as usize;
-        assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
+        assert_eq!(bytes.len(), nbytes, "should be {nbytes} bytes");
 
         let old_msg_sink = MutFileRecords::create(OFFSET, options)
             .await

@@ -31,7 +31,7 @@ impl SpuServiceSpec {
 
     /// unique name given spu name
     pub fn service_name(spu_name: &str) -> String {
-        format!("fluvio-spu-{}", spu_name)
+        format!("fluvio-spu-{spu_name}")
     }
 
     pub fn spu_name(meta: &ObjectMeta) -> Option<&String> {

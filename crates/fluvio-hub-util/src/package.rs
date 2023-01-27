@@ -442,7 +442,7 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
 
             let mut iv = vers
                 .get_mut(&fnamestr)
-                .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} verify error" )))?;
+                .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} verify error")))?;
             iv.seen = true;
             let sigbytes = hex::decode(&iv.fsig.sig)
                 .map_err(|_| HubError::PackageVerify(format!("{pkgfile} key decode error")))?;

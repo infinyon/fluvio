@@ -33,8 +33,8 @@ fn create_batches(records: u16) -> Batch {
     header.producer_epoch = -1;
 
     for i in 0..records {
-        let key = format!("key {}", i);
-        let value = format!("value {}", i);
+        let key = format!("key {i}");
+        let value = format!("value {i}");
         let record = Record::from((key, value));
         batches.add_record(record);
     }

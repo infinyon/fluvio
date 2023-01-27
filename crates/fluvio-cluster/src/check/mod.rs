@@ -304,10 +304,7 @@ impl ClusterCheck for ActiveKubernetesCluster {
 
             Err(err) => {
                 return Ok(CheckStatus::Unrecoverable(
-                    UnrecoverableCheckStatus::UnhandledK8ClientError(format!(
-                        "K8 Error: {:#?}",
-                        err
-                    )),
+                    UnrecoverableCheckStatus::UnhandledK8ClientError(format!("K8 Error: {err:#?}")),
                 ))
             }
         };
@@ -395,8 +392,7 @@ impl ClusterCheck for K8Version {
             ))
         } else {
             Ok(CheckStatus::pass(format!(
-                "Supported Kubernetes server {} found",
-                server_version
+                "Supported Kubernetes server {server_version} found"
             )))
         }
     }
@@ -426,8 +422,7 @@ impl ClusterCheck for HelmVersion {
             Err(err) => {
                 return Ok(CheckStatus::Unrecoverable(
                     UnrecoverableCheckStatus::NoHelmClient(format!(
-                        "Unable to find helm: {:#?}",
-                        err
+                        "Unable to find helm: {err:#?}"
                     )),
                 ))
             }
@@ -446,8 +441,7 @@ impl ClusterCheck for HelmVersion {
             ));
         }
         Ok(CheckStatus::pass(format!(
-            "Supported helm version {} is installed",
-            helm_version
+            "Supported helm version {helm_version} is installed"
         )))
     }
 
@@ -945,7 +939,7 @@ fn check_permission(resource: &str, _pb: &ProgressRenderer) -> CheckResult {
             },
         ));
     }
-    Ok(CheckStatus::pass(format!("Can create {}", resource)))
+    Ok(CheckStatus::pass(format!("Can create {resource}")))
 }
 
 fn check_create_permission(resource: &str) -> Result<bool, ClusterCheckError> {

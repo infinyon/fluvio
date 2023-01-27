@@ -245,7 +245,7 @@ impl FluvioAdmin {
         trace!("list response: {:#?}", response);
         response
             .try_into()
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
+            .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {err}")).into())
             .map(|out: ListResponse<S>| out.inner())
     }
 
@@ -270,15 +270,14 @@ impl FluvioAdmin {
         let stream = inner_socket.create_stream(req_msg, 10).await?;
         Ok(stream.map(|respons_result| match respons_result {
             Ok(response) => {
-                let watch_response: Result<WatchResponse<S>, IoError> =
-                    response.try_into().map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("can't convert: {}", err))
-                    });
+                let watch_response: Result<WatchResponse<S>, IoError> = response
+                    .try_into()
+                    .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {err}")));
                 watch_response
             }
             Err(err) => Err(IoError::new(
                 ErrorKind::Other,
-                format!("socket error {}", err),
+                format!("socket error {err}"),
             )),
         }))
     }

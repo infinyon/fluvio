@@ -382,7 +382,7 @@ impl ClusterConfigBuilder {
             .expect("should run 'git rev-parse HEAD' to get git hash");
         let git_hash = String::from_utf8(git_version_output.stdout)
             .expect("should read 'git' stdout to find hash");
-        println!("using development git hash: {}", git_hash);
+        println!("using development git hash: {git_hash}");
         self.image_tag(git_hash.trim());
         Ok(self)
     }
@@ -666,7 +666,7 @@ impl ClusterInstaller {
         let sc_service = self.discover_sc_service().await?;
         let (external_host, external_port) =
             self.discover_sc_external_host_and_port(&sc_service).await?;
-        let external_host_and_port = format!("{}:{}", external_host, external_port);
+        let external_host_and_port = format!("{external_host}:{external_port}");
 
         self.wait_for_sc_availability().await?;
 

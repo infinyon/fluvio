@@ -453,7 +453,7 @@ mod perf {
             .await
             .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
-        println!("validator: {:#?}", msm_result);
+        println!("validator: {msm_result:#?}");
 
         /*
         let record_time = Instant::now();

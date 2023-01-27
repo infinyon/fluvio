@@ -160,7 +160,7 @@ where
                     Err(err) => {
                         return Err(IoError::new(
                             ErrorKind::InvalidData,
-                            format!("problem converting: {}", err),
+                            format!("problem converting: {err}"),
                         ));
                     }
                 }
@@ -185,7 +185,7 @@ where
                 })
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| {
-                    IoError::new(ErrorKind::InvalidData, format!("problem converting: {}", e))
+                    IoError::new(ErrorKind::InvalidData, format!("problem converting: {e}"))
                 })?
                 .into_iter()
                 // .map(|it| LSUpdate::Mod(it))

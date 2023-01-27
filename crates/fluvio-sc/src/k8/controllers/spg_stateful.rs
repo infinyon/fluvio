@@ -176,7 +176,7 @@ impl SpgStatefulSetController {
         // ensure we don't have conflict with existing spu group
         if let Some(conflict_id) = spu_group.is_conflict_with(self.spus.store()).await {
             warn!(conflict_id, "spg is in conflict with existing id");
-            let status = SpuGroupStatus::invalid(format!("conflict with: {}", conflict_id));
+            let status = SpuGroupStatus::invalid(format!("conflict with: {conflict_id}"));
 
             self.groups
                 .update_status(spg_name.to_owned(), status)

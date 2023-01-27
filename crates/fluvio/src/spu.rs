@@ -129,7 +129,7 @@ impl SpuPool {
             Some(local) if self.config.use_spu_local_address() => {
                 let host = local.host;
                 let port = local.port;
-                format!("{}:{}", host, port)
+                format!("{host}:{port}")
             }
             _ => spu.spec.public_endpoint.addr(),
         };
