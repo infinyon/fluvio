@@ -408,7 +408,7 @@ impl LocalInstaller {
         Command::new("sync")
             .inherit()
             .result()
-            .map_err(|e| LocalInstallError::Other(format!("sync issue: {:#?}", e)))?;
+            .map_err(|e| LocalInstallError::Other(format!("sync issue: {e:#?}")))?;
 
         // set host name and port for SC
         // this should mirror K8
@@ -482,7 +482,7 @@ impl LocalInstaller {
     #[instrument(skip(self))]
     fn set_profile(&self) -> Result<(), LocalInstallError> {
         let pb = self.pb_factory.create()?;
-        pb.set_message(format!("Creating Local Profile to: {}", LOCAL_SC_ADDRESS));
+        pb.set_message(format!("Creating Local Profile to: {LOCAL_SC_ADDRESS}"));
 
         let mut config_file = ConfigFile::load_default_or_new()?;
         config_file.add_or_replace_profile(

@@ -675,7 +675,7 @@ impl ClusterInstaller {
             let (install_host, install_port, pf_process) =
                 self.start_sc_port_forwarding(&sc_service, &pb).await?;
             (
-                format!("{}:{}", install_host, install_port),
+                format!("{install_host}:{install_port}" ),
                 Some(pf_process),
             )
         } else {
@@ -690,7 +690,7 @@ impl ClusterInstaller {
                 Some(fluvio) => fluvio,
                 None => return Err(K8InstallError::SCServiceTimeout.into()),
             };
-        pb.println(format!("✅ Connected to SC: {}", install_host_and_port));
+        pb.println(format!("✅ Connected to SC: {install_host_and_port}"));
         pb.finish_and_clear();
         drop(pb);
 
@@ -907,8 +907,8 @@ impl ClusterInstaller {
             .arg("-n")
             .arg(&service.metadata.namespace)
             .arg("port-forward")
-            .arg(format!("service/{}", FLUVIO_SC_SERVICE))
-            .arg(format!("{}:{}", pf_port, target_port))
+            .arg(format!("service/{FLUVIO_SC_SERVICE}"))
+            .arg(format!("{pf_port}:{target_port}" ))
             .stderr(std::process::Stdio::piped())
             .stdin(std::process::Stdio::null())
             .spawn()
@@ -926,7 +926,7 @@ impl ClusterInstaller {
                 let mut reader = BufReader::new(stderr);
                 let mut buf = String::new();
                 let _ = reader.read_to_string(&mut buf)?;
-                let error_msg = format!("kubectl port-forward error: {}", buf);
+                let error_msg = format!("kubectl port-forward error: {buf}");
                 pb.println(error_msg);
 
                 return Err(K8InstallError::PortForwardingFailed(status).into());
@@ -1283,7 +1283,7 @@ impl ClusterInstaller {
     /// Updates the Fluvio configuration with the newly installed cluster info.
     fn update_profile(&self, external_addr: &str) -> Result<()> {
         let pb = self.pb_factory.create()?;
-        pb.set_message(format!("Creating K8 profile for: {}", external_addr));
+        pb.set_message(format!("Creating K8 profile for: {external_addr}"));
 
         let profile_name = self.compute_profile_name()?;
         let mut config_file = ConfigFile::load_default_or_new()?;
@@ -1320,7 +1320,7 @@ impl ClusterInstaller {
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<()> {
         let pb = self.pb_factory.create()?;
         let spg_name = self.config.group_name.clone();
-        pb.set_message(format!("📝 Checking for existing SPU Group: {}", spg_name));
+        pb.set_message(format!("📝 Checking for existing SPU Group: {spg_name}"));
         let admin = fluvio.admin().await;
         let lists = admin.all::<SpuGroupSpec>().await?;
         if lists.is_empty() {
@@ -1345,7 +1345,7 @@ impl ClusterInstaller {
                     spu_spec,
                 )
                 .await?;
-            pb.set_message(format!("🤖 Spu Group {} started", spg_name));
+            pb.set_message(format!("🤖 Spu Group {spg_name} started"));
         } else {
             pb.set_message("SPU Group Exists,skipping");
             // wait few seconds, this is hack to wait for spu to be terminated

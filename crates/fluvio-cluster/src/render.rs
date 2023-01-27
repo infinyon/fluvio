@@ -26,7 +26,7 @@ impl ProgressRenderer {
     pub fn set_message(&self, msg: impl Into<Cow<'static, str>>) {
         let msg = msg.into();
         match self {
-            ProgressRenderer::Std => eprintln!("{}", msg),
+            ProgressRenderer::Std => eprintln!("{msg}"),
             ProgressRenderer::Indicatiff(pb) => pb.set_message(msg),
         }
     }

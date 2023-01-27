@@ -184,14 +184,12 @@ impl ClusterUninstaller {
         match remove_file(SPU_MONITORING_UNIX_SOCKET) {
             Ok(_) => {
                 pb.println(format!(
-                    "Removed spu monitoring socket: {}",
-                    SPU_MONITORING_UNIX_SOCKET
+                    "Removed spu monitoring socket: {SPU_MONITORING_UNIX_SOCKET}"
                 ));
             }
             Err(err) => {
                 pb.println(format!(
-                    "SPU monitoring socket  {}, can't be removed: {}",
-                    SPU_MONITORING_UNIX_SOCKET, err
+                    "SPU monitoring socket  {SPU_MONITORING_UNIX_SOCKET}, can't be removed: {err}"
                 ));
             }
         }
@@ -242,7 +240,7 @@ impl ClusterUninstaller {
         force: bool,
         pb: &ProgressRenderer,
     ) -> Result<(), UninstallError> {
-        pb.set_message(format!("Removing {} objects", object_type));
+        pb.set_message(format!("Removing {object_type} objects"));
         let mut cmd = Command::new("kubectl");
         cmd.arg("delete");
         cmd.arg(object_type);
