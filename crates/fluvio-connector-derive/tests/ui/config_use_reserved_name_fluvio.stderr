@@ -4,17 +4,17 @@ error: Custom config name conflicts with reserved names: 'meta' and 'transforms'
 7 | struct CustomConfig {}
   | ^^^^^^
 
-error[E0433]: failed to resolve: use of undeclared type `CustomConfig`
- --> tests/ui/config_use_reserved_name_fluvio.rs:4:27
-  |
-4 | async fn start_fn(config: CustomConfig, producer: ()) {}
-  |                           ^^^^^^^^^^^^ use of undeclared type `CustomConfig`
-
 error[E0412]: cannot find type `CustomConfig` in this scope
  --> tests/ui/config_use_reserved_name_fluvio.rs:4:27
   |
 4 | async fn start_fn(config: CustomConfig, producer: ()) {}
   |                           ^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `CustomConfig`
+ --> tests/ui/config_use_reserved_name_fluvio.rs:4:27
+  |
+4 | async fn start_fn(config: CustomConfig, producer: ()) {}
+  |                           ^^^^^^^^^^^^ use of undeclared type `CustomConfig`
 
 error[E0308]: mismatched types
  --> tests/ui/config_use_reserved_name_fluvio.rs:3:1
