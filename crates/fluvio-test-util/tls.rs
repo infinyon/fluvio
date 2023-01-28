@@ -10,8 +10,8 @@ pub fn load_tls(client_user: &str) -> (TlsPolicy, TlsPolicy) {
     let cert_dir = cert_dir();
     let client_policy = TlsPolicy::from(TlsPaths {
         domain: DOMAIN.to_string(),
-        key: cert_dir.join(format!("client-{}.key", client_user)),
-        cert: cert_dir.join(format!("client-{}.crt", client_user)),
+        key: cert_dir.join(format!("client-{client_user}.key")),
+        cert: cert_dir.join(format!("client-{client_user}.crt")),
         ca_cert: cert_dir.join("ca.crt"),
     });
     let server_policy = TlsPolicy::from(TlsPaths {
@@ -34,8 +34,8 @@ impl Cert {
         let cert_dir = cert_dir();
         Cert {
             ca: cert_dir.join("ca.crt"),
-            cert: cert_dir.join(format!("client-{}.crt", client_user)),
-            key: cert_dir.join(format!("client-{}.key", client_user)),
+            cert: cert_dir.join(format!("client-{client_user}.crt")),
+            key: cert_dir.join(format!("client-{client_user}.key")),
         }
     }
 

@@ -164,7 +164,7 @@ mod file {
                                 writer.copy_slice(&f_slice).await.map_err(|err| {
                                     IoError::new(
                                         ErrorKind::Other,
-                                        format!("zero copy failed: {}", err),
+                                        format!("zero copy failed: {err}"),
                                     )
                                 })?;
                             trace!("finish writing file slice with {bytes_written} bytes");
@@ -315,7 +315,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_sink_copy() {
         let port = portpicker::pick_unused_port().expect("No free ports left");
-        let addr = format!("127.0.0.1:{}", port);
+        let addr = format!("127.0.0.1:{port}");
 
         let _r = join(setup_client(&addr), test_server(&addr)).await;
     }

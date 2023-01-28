@@ -70,7 +70,7 @@ mod process {
                 .arg("--ca-cert")
                 .arg(ca_cert)
                 .arg("--bind-non-tls-public")
-                .arg(format!("0.0.0.0:{}", port));
+                .arg(format!("0.0.0.0:{port}"));
             Ok(())
         }
     }

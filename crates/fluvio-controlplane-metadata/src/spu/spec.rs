@@ -450,7 +450,7 @@ impl Decoder for CustomSpu {
             _ => {
                 return Err(IoError::new(
                     ErrorKind::UnexpectedEof,
-                    format!("invalid value for Custom Spu: {}", value),
+                    format!("invalid value for Custom Spu: {value}"),
                 ))
             }
         }

@@ -257,7 +257,7 @@ impl std::fmt::Display for PkgVisibility {
             PkgVisibility::Private => "private",
             PkgVisibility::Public => "public",
         };
-        write!(f, "{}", lbl)
+        write!(f, "{lbl}")
     }
 }
 

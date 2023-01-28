@@ -207,7 +207,7 @@ impl MultiplexerSocket {
                     },
                     None => Err(IoError::new(
                         ErrorKind::BrokenPipe,
-                        format!("locked failed: {}, serial socket is in bad state",correlation_id)
+                        format!("locked failed: {correlation_id}, serial socket is in bad state")
                     ).into())
                 }
             },
@@ -473,8 +473,7 @@ impl MultiPlexingResponseDispatcher {
                         None => Err(IoError::new(
                             ErrorKind::BrokenPipe,
                             format!(
-                                "failed locking, abandoning sending to socket: {}",
-                                correlation_id
+                                "failed locking, abandoning sending to socket: {correlation_id}"
                             ),
                         )
                         .into()),
@@ -491,8 +490,7 @@ impl MultiPlexingResponseDispatcher {
                             IoError::new(
                                 ErrorKind::BrokenPipe,
                                 format!(
-                                    "problem sending to queue socket: {}, err: {}",
-                                    correlation_id, err
+                                    "problem sending to queue socket: {correlation_id}, err: {err}"
                                 ),
                             )
                             .into()

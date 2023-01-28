@@ -1,12 +1,12 @@
 use sha2::{Digest, Sha256};
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_channel::FLUVIO_RELEASE_CHANNEL;
 
-use crate::Result;
 use crate::metadata::subcommand_metadata;
 
 #[derive(Debug, Parser)]
@@ -49,7 +49,7 @@ impl VersionOpt {
     }
 
     fn print_width(&self, name: &str, version: &str, width: usize) {
-        println!("{:width$} : {}", name, version, width = width);
+        println!("{name:width$} : {version}");
     }
 
     /// Read CLI and compute its sha256
@@ -94,9 +94,9 @@ impl VersionOpt {
                     .current_profile_name()
                     .map(|name| name.to_string())
             })
-            .map(|name| format!(" ({})", name))
+            .map(|name| format!(" ({name})"))
             .unwrap_or_else(|| "".to_string());
-        format!("{}{}", platform_version, profile_name)
+        format!("{platform_version}{profile_name}")
     }
 
     fn format_subcommand_metadata(&self) -> Option<Vec<(String, String)>> {

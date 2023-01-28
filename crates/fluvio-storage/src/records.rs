@@ -69,7 +69,7 @@ impl FileRecordsSlice {
         debug!(
             path = %log_path.display(),
             len,
-            seconds = last_modified_time.elapsed().map_err(|err| StorageError::Other(format!("Other: {:#?}",err)))?. as_secs(),
+            seconds = last_modified_time.elapsed().map_err(|err| StorageError::Other(format!("Other: {err:#?}")))?. as_secs(),
             "opened read only records");
         Ok(FileRecordsSlice {
             base_offset,

@@ -6,9 +6,8 @@ use semver::Version;
 use anyhow::Result;
 
 use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
-use fluvio_cli_common::FLUVIO_ALWAYS_CHECK_UPDATES;
+use fluvio_cli_common::{FLUVIO_ALWAYS_CHECK_UPDATES, error::PackageNotFound};
 use fluvio_index::{PackageId, HttpAgent};
-use fluvio_cli_common::error::CliError as CommonCliError;
 use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 };
@@ -108,16 +107,17 @@ impl UpdateOpt {
         let package_result = fetch_package_file(agent, &id, &target).await;
         let package_file = match package_result {
             Ok(pf) => pf,
-            Err(CommonCliError::PackageNotFound {
-                version, target, ..
-            }) => {
-                install_println(format!(
-                    "❕ Fluvio is not published at version {} for {}, skipping self-update",
-                    version, target
-                ));
-                return Ok(());
-            }
-            Err(other) => return Err(other.into()),
+            Err(err) => match err.downcast_ref::<PackageNotFound>() {
+                Some(PackageNotFound {
+                    version, target, ..
+                }) => {
+                    install_println(format!(
+                        "❕ Fluvio is not published at version {version} for {target}, skipping self-update"
+                    ));
+                    return Ok(());
+                }
+                None => return Err(err),
+            },
         };
         install_println("🔑 Downloaded and verified package file");
 
@@ -160,17 +160,20 @@ impl UpdateOpt {
         let package_result = fetch_package_file(agent, &id, &target).await;
         let package_file = match package_result {
             Ok(pf) => pf,
-            Err(CommonCliError::PackageNotFound {
-                version, target, ..
-            }) => {
-                install_println(format!(
-                    "❕ fluvio-channel is not published at version {} for {}, skipping self-update",
-                    version, target
-                ));
-                return Ok(());
-            }
-            Err(other) => return Err(other.into()),
+            Err(err) => match err.downcast_ref::<PackageNotFound>() {
+                Some(PackageNotFound {
+                    version, target, ..
+                }) => {
+                    install_println(format!(
+                                "❕ fluvio-channel is not published at version {version} for {target}, skipping self-update"
+                            ));
+                    return Ok(());
+                }
+
+                None => return Err(err),
+            },
         };
+
         install_println("🔑 Downloaded and verified package file");
 
         // Install the update over the default fluvio frontend path

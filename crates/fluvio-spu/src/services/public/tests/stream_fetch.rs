@@ -71,8 +71,7 @@ fn read_wasm_module(module_name: &str) -> Vec<u8> {
         .parent()
         .expect("fluvio")
         .join(format!(
-            "smartmodule/examples/target/wasm32-unknown-unknown/release/{}.wasm",
-            module_name
+            "smartmodule/examples/target/wasm32-unknown-unknown/release/{module_name}.wasm"
         ));
     read_filter_from_path(wasm_path)
 }
@@ -97,7 +96,7 @@ async fn test_stream_fetch_basic() {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
@@ -112,7 +111,7 @@ async fn test_stream_fetch_basic() {
 
     // perform for two versions
     for version in 10..11 {
-        let topic = format!("test{}", version);
+        let topic = format!("test{version}");
         let test = Replica::new((topic.clone(), 0), 5001, vec![5001]);
         let test_id = test.id.clone();
         let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
@@ -435,7 +434,7 @@ async fn test_stream_fetch_filter(
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -624,7 +623,7 @@ async fn test_stream_fetch_filter_individual(
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -744,7 +743,7 @@ async fn test_stream_filter_error_fetch(
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -822,7 +821,7 @@ async fn test_stream_filter_error_fetch(
             assert!(error.record_key.is_none());
             assert_eq!(error.record_value.as_ref(), "ten".as_bytes());
             assert_eq!(error.kind, SmartModuleKindError::Filter);
-            let rendered = format!("{}", error);
+            let rendered = format!("{error}");
             assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartModule Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
         }
         _ => panic!("should have gotten error code"),
@@ -876,7 +875,7 @@ async fn test_stream_filter_max(
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1021,7 +1020,7 @@ async fn test_stream_fetch_map(
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1173,7 +1172,7 @@ async fn test_stream_fetch_map_chain(
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1327,7 +1326,7 @@ async fn test_stream_fetch_map_error(
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1462,7 +1461,7 @@ async fn test_stream_aggregate_fetch_single_batch(
     ensure_clean_dir(&test_path);
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1604,7 +1603,7 @@ async fn test_stream_aggregate_fetch_multiple_batch(
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1736,7 +1735,7 @@ async fn test_stream_fetch_and_new_request(
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1824,7 +1823,7 @@ async fn test_stream_fetch_array_map(
     ensure_clean_dir(&test_path);
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1943,7 +1942,7 @@ async fn test_stream_fetch_filter_map(
     ensure_clean_dir(&test_path);
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -2065,7 +2064,7 @@ async fn test_stream_fetch_filter_with_params(
     ensure_clean_dir(&test_path);
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -2259,7 +2258,7 @@ async fn test_stream_fetch_invalid_smartmodule(
     ensure_clean_dir(&test_path);
 
     let port = portpicker::pick_unused_port().expect("No free ports left");
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -2327,7 +2326,7 @@ async fn test_stream_fetch_join(
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -2574,7 +2573,7 @@ async fn test_stream_metrics() {
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);

@@ -210,7 +210,7 @@ mod cmd {
 
     fn parse_key_val(s: &str) -> Result<(String, String)> {
         let pos = s.find('=').ok_or_else(|| {
-            CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{}`", s))
+            CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{s}`"))
         })?;
         Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
     }
@@ -333,17 +333,13 @@ mod cmd {
             } else if !self.transform.is_empty() {
                 let config =
                     TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
-                        CliError::InvalidArg(format!(
-                            "unable to parse `transform` argument: {}",
-                            err
-                        ))
+                        CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
                     })?;
                 create_smartmodule_list(config)?
             } else if let Some(transforms_file) = &self.transforms_file {
                 let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
                     CliError::InvalidArg(format!(
-                        "unable to process `transforms_file` argument: {}",
-                        err
+                        "unable to process `transforms_file` argument: {err}"
                     ))
                 })?;
                 create_smartmodule_list(config)?
@@ -507,7 +503,7 @@ mod cmd {
                                         }
                                     }
                                 }
-                                Some(Err(e)) => println!("Error: {:?}\r", e),
+                                Some(Err(e)) => println!("Error: {e:?}\r"),
                                 None => break,
                             }
                         },
@@ -643,7 +639,7 @@ mod cmd {
             if self.output != Some(ConsumeOutputType::full_table) {
                 match formatted_value {
                     Some(value) if self.key_value => {
-                        let output = format!("[{}] {}", formatted_key, value);
+                        let output = format!("[{formatted_key}] {value}");
                         pb.println(&output);
                     }
                     Some(value) => {
@@ -664,22 +660,22 @@ mod cmd {
             let starting_description = if self.beginning {
                 " starting from the beginning of log".to_string()
             } else if let Some(offset) = self.head {
-                format!(" starting {} from the beginning of log", offset)
+                format!(" starting {offset} from the beginning of log")
             } else if let Some(offset) = self.start {
-                format!(" starting at offset {}", offset)
+                format!(" starting at offset {offset}")
             } else if let Some(offset) = self.tail {
-                format!(" starting {} from the end of log", offset)
+                format!(" starting {offset} from the end of log")
             } else {
                 "".to_string()
             };
 
             let ending_description = if let Some(end) = self.end {
-                format!(" until offset {} (inclusive)", end)
+                format!(" until offset {end} (inclusive)")
             } else {
                 "".to_string()
             };
 
-            format!("{}{}{}", prefix, starting_description, ending_description)
+            format!("{prefix}{starting_description}{ending_description}")
         }
 
         fn print_status(&self) {
@@ -701,7 +697,7 @@ mod cmd {
             if let Err(err) = result {
                 return Err(IoError::new(
                     ErrorKind::InvalidData,
-                    format!("CTRL-C handler can't be initialized {}", err),
+                    format!("CTRL-C handler can't be initialized {err}"),
                 )
                 .into());
             }

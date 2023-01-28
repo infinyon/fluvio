@@ -231,7 +231,7 @@ impl<T> PackageId<T> {
     pub fn pretty(&self) -> impl fmt::Display {
         let prefix = match (self.registry.as_ref(), self.group.as_ref()) {
             (Some(reg), _) => format!("{}{}/", reg, self.group()),
-            (None, Some(group)) => format!("{}/", group),
+            (None, Some(group)) => format!("{group}/"),
             (None, None) => "".to_string(),
         };
         format!("{}{}", prefix, self.name)
@@ -407,7 +407,7 @@ impl fmt::Display for PackageId<MaybeVersion> {
         let version = self
             .version
             .as_ref()
-            .map(|it| format!(":{}", it))
+            .map(|it| format!(":{it}"))
             .unwrap_or_else(|| "".to_string());
         write!(
             f,
@@ -432,7 +432,7 @@ impl<'de> Deserialize<'de> for PackageId<WithVersion> {
                 use serde::de::{Unexpected, Error as DeserializeError};
                 return Err(DeserializeError::invalid_value(
                     Unexpected::Other("Invalid PackageId"),
-                    &&*format!("A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {}", e),
+                    &&*format!("A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {e}"),
                 ));
             }
         };
@@ -452,7 +452,7 @@ impl<'de> Deserialize<'de> for PackageId<MaybeVersion> {
                 use serde::de::{Unexpected, Error as DeserializeError};
                 return Err(DeserializeError::invalid_value(
                     Unexpected::Other("Invalid PackageId"),
-                    &&*format!("A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {}", e),
+                    &&*format!("A PackageId, <registry>/<group>/<name>:<version>, where <registry> is optional: {e}"),
                 ));
             }
         };
@@ -527,7 +527,7 @@ mod tests {
     #[test]
     fn test_parse_package_id_custom_registry() {
         let registry_url = "https://other.registry.io/v2/";
-        let package_id: PackageId<WithVersion> = format!("{}/fluvio.io/fluvio:0.6.0", registry_url)
+        let package_id: PackageId<WithVersion> = format!("{registry_url}/fluvio.io/fluvio:0.6.0")
             .parse()
             .unwrap();
         assert_eq!(package_id.registry(), &registry_url.parse().unwrap());
@@ -568,21 +568,21 @@ mod tests {
             .unwrap();
         assert_eq!(
             "fluvio/fluvio:1.2.3-alpha",
-            format!("{}", package_id_with_version)
+            format!("{package_id_with_version}")
         );
 
         let package_id_maybe_with_version: PackageId<MaybeVersion> =
             "fluvio/fluvio:3.4.5-beta".parse().unwrap();
         assert_eq!(
             "fluvio/fluvio:3.4.5-beta",
-            format!("{}", package_id_maybe_with_version)
+            format!("{package_id_maybe_with_version}")
         );
 
         let package_id_maybe_without_version =
             PackageId::new_unversioned("fluvio".parse().unwrap(), "fluvio".parse().unwrap());
         assert_eq!(
             "fluvio/fluvio",
-            format!("{}", package_id_maybe_without_version)
+            format!("{package_id_maybe_without_version}")
         );
     }
 

@@ -114,18 +114,16 @@ pub fn validate_versions(min: i16, max: Option<i16>, field: Option<&str>) -> Opt
     match (max, field) {
         // Print name in named fields
         (Some(max), Some(field)) if min > max => Some(format!(
-            "On {}, max version({}) is less than min({}).",
-            field, max, min
+            "On {field}, max version({max}) is less than min({min})."
         )),
         // No name to print in unnamed fields
         (Some(max), None) if min > max => {
-            Some(format!("Max version({}) is less than min({}).", max, min))
+            Some(format!("Max version({max}) is less than min({min})."))
         }
-        (None, Some(field)) if min < 0 => Some(format!(
-            "On {} min version({}) must be positive.",
-            field, min
-        )),
-        (None, None) if min < 0 => Some(format!("Min version({}) must be positive.", min)),
+        (None, Some(field)) if min < 0 => {
+            Some(format!("On {field} min version({min}) must be positive."))
+        }
+        (None, None) if min < 0 => Some(format!("Min version({min}) must be positive.")),
         _ => None,
     }
 }

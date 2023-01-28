@@ -1,7 +1,10 @@
 use std::fmt::Debug;
+
 use http::uri::Scheme;
 use isahc::{AsyncBody, Request, Response};
 use tracing::{debug, error, instrument};
+use anyhow::Result;
+
 use crate::error::HttpError;
 
 #[instrument(
@@ -10,12 +13,12 @@ use crate::error::HttpError;
 )]
 pub async fn execute<B: Into<AsyncBody> + Debug>(
     request: Request<B>,
-) -> Result<Response<AsyncBody>, HttpError> {
+) -> Result<Response<AsyncBody>> {
     debug!(?request, "Executing http request:");
 
     if request.uri().scheme() != Some(&Scheme::HTTPS) {
         error!("CLI http executor only accepts https!");
-        return Err(HttpError::InvalidInput("Must use https".to_string()));
+        return Err(HttpError::InvalidInput("Must use https".to_string()).into());
     }
 
     let host = request
@@ -64,7 +67,13 @@ mod tests {
         let result = execute(request).await;
 
         //then
-        assert!(matches!(result, Err(HttpError::InvalidInput(_))));
+        match result {
+            Err(err) => match err.downcast_ref::<HttpError>() {
+                Some(HttpError::InvalidInput(_)) => {}
+                None => panic!("Expected invalid input error"),
+            },
+            Ok(_) => panic!("Expected error"),
+        }
     }
 
     #[fluvio_future::test]

@@ -133,12 +133,12 @@ impl SpuClusterManager for LocalSpuProcessClusterManager {
     }
 
     fn terminate_spu(&self, id: SpuId) -> AnyResult<()> {
-        let kill_arg = format!("fluvio-run spu -i {}", id);
+        let kill_arg = format!("fluvio-run spu -i {id}");
         Command::new("pkill")
             .arg("-f")
             .arg(kill_arg)
             .output()
-            .map_err(|err| anyhow!("failed to terminate: {}", err))
+            .map_err(|err| anyhow!("failed to terminate: {err}"))
             .map(|_| ())
     }
 }

@@ -121,7 +121,7 @@ where
         match self
             .find_offset_position(start_offset)
             .await
-            .map_err(|err| ErrorCode::Other(format!("offset error: {:#?}", err)))?
+            .map_err(|err| ErrorCode::Other(format!("offset error: {err:#?}")))?
         {
             Some(start_pos) => {
                 let batch = start_pos.batch;
@@ -139,7 +139,7 @@ where
                         if effective_max_offset == self.get_end_offset() {
                             debug!("effective max offset is same as end offset, reading to end");
                             Ok(Some(self.msg_log.as_file_slice(pos).map_err(|err| {
-                                ErrorCode::Other(format!("msg as file slice: {:#?}", err))
+                                ErrorCode::Other(format!("msg as file slice: {err:#?}"))
                             })?))
                         } else {
                             debug!(effective_max_offset, max_offset);
@@ -147,24 +147,23 @@ where
                                 .find_offset_position(effective_max_offset)
                                 .await
                                 .map_err(|err| {
-                                    ErrorCode::Other(format!("offset error: {:#?}", err))
+                                    ErrorCode::Other(format!("offset error: {err:#?}"))
                                 })? {
                                 Some(end_pos) => Ok(Some(
                                     self.msg_log
                                         .as_file_slice_from_to(pos, end_pos.pos - pos)
                                         .map_err(|err| {
-                                            ErrorCode::Other(format!("msg slice: {:#?}", err))
+                                            ErrorCode::Other(format!("msg slice: {err:#?}"))
                                         })?,
                                 )),
                                 None => Err(ErrorCode::Other(format!(
-                                    "max offset position: {} not found",
-                                    effective_max_offset
+                                    "max offset position: {effective_max_offset} not found"
                                 ))),
                             }
                         }
                     }
                     None => Ok(Some(self.msg_log.as_file_slice(start_pos.pos).map_err(
-                        |err| ErrorCode::Other(format!("msg slice error: {:#?}", err)),
+                        |err| ErrorCode::Other(format!("msg slice error: {err:#?}")),
                     )?)),
                 }
             }

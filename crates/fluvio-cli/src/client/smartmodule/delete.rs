@@ -39,12 +39,12 @@ impl ClientCmd for DeleteSmartModuleOpt {
             if let Err(error) = admin.delete::<SmartModuleSpec, _>(name).await {
                 err_happened = true;
                 if self.continue_on_error {
-                    println!("smart module \"{}\" delete failed with: {}", name, error);
+                    println!("smart module \"{name}\" delete failed with: {error}");
                 } else {
                     return Err(error);
                 }
             } else {
-                println!("smartmodule \"{}\" deleted", name);
+                println!("smartmodule \"{name}\" deleted");
             }
         }
         if err_happened {

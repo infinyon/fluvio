@@ -68,13 +68,13 @@ mod error {
                     write!(f, "TableFormat not found")
                 }
                 ApiError::Code(_, Some(msg)) => {
-                    write!(f, "{}", msg)
+                    write!(f, "{msg}")
                 }
                 ApiError::Code(code, None) => {
-                    write!(f, "{}", code)
+                    write!(f, "{code}")
                 }
                 ApiError::NoResourceFound(name) => {
-                    write!(f, "No resource found: {}", name)
+                    write!(f, "No resource found: {name}")
                 }
             }
         }

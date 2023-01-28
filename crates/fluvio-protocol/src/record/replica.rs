@@ -70,7 +70,7 @@ pub enum PartitionError {
 impl fmt::Display for PartitionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::InvalidSyntax(msg) => write!(f, "invalid partition syntax: {}", msg),
+            Self::InvalidSyntax(msg) => write!(f, "invalid partition syntax: {msg}"),
         }
     }
 }
@@ -111,5 +111,5 @@ pub fn decompose_partition_name(
 }
 
 pub fn create_partition_name(topic_name: &str, idx: &i32) -> String {
-    format!("{}-{}", topic_name, idx)
+    format!("{topic_name}-{idx}")
 }

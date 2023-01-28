@@ -72,7 +72,7 @@ impl fmt::Display for Replica {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} leader: {} replicas: [", self.id, self.leader)?;
         for replica in &self.replicas {
-            write!(f, "{},", replica)?;
+            write!(f, "{replica},")?;
         }
         write!(f, "]")?;
         if self.is_being_deleted {

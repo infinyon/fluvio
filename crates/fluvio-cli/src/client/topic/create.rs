@@ -102,7 +102,7 @@ impl CreateTopicOpt {
         debug!("creating topic: {} spec: {:#?}", name, topic_spec);
         let admin = fluvio.admin().await;
         admin.create(name.clone(), dry_run, topic_spec).await?;
-        println!("topic \"{}\" created", name);
+        println!("topic \"{name}\" created");
 
         Ok(())
     }
@@ -119,8 +119,7 @@ impl CreateTopicOpt {
                     IoError::new(
                         ErrorKind::InvalidInput,
                         format!(
-                            "cannot parse replica assignment file {:?}: {}",
-                            replica_assign_file, err
+                            "cannot parse replica assignment file {replica_assign_file:?}: {err}"
                         ),
                     )
                 },
@@ -213,7 +212,7 @@ mod load {
         fn file_decode<T: AsRef<Path>>(path: T) -> Result<Self, IoError> {
             let file_str: String = read_to_string(path)?;
             serde_json::from_str(&file_str)
-                .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{}", err)))
+                .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{err}")))
         }
     }
 }

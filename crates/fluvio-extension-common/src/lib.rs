@@ -70,11 +70,11 @@ impl Default for PrintTerminal {
 
 impl Terminal for PrintTerminal {
     fn print(&self, msg: &str) {
-        print!("{}", msg);
+        print!("{msg}");
     }
 
     fn println(&self, msg: &str) {
-        println!("{}", msg);
+        println!("{msg}");
     }
 }
 

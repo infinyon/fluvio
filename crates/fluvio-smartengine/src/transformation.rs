@@ -55,7 +55,7 @@ pub struct TransformationStep {
 
 impl Display for TransformationStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -116,7 +116,7 @@ impl<'de> Deserialize<'de> for JsonString {
                 let json: serde_json::Value =
                     Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))?;
                 serde_json::to_string(&json).map(JsonString).map_err(|err| {
-                    de::Error::custom(format!("unable to serialize map to json: {}", err))
+                    de::Error::custom(format!("unable to serialize map to json: {err}"))
                 })
             }
 
@@ -127,7 +127,7 @@ impl<'de> Deserialize<'de> for JsonString {
                 let json: serde_json::Value =
                     Deserialize::deserialize(de::value::SeqAccessDeserializer::new(seq))?;
                 serde_json::to_string(&json).map(JsonString).map_err(|err| {
-                    de::Error::custom(format!("unable to serialize seq to json: {}", err))
+                    de::Error::custom(format!("unable to serialize seq to json: {err}"))
                 })
             }
         }

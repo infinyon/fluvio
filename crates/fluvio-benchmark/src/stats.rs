@@ -81,7 +81,7 @@ impl AllStats {
                 (Variable::ConsumerThroughput, "First Consumed Message (First Time Consumed) <-> Last Consumed Message (First Time Consumed)"),
                 (Variable::CombinedThroughput, "First Produced Message <-> Last Consumed Message (First Time Consumed)"),
             ] {
-                throughput_yaml.push_str(&format!("- Variable: {}\n", variable));
+                throughput_yaml.push_str(&format!("- Variable: {variable}\n"));
                 let values = stats.data.get(&variable).unwrap();
                 let mut hist: Histogram<u64> = Histogram::new(HIST_PRECISION).unwrap();
                 for v in values.iter() {
@@ -96,7 +96,7 @@ impl AllStats {
                     ));
                 }
 
-                throughput_yaml.push_str(&format!("  Description: \"{}\"\n", description));
+                throughput_yaml.push_str(&format!("  Description: \"{description}\"\n"));
             }
             md.push_str("\n\n**Throughput (Total Produced Bytes / Time)**\n\n");
             md.push_str(&mk_md_table_from_yaml(&throughput_yaml, &None));
@@ -184,7 +184,7 @@ impl BenchmarkStats {
         let mut md = String::new();
         let mut yaml = String::new();
         for (variable, samples) in self.data.iter() {
-            yaml.push_str(&format!("- Variable: {}\n", variable));
+            yaml.push_str(&format!("- Variable: {variable}\n"));
             if let Some(other_samples) = other.data.get(variable) {
                 let (samples, other_samples) = if samples.len() == config.num_samples {
                     let samples: Vec<f64> = samples.iter().map(|x| *x as f64).collect();
@@ -222,7 +222,7 @@ impl BenchmarkStats {
                             variable.format(previous as u64)
                         ));
                         yaml.push_str(&format!("  Current: {}\n", variable.format(next as u64)));
-                        yaml.push_str(&format!("  P-Value: {:7.5}\n", p_value));
+                        yaml.push_str(&format!("  P-Value: {p_value:7.5}\n"));
                     }
                     CompareResult::Worse {
                         previous,
@@ -235,7 +235,7 @@ impl BenchmarkStats {
                             variable.format(previous as u64)
                         ));
                         yaml.push_str(&format!("  Current: {}\n", variable.format(next as u64)));
-                        yaml.push_str(&format!("  P-Value: {:7.5}\n", p_value));
+                        yaml.push_str(&format!("  P-Value: {p_value:7.5}\n"));
                     }
                     CompareResult::NoChange => {
                         yaml.push_str("  Change: None\n");

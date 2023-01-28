@@ -57,9 +57,9 @@ impl ReplicaStorage for FileReplica {
         replica: &ReplicaKey,
         replica_config: Self::ReplicaConfig,
     ) -> Result<Self> {
-        let storage_config = StorageConfig::builder().build().map_err(|err| {
-            StorageError::Other(format!("failed to build cleaner config: {}", err))
-        })?;
+        let storage_config = StorageConfig::builder()
+            .build()
+            .map_err(|err| StorageError::Other(format!("failed to build cleaner config: {err}")))?;
 
         Self::create_or_load_with_storage(
             replica.topic.clone(),
@@ -340,8 +340,7 @@ impl FileReplica {
                 return Ok(slice);
             } else if start_offset > leo {
                 return Err(ErrorCode::Other(format!(
-                    "start offset: {} is greater than leo: {}",
-                    start_offset, leo
+                    "start offset: {start_offset} is greater than leo: {leo}"
                 )));
             } else if let Some(slice) = self
                 .active_segment
@@ -1047,14 +1046,12 @@ mod tests {
         let partition_size = replica.get_partition_size();
         assert!(
             partition_size < max_partition_size,
-            "replica size must not exceed max_partition_size config. Was {}",
-            partition_size
+            "replica size must not exceed max_partition_size config. Was {partition_size}"
         );
         let prev_segments = replica.prev_segments.read().await.len();
         assert_eq!(
             prev_segments, 3,
-            "segments must be removed to enforce size. Was {}",
-            prev_segments
+            "segments must be removed to enforce size. Was {prev_segments}"
         );
     }
 

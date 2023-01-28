@@ -20,7 +20,7 @@ impl TestSink {
 impl Sink<String> for TestSink {
     async fn connect(self, _offset: Option<Offset>) -> Result<LocalBoxSink<String>> {
         let unfold = futures::sink::unfold((), |_: (), record: String| async move {
-            println!("Received record: {}", record);
+            println!("Received record: {record}");
             Ok::<_, anyhow::Error>(())
         });
         Ok(Box::pin(unfold))

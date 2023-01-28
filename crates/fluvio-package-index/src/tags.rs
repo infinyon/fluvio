@@ -19,14 +19,12 @@ impl std::str::FromStr for TagName {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if !s.is_ascii() {
             return Err(Error::InvalidTagName(format!(
-                "tag name must be ascii, got '{}'",
-                s
+                "tag name must be ascii, got '{s}'"
             )));
         }
         if s.contains('/') {
             return Err(Error::InvalidTagName(format!(
-                "tag name may not contain '/', got '{}'",
-                s
+                "tag name may not contain '/', got '{s}'"
             )));
         }
 

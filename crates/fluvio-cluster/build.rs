@@ -24,5 +24,5 @@ fn main() {
         .expect("should read 'git' stdout to find hash");
     // Assign the git hash to the compile-time GIT_HASH env variable (to use with env!())
     //  println!("git hash: {}", git_hash);
-    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+    println!("cargo:rustc-env=GIT_HASH={git_hash}");
 }

@@ -2,10 +2,14 @@ use std::fs::File;
 use std::io::{ErrorKind, Error as IoError};
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
+
 use semver::Version;
+use anyhow::{anyhow, Result};
+
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
+
 use crate::FLUVIO_EXTENSIONS_DIR;
-use crate::error::{Result, CliError};
+use crate::error::PackageNotFound;
 
 pub const FLUVIO_DIR: &str = "FLUVIO_DIR";
 
@@ -118,11 +122,7 @@ pub async fn fetch_package_file(
             let body = crate::http::read_to_end(tag_response).await?;
             agent.tag_version_from_response(tag, &body).await?
         }
-        _ => {
-            return Err(
-                fluvio_index::Error::Other("unknown PackageVersion type".to_string()).into(),
-            )
-        }
+        _ => return Err(anyhow!("unknown PackageVersion type")),
     };
 
     // Download the package file from the package registry
@@ -130,11 +130,12 @@ pub async fn fetch_package_file(
     debug!(uri = %download_request.uri(), "Requesting package download:");
     let response = crate::http::execute(download_request).await?;
     if !response.status().is_success() {
-        return Err(CliError::PackageNotFound {
+        return Err(PackageNotFound {
             package: id.clone().into_unversioned(),
             version: version.clone(),
             target: target.clone(),
-        });
+        }
+        .into());
     }
 
     let package_file = crate::http::read_to_end(response).await?;

@@ -25,7 +25,7 @@ impl CheckOpt {
         );
         let sys_config: ChartConfig = ChartConfig::sys_builder()
             .build()
-            .map_err(|err| ClusterCheckError::Other(format!("chart config error: {:#?}", err)))?;
+            .map_err(|err| ClusterCheckError::Other(format!("chart config error: {err:#?}")))?;
         let pb = ProgressBarFactory::new(false);
         ClusterChecker::empty()
             .with_preflight_checks()

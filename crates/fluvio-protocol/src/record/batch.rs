@@ -492,7 +492,7 @@ mod test {
         println!("batch raw bytes: {:#X?}", bytes.as_ref());
 
         let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
-        println!("batch: {:#?}", batch);
+        println!("batch: {batch:#?}");
 
         let decoded_record = batch.records.get(0).unwrap();
         println!("record crc: {}", batch.header.crc);

@@ -164,7 +164,7 @@ impl Default for DeliverySemantic {
 
 impl Display for DeliverySemantic {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -175,7 +175,7 @@ impl FromStr for DeliverySemantic {
         match s {
             "at_most_once" | "at-most-once" | "AtMostOnce" | "atMostOnce" | "atmostonce" => Ok(DeliverySemantic::AtMostOnce),
             "at_least_once" | "at-least-once" | "AtLeastOnce" | "atLeastOnce" | "atleastonce" => Ok(DeliverySemantic::default()),
-            _ => Err(format!("unrecognized delivery semantic: {}. Supported: at_most_once (AtMostOnce), at_least_once (AtLeastOnce)", s)),
+            _ => Err(format!("unrecognized delivery semantic: {s}. Supported: at_most_once (AtMostOnce), at_least_once (AtLeastOnce)")),
         }
     }
 }

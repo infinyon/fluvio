@@ -62,11 +62,13 @@ mod cmd {
     }
 }
 
+use anyhow::Result;
+
 use fluvio_hub_util as hubutil;
 use hubutil::HubAccess;
 use hubutil::PackageListMeta;
 
-use crate::{CliError, Result};
+use crate::{CliError};
 
 pub(crate) fn get_hub_access(remote: &Option<String>) -> Result<HubAccess> {
     let access = HubAccess::default_load(remote).map_err(|_| {

@@ -169,7 +169,7 @@ impl Decoder for ObjectCreateRequest {
             // Unexpected type
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                format!("invalid create type {:#?}", typ),
+                format!("invalid create type {typ:#?}"),
             )),
         }
     }

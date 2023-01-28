@@ -208,7 +208,7 @@ async fn extract_right_stream<'a, 'b>(
 
                         let consume_config = builder.build().map_err(|err| {
                             error!("error building consumer config {}", err);
-                            ErrorCode::Other(format!("error building consumer config {}", err))
+                            ErrorCode::Other(format!("error building consumer config {err}"))
                         })?;
                         Some(
                             consumer
@@ -247,7 +247,7 @@ fn resolve_invocation(
         if let Some(smartmodule) = ctx
             .smartmodule_localstore()
             .find_by_pk_key(&name)
-            .map_err(|err| ErrorCode::Other(format!("error parsing SmartModule name: {}", err)))?
+            .map_err(|err| ErrorCode::Other(format!("error parsing SmartModule name: {err}")))?
         {
             Ok(SmartModuleInvocation {
                 wasm: SmartModuleInvocationWasm::AdHoc(smartmodule.spec.wasm.payload.into()),

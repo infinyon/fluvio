@@ -88,7 +88,7 @@ impl TestDriver {
                 client
             }
             Err(err) => {
-                panic!("could not create producer: {:#?}", err);
+                panic!("could not create producer: {err:#?}");
             }
         }
     }
@@ -140,7 +140,7 @@ impl TestDriver {
                 client
             }
             Err(err) => {
-                panic!("can't create consumer: {:#?}", err);
+                panic!("can't create consumer: {err:#?}");
             }
         }
     }
@@ -157,7 +157,7 @@ impl TestDriver {
                 client
             }
             Err(err) => {
-                panic!("can't create consumer: {:#?}", err);
+                panic!("can't create consumer: {err:#?}");
             }
         }
     }
@@ -233,13 +233,13 @@ impl TestDriver {
             let _topic_time = now.elapsed().unwrap().as_nanos();
 
             if topic_create.is_ok() {
-                println!("topic \"{}\" created", topic_name);
+                println!("topic \"{topic_name}\" created");
                 //self.topic_create_latency_histogram
                 //    .record(topic_time as u64)
                 //    .unwrap();
                 //self.topic_num += 1;
             } else {
-                println!("topic \"{}\" already exists", topic_name);
+                println!("topic \"{topic_name}\" already exists");
             }
         }
 
@@ -250,7 +250,7 @@ impl TestDriver {
         // if `min_spu` undefined, min 1
         if let Some(min_spu) = test_reqs.min_spu {
             if min_spu > test_case.environment.spu() {
-                println!("Test requires {} spu", min_spu);
+                println!("Test requires {min_spu} spu");
                 return false;
             }
         }
@@ -260,7 +260,7 @@ impl TestDriver {
         // if `cluster_type = k8`, then environment must be k8 or skip
         if let Some(cluster_type) = &test_reqs.cluster_type {
             if &test_case.environment.cluster_type() != cluster_type {
-                println!("Test requires cluster type {:?} ", cluster_type);
+                println!("Test requires cluster type {cluster_type:?} ");
                 return false;
             }
         }

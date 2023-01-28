@@ -77,7 +77,7 @@ impl ScK8Config {
 
         let spu_pod_config = if let Some(config_str) = data.remove("spuPodConfig") {
             serde_json::from_str(&config_str).map_err(|err| {
-                ClientError::Other(format!("not able to parse spu pod config: {:#?}", err))
+                ClientError::Other(format!("not able to parse spu pod config: {err:#?}"))
             })?
         } else {
             info!("spu pod config not found, using default");
@@ -230,7 +230,7 @@ mod extended {
                         }
                         Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
                             ErrorKind::InvalidData,
-                            format!("error converting metadata: {:#?}", err),
+                            format!("error converting metadata: {err:#?}"),
                         ))),
                     },
                     Err(err) => Err(K8ConvertError::Other(std::io::Error::new(

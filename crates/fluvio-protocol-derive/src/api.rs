@@ -64,7 +64,7 @@ fn generate_encoder(data: &DataStruct, name: &Ident) -> TokenStream {
                 let fname = &f.ident.as_ref().unwrap();
                 let ty = &f.ty;
 
-                let new_name = format!("set_{}", fname);
+                let new_name = format!("set_{fname}");
                 let setter_name = Ident::new(&new_name, Span::call_site());
 
                 quote! {

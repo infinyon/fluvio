@@ -1,23 +1,15 @@
-use std::{
-    convert::Infallible,
-    io::{ErrorKind},
-};
+use std::{convert::Infallible};
 
-use semver::Version;
 use handlebars::TemplateError;
 use indicatif::style::TemplateError as ProgressTemplateError;
 
 use fluvio::FluvioError;
 #[cfg(feature = "k8s")]
 use fluvio_cluster::cli::ClusterCliError;
-use fluvio_sc_schema::ApiError;
 use fluvio_sc_schema::errors::ErrorCode;
 use fluvio_extension_common::output::OutputError;
-use fluvio_socket::SocketError;
-use fluvio_index::{PackageId, Target};
-use crate::common::target::TargetError;
 
-pub type Result<T, E = CliError> = core::result::Result<T, E>;
+use crate::common::target::TargetError;
 
 #[derive(thiserror::Error, Debug)]
 #[allow(clippy::enum_variant_names)]
@@ -54,12 +46,6 @@ pub enum CliError {
     WhichError(#[from] which::Error),
     #[error("Http Error: {0}")]
     HttpError(#[from] fluvio_cli_common::error::HttpError),
-    #[error("Package {package} is not published at version {version} for target {target}")]
-    PackageNotFound {
-        package: PackageId,
-        version: Version,
-        target: Target,
-    },
 
     #[error("Package error: {0}")]
     PackageError(String),
@@ -67,8 +53,6 @@ pub enum CliError {
     #[error(transparent)]
     TlsError(#[from] fluvio_future::openssl::TlsError),
 
-    #[error("Invalid connector: {0}")]
-    InvalidConnector(String),
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
     #[error("Unknown error: {0}")]
@@ -81,16 +65,12 @@ pub enum CliError {
     DataPlaneError(#[from] ErrorCode),
     #[error("TableFormat not found: {0}")]
     TableFormatNotFound(String),
-    #[error(transparent)]
-    FluvioInstall(#[from] fluvio_cli_common::error::CliError),
     #[error("Not active profile set in config")]
     NoActiveProfileInConfig,
     #[error("Profile not found in config: {0}")]
     ProfileNotFoundInConfig(String),
     #[error("Cluster not found in config: {0}")]
     ClusterNotFoundInConfig(String),
-    #[error("Connector not found: {0}")]
-    ConnectorNotFound(String),
     #[error("Progress Error")]
     ProgressError(#[from] ProgressTemplateError),
     #[cfg(feature = "smartengine")]
@@ -98,58 +78,4 @@ pub enum CliError {
     SmartModuleConfigBuilder(#[from] fluvio_smartengine::SmartModuleConfigBuilderError),
     #[error("Hub error: {0}")]
     HubError(String),
-}
-
-impl CliError {
-    pub fn invalid_arg<M: Into<String>>(reason: M) -> Self {
-        Self::InvalidArg(reason.into())
-    }
-
-    /// Looks at the error value and attempts to create a user facing error message
-    ///
-    /// Sometimes, specific errors require specific user-facing error messages.
-    /// Here is where we define those messages, as well as the exit code that the
-    /// program should return when exiting after those errors.
-    pub fn get_user_error(self) -> Result<&'static str> {
-        match &self {
-            Self::ClientError(FluvioError::AdminApi(api)) => match api {
-                ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
-                    Ok("Topic already exists")
-                }
-                ApiError::Code(ErrorCode::ManagedConnectorAlreadyExists, _) => {
-                    Ok("Connector already exists")
-                }
-                ApiError::Code(ErrorCode::TopicNotFound, _) => Ok("Topic not found"),
-                ApiError::Code(ErrorCode::SmartModuleNotFound{ name: _ }, _) => Ok("SmartModule not found"),
-                ApiError::Code(ErrorCode::ManagedConnectorNotFound, _) => {
-                    Ok("Connector not found")
-                }
-                ApiError::Code(ErrorCode::TopicInvalidName, _) => {
-                    Ok("Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).")
-                }
-                ApiError::Code(ErrorCode::TableFormatAlreadyExists, _) => {
-                    Ok("TableFormat already exists")
-                }
-                ApiError::Code(ErrorCode::TableFormatNotFound, _) => {
-                    Ok("TableFormat not found")
-                }
-                _ => Err(self),
-            },
-            Self::ClientError(FluvioError::Socket(SocketError::Io{ source, ..}))
-                if source.kind() == ErrorKind::TimedOut =>
-            {
-                Ok("Network connection timed out while waiting for response")
-            }
-            #[cfg(feature = "k8s")]
-            Self::ClusterCliError(ClusterCliError::TargetError(TargetError::ClientError(
-                FluvioError::Socket(SocketError::Io{ source, .. }),
-            ))) => match source.kind() {
-                ErrorKind::ConnectionRefused => {
-                    Ok("Failed to connect to cluster, make sure you have started or connected to your cluster")
-                }
-                _ => Err(self),
-            },
-            _ => Err(self),
-        }
-    }
 }

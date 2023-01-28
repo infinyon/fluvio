@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-protocol"
 edition = "2021"
-version = "0.8.3"
+version = "0.8.4"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio streaming protocol"
 repository = "https://github.com/infinyon/fluvio"

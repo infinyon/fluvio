@@ -3,9 +3,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all, read_to_string};
 use std::io::{ErrorKind, Error as IoError, Write};
-use color_eyre::Result;
-use color_eyre::eyre::eyre;
-use fluvio_types::defaults::CLI_CONFIG_PATH;
+
 use clap::{Parser, ValueEnum};
 use dirs::home_dir;
 use serde::{Serialize, Deserialize};
@@ -13,6 +11,9 @@ use tracing::debug;
 use semver::Version;
 use cfg_if::cfg_if;
 use thiserror::Error;
+use anyhow::{anyhow, Result};
+
+use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 // Default channels
 pub const DEV_CHANNEL_NAME: &str = "dev";
@@ -23,12 +24,6 @@ pub const LATEST_CHANNEL_NAME: &str = "latest";
 pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";
 pub const FLUVIO_EXTENSIONS_DIR: &str = "FLUVIO_EXTENSIONS_DIR";
 pub const FLUVIO_IMAGE_TAG_STRATEGY: &str = "FLUVIO_IMAGE_TAG_STRATEGY";
-
-#[derive(Error, Debug)]
-pub enum FluvioChannelError {
-    #[error(transparent)]
-    ConfigError(#[from] ChannelConfigError),
-}
 
 #[derive(Error, Debug)]
 pub enum ChannelConfigError {
@@ -234,15 +229,15 @@ impl FluvioChannelInfo {
         let extensions_dir_name = if channel_name == "stable" {
             "extensions".to_string()
         } else {
-            format!("extensions-{}", channel_name)
+            format!("extensions-{channel_name}")
         };
 
         // This is to handle windows binaries, which should end in `.exe`
         cfg_if! {
             if #[cfg(not(target_os = "windows"))] {
-                let fluvio_bin_name = format!("fluvio-{}", channel_name);
+                let fluvio_bin_name = format!("fluvio-{channel_name}");
             } else {
-                let fluvio_bin_name = format!("fluvio-{}.exe", channel_name);
+                let fluvio_bin_name = format!("fluvio-{channel_name}.exe");
             }
         }
 
@@ -263,9 +258,8 @@ impl FluvioChannelInfo {
             (binary_location, extensions)
         } else {
             // No home directory
-            let binary_location =
-                PathBuf::from(format!("{}/bin/{}", CLI_CONFIG_PATH, fluvio_bin_name));
-            let extensions = PathBuf::from(format!("{}/{}", CLI_CONFIG_PATH, extensions_dir_name));
+            let binary_location = PathBuf::from(format!("{CLI_CONFIG_PATH}/bin/{fluvio_bin_name}"));
+            let extensions = PathBuf::from(format!("{CLI_CONFIG_PATH}/{extensions_dir_name}"));
 
             (binary_location, extensions)
         };
@@ -342,7 +336,7 @@ impl ChannelConfig {
         let path_ref = path.as_ref();
         debug!("saving config: {:#?} to: {:#?}", self, path_ref);
         let toml =
-            toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{}", err)))?;
+            toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
 
         let mut file = File::create(path_ref)?;
         file.write_all(&toml)?;
@@ -367,7 +361,7 @@ impl FluvioBinVersion {
             let semver = if let Ok(semver) = Version::parse(version_str) {
                 semver
             } else {
-                return Err(eyre!("Unable to resolve version".to_string()));
+                return Err(anyhow!("Unable to resolve version"));
             };
             Ok(Self::Tag(semver))
         }

@@ -62,7 +62,7 @@ impl BatchProducer {
 pub fn storage_config() -> Arc<StorageConfig> {
     let clear_config = StorageConfig::builder()
         .build()
-        .map_err(|err| StorageError::Other(format!("failed to build cleaner config: {}", err)))
+        .map_err(|err| StorageError::Other(format!("failed to build cleaner config: {err}")))
         .expect("config");
     Arc::new(clear_config)
 }

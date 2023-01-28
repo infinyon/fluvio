@@ -140,7 +140,7 @@ impl Default for Direction {
 impl Display for Direction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = if self.source { "source" } else { "dest" };
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
@@ -367,7 +367,7 @@ fn validate_schema_object(kind: &SchemaKind, value: &serde_yaml::Value) -> anyho
                 (None, _) => anyhow::bail!("required property is missing in the config schema"),
                 (Some(ReferenceOr::Item(present_schema)), Some(present)) => {
                     validate_schema_object(&present_schema.as_ref().schema_kind, present)
-                        .context(format!("validation failed for object '{}'", required_prop))?
+                        .context(format!("validation failed for object '{required_prop}'"))?
                 }
                 (_, None) => anyhow::bail!(
                     "required property '{}' is not found in the config",

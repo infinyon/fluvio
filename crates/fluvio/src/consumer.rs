@@ -590,7 +590,7 @@ impl ConsumerConfig {
 impl ConsumerConfigBuilder {
     pub fn build(&self) -> Result<ConsumerConfig, FluvioError> {
         let config = self.build_impl().map_err(|e| {
-            FluvioError::ConsumerConfig(format!("Missing required config option: {}", e))
+            FluvioError::ConsumerConfig(format!("Missing required config option: {e}"))
         })?;
         Ok(config)
     }

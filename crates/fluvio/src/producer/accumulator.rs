@@ -288,7 +288,7 @@ impl Future for ProducePartitionResponseFuture {
                                 )
                             }),
                     ),
-                    Err(err) => Poll::Ready((0, ErrorCode::Other(format!("{:?}", err)))),
+                    Err(err) => Poll::Ready((0, ErrorCode::Other(format!("{err:?}")))),
                 }
             }
             Either::Right(ref mut maybe_pair) => match maybe_pair.take() {

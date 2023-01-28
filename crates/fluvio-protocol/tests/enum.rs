@@ -62,7 +62,7 @@ impl Decoder for Mix {
             _ => {
                 return Err(Error::new(
                     ErrorKind::UnexpectedEof,
-                    format!("invalid value for Mix: {}", value),
+                    format!("invalid value for Mix: {value}"),
                 ))
             }
         }

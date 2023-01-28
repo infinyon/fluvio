@@ -62,7 +62,7 @@ impl Iterator for FileBatchIterator {
 
         let mut header = vec![0u8; BATCH_FILE_HEADER_SIZE];
         let bytes_read = match pread(self.fd, &mut header, self.offset)
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {}", err)))
+            .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
         {
             Ok(bytes) => bytes,
             Err(err) => return Some(Err(err)),
@@ -84,7 +84,7 @@ impl Iterator for FileBatchIterator {
         if let Err(err) = batch.decode_from_file_buf(&mut Cursor::new(header), 0) {
             return Some(Err(IoError::new(
                 ErrorKind::Other,
-                format!("decodinge batch header error {}", err),
+                format!("decodinge batch header error {err}"),
             )));
         }
 
@@ -101,7 +101,7 @@ impl Iterator for FileBatchIterator {
         self.offset += BATCH_FILE_HEADER_SIZE as i64;
 
         let bytes_read = match pread(self.fd, &mut raw_records, self.offset)
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {}", err)))
+            .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
         {
             Ok(bytes) => bytes,
             Err(err) => return Some(Err(err)),
@@ -124,7 +124,7 @@ impl Iterator for FileBatchIterator {
             Err(err) => {
                 return Some(Err(IoError::new(
                     ErrorKind::Other,
-                    format!("unknown compression value for batch {}", err),
+                    format!("unknown compression value for batch {err}"),
                 )))
             }
         };
@@ -135,7 +135,7 @@ impl Iterator for FileBatchIterator {
             Err(err) => {
                 return Some(Err(IoError::new(
                     ErrorKind::Other,
-                    format!("uncompress error {}", err),
+                    format!("uncompress error {err}"),
                 )))
             }
         };
@@ -171,7 +171,7 @@ mod test {
         let mut buf = vec![0; STORAGE_MAX_BATCH_SIZE as usize];
         // let mut buf = BytesMut::with_capacity(64);
         let bytes_read = pread(fd, &mut buf, 1).expect("");
-        println!("bytes read: {}", bytes_read);
+        println!("bytes read: {bytes_read}");
         assert!(bytes_read > 2);
     }
 }

@@ -1,13 +1,15 @@
-use color_eyre::{Result, eyre::eyre};
+use std::path::PathBuf;
+
+use clap::{Parser, CommandFactory};
+use tracing::debug;
+use anyhow::{anyhow, Result};
+
 use fluvio_channel::{
     FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, DEV_CHANNEL_NAME,
     STABLE_CHANNEL_NAME, LATEST_CHANNEL_NAME,
 };
-use crate::install_channel_fluvio_bin;
 
-use std::path::PathBuf;
-use clap::{Parser, CommandFactory};
-use tracing::debug;
+use crate::install_channel_fluvio_bin;
 
 #[derive(Debug, Clone, Parser, Eq, PartialEq)]
 pub struct SwitchOpt {
@@ -77,9 +79,8 @@ impl SwitchOpt {
                 } else if channel_name == DEV_CHANNEL_NAME {
                     FluvioChannelInfo::dev_channel()
                 } else {
-                    return Err(eyre!(
+                    return Err(anyhow!(
                         "Channel not found in channel config. (Did you create it first?)"
-                            .to_string(),
                     ));
                 };
 
@@ -121,14 +122,14 @@ impl SwitchOpt {
             new_config.save()?;
 
             debug!("channel config: {:?}", channel_name.clone());
-            println!("Switched to release channel \"{}\"", channel_name);
+            println!("Switched to release channel \"{channel_name}\"");
 
             Ok(())
         } else {
             println!("No channel name provided");
             let _ = SwitchOpt::command().print_help();
             println!();
-            Err(eyre!(""))
+            Err(anyhow!(""))
         }
     }
 }

@@ -76,7 +76,7 @@ impl LoadCmd {
         let fluvio_config = self.target.clone().load()?;
 
         if let Err(e) = run_block_on(create(fluvio_config, spec, sm_id, self.dry_run)) {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             std::process::exit(1);
         }
         Ok(())
@@ -95,7 +95,7 @@ async fn create(
     let admin = fluvio.admin().await;
 
     if !dry_run {
-        println!("Creating SmartModule: {}", id);
+        println!("Creating SmartModule: {id}");
         admin.create(id, false, spec).await?;
     } else {
         println!("Dry run mode: Skipping SmartModule create");

@@ -58,10 +58,7 @@ impl ApiMessage for AuthorizationApiRequest {
             AUTH_REQUEST_API_KEY => api_decode!(AuthorizationApiRequest, AuthRequest, src, header),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!(
-                    "api auth header key should be set to {:?}",
-                    AUTH_REQUEST_API_KEY
-                ),
+                format!("api auth header key should be set to {AUTH_REQUEST_API_KEY:?}"),
             )),
         }
     }

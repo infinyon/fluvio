@@ -753,7 +753,7 @@ mod test_notify {
 
         for i in 0..10u16 {
             sleep(Duration::from_millis(2)).await;
-            let topic_name = format!("topic{}", i);
+            let topic_name = format!("topic{i}");
             debug!("creating topic: {}", topic_name);
             let topic = DefaultTest::with_spec(topic_name, TestSpec::default()).with_context(3);
             let _ = topic_store.apply_changes(vec![LSUpdate::Mod(topic)]).await;

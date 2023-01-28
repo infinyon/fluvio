@@ -167,12 +167,12 @@ where
                 msg = ws_receiver.recv() => {
                     match msg {
                         Ok(action) => {
-                            debug!("store: received ws action: {}", action);
+                            debug!("store: received ws action: {action}");
                             self.process_ws_action(action).await;
                         },
                         Err(err) => {
-                            error!("WS channel error: {}", err);
-                            panic!("WS channel error: {}", err);
+                            error!("WS channel error: {err}");
+                            panic!("WS channel error: {err}");
                         }
                     }
                 }
@@ -196,7 +196,7 @@ where
             .map_err(|err| {
                 IoError::new(
                     ErrorKind::InvalidData,
-                    format!("error retrieving k8: {:?}", err),
+                    format!("error retrieving k8: {err:?}"),
                 )
             })?;
 
@@ -213,7 +213,7 @@ where
             .map_err(|err| {
                 IoError::new(
                     ErrorKind::InvalidData,
-                    format!("error converting k8: {}", err),
+                    format!("error converting k8: {err}"),
                 )
             })?;
         Ok(version)
@@ -305,7 +305,7 @@ where
                     }
                 } else {
                     error!(
-                        key = &*format!("{}", key),
+                        key = &*format!("{key}"),
                         "Store: trying to delete non existent key",
                     );
                 }
@@ -322,7 +322,7 @@ where
                     }
                 } else {
                     error!(
-                        key = &*format!("{}", key),
+                        key = &*format!("{key}"),
                         "Store: trying to delete final non existent key",
                     );
                 }

@@ -1,16 +1,13 @@
-use color_eyre::{Result, eyre::eyre};
-use fluvio_channel::{
-    //FluvioChannelConfig, FluvioChannelInfo, install_channel_fluvio_bin,
-    FluvioChannelConfig,
-    FluvioChannelInfo,
-    FluvioBinVersion,
-    ImageTagStrategy,
-};
 use std::path::PathBuf;
+
 use clap::{Parser, CommandFactory};
 use tracing::debug;
 use dirs::home_dir;
+use anyhow::{anyhow, Result};
+
 use fluvio_types::defaults::CLI_CONFIG_PATH;
+use fluvio_channel::{FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, ImageTagStrategy};
+
 use crate::install_channel_fluvio_bin;
 
 #[derive(Debug, Clone, Parser, Eq, PartialEq)]
@@ -80,7 +77,7 @@ impl CreateOpt {
                 // Default to ~/.fluvio/bin/fluvio-<channel>
                 let mut p = home.clone();
                 p.push("bin");
-                p.push(format!("fluvio-{}", channel_name));
+                p.push(format!("fluvio-{channel_name}"));
                 p
             };
 
@@ -90,7 +87,7 @@ impl CreateOpt {
                 // Default to ~/.fluvio/bin/extensions-<channel>
                 let mut p = home.clone();
                 p.push("bin");
-                p.push(format!("extensions-{}", channel_name));
+                p.push(format!("extensions-{channel_name}"));
                 p
             };
 
@@ -122,7 +119,7 @@ impl CreateOpt {
             println!("No channel name provided");
             let _ = CreateOpt::command().print_help();
             println!();
-            Err(eyre!(""))
+            Err(anyhow!(""))
         }
     }
 }

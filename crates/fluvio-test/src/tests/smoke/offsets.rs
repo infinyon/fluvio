@@ -49,5 +49,5 @@ async fn last_leo(admin: &mut FluvioAdmin, topic: &str) -> i64 {
         }
     }
 
-    panic!("cannot found partition 0 for topic: {}", topic);
+    panic!("cannot found partition 0 for topic: {topic}");
 }

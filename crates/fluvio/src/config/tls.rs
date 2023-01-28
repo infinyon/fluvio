@@ -137,21 +137,15 @@ impl TryFrom<TlsPaths> for TlsCerts {
         Ok(Self {
             domain: paths.domain,
             key: String::from_utf8(read(paths.key)?).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("key should be UTF-8: {}", e),
-                )
+                IoError::new(ErrorKind::InvalidData, format!("key should be UTF-8: {e}"))
             })?,
             cert: String::from_utf8(read(paths.cert)?).map_err(|e| {
-                IoError::new(
-                    ErrorKind::InvalidData,
-                    format!("cert should be UTF-8: {}", e),
-                )
+                IoError::new(ErrorKind::InvalidData, format!("cert should be UTF-8: {e}"))
             })?,
             ca_cert: String::from_utf8(read(paths.ca_cert)?).map_err(|e| {
                 IoError::new(
                     ErrorKind::InvalidData,
-                    format!("CA cert should be UTF-8: {}", e),
+                    format!("CA cert should be UTF-8: {e}"),
                 )
             })?,
         })

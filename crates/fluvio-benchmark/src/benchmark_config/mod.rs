@@ -150,7 +150,7 @@ pub fn generate_new_topic_name() -> String {
     let chars: String = (0..15)
         .map(|_| rng.sample(Uniform::new(b'a', b'z')) as char)
         .collect();
-    format!("benchmarking-{}", chars)
+    format!("benchmarking-{chars}")
 }
 impl BenchmarkConfigBuilder {
     fn prebuild(&mut self) -> &mut Self {

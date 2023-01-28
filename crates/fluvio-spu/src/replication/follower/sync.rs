@@ -43,7 +43,7 @@ where
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[")?;
         for topic in &self.topics {
-            write!(f, "{},", topic)?;
+            write!(f, "{topic},")?;
         }
         write!(f, "]")
     }
@@ -95,7 +95,7 @@ where
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} [", self.name)?;
         for partition in &self.partitions {
-            write!(f, "{},", partition)?;
+            write!(f, "{partition},")?;
         }
         write!(f, "]")
     }

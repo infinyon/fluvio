@@ -205,8 +205,7 @@ async fn consume_work<S: ?Sized>(
     let throughput_p99 = throughput_histogram.max() / 1_000;
 
     println!(
-        "[consumer-{}] Consume P99: {:?} Peak Throughput: {:?} kB/s. # Records: {records_recvd}",
-        consumer_id, consume_p99, throughput_p99
+        "[consumer-{consumer_id}] Consume P99: {consume_p99:?} Peak Throughput: {throughput_p99:?} kB/s. # Records: {records_recvd}"
     );
 }
 
@@ -321,7 +320,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     println!("\nStarting Consumer test");
 
-    println!("Consumers: {}", consumers);
+    println!("Consumers: {consumers}");
     println!("Starting offset: {:?}", &offset);
 
     if test_case.option.num_records != 0 {
@@ -337,7 +336,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     // Spawn the consumers
     let mut consumer_wait = Vec::new();
     for n in 0..consumers {
-        println!("Starting Consumer #{}", n);
+        println!("Starting Consumer #{n}");
         let consumer = async_process!(
             async {
                 test_driver
@@ -365,7 +364,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     consume_work(stream, n.into(), test_case).await
                 }
             },
-            format!("consumer-{}", n)
+            format!("consumer-{n}")
         );
 
         consumer_wait.push(consumer);

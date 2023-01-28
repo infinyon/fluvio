@@ -17,7 +17,7 @@ pub async fn producer(
 ) {
     // Sync topic is unique per instance of generator
     let sync_topic = if let Some(run_id) = &run_id {
-        format!("sync-{}", run_id)
+        format!("sync-{run_id}")
     } else {
         "sync".to_string()
     };
@@ -106,7 +106,7 @@ pub async fn producer(
     // Let syncing process know this producer is ready
     sync_producer.send(RecordKey::NULL, "ready").await.unwrap();
 
-    println!("{}: waiting for start", producer_id);
+    println!("{producer_id}: waiting for start");
     while let Some(Ok(record)) = sync_stream.next().await {
         //let _key = record
         //    .key()
@@ -160,7 +160,7 @@ async fn send_record(
 
 fn generate_record(option: MyTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
     let record = TestRecordBuilder::new()
-        .with_tag(format!("{}", record_id))
+        .with_tag(format!("{record_id}"))
         .with_random_data(option.environment.producer_record_size)
         .build();
     let record_json = serde_json::to_string(&record)

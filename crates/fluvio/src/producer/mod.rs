@@ -230,7 +230,7 @@ cfg_if::cfg_if! {
         impl TopicProducer {
             /// Adds a chain of SmartModules to this TopicProducer
             pub fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self, FluvioError> {
-                let chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                let chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
                 self.sm_chain = Some(Arc::new(RwLock::new(chain_instance)));
                 Ok(self)
             }
@@ -329,25 +329,25 @@ impl TopicProducer {
                 CompressionAlgorithm::Gzip => match config.compression {
                     Some(Compression::Gzip) | None => Compression::Gzip,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        format!("Compression in the producer ({}) does not match with topic level compression (gzip)", compression_config),
+                        format!("Compression in the producer ({compression_config}) does not match with topic level compression (gzip)" ),
                     ))),
                 },
                 CompressionAlgorithm::Snappy => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        format!("Compression in the producer ({}) does not match with topic level compression (snappy)", compression_config),
+                        format!("Compression in the producer ({compression_config}) does not match with topic level compression (snappy)" ),
                     ))),
                 },
                 CompressionAlgorithm::Lz4 => match config.compression {
                     Some(Compression::Lz4) | None => Compression::Lz4,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        format!("Compression in the producer ({}) does not match with topic level compression (lz4)", compression_config),
+                        format!("Compression in the producer ({compression_config}) does not match with topic level compression (lz4)"),
                     ))),
                 },
             CompressionAlgorithm::None => match config.compression {
                     Some(Compression::None) | None => Compression::None,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        format!("Compression in the producer ({}) does not match with topic level compression (no compression)", compression_config)
+                        format!("Compression in the producer ({compression_config}) does not match with topic level compression (no compression)" )
 
                     ))),
                 },
@@ -442,7 +442,7 @@ impl TopicProducer {
                 ) = &self.sm_chain {
                     let mut sm_chain = smart_chain_ref.write().await;
 
-                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?,metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?,metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
                     entries = output.successes;
                 }
             } else {

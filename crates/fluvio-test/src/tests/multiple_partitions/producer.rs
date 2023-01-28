@@ -10,7 +10,7 @@ pub async fn producer(test_driver: TestDriver, option: MyTestCase) {
         .await;
 
     let iterations: u16 = 10000;
-    println!("Producing {} records", iterations);
+    println!("Producing {iterations} records");
     for i in 0..iterations {
         let record = i.to_string();
         producer.send(RecordKey::NULL, record).await.unwrap();

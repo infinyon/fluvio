@@ -193,13 +193,13 @@ impl SmartModulePackageKey {
     /// return key for storing SmartModule in the store
     pub fn store_id(&self) -> String {
         let group_id = if let Some(package) = &self.group {
-            format!("-{}", package)
+            format!("-{package}")
         } else {
             "".to_owned()
         };
 
         let version_id = if let Some(version) = &self.version {
-            format!("-{}", version)
+            format!("-{version}")
         } else {
             "".to_owned()
         };
@@ -271,7 +271,7 @@ impl std::fmt::Display for SmartModuleVisibility {
             Self::Private => "private",
             Self::Public => "public",
         };
-        write!(f, "{}", lbl)
+        write!(f, "{lbl}")
     }
 }
 
@@ -480,7 +480,7 @@ mod test {
         };
 
         let toml = toml::to_string(&metadata).expect("toml");
-        println!("{}", toml);
+        println!("{toml}");
         assert!(toml.contains("param1"));
     }
 

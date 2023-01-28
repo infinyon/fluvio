@@ -217,8 +217,7 @@ impl StatusOpt {
     fn partition_size(partition: &Metadata<PartitionSpec>) -> Result<i64, ClusterCliError> {
         match partition.status.size {
             size if size < 0 => Err(ClusterCliError::Other(format!(
-                "A partition has an invalid size: {}",
-                size
+                "A partition has an invalid size: {size}"
             ))),
             size => Ok(size),
         }

@@ -33,7 +33,7 @@ async fn main() {
         Err(_timeout) => (),
         // We encountered an error before having a chance to time out
         Ok(Err(e)) => {
-            eprintln!("Consume error: {:?}", e);
+            eprintln!("Consume error: {e:?}");
         }
         // The consumer should run forever except for the timeout above
         _ => unreachable!("Consumer should last forever"),
@@ -48,7 +48,7 @@ async fn consume() -> Result<(), fluvio::FluvioError> {
 
     while let Some(Ok(record)) = stream.next().await {
         let string = String::from_utf8_lossy(record.value());
-        println!("{}", string);
+        println!("{string}");
     }
     Ok(())
 }

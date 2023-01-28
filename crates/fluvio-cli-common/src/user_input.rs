@@ -182,7 +182,7 @@ mod file_tests {
         assert_eq!(d.data().len(), 1);
         assert_eq!(
             d.len(),
-            data.iter().map(|d| format!("{}\n", d).len()).sum::<usize>()
+            data.iter().map(|d| format!("{d}\n").len()).sum::<usize>()
         );
         assert_eq!(
             std::str::from_utf8(d.data()[0].as_ref()).unwrap(),

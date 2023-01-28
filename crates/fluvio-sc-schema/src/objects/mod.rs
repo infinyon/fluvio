@@ -90,10 +90,7 @@ mod metadata {
                 spec: value.spec,
                 status: value.status,
                 key: value.name.try_into().map_err(|err| {
-                    IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("problem converting: {}", err),
-                    )
+                    IoError::new(ErrorKind::InvalidData, format!("problem converting: {err}"))
                 })?,
                 ctx: MetadataContext::default(),
             })
@@ -571,7 +568,7 @@ mod test {
             .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
             .expect("encoding");
         //watch_response.encode(&mut src, 0).expect("encoding");
-        println!("output: {:#?}", src);
+        println!("output: {src:#?}");
         let dec = WatchResponse::<TopicSpec>::decode_from(
             &mut Cursor::new(&src),
             ObjectApiWatchRequest::API_KEY as i16,
@@ -596,7 +593,7 @@ mod test {
             .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
             .expect("encoding");
 
-        println!("output: {:#?}", src);
+        println!("output: {src:#?}");
 
         assert_eq!(
             src.len(),
@@ -627,7 +624,7 @@ mod test {
             .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
             .expect("encoding");
 
-        println!("output: {:#?}", src);
+        println!("output: {src:#?}");
 
         assert_eq!(
             src.len(),
@@ -663,7 +660,7 @@ mod test {
         let mut src = vec![];
         res_msg.encode(&mut src, 0).expect("encoding");
 
-        println!("output: {:#?}", src);
+        println!("output: {src:#?}");
 
         let dec_msg: ResponseMessage<ObjectApiListResponse> = ResponseMessage::decode_from(
             &mut Cursor::new(&src),

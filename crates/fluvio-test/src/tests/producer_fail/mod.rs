@@ -35,7 +35,7 @@ pub async fn produce_batch(
         test_topic.spec.leader
     };
 
-    println!("Found leader {}", leader);
+    println!("Found leader {leader}");
 
     let cluster_manager = test_driver
         .get_cluster()

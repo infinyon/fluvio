@@ -306,7 +306,7 @@ where
         let elements = spus
             .into_iter()
             .map(|(spu_id, online, rack)| {
-                let spu_key = format!("spu-{}", spu_id);
+                let spu_key = format!("spu-{spu_id}");
                 SpuMetadata::quick((spu_key, spu_id, online, rack))
             })
             .collect();

@@ -75,7 +75,7 @@ pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
             } else {
                 // spu does not exist
                 Status::new(
-                    format!("spu-{}", spu_id),
+                    format!("spu-{spu_id}"),
                     ErrorCode::SpuNotFound,
                     Some("not found".to_owned()),
                 )
@@ -109,7 +109,7 @@ async fn un_register_custom_spu<AC: AuthContext>(
         Status::new(
             spu_name,
             ErrorCode::SpuError,
-            Some(format!("error deleting: {}", err)),
+            Some(format!("error deleting: {err}")),
         )
     } else {
         info!(%spu_name, "custom spu unregistered");

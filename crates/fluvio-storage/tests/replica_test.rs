@@ -42,7 +42,7 @@ fn default_option() -> ReplicaConfig {
 }
 
 fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
-    let msg = format!("record {}", record_index);
+    let msg = format!("record {record_index}");
     Record::new(msg)
 }
 

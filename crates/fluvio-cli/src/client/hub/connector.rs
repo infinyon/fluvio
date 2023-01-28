@@ -3,11 +3,12 @@ use std::sync::Arc;
 use std::fmt::Debug;
 
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio_extension_common::Terminal;
 use fluvio_hub_util::HUB_API_CONN_LIST;
 
-use crate::{Result, error::CliError};
+use crate::{error::CliError};
 use crate::common::OutputFormat;
 
 use super::{get_pkg_list, get_hub_access};
@@ -99,8 +100,7 @@ impl ConnectorHubDownloadOpts {
 
         std::fs::write(file_path, data).map_err(|err| {
             CliError::Other(format!(
-                "unable to write downloaded package to the disk: {}",
-                err
+                "unable to write downloaded package to the disk: {err}"
             ))
         })?;
         println!("... downloading complete");
@@ -117,16 +117,15 @@ mod output {
     //! Format SmartModules response based on output type
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
-
     use tracing::debug;
     use serde::Serialize;
+    use anyhow::Result;
+
     use fluvio_extension_common::output::OutputType;
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
     use fluvio_hub_util::PackageMeta;
-
-    use crate::CliError;
 
     #[derive(Serialize)]
     struct ListConnectors(Vec<PackageMeta>);
@@ -140,7 +139,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_pkgs: Vec<PackageMeta>,
         output_type: OutputType,
-    ) -> Result<(), CliError> {
+    ) -> Result<()> {
         debug!("connectors: {:#?}", list_pkgs);
 
         if !list_pkgs.is_empty() {

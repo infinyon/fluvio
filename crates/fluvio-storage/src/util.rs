@@ -9,7 +9,7 @@ pub fn generate_file_name<P>(parent_dir: P, base_offset: Offset, extension: &str
 where
     P: AsRef<Path>,
 {
-    let mut file = parent_dir.as_ref().join(format!("{:020}", base_offset));
+    let mut file = parent_dir.as_ref().join(format!("{base_offset:020}"));
     file.set_extension(extension);
     file
 }

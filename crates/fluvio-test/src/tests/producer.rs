@@ -120,7 +120,7 @@ async fn producer_work(
         producer
             .send(RecordKey::NULL, record.clone())
             .await
-            .unwrap_or_else(|_| panic!("Producer {} send failed", producer_id));
+            .unwrap_or_else(|_| panic!("Producer {producer_id} send failed"));
 
         let send_latency = now.elapsed().unwrap().as_nanos() as u64;
         latency_histogram.record(send_latency).unwrap();
@@ -153,8 +153,7 @@ async fn producer_work(
     let throughput_p99 = throughput_histogram.max() / 1_000;
 
     println!(
-        "[producer-{}] Produce P99: {:?} Peak Throughput: {:?} kB/s",
-        producer_id, produce_p99, throughput_p99
+        "[producer-{producer_id}] Produce P99: {produce_p99:?} Peak Throughput: {throughput_p99:?} kB/s"
     );
 }
 
@@ -168,16 +167,13 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let producers = if total_records > test_case.option.producers {
         test_case.option.producers
     } else {
-        println!(
-            "More producers than records to split. Reducing number to {}",
-            total_records
-        );
+        println!("More producers than records to split. Reducing number to {total_records}");
         total_records
     };
 
     println!("\nStarting Producer test");
-    println!("Producers: {}", producers);
-    println!("# Records: {}", total_records);
+    println!("Producers: {producers}");
+    println!("# Records: {total_records}");
 
     // Divide work up amongst the total number of producers
     let record_producer_modulo = total_records % producers;
@@ -192,7 +188,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     // Spawn the producers
     let mut producer_wait = Vec::new();
     for n in 0..producers {
-        println!("Starting Producer #{}", n);
+        println!("Starting Producer #{n}");
 
         let producer = async_process!(
             async {
@@ -227,7 +223,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 )
                 .await
             },
-            format!("producer-{}", n)
+            format!("producer-{n}")
         );
 
         producer_wait.push(producer);

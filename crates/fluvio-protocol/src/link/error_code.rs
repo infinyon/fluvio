@@ -198,7 +198,7 @@ impl ErrorCode {
     pub fn to_sentence(&self) -> String {
         match self {
             ErrorCode::None => "".to_owned(),
-            _ => upper_cammel_case_to_sentence(format!("{:?}", self), true),
+            _ => upper_cammel_case_to_sentence(format!("{self:?}"), true),
         }
     }
 

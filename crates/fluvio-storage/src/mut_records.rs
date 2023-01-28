@@ -560,7 +560,7 @@ mod tests {
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
         let nbytes = write_size * NUM_WRITES as usize;
-        assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
+        assert_eq!(bytes.len(), nbytes, "should be {nbytes} bytes");
 
         let old_msg_sink = MutFileRecords::create(OFFSET, options)
             .await
@@ -649,7 +649,7 @@ mod tests {
         // assert_eq!(flush_count + 1, msg_sink.flush_count());
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
         let nbytes = write_size * 2;
-        assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
+        assert_eq!(bytes.len(), nbytes, "should be {nbytes} bytes");
 
         debug!("check multi write delayed flush: wait for flush");
         let flush_count = msg_sink.flush_count();
@@ -665,7 +665,7 @@ mod tests {
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
         let nbytes = write_size * 4;
-        assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
+        assert_eq!(bytes.len(), nbytes, "should be {nbytes} bytes");
 
         // this drop and await is useful to verify the flush task exits the
         // drop drops the mutrecords struct, and the await allows a scheduling

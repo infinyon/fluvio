@@ -36,7 +36,7 @@ impl ProducerWorker {
             .delivery_semantic(config.producer_delivery_semantic)
             .build()
             .map_err(|e| {
-                BenchmarkError::ErrorWithExplanation(format!("Fluvio topic config error: {:?}", e))
+                BenchmarkError::ErrorWithExplanation(format!("Fluvio topic config error: {e:?}"))
             })?;
         let fluvio_producer = fluvio
             .topic_producer_with_config(config.topic_name.clone(), fluvio_config)

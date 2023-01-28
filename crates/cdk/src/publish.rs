@@ -85,7 +85,7 @@ impl PublishCmd {
 
 pub fn package_assemble(pkgmeta: &str, access: &HubAccess) -> Result<String> {
     let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None)?;
-    println!("Package {} created", pkgname);
+    println!("Package {pkgname} created");
     Ok(pkgname)
 }
 
@@ -97,7 +97,7 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
         }
     }
     if let Err(e) = run_block_on(hubutil::push_package_conn(pkgpath, access)) {
-        eprintln!("{}", e);
+        eprintln!("{e}");
         std::process::exit(1);
     }
     Ok(())

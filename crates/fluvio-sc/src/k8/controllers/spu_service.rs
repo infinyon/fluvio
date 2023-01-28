@@ -190,7 +190,7 @@ impl SpuServiceController {
         use k8_types::core::service::{ServiceSpec as K8ServiceSpec};
 
         let mut selector = HashMap::new();
-        let pod_name = format!("fluvio-spg-{}", spu_name);
+        let pod_name = format!("fluvio-spg-{spu_name}");
         selector.insert("statefulset.kubernetes.io/pod-name".to_owned(), pod_name);
 
         let mut k8_service_spec = K8ServiceSpec {

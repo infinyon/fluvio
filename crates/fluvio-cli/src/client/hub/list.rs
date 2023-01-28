@@ -2,11 +2,11 @@ use std::sync::Arc;
 use std::fmt::Debug;
 
 use clap::Parser;
+use anyhow::Result;
 
 use fluvio_extension_common::Terminal;
 use fluvio_hub_util::HUB_API_LIST_META;
 
-use crate::Result;
 use crate::common::OutputFormat;
 
 use super::get_pkg_list;
@@ -38,16 +38,15 @@ mod output {
     //! Format SmartModules response based on output type
     use comfy_table::{Cell, Row};
     use comfy_table::CellAlignment;
-
     use tracing::debug;
     use serde::Serialize;
+    use anyhow::Result;
+
     use fluvio_extension_common::output::OutputType;
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
     use fluvio_hub_util::PackageMeta;
-
-    use crate::CliError;
 
     #[derive(Serialize)]
     struct ListSmartModules(Vec<PackageMeta>);
@@ -61,7 +60,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_smartmodules: Vec<PackageMeta>,
         output_type: OutputType,
-    ) -> Result<(), CliError> {
+    ) -> Result<()> {
         debug!("smartmodules: {:#?}", list_smartmodules);
 
         if !list_smartmodules.is_empty() {

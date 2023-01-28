@@ -1,7 +1,7 @@
 use clap::Parser;
-use fluvio::config::ConfigFile;
+use anyhow::Result;
 
-use crate::Result;
+use fluvio::config::ConfigFile;
 
 #[derive(Parser, Debug)]
 pub struct RenameOpt {

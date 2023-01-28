@@ -17,7 +17,7 @@ pub fn get_binary(bin_name: &str) -> Result<Command, IoError> {
     if !bin_dir.exists() {
         Err(IoError::new(
             ErrorKind::NotFound,
-            format!("{} not found in: {:#?}", bin_name, bin_dir),
+            format!("{bin_name} not found in: {bin_dir:#?}"),
         ))
     } else {
         Ok(Command::new(bin_dir.into_os_string()))

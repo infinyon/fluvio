@@ -21,7 +21,7 @@ pub async fn consumer_stream(test_driver: &TestDriver, option: MyTestCase) {
         let value = String::from_utf8_lossy(record.value())
             .parse::<usize>()
             .expect("Unable to parse");
-        println!("Consuming {:<5}: was consumed: {:?}", index, value);
+        println!("Consuming {index:<5}: was consumed: {value:?}");
 
         assert!((0..iterations).contains(&value));
 

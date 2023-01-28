@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use clap::Parser;
 use serde::Serialize;
+use anyhow::{anyhow, Result};
 
 use fluvio::config::{ConfigFile, TlsPolicy, TlsConfig};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::output::OutputType;
 
-use crate::Result;
 use crate::error::CliError;
 
 #[derive(Parser, Debug)]
@@ -46,12 +46,12 @@ impl ExportOpt {
             if let Some(profile) = config_file.config().profile(profile_name) {
                 profile.cluster.clone()
             } else {
-                return Err(CliError::ProfileNotFoundInConfig(profile_name.to_owned()));
+                return Err(CliError::ProfileNotFoundInConfig(profile_name.to_owned()).into());
             }
         } else if let Ok(profile) = config_file.config().current_profile() {
             profile.cluster.clone()
         } else {
-            return Err(CliError::NoActiveProfileInConfig);
+            return Err(CliError::NoActiveProfileInConfig.into());
         };
 
         let profile_export = if let Some(cluster) = config_file.config().cluster(&cluster_name) {
@@ -66,7 +66,7 @@ impl ExportOpt {
                         ca_cert: tls_certs.ca_cert.to_owned(),
                     },
                     TlsConfig::Files(_) => {
-                        return Err(CliError::Other(format!("Cluster {} uses externals TLS certs. Only inline TLS certs are supported.", cluster_name)));
+                        return Err(anyhow!("Cluster {cluster_name} uses externals TLS certs. Only inline TLS certs are supported."))
                     }
                 }),
             };
@@ -75,7 +75,7 @@ impl ExportOpt {
                 tls,
             }
         } else {
-            return Err(CliError::ClusterNotFoundInConfig(cluster_name.to_owned()));
+            return Err(CliError::ClusterNotFoundInConfig(cluster_name.to_owned()).into());
         };
 
         Ok(out.render_serde(&profile_export, output_format.into())?)

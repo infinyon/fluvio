@@ -40,7 +40,7 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
         return Ok(Status::new(
             name.to_string(),
             ErrorCode::TableFormatAlreadyExists,
-            Some(format!("tableformat '{}' already defined", name)),
+            Some(format!("tableformat '{name}' already defined")),
         ));
     }
 

@@ -1,13 +1,13 @@
+pub mod cli;
+
+use tracing::debug;
+use anyhow::{anyhow, Result};
+
 use fluvio_channel::{FluvioChannelConfig, FluvioBinVersion};
 use fluvio_cli_common::install::{
     install_println, fetch_latest_version, fetch_package_file, install_bin,
 };
 use fluvio_index::{PackageId, HttpAgent};
-
-use tracing::debug;
-use color_eyre::{Result, eyre::eyre};
-
-pub mod cli;
 
 pub async fn install_channel_fluvio_bin(
     channel_name: String,
@@ -24,22 +24,19 @@ pub async fn install_channel_fluvio_bin(
     let _channel_info = if let Some(info) = channel_config.get_channel(&current_channel) {
         info
     } else {
-        return Err(eyre!("Channel info not found in config".to_string(),));
+        return Err(anyhow!("Channel info not found in config"));
     };
 
     // Find the latest version of this package
     install_println(format!(
-        "🎣 Fetching '{}' channel binary for fluvio...",
-        current_channel
+        "🎣 Fetching '{current_channel}' channel binary for fluvio..."
     ));
 
     let install_version = match version {
         FluvioBinVersion::Stable => fetch_latest_version(&agent, &id, &target, false).await?,
         FluvioBinVersion::Latest => fetch_latest_version(&agent, &id, &target, true).await?,
         FluvioBinVersion::Tag(version) => version,
-        FluvioBinVersion::Dev => {
-            return Err(eyre!("Dev channel builds are not published".to_string(),))
-        }
+        FluvioBinVersion::Dev => return Err(anyhow!("Dev channel builds are not published")),
     };
 
     let id = id.into_versioned(install_version.into());
@@ -67,7 +64,7 @@ pub async fn install_channel_fluvio_bin(
     let fluvio_path = if let Some(c) = channel_config.config().channel().get(&current_channel) {
         c.clone().binary_location
     } else {
-        return Err(eyre!("Channel binary location not found".to_string(),));
+        return Err(anyhow!("Channel binary location not found"));
     };
 
     install_bin(&fluvio_path, package_file)?;

@@ -119,8 +119,8 @@ impl SpuGroupObj {
         };
 
         let ns = self.ctx().item().namespace();
-        let private_svc_fqdn = format!("fluvio-spg-{}.{}.svc.cluster.local", self.key(), ns);
-        let public_svc_fqdn = format!("fluvio-spu-{}.{}.svc.cluster.local", spu_name, ns);
+        let private_svc_fqdn = format!("fluvio-spg-{}.{ns}.svc.cluster.local", self.key(),);
+        let public_svc_fqdn = format!("fluvio-spu-{spu_name}.{ns}.svc.cluster.local");
 
         let spu_spec = SpuSpec {
             id: spu_id,
@@ -237,7 +237,7 @@ mod k8_convert {
 
         let mut volume_mounts = vec![VolumeMount {
             name: "data".to_owned(),
-            mount_path: format!("/var/lib/{}/data", PRODUCT_NAME),
+            mount_path: format!("/var/lib/{PRODUCT_NAME}/data"),
             ..Default::default()
         }];
 
@@ -247,10 +247,7 @@ mod k8_convert {
             "/fluvio-run".to_owned(),
             "spu".to_owned(),
             "--sc-addr".to_owned(),
-            format!(
-                "fluvio-sc-internal.{}.svc.cluster.local:{}",
-                namespace, SC_PRIVATE_PORT
-            ),
+            format!("fluvio-sc-internal.{namespace}.svc.cluster.local:{SC_PRIVATE_PORT}"),
             "--log-base-dir".to_owned(),
             storage.log_dir,
             "--log-size".to_owned(),

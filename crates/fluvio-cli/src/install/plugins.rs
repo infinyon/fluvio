@@ -3,22 +3,24 @@ use tracing::debug;
 use anyhow::Result;
 use current_platform::CURRENT_PLATFORM;
 
-use super::update::should_always_print_available_update;
-use fluvio_cli_common::error::CliError as CommonCliError;
-use fluvio_cli_common::error::HttpError;
+use fluvio_cli_common::error::{HttpError, PackageNotFound};
 use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
     fluvio_bin_dir,
 };
-use crate::error::CliError;
-use crate::install::update::{
-    check_update_required, prompt_required_update, check_update_available, prompt_available_update,
-};
+
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_hub_util as hubutil;
 use hubutil::{http, HubAccess, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
 use hubutil::http::StatusCode;
+
+use crate::error::CliError;
+use crate::install::update::{
+    check_update_required, prompt_required_update, check_update_available, prompt_available_update,
+};
+
+use super::update::should_always_print_available_update;
 pub const HUB_API_BPKG_AUTH: &str = "hub/v0/bpkg-auth"; // copied from hub-tool
 
 #[derive(Parser, Debug)]
@@ -121,8 +123,7 @@ impl InstallOpt {
                         ));
                         install_println("❕ Consider filing an issue to add support for this platform using the link below! 👇");
                         install_println(format!(
-                    "❕   https://github.com/infinyon/fluvio/issues/new?title=Support+fluvio-cloud+on+target+{}",
-                    target
+                    "❕   https://github.com/infinyon/fluvio/issues/new?title=Support+fluvio-cloud+on+target+{target}"
                 ));
                         return Ok(());
                     }
@@ -174,12 +175,11 @@ impl InstallOpt {
                 let id = &self.package.clone().ok_or(crate::CliError::Other(
                     "Package name not provided".to_string(),
                 ))?;
-                install_println(format!("🎣 Fetching latest version for package: {}...", id));
+                install_println(format!("🎣 Fetching latest version for package: {id}..."));
                 let version = fetch_latest_version(agent, id, &target, self.develop).await?;
                 let id = id.clone().into_versioned(version.into());
                 install_println(format!(
-                    "⏳ Downloading package with latest version: {}...",
-                    id
+                    "⏳ Downloading package with latest version: {id}..."
                 ));
                 id
             }
@@ -189,18 +189,19 @@ impl InstallOpt {
         let package_result = fetch_package_file(agent, &id, &target).await;
         let package_file = match package_result {
             Ok(pf) => pf,
-            Err(CommonCliError::PackageNotFound {
-                package,
-                version,
-                target,
-            }) => {
-                install_println(format!(
-                    "❕ Package {} is not published at {} for {}, skipping",
-                    package, version, target
-                ));
-                return Ok(());
-            }
-            Err(other) => return Err(other.into()),
+            Err(err) => match err.downcast_ref::<PackageNotFound>() {
+                Some(PackageNotFound {
+                    package,
+                    version,
+                    target,
+                }) => {
+                    install_println(format!(
+                        "❕ Package {package} is not published at {version} for {target}, skipping"
+                    ));
+                    return Ok(());
+                }
+                None => return Err(err),
+            },
         };
         install_println("🔑 Downloaded and verified package file");
 
@@ -243,9 +244,10 @@ impl InstallOpt {
     }
 
     async fn get_binary(&self, bin_name: &str, access: &HubAccess) -> Result<Vec<u8>> {
-        let actiontoken = access.get_bpkg_get_token().await.map_err(|_| {
-            CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into()))
-        })?;
+        let actiontoken = access
+            .get_bpkg_get_token()
+            .await
+            .map_err(|_| HttpError::InvalidInput("authorization error".into()))?;
 
         let binurl = format!(
             "{}/{HUB_API_BPKG_AUTH}/{channel}/{systuple}/{bin_name}",
@@ -257,9 +259,7 @@ impl InstallOpt {
         let mut resp = http::get(binurl)
             .header("Authorization", actiontoken)
             .await
-            .map_err(|_| {
-                CommonCliError::HttpError(HttpError::InvalidInput("authorization error".into()))
-            })?;
+            .map_err(|_| HttpError::InvalidInput("authorization error".into()))?;
 
         match resp.status() {
             StatusCode::Ok => {}

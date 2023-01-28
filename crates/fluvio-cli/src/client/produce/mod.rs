@@ -472,7 +472,7 @@ mod cmd {
             };
 
             if self.verbose {
-                println!("[{}] {}", key, value);
+                println!("[{key}] {value}");
             }
 
             Ok(Some(producer.send(key, value).await?))

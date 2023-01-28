@@ -167,23 +167,20 @@ impl TopicSpec {
             if let Some(segment_size) = storage.segment_size {
                 if segment_size < SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN {
                     return Some(format!(
-                        "segment_size {} is less than minimum {}",
-                        segment_size, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN
+                        "segment_size {segment_size} is less than minimum {SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN}"
                     ));
                 }
             }
             if let Some(max_partition_size) = storage.max_partition_size {
                 if max_partition_size < SPU_PARTITION_MAX_BYTES_MIN {
                     return Some(format!(
-                        "max_partition_size {} is less than minimum {}",
-                        max_partition_size, SPU_PARTITION_MAX_BYTES_MIN
+                        "max_partition_size {max_partition_size} is less than minimum {SPU_PARTITION_MAX_BYTES_MIN}"
                     ));
                 }
                 let segment_size = storage.segment_size.unwrap_or(SPU_LOG_SEGMENT_MAX_BYTES);
                 if max_partition_size < segment_size as u64 {
                     return Some(format!(
-                        "max_partition_size {} is less than segment size {}",
-                        max_partition_size, segment_size
+                        "max_partition_size {max_partition_size} is less than segment size {segment_size}"
                     ));
                 }
             }
@@ -233,8 +230,8 @@ pub enum ReplicaSpec {
 impl std::fmt::Display for ReplicaSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::Assigned(partition_map) => write!(f, "assigned::{}", partition_map),
-            Self::Computed(param) => write!(f, "computed::({})", param),
+            Self::Assigned(partition_map) => write!(f, "assigned::{partition_map}"),
+            Self::Computed(param) => write!(f, "computed::({param})"),
         }
     }
 }
@@ -388,7 +385,7 @@ impl Decoder for ReplicaSpec {
             // Unexpected type
             _ => Err(Error::new(
                 ErrorKind::UnexpectedEof,
-                format!("unknown replica type {}", typ),
+                format!("unknown replica type {typ}"),
             )),
         }
     }
@@ -645,8 +642,7 @@ impl PartitionMaps {
                     return Err(Error::new(
                         ErrorKind::InvalidInput,
                         format!(
-                            "all assigned replicas must have the same number of spu ids: {}",
-                            replica_len
+                            "all assigned replicas must have the same number of spu ids: {replica_len}"
                         ),
                     ));
                 }
@@ -662,10 +658,7 @@ impl PartitionMaps {
             if partition.replicas.len() != unique_count {
                 return Err(Error::new(
                     ErrorKind::InvalidInput,
-                    format!(
-                        "duplicate spu ids found in assigned partition with id: {}",
-                        id
-                    ),
+                    format!("duplicate spu ids found in assigned partition with id: {id}"),
                 ));
             }
 
@@ -674,10 +667,7 @@ impl PartitionMaps {
                 if *spu_id < 0 {
                     return Err(Error::new(
                         ErrorKind::InvalidInput,
-                        format!(
-                            "invalid spu id: {} in assigned partition with id: {}",
-                            spu_id, id
-                        ),
+                        format!("invalid spu id: {spu_id} in assigned partition with id: {id}"),
                     ));
                 }
             }
@@ -1004,7 +994,7 @@ pub mod test {
                     .into()
                 );
             }
-            _ => panic!("expect assigned topic spec, found {:?}", topic_spec_decoded),
+            _ => panic!("expect assigned topic spec, found {topic_spec_decoded:?}"),
         }
     }
 
@@ -1036,7 +1026,7 @@ pub mod test {
                 assert_eq!(param.replication_factor, 3);
                 assert!(param.ignore_rack_assignment);
             }
-            _ => panic!("expect computed topic spec, found {:?}", topic_spec_decoded),
+            _ => panic!("expect computed topic spec, found {topic_spec_decoded:?}"),
         }
     }
 

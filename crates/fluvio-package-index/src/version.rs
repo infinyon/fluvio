@@ -71,7 +71,7 @@ mod tests {
                 assert_eq!(sv.minor, 2);
                 assert_eq!(sv.patch, 3);
                 assert_eq!(sv.pre.as_str(), "alpha.1");
-                assert_eq!(format!("{}", package_version), "1.2.3-alpha.1");
+                assert_eq!(format!("{package_version}"), "1.2.3-alpha.1");
             }
             _ => panic!("should have parsed as semver"),
         }
@@ -83,7 +83,7 @@ mod tests {
         match &package_version {
             PackageVersion::Tag(tag) => {
                 assert_eq!(tag.as_ref(), "stable");
-                assert_eq!(format!("{}", package_version), "stable");
+                assert_eq!(format!("{package_version}"), "stable");
             }
             _ => panic!("should have parsed as tag"),
         }

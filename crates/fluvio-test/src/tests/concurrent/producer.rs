@@ -14,7 +14,7 @@ pub async fn producer(test_driver: &TestDriver, option: MyTestCase, digests: Sen
 
     // Iterations ranging approx. 5000 - 20_000
     let iterations: u16 = (rand::random::<u16>() / 2) + 20000;
-    println!("Producing {} records", iterations);
+    println!("Producing {iterations} records");
     for _ in 0..iterations {
         let record = rand_record();
         let record_digest = hash_record(&record);

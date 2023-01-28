@@ -113,7 +113,7 @@ impl RecordData {
         if self.is_binary() {
             format!("binary: ({} bytes)", self.len())
         } else {
-            format!("text: '{}'", self)
+            format!("text: '{self}'")
         }
     }
 

@@ -66,15 +66,12 @@ pub async fn produce_message_with_api(
                 .send_count(&producer, RecordKey::NULL, message.clone())
                 .await
                 .unwrap_or_else(|_| {
-                    panic!("send record failed for replication: {} iteration: {}", r, i)
+                    panic!("send record failed for replication: {r} iteration: {i}")
                 });
 
             if i % 100 == 0 {
                 let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
-                println!(
-                    "total records sent: {} chunk time: {:.5} secs",
-                    i, elapsed_chunk_time
-                );
+                println!("total records sent: {i} chunk time: {elapsed_chunk_time:.5} secs");
                 chunk_time = SystemTime::now();
             }
             info!(

@@ -1,8 +1,10 @@
-use color_eyre::{Result, eyre::eyre};
-use fluvio_channel::FluvioChannelConfig;
 use std::path::PathBuf;
+
 use clap::{Parser, CommandFactory};
 use tracing::debug;
+use anyhow::{anyhow, Result};
+
+use fluvio_channel::FluvioChannelConfig;
 
 #[derive(Debug, Parser, Clone, Eq, PartialEq)]
 pub struct DeleteOpt {
@@ -60,9 +62,9 @@ impl DeleteOpt {
                     debug!("Deleting: {}", channel_info.get_extensions_path().display());
                     std::fs::remove_dir_all(channel_info.get_extensions_path())?;
 
-                    println!("Deleted release channel \"{}\"", channel_name);
+                    println!("Deleted release channel \"{channel_name}\"");
                 } else {
-                    println!("Release channel \"{}\" not found", channel_name);
+                    println!("Release channel \"{channel_name}\" not found");
                 };
                 Ok(())
             } else {
@@ -73,7 +75,7 @@ impl DeleteOpt {
             println!("No channel name provided");
             let _ = DeleteOpt::command().print_help();
             println!();
-            Err(eyre!(""))
+            Err(anyhow!(""))
         }
     }
 }

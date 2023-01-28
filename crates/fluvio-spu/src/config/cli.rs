@@ -194,7 +194,7 @@ fn find_spu_id_from_env() -> Result<SpuId, IoError> {
         debug!("found spu id from env: {}", id_str);
         let id = id_str
             .parse()
-            .map_err(|err| IoError::new(ErrorKind::InvalidInput, format!("spu-id: {}", err)))?;
+            .map_err(|err| IoError::new(ErrorKind::InvalidInput, format!("spu-id: {err}")))?;
         Ok(id)
     } else {
         // try get special env SPU which has form of {}-{id} when in as in-cluster config
@@ -204,12 +204,12 @@ fn find_spu_id_from_env() -> Result<SpuId, IoError> {
             if spu_tokens.len() < 2 {
                 Err(IoError::new(
                     ErrorKind::InvalidInput,
-                    format!("SPU is invalid format: {} bailing out", spu_name),
+                    format!("SPU is invalid format: {spu_name} bailing out"),
                 ))
             } else {
                 let spu_token = spu_tokens[spu_tokens.len() - 1];
                 let id: SpuId = spu_token.parse().map_err(|err| {
-                    IoError::new(ErrorKind::InvalidInput, format!("invalid spu id: {}", err))
+                    IoError::new(ErrorKind::InvalidInput, format!("invalid spu id: {err}"))
                 })?;
                 info!("found SPU INDEX ID: {}", id);
 
@@ -219,7 +219,7 @@ fn find_spu_id_from_env() -> Result<SpuId, IoError> {
                 let base_id: SpuId = spu_min_var.parse().map_err(|err| {
                     IoError::new(
                         ErrorKind::InvalidInput,
-                        format!("invalid spu min id: {}", err),
+                        format!("invalid spu min id: {err}"),
                     )
                 })?;
                 Ok(id + base_id)
