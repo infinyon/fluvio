@@ -24,7 +24,6 @@ pub use root::{Root, HelpOpt};
 pub use client::TableFormatConfig;
 
 mod root {
-
     use crate::check_for_channel_update;
     use std::sync::Arc;
     use std::path::PathBuf;
@@ -62,6 +61,7 @@ mod root {
     impl Root {
         pub async fn process(self) -> Result<()> {
             if command_triggers_update_check(&self.command) {
+                tracing::info!("Triggered a Fluvio Update Check");
                 check_for_channel_update().await;
             }
 
