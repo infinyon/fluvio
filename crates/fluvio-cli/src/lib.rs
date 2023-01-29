@@ -61,9 +61,10 @@ mod root {
 
     impl Root {
         pub async fn process(self) -> Result<()> {
-            if !matches_consume(&self.command) {
+            if command_triggers_update_check(&self.command) {
                 check_for_channel_update().await;
             }
+
             self.command.process(self.opts).await?;
             Ok(())
         }
@@ -349,30 +350,53 @@ mod root {
 
         Ok(())
     }
+
+    /// Retrieves `true` if the provided `fluvio` command must trigger an
+    /// update check.
+    ///
+    /// Commands that must trigger update checks are:
+    ///
+    /// - `fluvio update`
+    /// - `fluvio version`
     #[inline]
-    fn matches_consume(cmd: &RootCmd) -> bool {
-        matches!(cmd, RootCmd::Fluvio(FluvioCmd::Consume(_)))
+    fn command_triggers_update_check(cmd: &RootCmd) -> bool {
+        matches!(cmd, RootCmd::Version(_)) || matches!(cmd, RootCmd::Update(_))
     }
+
     #[cfg(test)]
     mod tests {
         use clap::Parser;
 
-        use crate::{Root, root::matches_consume};
+        use crate::{Root, root::command_triggers_update_check};
 
         #[test]
-        fn test_matches_consume() {
-            assert!(matches_consume(
+        fn test_command_triggers_update_check() {
+            assert!(command_triggers_update_check(
+                &parse("fluvio version").unwrap().command
+            ));
+
+            assert!(command_triggers_update_check(
+                &parse("fluvio update").unwrap().command
+            ));
+        }
+
+        #[test]
+        fn test_command_does_not_trigger_update_check() {
+            assert!(!command_triggers_update_check(
                 &parse("fluvio consume hello").unwrap().command
             ));
-            assert!(!matches_consume(
+
+            assert!(!command_triggers_update_check(
                 &parse("fluvio produce hello").unwrap().command
             ));
         }
+
         fn parse(command: &str) -> Result<Root, clap::error::Error> {
             Root::try_parse_from(command.split_whitespace())
         }
     }
 }
+
 // Checks for an update if channel is latest or ALWAYS_CHECK is set
 async fn check_for_channel_update() {
     if should_always_print_available_update() {
