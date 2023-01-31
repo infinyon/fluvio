@@ -8,7 +8,7 @@ use fluvio_connector_deployer::{Deployment, DeploymentType};
 
 use crate::{cmd::PackageCmd, deploy::from_cargo_package};
 
-/// Builds and runs the Connector in the current working directory
+/// Build and run the Connector in the current working directory
 #[derive(Debug, Parser)]
 pub struct TestCmd {
     #[clap(flatten)]
@@ -45,6 +45,7 @@ impl TestCmd {
             .config(self.config)
             .pkg(connector_metadata)
             .deployment_type(DeploymentType::Local { output_file: None });
-        builder.deploy()
+        builder.deploy()?;
+        Ok(())
     }
 }

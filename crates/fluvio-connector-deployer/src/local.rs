@@ -10,7 +10,7 @@ use crate::Deployment;
 pub(crate) fn deploy_local<P: AsRef<Path>>(
     deployment: &Deployment,
     output_file: Option<P>,
-) -> Result<()> {
+) -> Result<u32> {
     let (stdout, stderr, wait) = if let Some(log_path) = output_file {
         println!("Log file: {}", log_path.as_ref().to_string_lossy());
         let log_file = std::fs::File::create(log_path)?;
@@ -39,5 +39,5 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
     if wait {
         child.wait()?;
     }
-    Ok(())
+    Ok(child.id())
 }

@@ -23,6 +23,12 @@ anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 cargo-builder = { path = "../cargo-builder"}
 
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+toml = { version = "0.7", default-features = false, features = ["parse", "display", "preserve_order"] }
+comfy-table = { version = "6.1" }
+sysinfo = { version = "0.27", default-features = false }
+
+
 fluvio = { path = "../fluvio"}
 fluvio-connector-deployer = { path = "../fluvio-connector-deployer"}
 fluvio-connector-package = { path = "../fluvio-connector-package", features = ["toml"]}

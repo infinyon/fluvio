@@ -7,7 +7,7 @@ use cargo_builder::{package::PackageInfo, cargo::Cargo};
 
 use crate::cmd::PackageCmd;
 
-/// Builds the Connector in the current working directory
+/// Build the Connector in the current working directory
 #[derive(Debug, Parser)]
 pub struct BuildCmd {
     #[clap(flatten)]
