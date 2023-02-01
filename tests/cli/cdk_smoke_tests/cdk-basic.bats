@@ -44,7 +44,7 @@ setup_file() {
 
     # Deploy
     cd $CONNECTOR_DIR
-    run $CDK_BIN deploy local \
+    run $CDK_BIN deploy start \
         $CONFIG_FILE_FLAG 
     assert_success
 
