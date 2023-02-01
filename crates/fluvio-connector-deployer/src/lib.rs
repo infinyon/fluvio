@@ -13,7 +13,6 @@ pub struct Secret(String);
 #[derive(Clone)]
 pub enum DeploymentType {
     Local { output_file: Option<PathBuf> },
-    K8,
 }
 
 /// Describe deployment configuration
@@ -33,20 +32,31 @@ impl Deployment {
     }
 }
 
+#[derive(Debug)]
+pub enum DeploymentResult {
+    Local {
+        process_id: u32,
+        name: String,
+        log_file: Option<PathBuf>,
+    },
+}
+
 impl DeploymentBuilder {
-    pub fn deploy(self) -> Result<()> {
+    pub fn deploy(self) -> Result<DeploymentResult> {
         let deployment = self.build()?;
         let config_file = std::fs::File::open(&deployment.config)?;
-        deployment.pkg.validate_config(config_file)?;
+        let config = deployment.pkg.validate_config(config_file)?;
         match &deployment.deployment_type {
             DeploymentType::Local { output_file } => {
-                local::deploy_local(&deployment, output_file.as_ref())?
-            }
-            DeploymentType::K8 => {
-                unimplemented!()
+                let process_id = local::deploy_local(&deployment, output_file.as_ref())?;
+                let name = config.meta.name;
+                let log_file = output_file.clone();
+                Ok(DeploymentResult::Local {
+                    process_id,
+                    name,
+                    log_file,
+                })
             }
         }
-
-        Ok(())
     }
 }

@@ -264,7 +264,7 @@ impl ConnectorMetadata {
 }
 
 impl ConnectorMetadata {
-    pub fn validate_config<R: std::io::Read>(&self, reader: R) -> anyhow::Result<()> {
+    pub fn validate_config<R: std::io::Read>(&self, reader: R) -> anyhow::Result<ConnectorConfig> {
         let value =
             serde_yaml::from_reader(reader).context("unable to parse config into YAML format")?;
         validate_custom_config(&self.custom_config, &value)
@@ -274,7 +274,7 @@ impl ConnectorMetadata {
         validate_direction(&self.direction, &config)?;
         validate_deployment(&self.deployment, &config)?;
         validate_secrets(&self.secrets, &config)?;
-        Ok(())
+        Ok(config)
     }
 }
 

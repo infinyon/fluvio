@@ -827,7 +827,7 @@ dependencies = [
  "serde",
  "tempfile",
  "thiserror",
- "toml",
+ "toml 0.5.11",
  "walkdir",
 ]
 
@@ -839,7 +839,7 @@ checksum = "031718ddb8f78aa5def78a09e90defe30151d1f6c672f937af4dd916429ed996"
 dependencies = [
  "semver 1.0.16",
  "serde",
- "toml",
+ "toml 0.5.11",
  "url",
 ]
 
@@ -874,7 +874,7 @@ checksum = "e72c3ff59e3b7d24630206bb63a73af65da4ed5df1f76ee84dfafb9fee2ba60e"
 dependencies = [
  "serde",
  "serde_derive",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -911,12 +911,16 @@ dependencies = [
  "anyhow",
  "cargo-builder",
  "clap 4.1.4",
+ "comfy-table",
  "fluvio",
  "fluvio-connector-deployer",
  "fluvio-connector-package",
  "fluvio-future",
  "fluvio-hub-util",
+ "serde",
+ "sysinfo",
  "thiserror",
+ "toml 0.7.1",
  "tracing",
 ]
 
@@ -938,7 +942,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tokio",
- "toml",
+ "toml 0.5.11",
  "toml-diff",
 ]
 
@@ -2228,7 +2232,7 @@ dependencies = [
  "siphasher",
  "thiserror",
  "tokio",
- "toml",
+ "toml 0.5.11",
  "tracing",
  "wasm-bindgen-test",
 ]
@@ -2288,7 +2292,7 @@ dependencies = [
  "semver 1.0.16",
  "serde",
  "thiserror",
- "toml",
+ "toml 0.5.11",
  "tracing",
 ]
 
@@ -2533,7 +2537,7 @@ dependencies = [
  "serde",
  "serde_yaml 0.8.26",
  "tempfile",
- "toml",
+ "toml 0.5.11",
  "tracing",
 ]
 
@@ -2566,7 +2570,7 @@ dependencies = [
  "serde",
  "serde_yaml 0.9.17",
  "thiserror",
- "toml",
+ "toml 0.5.11",
  "tracing",
 ]
 
@@ -2647,7 +2651,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.8.26",
  "thiserror",
- "toml",
+ "toml 0.5.11",
  "tracing",
 ]
 
@@ -2678,7 +2682,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "toml",
+ "toml 0.5.11",
  "tracing",
  "wasmparser",
 ]
@@ -2933,7 +2937,7 @@ dependencies = [
  "sysinfo",
  "thiserror",
  "tokio",
- "toml",
+ "toml 0.5.11",
  "tracing",
 ]
 
@@ -4820,6 +4824,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "nom8"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae01545c9c7fc4486ab7debaf2aad7003ac19431791868fb2e8066df97fad2f8"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "normalize-line-endings"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6150,6 +6163,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_spanned"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0efd8caf556a6cebd3b285caf480045fcc1ac04f6bd786b09a6f11af30c4fcf4"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_urlencoded"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6405,7 +6427,7 @@ dependencies = [
  "lib-cargo-crate",
  "tempfile",
  "thiserror",
- "toml",
+ "toml 0.5.11",
  "tracing",
 ]
 
@@ -6950,11 +6972,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "772c1426ab886e7362aedf4abc9c0d1348a979517efedfc25862944d10137af0"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit",
+]
+
+[[package]]
 name = "toml-diff"
 version = "0.0.0"
 dependencies = [
  "serde",
- "toml",
+ "toml 0.5.11",
+]
+
+[[package]]
+name = "toml_datetime"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ab8ed2edee10b50132aed5f331333428b011c99402b5a534154ed15746f9622"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90a238ee2e6ede22fb95350acc78e21dc40da00bb66c0334bde83de4ed89424e"
+dependencies = [
+ "indexmap",
+ "nom8",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
 ]
 
 [[package]]
@@ -7052,7 +7109,7 @@ dependencies = [
  "serde",
  "serde_json",
  "termcolor",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
@@ -7499,7 +7556,7 @@ dependencies = [
  "rustix",
  "serde",
  "sha2 0.10.6",
- "toml",
+ "toml 0.5.11",
  "windows-sys",
  "zstd",
 ]
