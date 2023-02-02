@@ -103,6 +103,7 @@ pub use config::FluvioConfig;
 pub use producer::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, RecordKey, ProduceOutput,
     FutureRecordMetadata, RecordMetadata, DeliverySemantic, RetryPolicy, RetryStrategy,
+    Partitioner, PartitionerConfig,
 };
 #[cfg(feature = "smartengine")]
 pub use producer::{SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData};

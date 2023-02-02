@@ -15,8 +15,8 @@ mod config;
 mod error;
 pub mod event;
 mod output;
-mod partitioning;
 mod record;
+mod partitioning;
 mod partition_producer;
 mod memory_batch;
 
@@ -26,7 +26,7 @@ use crate::FluvioError;
 use crate::metrics::ClientMetrics;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
-use crate::producer::partitioning::PartitionerConfig;
+pub use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 #[cfg(feature = "stats")]
 use crate::stats::{ClientStats, ClientStatsDataCollect, metrics::ClientStatsDataFrame};
 

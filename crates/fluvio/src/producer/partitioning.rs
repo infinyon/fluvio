@@ -26,6 +26,12 @@ pub struct PartitionerConfig {
     pub(crate) partition_count: PartitionCount,
 }
 
+impl PartitionerConfig {
+    pub fn partition_count(&self) -> PartitionCount {
+        self.partition_count
+    }
+}
+
 /// A [`Partitioner`] which combines hashing and round-robin partition assignment
 ///
 /// - Records with keys get their keys hashed with siphash
@@ -50,7 +56,7 @@ impl Partitioner for SiphashRoundRobinPartitioner {
         _value: &[u8],
     ) -> PartitionId {
         match maybe_key {
-            Some(key) => partition_siphash(key, config.partition_count),
+            Some(key) => partition_siphash(key, config.partition_count()),
             None => {
                 // Atomic increment. This will wrap on overflow, which is fine
                 // because we are only interested in the modulus anyway
