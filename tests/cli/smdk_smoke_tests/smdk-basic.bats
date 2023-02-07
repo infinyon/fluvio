@@ -49,7 +49,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -89,7 +89,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -130,7 +130,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -172,7 +172,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     cd $TEST_DIR
@@ -214,7 +214,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -257,7 +257,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -297,7 +297,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -332,7 +332,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -367,7 +367,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -402,7 +402,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -439,7 +439,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -479,7 +479,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -520,7 +520,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -562,7 +562,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -603,7 +603,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -646,7 +646,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -686,7 +686,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -721,7 +721,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -756,7 +756,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
@@ -791,7 +791,7 @@ setup_file() {
 
     # Add SM to workspace
     cd $TEST_DIR
-    sed -i "" -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
 
     # Generate
     run $SMDK_BIN generate \
