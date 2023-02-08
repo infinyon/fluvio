@@ -1,6 +1,6 @@
+use std::fs;
 use std::io::Read;
 use std::path::Path;
-use std::fs;
 
 use tracing::{debug, info};
 
@@ -251,6 +251,36 @@ fn hub_package_meta_t_read() {
 }
 
 #[test]
+fn hub_package_write() {
+    use fluvio_hub_protocol::PkgTag;
+
+    let pm = PackageMeta {
+        group: "infinyon".into(),
+        name: "test-write".into(),
+        version: "0.0.1".into(),
+        manifest: ["tests/apackage/module.wasm".into()].to_vec(),
+        ..PackageMeta::default()
+    };
+    pm.write("tests/apackage/package-yaml-write.yaml.tmp")
+        .expect("write fail");
+
+    let tags = vec![PkgTag {
+        tag: "target".to_string(),
+        value: "aarch64-unknown-linux-musl".to_string(),
+    }];
+    let pm = PackageMeta {
+        group: "infinyon".into(),
+        name: "test-write".into(),
+        version: "0.0.1".into(),
+        manifest: ["tests/apackage/module.wasm".into()].to_vec(),
+        tags: Some(tags),
+        ..PackageMeta::default()
+    };
+    pm.write("tests/apackage/package-yaml-write-tags.yaml.tmp")
+        .expect("write fail");
+}
+
+#[test]
 fn hub_package_meta_t_write_then_read() {
     let testfile: &str = "tests/hub_package_meta_rw_test.yaml";
     let pm = PackageMeta {
@@ -349,7 +379,7 @@ fn hub_packagemeta_naming_check() {
 
 #[cfg(test)]
 mod t_packagemeta_version {
-    use fluvio_hub_protocol::{HubError, PackageMeta, PkgVisibility};
+    use fluvio_hub_protocol::{HubError, PackageMeta, PkgTag, PkgVisibility};
 
     use crate::PackageMetaExt;
 
@@ -366,12 +396,33 @@ mod t_packagemeta_version {
             "tests/apackage/package-meta-v0.1.yaml",
             "tests/apackage/package-meta-v0.2-owner.yaml",
             "tests/apackage/package-meta-v0.2-public.yaml",
+            "tests/apackage/package-meta-v0.3-notags.yaml",
+            "tests/apackage/package-meta-v0.3-notags2.yaml",
+            "tests/apackage/package-meta-v0.3-targets.yaml",
         ];
 
         for ver in flist {
             let msg = format!("Failed to read {ver}");
             let _pm = read_pkgmeta(ver).expect(&msg);
         }
+    }
+
+    #[test]
+    fn read_tags_targets() {
+        const TAGGED_PM: &str = "tests/apackage/package-meta-v0.3-targets.yaml";
+        let msg = format!("couldn't read {TAGGED_PM}");
+        let pm = read_pkgmeta(TAGGED_PM).expect(&msg);
+        let tags = vec![
+            ("arch", "aarch64-apple-darwin"),
+            ("arch", "aarch64-unknown-linux-musl"),
+        ]
+        .iter()
+        .fold(Vec::new(), |mut h, (k, v)| {
+            let tag = PkgTag::new(k, v);
+            h.push(tag);
+            h
+        });
+        assert_eq!(Some(tags), pm.tags);
     }
 
     #[test]

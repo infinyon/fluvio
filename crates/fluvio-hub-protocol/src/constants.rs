@@ -20,7 +20,7 @@ pub const HUB_MANIFEST_BLOB: &str = "manifest.tar.gz";
 pub const HUB_PACKAGE_EXT: &str = "ipkg";
 pub const HUB_PACKAGE_META: &str = "package-meta.yaml";
 pub const HUB_PACKAGE_META_CLEAN: &str = "package-meta-clean.yaml";
-pub const HUB_PACKAGE_VERSION: &str = "0.2";
+pub const HUB_PACKAGE_VERSION: &str = "0.3";
 pub const HUB_REMOTE: &str = "https://hub.infinyon.cloud";
 pub const HUB_SIGNFILE_BASE: &str = "signature";
 
