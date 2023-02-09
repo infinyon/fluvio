@@ -44,29 +44,37 @@ async fn start_monitoring(metrics: Arc<ConnectorMetrics>) -> Result<(), IoError>
         }
     };
 
-    // check if file exists
-    if let Ok(_metadata) = std::fs::metadata(&metric_out_path) {
-        info!("metric file already exists, deleting: {}", metric_out_path);
-        match std::fs::remove_file(&metric_out_path) {
-            Ok(_) => {}
-            Err(err) => {
-                println!("error deleting metric file: {err}");
-                return Err(err);
+    loop {
+        // check if file exists
+        if let Ok(_metadata) = std::fs::metadata(&metric_out_path) {
+            info!("metric file already exists, deleting: {}", metric_out_path);
+            match std::fs::remove_file(&metric_out_path) {
+                Ok(_) => {}
+                Err(err) => {
+                    println!("error deleting metric file: {err}");
+                    return Err(err);
+                }
             }
         }
+
+        let listener = UnixListener::bind(&metric_out_path)?;
+        let mut incoming = listener.incoming();
+        info!("monitoring started");
+
+        while let Some(stream) = incoming.next().await {
+            let mut stream = match stream {
+                Ok(stream) => stream,
+                Err(err) => {
+                    error!("error accepting connection: {}", err);
+                    break;
+                }
+            };
+
+            trace!("metrics: {:?}", metrics);
+            let bytes = serde_json::to_vec_pretty(metrics.as_ref())?;
+            stream.write_all(&bytes).await?;
+        }
+        info!("monitoring socket closed. Trying to reconnect in 5 seconds");
+        fluvio_future::timer::sleep(std::time::Duration::from_secs(5)).await;
     }
-
-    let listener = UnixListener::bind(metric_out_path)?;
-    let mut incoming = listener.incoming();
-    info!("monitoring started");
-
-    while let Some(stream) = incoming.next().await {
-        let mut stream = stream?;
-
-        trace!("metrics: {:?}", metrics);
-        let bytes = serde_json::to_vec_pretty(metrics.as_ref())?;
-        stream.write_all(&bytes).await?;
-    }
-
-    Ok(())
 }
