@@ -60,5 +60,8 @@ async fn start_monitoring(ctx: DefaultSharedGlobalContext) -> Result<(), IoError
             let bytes = serde_json::to_vec_pretty(metrics)?;
             stream.write_all(&bytes).await?;
         }
+
+        info!("monitoring socket closed. Trying to reconnect in 5 seconds");
+        fluvio_future::timer::sleep(std::time::Duration::from_secs(5)).await;
     }
 }
