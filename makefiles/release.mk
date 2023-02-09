@@ -1,5 +1,6 @@
 # Use the binary name produced by cargo
 PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk
+PUBLISH_BINARIES_HUB=cdk
 
 # CI has to set RELEASE=true to run commands that update public
 #RELEASE?=false
@@ -170,12 +171,31 @@ publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 			$$ARTIFACT; \
 	)
 
+publish-artifacts: PUBLIC_VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
+publish-artifacts-hub: unzip-gh-release-artifacts
+	@echo "Publish to hub"
+	$(foreach bin, $(PUBLISH_BINARIES_HUB), \
+		$(foreach zipf, $(wildcard ${bin}*.zip), \
+			printf "\n"; \
+			export DIRNAME=$(basename $(zipf)); \
+			export TARGET=$(shell cat $(basename $(zipf))/.target); \
+			export PACKAGE=$(subst -$(shell cat $(basename $(zipf))/.target), ,$(basename $(zipf))); \
+			export ARTIFACT=$(abspath $$DIRNAME/$$PACKAGE); \
+			$(DRY_RUN_ECHO) actions/upload-bpkg.sh $$PACKAGE $$TARGET ${CHANNEL}; \
+		) \
+	)
 
-publish-artifacts-stable: VERSION=$(REPO_VERSION)
-publish-artifacts-stable: publish-artifacts
+publish-artifacts-dev-hub: CHANNEL=latest
+publish-artifacts-dev-hub: publish-artifacts-hub
 
 publish-artifacts-dev: VERSION=$(DEV_VERSION_TAG)
-publish-artifacts-dev: publish-artifacts
+publish-artifacts-dev: publish-artifacts publish-artifacts-dev-hub
+
+publish-artifacts-stable-hub: CHANNEL=stable
+publish-artifacts-stable-hub: publish-artifacts-hub
+
+publish-artifacts-stable: VERSION=$(REPO_VERSION)
+publish-artifacts-stable: publish-artifacts publish-artifacts-stable-hub
 
 # Need to ensure that version is always a semver
 # Version convention is different here. Notice the `+`
