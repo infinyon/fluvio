@@ -37,5 +37,7 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = [
 ] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", default-features = false }
 
+pyo3 = { version = "0.18.1", features = ["extension-module"] }
+
 [dev-dependencies]
 fluvio-types = { path = "../fluvio-types" }

@@ -732,6 +732,7 @@ mod cmd {
             wasm: SmartModuleInvocationWasm::Predefined(name.to_string()),
             kind: SmartModuleKind::Generic(ctx),
             params: params.into(),
+            ..Default::default()
         }
     }
 
@@ -751,6 +752,7 @@ mod cmd {
             wasm: SmartModuleInvocationWasm::AdHoc(buffer),
             kind: SmartModuleKind::Generic(ctx),
             params: params.into(),
+            ..Default::default()
         })
     }
 
@@ -768,6 +770,7 @@ mod cmd {
                     .map(|(k, v)| (k, v.into()))
                     .collect::<std::collections::BTreeMap<String, String>>()
                     .into(),
+                    ..Default::default()
             })
             .collect())
     }

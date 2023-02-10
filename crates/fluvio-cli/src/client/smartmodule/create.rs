@@ -8,7 +8,8 @@ use clap::Parser;
 use anyhow::Result;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
+use fluvio::dataplane::ByteBuf;
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec, SmartModuleWasmFormat};
 use fluvio_extension_common::Terminal;
 
 use crate::client::cmd::ClientCmd;
@@ -20,7 +21,9 @@ pub struct CreateSmartModuleOpt {
     name: String,
     /// The path to a WASM binary to create the SmartModule from
     #[clap(long)]
-    wasm_file: PathBuf,
+    wasm_file: Option<PathBuf>,
+    #[clap(long)]
+    python_file: Option<PathBuf>,
     #[clap(long)]
     /// The path to the SmartModule package (experimental)
     package: Option<PathBuf>,
@@ -68,13 +71,32 @@ impl ClientCmd for CreateSmartModuleOpt {
             (None, BTreeMap::new())
         };
         */
+        let spec : SmartModuleSpec =
+        if let Some(wasm_file) = self.wasm_file {
+            let raw = std::fs::read(wasm_file)?;
 
-        let raw = std::fs::read(self.wasm_file)?;
+            SmartModuleSpec {
+                wasm: SmartModuleWasm::from_raw_wasm_bytes(&raw)?,
+                ..Default::default()
+            }
+        } else if let Some(python_file) = self.python_file {
+            let payload = ByteBuf::from(std::fs::read(python_file)?);
 
-        let spec = SmartModuleSpec {
-            wasm: SmartModuleWasm::from_raw_wasm_bytes(&raw)?,
-            ..Default::default()
+            SmartModuleSpec {
+                wasm: SmartModuleWasm {
+                    payload,
+                    format: SmartModuleWasmFormat::Text,
+                },
+                ..Default::default()
+            }
+
+        } else {
+            SmartModuleSpec {
+                ..Default::default()
+            }
         };
+
+
 
         debug!(name = self.name, "creating smartmodule");
         let admin = fluvio.admin().await;

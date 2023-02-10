@@ -7,8 +7,10 @@ use fluvio_spu_schema::server::{
     stream_fetch::DerivedStreamInvocation,
     smartmodule::{
         SmartModuleInvocation, SmartModuleKind, SmartModuleContextData, SmartModuleInvocationWasm,
+        SmartModuleLanguage,
     },
 };
+use fluvio_controlplane_metadata::smartmodule::SmartModuleWasmFormat;
 use fluvio::{ConsumerConfig};
 use futures_util::{StreamExt, stream::BoxStream};
 use fluvio_protocol::record::ConsumerRecord;
@@ -93,27 +95,32 @@ async fn derivedstream_to_invocation(
                             accumulator: vec![],
                         },
                         params,
+                        ..Default::default()
                     },
                     DerivedStreamStep::Map(module) => SmartModuleInvocation {
                         wasm: SmartModuleInvocationWasm::Predefined(module.module),
                         kind: SmartModuleKind::Map,
                         params,
+                        ..Default::default()
                     },
                     DerivedStreamStep::FilterMap(module) => SmartModuleInvocation {
                         wasm: SmartModuleInvocationWasm::Predefined(module.module),
                         kind: SmartModuleKind::FilterMap,
                         params,
+                        ..Default::default()
                     },
                     DerivedStreamStep::Filter(module) => SmartModuleInvocation {
                         wasm: SmartModuleInvocationWasm::Predefined(module.module),
                         kind: SmartModuleKind::Filter,
                         params,
+                        ..Default::default()
                     },
                     DerivedStreamStep::Join(module) => match module.right {
                         DerivedStreamInputRef::Topic(ref topic) => SmartModuleInvocation {
                             wasm: SmartModuleInvocationWasm::Predefined(module.module),
                             kind: SmartModuleKind::Join(topic.name.to_owned()),
                             params,
+                            ..Default::default()
                         },
                         DerivedStreamInputRef::DerivedStream(ref smart_stream) => {
                             let join_target_name = smart_stream.name.to_owned();
@@ -132,6 +139,7 @@ async fn derivedstream_to_invocation(
                                                 derivedstream: join_target_name.to_owned(),
                                             },
                                             params,
+                                            ..Default::default()
                                         }
                                     }
 
@@ -249,8 +257,15 @@ fn resolve_invocation(
             .find_by_pk_key(&name)
             .map_err(|err| ErrorCode::Other(format!("error parsing SmartModule name: {err}")))?
         {
+            let payload : Vec<u8> = smartmodule.spec.wasm.payload.into();
+            let language = if smartmodule.spec.wasm.format == SmartModuleWasmFormat::Text {
+                SmartModuleLanguage::Python
+            } else {
+                SmartModuleLanguage::Rust
+            };
+
             Ok(SmartModuleInvocation {
-                wasm: SmartModuleInvocationWasm::AdHoc(smartmodule.spec.wasm.payload.into()),
+                wasm: SmartModuleInvocationWasm::AdHoc(payload),
                 ..invocation
             })
         } else {

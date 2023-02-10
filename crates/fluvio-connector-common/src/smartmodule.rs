@@ -47,6 +47,7 @@ pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<Smart
                     .map(|(k, v)| (k.clone(), v.clone().into()))
                     .collect::<std::collections::BTreeMap<String, String>>()
                     .into(),
+                ..Default::default()
             })
             .collect(),
     )

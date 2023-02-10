@@ -5,6 +5,7 @@ pub(crate) mod filter_map;
 pub(crate) mod aggregate;
 pub(crate) mod join;
 pub(crate) mod join_stream;
+pub(crate) mod python;
 
 pub(crate) use instance::create_transform;
 

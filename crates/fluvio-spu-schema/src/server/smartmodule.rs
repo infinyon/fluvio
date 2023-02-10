@@ -36,6 +36,7 @@ pub struct SmartModuleInvocation {
     pub wasm: SmartModuleInvocationWasm,
     pub kind: SmartModuleKind,
     pub params: SmartModuleExtraParams,
+    pub language: SmartModuleLanguage,
 }
 
 #[derive(Clone, Encoder, Decoder)]
@@ -44,6 +45,13 @@ pub enum SmartModuleInvocationWasm {
     Predefined(String),
     /// Compressed WASM module payload using Gzip
     AdHoc(Vec<u8>),
+}
+
+#[derive(Clone, Encoder, Decoder, Default, Debug)]
+pub enum SmartModuleLanguage {
+    #[default]
+    Rust,
+    Python,
 }
 
 impl SmartModuleInvocationWasm {
