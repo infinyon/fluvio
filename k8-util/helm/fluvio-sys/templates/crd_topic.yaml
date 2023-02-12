@@ -89,6 +89,28 @@ spec:
                     maxPartitionSize:
                       type: integer
                       minimum: 2048
+                columns:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - name
+                    - type
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        type: string
+                        enum:
+                          - String
+                          - Int
+                          - Long
+                          - Float
+                          - Double
+                          - Bool
+                          - Bytes
+                          - Timestamp
+                          - Json
       subresources:
           status: {}
       additionalPrinterColumns:
