@@ -632,4 +632,15 @@ mod tests {
             BTreeMap::from([("regex".to_string(), "\\w".into())])
         );
     }
+
+    #[test]
+    fn sample_yaml_test_files() {
+        let testfiles = vec!["tests/sample-http.yaml", "tests/sample-mqtt.yaml"];
+
+        for tfile in testfiles {
+            let connector_cfg = ConnectorConfig::from_file(tfile)
+                .expect(&format!("Failed to load {tfile}"));
+            dbg!(tfile, connector_cfg);
+        }
+    }
 }
