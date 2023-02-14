@@ -11,12 +11,18 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
+use tracing::{trace};
+use anyhow::{anyhow, Result};
+
+
 use fluvio_types::defaults::{
     STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
     SPU_PARTITION_MAX_BYTES_MIN, SPU_LOG_SEGMENT_MAX_BYTES,
 };
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
+use fluvio_protocol::Version;
+use fluvio_protocol::bytes::{Buf, BufMut};
 use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
@@ -34,6 +40,8 @@ pub struct TopicSpec {
     #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 6)]
     compression_type: CompressionAlgorithm,
+    #[fluvio(min_version = 11)]
+    columns: Vec<ColumnDef>,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -152,6 +160,8 @@ impl TopicSpec {
 
         None
     }
+
+
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
@@ -901,4 +911,6 @@ pub mod test {
         let spec2 = ReplicaSpec::new_assigned(p2);
         assert_eq!(spec2.partition_map_str(), Some("".to_string()));
     }
+
+    
 }

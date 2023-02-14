@@ -9,10 +9,11 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use fluvio_controlplane_metadata::topic::ColumnDef;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use fluvio_types::PartitionCount;
 use fluvio_types::ReplicationFactor;
@@ -92,6 +93,16 @@ pub struct CreateTopicOpt {
 
     #[clap(flatten)]
     setting: TopicConfigOpt,
+
+    /// column mapping, this will map to duckdb columns, if this not specific, then default column (key,timestamp, value)
+    /// this assume values json format
+    /// Eg. -c  ph=contact.ph -c addr=contact.addr -e
+    #[clap(
+        short = 'c',
+        long,
+        value_parser=parse_key_val,
+    )]
+    pub columns: Vec<(String, String)>,
 }
 
 impl CreateTopicOpt {
@@ -139,6 +150,9 @@ impl CreateTopicOpt {
         }
 
         let mut topic_spec: TopicSpec = replica_spec.into();
+
+        topic_spec.set_columns(self.columns_mappings()?);
+        
         if let Some(retention) = self.setting.retention_time {
             topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
                 time_in_seconds: retention.as_secs() as u32,
@@ -165,6 +179,14 @@ impl CreateTopicOpt {
 
         // return server separately from config
         Ok((self.topic, topic_spec))
+    }
+
+    pub(crate) fn columns_mappings(&self) -> Result<Vec<ColumnDef>> {
+        let mut columns = vec![];
+        for (name, _) in &self.columns {
+            columns.push(ColumnDef::from_dsl(&name)?);
+        }
+        Ok(columns)
     }
 }
 
@@ -212,4 +234,11 @@ mod load {
                 .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{err}")))
         }
     }
+}
+
+fn parse_key_val(s: &str) -> Result<(String, String)> {
+    let pos = s
+        .find('=')
+        .ok_or_else(|| anyhow!(format!("invalid KEY=value: no `=` found in `{s}`")))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
