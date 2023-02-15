@@ -86,7 +86,12 @@ impl ConnectorConfig {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let mut connector_config: Self = serde_yaml::from_str(&contents)?;
+        ConnectorConfig::config_from_str(&contents)
+    }
+
+    /// Only parses the meta section of the config
+    pub fn config_from_str(config_str: &str) -> Result<Self> {
+        let mut connector_config: Self = serde_yaml::from_str(config_str)?;
         connector_config.normalize_batch_size()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -638,9 +643,9 @@ mod tests {
         let testfiles = vec!["tests/sample-http.yaml", "tests/sample-mqtt.yaml"];
 
         for tfile in testfiles {
-            let connector_cfg = ConnectorConfig::from_file(tfile)
-                .expect(&format!("Failed to load {tfile}"));
-            dbg!(tfile, connector_cfg);
+            let connector_cfg =
+                ConnectorConfig::from_file(tfile).expect(&format!("Failed to load {tfile}"));
+            println!("{tfile}: {connector_cfg:?}");
         }
     }
 }
