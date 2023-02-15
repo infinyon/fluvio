@@ -24,7 +24,7 @@ futures-util = { version = "0.3.5", features = ["sink", "io"] }
 async-lock = "2.4.0"
 event-listener = "2.0.0"
 async-channel = "1.6.1"
-tokio = { version = "1.11.0", features = ["macros"] }
+tokio = { version = "1.24.2", features = ["macros"] }
 tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
 async-trait = "0.1.21"
 pin-project = "1.0.1"

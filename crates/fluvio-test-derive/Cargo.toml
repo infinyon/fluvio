@@ -25,7 +25,7 @@ rand = "0.8.4"
 [dev-dependencies]
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
 fluvio = { path = "../fluvio" }
-tokio = { version = "1.4", features = ["macros"] }
+tokio = { version = "1.24", features = ["macros"] }
 fluvio-future = { version = "0.4.0", features = ["task", "timer", "subscriber", "fixture"] }
 clap = { version = "4.0.9", features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 inventory = "0.3"

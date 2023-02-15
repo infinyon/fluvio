@@ -25,7 +25,7 @@ serde_yaml = "0.8"
 ssh-key = { version="0.4.3", features=[ "ed25519" ] }
 tar = "0.4"
 tempfile = "3.3.0"
-tokio = "1.20"
+tokio = "1.24"
 toml = "0.5.9"
 tracing = { workspace = true }
 thiserror = { workspace = true }

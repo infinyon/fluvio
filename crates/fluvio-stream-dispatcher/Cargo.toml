@@ -20,7 +20,7 @@ async-trait = "0.1.21"
 async-rwlock = "1.3.0"
 async-channel = "1.1.0"
 event-listener = "2.5.1"
-tokio = { version = "1.3.0", features = ["macros"] }
+tokio = { version = "1.24.2", features = ["macros"] }
 once_cell = "1.5"
 
 # Fluvio dependencies

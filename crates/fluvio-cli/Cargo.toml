@@ -71,7 +71,7 @@ humantime = "2.1.0"
 bytesize = { version = "1.1.0", features = ['serde'] }
 indicatif = "0.17.0"
 async-trait = "0.1.21"
-tokio = { version = "1.3.0", features = ["macros"] }
+tokio = { version = "1.24.2", features = ["macros"] }
 async-net = "1.7.0"
 anyhow = { workspace = true }
 current_platform = "0.2"
