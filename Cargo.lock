@@ -2492,9 +2492,11 @@ dependencies = [
  "fluvio-smartengine",
  "futures 0.3.26",
  "futures-util",
+ "once_cell",
  "serde",
  "serde_json",
  "serde_yaml 0.8.26",
+ "tempfile",
  "tracing",
 ]
 
