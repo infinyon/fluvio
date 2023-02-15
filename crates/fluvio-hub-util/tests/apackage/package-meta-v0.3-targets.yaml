@@ -1,11 +1,15 @@
 ---
 package_format_version: "0.3"
 name: example
-version: 0.0.1
+version: "0.0.1"
 group: infinyon
 description: Describe the module here
 license: e.g. Apache2
 visibility: private
 manifest:
-  - module.wasm
-tags: ~
+  - tests/apackage/module.wasm
+tags:
+  - tag: arch
+    value: aarch64-apple-darwin
+  - tag: arch
+    value: aarch64-unknown-linux-musl

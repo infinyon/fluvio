@@ -1,6 +1,6 @@
 mod hubaccess;
 mod package;
-mod packagemeta;
+mod package_meta_ext;
 mod utils;
 
 pub mod keymgmt;
@@ -9,7 +9,7 @@ use const_format::concatcp;
 
 pub use hubaccess::*;
 pub use package::*;
-pub use packagemeta::*;
+pub use package_meta_ext::*;
 pub use utils::*;
 pub use surf as http;
 

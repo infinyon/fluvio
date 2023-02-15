@@ -25,8 +25,9 @@ pub struct PackageMeta {
     #[serde(default = "PackageMeta::visibility_if_missing")]
     pub visibility: PkgVisibility, // private is default if missing
     pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
-                               // repository: optional url
-                               // repository-commit: optional hash
+    // repository: optional url
+    // repository-commit: optional hash
+    pub tags: Option<Vec<PkgTag>>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
@@ -35,6 +36,12 @@ pub enum PkgVisibility {
     #[default]
     Private,
     Public,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
+pub struct PkgTag {
+    pub tag: String,
+    pub value: String,
 }
 
 impl Default for PackageMeta {
@@ -48,6 +55,7 @@ impl Default for PackageMeta {
             license: "e.g. Apache2".into(),
             visibility: PkgVisibility::Private,
             manifest: Vec::new(),
+            tags: None,
         }
     }
 }
@@ -162,6 +170,14 @@ impl PackageMeta {
     }
 }
 
+impl PkgTag {
+    pub fn new(tag: &str, val: &str) -> Self {
+        PkgTag {
+            tag: tag.to_string(),
+            value: val.to_string(),
+        }
+    }
+}
 pub fn packagename_validate(pkgname: &str) -> Result<()> {
     let mut advice = String::new();
 

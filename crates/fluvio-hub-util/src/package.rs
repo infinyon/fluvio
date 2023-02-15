@@ -65,7 +65,7 @@ fn package_assemble<P: AsRef<Path>>(pkgmeta: P, outdir: Option<&str>) -> Result<
     // crate manifest blob
     //todo: create in tmpdir/tmpfile?
     let manipath = Path::new(outdir).join(HUB_MANIFEST_BLOB);
-    debug!(target: "package_assemble", "{pkgtarname}, creating temporary manifest blob ");
+    debug!(target: "package_assemble", "{pkgtarname}, creating temporary manifest blob");
     let tfio = std::fs::File::create(&manipath)?;
     let mut tfgz = GzBuilder::new()
         .filename(HUB_MANIFEST_BLOB)
@@ -87,6 +87,7 @@ fn package_assemble<P: AsRef<Path>>(pkgmeta: P, outdir: Option<&str>) -> Result<
     tf.finish()?;
     drop(tf);
     tfgz.finish()?;
+    debug!(target: "package_assemble", "{pkgtarname}, temporary manifest blob done");
 
     // write the clean temporary package file
     let clean_tmp = Path::new(outdir).join(HUB_PACKAGE_META_CLEAN);
@@ -506,6 +507,16 @@ mod tests {
 
     const PKG_SIGN_PUBKEY: &str = "tests/hubutil_package_sign-pubkey.pem";
 
+    fn rust_log_init() {
+        let trs = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO);
+        if std::env::var("RUST_LOG").is_ok() {
+            trs.with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                .init();
+        } else {
+            trs.init();
+        }
+    }
+
     #[test]
     fn hubutil_serialize_package_meta() {
         let pm = PackageMeta {
@@ -553,6 +564,7 @@ mod tests {
 
     #[test]
     fn hubutil_package_assemble() {
+        rust_log_init();
         let testfile: &str = "tests/apackage/package-meta.yaml";
         let res = package_assemble(testfile, Some("tests"));
         assert!(res.is_ok());
