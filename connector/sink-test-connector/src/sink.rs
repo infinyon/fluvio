@@ -3,7 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use fluvio::Offset;
-use fluvio_connector_common::{Sink, LocalBoxSink};
+use fluvio_connector_common::{Sink, LocalBoxSink, tracing::debug};
 
 use crate::CustomConfig;
 
@@ -11,7 +11,10 @@ use crate::CustomConfig;
 pub(crate) struct TestSink {}
 
 impl TestSink {
-    pub(crate) fn new(_config: &CustomConfig) -> Result<Self> {
+    pub(crate) fn new(config: &CustomConfig) -> Result<Self> {
+        debug!(?config.api_key);
+        let resolved = config.api_key.resolve()?;
+        debug!(resolved);
         Ok(Self {})
     }
 }

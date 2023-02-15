@@ -8,9 +8,6 @@ use derive_builder::Builder;
 use fluvio_connector_package::metadata::ConnectorMetadata;
 
 #[derive(Clone)]
-pub struct Secret(String);
-
-#[derive(Clone)]
 pub enum DeploymentType {
     Local { output_file: Option<PathBuf> },
 }
@@ -20,7 +17,7 @@ pub enum DeploymentType {
 pub struct Deployment {
     pub executable: PathBuf, // path to executable
     #[builder(default)]
-    pub secrets: Vec<Secret>, // List of Secrets
+    pub secrets: Option<PathBuf>, // path to secrets file
     pub config: PathBuf,     // Configuration to pass along,
     pub pkg: ConnectorMetadata, // Connector pkg definition
     pub deployment_type: DeploymentType, // deployment type

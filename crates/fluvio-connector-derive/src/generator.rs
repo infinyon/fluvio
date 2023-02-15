@@ -68,6 +68,7 @@ fn init_and_parse_config(config_type_path: &Path) -> TokenStream {
         #[derive(Debug)]
         pub struct ConnectorOpt {
             config: ::std::path::PathBuf,
+            secrets: Option<::std::path::PathBuf>
         }
 
         impl ConnectorOpt {
@@ -77,8 +78,14 @@ fn init_and_parse_config(config_type_path: &Path) -> TokenStream {
                     .find(|(_, a)| a.eq("--config"))
                     .and_then(|(i, _)| ::std::env::args().nth(i + 1))
                     .map(::std::path::PathBuf::from);
+                let secrets = ::std::env::args()
+                    .enumerate()
+                    .find(|(_, a)| a.eq("--secrets"))
+                    .and_then(|(i, _)| ::std::env::args().nth(i + 1))
+                    .map(::std::path::PathBuf::from);
+
                 match path {
-                    Some(config) => Self {config},
+                    Some(config) => Self {config, secrets},
                     None => {
                         eprintln!("error: The following required arguments were not provided:\n  --config <PATH>");
                         ::std::process::exit(1)
@@ -90,6 +97,20 @@ fn init_and_parse_config(config_type_path: &Path) -> TokenStream {
         ::fluvio_connector_common::future::init_logger();
 
         let opts = ConnectorOpt::parse();
+
+        match &opts.secrets {
+            Some(secrets) => {
+                ::fluvio_connector_common::tracing::info!("Using FileSecretStore");
+                ::fluvio_connector_common::secret::set_default_secret_store(
+                    ::std::boxed::Box::new(::fluvio_connector_common::secret::FileSecretStore::from(secrets)))?;
+            },
+            None => {
+                ::fluvio_connector_common::tracing::info!("Using EnvSecretStore");
+                ::fluvio_connector_common::secret::set_default_secret_store(
+                    ::std::boxed::Box::new(::fluvio_connector_common::secret::EnvSecretStore))?;
+            }
+        };
+
         ::fluvio_connector_common::tracing::info!("Reading config file from: {}", opts.config.to_string_lossy());
 
         let config_value = ::fluvio_connector_common::config::value_from_file(opts.config.as_path())?;
