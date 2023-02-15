@@ -3,6 +3,10 @@ meta:
   name: my-sink-test-connector
   type: test-sink
   topic: test-topic
+custom: 
+  api_key: 
+    secret:
+      name: TEST_API_KEY
 transforms:
   - uses: infinyon/jolt@0.1.0
     with:

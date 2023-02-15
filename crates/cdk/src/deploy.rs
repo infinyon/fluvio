@@ -50,8 +50,13 @@ enum DeployStartCmd {
     // As long as there is only one deployment type, we omit to specify its name
     #[command(name = "start")]
     Local {
+        /// Path to configuration file in YAML format
         #[clap(short, long, value_name = "PATH")]
         config: PathBuf,
+
+        /// Path to file with secrets. Secrets are 'key=value' pairs separated by the new line character. Optional
+        #[clap(short, long, value_name = "PATH")]
+        secrets: Option<PathBuf>,
 
         /// Deploy from local package file
         #[clap(long = "ipkg", value_name = "PATH")]
@@ -114,7 +119,11 @@ impl DeployOperationCmd {
 impl DeployStartCmd {
     pub(crate) fn process(self, package: PackageCmd) -> Result<()> {
         match self {
-            Self::Local { config, ipkg_file } => deploy_local(package, config, ipkg_file),
+            Self::Local {
+                config,
+                secrets,
+                ipkg_file,
+            } => deploy_local(package, config, secrets, ipkg_file),
         }
     }
 }
@@ -146,6 +155,7 @@ impl DeployLogCmd {
 fn deploy_local(
     package_cmd: PackageCmd,
     config: PathBuf,
+    secrets: Option<PathBuf>,
     ipkg_file: Option<PathBuf>,
 ) -> Result<()> {
     let (executable, connector_metadata) = match ipkg_file {
@@ -162,6 +172,7 @@ fn deploy_local(
     builder
         .executable(executable)
         .config(config)
+        .secrets(secrets)
         .pkg(connector_metadata)
         .deployment_type(DeploymentType::Local {
             output_file: Some(log_path),

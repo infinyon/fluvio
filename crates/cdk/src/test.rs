@@ -14,8 +14,13 @@ pub struct TestCmd {
     #[clap(flatten)]
     package: PackageCmd,
 
+    /// Path to configuration file in YAML format
     #[clap(short, long, value_name = "PATH")]
     config: PathBuf,
+
+    /// Path to file with secrets. Secrets are 'key=value' pairs separated by the new line character. Optional
+    #[clap(short, long, value_name = "PATH")]
+    secrets: Option<PathBuf>,
 
     /// Extra arguments to be passed to cargo
     #[clap(raw = true)]
@@ -43,6 +48,7 @@ impl TestCmd {
         builder
             .executable(executable)
             .config(self.config)
+            .secrets(self.secrets)
             .pkg(connector_metadata)
             .deployment_type(DeploymentType::Local { output_file: None });
         builder.deploy()?;

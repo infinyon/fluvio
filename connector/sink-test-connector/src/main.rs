@@ -1,6 +1,6 @@
 mod sink;
 
-use fluvio_connector_common::{connector, Result, consumer::ConsumerStream, Sink};
+use fluvio_connector_common::{connector, Result, consumer::ConsumerStream, Sink, secret::SecretString};
 use futures::SinkExt;
 use sink::TestSink;
 
@@ -16,4 +16,6 @@ async fn start(config: CustomConfig, mut stream: impl ConsumerStream) -> Result<
 }
 
 #[connector(config)]
-struct CustomConfig {}
+struct CustomConfig {
+    api_key: SecretString,
+}

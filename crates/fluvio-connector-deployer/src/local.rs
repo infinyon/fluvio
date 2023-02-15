@@ -1,9 +1,10 @@
 use std::{
     process::{Command, Stdio},
     path::Path,
+    fs::canonicalize,
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, Context};
 use tracing::debug;
 use crate::Deployment;
 
@@ -19,21 +20,24 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
         (Stdio::inherit(), Stdio::inherit(), true)
     };
 
-    debug!(
-        "running executable: {}",
-        &deployment.executable.to_string_lossy()
-    );
-    let mut cmd = Command::new(&deployment.executable);
+    let executable = canonicalize(&deployment.executable)
+        .context("Executable file path is invalid or file does not exist")?;
+    debug!("running executable: {}", &executable.to_string_lossy());
+    let mut cmd = Command::new(executable);
     cmd.stdin(Stdio::null());
     cmd.stdout(stdout);
     cmd.stderr(stderr);
     cmd.arg("--config");
     cmd.arg(
-        deployment
-            .config
-            .to_str()
-            .ok_or_else(|| anyhow!("illegal path of temp config file"))?,
+        canonicalize(&deployment.config)
+            .context("Config file path is invalid or file does not exist")?,
     );
+    if let Some(secrets) = &deployment.secrets {
+        cmd.arg("--secrets");
+        cmd.arg(
+            canonicalize(secrets).context("Secrets file path is invalid or file does not exist")?,
+        );
+    }
     let mut child = cmd.spawn()?;
     println!("Connector runs with process id: {}", child.id());
     if wait {
