@@ -99,7 +99,7 @@ spec:
                     properties:
                       name:
                         type: string
-                      type:
+                      ty:
                         type: string
                         enum:
                           - String
