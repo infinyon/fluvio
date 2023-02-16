@@ -643,8 +643,9 @@ mod tests {
         let testfiles = vec!["tests/sample-http.yaml", "tests/sample-mqtt.yaml"];
 
         for tfile in testfiles {
-            let connector_cfg =
-                ConnectorConfig::from_file(tfile).expect(&format!("Failed to load {tfile}"));
+            let res = ConnectorConfig::from_file(tfile);
+            assert!(res.is_ok(), "failed to load {tfile}");
+            let connector_cfg = res.unwrap();
             println!("{tfile}: {connector_cfg:?}");
         }
     }
