@@ -11,11 +11,12 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
+use tracing::{trace};
+
 use fluvio_types::defaults::{
     STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
     SPU_PARTITION_MAX_BYTES_MIN, SPU_LOG_SEGMENT_MAX_BYTES,
 };
-use tracing::{trace, debug};
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 
@@ -23,65 +24,37 @@ use fluvio_protocol::Version;
 use fluvio_protocol::bytes::{Buf, BufMut};
 use fluvio_protocol::{Encoder, Decoder};
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
 pub struct TopicSpec {
-    #[cfg_attr(feature = "use_serde", serde(flatten))]
-    inner: TopicSpecInner,
+    replicas: ReplicaSpec,
+    #[fluvio(min_version = 3)]
+    cleanup_policy: Option<CleanupPolicy>,
+    #[fluvio(min_version = 4)]
+    storage: Option<TopicStorageConfig>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    #[fluvio(min_version = 6)]
+    compression_type: CompressionAlgorithm,
+}
+
+impl From<ReplicaSpec> for TopicSpec {
+    fn from(replicas: ReplicaSpec) -> Self {
+        Self {
+            replicas,
+            ..Default::default()
+        }
+    }
 }
 
 impl Deref for TopicSpec {
     type Target = ReplicaSpec;
 
     fn deref(&self) -> &Self::Target {
-        &self.inner.replicas
-    }
-}
-
-impl Encoder for TopicSpec {
-    fn write_size(&self, version: Version) -> usize {
-        // classic topic
-        if version < 3 {
-            self.inner.replicas.write_size(version)
-        } else {
-            self.inner.write_size(version)
-        }
-    }
-
-    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: BufMut,
-    {
-        // classic topic
-        if version < 3 {
-            self.inner.replicas.encode(dest, version)
-        } else {
-            self.inner.encode(dest, version)
-        }
-    }
-}
-
-impl Decoder for TopicSpec {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: Buf,
-    {
-        if version < 3 {
-            debug!("decoding classic TopicSpec");
-            let mut replicas = ReplicaSpec::default();
-            replicas.decode(src, version)?;
-            self.inner.replicas = replicas;
-        } else {
-            let mut inner = TopicSpecInner::default();
-            inner.decode(src, version)?;
-            self.inner = inner;
-        }
-
-        Ok(())
+        &self.replicas
     }
 }
 
@@ -91,10 +64,8 @@ impl TopicSpec {
         J: Into<PartitionMaps>,
     {
         Self {
-            inner: TopicSpecInner {
-                replicas: ReplicaSpec::new_assigned(partition_map),
-                ..Default::default()
-            },
+            replicas: ReplicaSpec::new_assigned(partition_map),
+            ..Default::default()
         }
     }
 
@@ -104,44 +75,42 @@ impl TopicSpec {
         ignore_rack: Option<IgnoreRackAssignment>,
     ) -> Self {
         Self {
-            inner: TopicSpecInner {
-                replicas: ReplicaSpec::new_computed(partitions, replication, ignore_rack),
-                ..Default::default()
-            },
+            replicas: ReplicaSpec::new_computed(partitions, replication, ignore_rack),
+            ..Default::default()
         }
     }
 
     #[inline(always)]
     pub fn replicas(&self) -> &ReplicaSpec {
-        &self.inner.replicas
+        &self.replicas
     }
 
     pub fn set_cleanup_policy(&mut self, policy: CleanupPolicy) {
-        self.inner.cleanup_policy = Some(policy);
+        self.cleanup_policy = Some(policy);
     }
 
     pub fn get_clean_policy(&self) -> Option<&CleanupPolicy> {
-        self.inner.cleanup_policy.as_ref()
+        self.cleanup_policy.as_ref()
     }
 
     pub fn set_compression_type(&mut self, compression: CompressionAlgorithm) {
-        self.inner.compression_type = compression;
+        self.compression_type = compression;
     }
 
     pub fn get_compression_type(&self) -> &CompressionAlgorithm {
-        &self.inner.compression_type
+        &self.compression_type
     }
 
     pub fn get_storage(&self) -> Option<&TopicStorageConfig> {
-        self.inner.storage.as_ref()
+        self.storage.as_ref()
     }
 
     pub fn get_storage_mut(&mut self) -> Option<&mut TopicStorageConfig> {
-        self.inner.storage.as_mut()
+        self.storage.as_mut()
     }
 
     pub fn set_storage(&mut self, storage: TopicStorageConfig) {
-        self.inner.storage = Some(storage);
+        self.storage = Some(storage);
     }
 
     /// get retention secs that can be displayed
@@ -187,34 +156,6 @@ impl TopicSpec {
         }
 
         None
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
-)]
-pub(crate) struct TopicSpecInner {
-    replicas: ReplicaSpec,
-    #[fluvio(min_version = 3)]
-    cleanup_policy: Option<CleanupPolicy>,
-    #[fluvio(min_version = 4)]
-    storage: Option<TopicStorageConfig>,
-    #[cfg_attr(feature = "use_serde", serde(default))]
-    #[fluvio(min_version = 6)]
-    compression_type: CompressionAlgorithm,
-}
-
-impl From<ReplicaSpec> for TopicSpec {
-    fn from(replicas: ReplicaSpec) -> Self {
-        Self {
-            inner: TopicSpecInner {
-                replicas,
-                ..Default::default()
-            },
-        }
     }
 }
 
