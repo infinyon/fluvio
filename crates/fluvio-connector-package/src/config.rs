@@ -86,7 +86,12 @@ impl ConnectorConfig {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let mut connector_config: Self = serde_yaml::from_str(&contents)?;
+        ConnectorConfig::config_from_str(&contents)
+    }
+
+    /// Only parses the meta section of the config
+    pub fn config_from_str(config_str: &str) -> Result<Self> {
+        let mut connector_config: Self = serde_yaml::from_str(config_str)?;
         connector_config.normalize_batch_size()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -631,5 +636,17 @@ mod tests {
             transform[2].with,
             BTreeMap::from([("regex".to_string(), "\\w".into())])
         );
+    }
+
+    #[test]
+    fn sample_yaml_test_files() {
+        let testfiles = vec!["tests/sample-http.yaml", "tests/sample-mqtt.yaml"];
+
+        for tfile in testfiles {
+            let res = ConnectorConfig::from_file(tfile);
+            assert!(res.is_ok(), "failed to load {tfile}");
+            let connector_cfg = res.unwrap();
+            println!("{tfile}: {connector_cfg:?}");
+        }
     }
 }

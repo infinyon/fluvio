@@ -1,0 +1,15 @@
+meta:
+  version: latest
+  name: my-mqtt-connector
+  type: mqtt-source
+  topic: mqtt-topic
+  create-topic: true
+mqtt:
+  url: "mqtt://test.mosquitto.org/"
+  topic: "mqtt-to-fluvio"
+  client_id: "my_mqtt"
+  timeout:
+    secs: 30
+    nanos: 0
+  payload_output_type: json
+
