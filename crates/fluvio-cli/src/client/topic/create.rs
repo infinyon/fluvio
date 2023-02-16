@@ -152,7 +152,7 @@ impl CreateTopicOpt {
         let mut topic_spec: TopicSpec = replica_spec.into();
 
         topic_spec.set_columns(self.columns_mappings()?);
-        
+
         if let Some(retention) = self.setting.retention_time {
             topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
                 time_in_seconds: retention.as_secs() as u32,
@@ -176,8 +176,6 @@ impl CreateTopicOpt {
 
             topic_spec.set_storage(storage);
         }
-
-        
 
         // return server separately from config
         Ok((self.topic, topic_spec))
