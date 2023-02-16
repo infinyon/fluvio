@@ -1,0 +1,20 @@
+apiVersion: fluvio.infinyon.com/v2
+kind: Topic
+metadata:
+  name: vehicle
+spec:
+  replicas:
+    computed:
+      partitions: 1
+  columns:
+    - name: route
+      type: String
+    - name: speed
+      type: Int
+    - name: longitude
+      type: Double
+    - name: latitude
+      type: Double
+    - name: time
+      type: Timestamp
+

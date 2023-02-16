@@ -914,3 +914,51 @@ pub mod test {
 
     
 }
+
+
+
+#[cfg(test)]
+mod test_col_spec {
+
+    use std::{io::BufReader, fs::File};
+
+    use fluvio_stream_model::k8_types::K8Obj;
+    use crate::smartmodule::FluvioSemVersion;
+
+    use super::TopicSpec;
+
+    type K8TopicSpec = K8Obj<TopicSpec>;
+
+    #[test]
+    fn read_from_k8() {
+        let reader = BufReader::new(File::open("tests/topic.yaml").expect("v2 not found"));
+        let topic_k8: K8TopicSpec =
+            serde_yaml::from_reader(reader).expect("failed to parse sm k8");
+
+        let metadata = topic_k8.metadata;
+        assert_eq!(metadata.name, "vehicle");
+
+        let col_route = topic_k8.spec.columns.get("route").unwrap();
+        assert_eq!(
+            metadata.package.version,
+            FluvioSemVersion::parse("0.1.0").unwrap()
+        );
+        assert_eq!(
+            metadata.package.description.unwrap(),
+            "This is a test module"
+        );
+        assert_eq!(
+            metadata.package.api_version,
+            FluvioSemVersion::parse("0.1.0").unwrap()
+        );
+
+        let params = metadata.params;
+        assert_eq!(params.len(), 2);
+        let input1 = params.get_param("multipler").unwrap();
+        assert_eq!(input1.description.as_ref().unwrap(), "multipler");
+        assert!(!input1.optional);
+        let input2 = params.get_param("scaler").unwrap();
+        assert_eq!(input2.description.as_ref().unwrap(), "used for scaling");
+        assert!(input2.optional);
+    }
+}
