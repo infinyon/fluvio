@@ -177,7 +177,7 @@ impl CreateTopicOpt {
             topic_spec.set_storage(storage);
         }
 
-        topic_spec.set_columns(self.columns_mappings()?);
+        
 
         // return server separately from config
         Ok((self.topic, topic_spec))

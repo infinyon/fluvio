@@ -95,7 +95,7 @@ spec:
                     type: object
                     required:
                     - name
-                    - type
+                    - ty
                     properties:
                       name:
                         type: string
