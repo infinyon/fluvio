@@ -81,6 +81,10 @@ pub fn cli_pkgname_to_filename(pkgname: &str) -> Result<String> {
 /// returns recommended name and data
 pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
     let actiontoken = access.get_download_token().await?;
+    get_package_with_token(pkgurl, &actiontoken).await
+}
+
+pub async fn get_package_with_token(pkgurl: &str, actiontoken: &str) -> Result<Vec<u8>> {
     let mut resp = surf::get(pkgurl)
         .header("Authorization", actiontoken)
         .await
