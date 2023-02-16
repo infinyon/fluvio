@@ -24,8 +24,6 @@ impl Spec for TopicSpec {
     }
 }
 
-
-
 #[cfg(test)]
 mod test_col_spec {
 
