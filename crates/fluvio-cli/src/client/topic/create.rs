@@ -184,7 +184,7 @@ impl CreateTopicOpt {
     pub(crate) fn columns_mappings(&self) -> Result<Vec<ColumnDef>> {
         let mut columns = vec![];
         for (name, _) in &self.columns {
-            columns.push(ColumnDef::from_dsl(&name)?);
+            columns.push(ColumnDef::from_dsl(name)?);
         }
         Ok(columns)
     }
