@@ -1,9 +1,10 @@
-use anyhow::{anyhow, Context};
-use openapiv3::{Schema, AnySchema, ReferenceOr, Type, SchemaKind};
 use std::{collections::BTreeMap, ops::Deref, fmt::Display};
 
-use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
+use anyhow::{anyhow, Context};
+use openapiv3::{Schema, AnySchema, ReferenceOr, Type, SchemaKind};
 use serde::{Serialize, Deserialize};
+
+use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 
 use crate::config::ConnectorConfig;
 
@@ -240,16 +241,16 @@ impl From<Schema> for CustomConfigSchema {
 #[cfg(feature = "toml")]
 impl ConnectorMetadata {
     pub fn from_toml_str(input: &str) -> anyhow::Result<Self> {
-        Ok(toml::from_str(input)?)
+        toml::from_str(input).map_err(|err| anyhow::anyhow!(err))
     }
 
     pub fn from_toml_slice(input: &[u8]) -> anyhow::Result<Self> {
-        Ok(toml::from_slice(input)?)
+        toml::from_str(std::str::from_utf8(input)?).map_err(|err| anyhow::anyhow!(err))
     }
 
     pub fn from_toml_file<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
         let content = std::fs::read(path)?;
-        Ok(toml::from_slice(content.as_slice())?)
+        Self::from_toml_slice(&content)
     }
 
     pub fn to_toml_string(&self) -> anyhow::Result<String> {

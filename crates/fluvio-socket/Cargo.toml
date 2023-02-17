@@ -53,4 +53,4 @@ portpicker = "0.1.1"
 async-net = "1.4.3"
 
 [build-dependencies]
-built = "0.5.1"
+built = "0.6.0"

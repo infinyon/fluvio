@@ -21,11 +21,11 @@ tracing = "0.1.19"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"
 thiserror = "1.0.20"
-base64 = "0.20.0"
+base64 = { workspace = true }
 bytes = { version = "1" }
 flate2 = { version = "1.0.22", optional = true }
 semver = "1.0"
-toml = { version = "0.5.9", optional = true }
+toml = { workspace = true, optional = true }
 lenient_semver = "0.4.2"
 
 # External Fluvio dependencies

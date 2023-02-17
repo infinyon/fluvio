@@ -6,6 +6,7 @@ use std::{
     io::Error as IoError,
     fmt::{Display, Formatter},
 };
+use std::io::ErrorKind;
 
 use bytes::Buf;
 use semver::Version as SemVersion;
@@ -30,17 +31,18 @@ impl SmartModuleMetadata {
 
         let path_ref = path.as_ref();
         let file_str: String = read_to_string(path_ref)?;
-        let metadata = toml::from_str(&file_str)?;
+        let metadata = toml::from_str(&file_str)
+            .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("invalid toml: {err}")))?;
         Ok(metadata)
     }
 
     #[cfg(feature = "smartmodule")]
     /// parse the metadata bytes and return the metadata
     pub fn from_bytes(bytedata: &[u8]) -> std::io::Result<Self> {
-        use std::io::ErrorKind;
         let strdata = std::str::from_utf8(bytedata)
-            .map_err(|_| IoError::new(ErrorKind::InvalidData, "Smartmodule toml"))?;
-        let metadata = toml::from_str(strdata)?;
+            .map_err(|_| IoError::new(ErrorKind::InvalidData, "cant convert to utf8"))?;
+        let metadata = toml::from_str(strdata)
+            .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("invalid toml: {err}")))?;
         Ok(metadata)
     }
 

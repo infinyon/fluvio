@@ -557,12 +557,6 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
-
-[[package]]
-name = "base64"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
@@ -652,9 +646,9 @@ dependencies = [
 
 [[package]]
 name = "built"
-version = "0.5.2"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b9c056b9ed43aee5e064b683aa1ec783e19c6acec7559e3ae931b7490472fbe"
+checksum = "96f9cdd34d6eb553f9ea20e5bf84abb7b13c729f113fc1d8e49dc00ad9fa8738"
 dependencies = [
  "cargo-lock",
 ]
@@ -942,7 +936,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tokio",
- "toml 0.5.11",
+ "toml 0.7.2",
  "toml-diff",
 ]
 
@@ -2206,7 +2200,7 @@ dependencies = [
  "async-rwlock",
  "async-std",
  "async-trait",
- "base64 0.20.0",
+ "base64 0.21.0",
  "bytes 1.4.0",
  "cfg-if",
  "chrono",
@@ -2232,7 +2226,7 @@ dependencies = [
  "siphasher",
  "thiserror",
  "tokio",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
  "wasm-bindgen-test",
 ]
@@ -2292,7 +2286,7 @@ dependencies = [
  "semver 1.0.16",
  "serde",
  "thiserror",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
 ]
 
@@ -2539,7 +2533,7 @@ dependencies = [
  "serde",
  "serde_yaml 0.8.26",
  "tempfile",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
 ]
 
@@ -2559,7 +2553,7 @@ name = "fluvio-controlplane-metadata"
 version = "0.20.1"
 dependencies = [
  "async-trait",
- "base64 0.20.0",
+ "base64 0.21.0",
  "bytes 1.4.0",
  "flate2",
  "fluvio-future",
@@ -2572,7 +2566,7 @@ dependencies = [
  "serde",
  "serde_yaml 0.9.17",
  "thiserror",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
 ]
 
@@ -2764,7 +2758,7 @@ dependencies = [
  "async-channel",
  "async-lock",
  "async-trait",
- "base64 0.20.0",
+ "base64 0.21.0",
  "cfg-if",
  "clap 4.1.6",
  "event-listener",
@@ -2940,7 +2934,7 @@ dependencies = [
  "sysinfo",
  "thiserror",
  "tokio",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
 ]
 
@@ -4583,9 +4577,9 @@ dependencies = [
 
 [[package]]
 name = "lz4_flex"
-version = "0.9.5"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a8cbbb2831780bc3b9c15a41f5b49222ef756b6730a95f3decfdd15903eb5a3"
+checksum = "8b8c72594ac26bfd34f2d99dfced2edfaddfe8a476e3ff2ca0eb293d925c4f83"
 dependencies = [
  "twox-hash",
 ]
@@ -6442,7 +6436,7 @@ dependencies = [
  "lib-cargo-crate",
  "tempfile",
  "thiserror",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
 ]
 
@@ -6983,7 +6977,6 @@ version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4f7f0dd8d50a853a531c426359045b1998f04219d88799810762cd4ad314234"
 dependencies = [
- "indexmap",
  "serde",
 ]
 
@@ -7005,7 +6998,7 @@ name = "toml-diff"
 version = "0.0.0"
 dependencies = [
  "serde",
- "toml 0.5.11",
+ "toml 0.7.2",
 ]
 
 [[package]]
