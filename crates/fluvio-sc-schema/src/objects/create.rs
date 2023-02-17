@@ -2,18 +2,18 @@
 
 use std::fmt::Debug;
 
-use fluvio_protocol::bytes::{BufMut, Buf};
+use anyhow::Result;
+
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
+<<<<<<< HEAD
 use fluvio_protocol::Version;
+=======
+use fluvio_protocol::core::ByteBuf;
+>>>>>>> 8823db0a (wip)
 
-use crate::topic::TopicSpec;
-use crate::customspu::CustomSpuSpec;
-use crate::smartmodule::SmartModuleSpec;
-use crate::tableformat::TableFormatSpec;
-use crate::spg::SpuGroupSpec;
 
-use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, AdminSpec};
+use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct CreateRequest<S: CreatableAdminSpec> {
@@ -22,7 +22,7 @@ pub struct CreateRequest<S: CreatableAdminSpec> {
 
 /// Every create request must have this parameters
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct CommonCreateRequest {
+pub struct ObjectApiCreateRequest {
     pub name: String,
     pub dry_run: bool,
     #[fluvio(min_version = 7)]
@@ -37,15 +37,31 @@ impl Request for ObjectApiCreateRequest {
     type Response = Status;
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct ObjectApiCreateRequest {
-    pub common: CommonCreateRequest,
+impl ObjectApiCreateRequest {
+
+    /// encode admin spec into a request
+    pub fn encode<S: CreatableAdminSpec>(name: String, dry_run: bool,spec: S) -> Result<Self> {
+
+        let mut dest = vec![];
+        spec.encode(&mut dest, 0)?;
+        Self {
+            name,
+            dry_run: false,
+            timeout: None,
+            spec: ObjectWrapper {
+                ty: S::CREATE_TYPE,
+                spec: request.encode(),
+            },
+        }
+    }
 }
+
+
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct ObjectWrapper {
     pub ty: u8,
-    pub spec: ByteBuf,
+    pub spec: Vec<u128>,
 }
 
 /// Macro to convert create request
@@ -58,6 +74,7 @@ pub struct ObjectWrapper {
 /// }
 /// ObjectFrom!(WatchRequest, Topic);
 
+/* 
 macro_rules! CreateFrom {
     ($create:ty,$specTy:ident) => {
         impl From<(crate::objects::CommonCreateRequest, $create)>
@@ -72,7 +89,8 @@ macro_rules! CreateFrom {
         }
     };
 }
+*/
 
-pub(crate) use CreateFrom;
+//pub(crate) use CreateFrom;
 
 use super::COMMON_VERSION;
