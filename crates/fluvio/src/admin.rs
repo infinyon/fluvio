@@ -11,7 +11,7 @@ use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_future::net::DomainConnector;
 use fluvio_sc_schema::objects::{
-    CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
+     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
     ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter,
     WatchRequest, ObjectApiWatchResponse, WatchResponse,
 };

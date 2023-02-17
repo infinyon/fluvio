@@ -5,7 +5,7 @@ mod convert {
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
         objects::{
-            CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
+             DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
             WatchRequest, WatchResponse,
         },
     };
@@ -21,7 +21,7 @@ mod convert {
         type DeleteKey = String;
     }
 
-    CreateFrom!(SpuGroupSpec, SpuGroup);
+  
     ObjectFrom!(WatchRequest, SpuGroup);
     ObjectFrom!(WatchResponse, SpuGroup);
 

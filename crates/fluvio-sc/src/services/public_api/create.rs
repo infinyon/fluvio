@@ -5,7 +5,7 @@ use tracing::{instrument, debug};
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
-use fluvio_sc_schema::objects::{ObjectApiCreateRequest, ObjectCreateRequest};
+use fluvio_sc_schema::objects::{ObjectApiCreateRequest};
 use fluvio_auth::AuthContext;
 
 use crate::services::auth::AuthServiceContext;

@@ -5,7 +5,6 @@ mod convert {
     use crate::AdminSpec;
     use crate::CreatableAdminSpec;
     use crate::DeletableAdminSpec;
-    use crate::objects::CreateFrom;
     use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
@@ -26,7 +25,7 @@ mod convert {
         type DeleteKey = String;
     }
 
-    CreateFrom!(DerivedStreamSpec, DerivedStream);
+    //CreateFrom!(DerivedStreamSpec, DerivedStream);
     ObjectFrom!(WatchRequest, DerivedStream);
     ObjectFrom!(WatchResponse, DerivedStream);
     ObjectFrom!(ListRequest, DerivedStream);
