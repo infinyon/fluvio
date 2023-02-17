@@ -67,6 +67,8 @@ impl From<SmartModuleSpecV1> for SmartModuleSpec {
 
 #[cfg(test)]
 mod tests {
+    use base64::Engine;
+
     use crate::smartmodule::spec_v1::SmartModuleInputKind;
 
     #[test]
@@ -91,7 +93,7 @@ wasm:
     #[test]
     fn test_encode_wasm_header() {
         let bytes: Vec<u8> = vec![0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
-        let encoded_string = base64::encode(bytes);
+        let encoded_string = base64::engine::general_purpose::STANDARD.encode(bytes);
 
         assert_eq!(encoded_string, "AGFzbQEAAAA=");
     }

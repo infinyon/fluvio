@@ -72,6 +72,7 @@ sysinfo = "0.27.0"
 cargo_toml = "0.15.0"
 base64 = "0.21.0"
 toml = "0.7.0"
+wasmparser = { version = "0.101.0" }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

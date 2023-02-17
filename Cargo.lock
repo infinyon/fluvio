@@ -1110,7 +1110,7 @@ version = "6.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e7b787b0dc42e8111badfdbe4c3059158ccb2db8780352fa1b01e8ccf45cc4d"
 dependencies = [
- "crossterm",
+ "crossterm 0.25.0",
  "strum",
  "strum_macros",
  "unicode-width",
@@ -1392,7 +1392,7 @@ dependencies = [
  "itertools",
  "log",
  "smallvec",
- "wasmparser",
+ "wasmparser 0.96.0",
  "wasmtime-types",
 ]
 
@@ -1541,6 +1541,22 @@ name = "crossterm"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e64e6c0fbe2c17357405f7c758c1ef960fce08bdfb2c03d88d2a18d7e09c4b67"
+dependencies = [
+ "bitflags",
+ "crossterm_winapi",
+ "libc",
+ "mio",
+ "parking_lot 0.12.1",
+ "signal-hook",
+ "signal-hook-mio",
+ "winapi",
+]
+
+[[package]]
+name = "crossterm"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77f67c7faacd4db07a939f55d66a983a5355358a1f17d32cc9a8d01d1266b9ce"
 dependencies = [
  "bitflags",
  "crossterm_winapi",
@@ -2324,7 +2340,7 @@ dependencies = [
  "colored",
  "comfy-table",
  "content_inspector",
- "crossterm",
+ "crossterm 0.26.0",
  "ctrlc",
  "current_platform",
  "dirs",
@@ -2647,7 +2663,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.8.26",
  "thiserror",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
 ]
 
@@ -2678,10 +2694,10 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "toml 0.5.11",
+ "toml 0.7.2",
  "tracing",
  "tracing-subscriber",
- "wasmparser",
+ "wasmparser 0.101.0",
 ]
 
 [[package]]
@@ -7144,7 +7160,7 @@ checksum = "ccdd26cbd674007e649a272da4475fb666d3aa0ad0531da7136db6fab0e5bad1"
 dependencies = [
  "bitflags",
  "cassowary",
- "crossterm",
+ "crossterm 0.25.0",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -7510,6 +7526,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmparser"
+version = "0.101.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9cc3222d9e47412382cc95e2f013c6a9f510bcff80af92de5665ae3ec1e4a2f6"
+dependencies = [
+ "indexmap",
+ "url",
+]
+
+[[package]]
 name = "wasmtime"
 version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7529,7 +7555,7 @@ dependencies = [
  "rayon",
  "serde",
  "target-lexicon",
- "wasmparser",
+ "wasmparser 0.96.0",
  "wasmtime-cache",
  "wasmtime-component-macro",
  "wasmtime-cranelift",
@@ -7607,7 +7633,7 @@ dependencies = [
  "object 0.29.0",
  "target-lexicon",
  "thiserror",
- "wasmparser",
+ "wasmparser 0.96.0",
  "wasmtime-environ",
 ]
 
@@ -7626,7 +7652,7 @@ dependencies = [
  "serde",
  "target-lexicon",
  "thiserror",
- "wasmparser",
+ "wasmparser 0.96.0",
  "wasmtime-types",
 ]
 
@@ -7724,7 +7750,7 @@ dependencies = [
  "cranelift-entity",
  "serde",
  "thiserror",
- "wasmparser",
+ "wasmparser 0.96.0",
 ]
 
 [[package]]
