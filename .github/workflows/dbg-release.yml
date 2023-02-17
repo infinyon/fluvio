@@ -106,88 +106,88 @@ jobs:
         run: make update-public-installer-script-s3
 
   # Check for Github Release
-  release_github:
-    name: Release Fluvio to GitHub Release
-    needs: [setup_job]
-    runs-on: ubuntu-latest
-    permissions: write-all
-    env:
-      VERSION: ${{ needs.setup_job.outputs.VERSION }}
-    steps:
-      - uses: actions/checkout@v3
-      # Check that this release does not already exist by trying to download it
-      - name: Attempt to download release by version number
-        id: release_check
-        continue-on-error: true
-        env:
-          GH_RELEASE_TAG: v${{ env.VERSION }}
-        run: make download-fluvio-release
+  # release_github:
+  #   name: Release Fluvio to GitHub Release
+  #   needs: [setup_job]
+  #   runs-on: ubuntu-latest
+  #   permissions: write-all
+  #   env:
+  #     VERSION: ${{ needs.setup_job.outputs.VERSION }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     # Check that this release does not already exist by trying to download it
+  #     - name: Attempt to download release by version number
+  #       id: release_check
+  #       continue-on-error: true
+  #       env:
+  #         GH_RELEASE_TAG: v${{ env.VERSION }}
+  #       run: make download-fluvio-release
 
-      # If this release does not already exist (i.e. the release_check failed), create it
-      - name: Download artifacts from dev
-        if: ${{ steps.release_check.outcome == 'failure' }}
-        env:
-          GH_RELEASE_TAG: dev
-        run: make download-fluvio-release
+  #     # If this release does not already exist (i.e. the release_check failed), create it
+  #     - name: Download artifacts from dev
+  #       if: ${{ steps.release_check.outcome == 'failure' }}
+  #       env:
+  #         GH_RELEASE_TAG: dev
+  #       run: make download-fluvio-release
 
-      # Release conventions expect the top-most release in CHANGELOG.md to be the version we're releasing
-      # The date is expected to be UNRELEASED, which we will replace with the current date
-      - name: Create GH Release with release notes
-        if: ${{ steps.release_check.outcome == 'failure' }}
-        env:
-          CHANNEL_TAG: ${{ env.VERSION }}
-          PRE_RELEASE: ${{ github.event.inputs.pre_release }}
-        run: make create-gh-release
+  #     # Release conventions expect the top-most release in CHANGELOG.md to be the version we're releasing
+  #     # The date is expected to be UNRELEASED, which we will replace with the current date
+  #     - name: Create GH Release with release notes
+  #       if: ${{ steps.release_check.outcome == 'failure' }}
+  #       env:
+  #         CHANNEL_TAG: ${{ env.VERSION }}
+  #         PRE_RELEASE: ${{ github.event.inputs.pre_release }}
+  #       run: make create-gh-release
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+  #     - name: Slack Notification
+  #       uses: 8398a7/action-slack@v3
+  #       if: failure()
+  #       with:
+  #         status: ${{ job.status }}
+  #         fields: repo,message,commit,author,action,eventName,ref,workflow,job
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
-  ## Check for docker image
-  release_docker:
-    name: Release Docker Image
-    needs: [setup_job]
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.setup_job.outputs.VERSION }}
-      TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Attempt to pull image tag in docker registry
-        id: docker_check
-        continue-on-error: true
-        env:
-          DOCKER_IMAGE_TAG: ${{ env.VERSION }}
-        run: |
-          make docker-hub-check-image-exists
+  # ## Check for docker image
+  # release_docker:
+  #   name: Release Docker Image
+  #   needs: [setup_job]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     VERSION: ${{ needs.setup_job.outputs.VERSION }}
+  #     TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Attempt to pull image tag in docker registry
+  #       id: docker_check
+  #       continue-on-error: true
+  #       env:
+  #         DOCKER_IMAGE_TAG: ${{ env.VERSION }}
+  #       run: |
+  #         make docker-hub-check-image-exists
 
-      # if the check fails, then continue
-      - name: Tag and push release image
-        if: ${{ steps.docker_check.outcome == 'failure' }}
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          DOCKER_IMAGE_TAG: ${{ env.VERSION }}
-          CHANNEL_TAG: stable
-          DEV_VERSION_TAG: ${{ env.VERSION }}-${{ env.TARGET_SHA }}
-        run: |
-          make docker-push-manifest
+  #     # if the check fails, then continue
+  #     - name: Tag and push release image
+  #       if: ${{ steps.docker_check.outcome == 'failure' }}
+  #       env:
+  #         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  #         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  #         DOCKER_IMAGE_TAG: ${{ env.VERSION }}
+  #         CHANNEL_TAG: stable
+  #         DEV_VERSION_TAG: ${{ env.VERSION }}-${{ env.TARGET_SHA }}
+  #       run: |
+  #         make docker-push-manifest
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+  #     - name: Slack Notification
+  #       uses: 8398a7/action-slack@v3
+  #       if: failure()
+  #       with:
+  #         status: ${{ job.status }}
+  #         fields: repo,message,commit,author,action,eventName,ref,workflow,job
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
   # Check for Fluvio CLI
   release_fluvio:
