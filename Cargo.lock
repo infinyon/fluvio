@@ -7014,7 +7014,7 @@ name = "toml-diff"
 version = "0.0.0"
 dependencies = [
  "serde",
- "toml 0.7.2",
+ "toml 0.5.11",
 ]
 
 [[package]]
