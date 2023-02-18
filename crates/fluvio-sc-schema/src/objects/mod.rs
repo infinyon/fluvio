@@ -9,18 +9,18 @@ pub use list::*;
 pub use watch::*;
 pub use metadata::*;
 
-pub(crate) use delete_macro::*;
-
 pub(crate) const COMMON_VERSION: i16 = 10; // from now, we use a single version for all objects
 
 mod metadata {
 
     use std::convert::{TryFrom, TryInto};
     use std::fmt::{Debug, Display};
-    use std::io::Error as IoError;
+    use std::io::{Error as IoError, Cursor};
     use std::io::ErrorKind;
 
-    use fluvio_protocol::{Encoder, Decoder};
+    use anyhow::Result;
+
+    use fluvio_protocol::{Encoder, Decoder, ByteBuf};
 
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
     use fluvio_controlplane_metadata::core::{MetadataContext, MetadataItem};
@@ -95,150 +95,50 @@ mod metadata {
             })
         }
     }
-}
 
-mod delete_macro {
+    /// Type encoded buffer, it uses type label to determine type
+    #[derive(Debug, Default, Encoder, Decoder)]
+    pub struct TypeBuffer {
+        ty: String,
+        buf: ByteBuf,
+    }
 
-    /// Macro to for converting delete object to generic Delete
-    macro_rules! DeleteApiEnum {
-        ($api:ident) => {
+    impl TypeBuffer {
+        // encode admin spec into a request
+        pub fn encode<S, I>(input: I) -> Result<Self>
+        where
+            S: Spec,
+            I: Encoder,
+        {
+            let ty = S::LABEL.to_owned();
+            let mut buf = vec![];
+            input.encode(&mut buf, 0)?;
+            Ok(Self {
+                ty,
+                buf: ByteBuf::from(buf),
+            })
+        }
 
-            paste::paste! {
+        // check if this object is kind of spec
+        pub fn is_kind_of<S: Spec>(&self) -> bool {
+            self.ty == S::LABEL
+        }
 
-                #[derive(Debug)]
-                pub enum [<ObjectApi $api>] {
-                    Topic($api<crate::topic::TopicSpec>),
-                    CustomSpu($api<crate::customspu::CustomSpuSpec>),
-                    SmartModule($api<crate::smartmodule::SmartModuleSpec>),
-                    SpuGroup($api<crate::spg::SpuGroupSpec>),
-                    TableFormat($api<crate::tableformat::TableFormatSpec>),
-                }
-
-                impl Default for [<ObjectApi $api>] {
-                    fn default() -> Self {
-                        Self::Topic($api::<crate::topic::TopicSpec>::default())
-                    }
-                }
-
-                impl [<ObjectApi $api>] {
-                    fn type_string(&self) -> &'static str {
-                        use fluvio_controlplane_metadata::core::Spec;
-                        match self {
-                            Self::Topic(_) => crate::topic::TopicSpec::LABEL,
-                            Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
-                            Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
-                            Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
-                            Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
-                        }
-                    }
-                }
-
-                impl  fluvio_protocol::Encoder for [<ObjectApi $api>] {
-
-                    fn write_size(&self, version: fluvio_protocol::Version) -> usize {
-                        let type_size = self.type_string().to_owned().write_size(version);
-
-                        type_size
-                            + match self {
-                                Self::Topic(s) => s.write_size(version),
-                                Self::CustomSpu(s) => s.write_size(version),
-                                Self::SmartModule(s) => s.write_size(version),
-                                Self::SpuGroup(s) => s.write_size(version),
-                                Self::TableFormat(s) => s.write_size(version),
-                            }
-                    }
-
-                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(), std::io::Error>
-                    where
-                        T: fluvio_protocol::bytes::BufMut,
-                    {
-                        let ty = self.type_string().to_owned();
-
-                        tracing::trace!(%ty,len = self.write_size(version),"encoding objects");
-                        ty.encode(dest, version)?;
-
-                        match self {
-                            Self::Topic(s) => s.encode(dest, version)?,
-                            Self::CustomSpu(s) => s.encode(dest, version)?,
-                            Self::SpuGroup(s) => s.encode(dest, version)?,
-                            Self::SmartModule(s) => s.encode(dest, version)?,
-                            Self::TableFormat(s) => s.encode(dest, version)?,
-                        }
-
-                        Ok(())
-                    }
-
-                }
-
-
-                impl  fluvio_protocol::Decoder for [<ObjectApi $api>] {
-
-                    fn decode<T>(&mut self, src: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error>
-                    where
-                        T: fluvio_protocol::bytes::Buf
-                    {
-                        use fluvio_controlplane_metadata::core::Spec;
-
-                        let mut typ = "".to_owned();
-                        typ.decode(src, version)?;
-                        tracing::trace!(%typ,"decoded type");
-
-                        match typ.as_ref() {
-                            crate::topic::TopicSpec::LABEL => {
-                                tracing::trace!("detected topic");
-                                let mut request = $api::<crate::topic::TopicSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Topic(request);
-                                return Ok(())
-                            }
-
-                            crate::tableformat::TableFormatSpec::LABEL => {
-                                tracing::trace!("detected tableformat");
-                                let mut request = $api::<crate::tableformat::TableFormatSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::TableFormat(request);
-                                return Ok(())
-                            }
-
-                            crate::customspu::CustomSpuSpec::LABEL => {
-                                tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::CustomSpu(request);
-                                return Ok(())
-                            }
-
-                            crate::spg::SpuGroupSpec::LABEL => {
-                                tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::spg::SpuGroupSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SpuGroup(request);
-                                return Ok(())
-                            }
-
-                            crate::smartmodule::SmartModuleSpec::LABEL => {
-                                tracing::trace!("detected smartmodule");
-                                let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SmartModule(request);
-                                Ok(())
-                            },
-
-
-                            // Unexpected type
-                            _ => Err(std::io::Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                format!("invalid object type {:#?}", typ),
-                            ))
-                        }
-                    }
-
-                }
+        // downcast to specific spec type and return object
+        // if doens't match to ty, return None
+        pub fn downcast<S, O>(&self) -> Result<Option<O>>
+        where
+            S: Spec,
+            O: Encoder + Decoder + Debug,
+        {
+            if self.is_kind_of::<S>() {
+                let mut buf = Cursor::new(self.buf.as_ref());
+                Ok(Some(O::decode_from(&mut buf, 0)?))
+            } else {
+                Ok(None)
             }
         }
     }
-
-    pub(crate) use DeleteApiEnum;
 }
 
 #[cfg(test)]
@@ -253,8 +153,8 @@ mod test {
     use fluvio_controlplane_metadata::spu::SpuStatus;
 
     use crate::objects::{
-        ObjectApiListResponse, ListRequest, ListResponse, Metadata, MetadataUpdate,
-        ObjectApiListRequest, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
+        ObjectApiListResponse, Metadata, MetadataUpdate, ObjectApiListRequest,
+        ObjectApiWatchRequest, ObjectApiWatchResponse,
     };
 
     use crate::topic::TopicSpec;

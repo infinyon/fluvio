@@ -17,7 +17,9 @@ use fluvio_protocol::core::{Decoder};
 use fluvio_protocol::link::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
-use crate::objects::{ObjectApiCreateRequest, ObjectApiDeleteRequest};
+use crate::objects::{
+    ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
+};
 
 /// Non generic AdminRequest, This is typically used Decoding
 #[derive(Debug)]
@@ -92,7 +94,7 @@ mod test {
     use fluvio_protocol::{Encoder};
     use fluvio_protocol::api::ApiMessage;
 
-    use crate::objects::{ListRequest, ObjectApiListRequest};
+    use crate::objects::{ObjectApiListRequest};
     use crate::{AdminPublicDecodedRequest};
     use crate::topic::TopicSpec;
 

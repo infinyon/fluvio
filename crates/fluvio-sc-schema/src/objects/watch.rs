@@ -1,7 +1,8 @@
 #![allow(clippy::assign_op_pattern)]
 
 use std::fmt::Debug;
-use std::marker::PhantomData;
+
+use anyhow::Result;
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::{Request};
@@ -11,22 +12,18 @@ use fluvio_controlplane_metadata::message::Message;
 use crate::{AdminPublicApiKey, AdminSpec};
 use crate::core::Spec;
 
-use super::{Metadata, COMMON_VERSION};
+use super::{Metadata, COMMON_VERSION, TypeBuffer};
 
 /// Watch resources
 /// Argument epoch is not being used, it is always 0
 #[derive(Debug, Encoder, Default, Decoder)]
-pub struct WatchRequest<S: AdminSpec> {
+pub struct ObjectApiWatchRequest {
     epoch: Epoch,
     #[fluvio(min_version = 10)]
     pub summary: bool, // if true, only return summary
-    data: PhantomData<S>,
 }
 
-impl<S> WatchRequest<S>
-where
-    S: AdminSpec,
-{
+impl ObjectApiWatchRequest {
     pub fn summary() -> Self {
         Self {
             summary: true,
@@ -42,24 +39,15 @@ impl Request for ObjectApiWatchRequest {
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct WatchResponse<S: AdminSpec>
-where
-    S::Status: Encoder + Decoder,
-{
-    inner: MetadataUpdate<S>,
-}
+pub struct ObjectApiWatchResponse(TypeBuffer);
 
-impl<S> WatchResponse<S>
-where
-    S: AdminSpec,
-    S::Status: Encoder + Decoder,
-{
-    pub fn new(inner: MetadataUpdate<S>) -> Self {
-        Self { inner }
-    }
-
-    pub fn inner(self) -> MetadataUpdate<S> {
-        self.inner
+impl ObjectApiWatchResponse {
+    pub fn downcast<S>(&self) -> Result<Option<Vec<MetadataUpdate<S>>>>
+    where
+        S: AdminSpec,
+        S::Status: Encoder + Decoder + Debug,
+    {
+        self.0.downcast::<S, Vec<MetadataUpdate<S>>>()
     }
 }
 

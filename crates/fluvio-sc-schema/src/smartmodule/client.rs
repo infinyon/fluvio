@@ -4,7 +4,7 @@ use anyhow::Result;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_socket::{VersionedSerialSocket, MultiplexerSocket, SerialFrame};
 
-use crate::objects::{ListFilter, ObjectApiListRequest, ListRequest, ListResponse, Metadata};
+use crate::objects::{ListFilter, ObjectApiListRequest, Metadata};
 pub use fluvio_socket::{ClientConfig, SocketError};
 
 /// Experimental: this API is not finalized and may be changed in the future.
