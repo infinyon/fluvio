@@ -20,6 +20,7 @@ serde = { workspace = true, features = ['derive'], optional = true }
 static_assertions = { workspace = true }
 anyhow = { workspace = true }
 paste = "1.0"
+anyhow = { workspace = true }
 
 # Workspace Dependencies
 thiserror = { workspace = true }
