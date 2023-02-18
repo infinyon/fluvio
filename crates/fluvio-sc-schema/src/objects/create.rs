@@ -11,19 +11,14 @@ use fluvio_protocol::core::ByteBuf;
 
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
 
-#[derive(Encoder, Decoder, Default, Debug)]
-pub struct CreateRequest<S: CreatableAdminSpec> {
-    pub request: S,
-}
 
 /// Every create request must have this parameters
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct ObjectApiCreateRequest {
+pub struct CommonCreateRequest {
     pub name: String,
     pub dry_run: bool,
     #[fluvio(min_version = 7)]
     pub timeout: Option<u32>, // timeout in milliseconds
-    pub spec: ObjectWrapper,
 }
 
 impl Request for ObjectApiCreateRequest {
@@ -33,22 +28,26 @@ impl Request for ObjectApiCreateRequest {
     type Response = Status;
 }
 
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct ObjectApiCreateRequest {
+    pub common: CommonCreateRequest,
+    pub spec: ObjectWrapper,
+}
+
 impl ObjectApiCreateRequest {
 
     /// encode admin spec into a request
-    pub fn encode<S: CreatableAdminSpec>(name: String, dry_run: bool,spec: S) -> Result<Self> {
+    pub fn encode<S: CreatableAdminSpec>(common: CommonCreateRequest, spec: S) -> Result<Self> {
 
-        let mut dest = vec![];
-        spec.encode(&mut dest, 0)?;
-        Self {
-            name,
-            dry_run: false,
-            timeout: None,
+        let mut buf = vec![];
+        spec.encode(&mut buf, 0)?;
+       Ok(Self {
+            common,
             spec: ObjectWrapper {
                 ty: S::CREATE_TYPE,
-                spec: request.encode(),
+                buf: ByteBuf::from(buf),
             },
-        }
+        })
     }
 }
 
@@ -57,7 +56,7 @@ impl ObjectApiCreateRequest {
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct ObjectWrapper {
     pub ty: u8,
-    pub spec: Vec<u128>,
+    pub buf: ByteBuf
 }
 
 /// Macro to convert create request

@@ -12,6 +12,7 @@
 use std::io::{Error as IoError, ErrorKind};
 
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
+use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::{info, debug, trace, instrument};
 
