@@ -11,10 +11,9 @@ use fluvio_controlplane_metadata::message::Message;
 use crate::{AdminPublicApiKey, AdminSpec};
 use crate::core::Spec;
 
-use super::{Metadata, ObjectApiEnum, COMMON_VERSION};
+use super::{Metadata, COMMON_VERSION};
 
-ObjectApiEnum!(WatchRequest);
-ObjectApiEnum!(WatchResponse);
+
 
 /// Watch resources
 /// Argument epoch is not being used, it is always 0

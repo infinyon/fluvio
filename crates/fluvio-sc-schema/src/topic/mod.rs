@@ -43,12 +43,8 @@ mod convert {
 
     use crate::CreatableAdminSpec;
     use crate::DeletableAdminSpec;
-   // use crate::objects::CreateFrom;
-    use crate::objects::DeleteRequest;
-    use crate::objects::ListRequest;
-    use crate::objects::ListResponse;
     use crate::{AdminSpec};
-    use crate::objects::{ObjectFrom, ObjectTryFrom, WatchResponse, WatchRequest};
+
 
     use super::TopicSpec;
 
@@ -62,13 +58,4 @@ mod convert {
         type DeleteKey = String;
     }
 
-   // CreateFrom!(TopicSpec, Topic);
-    ObjectFrom!(WatchRequest, Topic);
-    ObjectFrom!(WatchResponse, Topic);
-    ObjectFrom!(ListRequest, Topic);
-    ObjectFrom!(ListResponse, Topic);
-    ObjectFrom!(DeleteRequest, Topic);
-
-    ObjectTryFrom!(WatchResponse, Topic);
-    ObjectTryFrom!(ListResponse, Topic);
 }
