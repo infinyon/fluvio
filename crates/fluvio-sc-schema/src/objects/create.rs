@@ -37,7 +37,7 @@ impl ObjectApiCreateRequest {
     /// encode admin spec into a request
     pub fn encode<S: CreatableAdminSpec>(common: CommonCreateRequest, spec: S) -> Result<Self> {
         let mut buf = vec![];
-        spec.encode(&mut buf, 0)?;
+        spec.encode(&mut buf, COMMON_VERSION)?;
         Ok(Self {
             common,
             req: ObjectWrapper {

@@ -1,10 +1,9 @@
 use std::fmt::Debug;
-use std::io::Cursor;
 
 use anyhow::Result;
 
 use fluvio_controlplane_metadata::store::KeyFilter;
-use fluvio_protocol::{Encoder, Decoder, ByteBuf};
+use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec};
@@ -52,14 +51,16 @@ impl KeyFilter<str> for ListFilters {
     }
 }
 
+pub type ObjectApiListRequest = ListRequest;
+
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct ObjectApiListRequest {
+pub struct ListRequest {
     pub name_filters: ListFilters,
     #[fluvio(min_version = 10)]
     pub summary: bool, // if true, only return summary
 }
 
-impl ObjectApiListRequest {
+impl ListRequest {
     pub fn new(name_filters: impl Into<ListFilters>, summary: bool) -> Self {
         Self {
             name_filters: name_filters.into(),
@@ -68,21 +69,33 @@ impl ObjectApiListRequest {
     }
 }
 
-impl Request for ObjectApiListRequest {
+impl Request for ListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiListResponse;
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct ObjectApiListResponse(TypeBuffer);
+pub type ObjectApiListResponse = ListResponse;
 
-impl ObjectApiListResponse {
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct ListResponse(TypeBuffer);
+
+impl ListResponse {
+
+    pub fn encode<S>(input: Vec<Metadata<S>>) -> Result<Self> 
+    where
+    S: AdminSpec,
+    S::Status: Encoder + Decoder + Debug,
+    {
+
+        Ok(Self(TypeBuffer::encode::<S,_>(input)?))
+    }
+
     pub fn downcast<S>(&self) -> Result<Option<Vec<Metadata<S>>>>
     where
         S: AdminSpec,
         S::Status: Encoder + Decoder + Debug,
     {
-        self.0.downcast::<S, Vec<Metadata<S>>>()
+        self.0.downcast::<S, _>()
     }
 }
