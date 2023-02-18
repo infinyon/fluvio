@@ -148,8 +148,7 @@ impl FluvioAdmin {
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<()>
     where
-        S: CreatableAdminSpec + Sync + Send,
-        ObjectApiCreateRequest: From<(CommonCreateRequest, S)>,
+        S: CreatableAdminSpec + Sync + Send
     {
         let common_request = CommonCreateRequest {
             name,

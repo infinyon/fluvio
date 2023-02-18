@@ -11,16 +11,15 @@
 
 use std::io::{Error as IoError, ErrorKind};
 
+use tracing::{info, debug, trace, instrument};
+use anyhow::Result;
+
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
-use tracing::{info, debug, trace, instrument};
-
 use fluvio_protocol::link::ErrorCode;
-
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::topic::TopicSpec;
-
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
@@ -37,7 +36,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
     create: CommonCreateRequest,
     topic: TopicSpec,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<Status, IoError> {
+) -> Result<Status> {
     let name = create.name;
 
     info!( topic = %name,"creating topic");
@@ -59,7 +58,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
         return Err(IoError::new(
             ErrorKind::Interrupted,
             "authorization io error",
-        ));
+        ).into());
     }
 
     // validate topic request
