@@ -2,9 +2,7 @@ pub use fluvio_controlplane_metadata::spg::*;
 
 mod convert {
 
-    use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
-    };
+    use crate::{AdminSpec, CreatableAdminSpec, DeletableAdminSpec};
     use super::SpuGroupSpec;
 
     impl AdminSpec for SpuGroupSpec {}
@@ -16,5 +14,4 @@ mod convert {
     impl DeletableAdminSpec for SpuGroupSpec {
         type DeleteKey = String;
     }
-
 }

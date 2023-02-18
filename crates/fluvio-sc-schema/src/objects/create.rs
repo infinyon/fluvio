@@ -13,9 +13,7 @@ use fluvio_protocol::Version;
 use fluvio_protocol::core::ByteBuf;
 >>>>>>> 8823db0a (wip)
 
-
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
-
 
 /// Every create request must have this parameters
 #[derive(Encoder, Decoder, Default, Debug)]
@@ -40,13 +38,11 @@ pub struct ObjectApiCreateRequest {
 }
 
 impl ObjectApiCreateRequest {
-
     /// encode admin spec into a request
     pub fn encode<S: CreatableAdminSpec>(common: CommonCreateRequest, spec: S) -> Result<Self> {
-
         let mut buf = vec![];
         spec.encode(&mut buf, 0)?;
-       Ok(Self {
+        Ok(Self {
             common,
             req: ObjectWrapper {
                 ty: S::CREATE_TYPE,
@@ -56,16 +52,13 @@ impl ObjectApiCreateRequest {
     }
 }
 
-
-
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct ObjectWrapper {
     pub ty: u8,
-    pub buf: ByteBuf
+    pub buf: ByteBuf,
 }
 
 impl ObjectWrapper {
-
     // check if this object is kind of spec
     pub fn is_kind_of<S: CreatableAdminSpec>(&self) -> bool {
         self.ty == S::CREATE_TYPE
@@ -92,8 +85,7 @@ impl ObjectWrapper {
 ///       }
 /// }
 /// ObjectFrom!(WatchRequest, Topic);
-
-/* 
+/*
 macro_rules! CreateFrom {
     ($create:ty,$specTy:ident) => {
         impl From<(crate::objects::CommonCreateRequest, $create)>
@@ -109,7 +101,5 @@ macro_rules! CreateFrom {
     };
 }
 */
-
 //pub(crate) use CreateFrom;
-
 use super::COMMON_VERSION;

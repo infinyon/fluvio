@@ -6,9 +6,7 @@ mod convert {
 
     use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmSummary, SmartModuleWasm};
 
-    use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
-    };
+    use crate::{AdminSpec, CreatableAdminSpec, DeletableAdminSpec};
     use super::SmartModuleSpec;
 
     impl AdminSpec for SmartModuleSpec {
@@ -30,6 +28,4 @@ mod convert {
     impl DeletableAdminSpec for SmartModuleSpec {
         type DeleteKey = String;
     }
-
-
 }

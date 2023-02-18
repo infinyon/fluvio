@@ -13,8 +13,6 @@ use crate::core::Spec;
 
 use super::{Metadata, COMMON_VERSION};
 
-
-
 /// Watch resources
 /// Argument epoch is not being used, it is always 0
 #[derive(Debug, Encoder, Default, Decoder)]

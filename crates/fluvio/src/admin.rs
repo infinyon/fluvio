@@ -11,9 +11,9 @@ use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_future::net::DomainConnector;
 use fluvio_sc_schema::objects::{
-     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
-    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter,
-    WatchRequest, ObjectApiWatchResponse, WatchResponse, CommonCreateRequest,
+    DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
+    ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter, WatchRequest,
+    ObjectApiWatchResponse, WatchResponse, CommonCreateRequest,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
@@ -148,7 +148,7 @@ impl FluvioAdmin {
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<()>
     where
-        S: CreatableAdminSpec + Sync + Send
+        S: CreatableAdminSpec + Sync + Send,
     {
         let common_request = CommonCreateRequest {
             name,
@@ -162,7 +162,7 @@ impl FluvioAdmin {
     #[instrument(skip(self, config, spec))]
     pub async fn create_with_config<S>(&self, config: CommonCreateRequest, spec: S) -> Result<()>
     where
-        S: CreatableAdminSpec + Sync + Send
+        S: CreatableAdminSpec + Sync + Send,
     {
         let create_request = ObjectApiCreateRequest::encode(config, spec)?;
 
