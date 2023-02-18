@@ -14,16 +14,18 @@ use crate::core::Spec;
 
 use super::{Metadata, COMMON_VERSION, TypeBuffer};
 
+pub type ObjectApiWatchRequest = WatchRequest;
+
 /// Watch resources
 /// Argument epoch is not being used, it is always 0
 #[derive(Debug, Encoder, Default, Decoder)]
-pub struct ObjectApiWatchRequest {
+pub struct WatchRequest {
     epoch: Epoch,
     #[fluvio(min_version = 10)]
     pub summary: bool, // if true, only return summary
 }
 
-impl ObjectApiWatchRequest {
+impl WatchRequest {
     pub fn summary() -> Self {
         Self {
             summary: true,
@@ -32,22 +34,35 @@ impl ObjectApiWatchRequest {
     }
 }
 
-impl Request for ObjectApiWatchRequest {
+impl Request for WatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiWatchResponse;
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct ObjectApiWatchResponse(TypeBuffer);
+pub type ObjectApiWatchResponse = WatchResponse;
 
-impl ObjectApiWatchResponse {
-    pub fn downcast<S>(&self) -> Result<Option<Vec<MetadataUpdate<S>>>>
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct WatchResponse(TypeBuffer);
+
+impl WatchResponse 
+{
+
+    pub fn encode<S>(update: MetadataUpdate<S>) -> Result<Self> 
+    where
+    S: AdminSpec,
+    S::Status: Encoder + Decoder + Debug,
+    {
+
+        Ok(Self(TypeBuffer::encode::<S,_>(update)?))
+    }
+
+    pub fn downcast<S>(&self) -> Result<Option<MetadataUpdate<S>>>
     where
         S: AdminSpec,
         S::Status: Encoder + Decoder + Debug,
     {
-        self.0.downcast::<S, Vec<MetadataUpdate<S>>>()
+        self.0.downcast::<S, _>()
     }
 }
 
