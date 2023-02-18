@@ -8,7 +8,7 @@ use fluvio_protocol::{Encoder, Decoder, ByteBuf};
 use fluvio_protocol::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec};
-use super::{COMMON_VERSION, Metadata};
+use super::{COMMON_VERSION, Metadata, TypeBuffer};
 
 /// Filter for List
 #[derive(Debug, Encoder, Decoder, Default)]
@@ -72,35 +72,6 @@ impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiListResponse;
-}
-
-/// Type encoded buffer, it uses type label to determine type
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct TypeBuffer {
-    ty: String,
-    buf: ByteBuf,
-}
-
-impl TypeBuffer {
-    // check if this object is kind of spec
-    pub fn is_kind_of<S: AdminSpec>(&self) -> bool {
-        self.ty == S::LABEL
-    }
-
-    // downcast to specific spec type and return object
-    // if doens't match to ty, return None
-    pub fn downcast<S, O>(&self) -> Result<Option<O>>
-    where
-        S: AdminSpec,
-        O: Encoder + Decoder + Debug,
-    {
-        if self.is_kind_of::<S>() {
-            let mut buf = Cursor::new(self.buf.as_ref());
-            Ok(Some(O::decode_from(&mut buf, 0)?))
-        } else {
-            Ok(None)
-        }
-    }
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
