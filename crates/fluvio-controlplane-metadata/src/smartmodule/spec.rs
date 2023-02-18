@@ -178,6 +178,7 @@ mod base64 {
 
     use serde::{Serialize, Deserialize};
     use serde::{Deserializer, Serializer};
+    use base64::Engine;
 
     use fluvio_protocol::ByteBuf;
 
@@ -185,13 +186,15 @@ mod base64 {
     where
         S: Serializer,
     {
-        let base64 = base64::encode(bytebuf.deref());
+        let base64 = base64::engine::general_purpose::STANDARD.encode(bytebuf.deref());
         String::serialize(&base64, serializer)
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<ByteBuf, D::Error> {
         let b64 = String::deserialize(d)?;
-        let bytes: Vec<u8> = base64::decode(b64.as_bytes()).map_err(serde::de::Error::custom)?;
+        let bytes: Vec<u8> = base64::engine::general_purpose::STANDARD
+            .decode(b64.as_bytes())
+            .map_err(serde::de::Error::custom)?;
         let bytebuf = ByteBuf::from(bytes);
 
         Ok(bytebuf)

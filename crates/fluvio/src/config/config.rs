@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::fs::File;
 use std::fs::create_dir_all;
+
 use thiserror::Error;
 
 use tracing::debug;
@@ -233,11 +234,11 @@ impl Config {
     fn save_to<T: AsRef<Path>>(&self, path: T) -> Result<(), IoError> {
         let path_ref = path.as_ref();
         debug!("saving config: {:#?} to: {:#?}", self, path_ref);
-        let toml =
-            toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
+        let toml = toml::to_string(self)
+            .map_err(|err| IoError::new(ErrorKind::Other, format!("{err}")))?;
 
         let mut file = File::create(path_ref)?;
-        file.write_all(&toml)?;
+        file.write_all(toml.as_bytes())?;
         // On windows flush() is noop, but sync_all() calls FlushFileBuffers.
         file.sync_all()
     }

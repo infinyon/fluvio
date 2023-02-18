@@ -25,7 +25,7 @@ bytes = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "env"], default-features = false }
 thiserror = { workspace = true }
 nix = { workspace = true }
-toml = "0.5.5"
+toml = { workspace = true }
 futures-util = { version = "0.3.5", features = ["sink"] }
 async-trait = "0.1.51"
 serde = { version = "1.0.103", features = ['derive'] }

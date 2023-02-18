@@ -29,9 +29,9 @@ function cargo_publish_dry_run_all() {
                 deps_header=2
                 bad_dep=$line
             elif [[ $deps_header -eq 1 ]] && [[ $line =~ ^(.*\{.*\}.*)$ ]] && \
-                 [[ ! $line =~ ^.*version.*$ ]]; then
+                  [[ ! $line =~ ^.*workspace.*$ ]] && [[ ! $line =~ ^.*version.*$ ]]; then
                 # Dependency has multiple locations defined but no version
-                echo "❌ $crate has no version pinned for dependency: $line"
+                echo "❌ $crate has no version pinned for dependency: line $line"
                 exit 1
             elif [[ $deps_header -eq 1 ]] && [[ $line =~ ^(.*\{.*)$ ]] && \
                  [[ ! $line =~ ^(.*version.*)$ ]]; then
@@ -39,9 +39,9 @@ function cargo_publish_dry_run_all() {
                 deps_header=2
                 bad_dep=$line
             elif [[ $deps_header -eq 2 ]] && [[ $line =~ ^((.*\}.*)|())$ ]] && \
-                 [[ ! $line =~ ^(.*version.*)$ ]]; then
+                 [[ ! $bad_dep =~ ^.*workspace.*$ ]] && [[ ! $line =~ ^(.*version.*)$ ]]; then
                 # Multi-line/dedicated dep without version in any line
-                echo "❌ $crate has no version pinned for dependency: $bad_dep"
+                echo "❌ $crate has no version pinned for dependency: bad $bad_dep"
                 exit 1
             elif [[ $deps_header -eq 2 ]] && \
                  [[ $line =~ ^(.*version.*)$ ]]; then
