@@ -1,5 +1,5 @@
 use tracing::{instrument, debug};
-use anyhow::Result;
+use anyhow::{anyhow,Result};
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
@@ -17,30 +17,33 @@ pub async fn handle_create_request<AC: AuthContext>(
     let (header, obj_req) = request.get_header_request();
 
     debug!(?obj_req, "create request");
-    let ObjectApiCreateRequest { common, request } = obj_req;
-    let status = match request {
-        ObjectCreateRequest::Topic(create) => {
-            super::topic::handle_create_topics_request(common, create, auth_context).await?
-        }
-        ObjectCreateRequest::SpuGroup(create) => {
-            super::spg::handle_create_spu_group_request(common, create, auth_context).await?
-        }
-        ObjectCreateRequest::CustomSpu(create) => {
-            super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
-                common,
-                create,
-                auth_context,
-            )
-            .await
-        }
-        ObjectCreateRequest::SmartModule(create) => {
-            super::smartmodule::handle_create_smartmodule_request(common, create, auth_context)
-                .await?
-        }
-        ObjectCreateRequest::TableFormat(create) => {
-            super::tableformat::handle_create_tableformat_request(common, create, auth_context)
-                .await?
-        }
+    let ObjectApiCreateRequest { common, req } = obj_req;
+    let status = if let Some(spec) = req.downcast::<TopicSpec>()? {
+        super::topic::handle_create_topics_request(common, spec, auth_context).await?
+    } else if let Some(create) = req.downcast::<SpuGroupSpec>()? {
+        super::spg::handle_create_spu_group_request(common, create, auth_context).await?
+    } else if let Some(create) = req.downcast::<CustomSpuSpec>()? {
+        super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
+            common,
+            create,
+            auth_context,
+        )
+        .await
+    } else if let Some(create) = req.downcast::<SmartModuleSpec>()? {
+        super::smartmodule::handle_create_smartmodule_request(common, create, auth_context).await?
+    } else if let Some(create) = req.downcast::<TableFormatSpec>()? {
+        super::tableformat::handle_create_tableformat_request(common, create, auth_context).await?
+    } else if let Some(create) = req.downcast::<DerivedStreamSpec>()? {
+        create_handler::process(
+            common,
+            create,
+            auth_context,
+            auth_context.global_ctx.derivedstreams(),
+            |_| ErrorCode::DerivedStreamObjectError,
+        )
+        .await?
+    } else {
+        return Err(anyhow!("unknown type: {}", req.ty))
     };
 
     Ok(ResponseMessage::from_header(&header, status))

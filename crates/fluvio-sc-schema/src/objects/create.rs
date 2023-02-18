@@ -1,6 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 
 use std::fmt::Debug;
+use std::io::Cursor;
 
 use anyhow::Result;
 
@@ -35,7 +36,7 @@ impl Request for ObjectApiCreateRequest {
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiCreateRequest {
     pub common: CommonCreateRequest,
-    pub spec: ObjectWrapper,
+    pub req: ObjectWrapper,
 }
 
 impl ObjectApiCreateRequest {
@@ -47,7 +48,7 @@ impl ObjectApiCreateRequest {
         spec.encode(&mut buf, 0)?;
        Ok(Self {
             common,
-            spec: ObjectWrapper {
+            req: ObjectWrapper {
                 ty: S::CREATE_TYPE,
                 buf: ByteBuf::from(buf),
             },
@@ -61,6 +62,25 @@ impl ObjectApiCreateRequest {
 pub struct ObjectWrapper {
     pub ty: u8,
     pub buf: ByteBuf
+}
+
+impl ObjectWrapper {
+
+    // check if this object is kind of spec
+    pub fn is_kind_of<S: CreatableAdminSpec>(&self) -> bool {
+        self.ty == S::CREATE_TYPE
+    }
+
+    /// try to decode as spec
+    /// if it is not kind of spec, return None
+    pub fn downcast<S: CreatableAdminSpec>(&self) -> Result<Option<S>> {
+        if self.is_kind_of::<S>() {
+            let mut buf = Cursor::new(self.buf.as_ref());
+            Ok(Some(S::decode_from(&mut buf, 0)?))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 /// Macro to convert create request
