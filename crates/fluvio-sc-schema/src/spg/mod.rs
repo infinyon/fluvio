@@ -4,10 +4,6 @@ mod convert {
 
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
-        objects::{
-             DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
-            WatchRequest, WatchResponse,
-        },
     };
     use super::SpuGroupSpec;
 
@@ -21,15 +17,4 @@ mod convert {
         type DeleteKey = String;
     }
 
-  
-    ObjectFrom!(WatchRequest, SpuGroup);
-    ObjectFrom!(WatchResponse, SpuGroup);
-
-    ObjectFrom!(ListRequest, SpuGroup);
-    ObjectFrom!(ListResponse, SpuGroup);
-
-    ObjectTryFrom!(WatchResponse, SpuGroup);
-    ObjectTryFrom!(ListResponse, SpuGroup);
-
-    ObjectFrom!(DeleteRequest, SpuGroup);
 }

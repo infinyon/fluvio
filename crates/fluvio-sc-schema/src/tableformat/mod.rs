@@ -3,12 +3,9 @@ pub use fluvio_controlplane_metadata::tableformat::*;
 mod convert {
 
     use crate::{CreatableAdminSpec, DeletableAdminSpec};
-    use crate::objects::{
-         DeleteRequest, ListResponse, ObjectFrom, ObjectTryFrom, WatchRequest,
-    };
+
     use crate::{
-        AdminSpec,
-        objects::{ListRequest, WatchResponse},
+        AdminSpec
     };
     use super::TableFormatSpec;
 
@@ -22,13 +19,4 @@ mod convert {
         type DeleteKey = String;
     }
 
-   // CreateFrom!(TableFormatSpec, TableFormat);
-    ObjectFrom!(WatchRequest, TableFormat);
-    ObjectFrom!(WatchResponse, TableFormat);
-    ObjectFrom!(ListRequest, TableFormat);
-    ObjectFrom!(ListResponse, TableFormat);
-    ObjectFrom!(DeleteRequest, TableFormat);
-
-    ObjectTryFrom!(WatchResponse, TableFormat);
-    ObjectTryFrom!(ListResponse, TableFormat);
 }

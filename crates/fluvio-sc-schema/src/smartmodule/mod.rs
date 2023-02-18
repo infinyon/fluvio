@@ -8,10 +8,6 @@ mod convert {
 
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
-        objects::{
-             DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
-            WatchRequest, WatchResponse,
-        },
     };
     use super::SmartModuleSpec;
 
@@ -35,13 +31,5 @@ mod convert {
         type DeleteKey = String;
     }
 
-    //CreateFrom!(SmartModuleSpec, SmartModule);
-    ObjectFrom!(WatchRequest, SmartModule);
-    ObjectFrom!(WatchResponse, SmartModule);
-    ObjectFrom!(ListRequest, SmartModule);
-    ObjectFrom!(ListResponse, SmartModule);
-    ObjectFrom!(DeleteRequest, SmartModule);
 
-    ObjectTryFrom!(WatchResponse, SmartModule);
-    ObjectTryFrom!(ListResponse, SmartModule);
 }

@@ -8,10 +8,9 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec};
-use super::{ObjectApiEnum, COMMON_VERSION, Metadata};
+use super::{ COMMON_VERSION, Metadata};
 
-ObjectApiEnum!(ListRequest);
-ObjectApiEnum!(ListResponse);
+
 
 /// Filter for List
 #[derive(Debug, Encoder, Decoder, Default)]
@@ -56,22 +55,18 @@ impl KeyFilter<str> for ListFilters {
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct ListRequest<S: AdminSpec> {
+pub struct ObjectApiListRequest {
     pub name_filters: ListFilters,
     #[fluvio(min_version = 10)]
     pub summary: bool, // if true, only return summary
-    data: PhantomData<S>, // satisfy generic
 }
 
-impl<S> ListRequest<S>
-where
-    S: AdminSpec,
+impl ObjectApiListRequest
 {
     pub fn new(name_filters: impl Into<ListFilters>, summary: bool) -> Self {
         Self {
             name_filters: name_filters.into(),
-            summary,
-            data: PhantomData,
+            summary
         }
     }
 }
