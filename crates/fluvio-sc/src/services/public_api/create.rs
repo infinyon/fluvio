@@ -1,8 +1,8 @@
 use tracing::{instrument, debug};
-use anyhow::{anyhow,Result};
+use anyhow::{anyhow, Result};
 
 use fluvio_controlplane_metadata::derivedstream::DerivedStreamSpec;
-use fluvio_controlplane_metadata::smartmodule::{ SmartModuleSpec};
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::spu::{CustomSpuSpec};
 use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
@@ -50,7 +50,7 @@ pub async fn handle_create_request<AC: AuthContext>(
         )
         .await?
     } else {
-        return Err(anyhow!("unknown type: {}", req.ty))
+        return Err(anyhow!("unknown type: {}", req.ty));
     };
 
     Ok(ResponseMessage::from_header(&header, status))

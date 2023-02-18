@@ -45,7 +45,6 @@ mod convert {
     use crate::DeletableAdminSpec;
     use crate::{AdminSpec};
 
-
     use super::TopicSpec;
 
     impl AdminSpec for TopicSpec {}
@@ -57,5 +56,4 @@ mod convert {
     impl DeletableAdminSpec for TopicSpec {
         type DeleteKey = String;
     }
-
 }

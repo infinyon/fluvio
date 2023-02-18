@@ -17,5 +17,4 @@ mod convert {
     impl DeletableAdminSpec for DerivedStreamSpec {
         type DeleteKey = String;
     }
-
 }

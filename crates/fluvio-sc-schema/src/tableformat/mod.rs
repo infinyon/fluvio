@@ -4,9 +4,7 @@ mod convert {
 
     use crate::{CreatableAdminSpec, DeletableAdminSpec};
 
-    use crate::{
-        AdminSpec
-    };
+    use crate::{AdminSpec};
     use super::TableFormatSpec;
 
     impl AdminSpec for TableFormatSpec {}
@@ -18,5 +16,4 @@ mod convert {
     impl DeletableAdminSpec for TableFormatSpec {
         type DeleteKey = String;
     }
-
 }

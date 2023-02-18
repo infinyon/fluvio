@@ -55,10 +55,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
             ));
         }
     } else {
-        return Err(IoError::new(
-            ErrorKind::Interrupted,
-            "authorization io error",
-        ).into());
+        return Err(IoError::new(ErrorKind::Interrupted, "authorization io error").into());
     }
 
     // validate topic request

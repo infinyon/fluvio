@@ -13,4 +13,3 @@ impl CreatableAdminSpec for CustomSpuSpec {
 impl DeletableAdminSpec for CustomSpuSpec {
     type DeleteKey = CustomSpuKey;
 }
-

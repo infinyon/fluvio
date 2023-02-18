@@ -97,7 +97,6 @@ mod metadata {
     }
 }
 
-
 mod delete_macro {
 
     /// Macro to for converting delete object to generic Delete
