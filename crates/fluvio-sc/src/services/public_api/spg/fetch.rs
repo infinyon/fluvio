@@ -29,7 +29,7 @@ pub async fn handle_fetch_spu_groups_request<AC: AuthContext>(
             return Ok(ListResponse::new(vec![]));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error").into());
     }
 
     let spgs: Vec<Metadata<SpuGroupSpec>> = auth_ctx

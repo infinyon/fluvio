@@ -1,3 +1,11 @@
+use fluvio_controlplane_metadata::{
+    spu::{CustomSpuSpec, SpuSpec},
+    topic::TopicSpec,
+    spg::SpuGroupSpec,
+    partition::PartitionSpec,
+    smartmodule::SmartModuleSpec,
+    tableformat::TableFormatSpec,
+};
 use tracing::{debug, instrument};
 use anyhow::Result;
 
@@ -18,23 +26,28 @@ pub async fn handle_list_request<AC: AuthContext>(
     let (header, req) = request.get_header_request();
     debug!("list header: {:#?}, request: {:#?}", header, req);
 
-    let response = match req {
-        ObjectApiListRequest::Topic(req) => ObjectApiListResponse::Topic(
+    let response = if let Some(req) = req.downcast::<TopicSpec>()? {
+        ObjectApiListResponse::encode::<_>(
             super::topic::handle_fetch_topics_request(req.name_filters, auth_ctx).await?,
-        ),
-        ObjectApiListRequest::Spu(req) => ObjectApiListResponse::Spu(
+        )?
+    } else if let Some(req) = req.downcast::<SpuSpec>()? {
+        ObjectApiListResponse::encode::<_>(
             super::spu::handle_fetch_spus_request(req.name_filters, auth_ctx).await?,
-        ),
-        ObjectApiListRequest::SpuGroup(req) => ObjectApiListResponse::SpuGroup(
+        )?
+    } else if let Some(req) = req.downcast::<SpuGroupSpec>()? {
+        ObjectApiListResponse::encode(
             super::spg::handle_fetch_spu_groups_request(req.name_filters, auth_ctx).await?,
-        ),
-        ObjectApiListRequest::CustomSpu(req) => ObjectApiListResponse::CustomSpu(
+        )?
+    } else if let Some(req) = req.downcast::<CustomSpuSpec>()? {
+        ObjectApiListResponse::encode(
             super::spu::handle_fetch_custom_spu_request(req.name_filters, auth_ctx).await?,
-        ),
-        ObjectApiListRequest::Partition(req) => ObjectApiListResponse::Partition(
+        )?
+    } else if let Some(req) = req.downcast::<PartitionSpec>()? {
+        ObjectApiListResponse::encode(
             super::partition::handle_fetch_request(req.name_filters, auth_ctx).await?,
-        ),
-        ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
+        )?
+    } else if let Some(req) = req.downcast::<SmartModuleSpec>()? {
+        ObjectApiListResponse::encode(
             fetch_smart_modules(
                 req.name_filters.into(),
                 req.summary,
@@ -42,23 +55,18 @@ pub async fn handle_list_request<AC: AuthContext>(
                 auth_ctx.global_ctx.smartmodules(),
             )
             .await?,
-        ),
-        ObjectApiListRequest::TableFormat(req) => ObjectApiListResponse::TableFormat(
+        )?
+    } else if let Some(req) = req.downcast::<TableFormatSpec>()? {
+        ObjectApiListResponse::encode::<_>(
             fetch::handle_fetch_request(
                 req.name_filters,
                 auth_ctx,
                 auth_ctx.global_ctx.tableformats(),
             )
             .await?,
-        ),
-        ObjectApiListRequest::DerivedStream(req) => ObjectApiListResponse::DerivedStream(
-            fetch::handle_fetch_request(
-                req.name_filters,
-                auth_ctx,
-                auth_ctx.global_ctx.derivedstreams(),
-            )
-            .await?,
-        ),
+        )?
+    } else {
+        return Err(anyhow::anyhow!("unsupported list request: {:#?}", req));
     };
 
     debug!("response: {:#?}", response);

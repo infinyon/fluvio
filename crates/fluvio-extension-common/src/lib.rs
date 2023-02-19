@@ -33,6 +33,8 @@ macro_rules! t_print_cli_err {
     };
 }
 
+
+
 /// Metadata that plugins may provide to Fluvio at runtime.
 ///
 /// This allows `fluvio` to include external plugins in the help
@@ -84,6 +86,8 @@ pub mod target {
     use std::convert::TryInto;
     use clap::Parser;
 
+    use anyhow::Result;
+
     use fluvio::FluvioConfig;
     use fluvio::FluvioError;
     use fluvio::Fluvio;
@@ -124,7 +128,7 @@ pub mod target {
 
     impl ClusterTarget {
         /// helper method to connect to fluvio
-        pub async fn connect(self) -> Result<Fluvio, TargetError> {
+        pub async fn connect(self) -> Result<Fluvio> {
             let fluvio_config = self.load()?;
             Fluvio::connect_with_config(&fluvio_config)
                 .await

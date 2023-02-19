@@ -13,7 +13,7 @@ use futures::stream::LocalBoxStream;
 use async_trait::async_trait;
 
 pub type Error = anyhow::Error;
-pub type Result<T> = std::result::Result<T, Error>;
+use anyhow::Result;
 
 pub mod future {
     pub use fluvio_future::task::run_block_on;

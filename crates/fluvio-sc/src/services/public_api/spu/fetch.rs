@@ -30,7 +30,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
             return Ok(ListResponse::new(vec![]));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error").into());
     }
 
     let custom_spus: Vec<_> = auth_ctx

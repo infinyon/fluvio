@@ -18,7 +18,7 @@ impl BenchmarkDriver {
     pub async fn run_samples(
         config: BenchmarkConfig,
         all_stats: AllStatsSync,
-    ) -> Result<(), BenchmarkError> {
+    ) -> Result<()> {
         // Works send results to stats collector
         let (tx_stats, rx_stats) = unbounded();
 
@@ -179,7 +179,7 @@ struct ProducerDriver;
 impl ProducerDriver {
     async fn main_loop(
         rx: Receiver<ControlMessage>,
-        tx: Sender<Result<(), BenchmarkError>>,
+        tx: Sender<Result<()>>,
         mut worker: ProducerWorker,
     ) -> Result<(), BenchmarkError> {
         loop {

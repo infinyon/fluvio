@@ -28,7 +28,7 @@ pub async fn handle_fetch_topics_request<AC: AuthContext>(
             return Ok(ListResponse::new(vec![]));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(Error::new(ErrorKind::Interrupted, "authorization io error").into());
     }
 
     let topics: Vec<Metadata<TopicSpec>> = auth_ctx

@@ -4,10 +4,15 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use tracing::{instrument, trace, debug};
-use anyhow::Result;
 
-use fluvio_protocol::link::ErrorCode;
+use tracing::{instrument, trace, debug};
+use anyhow::{anyhow, Result};
+
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_controlplane_metadata::spg::SpuGroupSpec;
+use fluvio_controlplane_metadata::spu::CustomSpuSpec;
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
 use fluvio_sc_schema::objects::{ObjectApiDeleteRequest};
@@ -25,33 +30,18 @@ pub async fn handle_delete_request<AC: AuthContext>(
 
     debug!(?del_req, "del request");
 
-    let status = match del_req {
-        ObjectApiDeleteRequest::Topic(req) => {
-            super::topic::handle_delete_topic(req.key(), auth_ctx).await?
-        }
-        ObjectApiDeleteRequest::CustomSpu(req) => {
-            super::spu::handle_un_register_custom_spu_request(req.key(), auth_ctx).await?
-        }
-        ObjectApiDeleteRequest::SpuGroup(req) => {
-            super::spg::handle_delete_spu_group(req.key(), auth_ctx).await?
-        }
-        ObjectApiDeleteRequest::SmartModule(req) => {
-            super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
-        }
-        ObjectApiDeleteRequest::TableFormat(req) => {
-            super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
-        }
-        ObjectApiDeleteRequest::DerivedStream(req) => {
-            let name = req.key();
-            delete_handler::process(
-                name.clone(),
-                auth_ctx,
-                auth_ctx.global_ctx.derivedstreams(),
-                |_| ErrorCode::DerivedStreamObjectError,
-                || ErrorCode::SmartModuleNotFound { name },
-            )
-            .await?
-        }
+    let status = if let Some(req) = del_req.downcast::<TopicSpec>()? {
+        super::topic::handle_delete_topic(req.key(), auth_ctx).await?
+    } else if let Some(req) = del_req.downcast::<CustomSpuSpec>()? {
+        super::spu::handle_un_register_custom_spu_request(req.key(), auth_ctx).await?
+    } else if let Some(req) = del_req.downcast::<SpuGroupSpec>()? {
+        super::spg::handle_delete_spu_group(req.key(), auth_ctx).await?
+    } else if let Some(req) = del_req.downcast::<SmartModuleSpec>()? {
+        super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
+    } else if let Some(req) = del_req.downcast::<TableFormatSpec>()? {
+        super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
+    } else {
+        return Err(anyhow!("invalid object type"));
     };
 
     trace!("flv delete topics resp {:#?}", status);

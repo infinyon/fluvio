@@ -1,6 +1,10 @@
 use std::time::Instant;
+
 use async_channel::Sender;
+use anyhow::Result;
+
 use fluvio::{TopicProducer, RecordKey, Fluvio, TopicProducerConfigBuilder};
+
 use crate::{
     benchmark_config::{
         BenchmarkConfig,
@@ -22,7 +26,7 @@ impl ProducerWorker {
         producer_id: u64,
         config: BenchmarkConfig,
         tx_to_stats_collector: Sender<StatsCollectorMessage>,
-    ) -> Result<Self, BenchmarkError> {
+    ) -> Result<Self> {
         let fluvio = Fluvio::connect().await?;
 
         let fluvio_config = TopicProducerConfigBuilder::default()
@@ -72,7 +76,7 @@ impl ProducerWorker {
         self.records_to_send = Some(records);
     }
 
-    pub async fn send_batch(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn send_batch(&mut self) -> Result<()> {
         for record in self.records_to_send.take().ok_or_else(|| {
             BenchmarkError::ErrorWithExplanation(
                 "prepare_for_batch() not called on PrdoucerWorker".to_string(),

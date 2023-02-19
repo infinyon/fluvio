@@ -1,6 +1,9 @@
 use std::pin::Pin;
 use std::time::{Duration, Instant};
+
 use async_channel::{Sender, Receiver};
+use anyhow::Result;
+
 use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode};
 use fluvio::dataplane::record::ConsumerRecord;
 use fluvio_future::future::timeout;
@@ -24,7 +27,7 @@ impl ConsumerWorker {
         rx_stop: Receiver<()>,
         assigned_partition: u64,
         preallocation_hint: u64,
-    ) -> Result<Self, BenchmarkError> {
+    ) -> Result<Self> {
         let mut config_builder = ConsumerConfigBuilder::default();
         config_builder.max_bytes(config.consumer_max_bytes as i32);
         config_builder.isolation(config.consumer_isolation);

@@ -1,11 +1,13 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use fluvio_sc_schema::objects::ObjectApiWatchRequest;
-use fluvio_types::PartitionId;
+
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
+use anyhow::{anyhow,Result};
 
+use fluvio_sc_schema::objects::ObjectApiWatchRequest;
+use fluvio_types::PartitionId;
 use fluvio_socket::{
     ClientConfig, Versions, VersionedSerialSocket, SharedMultiplexerSocket, MultiplexerSocket,
 };
@@ -52,7 +54,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect() -> Result<Self, FluvioError> {
+    pub async fn connect() -> Result<Self> {
         let cluster_config = FluvioConfig::load()?;
         Self::connect_with_config(&cluster_config).await
     }
@@ -71,7 +73,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
+    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         info!(
             fluvio_crate_version = env!("CARGO_PKG_VERSION"),
@@ -84,7 +86,7 @@ impl Fluvio {
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
-    ) -> Result<Self, FluvioError> {
+    ) -> Result<Self> {
         let mut client_config =
             ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
         if let Some(client_id) = &config.client_id {
@@ -114,12 +116,12 @@ impl Fluvio {
                 metric: Arc::new(ClientMetrics::new()),
             })
         } else {
-            Err(FluvioError::Other("WatchApi version not found".to_string()))
+            Err(anyhow!("WatchApi version not found"))
         }
     }
 
     /// lazy get spu pool
-    async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
+    async fn spu_pool(&self) -> Result<Arc<SpuPool>> {
         self.spu_pool
             .get_or_try_init(|| async {
                 let metadata =
@@ -150,7 +152,7 @@ impl Fluvio {
     pub async fn topic_producer<S: Into<String>>(
         &self,
         topic: S,
-    ) -> Result<TopicProducer, FluvioError> {
+    ) -> Result<TopicProducer> {
         self.topic_producer_with_config(topic, Default::default())
             .await
     }
@@ -176,13 +178,13 @@ impl Fluvio {
         &self,
         topic: S,
         config: TopicProducerConfig,
-    ) -> Result<TopicProducer, FluvioError> {
+    ) -> Result<TopicProducer> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
 
         let spu_pool = self.spu_pool().await?;
         if !spu_pool.topic_exists(&topic).await? {
-            return Err(FluvioError::TopicNotFound(topic));
+            return Err(FluvioError::TopicNotFound(topic).into());
         }
 
         TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
@@ -198,7 +200,7 @@ impl Fluvio {
         &self,
         topic: S,
         partition: PartitionId,
-    ) -> Result<PartitionConsumer, FluvioError> {
+    ) -> Result<PartitionConsumer> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");
         Ok(PartitionConsumer::new(
@@ -232,7 +234,7 @@ impl Fluvio {
     pub async fn consumer(
         &self,
         strategy: PartitionSelectionStrategy,
-    ) -> Result<MultiplePartitionConsumer, FluvioError> {
+    ) -> Result<MultiplePartitionConsumer> {
         Ok(MultiplePartitionConsumer::new(
             strategy,
             self.spu_pool().await?,

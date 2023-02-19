@@ -32,7 +32,7 @@ async fn main() {
     }
 }
 
-async fn produce_key_value() -> Result<(), fluvio::FluvioError> {
+async fn produce_key_value() -> anyhow::Result<()> {
     let producer = fluvio::producer("key-value").await?;
 
     let key = "Hello";

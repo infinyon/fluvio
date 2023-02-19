@@ -12,7 +12,7 @@ use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 use fluvio_socket::AsyncResponse;
 use fluvio_sc_schema::objects::{
-    Metadata, MetadataUpdate, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
+    Metadata, MetadataUpdate, ObjectApiWatchRequest,
 };
 use fluvio_sc_schema::AdminSpec;
 
@@ -60,9 +60,7 @@ where
     S: Encoder + Decoder + Send + Sync,
     S::Status: Sync + Send + Encoder + Decoder,
     S::IndexKey: Display + Sync + Send,
-    <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
     CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
-    WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
     <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
 {
     pub fn start(
@@ -106,11 +104,15 @@ where
 
                     match item {
                         Some(Ok(watch_response)) => {
-                            let update_result: Result<WatchResponse<S>,_> = watch_response.try_into();
+                            let update_result = watch_response.downcast::<S>();
                             match update_result {
-                                Ok(update) => {
-                                    if let Err(err) = self.sync_metadata(update.inner()).await {
-                                        error!("Processing updates: {}", err);
+                                Ok(update_opt) => {
+                                    if let Some(update) = update_opt {
+                                        if let Err(err) = self.sync_metadata(update.inner()).await {
+                                            error!("Processing updates: {}", err);
+                                        }
+                                    } else {
+                                        error!("invalid update type: {s}", s = S::LABEL);
                                     }
                                 },
                                 Err(err) => {

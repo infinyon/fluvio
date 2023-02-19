@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use tracing::instrument;
 use async_lock::RwLock;
+use anyhow::Result;
 
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::Record;
@@ -41,7 +42,6 @@ pub use self::output::ProduceOutput;
 use self::partition_producer::PartitionProducer;
 pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
-use crate::error::Result;
 
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
@@ -330,26 +330,26 @@ impl TopicProducer {
                     Some(Compression::Gzip) | None => Compression::Gzip,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (gzip)" ),
-                    ))),
+                    )).into()),
                 },
                 CompressionAlgorithm::Snappy => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (snappy)" ),
-                    ))),
+                    )).into()),
                 },
                 CompressionAlgorithm::Lz4 => match config.compression {
                     Some(Compression::Lz4) | None => Compression::Lz4,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (lz4)"),
-                    ))),
+                    )).into()),
                 },
             CompressionAlgorithm::None => match config.compression {
                     Some(Compression::None) | None => Compression::None,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (no compression)" )
 
-                    ))),
+                    )).into()),
                 },
             };
 
@@ -392,7 +392,7 @@ impl TopicProducer {
     /// producer.flush().await?;
     /// # Ok(())
     /// # }
-    pub async fn flush(&self) -> Result<(), FluvioError> {
+    pub async fn flush(&self) -> Result<()> {
         self.inner.flush().await
     }
 
@@ -419,7 +419,7 @@ impl TopicProducer {
         skip(self, key, value),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send<K, V>(&self, key: K, value: V) -> Result<ProduceOutput, FluvioError>
+    pub async fn send<K, V>(&self, key: K, value: V) -> Result<ProduceOutput>
     where
         K: Into<RecordKey>,
         V: Into<RecordData>,
@@ -462,7 +462,7 @@ impl TopicProducer {
         skip(self, records),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send_all<K, V, I>(&self, records: I) -> Result<Vec<ProduceOutput>, FluvioError>
+    pub async fn send_all<K, V, I>(&self, records: I) -> Result<Vec<ProduceOutput>>
     where
         K: Into<RecordKey>,
         V: Into<RecordData>,
