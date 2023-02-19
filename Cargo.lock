@@ -3050,6 +3050,7 @@ dependencies = [
 name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-channel",
  "async-std",
  "async-trait",

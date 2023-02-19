@@ -49,7 +49,7 @@ impl ConsumerWorker {
         })
     }
 
-    pub async fn consume(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn consume(&mut self) -> Result<()> {
         self.received.clear();
         loop {
             match timeout(Duration::from_millis(20), self.stream.next()).await {
@@ -62,7 +62,7 @@ impl ConsumerWorker {
                     } else {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Consumer unable to get record from fluvio".to_string(),
-                        ));
+                        ).into());
                     }
                 }
                 // timeout
@@ -75,7 +75,7 @@ impl ConsumerWorker {
         }
     }
 
-    pub async fn send_results(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn send_results(&mut self) -> Result<()> {
         for (record, recv_time) in self.received.iter() {
             let data = String::from_utf8_lossy(record.value());
             self.tx_to_stats_collector

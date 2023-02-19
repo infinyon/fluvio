@@ -8,7 +8,7 @@ use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
-    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError,
+    consumer_worker::ConsumerWorker, stats_collector::StatsWorker,
     stats::AllStatsSync,
 };
 
@@ -200,9 +200,9 @@ struct ConsumerDriver;
 impl ConsumerDriver {
     async fn main_loop(
         rx: Receiver<ControlMessage>,
-        tx: Sender<Result<(), BenchmarkError>>,
+        tx: Sender<Result<()>>,
         mut worker: ConsumerWorker,
-    ) -> Result<(), BenchmarkError> {
+    ) -> Result<()> {
         loop {
             match rx.recv().await? {
                 ControlMessage::PrepareForBatch => tx.send(Ok(())).await?,
@@ -218,7 +218,7 @@ struct StatsDriver;
 impl StatsDriver {
     async fn main_loop(
         rx: Receiver<ControlMessage>,
-        tx: Sender<Result<(), BenchmarkError>>,
+        tx: Sender<Result<()>>,
         mut worker: StatsWorker,
     ) -> Result<()> {
         loop {
