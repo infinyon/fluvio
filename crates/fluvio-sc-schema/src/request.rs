@@ -90,17 +90,18 @@ mod test {
 
     use std::io::Cursor;
 
+    use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_protocol::api::RequestMessage;
     use fluvio_protocol::{Encoder};
     use fluvio_protocol::api::ApiMessage;
 
-    use crate::objects::{ObjectApiListRequest};
+    use crate::objects::{ObjectApiListRequest, ListRequest};
     use crate::{AdminPublicDecodedRequest};
-    use crate::topic::TopicSpec;
+
 
     fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        list_request.into()
+        ObjectApiListRequest::encode(list_request).expect("encode")
     }
 
     #[test]
