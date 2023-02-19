@@ -89,7 +89,7 @@
 //! ```
 
 use std::time::Duration;
-use fluvio::{FluvioError, Offset, RecordKey};
+use fluvio::{Offset, RecordKey};
 use futures::future::join;
 use async_std::task::spawn;
 use async_std::future::timeout;

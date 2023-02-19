@@ -1,9 +1,10 @@
 //use fluvio::consumer::{PartitionSelectionStrategy, ConsumerConfig};
-use fluvio::consumer::PartitionSelectionStrategy;
+
 use tracing::debug;
+use anyhow::Result;
 
-use fluvio::{Fluvio, FluvioError};
-
+use fluvio::consumer::PartitionSelectionStrategy;
+use fluvio::{Fluvio};
 use fluvio::metadata::topic::TopicSpec;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
 use fluvio::TopicProducerConfig;
@@ -45,7 +46,7 @@ impl TestDriver {
         }
     }
 
-    pub async fn connect(&mut self) -> Result<(), FluvioError> {
+    pub async fn connect(&mut self) -> Result<()> {
         let client = self.create_client().await?;
 
         self.client = Some(client);
@@ -105,7 +106,7 @@ impl TestDriver {
         p: &TopicProducer,
         key: RecordKey,
         message: Vec<u8>,
-    ) -> Result<(), FluvioError> {
+    ) -> Result<()> {
         use std::time::SystemTime;
         let now = SystemTime::now();
 
@@ -269,7 +270,7 @@ impl TestDriver {
     }
 
     /// create new fluvio client
-    async fn create_client(&self) -> Result<Fluvio, FluvioError> {
+    async fn create_client(&self) -> Result<Fluvio> {
         Fluvio::connect().await
     }
 }

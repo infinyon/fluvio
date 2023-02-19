@@ -29,6 +29,7 @@ dyn-clone = "1.0"
 semver = "1.0.0"
 hdrhistogram = "7.3.0"
 uuid = { version = "1.1", features = ["serde", "v4"] }
+anyhow = { workspace = true }
 
 fluvio = { path = "../fluvio" }
 fluvio-types = { path = "../fluvio-types" }

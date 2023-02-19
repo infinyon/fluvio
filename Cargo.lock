@@ -3135,6 +3135,7 @@ dependencies = [
 name = "fluvio-test-util"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "bytes 1.4.0",
  "clap 4.1.6",

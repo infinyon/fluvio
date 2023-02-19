@@ -156,7 +156,7 @@ impl BenchmarkDriver {
 async fn send_control_message(
     tx_control: &mut [Sender<ControlMessage>],
     message: ControlMessage,
-) -> Result<(), BenchmarkError> {
+) -> Result<()> {
     for tx_control in tx_control.iter_mut() {
         tx_control.send(message).await?;
     }
@@ -164,10 +164,10 @@ async fn send_control_message(
 }
 
 async fn expect_success(
-    rx_success: &mut Receiver<Result<(), BenchmarkError>>,
+    rx_success: &mut Receiver<Result<()>>,
     config: &BenchmarkConfig,
     num_expected_messages: usize,
-) -> Result<(), BenchmarkError> {
+) -> Result<()> {
     for _ in 0..num_expected_messages {
         timeout(config.worker_timeout, rx_success.recv()).await???;
     }
@@ -181,7 +181,7 @@ impl ProducerDriver {
         rx: Receiver<ControlMessage>,
         tx: Sender<Result<()>>,
         mut worker: ProducerWorker,
-    ) -> Result<(), BenchmarkError> {
+    ) -> Result<()> {
         loop {
             match rx.recv().await? {
                 ControlMessage::PrepareForBatch => {
@@ -220,7 +220,7 @@ impl StatsDriver {
         rx: Receiver<ControlMessage>,
         tx: Sender<Result<(), BenchmarkError>>,
         mut worker: StatsWorker,
-    ) -> Result<(), BenchmarkError> {
+    ) -> Result<()> {
         loop {
             match rx.recv().await? {
                 ControlMessage::PrepareForBatch => {

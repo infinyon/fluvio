@@ -229,7 +229,7 @@ cfg_if::cfg_if! {
 
         impl TopicProducer {
             /// Adds a chain of SmartModules to this TopicProducer
-            pub fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self, FluvioError> {
+            pub fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self> {
                 let chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
                 self.sm_chain = Some(Arc::new(RwLock::new(chain_instance)));
                 Ok(self)
@@ -240,7 +240,7 @@ cfg_if::cfg_if! {
                 self,
                 filter: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, filter)))
             }
@@ -250,7 +250,7 @@ cfg_if::cfg_if! {
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
@@ -260,7 +260,7 @@ cfg_if::cfg_if! {
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
@@ -270,7 +270,7 @@ cfg_if::cfg_if! {
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
@@ -281,7 +281,7 @@ cfg_if::cfg_if! {
                 map: T,
                 params: BTreeMap<String, String>,
                 accumulator: Vec<u8>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder()
                     .initial_data(SmartModuleInitialData::Aggregate{accumulator})
                     .params(params.into()).build()?;
@@ -294,7 +294,7 @@ cfg_if::cfg_if! {
                 smartmodule: T,
                 params: BTreeMap<String, String>,
                 context: SmartModuleContextData,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let mut config_builder = SmartModuleConfig::builder();
                 config_builder.params(params.into());
                 if let SmartModuleContextData::Aggregate{accumulator} = context {
