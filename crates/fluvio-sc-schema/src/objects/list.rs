@@ -77,7 +77,6 @@ where
 pub struct ObjectApiListRequest(TypeBuffer);
 
 impl ObjectApiListRequest {
-
     pub fn encode<S>(input: ListRequest<S>) -> Result<Self>
     where
         S: AdminSpec,
@@ -87,11 +86,10 @@ impl ObjectApiListRequest {
 
     pub fn downcast<S>(&self) -> Result<Option<ListRequest<S>>>
     where
-        S: AdminSpec
+        S: AdminSpec,
     {
         self.0.downcast::<S, _>()
     }
-
 }
 
 impl Request for ObjectApiListRequest {

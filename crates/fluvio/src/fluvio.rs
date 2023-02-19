@@ -1,10 +1,9 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
-use anyhow::{anyhow,Result};
+use anyhow::{anyhow, Result};
 
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use fluvio_types::PartitionId;

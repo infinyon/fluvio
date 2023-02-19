@@ -1,5 +1,5 @@
 use std::convert::{TryFrom};
-use std::fmt::{ Debug};
+use std::fmt::{Debug};
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
@@ -12,8 +12,7 @@ use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_future::net::DomainConnector;
 use fluvio_sc_schema::objects::{
     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
-    ObjectApiWatchRequest, Metadata, ListFilter, WatchRequest,
-    WatchResponse, CommonCreateRequest,
+    ObjectApiWatchRequest, Metadata, ListFilter, WatchRequest, WatchResponse, CommonCreateRequest,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};

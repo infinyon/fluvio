@@ -33,8 +33,6 @@ macro_rules! t_print_cli_err {
     };
 }
 
-
-
 /// Metadata that plugins may provide to Fluvio at runtime.
 ///
 /// This allows `fluvio` to include external plugins in the help

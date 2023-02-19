@@ -38,7 +38,6 @@ where
 pub struct ObjectApiDeleteRequest(TypeBuffer);
 
 impl ObjectApiDeleteRequest {
-
     pub fn encode<S>(input: DeleteRequest<S>) -> Result<Self>
     where
         S: DeletableAdminSpec,
@@ -50,7 +49,7 @@ impl ObjectApiDeleteRequest {
     where
         S: DeletableAdminSpec,
     {
-        self.0.downcast::<S,_>()
+        self.0.downcast::<S, _>()
     }
 }
 
