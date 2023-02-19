@@ -15,8 +15,6 @@ use crate::core::Spec;
 
 use super::{Metadata, COMMON_VERSION, TypeBuffer};
 
-
-
 /// Watch resources
 /// Argument epoch is not being used, it is always 0
 #[derive(Debug, Encoder, Default, Decoder)]
@@ -43,7 +41,6 @@ where
 pub struct ObjectApiWatchRequest(TypeBuffer);
 
 impl ObjectApiWatchRequest {
-
     pub fn encode<S>(input: WatchRequest<S>) -> Result<Self>
     where
         S: AdminSpec,
@@ -53,7 +50,7 @@ impl ObjectApiWatchRequest {
 
     pub fn downcast<S>(&self) -> Result<Option<WatchRequest<S>>>
     where
-        S: AdminSpec
+        S: AdminSpec,
     {
         self.0.downcast::<S, _>()
     }
@@ -69,7 +66,6 @@ impl Request for ObjectApiWatchRequest {
 pub struct ObjectApiWatchResponse(TypeBuffer);
 
 impl ObjectApiWatchResponse {
-
     pub fn encode<S>(input: WatchResponse<S>) -> Result<Self>
     where
         S: AdminSpec,
@@ -86,7 +82,6 @@ impl ObjectApiWatchResponse {
         self.0.downcast::<S, _>()
     }
 }
-
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct WatchResponse<S: AdminSpec>

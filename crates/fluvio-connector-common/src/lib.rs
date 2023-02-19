@@ -15,7 +15,6 @@ use async_trait::async_trait;
 pub use anyhow::Error;
 pub use anyhow::Result;
 
-
 pub mod future {
     pub use fluvio_future::task::run_block_on;
     pub use fluvio_future::subscriber::init_logger;

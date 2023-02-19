@@ -11,9 +11,7 @@ use futures_util::stream::StreamExt;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::{
-    Metadata, MetadataUpdate, ObjectApiWatchRequest,
-};
+use fluvio_sc_schema::objects::{Metadata, MetadataUpdate, ObjectApiWatchRequest};
 use fluvio_sc_schema::AdminSpec;
 
 use super::StoreContext;

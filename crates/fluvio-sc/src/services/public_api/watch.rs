@@ -33,7 +33,7 @@ pub fn handle_watch_request<AC>(
     let (header, req) = request.get_header_request();
     debug!("handling watch header: {:#?}, request: {:#?}", header, req);
 
-    if let Some(_) = req.downcast::<TopicSpec>()? {
+    if req.downcast::<TopicSpec>()?.is_some() {
         WatchController::<TopicSpec>::update(
             sink,
             end_event,
@@ -41,7 +41,7 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if let Some(_) = req.downcast::<SpuSpec>()? {
+    } else if req.downcast::<SpuSpec>()?.is_some() {
         WatchController::<SpuSpec>::update(
             sink,
             end_event,
@@ -49,7 +49,7 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if let Some(_) = req.downcast::<SpuGroupSpec>()? {
+    } else if req.downcast::<SpuGroupSpec>()?.is_some() {
         WatchController::<SpuGroupSpec>::update(
             sink,
             end_event,
@@ -57,7 +57,7 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if let Some(_) = req.downcast::<PartitionSpec>()? {
+    } else if req.downcast::<PartitionSpec>()?.is_some() {
         WatchController::<PartitionSpec>::update(
             sink,
             end_event,
@@ -73,7 +73,7 @@ pub fn handle_watch_request<AC>(
             header,
             req.summary,
         )
-    } else if let Some(_) = req.downcast::<TableFormatSpec>()? {
+    } else if req.downcast::<TableFormatSpec>()?.is_some() {
         WatchController::<TableFormatSpec>::update(
             sink,
             end_event,

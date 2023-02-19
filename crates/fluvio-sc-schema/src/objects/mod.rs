@@ -146,8 +146,6 @@ mod metadata {
 #[cfg(test)]
 mod test {
 
-
-
     use std::io::Cursor;
 
     use fluvio_protocol::api::{RequestHeader, ResponseMessage, RequestMessage};
@@ -156,7 +154,7 @@ mod test {
     use fluvio_controlplane_metadata::spu::SpuStatus;
 
     use crate::objects::{
-        Metadata, MetadataUpdate,  ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
+        Metadata, MetadataUpdate, ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
     };
 
     use crate::topic::TopicSpec;
@@ -205,7 +203,11 @@ mod test {
             ObjectApiListRequest::API_KEY as i16,
         )
         .expect("decode");
-        assert!(dec_msg.request.downcast::<TopicSpec>().expect("downcast").is_some());
+        assert!(dec_msg
+            .request
+            .downcast::<TopicSpec>()
+            .expect("downcast")
+            .is_some());
     }
 
     // test encoding and decoding of metadata update
@@ -261,7 +263,11 @@ mod test {
             ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
-        let _ = dec_msg.response.downcast::<TopicSpec>().expect("downcast").unwrap();
+        let _ = dec_msg
+            .response
+            .downcast::<TopicSpec>()
+            .expect("downcast")
+            .unwrap();
     }
 
     #[test]
@@ -292,8 +298,11 @@ mod test {
             ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
-        let _ = dec_msg.response.downcast::<TopicSpec>().expect("downcast").unwrap();
-
+        let _ = dec_msg
+            .response
+            .downcast::<TopicSpec>()
+            .expect("downcast")
+            .unwrap();
     }
 
     #[test]
@@ -309,7 +318,7 @@ mod test {
         }]);
 
         let resp = ObjectApiListResponse::encode::<_>(list).expect("encode");
-        
+
         let mut header = RequestHeader::new(ObjectApiListRequest::API_KEY);
         header.set_client_id("test");
         header.set_correlation_id(11);
@@ -325,7 +334,11 @@ mod test {
         )
         .expect("decode");
 
-        let response = dec_msg.response.downcast::<CustomSpuSpec>().expect("downcast").unwrap();
+        let response = dec_msg
+            .response
+            .downcast::<CustomSpuSpec>()
+            .expect("downcast")
+            .unwrap();
         assert_eq!(response.inner().len(), 1);
     }
 }

@@ -62,7 +62,8 @@ impl ConsumerWorker {
                     } else {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Consumer unable to get record from fluvio".to_string(),
-                        ).into());
+                        )
+                        .into());
                     }
                 }
                 // timeout

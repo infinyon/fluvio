@@ -1,10 +1,9 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
-use anyhow::{anyhow,Result};
+use anyhow::{anyhow, Result};
 
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use fluvio_types::PartitionId;
@@ -49,7 +48,7 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError};
-    /// # async fn do_connect() -> Result<(), FluvioError> {
+    /// # async fn do_connect() -> anyhow::Result<()> {
     /// let fluvio = Fluvio::connect().await?;
     /// # Ok(())
     /// # }
@@ -66,7 +65,7 @@ impl Fluvio {
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError, FluvioConfig};
     /// use fluvio::config::ConfigFile;
-    /// # async fn do_connect_with_config() -> Result<(), FluvioError> {
+    /// # async fn do_connect_with_config() -> anyhow::Result<()> {
     /// let config_file = ConfigFile::load_default_or_new()?;
     /// let config = config_file.config().current_cluster().unwrap();
     /// let fluvio = Fluvio::connect_with_config(&config).await?;
@@ -143,16 +142,13 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError, RecordKey};
-    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> anyhow::Result<()> {
     /// let producer = fluvio.topic_producer("my-topic").await?;
     /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn topic_producer<S: Into<String>>(
-        &self,
-        topic: S,
-    ) -> Result<TopicProducer> {
+    pub async fn topic_producer<S: Into<String>>(&self, topic: S) -> Result<TopicProducer> {
         self.topic_producer_with_config(topic, Default::default())
             .await
     }
@@ -167,7 +163,7 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError, RecordKey, TopicProducerConfigBuilder};
-    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> anyhow::Result<()> {
     /// let config = TopicProducerConfigBuilder::default().batch_size(500).build()?;
     /// let producer = fluvio.topic_producer_with_config("my-topic", config).await?;
     /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
@@ -225,7 +221,7 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, Offset, FluvioError, PartitionSelectionStrategy};
-    /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> anyhow::Result<()> {
     /// # let consumer = fluvio.consumer(PartitionSelectionStrategy::All("my-topic".to_string())).await?;
     /// # let stream = consumer.stream(Offset::beginning()).await?;
     /// # Ok(())
@@ -248,7 +244,7 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError};
-    /// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_get_admin(fluvio: &mut Fluvio) -> anyhow::Result<()> {
     /// let admin = fluvio.admin().await;
     /// # Ok(())
     /// # }

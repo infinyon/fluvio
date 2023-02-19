@@ -98,7 +98,6 @@ mod test {
     use crate::objects::{ObjectApiListRequest, ListRequest};
     use crate::{AdminPublicDecodedRequest};
 
-
     fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
         ObjectApiListRequest::encode(list_request).expect("encode")

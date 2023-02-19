@@ -15,7 +15,6 @@ use fluvio_socket::AsyncResponse;
 
 use fluvio_socket::SharedMultiplexerSocket;
 
-
 use crate::metadata::topic::TopicSpec;
 use crate::metadata::spu::SpuSpec;
 use crate::metadata::partition::PartitionSpec;
@@ -39,10 +38,7 @@ impl MetadataStores {
     /// start synchronization
 
     #[instrument(skip(socket))]
-    pub async fn start(
-        socket: SharedMultiplexerSocket,
-        watch_version: i16,
-    ) -> Result<Self> {
+    pub async fn start(socket: SharedMultiplexerSocket, watch_version: i16) -> Result<Self> {
         debug!(watch_version, "starting metadata store");
         let store = Self {
             shutdown: SimpleEvent::shared(),

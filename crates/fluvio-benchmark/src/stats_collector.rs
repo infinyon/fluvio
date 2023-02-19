@@ -100,7 +100,8 @@ impl StatsWorker {
                     StatsCollectorMessage::MessageHash { .. } => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message hash".to_string(),
-                        ).into());
+                        )
+                        .into());
                     }
                     StatsCollectorMessage::ProducerFlushed { flush_time } => {
                         self.current_batch.flush_recv(flush_time)
@@ -109,7 +110,8 @@ impl StatsWorker {
                 Err(_) => {
                     return Err(BenchmarkError::ErrorWithExplanation(
                         "StatsCollectorChannelClosed".to_string(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
         }
@@ -129,12 +131,14 @@ impl StatsWorker {
                     StatsCollectorMessage::MessageSent { .. } => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message sent".to_string(),
-                        ).into());
+                        )
+                        .into());
                     }
                     StatsCollectorMessage::MessageReceived => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message received".to_string(),
-                        ).into());
+                        )
+                        .into());
                     }
                     StatsCollectorMessage::MessageHash {
                         hash,
@@ -147,13 +151,15 @@ impl StatsWorker {
                     StatsCollectorMessage::ProducerFlushed { .. } => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message flushed".to_string(),
-                        ).into());
+                        )
+                        .into());
                     }
                 },
                 Err(_) => {
                     return Err(BenchmarkError::ErrorWithExplanation(
                         "StatsCollectorChannelClosed".to_string(),
-                    ).into())
+                    )
+                    .into())
                 }
             }
         }

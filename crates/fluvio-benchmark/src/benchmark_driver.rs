@@ -8,17 +8,13 @@ use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
-    consumer_worker::ConsumerWorker, stats_collector::StatsWorker,
-    stats::AllStatsSync,
+    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, stats::AllStatsSync,
 };
 
 pub struct BenchmarkDriver {}
 
 impl BenchmarkDriver {
-    pub async fn run_samples(
-        config: BenchmarkConfig,
-        all_stats: AllStatsSync,
-    ) -> Result<()> {
+    pub async fn run_samples(config: BenchmarkConfig, all_stats: AllStatsSync) -> Result<()> {
         // Works send results to stats collector
         let (tx_stats, rx_stats) = unbounded();
 

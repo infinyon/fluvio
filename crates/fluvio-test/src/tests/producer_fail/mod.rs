@@ -5,7 +5,6 @@ use anyhow::Result;
 use fluvio::{RecordKey, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 
-
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_case_derive::MyTestCase;
 
