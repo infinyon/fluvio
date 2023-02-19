@@ -1,4 +1,4 @@
-pub mod producer;
+
 pub mod smartmodule;
 pub mod monitoring;
 pub mod consumer;
@@ -14,8 +14,9 @@ use fluvio::{Offset, metadata::topic::TopicSpec};
 use futures::stream::LocalBoxStream;
 use async_trait::async_trait;
 
-pub type Error = anyhow::Error;
-use anyhow::Result;
+pub use anyhow::Error;
+pub use anyhow::Result;
+
 
 pub mod future {
     pub use fluvio_future::task::run_block_on;
