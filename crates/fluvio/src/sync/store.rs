@@ -11,9 +11,6 @@ use fluvio_protocol::Encoder;
 use fluvio_sc_schema::AdminSpec;
 use fluvio_sc_schema::objects::Metadata;
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
-use fluvio_sc_schema::objects::ObjectApiWatchResponse;
-use fluvio_sc_schema::objects::WatchRequest;
-use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_socket::AsyncResponse;
 use fluvio_socket::SharedMultiplexerSocket;
 
@@ -102,21 +99,18 @@ impl MetadataStores {
     // same bounds as MetadataSyncController
     where
         S: AdminSpec + 'static + Sync + Send,
-        ObjectApiWatchRequest: From<WatchRequest<S>>,
         AsyncResponse<ObjectApiWatchRequest>: Send,
         S: Encoder + Decoder + Send + Sync,
         S::Status: Sync + Send + Encoder + Decoder,
         S::IndexKey: Display + Sync + Send,
-        <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
         CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
-        WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
         <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
     {
         use fluvio_protocol::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         let watch_request: WatchRequest<S> = WatchRequest::default();
-        let watch_req: ObjectApiWatchRequest = watch_request.into();
+        let watch_req = ObjectApiWatchRequest::encode::<_>(watch_request)?;
         let mut req_msg = RequestMessage::new_request(watch_req);
         req_msg.get_mut_header().set_api_version(self.watch_version);
 

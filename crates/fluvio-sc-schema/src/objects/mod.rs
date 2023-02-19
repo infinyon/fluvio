@@ -156,7 +156,7 @@ mod test {
     use fluvio_controlplane_metadata::spu::SpuStatus;
 
     use crate::objects::{
-        Metadata, MetadataUpdate, WatchRequest, ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
+        Metadata, MetadataUpdate,  ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
     };
 
     use crate::topic::TopicSpec;

@@ -67,13 +67,13 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if let Some(_) = req.downcast::<SmartModuleSpec>()? {
+    } else if let Some(req) = req.downcast::<SmartModuleSpec>()? {
         WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.smartmodules().clone(),
             header,
-            sm_req.summary,
+            req.summary,
         )
     } else if let Some(_) = req.downcast::<TableFormatSpec>()? {
         WatchController::<TableFormatSpec>::update(
@@ -82,14 +82,10 @@ pub fn handle_watch_request<AC>(
             auth_ctx.global_ctx.tableformats().clone(),
             header,
             false,
-        ),
-        _ => {
-            debug!("Invalid Watch Req {:?}", req);
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                "Not Valid Watch Request",
-            ));
-        }
+        )
+    } else {
+        debug!("Invalid Watch Req {:?}", req);
+        return Err(anyhow!("Not Valid Watch Request",));
     }
 
     Ok(())
@@ -214,7 +210,14 @@ where
         };
 
         let response: WatchResponse<S> = WatchResponse::new(updates);
-        let res: ObjectApiWatchResponse = response.into();
+        let res = match ObjectApiWatchResponse::encode(response) {
+            Ok(res) => res,
+            Err(err) => {
+                error!("error encoding watch response: {}", err);
+                return false;
+            }
+        };
+
         let resp_msg = ResponseMessage::from_header(&self.header, res);
 
         // try to send response, if it fails then we need to end
