@@ -1,5 +1,7 @@
-use tracing::{trace, debug, instrument};
 use std::io::{Error, ErrorKind};
+
+use tracing::{trace, debug, instrument};
+use anyhow::Result;
 
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
@@ -13,7 +15,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_topics_request<AC: AuthContext>(
     filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse<TopicSpec>, Error> {
+) -> Result<ListResponse<TopicSpec>> {
     debug!("retrieving topic list: {:#?}", filters);
 
     if let Ok(authorized) = auth_ctx

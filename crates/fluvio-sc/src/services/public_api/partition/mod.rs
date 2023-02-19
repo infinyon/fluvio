@@ -1,6 +1,7 @@
 use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug, instrument};
+use anyhow::Result;
 
 use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
 use fluvio_sc_schema::partition::{PartitionSpec};
@@ -13,7 +14,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_request<AC: AuthContext>(
     _filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse<PartitionSpec>, Error> {
+) -> Result<ListResponse<PartitionSpec>> {
     debug!("fetching custom spu list");
 
     if let Ok(authorized) = auth_ctx

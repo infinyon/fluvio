@@ -5,7 +5,7 @@ use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_socket::{VersionedSerialSocket, MultiplexerSocket, SerialFrame};
 
 
-use crate::objects::{ListFilter,  Metadata, ListRequest};
+use crate::objects::{ListFilter,  Metadata, ListRequest, ObjectApiListRequest, ListResponse};
 pub use fluvio_socket::{ClientConfig, SocketError};
 
 /// Experimental: this API is not finalized and may be changed in the future.
@@ -44,12 +44,14 @@ impl SmartModuleApiClient {
         ListFilter: From<F>,
     {
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
-        let list_request = ListRequest::new(filter_list, summary);
+        let list_request: ListRequest<SmartModuleSpec> = ListRequest::new(filter_list, summary);
 
+        let list_request = ObjectApiListRequest::encode(list_request)?;
         let response = self.socket.send_receive(list_request).await?;
         trace!("list response: {:#?}", response);
-        response
-            .downcast::<_>()?
-            .ok_or(anyhow!("not smartmodule list"))
+        Ok(response
+            .downcast::<SmartModuleSpec>()?
+            .ok_or(anyhow!("not smartmodule list"))?
+            .inner())
     }
 }

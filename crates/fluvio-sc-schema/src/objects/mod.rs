@@ -150,58 +150,87 @@ mod test {
 
     use std::io::Cursor;
 
-    use fluvio_protocol::api::{RequestHeader, ResponseMessage};
+    use fluvio_protocol::api::{RequestHeader, ResponseMessage, RequestMessage};
     use fluvio_protocol::{Encoder, Decoder};
     use fluvio_protocol::api::Request;
     use fluvio_controlplane_metadata::spu::SpuStatus;
 
     use crate::objects::{
-        Metadata, MetadataUpdate, WatchRequest, ListResponse,
+        Metadata, MetadataUpdate, WatchRequest, ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
     };
 
     use crate::topic::TopicSpec;
     use crate::customspu::CustomSpuSpec;
 
-    use super::{ListRequest, WatchResponse};
+    use super::{ListRequest, ObjectApiListRequest, WatchResponse, ObjectApiWatchResponse};
 
-    fn create_req() -> ListRequest {
-         ListRequest::new(vec![], false)
+    fn create_req() -> ObjectApiListRequest {
+        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
+        ObjectApiListRequest::encode(list_request).expect("encode")
     }
 
-    fn create_res() -> WatchResponse {
-        let update: MetadataUpdate<TopicSpec> = MetadataUpdate {
+    fn create_res() -> ObjectApiWatchResponse {
+        let update = MetadataUpdate {
             epoch: 2,
             changes: vec![],
             all: vec![],
         };
-        WatchResponse::encode(update).expect("encode")
+        let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
+        ObjectApiWatchResponse::encode(watch_response).expect("encode")
     }
 
+    #[test]
+    fn test_from() {
+        let req = create_req();
+        assert!(req.downcast::<TopicSpec>().expect("downcast").is_some());
+    }
+
+    #[test]
+    fn test_encode_decoding() {
+        use fluvio_protocol::api::Request;
+
+        let req = create_req();
+
+        let mut req_msg = RequestMessage::new_request(req);
+        req_msg
+            .get_mut_header()
+            .set_client_id("test")
+            .set_api_version(ObjectApiListRequest::API_KEY as i16);
+
+        let mut src = vec![];
+        req_msg.encode(&mut src, 0).expect("encoding");
+
+        let dec_msg: RequestMessage<ObjectApiListRequest> = RequestMessage::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiListRequest::API_KEY as i16,
+        )
+        .expect("decode");
+        assert!(dec_msg.request.downcast::<TopicSpec>().expect("downcast").is_some());
+    }
 
     // test encoding and decoding of metadata update
     #[test]
     fn test_watch_response_encoding() {
         fluvio_future::subscriber::init_logger();
-        let update: MetadataUpdate<TopicSpec> = MetadataUpdate {
+        let update = MetadataUpdate {
             epoch: 2,
             changes: vec![],
             all: vec![],
         };
-        let watch_response = WatchResponse::encode(update).expect("encode");
+        let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
 
         let mut src = vec![];
         watch_response
-            .encode(&mut src, WatchRequest::API_KEY as i16)
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
             .expect("encoding");
         //watch_response.encode(&mut src, 0).expect("encoding");
         println!("output: {src:#?}");
-        let resp = WatchResponse:: decode_from(
+        let dec = WatchResponse::<TopicSpec>::decode_from(
             &mut Cursor::new(&src),
-            WatchRequest::API_KEY as i16,
+            ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
-        let update = resp.downcast::<TopicSpec>().expect("downcast").unwrap();
-        assert_eq!(update.epoch, 2);
+        assert_eq!(dec.inner().epoch, 2);
     }
 
     #[test]
@@ -210,26 +239,26 @@ mod test {
 
         let res = create_res();
 
-        let mut header = RequestHeader::new(WatchRequest::API_KEY);
+        let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
         header.set_client_id("test");
         header.set_correlation_id(11);
         let res_msg = ResponseMessage::from_header(&header, res);
 
         let mut src = vec![];
         res_msg
-            .encode(&mut src, WatchRequest::API_KEY as i16)
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
             .expect("encoding");
 
         println!("output: {src:#?}");
 
         assert_eq!(
             src.len(),
-            res_msg.write_size(WatchRequest::API_KEY as i16)
+            res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16)
         );
 
-        let dec_msg: ResponseMessage<WatchResponse> = ResponseMessage::decode_from(
+        let dec_msg: ResponseMessage<ObjectApiWatchResponse> = ResponseMessage::decode_from(
             &mut Cursor::new(&src),
-            WatchRequest::API_KEY as i16,
+            ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
         let _ = dec_msg.response.downcast::<TopicSpec>().expect("downcast").unwrap();
@@ -241,26 +270,26 @@ mod test {
 
         let res = create_res();
 
-        let mut header = RequestHeader::new(WatchRequest::API_KEY);
+        let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
         header.set_client_id("test");
         header.set_correlation_id(11);
         let res_msg = ResponseMessage::from_header(&header, res);
 
         let mut src = vec![];
         res_msg
-            .encode(&mut src, WatchRequest::API_KEY as i16)
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
             .expect("encoding");
 
         println!("output: {src:#?}");
 
         assert_eq!(
             src.len(),
-            res_msg.write_size(WatchRequest::API_KEY as i16)
+            res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16)
         );
 
-        let dec_msg: ResponseMessage<WatchResponse> = ResponseMessage::decode_from(
+        let dec_msg: ResponseMessage<ObjectApiWatchResponse> = ResponseMessage::decode_from(
             &mut Cursor::new(&src),
-            WatchRequest::API_KEY as i16,
+            ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
         let _ = dec_msg.response.downcast::<TopicSpec>().expect("downcast").unwrap();
@@ -273,13 +302,15 @@ mod test {
 
         fluvio_future::subscriber::init_logger();
 
-        let resp = ListResponse::encode::<CustomSpuSpec>(vec![Metadata {
+        let list = ListResponse::<CustomSpuSpec>::new(vec![Metadata {
             name: "test".to_string(),
             spec: CustomSpuSpec::default(),
             status: SpuStatus::default(),
-        }]).expect("encode");
+        }]);
 
-        let mut header = RequestHeader::new(ListRequest::API_KEY);
+        let resp = ObjectApiListResponse::encode::<_>(list).expect("encode");
+        
+        let mut header = RequestHeader::new(ObjectApiListRequest::API_KEY);
         header.set_client_id("test");
         header.set_correlation_id(11);
         let res_msg = ResponseMessage::from_header(&header, resp);
@@ -288,13 +319,13 @@ mod test {
 
         println!("output: {src:#?}");
 
-        let dec_msg: ResponseMessage<ListResponse> = ResponseMessage::decode_from(
+        let dec_msg: ResponseMessage<ObjectApiListResponse> = ResponseMessage::decode_from(
             &mut Cursor::new(&src),
-            ListRequest::API_KEY as i16,
+            ObjectApiListRequest::API_KEY as i16,
         )
         .expect("decode");
 
         let response = dec_msg.response.downcast::<CustomSpuSpec>().expect("downcast").unwrap();
-        assert_eq!(response.len(), 1);
+        assert_eq!(response.inner().len(), 1);
     }
 }

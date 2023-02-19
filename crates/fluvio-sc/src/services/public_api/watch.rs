@@ -2,9 +2,10 @@ use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use fluvio_sc_schema::AdminSpec;
 use tracing::{debug, trace, error, instrument};
+use anyhow::Result;
 
+use fluvio_sc_schema::AdminSpec;
 use fluvio_types::event::StickyEvent;
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_protocol::{Encoder, Decoder};
@@ -30,60 +31,64 @@ pub fn handle_watch_request<AC>(
     auth_ctx: &AuthServiceContext<AC>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
-) -> Result<(), IoError> {
+) -> Result<()> {
     let (header, req) = request.get_header_request();
     debug!("handling watch header: {:#?}, request: {:#?}", header, req);
 
-    match req {
-        ObjectApiWatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
+    if let Some(_) = req.downcast::<TopicSpec>()? {
+        WatchController::<TopicSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.topics().clone(),
             header,
             false,
-        ),
-        ObjectApiWatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
+        )
+    } else if let Some(_) = req.downcast::<SpuSpec>()? {
+        WatchController::<SpuSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
             header,
             false,
-        ),
-        ObjectApiWatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
+        )
+    } else if let Some(_) = req.downcast::<SpuGroupSpec>()? {
+        WatchController::<SpuGroupSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spgs().clone(),
             header,
             false,
-        ),
-        ObjectApiWatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
+        )
+    } else if let Some(_) = req.downcast::<PartitionSpec>()? {
+        WatchController::<PartitionSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
             header,
             false,
-        ),
-        ObjectApiWatchRequest::SmartModule(sm_req) => WatchController::<SmartModuleSpec>::update(
+        )
+    } else if let Some(_) = req.downcast::<SmartModuleSpec>()? {
+        WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.smartmodules().clone(),
             header,
             sm_req.summary,
-        ),
-        ObjectApiWatchRequest::TableFormat(_) => WatchController::<TableFormatSpec>::update(
+        )
+    } else if let Some(_) = req.downcast::<TableFormatSpec>()? {
+        WatchController::<TableFormatSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.tableformats().clone(),
             header,
             false,
-        ),
-        _ => {
-            debug!("Invalid Watch Req {:?}", req);
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                "Not Valid Watch Request",
-            ));
-        }
+        )
+    } else {
+        debug!("Invalid Watch Req {:?}", req);
+        return Err(IoError::new(
+            ErrorKind::InvalidData,
+            "Not Valid Watch Request",
+        ));
     }
 
     Ok(())
@@ -104,7 +109,6 @@ where
     S: Encoder + Decoder + Send + Sync,
     S::Status: Encoder + Decoder + Send + Sync,
     S::IndexKey: ToString + Send + Sync,
-    ObjectApiWatchResponse: From<WatchResponse<S>>,
 {
     /// start watch controller
     fn update(
