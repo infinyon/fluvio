@@ -1,5 +1,5 @@
-use std::convert::{TryFrom, TryInto};
-use std::fmt::{Display, Debug};
+use std::convert::{TryFrom};
+use std::fmt::{ Debug};
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
@@ -12,8 +12,8 @@ use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_future::net::DomainConnector;
 use fluvio_sc_schema::objects::{
     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
-    ObjectApiListResponse, ObjectApiWatchRequest, Metadata, ListFilter, WatchRequest,
-    ObjectApiWatchResponse, WatchResponse, CommonCreateRequest,
+    ObjectApiWatchRequest, Metadata, ListFilter, WatchRequest,
+    WatchResponse, CommonCreateRequest,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
@@ -180,10 +180,9 @@ impl FluvioAdmin {
     where
         S: DeletableAdminSpec + Sync + Send,
         K: Into<S::DeleteKey>,
-        ObjectApiDeleteRequest: From<DeleteRequest<S>>,
     {
         let delete_request = DeleteRequest::new(key.into());
-        let delete_request: ObjectApiDeleteRequest = delete_request.into();
+        let delete_request = ObjectApiDeleteRequest::encode::<S>(delete_request)?;
 
         debug!("sending delete request: {:#?}", delete_request);
 
@@ -196,9 +195,6 @@ impl FluvioAdmin {
     pub async fn all<S>(&self) -> Result<Vec<Metadata<S>>>
     where
         S: AdminSpec,
-        ObjectApiListRequest: From<ListRequest<S>>,
-        ListResponse<S>: TryFrom<ObjectApiListResponse>,
-        <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
         S::Status: Encoder + Decoder + Debug,
     {
         self.list_with_params::<S, String>(vec![], false).await
@@ -210,9 +206,6 @@ impl FluvioAdmin {
     where
         S: AdminSpec,
         ListFilter: From<F>,
-        ObjectApiListRequest: From<ListRequest<S>>,
-        ListResponse<S>: TryFrom<ObjectApiListResponse>,
-        <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
         S::Status: Encoder + Decoder + Debug,
     {
         self.list_with_params(filters, false).await
@@ -227,23 +220,17 @@ impl FluvioAdmin {
     where
         S: AdminSpec,
         ListFilter: From<F>,
-        ObjectApiListRequest: From<ListRequest<S>>,
-        ListResponse<S>: TryFrom<ObjectApiListResponse>,
-        <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
         S::Status: Encoder + Decoder + Debug,
     {
-        use std::io::Error as IoError;
-        use std::io::ErrorKind;
-
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
-        let list_request = ListRequest::new(filter_list, summary);
+        let list_request: ListRequest<S> = ListRequest::new(filter_list, summary);
 
-        let list_request: ObjectApiListRequest = list_request.into();
+        let list_request = ObjectApiListRequest::encode::<_>(list_request)?;
         let response = self.send_receive(list_request).await?;
         trace!("list response: {:#?}", response);
         response
-            .try_into()
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {err}")).into())
+            .downcast::<S>()?
+            .ok_or(anyhow!("downcast error: {s}", s = S::LABEL))
             .map(|out: ListResponse<S>| out.inner())
     }
 
@@ -253,25 +240,25 @@ impl FluvioAdmin {
     pub async fn watch<S>(&self) -> Result<impl Stream<Item = Result<WatchResponse<S>, IoError>>>
     where
         S: AdminSpec,
-        ObjectApiWatchRequest: From<WatchRequest<S>>,
         S::Status: Encoder + Decoder,
-        WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
-        <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
     {
         // only summary for watch
         let watch_request: WatchRequest<S> = WatchRequest::summary();
 
-        let watch_req: ObjectApiWatchRequest = watch_request.into();
+        let watch_req = ObjectApiWatchRequest::encode::<S>(watch_request)?;
         let req_msg = RequestMessage::new_request(watch_req);
         debug!(api_version = req_msg.header.api_version(), obj = %S::LABEL, "create watch stream");
         let inner_socket = self.socket.new_socket();
         let stream = inner_socket.create_stream(req_msg, 10).await?;
         Ok(stream.map(|respons_result| match respons_result {
             Ok(response) => {
-                let watch_response: Result<WatchResponse<S>, IoError> = response
-                    .try_into()
-                    .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {err}")));
-                watch_response
+                let watch_response = response.downcast::<S>().map_err(|err| {
+                    IoError::new(ErrorKind::Other, format!("downcast error: {:#?}", err))
+                })?;
+                watch_response.ok_or(IoError::new(
+                    ErrorKind::Other,
+                    format!("cannot decoded as {s}", s = S::LABEL),
+                ))
             }
             Err(err) => Err(IoError::new(
                 ErrorKind::Other,
