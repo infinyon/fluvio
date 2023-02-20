@@ -1,0 +1,291 @@
+name: Release (test-hub-rel)
+
+permissions: read-all
+#  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        required: false
+        description: 'Fluvio git commit override (latest `master` by default)'
+        default: ''
+      installer_version:
+        required: false
+        description: ''
+        default: ''
+      pre_release:
+        type: boolean
+        required: true
+        description: ''
+        default: true
+
+  workflow_call:
+    inputs:
+      commit:
+        required: false
+        type: string
+        description: 'Fluvio git commit override (latest `master` by default)'
+        default: ''
+      installer_version:
+        required: false
+        type: string
+        description: 'The version of Fluvio to download with install.sh'
+        default: 'stable'
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RELEASE: true # Needed so `make` targets make public changes
+
+jobs:
+  cd_dev_check:
+    name: CD_Dev check
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get status of latest CD_Dev run
+        id: cd_dev_check
+        run: make latest-cd-dev-status
+  setup_job:
+    name: Setup workflow
+    needs: [cd_dev_check]
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.version_step.outputs.VERSION }}
+      TARGET_SHA: ${{ steps.version_step.outputs.GIT_SHA }}
+      INSTALLER_URL: ${{ steps.installer_step.outputs.INSTALLER_URL }}
+    steps:
+      - name: Set target sha and Fluvio version
+        id: version_step
+        run: |
+          if [[ -z "${{ github.event.inputs.commit }}" ]]; then
+            export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
+            echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
+            echo "::set-output name=VERSION::${GITHUB_VERSION}"
+            echo "GIT_SHA=${{ github.sha }}" | tee -a $GITHUB_ENV
+            echo "::set-output name=GIT_SHA::${{ github.sha }}"
+          else
+            export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)
+            echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
+            echo "::set-output name=VERSION::${GITHUB_VERSION}"
+            echo "GIT_SHA=${{ github.event.inputs.commit }}" | tee -a $GITHUB_ENV
+            echo "::set-output name=GIT_SHA::${{ github.event.inputs.commit }}"
+          fi
+      - name: Set Installer URL
+        id: installer_step
+        run: |
+          echo "::set-output name=INSTALLER_URL::https://raw.githubusercontent.com/infinyon/fluvio/${{ steps.version_step.outputs.GIT_SHA }}/install.sh"
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+
+  release_installer:
+    name: Release Fluvio Installer
+    needs: [setup_job]
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-west-2
+      TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
+      INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download install.sh
+        run: curl -sSO $INSTALLER_URL
+      - name: Push install.sh to packages S3 bucket
+        run: make update-public-installer-script-s3
+
+  # Check for Github Release
+  # release_github:
+  #   name: Release Fluvio to GitHub Release
+  #   needs: [setup_job]
+  #   runs-on: ubuntu-latest
+  #   permissions: write-all
+  #   env:
+  #     VERSION: ${{ needs.setup_job.outputs.VERSION }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     # Check that this release does not already exist by trying to download it
+  #     - name: Attempt to download release by version number
+  #       id: release_check
+  #       continue-on-error: true
+  #       env:
+  #         GH_RELEASE_TAG: v${{ env.VERSION }}
+  #       run: make download-fluvio-release
+
+  #     # If this release does not already exist (i.e. the release_check failed), create it
+  #     - name: Download artifacts from dev
+  #       if: ${{ steps.release_check.outcome == 'failure' }}
+  #       env:
+  #         GH_RELEASE_TAG: dev
+  #       run: make download-fluvio-release
+
+  #     # Release conventions expect the top-most release in CHANGELOG.md to be the version we're releasing
+  #     # The date is expected to be UNRELEASED, which we will replace with the current date
+  #     - name: Create GH Release with release notes
+  #       if: ${{ steps.release_check.outcome == 'failure' }}
+  #       env:
+  #         CHANNEL_TAG: ${{ env.VERSION }}
+  #         PRE_RELEASE: ${{ github.event.inputs.pre_release }}
+  #       run: make create-gh-release
+
+  #     - name: Slack Notification
+  #       uses: 8398a7/action-slack@v3
+  #       if: failure()
+  #       with:
+  #         status: ${{ job.status }}
+  #         fields: repo,message,commit,author,action,eventName,ref,workflow,job
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         MATRIX_CONTEXT: ${{ toJson(matrix) }}
+
+  # ## Check for docker image
+  # release_docker:
+  #   name: Release Docker Image
+  #   needs: [setup_job]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     VERSION: ${{ needs.setup_job.outputs.VERSION }}
+  #     TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Attempt to pull image tag in docker registry
+  #       id: docker_check
+  #       continue-on-error: true
+  #       env:
+  #         DOCKER_IMAGE_TAG: ${{ env.VERSION }}
+  #       run: |
+  #         make docker-hub-check-image-exists
+
+  #     # if the check fails, then continue
+  #     - name: Tag and push release image
+  #       if: ${{ steps.docker_check.outcome == 'failure' }}
+  #       env:
+  #         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  #         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  #         DOCKER_IMAGE_TAG: ${{ env.VERSION }}
+  #         CHANNEL_TAG: stable
+  #         DEV_VERSION_TAG: ${{ env.VERSION }}-${{ env.TARGET_SHA }}
+  #       run: |
+  #         make docker-push-manifest
+
+  #     - name: Slack Notification
+  #       uses: 8398a7/action-slack@v3
+  #       if: failure()
+  #       with:
+  #         status: ${{ job.status }}
+  #         fields: repo,message,commit,author,action,eventName,ref,workflow,job
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         MATRIX_CONTEXT: ${{ toJson(matrix) }}
+
+  # Check for Fluvio CLI
+  release_fluvio:
+    name: Release Fluvio CLI package
+    needs: [setup_job]
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      VERSION: ${{ needs.setup_job.outputs.VERSION }}
+      INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
+      BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v3
+      # Check that this release does not already exist by trying to download it
+      - name: Attempt to install Fluvio CLI
+        id: check_fluvio
+        continue-on-error: true
+        env:
+          CHANNEL_TAG: ${{ env.VERSION }}
+        run: make curl-install-fluvio
+
+      # If this release does not already exist (i.e. check_fluvio failed), continue
+      - name: Install fluvio-package
+        env:
+          CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
+        run: |
+          make curl-install-fluvio
+          make install-fluvio-package
+
+      - name: Download dev release
+        if: ${{ steps.check_fluvio.outcome == 'failure' }}
+        env:
+          GH_RELEASE_TAG: dev
+        run: make download-fluvio-release
+
+      - name: Publish artifacts
+        if: ${{ steps.check_fluvio.outcome == 'failure' }}
+        env:
+          FLUVIO_BIN: ~/.fluvio/bin/fluvio
+        run: |
+          make publish-artifacts-dev-hub
+
+      # - name: Slack Notification
+      #   uses: 8398a7/action-slack@v3
+      #   if: ${{ !success() }}
+      #   with:
+      #     status: ${{ job.status }}
+      #     fields: repo,message,commit,author,action,eventName,ref,workflow,job
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #     MATRIX_CONTEXT: ${{ toJson(matrix) }}
+
+  # publish_crates:
+  #   name: Publish Crates
+  #   if: ${{ !github.event.inputs.pre_release }}
+  #   uses: ./.github/workflows/publish_crates.yml
+  #   with:
+  #     commit: ${{ github.event.inputs.commit }}
+  #   secrets: inherit
+
+  # bump_stable_fluvio:
+  #   name: Bump stable Fluvio
+  #   needs: [setup_job, release_github, release_docker, release_fluvio]
+  #   #permissions: write-all
+  #   runs-on: ubuntu-latest
+  #   if: ${{ !github.event.inputs.pre_release }}
+  #   env:
+  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #     VERSION: ${{ needs.setup_job.outputs.VERSION }}
+  #     TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
+  #     INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Install fluvio-package
+  #       env:
+  #         CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
+  #       run: |
+  #         if [ -n "${{ github.event.inputs.installer_version }}" ]; then
+  #             export VERSION=${{ github.event.inputs.installer_version }}
+  #             echo "VERSION=$VERSION"
+  #         fi
+  #         make curl-install-fluvio
+  #         make install-fluvio-package
+
+  #     - name: Bump Fluvio CLI
+  #       # This should work until we support graceful failure
+  #       continue-on-error: true
+  #       run: |
+  #         make bump-fluvio-stable
+  #     - name: Slack Notification
+  #       uses: 8398a7/action-slack@v3
+  #       if: failure()
+  #       with:
+  #         status: ${{ job.status }}
+  #         fields: repo,message,commit,author,action,eventName,ref,workflow,job
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #         MATRIX_CONTEXT: ${{ toJson(matrix) }}
