@@ -36,8 +36,7 @@ pub(crate) async fn handle_create_topics_request<AC: AuthContext>(
     req: CreateRequest<TopicSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status> {
-
-    let (create,topic) = req.parts();
+    let (create, topic) = req.parts();
     let name = create.name;
 
     info!( topic = %name,"creating topic");

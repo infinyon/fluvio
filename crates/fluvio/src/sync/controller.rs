@@ -12,8 +12,8 @@ use anyhow::Result;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::{Metadata, MetadataUpdate, ObjectApiWatchRequest,WatchResponse};
-use fluvio_sc_schema::{AdminSpec,TryEncodableFrom};
+use fluvio_sc_schema::objects::{Metadata, MetadataUpdate, ObjectApiWatchRequest, WatchResponse};
+use fluvio_sc_schema::{AdminSpec, TryEncodableFrom};
 
 use super::StoreContext;
 use super::CacheMetadataStoreObject;

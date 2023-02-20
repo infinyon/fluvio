@@ -107,7 +107,7 @@ mod metadata {
 
     impl TypeBuffer {
         // encode admin spec into a request
-        pub fn encode<S, I>(input: I,version: Version) -> Result<Self>
+        pub fn encode<S, I>(input: I, version: Version) -> Result<Self>
         where
             S: Spec,
             I: Encoder,
@@ -161,11 +161,13 @@ mod test {
     use crate::topic::TopicSpec;
     use crate::customspu::CustomSpuSpec;
 
-    use super::{ListRequest, ObjectApiListRequest, WatchResponse, ObjectApiWatchResponse, COMMON_VERSION};
+    use super::{
+        ListRequest, ObjectApiListRequest, WatchResponse, ObjectApiWatchResponse, COMMON_VERSION,
+    };
 
     fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        ObjectApiListRequest::try_encode_from(list_request,COMMON_VERSION).expect("encode")
+        ObjectApiListRequest::try_encode_from(list_request, COMMON_VERSION).expect("encode")
     }
 
     fn create_res() -> ObjectApiWatchResponse {
@@ -175,7 +177,7 @@ mod test {
             all: vec![],
         };
         let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
-        ObjectApiWatchResponse::try_encode_from(watch_response,COMMON_VERSION).expect("encode")
+        ObjectApiWatchResponse::try_encode_from(watch_response, COMMON_VERSION).expect("encode")
     }
 
     #[test]
@@ -204,12 +206,10 @@ mod test {
             ObjectApiListRequest::API_KEY as i16,
         )
         .expect("decode");
-        assert!((dec_msg
-            .request
-            .downcast()
-            .expect("downcast")
-            as Option<ListRequest<TopicSpec>>)
-            .is_some());
+        assert!(
+            (dec_msg.request.downcast().expect("downcast") as Option<ListRequest<TopicSpec>>)
+                .is_some()
+        );
     }
 
     // test encoding and decoding of metadata update
@@ -265,10 +265,7 @@ mod test {
             ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
-        let _ = (dec_msg
-            .response
-            .downcast()
-            .expect("downcast")
+        let _ = (dec_msg.response.downcast().expect("downcast")
             as Option<WatchResponse<TopicSpec>>)
             .unwrap();
     }
@@ -301,10 +298,7 @@ mod test {
             ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
-        let _ = (dec_msg
-            .response
-            .downcast()
-            .expect("downcast")
+        let _ = (dec_msg.response.downcast().expect("downcast")
             as Option<WatchResponse<TopicSpec>>)
             .unwrap();
     }
@@ -321,7 +315,7 @@ mod test {
             status: SpuStatus::default(),
         }]);
 
-        let resp = ObjectApiListResponse::try_encode_from(list,COMMON_VERSION).expect("encode");
+        let resp = ObjectApiListResponse::try_encode_from(list, COMMON_VERSION).expect("encode");
 
         let mut header = RequestHeader::new(ObjectApiListRequest::API_KEY);
         header.set_client_id("test");
@@ -338,10 +332,7 @@ mod test {
         )
         .expect("decode");
 
-        let response = (dec_msg
-            .response
-            .downcast()
-            .expect("downcast")
+        let response = (dec_msg.response.downcast().expect("downcast")
             as Option<ListResponse<CustomSpuSpec>>)
             .unwrap();
         assert_eq!(response.inner().len(), 1);

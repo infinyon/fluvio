@@ -1,7 +1,6 @@
 use tracing::{instrument, debug};
 use anyhow::{anyhow, Result};
 
-
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::spu::{CustomSpuSpec};
@@ -35,7 +34,7 @@ pub async fn handle_create_request<AC: AuthContext>(
     } else if let Some(create) = req.downcast()? as Option<CreateRequest<TableFormatSpec>> {
         super::tableformat::handle_create_tableformat_request(create, auth_context).await?
     } else {
-        return Err(anyhow!("unknown type"))
+        return Err(anyhow!("unknown type"));
     };
 
     Ok(ResponseMessage::from_header(&header, status))
