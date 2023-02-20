@@ -14,8 +14,8 @@ use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::{Status};
-use fluvio_sc_schema::objects::{ObjectApiDeleteRequest};
+use fluvio_sc_schema::{Status, TryEncodableFrom};
+use fluvio_sc_schema::objects::{ObjectApiDeleteRequest, DeleteRequest};
 use fluvio_auth::{AuthContext};
 
 use crate::services::auth::AuthServiceContext;
@@ -30,7 +30,7 @@ pub async fn handle_delete_request<AC: AuthContext>(
 
     debug!(?del_req, "del request");
 
-    let status = if let Some(req) = del_req.downcast::<TopicSpec>()? {
+    let status = if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TopicSpec>> {
         super::topic::handle_delete_topic(req.key(), auth_ctx).await?
     } else if let Some(req) = del_req.downcast::<CustomSpuSpec>()? {
         super::spu::handle_un_register_custom_spu_request(req.key(), auth_ctx).await?

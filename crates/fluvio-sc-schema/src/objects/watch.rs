@@ -5,12 +5,12 @@ use std::marker::PhantomData;
 
 use anyhow::Result;
 
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::{Request};
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 
-use crate::{AdminPublicApiKey, AdminSpec};
+use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
 use crate::core::Spec;
 
 use super::{Metadata, COMMON_VERSION, TypeBuffer};
@@ -40,21 +40,19 @@ where
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiWatchRequest(TypeBuffer);
 
-impl ObjectApiWatchRequest {
-    pub fn encode<S>(input: WatchRequest<S>) -> Result<Self>
-    where
-        S: AdminSpec,
-    {
-        Ok(Self(TypeBuffer::encode::<S, _>(input)?))
+impl <S> TryEncodableFrom<WatchRequest<S>> for ObjectApiWatchRequest
+where
+    S: AdminSpec,
+{
+    fn try_encode_from(input: WatchRequest<S>,version: Version) -> Result<Self> {
+        Ok(Self(TypeBuffer::encode::<S, _>(input,version)?))
     }
 
-    pub fn downcast<S>(&self) -> Result<Option<WatchRequest<S>>>
-    where
-        S: AdminSpec,
-    {
+    fn downcast(&self) -> Result<Option<WatchRequest<S>>> {
         self.0.downcast::<S, _>()
     }
 }
+
 
 impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
@@ -65,23 +63,20 @@ impl Request for ObjectApiWatchRequest {
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiWatchResponse(TypeBuffer);
 
-impl ObjectApiWatchResponse {
-    pub fn encode<S>(input: WatchResponse<S>) -> Result<Self>
-    where
-        S: AdminSpec,
-        S::Status: Encoder + Decoder,
-    {
-        Ok(Self(TypeBuffer::encode::<S, _>(input)?))
+impl <S> TryEncodableFrom<WatchResponse<S>> for ObjectApiWatchResponse
+where
+    S: AdminSpec,
+    S::Status: Encoder + Decoder,
+{
+    fn try_encode_from(input: WatchResponse<S>,version: Version) -> Result<Self> {
+        Ok(Self(TypeBuffer::encode::<S, _>(input,version)?))
     }
 
-    pub fn downcast<S>(&self) -> Result<Option<WatchResponse<S>>>
-    where
-        S: AdminSpec,
-        S::Status: Encoder + Decoder,
-    {
+    fn downcast(&self) -> Result<Option<WatchResponse<S>>> {
         self.0.downcast::<S, _>()
     }
 }
+
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct WatchResponse<S: AdminSpec>

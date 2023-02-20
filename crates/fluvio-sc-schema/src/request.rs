@@ -95,12 +95,12 @@ mod test {
     use fluvio_protocol::{Encoder};
     use fluvio_protocol::api::ApiMessage;
 
-    use crate::objects::{ObjectApiListRequest, ListRequest};
-    use crate::{AdminPublicDecodedRequest};
+    use crate::objects::{ObjectApiListRequest, ListRequest, COMMON_VERSION};
+    use crate::{AdminPublicDecodedRequest, TryEncodableFrom};
 
     fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        ObjectApiListRequest::encode(list_request).expect("encode")
+        ObjectApiListRequest::try_encode_from(list_request,COMMON_VERSION).expect("encode")
     }
 
     #[test]

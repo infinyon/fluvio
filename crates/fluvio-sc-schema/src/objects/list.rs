@@ -4,10 +4,10 @@ use std::marker::PhantomData;
 use anyhow::Result;
 
 use fluvio_controlplane_metadata::store::KeyFilter;
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 
-use crate::{AdminPublicApiKey, AdminSpec};
+use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
 use super::{COMMON_VERSION, Metadata, TypeBuffer};
 
 /// Filter for List
@@ -76,18 +76,18 @@ where
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiListRequest(TypeBuffer);
 
-impl ObjectApiListRequest {
-    pub fn encode<S>(input: ListRequest<S>) -> Result<Self>
-    where
-        S: AdminSpec,
-    {
-        Ok(Self(TypeBuffer::encode::<S, _>(input)?))
+impl<S> TryEncodableFrom<ListRequest<S>> for ObjectApiListRequest
+where
+    ListRequest<S>: Encoder + Decoder + Debug,
+    S: AdminSpec,
+{
+    fn try_encode_from(input: ListRequest<S>, version: Version) -> Result<ObjectApiListRequest> {
+        Ok(ObjectApiListRequest(TypeBuffer::encode::<S, _>(
+            input, version,
+        )?))
     }
 
-    pub fn downcast<S>(&self) -> Result<Option<ListRequest<S>>>
-    where
-        S: AdminSpec,
-    {
+    fn downcast(&self) -> Result<Option<ListRequest<S>>> {
         self.0.downcast::<S, _>()
     }
 }
@@ -101,20 +101,18 @@ impl Request for ObjectApiListRequest {
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiListResponse(TypeBuffer);
 
-impl ObjectApiListResponse {
-    pub fn encode<S>(input: ListResponse<S>) -> Result<Self>
-    where
-        S: AdminSpec,
-        S::Status: Encoder + Decoder + Debug,
-    {
-        Ok(Self(TypeBuffer::encode::<S, _>(input)?))
+impl<S> TryEncodableFrom<ListResponse<S>> for ObjectApiListResponse
+where
+    S: AdminSpec,
+    S::Status: Encoder + Decoder + Debug,
+{
+    fn try_encode_from(input: ListResponse<S>, version: Version) -> Result<ObjectApiListResponse> {
+        Ok(ObjectApiListResponse(TypeBuffer::encode::<S, _>(
+            input, version,
+        )?))
     }
 
-    pub fn downcast<S>(&self) -> Result<Option<ListResponse<S>>>
-    where
-        S: AdminSpec,
-        S::Status: Encoder + Decoder + Debug,
-    {
+    fn downcast(&self) -> Result<Option<ListResponse<S>>> {
         self.0.downcast::<S, _>()
     }
 }

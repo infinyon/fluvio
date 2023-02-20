@@ -14,7 +14,7 @@ use fluvio_sc_schema::objects::{
     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
     ObjectApiWatchRequest, Metadata, ListFilter, WatchRequest, WatchResponse, CommonCreateRequest,
 };
-use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
+use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec, TryEncodableFrom};
 use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
 
 use crate::FluvioConfig;
@@ -143,6 +143,16 @@ impl FluvioAdmin {
         self.socket.send_receive(request).await
     }
 
+    #[instrument(skip(self, request))]
+    async fn send_receive_admin<R,I>(&self, request: I) -> Result<R::Response>
+    where
+        R: Request + Send + Sync,
+        R: TryEncodableFrom<I>,
+    {
+        let request = R::try_encode_from(request)?;
+        self.socket.send_receive(request).await
+    }
+
     /// Create new object
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<()>
@@ -224,9 +234,7 @@ impl FluvioAdmin {
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
         let list_request: ListRequest<S> = ListRequest::new(filter_list, summary);
 
-        
-        let list_request = ObjectApiListRequest::encode::<_>(list_request)?;
-        let response = self.send_receive(list_request).await?;
+        let response = self.send_receive_admin(list_request).await?;
         trace!("list response: {:#?}", response);
         response
             .downcast::<S>()?

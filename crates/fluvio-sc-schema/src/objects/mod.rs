@@ -20,7 +20,7 @@ mod metadata {
 
     use anyhow::Result;
 
-    use fluvio_protocol::{Encoder, Decoder, ByteBuf};
+    use fluvio_protocol::{Encoder, Decoder, ByteBuf, Version};
 
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
     use fluvio_controlplane_metadata::core::{MetadataContext, MetadataItem};
@@ -107,14 +107,14 @@ mod metadata {
 
     impl TypeBuffer {
         // encode admin spec into a request
-        pub fn encode<S, I>(input: I) -> Result<Self>
+        pub fn encode<S, I>(input: I,version: Version) -> Result<Self>
         where
             S: Spec,
             I: Encoder,
         {
             let ty = S::LABEL.to_owned();
             let mut buf = vec![];
-            input.encode(&mut buf, COMMON_VERSION)?;
+            input.encode(&mut buf, version)?;
             Ok(Self {
                 ty,
                 buf: ByteBuf::from(buf),
@@ -153,6 +153,7 @@ mod test {
     use fluvio_protocol::api::Request;
     use fluvio_controlplane_metadata::spu::SpuStatus;
 
+    use crate::TryEncodableFrom;
     use crate::objects::{
         Metadata, MetadataUpdate, ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
     };
@@ -160,11 +161,11 @@ mod test {
     use crate::topic::TopicSpec;
     use crate::customspu::CustomSpuSpec;
 
-    use super::{ListRequest, ObjectApiListRequest, WatchResponse, ObjectApiWatchResponse};
+    use super::{ListRequest, ObjectApiListRequest, WatchResponse, ObjectApiWatchResponse, COMMON_VERSION};
 
     fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        ObjectApiListRequest::encode(list_request).expect("encode")
+        ObjectApiListRequest::try_encode_from(list_request,COMMON_VERSION).expect("encode")
     }
 
     fn create_res() -> ObjectApiWatchResponse {
@@ -174,13 +175,13 @@ mod test {
             all: vec![],
         };
         let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
-        ObjectApiWatchResponse::encode(watch_response).expect("encode")
+        ObjectApiWatchResponse::try_encode_from(watch_response,COMMON_VERSION).expect("encode")
     }
 
     #[test]
     fn test_from() {
         let req = create_req();
-        assert!(req.downcast::<TopicSpec>().expect("downcast").is_some());
+        assert!((req.downcast().expect("downcast") as Option<ListRequest<TopicSpec>>).is_some());
     }
 
     #[test]
@@ -203,10 +204,11 @@ mod test {
             ObjectApiListRequest::API_KEY as i16,
         )
         .expect("decode");
-        assert!(dec_msg
+        assert!((dec_msg
             .request
-            .downcast::<TopicSpec>()
+            .downcast()
             .expect("downcast")
+            as Option<ListRequest<TopicSpec>>)
             .is_some());
     }
 
@@ -263,10 +265,11 @@ mod test {
             ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
-        let _ = dec_msg
+        let _ = (dec_msg
             .response
-            .downcast::<TopicSpec>()
+            .downcast()
             .expect("downcast")
+            as Option<WatchResponse<TopicSpec>>)
             .unwrap();
     }
 
@@ -298,10 +301,11 @@ mod test {
             ObjectApiWatchRequest::API_KEY as i16,
         )
         .expect("decode");
-        let _ = dec_msg
+        let _ = (dec_msg
             .response
-            .downcast::<TopicSpec>()
+            .downcast()
             .expect("downcast")
+            as Option<WatchResponse<TopicSpec>>)
             .unwrap();
     }
 
@@ -317,7 +321,7 @@ mod test {
             status: SpuStatus::default(),
         }]);
 
-        let resp = ObjectApiListResponse::encode::<_>(list).expect("encode");
+        let resp = ObjectApiListResponse::try_encode_from(list,COMMON_VERSION).expect("encode");
 
         let mut header = RequestHeader::new(ObjectApiListRequest::API_KEY);
         header.set_client_id("test");
@@ -334,10 +338,11 @@ mod test {
         )
         .expect("decode");
 
-        let response = dec_msg
+        let response = (dec_msg
             .response
-            .downcast::<CustomSpuSpec>()
+            .downcast()
             .expect("downcast")
+            as Option<ListResponse<CustomSpuSpec>>)
             .unwrap();
         assert_eq!(response.inner().len(), 1);
     }

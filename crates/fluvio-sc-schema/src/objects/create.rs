@@ -5,7 +5,7 @@ use std::io::Cursor;
 
 use anyhow::Result;
 
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 <<<<<<< HEAD
 use fluvio_protocol::Version;
@@ -39,9 +39,9 @@ pub struct ObjectApiCreateRequest {
 
 impl ObjectApiCreateRequest {
     /// encode admin spec into a request
-    pub fn encode<S: CreatableAdminSpec>(common: CommonCreateRequest, spec: S) -> Result<Self> {
+    pub fn encode<S: CreatableAdminSpec>(common: CommonCreateRequest, spec: S,version: Version) -> Result<Self> {
         let mut buf = vec![];
-        spec.encode(&mut buf, COMMON_VERSION)?;
+        spec.encode(&mut buf, version)?;
         Ok(Self {
             common,
             req: ObjectWrapper {
