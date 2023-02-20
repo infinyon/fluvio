@@ -2335,7 +2335,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.18.2"
+version = "0.18.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2711,7 +2711,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.12.1"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "async-trait",
