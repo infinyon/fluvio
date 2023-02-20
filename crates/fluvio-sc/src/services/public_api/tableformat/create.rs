@@ -10,7 +10,7 @@ use tracing::{debug, info, trace, instrument};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{Status};
-use fluvio_sc_schema::objects::{CommonCreateRequest};
+use fluvio_sc_schema::objects::{CommonCreateRequest, CreateRequest};
 use fluvio_sc_schema::tableformat::TableFormatSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -19,12 +19,12 @@ use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for tableformat request
-#[instrument(skip(create, auth_ctx))]
+#[instrument(skip(req, auth_ctx))]
 pub async fn handle_create_tableformat_request<AC: AuthContext>(
-    create: CommonCreateRequest,
-    spec: TableFormatSpec,
+    req: CreateRequest<TableFormatSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
+    let (create, spec) = req.parts();
     let name = create.name;
 
     info!(%name,"creating tableformat");

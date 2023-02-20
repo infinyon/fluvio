@@ -9,15 +9,32 @@ use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 use fluvio_protocol::core::ByteBuf;
 
-use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
+use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom, request, AdminSpec};
 
 /// Every create request must have this parameters
-#[derive(Encoder, Decoder, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug, Clone)]
 pub struct CommonCreateRequest {
     pub name: String,
     pub dry_run: bool,
     #[fluvio(min_version = 7)]
     pub timeout: Option<u32>, // timeout in milliseconds
+}
+
+#[derive(Debug)]
+pub struct CreateRequest<R> {
+    common: CommonCreateRequest,
+    spec: R,
+}
+
+impl<S> CreateRequest<S> {
+    pub fn new(common: CommonCreateRequest, spec: S) -> Self {
+        Self { common, spec }
+    }
+
+    /// deconstruct
+    pub fn parts(self) -> (CommonCreateRequest,S) {
+        (self.common,self.spec)
+    }
 }
 
 impl Request for ObjectApiCreateRequest {
@@ -29,32 +46,49 @@ impl Request for ObjectApiCreateRequest {
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiCreateRequest {
-    pub common: CommonCreateRequest,
-    pub req: ObjectWrapper,
+    common: CommonCreateRequest,
+    encoded_spec: CreateTypeBuffer,
 }
 
-impl ObjectApiCreateRequest {
-    /// encode admin spec into a request
-    pub fn encode<S: CreatableAdminSpec>(common: CommonCreateRequest, spec: S,version: Version) -> Result<Self> {
-        let mut buf = vec![];
-        spec.encode(&mut buf, version)?;
+impl<S> TryEncodableFrom<CreateRequest<S>> for ObjectApiCreateRequest
+where
+    S: CreatableAdminSpec,
+{
+    fn try_encode_from(request: CreateRequest<S>, version: Version) -> Result<Self> {
+        let CreateRequest { common, spec } = request;
+        let encoded_spec = CreateTypeBuffer::encode(spec, version)?;
         Ok(Self {
             common,
-            req: ObjectWrapper {
-                ty: S::CREATE_TYPE,
-                buf: ByteBuf::from(buf),
-            },
+            encoded_spec,
         })
+    }
+
+    fn downcast(&self) -> Result<Option<CreateRequest<S>>> {
+        Ok(self.encoded_spec.downcast()?.map(|spec| CreateRequest {
+            common: self.common.clone(),
+            spec,
+        }))
     }
 }
 
+/// special type buffer for create request
+/// unlike other request, this uses int for legacy reason
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct ObjectWrapper {
+pub struct CreateTypeBuffer {
     pub ty: u8,
     pub buf: ByteBuf,
 }
 
-impl ObjectWrapper {
+impl CreateTypeBuffer {
+    fn encode<S: CreatableAdminSpec>(spec: S, version: Version) -> Result<Self> {
+        let mut buf = vec![];
+        spec.encode(&mut buf, version)?;
+        Ok(Self {
+            ty: S::CREATE_TYPE,
+            buf: ByteBuf::from(buf),
+        })
+    }
+
     // check if this object is kind of spec
     pub fn is_kind_of<S: CreatableAdminSpec>(&self) -> bool {
         self.ty == S::CREATE_TYPE

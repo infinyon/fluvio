@@ -12,7 +12,7 @@ use tracing::{info, trace, instrument};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::{CommonCreateRequest};
+use fluvio_sc_schema::objects::{CommonCreateRequest, CreateRequest};
 use fluvio_sc_schema::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -23,12 +23,12 @@ use crate::services::auth::AuthServiceContext;
 const DEFAULT_SPG_CREATE_TIMEOUT: u32 = 120 * 1000; // 2 minutes
 
 /// Handler for spu groups request
-#[instrument(skip(common, auth_ctx))]
+#[instrument(skip(req, auth_ctx))]
 pub async fn handle_create_spu_group_request<AC: AuthContext>(
-    common: CommonCreateRequest,
-    spg: SpuGroupSpec,
+    req: CreateRequest<SpuGroupSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
+    let (common, spg) = req.parts();
     let name = common.name;
 
     info!( spg = %name,
