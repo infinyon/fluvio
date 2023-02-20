@@ -149,8 +149,11 @@ impl FluvioAdmin {
         R: Request + Send + Sync,
         R: TryEncodableFrom<I>,
     {
-        let request = R::try_encode_from(request)?;
-        self.socket.send_receive(request).await
+        let version = self.socket.lookup_version::<R>()
+            .ok_or(anyhow!("no version found for: {}",R::API_KEY))?;
+        let request = R::try_encode_from(request,version)?;
+        let req_msg = self.socket.new_request(request,Some(version));
+        self.socket.send_and_receive(req_msg).await.map_err(|err| err.into())
     }
 
     /// Create new object
@@ -234,10 +237,10 @@ impl FluvioAdmin {
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
         let list_request: ListRequest<S> = ListRequest::new(filter_list, summary);
 
-        let response = self.send_receive_admin(list_request).await?;
+        let response = self.send_receive_admin::<ObjectApiListRequest,_>(list_request).await?;
         trace!("list response: {:#?}", response);
         response
-            .downcast::<S>()?
+            .downcast()?
             .ok_or(anyhow!("downcast error: {s}", s = S::LABEL))
             .map(|out: ListResponse<S>| out.inner())
     }
@@ -252,15 +255,17 @@ impl FluvioAdmin {
     {
         // only summary for watch
         let watch_request: WatchRequest<S> = WatchRequest::summary();
+        let version = self.socket.lookup_version::<ObjectApiWatchRequest>()
+            .ok_or(anyhow!("no version found watch request {}",ObjectApiWatchRequest::API_KEY))?;
 
-        let watch_req = ObjectApiWatchRequest::encode::<S>(watch_request)?;
+        let watch_req = ObjectApiWatchRequest::try_encode_from(watch_request, version)?;
         let req_msg = RequestMessage::new_request(watch_req);
         debug!(api_version = req_msg.header.api_version(), obj = %S::LABEL, "create watch stream");
         let inner_socket = self.socket.new_socket();
         let stream = inner_socket.create_stream(req_msg, 10).await?;
         Ok(stream.map(|respons_result| match respons_result {
             Ok(response) => {
-                let watch_response = response.downcast::<S>().map_err(|err| {
+                let watch_response = response.downcast().map_err(|err| {
                     IoError::new(ErrorKind::Other, format!("downcast error: {:#?}", err))
                 })?;
                 watch_response.ok_or(IoError::new(
