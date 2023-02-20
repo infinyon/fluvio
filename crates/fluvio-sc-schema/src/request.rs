@@ -100,7 +100,7 @@ mod test {
 
     fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        ObjectApiListRequest::try_encode_from(list_request,COMMON_VERSION).expect("encode")
+        ObjectApiListRequest::try_encode_from(list_request, COMMON_VERSION).expect("encode")
     }
 
     #[test]

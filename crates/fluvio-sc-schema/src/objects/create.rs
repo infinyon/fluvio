@@ -32,8 +32,8 @@ impl<S> CreateRequest<S> {
     }
 
     /// deconstruct
-    pub fn parts(self) -> (CommonCreateRequest,S) {
-        (self.common,self.spec)
+    pub fn parts(self) -> (CommonCreateRequest, S) {
+        (self.common, self.spec)
     }
 }
 

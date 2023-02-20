@@ -4,7 +4,12 @@ use anyhow::{anyhow, Result};
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_socket::{VersionedSerialSocket, MultiplexerSocket, SerialFrame};
 
-use crate::{objects::{ListFilter, Metadata, ListRequest, ObjectApiListRequest, COMMON_VERSION, ListResponse}, TryEncodableFrom};
+use crate::{
+    objects::{
+        ListFilter, Metadata, ListRequest, ObjectApiListRequest, COMMON_VERSION, ListResponse,
+    },
+    TryEncodableFrom,
+};
 pub use fluvio_socket::{ClientConfig, SocketError};
 
 /// Experimental: this API is not finalized and may be changed in the future.
@@ -45,13 +50,12 @@ impl SmartModuleApiClient {
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
         let list_request: ListRequest<SmartModuleSpec> = ListRequest::new(filter_list, summary);
 
-        let list_request = ObjectApiListRequest::try_encode_from(list_request,COMMON_VERSION)?;
+        let list_request = ObjectApiListRequest::try_encode_from(list_request, COMMON_VERSION)?;
         let response = self.socket.send_receive(list_request).await?;
         trace!("list response: {:#?}", response);
         Ok((response
             .downcast()?
-            .ok_or(anyhow!("not smartmodule list"))?
-            as ListResponse<SmartModuleSpec>)
+            .ok_or(anyhow!("not smartmodule list"))? as ListResponse<SmartModuleSpec>)
             .inner())
     }
 }

@@ -9,7 +9,8 @@ use fluvio_socket::ExclusiveFlvSink;
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::{
-    ObjectApiWatchRequest, WatchResponse, Metadata, MetadataUpdate, ObjectApiWatchResponse, WatchRequest,
+    ObjectApiWatchRequest, WatchResponse, Metadata, MetadataUpdate, ObjectApiWatchResponse,
+    WatchRequest,
 };
 
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -208,7 +209,8 @@ where
         };
 
         let response: WatchResponse<S> = WatchResponse::new(updates);
-        let res = match ObjectApiWatchResponse::try_encode_from(response,self.header.api_version()) {
+        let res = match ObjectApiWatchResponse::try_encode_from(response, self.header.api_version())
+        {
             Ok(res) => res,
             Err(err) => {
                 error!("error encoding watch response: {}", err);

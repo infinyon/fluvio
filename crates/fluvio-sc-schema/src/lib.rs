@@ -124,7 +124,7 @@ mod admin {
 
     /// try to encode from type
     pub trait TryEncodableFrom<T>: Sized + Encoder + Decoder {
-        fn try_encode_from(value: T,version: Version) -> Result<Self>;
+        fn try_encode_from(value: T, version: Version) -> Result<Self>;
 
         fn downcast(&self) -> Result<Option<T>>;
     }

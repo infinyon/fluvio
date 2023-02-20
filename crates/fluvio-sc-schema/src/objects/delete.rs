@@ -37,19 +37,18 @@ where
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiDeleteRequest(TypeBuffer);
 
-impl <S> TryEncodableFrom<DeleteRequest<S>> for ObjectApiDeleteRequest
+impl<S> TryEncodableFrom<DeleteRequest<S>> for ObjectApiDeleteRequest
 where
     S: DeletableAdminSpec,
 {
-    fn try_encode_from(input: DeleteRequest<S>,version: Version) -> Result<Self> {
-        Ok(Self(TypeBuffer::encode::<S, _>(input,version)?))
+    fn try_encode_from(input: DeleteRequest<S>, version: Version) -> Result<Self> {
+        Ok(Self(TypeBuffer::encode::<S, _>(input, version)?))
     }
 
     fn downcast(&self) -> Result<Option<DeleteRequest<S>>> {
         self.0.downcast::<S, _>()
     }
 }
-
 
 impl Request for ObjectApiDeleteRequest {
     const API_KEY: u16 = AdminPublicApiKey::Delete as u16;

@@ -222,10 +222,10 @@ pub struct VersionedSerialSocket {
 }
 
 impl Deref for VersionedSerialSocket {
-    type Target= SharedMultiplexerSocket;
+    type Target = SharedMultiplexerSocket;
 
     fn deref(&self) -> &Self::Target {
-       &self.socket
+        &self.socket
     }
 }
 
@@ -284,7 +284,8 @@ impl VersionedSerialSocket {
 
     /// look up version for the request
     pub fn lookup_version<R>(&self) -> Option<Version>
-     where R: Request
+    where
+        R: Request,
     {
         self.versions.lookup_version::<R>()
     }
