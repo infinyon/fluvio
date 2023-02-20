@@ -224,6 +224,7 @@ impl FluvioAdmin {
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
         let list_request: ListRequest<S> = ListRequest::new(filter_list, summary);
 
+        
         let list_request = ObjectApiListRequest::encode::<_>(list_request)?;
         let response = self.send_receive(list_request).await?;
         trace!("list response: {:#?}", response);
