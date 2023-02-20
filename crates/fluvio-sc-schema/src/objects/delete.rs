@@ -7,10 +7,10 @@ use std::fmt::Debug;
 
 use anyhow::Result;
 
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 
-use crate::{DeletableAdminSpec};
+use crate::{DeletableAdminSpec, TryEncodableFrom};
 use crate::Status;
 use crate::AdminPublicApiKey;
 use super::{COMMON_VERSION, TypeBuffer};
@@ -37,21 +37,19 @@ where
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ObjectApiDeleteRequest(TypeBuffer);
 
-impl ObjectApiDeleteRequest {
-    pub fn encode<S>(input: DeleteRequest<S>) -> Result<Self>
-    where
-        S: DeletableAdminSpec,
-    {
-        Ok(Self(TypeBuffer::encode::<S, _>(input)?))
+impl <S> TryEncodableFrom<DeleteRequest<S>> for ObjectApiDeleteRequest
+where
+    S: DeletableAdminSpec,
+{
+    fn try_encode_from(input: DeleteRequest<S>,version: Version) -> Result<Self> {
+        Ok(Self(TypeBuffer::encode::<S, _>(input,version)?))
     }
 
-    pub fn downcast<S>(&self) -> Result<Option<DeleteRequest<S>>>
-    where
-        S: DeletableAdminSpec,
-    {
+    fn downcast(&self) -> Result<Option<DeleteRequest<S>>> {
         self.0.downcast::<S, _>()
     }
 }
+
 
 impl Request for ObjectApiDeleteRequest {
     const API_KEY: u16 = AdminPublicApiKey::Delete as u16;

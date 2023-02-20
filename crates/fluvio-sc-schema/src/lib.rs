@@ -85,7 +85,9 @@ mod admin {
 
     use std::fmt::Debug;
 
-    use fluvio_protocol::{Encoder, Decoder};
+    use anyhow::Result;
+
+    use fluvio_protocol::{Encoder, Decoder, Version};
     use fluvio_controlplane_metadata::{store::MetadataStoreObject};
 
     use crate::objects::Metadata;
@@ -118,5 +120,12 @@ mod admin {
 
     pub trait DeletableAdminSpec: Spec + Encoder + Decoder {
         type DeleteKey: Encoder + Decoder + Debug + Default;
+    }
+
+    /// try to encode from type
+    pub trait TryEncodableFrom<T>: Sized + Encoder + Decoder {
+        fn try_encode_from(value: T,version: Version) -> Result<Self>;
+
+        fn downcast(&self) -> Result<Option<T>>;
     }
 }
