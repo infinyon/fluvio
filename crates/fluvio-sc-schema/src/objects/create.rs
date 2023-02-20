@@ -9,7 +9,7 @@ use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 use fluvio_protocol::core::ByteBuf;
 
-use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom, request, AdminSpec};
+use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom};
 
 /// Every create request must have this parameters
 #[derive(Encoder, Decoder, Default, Debug, Clone)]

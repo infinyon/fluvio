@@ -10,7 +10,7 @@ use tracing::{info, trace, debug, instrument};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{Status};
-use fluvio_sc_schema::objects::{CommonCreateRequest, CreateRequest};
+use fluvio_sc_schema::objects::{CreateRequest};
 use fluvio_sc_schema::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
