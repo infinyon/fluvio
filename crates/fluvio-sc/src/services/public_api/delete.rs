@@ -32,13 +32,13 @@ pub async fn handle_delete_request<AC: AuthContext>(
 
     let status = if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TopicSpec>> {
         super::topic::handle_delete_topic(req.key(), auth_ctx).await?
-    } else if let Some(req) = del_req.downcast::<CustomSpuSpec>()? {
+    } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<CustomSpuSpec>> {
         super::spu::handle_un_register_custom_spu_request(req.key(), auth_ctx).await?
-    } else if let Some(req) = del_req.downcast::<SpuGroupSpec>()? {
+    } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<SpuGroupSpec>> {
         super::spg::handle_delete_spu_group(req.key(), auth_ctx).await?
-    } else if let Some(req) = del_req.downcast::<SmartModuleSpec>()? {
+    } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<SmartModuleSpec>> {
         super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
-    } else if let Some(req) = del_req.downcast::<TableFormatSpec>()? {
+    } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TableFormatSpec>> {
         super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
     } else {
         return Err(anyhow!("invalid object type"));

@@ -3,15 +3,13 @@ use std::sync::Arc;
 use tracing::{debug, trace, error, instrument};
 use anyhow::{anyhow, Result};
 
-use fluvio_sc_schema::AdminSpec;
-use tracing::{debug, trace, error, instrument};
-
+use fluvio_sc_schema::{AdminSpec, TryEncodableFrom};
 use fluvio_types::event::StickyEvent;
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::{
-    ObjectApiWatchRequest, WatchResponse, Metadata, MetadataUpdate, ObjectApiWatchResponse,
+    ObjectApiWatchRequest, WatchResponse, Metadata, MetadataUpdate, ObjectApiWatchResponse, WatchRequest,
 };
 
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -35,7 +33,7 @@ pub fn handle_watch_request<AC>(
     let (header, req) = request.get_header_request();
     debug!("handling watch header: {:#?}, request: {:#?}", header, req);
 
-    if req.downcast::<TopicSpec>()?.is_some() {
+    if (req.downcast()? as Option<WatchRequest<TopicSpec>>).is_some() {
         WatchController::<TopicSpec>::update(
             sink,
             end_event,
@@ -43,7 +41,7 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if req.downcast::<SpuSpec>()?.is_some() {
+    } else if (req.downcast()? as Option<WatchRequest<SpuSpec>>).is_some() {
         WatchController::<SpuSpec>::update(
             sink,
             end_event,
@@ -51,7 +49,7 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if req.downcast::<SpuGroupSpec>()?.is_some() {
+    } else if (req.downcast()? as Option<WatchRequest<SpuGroupSpec>>).is_some() {
         WatchController::<SpuGroupSpec>::update(
             sink,
             end_event,
@@ -59,7 +57,7 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if req.downcast::<PartitionSpec>()?.is_some() {
+    } else if (req.downcast()? as Option<WatchRequest<PartitionSpec>>).is_some() {
         WatchController::<PartitionSpec>::update(
             sink,
             end_event,
@@ -67,7 +65,7 @@ pub fn handle_watch_request<AC>(
             header,
             false,
         )
-    } else if let Some(req) = req.downcast::<SmartModuleSpec>()? {
+    } else if let Some(req) = req.downcast()? as Option<WatchRequest<SmartModuleSpec>> {
         WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,
@@ -75,7 +73,7 @@ pub fn handle_watch_request<AC>(
             header,
             req.summary,
         )
-    } else if req.downcast::<TableFormatSpec>()?.is_some() {
+    } else if (req.downcast()? as Option<WatchRequest<TableFormatSpec>>).is_some() {
         WatchController::<TableFormatSpec>::update(
             sink,
             end_event,
@@ -210,7 +208,7 @@ where
         };
 
         let response: WatchResponse<S> = WatchResponse::new(updates);
-        let res = match ObjectApiWatchResponse::encode(response) {
+        let res = match ObjectApiWatchResponse::try_encode_from(response,self.header.api_version()) {
             Ok(res) => res,
             Err(err) => {
                 error!("error encoding watch response: {}", err);

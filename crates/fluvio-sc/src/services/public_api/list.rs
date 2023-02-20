@@ -11,7 +11,7 @@ use anyhow::Result;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{
-    objects::{ObjectApiListRequest, ObjectApiListResponse},
+    objects::{ObjectApiListRequest, ObjectApiListResponse, ListRequest}, TryEncodableFrom,
 };
 use fluvio_auth::{AuthContext};
 
@@ -26,28 +26,33 @@ pub async fn handle_list_request<AC: AuthContext>(
     let (header, req) = request.get_header_request();
     debug!("list header: {:#?}, request: {:#?}", header, req);
 
-    let response = if let Some(req) = req.downcast::<TopicSpec>()? {
-        ObjectApiListResponse::encode::<_>(
+    let response = if let Some(req) = req.downcast()? as Option<ListRequest<TopicSpec>> {
+        ObjectApiListResponse::try_encode_from(
             super::topic::handle_fetch_topics_request(req.name_filters, auth_ctx).await?,
+            header.api_version()
         )?
-    } else if let Some(req) = req.downcast::<SpuSpec>()? {
-        ObjectApiListResponse::encode::<_>(
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<SpuSpec>> {
+        ObjectApiListResponse::try_encode_from(
             super::spu::handle_fetch_spus_request(req.name_filters, auth_ctx).await?,
+            header.api_version()
         )?
-    } else if let Some(req) = req.downcast::<SpuGroupSpec>()? {
-        ObjectApiListResponse::encode(
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<SpuGroupSpec>> {
+        ObjectApiListResponse::try_encode_from(
             super::spg::handle_fetch_spu_groups_request(req.name_filters, auth_ctx).await?,
+            header.api_version()
         )?
-    } else if let Some(req) = req.downcast::<CustomSpuSpec>()? {
-        ObjectApiListResponse::encode(
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<CustomSpuSpec>> {
+        ObjectApiListResponse::try_encode_from(
             super::spu::handle_fetch_custom_spu_request(req.name_filters, auth_ctx).await?,
+            header.api_version()
         )?
-    } else if let Some(req) = req.downcast::<PartitionSpec>()? {
-        ObjectApiListResponse::encode(
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<PartitionSpec>> {
+        ObjectApiListResponse::try_encode_from(
             super::partition::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            header.api_version()
         )?
-    } else if let Some(req) = req.downcast::<SmartModuleSpec>()? {
-        ObjectApiListResponse::encode(
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<SmartModuleSpec>> {
+        ObjectApiListResponse::try_encode_from(
             fetch_smart_modules(
                 req.name_filters.into(),
                 req.summary,
@@ -55,15 +60,17 @@ pub async fn handle_list_request<AC: AuthContext>(
                 auth_ctx.global_ctx.smartmodules(),
             )
             .await?,
+            header.api_version()
         )?
-    } else if let Some(req) = req.downcast::<TableFormatSpec>()? {
-        ObjectApiListResponse::encode::<_>(
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<TableFormatSpec>> {
+        ObjectApiListResponse::try_encode_from(
             fetch::handle_fetch_request(
                 req.name_filters,
                 auth_ctx,
                 auth_ctx.global_ctx.tableformats(),
             )
             .await?,
+            header.api_version()
         )?
     } else {
         return Err(anyhow::anyhow!("unsupported list request: {:#?}", req));
