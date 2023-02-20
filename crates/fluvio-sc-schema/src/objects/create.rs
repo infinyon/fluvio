@@ -13,7 +13,7 @@ use fluvio_protocol::Version;
 use fluvio_protocol::core::ByteBuf;
 >>>>>>> 8823db0a (wip)
 
-use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom, request, AdminSpec};
+use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom};
 
 /// Every create request must have this parameters
 #[derive(Encoder, Decoder, Default, Debug, Clone)]

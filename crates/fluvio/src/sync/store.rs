@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use std::fmt::Display;
 use std::sync::Arc;
 
+use fluvio_sc_schema::TryEncodableFrom;
 use tracing::{debug, instrument};
 use anyhow::Result;
 
@@ -110,7 +111,7 @@ impl MetadataStores {
         use fluvio_sc_schema::objects::WatchRequest;
 
         let watch_request: WatchRequest<S> = WatchRequest::default();
-        let watch_req = ObjectApiWatchRequest::encode::<_>(watch_request)?;
+        let watch_req = ObjectApiWatchRequest::try_encode_from(watch_request,self.watch_version)?;
         let mut req_msg = RequestMessage::new_request(watch_req);
         req_msg.get_mut_header().set_api_version(self.watch_version);
 
