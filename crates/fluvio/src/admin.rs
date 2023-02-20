@@ -13,6 +13,7 @@ use fluvio_future::net::DomainConnector;
 use fluvio_sc_schema::objects::{
     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
     ObjectApiWatchRequest, Metadata, ListFilter, WatchRequest, WatchResponse, CommonCreateRequest,
+    CreateRequest,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec, TryEncodableFrom};
 use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
@@ -144,16 +145,21 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    async fn send_receive_admin<R,I>(&self, request: I) -> Result<R::Response>
+    async fn send_receive_admin<R, I>(&self, request: I) -> Result<R::Response>
     where
         R: Request + Send + Sync,
         R: TryEncodableFrom<I>,
     {
-        let version = self.socket.lookup_version::<R>()
-            .ok_or(anyhow!("no version found for: {}",R::API_KEY))?;
-        let request = R::try_encode_from(request,version)?;
-        let req_msg = self.socket.new_request(request,Some(version));
-        self.socket.send_and_receive(req_msg).await.map_err(|err| err.into())
+        let version = self
+            .socket
+            .lookup_version::<R>()
+            .ok_or(anyhow!("no version found for: {}", R::API_KEY))?;
+        let request = R::try_encode_from(request, version)?;
+        let req_msg = self.socket.new_request(request, Some(version));
+        self.socket
+            .send_and_receive(req_msg)
+            .await
+            .map_err(|err| err.into())
     }
 
     /// Create new object
@@ -176,11 +182,11 @@ impl FluvioAdmin {
     where
         S: CreatableAdminSpec + Sync + Send,
     {
-        let create_request = ObjectApiCreateRequest::encode(config, spec)?;
-
+        let create_request = CreateRequest::new(config, spec);
         debug!("sending create request: {:#?}", create_request);
 
-        self.send_receive(create_request).await?.as_result()?;
+        self.send_receive_admin::<ObjectApiCreateRequest, _>(create_request)
+            .await?;
 
         Ok(())
     }
@@ -193,12 +199,11 @@ impl FluvioAdmin {
         S: DeletableAdminSpec + Sync + Send,
         K: Into<S::DeleteKey>,
     {
-        let delete_request = DeleteRequest::new(key.into());
-        let delete_request = ObjectApiDeleteRequest::encode::<S>(delete_request)?;
-
+        let delete_request: DeleteRequest<S> = DeleteRequest::new(key.into());
         debug!("sending delete request: {:#?}", delete_request);
 
-        self.send_receive(delete_request).await?.as_result()?;
+        self.send_receive_admin::<ObjectApiDeleteRequest, _>(delete_request)
+            .await?;
         Ok(())
     }
 
@@ -237,7 +242,9 @@ impl FluvioAdmin {
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
         let list_request: ListRequest<S> = ListRequest::new(filter_list, summary);
 
-        let response = self.send_receive_admin::<ObjectApiListRequest,_>(list_request).await?;
+        let response = self
+            .send_receive_admin::<ObjectApiListRequest, _>(list_request)
+            .await?;
         trace!("list response: {:#?}", response);
         response
             .downcast()?
@@ -255,8 +262,13 @@ impl FluvioAdmin {
     {
         // only summary for watch
         let watch_request: WatchRequest<S> = WatchRequest::summary();
-        let version = self.socket.lookup_version::<ObjectApiWatchRequest>()
-            .ok_or(anyhow!("no version found watch request {}",ObjectApiWatchRequest::API_KEY))?;
+        let version = self
+            .socket
+            .lookup_version::<ObjectApiWatchRequest>()
+            .ok_or(anyhow!(
+                "no version found watch request {}",
+                ObjectApiWatchRequest::API_KEY
+            ))?;
 
         let watch_req = ObjectApiWatchRequest::try_encode_from(watch_request, version)?;
         let req_msg = RequestMessage::new_request(watch_req);
