@@ -386,7 +386,7 @@ impl TopicProducer {
     ///
     /// ```
     /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// # async fn example(producer: &TopicProducer) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// producer.flush().await?;
     /// # Ok(())
@@ -409,7 +409,7 @@ impl TopicProducer {
     ///
     /// ```
     /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// # async fn example(producer: &TopicProducer) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// # Ok(())
     /// # }
