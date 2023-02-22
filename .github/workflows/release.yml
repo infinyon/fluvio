@@ -199,6 +199,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
+      BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
     steps:
       - uses: actions/checkout@v3
       # Check that this release does not already exist by trying to download it
