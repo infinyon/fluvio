@@ -210,14 +210,16 @@ cli-basic-test:
 	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 
 cli-smartmodule-all-test:
-	bats  ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
+	bats ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
 
 cli-smartmodule-aggregate-test:
-	bats  -f aggregate  ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
-
+	bats -f aggregate ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
 
 cli-smartmodule-basic-test:
-	bats   ./tests/cli/fluvio_smoke_tests/smartmodule-basic.bats
+	bats ./tests/cli/fluvio_smoke_tests/smartmodule-basic.bats
+
+cli-producer-smartmodule-test:
+	bats ./tests/cli/fluvio_smoke_tests/producer-smartmodule.bats
 
 stats-test:
 	$(TEST_BIN) stats -- $(VERBOSE_FLAG) --tolerance=5
