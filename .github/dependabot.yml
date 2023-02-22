@@ -24,7 +24,7 @@ updates:
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     labels:
       - bot
       - rust
@@ -35,6 +35,5 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: [
-            "version-update:semver-minor",
             "version-update:semver-patch",
-          ] # Only major version updates
+          ]
