@@ -9,7 +9,7 @@ repository = "https://github.com/infinyon/fluvio"
 publish = false
 
 [dependencies]
-cargo_toml = "0.11"
+cargo_toml = "0.15"
 const_format = "0.2"
 dirs = "4.0.0"
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
