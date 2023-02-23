@@ -242,10 +242,6 @@ pub mod metadata {
         pub use fluvio_sc_schema::smartmodule::*;
     }
 
-    pub mod derivedstream {
-        pub use fluvio_sc_schema::derivedstream::*;
-    }
-
     pub mod customspu {
         pub use fluvio_sc_schema::customspu::*;
     }

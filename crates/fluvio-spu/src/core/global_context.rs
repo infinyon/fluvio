@@ -24,11 +24,9 @@ use crate::core::metrics::SpuMetrics;
 
 use super::leader_client::LeaderConnections;
 use super::smartmodule::SmartModuleLocalStore;
-use super::derivedstream::DerivedStreamStore;
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
 use super::smartmodule::SharedSmartModuleLocalStore;
-use super::derivedstream::SharedStreamStreamLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
 use super::SharedSpuConfig;
@@ -41,7 +39,6 @@ pub struct GlobalContext<S> {
     spu_localstore: SharedSpuLocalStore,
     replica_localstore: SharedReplicaLocalStore,
     smartmodule_localstore: SharedSmartModuleLocalStore,
-    derivedstream_localstore: SharedStreamStreamLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     spu_followers: SharedSpuUpdates,
@@ -72,7 +69,6 @@ where
             spu_localstore: spus.clone(),
             replica_localstore: replicas.clone(),
             smartmodule_localstore: SmartModuleLocalStore::new_shared(),
-            derivedstream_localstore: DerivedStreamStore::new_shared(),
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
@@ -103,10 +99,6 @@ where
 
     pub fn smartmodule_localstore(&self) -> &SmartModuleLocalStore {
         &self.smartmodule_localstore
-    }
-
-    pub fn derivedstream_store(&self) -> &DerivedStreamStore {
-        &self.derivedstream_localstore
     }
 
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
