@@ -1,11 +1,6 @@
-use std::collections::BTreeMap;
-use std::convert::Infallible;
-use std::fmt;
 use std::fs::File;
 use std::io::Read;
-use std::ops::Deref;
 use std::path::{PathBuf, Path};
-use std::str::FromStr;
 use std::time::Duration;
 
 use fluvio_types::PartitionId;
@@ -40,12 +35,6 @@ pub struct MetaConfig {
     pub topic: String,
 
     pub version: String,
-
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub parameters: BTreeMap<String, ConnectorParameterValue>,
-
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub secrets: BTreeMap<String, SecretString>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub producer: Option<ProducerParameters>,
@@ -111,36 +100,6 @@ impl ConnectorConfig {
         Ok(())
     }
 
-    pub fn consumer_parameters(&self) -> Vec<String> {
-        let mut params = Vec::new();
-        if let Some(consumer) = self.meta.consumer.as_ref() {
-            if let Some(partition) = consumer.partition {
-                params.push("--consumer-partition".to_string());
-                params.push(format!("{partition}"));
-            }
-        }
-        params
-    }
-    pub fn producer_parameters(&self) -> Vec<String> {
-        let mut params = Vec::new();
-        if let Some(producer) = self.meta.producer.as_ref() {
-            if let Some(linger) = producer.linger {
-                params.push("--producer-linger".to_string());
-
-                params.push(format!("{}ms", linger.as_millis()));
-            }
-            if let Some(compression) = producer.compression {
-                params.push("--producer-compression".to_string());
-                params.push(compression.to_string());
-            }
-            if let Some(batch_size_string) = producer.batch_size_string.as_ref() {
-                params.push("--producer-batch-size".to_string());
-                params.push(batch_size_string.to_string());
-            }
-        }
-        params
-    }
-
     pub fn direction(&self) -> Direction {
         if self.meta.type_.ends_with(SOURCE_SUFFIX) {
             Direction::source()
@@ -171,193 +130,10 @@ impl ConnectorConfig {
     }
 }
 
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Default, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// Wrapper for string that does not reveal its internal
-/// content in its display and debug implementation
-pub struct SecretString(String);
-
-impl fmt::Debug for SecretString {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("[REDACTED]")
-    }
-}
-
-impl fmt::Display for SecretString {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str("[REDACTED]")
-    }
-}
-
-impl FromStr for SecretString {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.into()))
-    }
-}
-
-impl From<String> for SecretString {
-    fn from(s: String) -> Self {
-        Self(s)
-    }
-}
-
-impl Deref for SecretString {
-    type Target = str;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase", untagged)]
-pub enum ConnectorParameterValue {
-    Vec(Vec<String>),
-    Map(BTreeMap<String, String>),
-    String(String),
-}
-
-impl Default for ConnectorParameterValue {
-    fn default() -> Self {
-        Self::Vec(Vec::new())
-    }
-}
-
-impl From<String> for ConnectorParameterValue {
-    fn from(str: String) -> Self {
-        Self::String(str)
-    }
-}
-
-impl From<&str> for ConnectorParameterValue {
-    fn from(str: &str) -> Self {
-        Self::String(str.to_string())
-    }
-}
-
-impl From<Vec<String>> for ConnectorParameterValue {
-    fn from(vec: Vec<String>) -> Self {
-        Self::Vec(vec)
-    }
-}
-
-impl From<BTreeMap<String, String>> for ConnectorParameterValue {
-    fn from(map: BTreeMap<String, String>) -> Self {
-        Self::Map(map)
-    }
-}
-
-impl ConnectorParameterValue {
-    pub fn as_string(&self) -> Result<String> {
-        match self {
-            Self::String(str) => Ok(str.to_owned()),
-            _ => anyhow::bail!("Parameter value is not a string"),
-        }
-    }
-
-    pub fn as_u32(&self) -> Result<u32> {
-        self.as_string()?
-            .parse::<u32>()
-            .map_err(|err| anyhow::anyhow!("Fail to parse u32 {}", err))
-    }
-}
-
-use serde::de::{self, MapAccess, SeqAccess, Visitor};
-use serde::Deserializer;
-
-struct ParameterValueVisitor;
-impl<'de> Deserialize<'de> for ConnectorParameterValue {
-    fn deserialize<D>(deserializer: D) -> Result<ConnectorParameterValue, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(ParameterValueVisitor)
-    }
-}
-
-impl<'de> Visitor<'de> for ParameterValueVisitor {
-    type Value = ConnectorParameterValue;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("string, map or sequence")
-    }
-
-    fn visit_none<E>(self) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        self.visit_str("null")
-    }
-    fn visit_unit<E>(self) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        self.visit_str("null")
-    }
-
-    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        self.visit_str(&v.to_string())
-    }
-    fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        self.visit_str(&v.to_string())
-    }
-
-    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        self.visit_str(&v.to_string())
-    }
-
-    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        self.visit_str(&v.to_string())
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(ConnectorParameterValue::String(value.to_string()))
-    }
-
-    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
-    where
-        M: MapAccess<'de>,
-    {
-        let mut inner = BTreeMap::new();
-        while let Some((key, value)) = map.next_entry::<String, String>()? {
-            inner.insert(key.clone(), value.clone());
-        }
-
-        Ok(ConnectorParameterValue::Map(inner))
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let mut vec_inner = Vec::new();
-        while let Some(param) = seq.next_element::<String>()? {
-            vec_inner.push(param);
-        }
-        Ok(ConnectorParameterValue::Vec(vec_inner))
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
     use fluvio_smartengine::transformation::TransformationStep;
     use pretty_assertions::assert_eq;
@@ -371,29 +147,6 @@ mod tests {
                 type_: "mqtt".to_string(),
                 topic: "my-mqtt".to_string(),
                 version: "0.1.0".to_string(),
-                parameters: BTreeMap::from([
-                    ("param_1".to_string(), "mqtt.hsl.fi".to_string().into()),
-                    (
-                        "param_2".to_string(),
-                        vec!["foo:baz".to_string(), "bar".to_string()].into(),
-                    ),
-                    (
-                        "param_3".to_string(),
-                        BTreeMap::from([
-                            ("bar".to_string(), "10.0".to_string()),
-                            ("foo".to_string(), "bar".to_string()),
-                            ("linger.ms".to_string(), "10".to_string()),
-                        ])
-                        .into(),
-                    ),
-                    ("param_4".to_string(), "true".to_string().into()),
-                    ("param_5".to_string(), "10".to_string().into()),
-                    (
-                        "param_6".to_string(),
-                        vec!["-10".to_string(), "-10.0".to_string()].into(),
-                    ),
-                ]),
-                secrets: BTreeMap::from([("foo".to_string(), SecretString("bar".to_string()))]),
                 producer: Some(ProducerParameters {
                     linger: Some(Duration::from_millis(1)),
                     compression: Some(Compression::Gzip),
@@ -426,6 +179,7 @@ mod tests {
         //then
         assert_eq!(connector_cfg, expected);
     }
+
     #[test]
     fn simple_yaml_test() {
         //given
@@ -435,8 +189,6 @@ mod tests {
                 type_: "mqtt".to_string(),
                 topic: "my-mqtt".to_string(),
                 version: "0.1.0".to_string(),
-                parameters: BTreeMap::new(),
-                secrets: BTreeMap::new(),
                 producer: None,
                 consumer: None,
             },
@@ -488,36 +240,6 @@ mod tests {
         let yaml = r#"
             meta:
                 name: kafka-out
-                parameters:
-                  param_1: "param_str"
-                  param_2:
-                   - item_1
-                   - item_2
-                   - 10
-                   - 10.0
-                   - true
-                   - On
-                   - Off
-                   - null
-                  param_3:
-                    arg1: val1
-                    arg2: 10
-                    arg3: -10
-                    arg4: false
-                    arg5: 1.0
-                    arg6: null
-                    arg7: On
-                    arg8: Off
-                  param_4: 10
-                  param_5: 10.0
-                  param_6: -10
-                  param_7: True
-                  param_8: 0xf1
-                  param_9: null
-                  param_10: 12.3015e+05
-                  param_11: [On, Off]
-                  param_12: true
-                secrets: {}
                 topic: poc1
                 type: kafka-sink
                 version: latest
@@ -529,50 +251,6 @@ mod tests {
                 type_: "kafka-sink".to_string(),
                 topic: "poc1".to_string(),
                 version: "latest".to_string(),
-                parameters: BTreeMap::from([
-                    ("param_1".to_string(), "param_str".into()),
-                    ("param_10".to_string(), "1230150".into()),
-                    (
-                        "param_11".to_string(),
-                        vec!["On".to_string(), "Off".to_string()].into(),
-                    ),
-                    ("param_12".to_string(), "true".into()),
-                    (
-                        "param_2".to_string(),
-                        vec![
-                            "item_1".to_string(),
-                            "item_2".to_string(),
-                            "10".to_string(),
-                            "10.0".to_string(),
-                            "true".to_string(),
-                            "On".to_string(),
-                            "Off".to_string(),
-                            "null".to_string(),
-                        ]
-                        .into(),
-                    ),
-                    (
-                        "param_3".to_string(),
-                        BTreeMap::from([
-                            ("arg1".to_string(), "val1".to_string()),
-                            ("arg2".to_string(), "10".to_string()),
-                            ("arg3".to_string(), "-10".to_string()),
-                            ("arg4".to_string(), "false".to_string()),
-                            ("arg5".to_string(), "1.0".to_string()),
-                            ("arg6".to_string(), "null".to_string()),
-                            ("arg7".to_string(), "On".to_string()),
-                            ("arg8".to_string(), "Off".to_string()),
-                        ])
-                        .into(),
-                    ),
-                    ("param_4".to_string(), "10".into()),
-                    ("param_5".to_string(), "10".into()),
-                    ("param_6".to_string(), "-10".into()),
-                    ("param_7".to_string(), "True".into()),
-                    ("param_8".to_string(), "241".into()),
-                    ("param_9".to_string(), "null".into()),
-                ]),
-                secrets: BTreeMap::new(),
                 producer: None,
                 consumer: None,
             },

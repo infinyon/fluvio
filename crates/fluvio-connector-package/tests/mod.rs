@@ -75,7 +75,6 @@ fn test_write_to_toml_file() {
     metadata.to_toml_file(file.as_ref()).unwrap();
 
     let content = std::fs::read_to_string(file).unwrap();
-    println!("{}", &content);
 
     //then
     assert_eq!(
@@ -95,6 +94,7 @@ source = true
 
 [deployment]
 binary = "json-test-connector"
+
 [secret.my_cert]
 type = "file"
 mount = "/mydata/secret1"
@@ -104,6 +104,7 @@ type = "env"
 
 [custom]
 required = ["template"]
+
 [custom.properties.template]
 title = "template"
 description = "JSON template"
