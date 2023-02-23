@@ -14,6 +14,11 @@ use async_trait::async_trait;
 use futures_util::stream::Stream;
 use anyhow::Result;
 
+use fluvio_controlplane_metadata::message::SmartModuleMsg;
+use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_future::timer::sleep;
+use fluvio_service::ConnectInfo;
 use fluvio_types::SpuId;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
