@@ -53,7 +53,7 @@ impl PackageMetaExt for PackageMeta {
 
         packagename_validate(&cpkg.name)?;
         self.name = cpkg.name;
-        self.version = cpkg.version;
+        self.version = cpkg.version.get()?.to_string();
 
         Ok(())
     }
