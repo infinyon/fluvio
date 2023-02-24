@@ -3,6 +3,7 @@ use clap::Parser;
 use anyhow::Result;
 
 use crate::build::BuildCmd;
+use crate::generate::GenerateCmd;
 use crate::deploy::DeployCmd;
 use crate::test::TestCmd;
 use crate::publish::PublishCmd;
@@ -13,6 +14,7 @@ use crate::set_public::SetPublicCmd;
 pub enum CdkCommand {
     Build(BuildCmd),
     Test(TestCmd),
+    Generate(GenerateCmd),
     Deploy(DeployCmd),
     Publish(PublishCmd),
 
@@ -28,6 +30,7 @@ impl CdkCommand {
             CdkCommand::Deploy(opt) => opt.process(),
             CdkCommand::Publish(opt) => opt.process(),
             CdkCommand::SetPublic(opt) => opt.process(),
+            CdkCommand::Generate(opt) => opt.process(),
         }
     }
 }
