@@ -99,7 +99,7 @@ mod metadata {
     }
 
     /// Type encoded buffer, it uses type label to determine type
-    #[derive(Debug, Default, Encoder, Decoder)]
+    #[derive(Debug, Default)]
     pub struct TypeBuffer {
         ty: String,
         buf: ByteBuf,
@@ -140,6 +140,220 @@ mod metadata {
                 Ok(None)
             }
         }
+    }
+
+    impl Encoder for TypeBuffer {
+        fn write_size(&self, version: Version) -> usize {
+            self.ty.write_size(version) + self.buf.len()
+        }
+
+        fn encode<T>(&self, dest: &mut T, version: Version) -> std::result::Result<(), IoError>
+        where
+            T: fluvio_protocol::bytes::BufMut,
+        {
+            self.ty.encode(dest, version)?;
+            dest.put(self.buf.as_ref());
+            Ok(())
+        }
+    }
+
+    impl Decoder for TypeBuffer {
+        fn decode<T>(&mut self, src: &mut T, version: Version) -> std::result::Result<(), IoError>
+        where
+            T: fluvio_protocol::bytes::Buf,
+        {
+            let mut typ = "".to_owned();
+            typ.decode(src, version)?;
+            tracing::trace!(%typ,"decoded type");
+
+            /*
+            // map to type
+
+            match typ.as_ref() {
+                crate::topic::TopicSpec::LABEL => {
+                    tracing::trace!("detected topic");
+                    let mut request = $api::<crate::topic::TopicSpec>::default();
+                    request.decode(src, version)?;
+                    *self = Self::Topic(request);
+                    return Ok(())
+                }
+
+                crate::spu::SpuSpec::LABEL  => {
+                    tracing::trace!("detected spu");
+                    let mut request = $api::<crate::spu::SpuSpec>::default();
+                    request.decode(src, version)?;
+                    *self = Self::Spu(request);
+                    return Ok(())
+                }
+
+
+                // Unexpected type
+                _ => Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("invalid object type {:#?}", typ),
+                ))
+            }
+            */
+
+            Ok(())
+        }
+    }
+}
+
+#[cfg(test)]
+mod object_macro {
+    use fluvio_controlplane_metadata::topic::TopicSpec;
+    use fluvio_protocol::Encoder;
+
+    use crate::{
+        objects::{ListRequest, ObjectApiListRequest, COMMON_VERSION},
+        TryEncodableFrom,
+    };
+
+    /// carry from prev version for compatibility test
+    macro_rules! ObjectApiEnum {
+        ($api:ident) => {
+
+            paste::paste! {
+
+
+                #[derive(Debug)]
+                pub enum [<ObjectApiOld $api>] {
+                    Topic($api<crate::topic::TopicSpec>),
+                    Spu($api<crate::spu::SpuSpec>)
+                }
+
+                impl Default for [<ObjectApiOld $api>] {
+                    fn default() -> Self {
+                        Self::Topic($api::<crate::topic::TopicSpec>::default())
+                    }
+                }
+
+                impl [<ObjectApiOld $api>] {
+                    fn type_string(&self) -> &'static str {
+                        use fluvio_controlplane_metadata::core::Spec;
+                        match self {
+                            Self::Topic(_) => crate::topic::TopicSpec::LABEL,
+                            Self::Spu(_) => crate::spu::SpuSpec::LABEL,
+                        }
+                    }
+                }
+
+                impl  fluvio_protocol::Encoder for [<ObjectApiOld $api>] {
+
+                    fn write_size(&self, version: fluvio_protocol::Version) -> usize {
+                        let type_size = self.type_string().to_owned().write_size(version);
+
+                        type_size
+                            + match self {
+                                Self::Topic(s) => s.write_size(version),
+                                Self::Spu(s) => s.write_size(version),
+                            }
+                    }
+
+                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(), std::io::Error>
+                    where
+                        T: fluvio_protocol::bytes::BufMut,
+                    {
+                        let ty = self.type_string().to_owned();
+
+                        tracing::trace!(%ty,len = self.write_size(version),"encoding objects");
+                        ty.encode(dest, version)?;
+
+                        match self {
+                            Self::Topic(s) => s.encode(dest, version)?,
+                            Self::Spu(s) => s.encode(dest, version)?,
+
+                        }
+
+                        Ok(())
+                    }
+
+                }
+
+
+                impl  fluvio_protocol::Decoder for [<ObjectApiOld $api>] {
+
+                    fn decode<T>(&mut self, src: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error>
+                    where
+                        T: fluvio_protocol::bytes::Buf
+                    {
+                        use fluvio_controlplane_metadata::core::Spec;
+
+                        let mut typ = "".to_owned();
+                        typ.decode(src, version)?;
+                        tracing::trace!(%typ,"decoded type");
+
+                        match typ.as_ref() {
+                            crate::topic::TopicSpec::LABEL => {
+                                tracing::trace!("detected topic");
+                                let mut request = $api::<crate::topic::TopicSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Topic(request);
+                                return Ok(())
+                            }
+
+                            crate::spu::SpuSpec::LABEL  => {
+                                tracing::trace!("detected spu");
+                                let mut request = $api::<crate::spu::SpuSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Spu(request);
+                                return Ok(())
+                            }
+
+
+                            // Unexpected type
+                            _ => Err(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                format!("invalid object type {:#?}", typ),
+                            ))
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    ObjectApiEnum!(ListRequest);
+
+    /// test upcasting of list request
+    #[test]
+    fn test_req_upcast_encoding() {
+        let raw_req: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
+
+        // upcast
+        let list_request =
+            ObjectApiListRequest::try_encode_from(raw_req, COMMON_VERSION).expect("encoded");
+
+        //
+        let mut new_src = vec![];
+        list_request
+            .encode(&mut new_src, COMMON_VERSION)
+            .expect("encoding");
+
+        let raw_req2: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
+        let mut old_src: Vec<u8> = vec![];
+
+        let old_topic_request = ObjectApiOldListRequest::Topic(raw_req2);
+        old_topic_request
+            .encode(&mut old_src, COMMON_VERSION)
+            .expect("encoding");
+
+        assert_eq!(new_src.len(), old_src.len());
+    }
+
+    #[test]
+    fn test_req_old_to_new() {
+        let raw_req: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
+
+        let raw_req2: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
+        let mut old_src: Vec<u8> = vec![];
+
+        let old_topic_request = ObjectApiOldListRequest::Topic(raw_req2);
+        old_topic_request
+            .encode(&mut old_src, COMMON_VERSION)
+            .expect("encoding");
     }
 }
 
