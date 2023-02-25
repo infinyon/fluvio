@@ -3,7 +3,6 @@ use std::convert::TryInto;
 use std::fmt::Display;
 use std::sync::Arc;
 
-
 use tracing::{debug, instrument};
 use anyhow::Result;
 
@@ -17,7 +16,6 @@ use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;
 use fluvio_socket::AsyncResponse;
 use fluvio_socket::SharedMultiplexerSocket;
-
 
 use crate::metadata::topic::TopicSpec;
 use crate::metadata::spu::SpuSpec;
