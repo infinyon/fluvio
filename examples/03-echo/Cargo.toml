@@ -8,6 +8,8 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fluvio = { path = "../../crates/fluvio" }
 futures = "0.3.0"
 async-std = { version = "1.8.0", default-features = false,features = ["attributes"] }
+anyhow = { workspace = true }
+
+fluvio = { path = "../../crates/fluvio" }

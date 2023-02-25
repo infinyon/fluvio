@@ -84,6 +84,8 @@ pub mod target {
     use std::convert::TryInto;
     use clap::Parser;
 
+    use anyhow::Result;
+
     use fluvio::FluvioConfig;
     use fluvio::FluvioError;
     use fluvio::Fluvio;
@@ -124,15 +126,13 @@ pub mod target {
 
     impl ClusterTarget {
         /// helper method to connect to fluvio
-        pub async fn connect(self) -> Result<Fluvio, TargetError> {
+        pub async fn connect(self) -> Result<Fluvio> {
             let fluvio_config = self.load()?;
-            Fluvio::connect_with_config(&fluvio_config)
-                .await
-                .map_err(|err| err.into())
+            Fluvio::connect_with_config(&fluvio_config).await
         }
 
         /// try to create sc config
-        pub fn load(self) -> Result<FluvioConfig, TargetError> {
+        pub fn load(self) -> Result<FluvioConfig> {
             let tls = self.tls.try_into()?;
 
             use fluvio::config::TlsPolicy::*;
@@ -140,13 +140,15 @@ pub mod target {
                 // Profile and Cluster together is illegal
                 (Some(_profile), Some(_cluster)) => Err(TargetError::invalid_arg(
                     "cluster addr is not valid when profile is used",
-                )),
+                )
+                .into()),
                 (Some(profile), _) => {
                     // Specifying TLS is illegal when also giving a profile
                     if let Anonymous | Verified(_) = tls {
                         return Err(TargetError::invalid_arg(
                             "tls is not valid when profile is is used",
-                        ));
+                        )
+                        .into());
                     }
 
                     let config_file = ConfigFile::load(None)?;
@@ -169,7 +171,8 @@ pub mod target {
                     if let Anonymous | Verified(_) = tls {
                         return Err(TargetError::invalid_arg(
                             "tls is only valid if cluster addr is used",
-                        ));
+                        )
+                        .into());
                     }
 
                     // Try to use the default cluster from saved config

@@ -31,7 +31,7 @@ async fn main() {
     }
 }
 
-async fn produce() -> Result<(), fluvio::FluvioError> {
+async fn produce() -> anyhow::Result<()> {
     let producer = fluvio::producer("simple").await?;
 
     let value = "Hello, Fluvio!";

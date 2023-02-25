@@ -53,7 +53,7 @@
 //!     println!("Error: {}", e);
 //! }
 //!
-//! async fn produce_records() -> Result<(), FluvioError> {
+//! async fn produce_records() -> anyhow::Result<()> {
 //!     let producer = fluvio::producer("echo").await?;
 //!     for i in 0..10u8 {
 //!         producer.send(RecordKey::NULL, format!("Hello, Fluvio {}!", i)).await?;
@@ -139,7 +139,7 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 ///
 /// ```no_run
 /// # use fluvio::{FluvioError, RecordKey};
-/// # async fn do_produce() -> Result<(), FluvioError> {
+/// # async fn do_produce() -> anyhow::Result<()> {
 /// let producer = fluvio::producer("my-topic").await?;
 /// producer.send(RecordKey::NULL, "Hello, world!").await?;
 /// # Ok(())
@@ -155,7 +155,7 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 ///
 /// ```no_run
 /// # use fluvio::FluvioError;
-/// # async fn do_produce() -> Result<(), FluvioError> {
+/// # async fn do_produce() -> anyhow::Result<()> {
 /// let producer = fluvio::producer("my-topic").await?;
 /// let key = "fluvio";
 /// let value = r#"
@@ -173,7 +173,7 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 /// ```no_run
 ///     # use fluvio::FluvioError;
 ///     # use fluvio_protocol::record::RecordKey;
-///     # async fn produce_records() -> Result<(), FluvioError> {
+///     # async fn produce_records() -> anyhow::Result<()> {
 ///     let producer = fluvio::producer("echo").await?;
 ///     for i in 0..10u8 {
 ///         producer.send(RecordKey::NULL, format!("Hello, Fluvio {}!", i)).await?;
@@ -186,7 +186,7 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
 #[instrument(skip(topic))]
-pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, FluvioError> {
+pub async fn producer<S: Into<String>>(topic: S) -> anyhow::Result<TopicProducer> {
     let fluvio = Fluvio::connect().await?;
     let producer = fluvio.topic_producer(topic).await?;
     Ok(producer)
@@ -205,7 +205,7 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// # mod futures {
 /// #     pub use futures_util::stream::StreamExt;
 /// # }
-/// #  async fn example() -> Result<(), FluvioError> {
+/// #  async fn example() -> anyhow::Result<()> {
 /// use futures::StreamExt;
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
 /// let mut stream = consumer.stream(Offset::beginning()).await?;
@@ -223,7 +223,7 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 pub async fn consumer<S: Into<String>>(
     topic: S,
     partition: PartitionId,
-) -> Result<PartitionConsumer, FluvioError> {
+) -> anyhow::Result<PartitionConsumer> {
     let fluvio = Fluvio::connect().await?;
     let consumer = fluvio.partition_consumer(topic, partition).await?;
     Ok(consumer)
