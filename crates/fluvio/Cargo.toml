@@ -61,7 +61,7 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
     "api",
 ] }
 fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
-fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.3.0", default-features = false }
+fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.4.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "4.0.0"
