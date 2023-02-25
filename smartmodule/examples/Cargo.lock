@@ -235,7 +235,7 @@ version = "0.3.1"
 dependencies = [
  "eyre",
  "fluvio-protocol 0.8.4",
- "fluvio-smartmodule-derive 0.3.0",
+ "fluvio-smartmodule-derive 0.4.0",
  "thiserror",
  "tracing",
 ]
@@ -276,7 +276,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -402,13 +402,6 @@ name = "fluvio-wasm-filter-with-parameters-v1"
 version = "0.0.0"
 dependencies = [
  "fluvio-smartmodule 0.2.5",
-]
-
-[[package]]
-name = "fluvio-wasm-join"
-version = "0.0.0"
-dependencies = [
- "fluvio-smartmodule 0.3.1",
 ]
 
 [[package]]
@@ -834,9 +827,9 @@ dependencies = [
 
 [[package]]
 name = "slab"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef"
+checksum = "6528351c9bc8ab22353f9d776db39a20288e8d6c37ef8cfe3317cf875eecfc2d"
 dependencies = [
  "autocfg",
 ]
@@ -861,9 +854,9 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "syn"
-version = "1.0.107"
+version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f4064b5b16e03ae50984a5a8ed5d4f8803e6bc1fd170a3cda91a1be4b18e3f5"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
  "proc-macro2",
  "quote",

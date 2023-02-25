@@ -1,11 +1,10 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use fluvio_smartengine::SmartModuleChainInstance;
 use tracing::{debug, error, instrument, trace, warn};
-use futures_util::StreamExt;
 use tokio::select;
 
+use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
@@ -138,9 +137,7 @@ impl StreamFetchHandler {
         let version = header.api_version();
 
         let derivedstream_ctx =
-            match SmartModuleContext::try_from(msg.smartmodules, msg.derivedstream, version, &ctx)
-                .await
-            {
+            match SmartModuleContext::try_from(msg.smartmodules, version, &ctx).await {
                 Ok(ctx) => ctx,
                 Err(error_code) => {
                     warn!("smartmodule context init failed: {:?}", error_code);
@@ -211,35 +208,17 @@ impl StreamFetchHandler {
     async fn process(
         mut self,
         starting_offset: Offset,
-        derivedstream_ctx: Option<SmartModuleContext>,
+        sm_ctx: Option<SmartModuleContext>,
     ) -> Result<(), StreamFetchError> {
-        let (mut smartmodule_instance, mut right_consumer_stream) =
-            if let Some(ctx) = derivedstream_ctx {
-                let SmartModuleContext {
-                    chain: st,
-                    right_consumer_stream,
-                } = ctx;
-                (Some(st), right_consumer_stream)
-            } else {
-                (None, None)
-            };
-        let mut join_record = if let Some(join_stream) = right_consumer_stream.as_mut() {
-            // we wait for at least one record
-            join_stream.next().await.transpose().map_err(|err| {
-                StreamFetchError::Fetch(ErrorCode::Other(format!(
-                    "failed to get record from join stream {err}"
-                )))
-            })?
+        let mut smartmodule_instance = if let Some(ctx) = sm_ctx {
+            let SmartModuleContext { chain: st } = ctx;
+            Some(st)
         } else {
             None
         };
 
         let (mut last_partition_offset, consumer_wait) = self
-            .send_back_records(
-                starting_offset,
-                smartmodule_instance.as_mut(),
-                join_record.as_ref(),
-            )
+            .send_back_records(starting_offset, smartmodule_instance.as_mut())
             .await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
@@ -262,27 +241,6 @@ impl StreamFetchHandler {
                     debug!("end event has been received, terminating");
                     break;
                 },
-
-
-
-                record = async {  right_consumer_stream.as_mut().expect("Unexpected crash").next().await }, if right_consumer_stream.is_some() =>  {
-                    debug!("Updated right stream");
-                    match record {
-                        Some(rec) => {
-                            join_record = Some(rec.map_err(|err|
-                               StreamFetchError::Fetch(ErrorCode::Other(
-                                    format!("failed to get record from join stream {err}"),
-                                ))
-                            )?);
-                        },
-                        None => {
-                            debug!("join stream has been closed, terminating");
-                            break;
-                        }
-                    }
-
-                },
-
 
 
                 // Received offset update from consumer, i.e. consumer acknowledged to this offset
@@ -309,7 +267,7 @@ impl StreamFetchHandler {
                         last_partition_offset,
                         "Consumer offset updated and is behind, need to send records",
                     );
-                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartmodule_instance.as_mut(), join_record.as_ref()).await?;
+                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartmodule_instance.as_mut()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -350,7 +308,7 @@ impl StreamFetchHandler {
 
                     // We need to send the consumer all records since the last consumer offset
                     debug!(partition_offset_update, last_consumer_offset, "reading offset event");
-                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartmodule_instance.as_mut(), join_record.as_ref()).await?;
+                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartmodule_instance.as_mut()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -377,14 +335,13 @@ impl StreamFetchHandler {
     /// return (next offset, consumer wait)
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
-        skip(self, sm_chain, join_last_record),
+        skip(self, sm_chain),
         fields(stream_id = self.stream_id)
     )]
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
         sm_chain: Option<&mut SmartModuleChainInstance>,
-        join_last_record: Option<&fluvio::consumer::Record>,
     ) -> Result<(Offset, bool), StreamFetchError> {
         let now = Instant::now();
 
@@ -447,7 +404,6 @@ impl StreamFetchHandler {
                     .process_batch(
                         &mut file_batch_iterator,
                         self.max_bytes as usize,
-                        join_last_record.map(|s| s.inner()),
                         self.metrics.chain_metrics(),
                     )
                     .map_err(|err| {

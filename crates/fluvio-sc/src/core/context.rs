@@ -12,7 +12,6 @@ use crate::stores::topic::*;
 use crate::stores::spg::*;
 use crate::stores::smartmodule::*;
 use crate::stores::tableformat::*;
-use crate::stores::derivedstream::*;
 use crate::stores::*;
 
 pub type SharedContext = Arc<Context>;
@@ -27,7 +26,6 @@ pub struct Context {
     spgs: StoreContext<SpuGroupSpec>,
     smartmodules: StoreContext<SmartModuleSpec>,
     tableformats: StoreContext<TableFormatSpec>,
-    smart_streams: StoreContext<DerivedStreamSpec>,
     health: SharedHealthCheck,
     config: ScConfig,
 }
@@ -50,7 +48,6 @@ impl Context {
             spgs: StoreContext::new(),
             smartmodules: StoreContext::new(),
             tableformats: StoreContext::new(),
-            smart_streams: StoreContext::new(),
             health: HealthCheck::shared(),
             config,
         }
@@ -81,10 +78,6 @@ impl Context {
 
     pub fn tableformats(&self) -> &StoreContext<TableFormatSpec> {
         &self.tableformats
-    }
-
-    pub fn derivedstreams(&self) -> &StoreContext<DerivedStreamSpec> {
-        &self.smart_streams
     }
 
     /// spu health channel

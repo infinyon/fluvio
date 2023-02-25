@@ -13,7 +13,6 @@ pub use self::requests::register_spu::*;
 pub use self::requests::update_lrs::*;
 pub use self::requests::remove::*;
 pub use self::requests::update_smartmodule::*;
-pub use self::requests::update_derivedstream::*;
 
 use fluvio_protocol::api::RequestMessage;
 

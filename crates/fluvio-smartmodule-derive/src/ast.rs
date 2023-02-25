@@ -26,7 +26,6 @@ pub enum SmartModuleKind {
     Map,
     ArrayMap,
     FilterMap,
-    Join,
 }
 
 impl SmartModuleKind {
@@ -43,7 +42,6 @@ impl SmartModuleKind {
                                 "map" => Some(Self::Map),
                                 "array_map" => Some(Self::ArrayMap),
                                 "filter_map" => Some(Self::FilterMap),
-                                "join" => Some(Self::Join),
                                 "init" => Some(Self::Init),
                                 _ => None,
                             }
