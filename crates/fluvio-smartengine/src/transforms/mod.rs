@@ -3,8 +3,6 @@ pub(crate) mod map;
 pub(crate) mod array_map;
 pub(crate) mod filter_map;
 pub(crate) mod aggregate;
-pub(crate) mod join;
-pub(crate) mod join_stream;
 
 pub(crate) use instance::create_transform;
 
@@ -21,8 +19,7 @@ mod instance {
 
     use super::{
         filter::SmartModuleFilter, map::SmartModuleMap, filter_map::SmartModuleFilterMap,
-        array_map::SmartModuleArrayMap, join::SmartModuleJoin, join_stream::SmartModuleJoinStream,
-        aggregate::SmartModuleAggregate,
+        array_map::SmartModuleArrayMap, aggregate::SmartModuleAggregate,
     };
 
     pub(crate) fn create_transform(
@@ -43,14 +40,6 @@ mod instance {
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleArrayMap::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
-        {
-            Ok(tr)
-        } else if let Some(tr) = SmartModuleJoin::try_instantiate(ctx, store)?
-            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
-        {
-            Ok(tr)
-        } else if let Some(tr) = SmartModuleJoinStream::try_instantiate(ctx, store)?
             .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)

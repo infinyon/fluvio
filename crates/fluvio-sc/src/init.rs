@@ -70,8 +70,8 @@ where
     );
 
     K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
-        namespace.clone(),
-        metadata_client.clone(),
+        namespace,
+        metadata_client,
         ctx.smartmodules().clone(),
     );
 
