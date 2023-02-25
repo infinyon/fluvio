@@ -6,7 +6,7 @@ use tracing::{instrument, debug, trace};
 
 use fluvio_protocol::{Encoder};
 use fluvio_protocol::{
-    record::{Batch, MemoryRecords, Record},
+    record::{Batch, MemoryRecords},
     link::smartmodule::SmartModuleTransformRuntimeError,
 };
 use fluvio_smartengine::SmartModuleChainInstance;
@@ -19,7 +19,6 @@ pub(crate) trait BatchSmartEngine {
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-        join_last_record: Option<&Record>,
         metric: &SmartModuleChainMetrics,
     ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error>;
 }
@@ -30,7 +29,6 @@ impl BatchSmartEngine for SmartModuleChainInstance {
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-        _join_last_record: Option<&Record>,
         metric: &SmartModuleChainMetrics,
     ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
         let mut smartmodule_batch = Batch::<MemoryRecords>::default();

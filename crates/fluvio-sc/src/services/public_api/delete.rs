@@ -7,7 +7,7 @@
 use tracing::{instrument, trace, debug};
 use anyhow::Result;
 
-use fluvio_protocol::link::ErrorCode;
+
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
 use fluvio_sc_schema::objects::{ObjectApiDeleteRequest};
@@ -41,17 +41,7 @@ pub async fn handle_delete_request<AC: AuthContext>(
         ObjectApiDeleteRequest::TableFormat(req) => {
             super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
         }
-        ObjectApiDeleteRequest::DerivedStream(req) => {
-            let name = req.key();
-            delete_handler::process(
-                name.clone(),
-                auth_ctx,
-                auth_ctx.global_ctx.derivedstreams(),
-                |_| ErrorCode::DerivedStreamObjectError,
-                || ErrorCode::SmartModuleNotFound { name },
-            )
-            .await?
-        }
+        
     };
 
     trace!("flv delete topics resp {:#?}", status);

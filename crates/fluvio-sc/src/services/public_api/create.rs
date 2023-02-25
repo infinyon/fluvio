@@ -2,7 +2,6 @@ use std::io::Error as IoError;
 
 use tracing::{instrument, debug};
 
-use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
 use fluvio_sc_schema::objects::{ObjectApiCreateRequest, ObjectCreateRequest};
@@ -43,16 +42,7 @@ pub async fn handle_create_request<AC: AuthContext>(
             super::tableformat::handle_create_tableformat_request(common, create, auth_context)
                 .await?
         }
-        ObjectCreateRequest::DerivedStream(create) => {
-            create_handler::process(
-                common,
-                create,
-                auth_context,
-                auth_context.global_ctx.derivedstreams(),
-                |_| ErrorCode::DerivedStreamObjectError,
-            )
-            .await?
-        }
+        
     };
 
     Ok(ResponseMessage::from_header(&header, status))

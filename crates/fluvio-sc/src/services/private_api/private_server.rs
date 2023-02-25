@@ -1,8 +1,7 @@
-use fluvio_controlplane::UpdateDerivedStreamRequest;
 use fluvio_controlplane_metadata::message::SmartModuleMsg;
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
-use fluvio_controlplane_metadata::derivedstream::DerivedStreamSpec;
+
 use fluvio_future::timer::sleep;
 use fluvio_service::ConnectInfo;
 use std::sync::Arc;
@@ -113,7 +112,7 @@ async fn dispatch_loop(
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
     let mut sm_spec_listener = context.smartmodules().change_listener();
-    let mut ss_spec_listener = context.derivedstreams().change_listener();
+   
 
     // send initial changes
 
@@ -126,7 +125,7 @@ async fn dispatch_loop(
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
         send_smartmodule_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
-        send_derivedstream_changes(&mut ss_spec_listener, &mut sink, spu_id).await?;
+      
 
         trace!(spu_id, "waiting for SPU channel");
 
@@ -423,65 +422,6 @@ async fn send_smartmodule_changes(
     };
 
     debug!(?request, "sending sm to spu");
-
-    let mut message = RequestMessage::new_request(request);
-    message.get_mut_header().set_client_id("sc");
-
-    sink.send_request(&message).await?;
-    Ok(())
-}
-
-#[instrument(level = "trace", skip(sink))]
-async fn send_derivedstream_changes(
-    listener: &mut K8ChangeListener<DerivedStreamSpec>,
-    sink: &mut FluvioSink,
-    spu_id: SpuId,
-) -> Result<(), SocketError> {
-    use fluvio_controlplane_metadata::message::{DerivedStreamMsg};
-
-    use crate::stores::ChangeFlag;
-
-    if !listener.has_change() {
-        trace!("changes is empty, skipping");
-        return Ok(());
-    }
-
-    let changes = listener
-        .sync_changes_with_filter(&ChangeFlag {
-            spec: true,
-            status: true,
-            meta: true,
-        })
-        .await;
-    if changes.is_empty() {
-        trace!("spec changes is empty, skipping");
-        return Ok(());
-    }
-
-    let epoch = changes.epoch;
-
-    let is_sync_all = changes.is_sync_all();
-    let (updates, deletes) = changes.parts();
-
-    let request = if is_sync_all {
-        UpdateDerivedStreamRequest::with_all(
-            epoch,
-            updates.into_iter().map(|sm| sm.into()).collect(),
-        )
-    } else {
-        let mut changes: Vec<DerivedStreamMsg> = updates
-            .into_iter()
-            .map(|sm| Message::update(sm.into()))
-            .collect();
-        let mut deletes = deletes
-            .into_iter()
-            .map(|sm| Message::delete(sm.into()))
-            .collect();
-        changes.append(&mut deletes);
-        UpdateDerivedStreamRequest::with_changes(epoch, changes)
-    };
-
-    debug!(?request, "sending ss to spu");
 
     let mut message = RequestMessage::new_request(request);
     message.get_mut_header().set_client_id("sc");

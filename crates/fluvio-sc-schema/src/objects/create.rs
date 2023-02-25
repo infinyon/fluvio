@@ -5,7 +5,6 @@ use std::fmt::Debug;
 use fluvio_protocol::bytes::{BufMut, Buf};
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
-use fluvio_controlplane_metadata::derivedstream::DerivedStreamSpec;
 use fluvio_protocol::Version;
 
 use crate::topic::TopicSpec;
@@ -49,8 +48,7 @@ pub enum ObjectCreateRequest {
     CustomSpu(CustomSpuSpec),
     SmartModule(SmartModuleSpec),
     SpuGroup(SpuGroupSpec),
-    TableFormat(TableFormatSpec),
-    DerivedStream(DerivedStreamSpec),
+    TableFormat(TableFormatSpec)
 }
 
 impl Default for ObjectCreateRequest {
@@ -66,8 +64,7 @@ impl ObjectCreateRequest {
             Self::CustomSpu(_) => CustomSpuSpec::CREATE_TYPE,
             Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
-            Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
-            Self::DerivedStream(_) => DerivedStreamSpec::CREATE_TYPE,
+            Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE
         }
     }
 }
@@ -83,7 +80,6 @@ impl Encoder for ObjectCreateRequest {
                 Self::SmartModule(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
                 Self::TableFormat(s) => s.write_size(version),
-                Self::DerivedStream(s) => s.write_size(version),
             }
     }
 
@@ -98,7 +94,6 @@ impl Encoder for ObjectCreateRequest {
             Self::SmartModule(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
             Self::TableFormat(s) => s.encode(dest, version)?,
-            Self::DerivedStream(s) => s.encode(dest, version)?,
         }
 
         Ok(())
@@ -158,13 +153,6 @@ impl Decoder for ObjectCreateRequest {
                 Ok(())
             }
 
-            DerivedStreamSpec::CREATE_TYPE => {
-                tracing::trace!("detected derivedstream");
-                let mut request = DerivedStreamSpec::default();
-                request.decode(src, version)?;
-                *self = Self::DerivedStream(request);
-                Ok(())
-            }
 
             // Unexpected type
             _ => Err(std::io::Error::new(

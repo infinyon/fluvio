@@ -5,7 +5,7 @@ mod produce;
 mod partition;
 mod tableformat;
 mod smartmodule;
-mod derivedstream;
+
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -45,7 +45,6 @@ mod cmd {
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
 
-    use super::derivedstream::DerivedStreamCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;
@@ -132,13 +131,6 @@ mod cmd {
         #[clap(subcommand, name = "table-format", visible_alias = "tf")]
         TableFormat(TableFormatCmd),
 
-        /// Create and manage DerivedStreams
-        ///
-        /// Use topics, SmartModules or other DerivedStreams
-        /// to build a customized stream to consume
-        #[clap(subcommand, name = "derived-stream", visible_alias = "ds")]
-        DerivedStream(DerivedStreamCmd),
-
         /// Work with the SmartModule Hub
         #[clap(subcommand, name = "hub")]
         Hub(HubCmd),
@@ -169,9 +161,6 @@ mod cmd {
                 }
                 Self::TableFormat(tableformat) => {
                     tableformat.process(out, target).await?;
-                }
-                Self::DerivedStream(derivedstream) => {
-                    derivedstream.process(out, target).await?;
                 }
                 Self::Hub(hub) => {
                     hub.process(out, target).await?;

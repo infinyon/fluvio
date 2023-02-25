@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.16.1"
+version = "0.17.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -54,7 +54,7 @@ fluvio-future = { version = "0.4.4", features = [
 fluvio-types = { version = "0.4.0", features = [
     "events",
 ], path = "../fluvio-types" }
-fluvio-sc-schema = { version = "0.16.0", path = "../fluvio-sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.17.0", path = "../fluvio-sc-schema", default-features = false }
 fluvio-socket = { path = "../fluvio-socket", version = "0.13.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
     "record",

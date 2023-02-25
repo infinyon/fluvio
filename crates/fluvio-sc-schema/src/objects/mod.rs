@@ -119,7 +119,6 @@ mod object_macro {
                     Partition($api<crate::partition::PartitionSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     TableFormat($api<crate::tableformat::TableFormatSpec>),
-                    DerivedStream($api<crate::derivedstream::DerivedStreamSpec>),
                 }
 
                 impl Default for [<ObjectApi $api>] {
@@ -139,7 +138,6 @@ mod object_macro {
                             Self::Partition(_) => crate::partition::PartitionSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
-                            Self::DerivedStream(_) => crate::derivedstream::DerivedStreamSpec::LABEL,
 
                         }
                     }
@@ -159,7 +157,6 @@ mod object_macro {
                                 Self::SmartModule(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::TableFormat(s) => s.write_size(version),
-                                Self::DerivedStream(s) => s.write_size(version),
                             }
                     }
 
@@ -180,7 +177,6 @@ mod object_macro {
                             Self::Partition(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
                             Self::TableFormat(s) => s.encode(dest, version)?,
-                            Self::DerivedStream(s) => s.encode(dest, version)?,
                         }
 
                         Ok(())
@@ -258,14 +254,6 @@ mod object_macro {
                                 Ok(())
                             }
 
-
-                            crate::derivedstream::DerivedStreamSpec::LABEL => {
-                                tracing::trace!("detected derivedstream");
-                                let mut request = $api::<crate::derivedstream::DerivedStreamSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::DerivedStream(request);
-                                Ok(())
-                            }
 
                             // Unexpected type
                             _ => Err(std::io::Error::new(
@@ -348,7 +336,6 @@ mod delete_macro {
                     SmartModule($api<crate::smartmodule::SmartModuleSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     TableFormat($api<crate::tableformat::TableFormatSpec>),
-                    DerivedStream($api<crate::derivedstream::DerivedStreamSpec>),
                 }
 
                 impl Default for [<ObjectApi $api>] {
@@ -366,7 +353,6 @@ mod delete_macro {
                             Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
-                            Self::DerivedStream(_) => crate::derivedstream::DerivedStreamSpec::LABEL,
                         }
                     }
                 }
@@ -383,7 +369,6 @@ mod delete_macro {
                                 Self::SmartModule(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::TableFormat(s) => s.write_size(version),
-                                Self::DerivedStream(s) => s.write_size(version),
                             }
                     }
 
@@ -402,7 +387,6 @@ mod delete_macro {
                             Self::SpuGroup(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
                             Self::TableFormat(s) => s.encode(dest, version)?,
-                            Self::DerivedStream(s) => s.encode(dest, version)?,
                         }
 
                         Ok(())
@@ -464,13 +448,6 @@ mod delete_macro {
                                 Ok(())
                             },
 
-                            crate::derivedstream::DerivedStreamSpec::LABEL => {
-                                tracing::trace!("detected derivedstream");
-                                let mut request = $api::<crate::derivedstream::DerivedStreamSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::DerivedStream(request);
-                                Ok(())
-                            }
 
                             // Unexpected type
                             _ => Err(std::io::Error::new(
