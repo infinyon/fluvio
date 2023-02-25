@@ -8,7 +8,6 @@ pub mod versions;
 pub mod objects;
 pub mod tableformat;
 
-
 mod apis;
 mod request;
 mod response;

@@ -6,7 +6,6 @@ mod partition;
 mod tableformat;
 mod smartmodule;
 
-
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
 pub use tableformat::TableFormatConfig;

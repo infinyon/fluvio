@@ -48,7 +48,7 @@ pub enum ObjectCreateRequest {
     CustomSpu(CustomSpuSpec),
     SmartModule(SmartModuleSpec),
     SpuGroup(SpuGroupSpec),
-    TableFormat(TableFormatSpec)
+    TableFormat(TableFormatSpec),
 }
 
 impl Default for ObjectCreateRequest {
@@ -64,7 +64,7 @@ impl ObjectCreateRequest {
             Self::CustomSpu(_) => CustomSpuSpec::CREATE_TYPE,
             Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
-            Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE
+            Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
         }
     }
 }
@@ -152,7 +152,6 @@ impl Decoder for ObjectCreateRequest {
                 *self = Self::SmartModule(request);
                 Ok(())
             }
-
 
             // Unexpected type
             _ => Err(std::io::Error::new(

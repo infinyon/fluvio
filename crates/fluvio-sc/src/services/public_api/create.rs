@@ -42,7 +42,6 @@ pub async fn handle_create_request<AC: AuthContext>(
             super::tableformat::handle_create_tableformat_request(common, create, auth_context)
                 .await?
         }
-        
     };
 
     Ok(ResponseMessage::from_header(&header, status))

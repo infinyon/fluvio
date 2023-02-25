@@ -14,7 +14,6 @@ pub use self::requests::update_lrs::*;
 pub use self::requests::remove::*;
 pub use self::requests::update_smartmodule::*;
 
-
 use fluvio_protocol::api::RequestMessage;
 
 pub type UpdateSpuRequestMessage = RequestMessage<UpdateSpuRequest>;

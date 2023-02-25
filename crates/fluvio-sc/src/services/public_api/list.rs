@@ -50,7 +50,7 @@ pub async fn handle_list_request<AC: AuthContext>(
                 auth_ctx.global_ctx.tableformats(),
             )
             .await?,
-        )
+        ),
     };
 
     debug!("response: {:#?}", response);

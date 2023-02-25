@@ -112,7 +112,6 @@ async fn dispatch_loop(
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
     let mut sm_spec_listener = context.smartmodules().change_listener();
-   
 
     // send initial changes
 
@@ -125,7 +124,6 @@ async fn dispatch_loop(
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
         send_smartmodule_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
-      
 
         trace!(spu_id, "waiting for SPU channel");
 

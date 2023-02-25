@@ -80,7 +80,6 @@ impl Context {
         &self.tableformats
     }
 
-
     /// spu health channel
     pub fn health(&self) -> &SharedHealthCheck {
         &self.health

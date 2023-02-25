@@ -136,14 +136,15 @@ impl StreamFetchHandler {
         debug!("request: {:#?}", msg);
         let version = header.api_version();
 
-        let derivedstream_ctx = match SmartModuleContext::try_from(msg.smartmodules,version, &ctx).await {
-            Ok(ctx) => ctx,
-            Err(error_code) => {
-                warn!("smartmodule context init failed: {:?}", error_code);
-                send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
-                return Ok(());
-            }
-        };
+        let derivedstream_ctx =
+            match SmartModuleContext::try_from(msg.smartmodules, version, &ctx).await {
+                Ok(ctx) => ctx,
+                Err(error_code) => {
+                    warn!("smartmodule context init failed: {:?}", error_code);
+                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                    return Ok(());
+                }
+            };
 
         let max_bytes = msg.max_bytes as u32;
         // compute max fetch bytes depends on smart stream
@@ -204,25 +205,20 @@ impl StreamFetchHandler {
         }
     }
 
-    async fn process(mut self, starting_offset: Offset,
-        sm_ctx: Option<SmartModuleContext>
+    async fn process(
+        mut self,
+        starting_offset: Offset,
+        sm_ctx: Option<SmartModuleContext>,
     ) -> Result<(), StreamFetchError> {
-        let mut smartmodule_instance =
-            if let Some(ctx) = sm_ctx {
-                let SmartModuleContext {
-                    chain: st,
-                } = ctx;
-                Some(st)
-            } else {
-                None
-            };
-       
+        let mut smartmodule_instance = if let Some(ctx) = sm_ctx {
+            let SmartModuleContext { chain: st } = ctx;
+            Some(st)
+        } else {
+            None
+        };
 
         let (mut last_partition_offset, consumer_wait) = self
-            .send_back_records(
-                starting_offset,
-                smartmodule_instance.as_mut()
-            )
+            .send_back_records(starting_offset, smartmodule_instance.as_mut())
             .await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);

@@ -6,7 +6,6 @@ pub mod message;
 pub mod smartmodule;
 pub mod tableformat;
 
-
 pub use fluvio_stream_model::core;
 
 pub mod store {

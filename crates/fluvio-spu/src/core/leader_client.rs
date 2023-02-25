@@ -15,6 +15,7 @@ use super::SharedReplicaLocalStore;
 use super::spus::SharedSpuLocalStore;
 
 /// maintain connections to all leaders
+#[allow(dead_code)]
 #[derive(Debug, Default)]
 pub struct LeaderConnections {
     spus: SharedSpuLocalStore,

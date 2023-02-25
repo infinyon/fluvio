@@ -101,7 +101,6 @@ where
         &self.smartmodule_localstore
     }
 
-
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
         &self.leaders_state
     }

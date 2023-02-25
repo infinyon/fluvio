@@ -12,7 +12,6 @@ pub use self::smartmodule_msg::{SmartModuleMsgs, SmartModuleMsg};
 pub use spu_msg::*;
 pub use smartmodule_msg::*;
 
-
 mod spu_msg {
 
     use crate::spu::SpuSpec;
