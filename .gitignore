@@ -9,3 +9,4 @@ VERSION
 .env
 .vscode/
 vendor/
+*.tmp
