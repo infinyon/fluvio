@@ -128,4 +128,6 @@ mod admin {
 
         fn downcast(&self) -> Result<Option<T>>;
     }
+
+    //pub fn str_to_spec(ty_name: &str) ->
 }
