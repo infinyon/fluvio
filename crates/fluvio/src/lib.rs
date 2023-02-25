@@ -65,7 +65,7 @@
 //!     Ok(())
 //! }
 //!
-//! async fn consume_records() -> Result<(), FluvioError> {
+//! async fn consume_records() -> anyhow::Result<()> {
 //!     let consumer = fluvio::consumer("echo", 0).await?;
 //!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
