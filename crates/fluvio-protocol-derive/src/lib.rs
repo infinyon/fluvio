@@ -80,7 +80,7 @@ use syn::parse_macro_input;
 /// * `#fluvio(min_version = <version>)]` decodes only if version is equal or greater than min_version
 /// * `#fluvio(max_version = <version>)]`decodes only if version is less or equal than max_version
 ///
-#[proc_macro_derive(Decoder, attributes(varint,trace,fluvio))]
+#[proc_macro_derive(Decoder, attributes(varint, trace, fluvio))]
 pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
     let expanded = generate_decode_trait_impls(&input);
@@ -112,7 +112,7 @@ pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
 /// Encoder applies to either Struct of Enum.  
 ///
 /// Encoder respects version attributes.  See Decoder derive.
-#[proc_macro_derive(Encoder, attributes(varint,trace,fluvio))]
+#[proc_macro_derive(Encoder, attributes(varint, trace, fluvio))]
 pub fn fluvio_encode(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
     let expanded = generate_encode_trait_impls(&input);

@@ -1,5 +1,5 @@
 use crate::ast::prop::{NamedProp, UnnamedProp};
-use syn::{Fields, Generics, Ident, ItemStruct, GenericParam, parse_quote};
+use syn::{parse_quote, Fields, GenericParam, Generics, Ident, ItemStruct};
 
 use super::{container::ContainerAttributes, FluvioBound};
 
@@ -73,11 +73,7 @@ impl FluvioStruct {
             FluvioStruct::Tuple(inner) => FluvioStructProps::Unnamed(inner.props.clone()),
         }
     }
-
 }
-
-
-
 
 pub(crate) enum FluvioStructProps {
     Named(Vec<NamedProp>),

@@ -23,7 +23,6 @@ pub trait Decoder {
         T: Buf;
 }
 
-
 /// Create a new type that can be decoded from a buffer
 pub trait DecodeExt: Sized {
     /// decode Fluvio compliant protocol values from buf
