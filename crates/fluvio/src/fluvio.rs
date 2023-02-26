@@ -1,11 +1,12 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use fluvio_sc_schema::objects::ObjectApiWatchRequest;
-use fluvio_types::PartitionId;
 use tracing::{debug, info};
 use tokio::sync::OnceCell;
+use anyhow::{anyhow, Result};
 
+use fluvio_sc_schema::objects::ObjectApiWatchRequest;
+use fluvio_types::PartitionId;
 use fluvio_socket::{
     ClientConfig, Versions, VersionedSerialSocket, SharedMultiplexerSocket, MultiplexerSocket,
 };
@@ -47,12 +48,12 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError};
-    /// # async fn do_connect() -> Result<(), FluvioError> {
+    /// # async fn do_connect() -> anyhow::Result<()> {
     /// let fluvio = Fluvio::connect().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect() -> Result<Self, FluvioError> {
+    pub async fn connect() -> Result<Self> {
         let cluster_config = FluvioConfig::load()?;
         Self::connect_with_config(&cluster_config).await
     }
@@ -64,14 +65,14 @@ impl Fluvio {
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError, FluvioConfig};
     /// use fluvio::config::ConfigFile;
-    /// # async fn do_connect_with_config() -> Result<(), FluvioError> {
+    /// # async fn do_connect_with_config() -> anyhow::Result<()> {
     /// let config_file = ConfigFile::load_default_or_new()?;
     /// let config = config_file.config().current_cluster().unwrap();
     /// let fluvio = Fluvio::connect_with_config(&config).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
+    pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         info!(
             fluvio_crate_version = env!("CARGO_PKG_VERSION"),
@@ -84,7 +85,7 @@ impl Fluvio {
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
-    ) -> Result<Self, FluvioError> {
+    ) -> Result<Self> {
         let mut client_config =
             ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
         if let Some(client_id) = &config.client_id {
@@ -114,12 +115,12 @@ impl Fluvio {
                 metric: Arc::new(ClientMetrics::new()),
             })
         } else {
-            Err(FluvioError::Other("WatchApi version not found".to_string()))
+            Err(anyhow!("WatchApi version not found"))
         }
     }
 
     /// lazy get spu pool
-    async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
+    async fn spu_pool(&self) -> Result<Arc<SpuPool>> {
         self.spu_pool
             .get_or_try_init(|| async {
                 let metadata =
@@ -141,16 +142,13 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError, RecordKey};
-    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> anyhow::Result<()> {
     /// let producer = fluvio.topic_producer("my-topic").await?;
     /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn topic_producer<S: Into<String>>(
-        &self,
-        topic: S,
-    ) -> Result<TopicProducer, FluvioError> {
+    pub async fn topic_producer<S: Into<String>>(&self, topic: S) -> Result<TopicProducer> {
         self.topic_producer_with_config(topic, Default::default())
             .await
     }
@@ -165,7 +163,7 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError, RecordKey, TopicProducerConfigBuilder};
-    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> anyhow::Result<()> {
     /// let config = TopicProducerConfigBuilder::default().batch_size(500).build()?;
     /// let producer = fluvio.topic_producer_with_config("my-topic", config).await?;
     /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
@@ -176,13 +174,13 @@ impl Fluvio {
         &self,
         topic: S,
         config: TopicProducerConfig,
-    ) -> Result<TopicProducer, FluvioError> {
+    ) -> Result<TopicProducer> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
 
         let spu_pool = self.spu_pool().await?;
         if !spu_pool.topic_exists(&topic).await? {
-            return Err(FluvioError::TopicNotFound(topic));
+            return Err(FluvioError::TopicNotFound(topic).into());
         }
 
         TopicProducer::new(topic, spu_pool, config, self.metric.clone()).await
@@ -198,7 +196,7 @@ impl Fluvio {
         &self,
         topic: S,
         partition: PartitionId,
-    ) -> Result<PartitionConsumer, FluvioError> {
+    ) -> Result<PartitionConsumer> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");
         Ok(PartitionConsumer::new(
@@ -223,7 +221,7 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, Offset, FluvioError, PartitionSelectionStrategy};
-    /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> anyhow::Result<()> {
     /// # let consumer = fluvio.consumer(PartitionSelectionStrategy::All("my-topic".to_string())).await?;
     /// # let stream = consumer.stream(Offset::beginning()).await?;
     /// # Ok(())
@@ -232,7 +230,7 @@ impl Fluvio {
     pub async fn consumer(
         &self,
         strategy: PartitionSelectionStrategy,
-    ) -> Result<MultiplePartitionConsumer, FluvioError> {
+    ) -> Result<MultiplePartitionConsumer> {
         Ok(MultiplePartitionConsumer::new(
             strategy,
             self.spu_pool().await?,
@@ -246,7 +244,7 @@ impl Fluvio {
     ///
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError};
-    /// # async fn do_get_admin(fluvio: &mut Fluvio) -> Result<(), FluvioError> {
+    /// # async fn do_get_admin(fluvio: &mut Fluvio) -> anyhow::Result<()> {
     /// let admin = fluvio.admin().await;
     /// # Ok(())
     /// # }

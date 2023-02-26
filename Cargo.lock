@@ -1217,6 +1217,7 @@ dependencies = [
 name = "consume"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-std",
  "fluvio",
  "futures-lite",
@@ -1992,6 +1993,7 @@ checksum = "c9b0705efd4599c15a38151f4721f7bc388306f61084d3bfd50bd07fbca5cb60"
 name = "echo"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-std",
  "fluvio",
  "futures 0.3.26",
@@ -2590,6 +2592,7 @@ dependencies = [
 name = "fluvio-extension-common"
 version = "0.11.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "clap 4.1.6",
  "comfy-table",
@@ -3046,6 +3049,7 @@ dependencies = [
 name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-channel",
  "async-std",
  "async-trait",
@@ -3131,6 +3135,7 @@ dependencies = [
 name = "fluvio-test-util"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "bytes 1.4.0",
  "clap 4.1.6",
@@ -5479,6 +5484,7 @@ dependencies = [
 name = "produce"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-std",
  "fluvio",
 ]
@@ -5487,6 +5493,7 @@ dependencies = [
 name = "produce-batch"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-std",
  "fluvio",
 ]
@@ -5495,6 +5502,7 @@ dependencies = [
 name = "produce-key-value"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-std",
  "fluvio",
  "tracing-subscriber",

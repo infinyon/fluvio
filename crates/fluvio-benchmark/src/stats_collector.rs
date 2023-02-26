@@ -2,8 +2,10 @@ use std::{
     time::{Instant, Duration},
     collections::HashMap,
 };
+
 use async_channel::{Receiver, Sender};
 use tracing::debug;
+use anyhow::Result;
 
 use crate::{BenchmarkError, benchmark_config::BenchmarkConfig};
 use crate::stats::AllStatsSync;
@@ -75,7 +77,7 @@ impl StatsWorker {
         }
     }
 
-    pub async fn collect_send_recv_messages(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn collect_send_recv_messages(&mut self) -> Result<()> {
         let num_produced = self.config.total_number_of_messages_produced_per_batch();
         let num_consumed = self.config.total_number_of_messages_produced_per_batch()
             * self.config.number_of_expected_times_each_message_consumed();
@@ -98,7 +100,8 @@ impl StatsWorker {
                     StatsCollectorMessage::MessageHash { .. } => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message hash".to_string(),
-                        ));
+                        )
+                        .into());
                     }
                     StatsCollectorMessage::ProducerFlushed { flush_time } => {
                         self.current_batch.flush_recv(flush_time)
@@ -107,7 +110,8 @@ impl StatsWorker {
                 Err(_) => {
                     return Err(BenchmarkError::ErrorWithExplanation(
                         "StatsCollectorChannelClosed".to_string(),
-                    ))
+                    )
+                    .into())
                 }
             }
         }
@@ -118,7 +122,7 @@ impl StatsWorker {
         Ok(())
     }
 
-    pub async fn validate(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn validate(&mut self) -> Result<()> {
         let number_of_consumed_messages = self.config.total_number_of_messages_produced_per_batch()
             * self.config.number_of_expected_times_each_message_consumed();
         for _ in 0..number_of_consumed_messages {
@@ -127,12 +131,14 @@ impl StatsWorker {
                     StatsCollectorMessage::MessageSent { .. } => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message sent".to_string(),
-                        ));
+                        )
+                        .into());
                     }
                     StatsCollectorMessage::MessageReceived => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message received".to_string(),
-                        ));
+                        )
+                        .into());
                     }
                     StatsCollectorMessage::MessageHash {
                         hash,
@@ -145,13 +151,15 @@ impl StatsWorker {
                     StatsCollectorMessage::ProducerFlushed { .. } => {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Received unexpected message flushed".to_string(),
-                        ));
+                        )
+                        .into());
                     }
                 },
                 Err(_) => {
                     return Err(BenchmarkError::ErrorWithExplanation(
                         "StatsCollectorChannelClosed".to_string(),
-                    ))
+                    )
+                    .into())
                 }
             }
         }

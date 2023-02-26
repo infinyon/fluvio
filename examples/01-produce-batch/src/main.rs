@@ -28,7 +28,7 @@ async fn main() {
     }
 }
 
-async fn produce_batch() -> Result<(), fluvio::FluvioError> {
+async fn produce_batch() -> anyhow::Result<()> {
     let producer = fluvio::producer("batch").await?;
 
     for i in 0..10 {

@@ -6,8 +6,10 @@ mod cluster {
 
     use std::time::Duration;
 
+    use anyhow::Result;
+
     use fluvio_future::timer::sleep;
-    use fluvio::{Fluvio, FluvioConfig, FluvioError};
+    use fluvio::{Fluvio, FluvioConfig};
 
     use crate::tls::load_tls;
     use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
@@ -40,7 +42,7 @@ mod cluster {
             self.env_driver.remove_cluster().await;
         }
 
-        pub async fn start(&mut self) -> Result<Fluvio, FluvioError> {
+        pub async fn start(&mut self) -> Result<Fluvio> {
             if self.option.remove_cluster_before() {
                 self.remove_cluster().await;
             } else {

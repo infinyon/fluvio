@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::{error, debug, instrument};
 use event_listener::{Event, EventListener};
 use futures_util::stream::StreamExt;
+use anyhow::Result;
 
 use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;

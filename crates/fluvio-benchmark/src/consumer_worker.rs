@@ -1,6 +1,9 @@
 use std::pin::Pin;
 use std::time::{Duration, Instant};
+
 use async_channel::{Sender, Receiver};
+use anyhow::Result;
+
 use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode};
 use fluvio::dataplane::record::ConsumerRecord;
 use fluvio_future::future::timeout;
@@ -24,7 +27,7 @@ impl ConsumerWorker {
         rx_stop: Receiver<()>,
         assigned_partition: u64,
         preallocation_hint: u64,
-    ) -> Result<Self, BenchmarkError> {
+    ) -> Result<Self> {
         let mut config_builder = ConsumerConfigBuilder::default();
         config_builder.max_bytes(config.consumer_max_bytes as i32);
         config_builder.isolation(config.consumer_isolation);
@@ -46,7 +49,7 @@ impl ConsumerWorker {
         })
     }
 
-    pub async fn consume(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn consume(&mut self) -> Result<()> {
         self.received.clear();
         loop {
             match timeout(Duration::from_millis(20), self.stream.next()).await {
@@ -59,7 +62,8 @@ impl ConsumerWorker {
                     } else {
                         return Err(BenchmarkError::ErrorWithExplanation(
                             "Consumer unable to get record from fluvio".to_string(),
-                        ));
+                        )
+                        .into());
                     }
                 }
                 // timeout
@@ -72,7 +76,7 @@ impl ConsumerWorker {
         }
     }
 
-    pub async fn send_results(&mut self) -> Result<(), BenchmarkError> {
+    pub async fn send_results(&mut self) -> Result<()> {
         for (record, recv_time) in self.received.iter() {
             let data = String::from_utf8_lossy(record.value());
             self.tx_to_stats_collector

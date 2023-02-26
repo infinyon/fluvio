@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use tracing::instrument;
 use async_lock::RwLock;
+use anyhow::Result;
 
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::Record;
@@ -40,8 +41,6 @@ use self::event::EventHandler;
 pub use self::output::ProduceOutput;
 use self::partition_producer::PartitionProducer;
 pub use self::record::{FutureRecordMetadata, RecordMetadata};
-
-use crate::error::Result;
 
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
@@ -229,7 +228,7 @@ cfg_if::cfg_if! {
 
         impl TopicProducer {
             /// Adds a chain of SmartModules to this TopicProducer
-            pub fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self, FluvioError> {
+            pub fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self> {
                 let chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
                 self.sm_chain = Some(Arc::new(RwLock::new(chain_instance)));
                 Ok(self)
@@ -240,7 +239,7 @@ cfg_if::cfg_if! {
                 self,
                 filter: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, filter)))
             }
@@ -250,7 +249,7 @@ cfg_if::cfg_if! {
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
@@ -260,7 +259,7 @@ cfg_if::cfg_if! {
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
@@ -270,7 +269,7 @@ cfg_if::cfg_if! {
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
                 self.with_chain(SmartModuleChainBuilder::from((config, map)))
             }
@@ -281,7 +280,7 @@ cfg_if::cfg_if! {
                 map: T,
                 params: BTreeMap<String, String>,
                 accumulator: Vec<u8>,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let config = SmartModuleConfig::builder()
                     .initial_data(SmartModuleInitialData::Aggregate{accumulator})
                     .params(params.into()).build()?;
@@ -294,7 +293,7 @@ cfg_if::cfg_if! {
                 smartmodule: T,
                 params: BTreeMap<String, String>,
                 context: SmartModuleContextData,
-            ) -> Result<Self, FluvioError> {
+            ) -> Result<Self> {
                 let mut config_builder = SmartModuleConfig::builder();
                 config_builder.params(params.into());
                 if let SmartModuleContextData::Aggregate{accumulator} = context {
@@ -330,26 +329,26 @@ impl TopicProducer {
                     Some(Compression::Gzip) | None => Compression::Gzip,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (gzip)" ),
-                    ))),
+                    )).into()),
                 },
                 CompressionAlgorithm::Snappy => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (snappy)" ),
-                    ))),
+                    )).into()),
                 },
                 CompressionAlgorithm::Lz4 => match config.compression {
                     Some(Compression::Lz4) | None => Compression::Lz4,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (lz4)"),
-                    ))),
+                    )).into()),
                 },
             CompressionAlgorithm::None => match config.compression {
                     Some(Compression::None) | None => Compression::None,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (no compression)" )
 
-                    ))),
+                    )).into()),
                 },
             };
 
@@ -387,12 +386,12 @@ impl TopicProducer {
     ///
     /// ```
     /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// # async fn example(producer: &TopicProducer) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// producer.flush().await?;
     /// # Ok(())
     /// # }
-    pub async fn flush(&self) -> Result<(), FluvioError> {
+    pub async fn flush(&self) -> Result<()> {
         self.inner.flush().await
     }
 
@@ -410,7 +409,7 @@ impl TopicProducer {
     ///
     /// ```
     /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// # async fn example(producer: &TopicProducer) -> anyhow::Result<()> {
     /// producer.send("Key", "Value").await?;
     /// # Ok(())
     /// # }
@@ -419,7 +418,7 @@ impl TopicProducer {
         skip(self, key, value),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send<K, V>(&self, key: K, value: V) -> Result<ProduceOutput, FluvioError>
+    pub async fn send<K, V>(&self, key: K, value: V) -> Result<ProduceOutput>
     where
         K: Into<RecordKey>,
         V: Into<RecordData>,
@@ -462,7 +461,7 @@ impl TopicProducer {
         skip(self, records),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send_all<K, V, I>(&self, records: I) -> Result<Vec<ProduceOutput>, FluvioError>
+    pub async fn send_all<K, V, I>(&self, records: I) -> Result<Vec<ProduceOutput>>
     where
         K: Into<RecordKey>,
         V: Into<RecordData>,

@@ -8,17 +8,13 @@ use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
-    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, BenchmarkError,
-    stats::AllStatsSync,
+    consumer_worker::ConsumerWorker, stats_collector::StatsWorker, stats::AllStatsSync,
 };
 
 pub struct BenchmarkDriver {}
 
 impl BenchmarkDriver {
-    pub async fn run_samples(
-        config: BenchmarkConfig,
-        all_stats: AllStatsSync,
-    ) -> Result<(), BenchmarkError> {
+    pub async fn run_samples(config: BenchmarkConfig, all_stats: AllStatsSync) -> Result<()> {
         // Works send results to stats collector
         let (tx_stats, rx_stats) = unbounded();
 
@@ -156,7 +152,7 @@ impl BenchmarkDriver {
 async fn send_control_message(
     tx_control: &mut [Sender<ControlMessage>],
     message: ControlMessage,
-) -> Result<(), BenchmarkError> {
+) -> Result<()> {
     for tx_control in tx_control.iter_mut() {
         tx_control.send(message).await?;
     }
@@ -164,10 +160,10 @@ async fn send_control_message(
 }
 
 async fn expect_success(
-    rx_success: &mut Receiver<Result<(), BenchmarkError>>,
+    rx_success: &mut Receiver<Result<()>>,
     config: &BenchmarkConfig,
     num_expected_messages: usize,
-) -> Result<(), BenchmarkError> {
+) -> Result<()> {
     for _ in 0..num_expected_messages {
         timeout(config.worker_timeout, rx_success.recv()).await???;
     }
@@ -179,9 +175,9 @@ struct ProducerDriver;
 impl ProducerDriver {
     async fn main_loop(
         rx: Receiver<ControlMessage>,
-        tx: Sender<Result<(), BenchmarkError>>,
+        tx: Sender<Result<()>>,
         mut worker: ProducerWorker,
-    ) -> Result<(), BenchmarkError> {
+    ) -> Result<()> {
         loop {
             match rx.recv().await? {
                 ControlMessage::PrepareForBatch => {
@@ -200,9 +196,9 @@ struct ConsumerDriver;
 impl ConsumerDriver {
     async fn main_loop(
         rx: Receiver<ControlMessage>,
-        tx: Sender<Result<(), BenchmarkError>>,
+        tx: Sender<Result<()>>,
         mut worker: ConsumerWorker,
-    ) -> Result<(), BenchmarkError> {
+    ) -> Result<()> {
         loop {
             match rx.recv().await? {
                 ControlMessage::PrepareForBatch => tx.send(Ok(())).await?,
@@ -218,9 +214,9 @@ struct StatsDriver;
 impl StatsDriver {
     async fn main_loop(
         rx: Receiver<ControlMessage>,
-        tx: Sender<Result<(), BenchmarkError>>,
+        tx: Sender<Result<()>>,
         mut worker: StatsWorker,
-    ) -> Result<(), BenchmarkError> {
+    ) -> Result<()> {
         loop {
             match rx.recv().await? {
                 ControlMessage::PrepareForBatch => {

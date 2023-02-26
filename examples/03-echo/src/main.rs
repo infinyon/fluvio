@@ -89,7 +89,7 @@
 //! ```
 
 use std::time::Duration;
-use fluvio::{FluvioError, Offset, RecordKey};
+use fluvio::{Offset, RecordKey};
 use futures::future::join;
 use async_std::task::spawn;
 use async_std::future::timeout;
@@ -135,7 +135,7 @@ async fn main() {
 }
 
 /// Produces 10 "Hello, Fluvio" events, followed by a "Done!" event
-async fn produce() -> Result<(), FluvioError> {
+async fn produce() -> anyhow::Result<()> {
     let producer = fluvio::producer(TOPIC).await?;
 
     for i in 0..10u32 {
@@ -151,7 +151,7 @@ async fn produce() -> Result<(), FluvioError> {
 }
 
 /// Consumes events until a "Done!" event is read
-async fn consume() -> Result<(), FluvioError> {
+async fn consume() -> anyhow::Result<()> {
     use futures::StreamExt;
 
     let consumer = fluvio::consumer(TOPIC, 0).await?;

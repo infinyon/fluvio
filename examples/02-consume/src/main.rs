@@ -40,7 +40,7 @@ async fn main() {
     }
 }
 
-async fn consume() -> Result<(), fluvio::FluvioError> {
+async fn consume() -> anyhow::Result<()> {
     use futures_lite::StreamExt;
 
     let consumer = fluvio::consumer("simple", 0).await?;
