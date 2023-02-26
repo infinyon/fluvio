@@ -1,7 +1,77 @@
-use std::fmt::Debug;
+//use std::fmt::Debug;
 use std::io::Cursor;
 
 use fluvio_protocol::{Decoder, Encoder, DecodeExt};
+
+
+
+#[derive(Encoder)]
+pub struct SimpleStructE<R>
+{
+    value: R,
+}
+
+type SSByte = SimpleStructE<i8>;
+
+#[test]
+fn test_generic_with_bounds() {
+
+    
+    let record = SimpleStructE {
+        value: 3
+    };
+
+    let mut src = vec![];
+    record.encode(&mut src, 0).expect("encode");
+
+    assert_eq!(src.len(), 1);
+}
+
+/*
+#[derive(Encoder)]
+#[fluvio(trace)]
+pub struct SimpleStructWithTrace<R>
+{
+    value: R,
+}
+
+type SSByteTrace = SimpleStructWithTrace<u8>;
+
+#[test]
+fn test_generic_with_bounds_with_trace() {
+
+    
+    let record = SSByteTrace {
+        value: 3
+    };
+
+    let mut src = vec![];
+    let result = record.encode(&mut src, 0);
+    assert!(result.is_ok());
+    assert_eq!(src.len(), 1);
+}
+
+/* 
+#[derive(Decoder,Default)]
+pub struct SimpleStructD<R>
+{
+    value: R,
+}
+
+type SSByteD = SimpleStructD<u8>;
+*/
+
+/* 
+#[test]
+fn test_decoding_generic() {
+
+    let mut src = vec![];
+    src.push(3);
+    let d = SSByteD::decode_from(&mut Cursor::new(&src), 0).expect("decoded");
+    assert_eq!(d.value,3);
+}
+*/
+
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct GenericRecord<R>
@@ -31,3 +101,4 @@ fn test_generic() {
     assert_eq!(decoded_record.len, 20);
     assert_eq!(decoded_record.value, 25);
 }
+*/

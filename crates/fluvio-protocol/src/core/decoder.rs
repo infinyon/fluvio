@@ -16,13 +16,15 @@ use tracing::trace;
 use super::varint::varint_decode;
 use crate::Version;
 
-// trait for encoding and decoding using Kafka Protocol
+/// Decode itself from a buffer
 pub trait Decoder {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf;
 }
 
+
+/// Create a new type that can be decoded from a buffer
 pub trait DecodeExt: Sized {
     /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
@@ -53,6 +55,7 @@ pub trait DecodeExt: Sized {
     }
 }
 
+/// Implement DecodeExt for any type that implements Default
 impl<S: ?Sized> DecodeExt for S
 where
     S: Default + Decoder,
