@@ -7,6 +7,7 @@ use tracing::trace;
 use bytes::Buf;
 use bytes::BufMut;
 
+use crate::DecodeExt;
 use crate::Decoder;
 use crate::Encoder;
 use crate::Version;
@@ -104,6 +105,7 @@ where
     ) -> Result<ResponseMessage<R::Response>, IoError>
     where
         T: Buf,
+        <R as Request>::Response: DecodeExt,
     {
         ResponseMessage::decode_from(src, version)
     }
@@ -113,7 +115,10 @@ where
         &self,
         file_name: H,
         version: Version,
-    ) -> Result<ResponseMessage<R::Response>, IoError> {
+    ) -> Result<ResponseMessage<R::Response>, IoError>
+    where
+        <R as Request>::Response: DecodeExt,
+    {
         ResponseMessage::decode_from_file(file_name, version)
     }
 

@@ -1,33 +1,82 @@
 use std::cmp::Ord;
 use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::Cursor;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Read;
 use std::marker::PhantomData;
+use std::path::Path;
 
 use bytes::Buf;
 use bytes::BufMut;
+use tracing::debug;
 use tracing::trace;
 
 use super::varint::varint_decode;
 use crate::Version;
 
 // trait for encoding and decoding using Kafka Protocol
-pub trait Decoder: Sized + Default {
+pub trait Decoder  {
+    
+
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: Buf;
+
+}
+
+pub trait DecodeExt: Sized
+ {
+
     /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
-        T: Buf,
-        Self: Default,
+        T: Buf;
+
+    fn decode_from_file<H: AsRef<Path>>(
+        file_name: H,
+        version: Version,
+    ) -> Result<Self, Error> {
+        debug!("decoding from file: {:#?}", file_name.as_ref());
+        let mut f = File::open(file_name)?;
+        let mut buffer: [u8; 1000] = [0; 1000];
+
+        f.read_exact(&mut buffer)?;
+        let data = buffer.to_vec();
+
+        let mut src = Cursor::new(&data);
+
+    
+        let mut size: i32 = 0;
+        size.decode(&mut src, version)?;
+        trace!("decoded response size: {} bytes", size);
+
+        if src.remaining() < size as usize {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                "not enough for response",
+            ));
+        }
+        Self::decode_from(&mut src, version)
+    }
+
+}
+
+impl<S: ?Sized> DecodeExt for S where S: Default + Decoder
+ {
+
+    /// decode Fluvio compliant protocol values from buf
+    fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
+    where
+        T: Buf
     {
+        
         let mut decoder = Self::default();
         decoder.decode(src, version)?;
         Ok(decoder)
     }
 
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: Buf;
 }
 
 pub trait DecoderVarInt {
@@ -109,8 +158,9 @@ where
 
 impl<K, V> Decoder for BTreeMap<K, V>
 where
-    K: Decoder + Ord,
-    V: Decoder,
+    K: Decoder + Ord + Default,
+    V: Decoder + Default,
+
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where

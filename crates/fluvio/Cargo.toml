@@ -55,8 +55,8 @@ fluvio-types = { version = "0.4.0", features = [
     "events",
 ], path = "../fluvio-types" }
 fluvio-sc-schema = { version = "0.17.0", path = "../fluvio-sc-schema", default-features = false }
-fluvio-socket = { path = "../fluvio-socket", version = "0.13.0" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
+fluvio-socket = { path = "../fluvio-socket", version = "0.14.0" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
     "record",
     "api",
 ] }
