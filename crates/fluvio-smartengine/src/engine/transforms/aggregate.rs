@@ -9,7 +9,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleAggregateOutput,
     SmartModuleTransformErrorStatus,
 };
-use crate::{
+use crate::engine::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     SmartModuleInitialData,
     state::WasmState,
@@ -111,14 +111,14 @@ mod test {
         Record,
     };
 
-    use crate::{
+    use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
         metrics::SmartModuleChainMetrics,
     };
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 
-    use crate::fixture::read_wasm_module;
+    use crate::engine::fixture::read_wasm_module;
 
     #[ignore]
     #[test]
@@ -133,7 +133,8 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),

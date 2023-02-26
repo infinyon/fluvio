@@ -12,10 +12,10 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
 };
 
-use crate::error::EngineError;
-use crate::init::SmartModuleInit;
-use crate::{WasmSlice, memory};
-use crate::state::WasmState;
+use super::error::EngineError;
+use super::init::SmartModuleInit;
+use super::{WasmSlice, memory};
+use super::state::WasmState;
 
 pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,

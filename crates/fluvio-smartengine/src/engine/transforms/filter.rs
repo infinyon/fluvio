@@ -8,7 +8,7 @@ mod test {
         Record,
     };
 
-    use crate::{
+    use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
         transforms::simple_transform::FILTER_FN_NAME,
     };
@@ -16,7 +16,7 @@ mod test {
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
 
-    use crate::fixture::read_wasm_module;
+    use crate::engine::fixture::read_wasm_module;
 
     #[ignore]
     #[test]
@@ -31,7 +31,8 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),
@@ -89,7 +90,8 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         let instance = chain.instances().first().expect("first");
 

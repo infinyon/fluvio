@@ -11,7 +11,7 @@ mod instance {
     use anyhow::{Result};
     use wasmtime::AsContextMut;
 
-    use crate::{
+    use crate::engine::{
         instance::{SmartModuleInstanceContext, DowncastableTransform},
         error::EngineError,
         SmartModuleInitialData,
