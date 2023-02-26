@@ -29,7 +29,7 @@ mod common {
     use bytes::Buf;
     use tracing::{debug, trace};
 
-    use crate::{Encoder, Decoder};
+    use crate::{Encoder, Decoder, DecodeExt};
 
     const fn max(a: i16, b: i16) -> i16 {
         if a > b {
@@ -100,6 +100,7 @@ mod common {
         correlation_id: i32,
         client_id: String,
     }
+
 
     impl fmt::Display for RequestHeader {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

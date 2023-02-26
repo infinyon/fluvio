@@ -10,7 +10,7 @@ use fluvio_protocol::{Encoder, Decoder};
 
 use super::Message;
 
-#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone)]
 pub struct Messages<S>
 where
     S: Encoder + Decoder + Debug,
@@ -34,6 +34,7 @@ where
 impl<S> Messages<S>
 where
     S: Encoder + Decoder + Debug,
+    Message<S>: Encoder + Decoder + Debug,
 {
     pub fn new(messages: Vec<Message<S>>) -> Self {
         Self { messages }

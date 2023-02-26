@@ -5,7 +5,7 @@ mod varint;
 mod zerocopy;
 
 pub use self::bytebuf::ByteBuf;
-pub use self::decoder::Decoder;
+pub use self::decoder::{Decoder,DecodeExt};
 pub use self::decoder::DecoderVarInt;
 pub use self::encoder::Encoder;
 pub use self::encoder::EncoderVarInt;
