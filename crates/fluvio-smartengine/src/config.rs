@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams};
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
 const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
 

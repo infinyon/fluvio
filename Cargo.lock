@@ -7680,8 +7680,7 @@ dependencies = [
 [[package]]
 name = "wasmedge-macro"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f159a9a7d3d2301de2fc9cb88ad3459af9e95cbd5a0f57437efccc2b572a027"
+source = "git+https://github.com/WasmEdge/WasmEdge?rev=fe5fe2c#fe5fe2c03dbfe9d8261b1077e1cc55b10480abd9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7690,9 +7689,8 @@ dependencies = [
 
 [[package]]
 name = "wasmedge-sdk"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6b7678a024c25fbe7168dedbca6958b6baf5412a998c697bf40dbf359efc54e"
+version = "0.8.0"
+source = "git+https://github.com/WasmEdge/WasmEdge?rev=fe5fe2c#fe5fe2c03dbfe9d8261b1077e1cc55b10480abd9"
 dependencies = [
  "anyhow",
  "num-derive",
@@ -7706,9 +7704,8 @@ dependencies = [
 
 [[package]]
 name = "wasmedge-sys"
-version = "0.12.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00ab1f78c1d3de17fd0deff054de96e337cf8cf02d13651748bdfa1f1b219369"
+version = "0.12.3"
+source = "git+https://github.com/WasmEdge/WasmEdge?rev=fe5fe2c#fe5fe2c03dbfe9d8261b1077e1cc55b10480abd9"
 dependencies = [
  "bindgen",
  "cmake",
@@ -7725,9 +7722,8 @@ dependencies = [
 
 [[package]]
 name = "wasmedge-types"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3323fe75a4e65476b33a041092aac22a1065a7ba0bfecbedc8135e8efb6c522d"
+version = "0.4.0"
+source = "git+https://github.com/WasmEdge/WasmEdge?rev=fe5fe2c#fe5fe2c03dbfe9d8261b1077e1cc55b10480abd9"
 dependencies = [
  "thiserror",
  "wat",
