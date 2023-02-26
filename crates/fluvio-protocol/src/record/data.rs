@@ -518,7 +518,7 @@ where
 impl<B> Decoder for Record<B>
 where
     Option<B>: Decoder,
-    B: Decoder
+    B: Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where

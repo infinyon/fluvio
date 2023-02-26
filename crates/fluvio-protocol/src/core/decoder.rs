@@ -17,27 +17,19 @@ use super::varint::varint_decode;
 use crate::Version;
 
 // trait for encoding and decoding using Kafka Protocol
-pub trait Decoder  {
-    
-
+pub trait Decoder {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf;
-
 }
 
-pub trait DecodeExt: Sized
- {
-
+pub trait DecodeExt: Sized {
     /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
         T: Buf;
 
-    fn decode_from_file<H: AsRef<Path>>(
-        file_name: H,
-        version: Version,
-    ) -> Result<Self, Error> {
+    fn decode_from_file<H: AsRef<Path>>(file_name: H, version: Version) -> Result<Self, Error> {
         debug!("decoding from file: {:#?}", file_name.as_ref());
         let mut f = File::open(file_name)?;
         let mut buffer: [u8; 1000] = [0; 1000];
@@ -47,7 +39,6 @@ pub trait DecodeExt: Sized
 
         let mut src = Cursor::new(&data);
 
-    
         let mut size: i32 = 0;
         size.decode(&mut src, version)?;
         trace!("decoded response size: {} bytes", size);
@@ -60,23 +51,21 @@ pub trait DecodeExt: Sized
         }
         Self::decode_from(&mut src, version)
     }
-
 }
 
-impl<S: ?Sized> DecodeExt for S where S: Default + Decoder
- {
-
+impl<S: ?Sized> DecodeExt for S
+where
+    S: Default + Decoder,
+{
     /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
-        T: Buf
+        T: Buf,
     {
-        
         let mut decoder = Self::default();
         decoder.decode(src, version)?;
         Ok(decoder)
     }
-
 }
 
 pub trait DecoderVarInt {
@@ -160,7 +149,6 @@ impl<K, V> Decoder for BTreeMap<K, V>
 where
     K: Decoder + Ord + Default,
     V: Decoder + Default,
-
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
