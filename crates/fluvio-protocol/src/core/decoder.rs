@@ -453,6 +453,7 @@ impl DecoderVarInt for Option<Vec<u8>> {
 #[cfg(test)]
 mod test {
 
+    use crate::DecodeExt;
     use crate::Decoder;
     use crate::DecoderVarInt;
     use crate::Version;

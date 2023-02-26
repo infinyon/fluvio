@@ -348,7 +348,7 @@ mod test {
         let mut encode_bytes = Cursor::new(&out);
 
         let res_msg_result: Result<RequestMessage<ApiVersionRequest>, IoError> =
-            Decoder::decode_from(&mut encode_bytes, 0);
+            DecodeExt::decode_from(&mut encode_bytes, 0);
 
         let msg = res_msg_result.unwrap();
         assert_eq!(msg.header.correlation_id(), 5);

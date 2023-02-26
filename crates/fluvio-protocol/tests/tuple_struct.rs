@@ -1,6 +1,7 @@
 use std::io::Cursor;
 use std::io::Error;
 
+use fluvio_protocol::DecodeExt;
 use fluvio_protocol::{Decoder, Encoder};
 
 #[derive(Encoder, Default, Decoder, Debug)]

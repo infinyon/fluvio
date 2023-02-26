@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::io::Cursor;
 
-use fluvio_protocol::{Decoder, Encoder};
+use fluvio_protocol::{Decoder, Encoder, DecodeExt};
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct GenericRecord<R>
