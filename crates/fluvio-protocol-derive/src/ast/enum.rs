@@ -3,12 +3,12 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
 use syn::{
-    Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum,
-    Lit, Meta, NestedMeta, Variant, GenericParam,
+    Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, GenericParam, Generics,
+    Ident, ItemEnum, Lit, Meta, NestedMeta, Variant,
 };
 
-use super::FluvioBound;
 use super::container::ContainerAttributes;
+use super::FluvioBound;
 
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
@@ -33,7 +33,6 @@ impl FluvioEnum {
             generics,
         })
     }
-
 }
 
 pub(crate) enum DiscrimantExpr {

@@ -64,11 +64,9 @@ impl ContainerAttributes {
                         } else if let NestedMeta::Meta(Meta::Path(path)) = kf_attr {
                             if path.is_ident("default") {
                                 cont_attr.default = true;
-                            }
-                            /*  else if path.is_ident("trace") {
+                            } else if path.is_ident("trace") {
                                 cont_attr.trace = true;
-                            */
-                             else if path.is_ident("encode_discriminant") {
+                            } else if path.is_ident("encode_discriminant") {
                                 cont_attr.encode_discriminant = true;
                             } else {
                                 tracing::warn!(

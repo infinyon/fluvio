@@ -7,10 +7,10 @@ use syn::Ident;
 use syn::LitInt;
 use syn::Token;
 
-use crate::ast::FluvioBound;
 use crate::ast::add_bounds;
 use crate::ast::prop::UnnamedProp;
-use crate::ast::r#struct::{FluvioStructProps};
+use crate::ast::r#struct::FluvioStructProps;
+use crate::ast::FluvioBound;
 use crate::ast::{
     container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
     DeriveItem,
@@ -20,9 +20,10 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
         DeriveItem::Struct(kf_struct, attrs) => {
             // TODO: struct level attrs is not used.
-            let field_tokens = generate_struct_fields(&kf_struct.props(), kf_struct.struct_ident());
+            let field_tokens =
+                generate_struct_fields(&kf_struct.props(), kf_struct.struct_ident(), attrs);
             let ident = &kf_struct.struct_ident();
-            let generics = add_bounds(kf_struct.generics().clone(),&attrs,FluvioBound::Decoder);
+            let generics = add_bounds(kf_struct.generics().clone(), &attrs, FluvioBound::Decoder);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
@@ -36,7 +37,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
         }
         DeriveItem::Enum(kf_enum, attrs) => {
             let ident = &kf_enum.enum_ident;
-            let generics = add_bounds(kf_enum.generics.clone(),&attrs,FluvioBound::Decoder);
+            let generics = add_bounds(kf_enum.generics.clone(), &attrs, FluvioBound::Decoder);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             let int_type = if let Some(int_type_name) = &attrs.repr_type_name {
                 format_ident!("{}", int_type_name)
@@ -63,13 +64,14 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
 pub(crate) fn generate_struct_fields(
     props: &FluvioStructProps,
     struct_ident: &Ident,
+    attr: &ContainerAttributes,
 ) -> TokenStream {
     match props {
         FluvioStructProps::Named(named_fields) => {
-            generate_struct_named_fields(named_fields, struct_ident)
+            generate_struct_named_fields(named_fields, struct_ident, attr)
         }
         FluvioStructProps::Unnamed(unnamed_fields) => {
-            generate_struct_unnamed_fields(unnamed_fields, struct_ident)
+            generate_struct_unnamed_fields(unnamed_fields, struct_ident, attr)
         }
     }
 }
@@ -77,6 +79,7 @@ pub(crate) fn generate_struct_fields(
 pub(crate) fn generate_struct_named_fields(
     props: &[NamedProp],
     struct_ident: &Ident,
+    attr: &ContainerAttributes,
 ) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
@@ -103,7 +106,7 @@ pub(crate) fn generate_struct_named_fields(
                 }
             };
 
-            prop.version_check_token_stream(base)
+            prop.version_check_token_stream(base, attr.trace)
         }
     });
     quote! {
@@ -114,6 +117,7 @@ pub(crate) fn generate_struct_named_fields(
 pub(crate) fn generate_struct_unnamed_fields(
     props: &[UnnamedProp],
     struct_ident: &Ident,
+    attrs: &ContainerAttributes,
 ) -> TokenStream {
     let recurse = props.iter().enumerate().map(|(idx, prop)| {
         let field_idx = syn::Index::from(idx);
@@ -140,7 +144,7 @@ pub(crate) fn generate_struct_unnamed_fields(
                 }
             };
 
-            prop.version_check_token_stream(base)
+            prop.version_check_token_stream(base, attrs.trace)
         }
     });
     quote! {
@@ -358,7 +362,7 @@ pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
         DeriveItem::Struct(kf_struct, attrs) => {
             let ident = &kf_struct.struct_ident();
             let field_tokens = generate_default_impls(&kf_struct.props());
-            let generics = add_bounds(kf_struct.generics().clone(),&attrs,FluvioBound::Decoder);
+            let generics = add_bounds(kf_struct.generics().clone(), &attrs, FluvioBound::Decoder);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             quote! {
                 impl #impl_generics Default for #ident #ty_generics #where_clause {

@@ -3,11 +3,8 @@ use std::io::Cursor;
 
 use fluvio_protocol::{Decoder, Encoder, DecodeExt};
 
-
-
 #[derive(Encoder)]
-pub struct SimpleStructE<R>
-{
+pub struct SimpleStructE<R> {
     value: R,
 }
 
@@ -15,11 +12,7 @@ type SSByte = SimpleStructE<i8>;
 
 #[test]
 fn test_generic_with_bounds() {
-
-    
-    let record = SimpleStructE {
-        value: 3
-    };
+    let record = SSByte { value: 3 };
 
     let mut src = vec![];
     record.encode(&mut src, 0).expect("encode");
@@ -40,7 +33,7 @@ type SSByteTrace = SimpleStructWithTrace<u8>;
 #[test]
 fn test_generic_with_bounds_with_trace() {
 
-    
+
     let record = SSByteTrace {
         value: 3
     };
@@ -51,7 +44,7 @@ fn test_generic_with_bounds_with_trace() {
     assert_eq!(src.len(), 1);
 }
 
-/* 
+/*
 #[derive(Decoder,Default)]
 pub struct SimpleStructD<R>
 {
@@ -61,7 +54,7 @@ pub struct SimpleStructD<R>
 type SSByteD = SimpleStructD<u8>;
 */
 
-/* 
+/*
 #[test]
 fn test_decoding_generic() {
 
