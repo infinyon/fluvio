@@ -101,7 +101,6 @@ mod common {
         client_id: String,
     }
 
-
     impl fmt::Display for RequestHeader {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "api: {} client: {}", self.api_key, self.client_id)

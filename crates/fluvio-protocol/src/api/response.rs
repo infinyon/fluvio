@@ -1,4 +1,3 @@
-
 use std::io::Error as IoError;
 
 use tracing::trace;
@@ -28,11 +27,13 @@ impl<P> ResponseMessage<P> {
     }
 }
 
-impl <P> DecodeExt for ResponseMessage<P> where P: DecodeExt
+impl<P> DecodeExt for ResponseMessage<P>
+where
+    P: DecodeExt,
 {
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, IoError>
     where
-        T: Buf
+        T: Buf,
     {
         let mut correlation_id: i32 = 0;
         correlation_id.decode(src, version)?;
@@ -44,8 +45,6 @@ impl <P> DecodeExt for ResponseMessage<P> where P: DecodeExt
             response,
         })
     }
-
-    
 }
 
 impl<P> Encoder for ResponseMessage<P>
