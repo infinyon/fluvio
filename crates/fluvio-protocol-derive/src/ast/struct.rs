@@ -1,5 +1,7 @@
 use crate::ast::prop::{NamedProp, UnnamedProp};
-use syn::{Fields, Generics, Ident, ItemStruct};
+use syn::{Fields, Generics, Ident, ItemStruct, GenericParam, parse_quote};
+
+use super::{container::ContainerAttributes, FluvioBound};
 
 pub(crate) enum FluvioStruct {
     Named(FluvioNamedStruct),
@@ -9,14 +11,13 @@ pub(crate) enum FluvioStruct {
 pub(crate) struct FluvioNamedStruct {
     pub struct_ident: Ident,
     pub props: Vec<NamedProp>,
-    pub generics: Generics,
+    generics: Generics,
 }
 
 impl FluvioStruct {
     pub fn from_ast(item: &ItemStruct) -> syn::Result<Self> {
         let struct_ident = item.ident.clone();
         let generics = item.generics.clone();
-
         let fluvio_struct = match &item.fields {
             Fields::Named(fields) => {
                 let mut props = vec![];
@@ -72,7 +73,11 @@ impl FluvioStruct {
             FluvioStruct::Tuple(inner) => FluvioStructProps::Unnamed(inner.props.clone()),
         }
     }
+
 }
+
+
+
 
 pub(crate) enum FluvioStructProps {
     Named(Vec<NamedProp>),
