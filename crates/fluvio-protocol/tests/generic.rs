@@ -1,7 +1,7 @@
 //use std::fmt::Debug;
 use std::io::Cursor;
 
-use fluvio_protocol::{Decoder, Encoder, DecodeExt};
+use fluvio_protocol::{Decoder, Encoder, DecodeFrom};
 
 #[derive(Encoder)]
 pub struct SimpleStructE<R> {

@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 
 use educe::Educe;
 use fluvio_protocol::record::RawRecords;
-use fluvio_protocol::{Encoder, Decoder, DecodeExt};
+use fluvio_protocol::{Encoder, Decoder, DecodeFrom};
 use fluvio_protocol::api::Request;
 
 use fluvio_protocol::record::RecordSet;
@@ -75,7 +75,10 @@ pub struct StreamFetchRequest<R> {
     pub data: PhantomData<R>,
 }
 
-impl<R> Request for StreamFetchRequest<R> {
+impl<R> Request for StreamFetchRequest<R>
+where
+    R: Debug + Decoder + Encoder
+{
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
     const DEFAULT_API_VERSION: i16 = CHAIN_SMARTMODULE_API;
     type Response = StreamFetchResponse<R>;

@@ -5,7 +5,7 @@ use std::time::Duration;
 use bytes::{Buf, BufMut};
 
 use fluvio_protocol::record::RawRecords;
-use fluvio_protocol::{Encoder, DecodeExt};
+use fluvio_protocol::{Encoder, DecodeFrom};
 use fluvio_protocol::Decoder;
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::Version;
@@ -41,7 +41,7 @@ pub struct ProduceRequest<R> {
 
 impl<R> Request for ProduceRequest<R>
 where
-    R: Debug + Decoder + Encoder + DecodeExt,
+    R: Debug + Decoder + DecodeFrom + Encoder,
 {
     const API_KEY: u16 = 0;
 
@@ -53,7 +53,8 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct TopicProduceData<R> {
+pub struct TopicProduceData<R>
+{
     /// The topic name.
     pub name: String,
 

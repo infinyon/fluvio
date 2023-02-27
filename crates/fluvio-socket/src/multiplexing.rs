@@ -31,7 +31,7 @@ use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::{Decoder, DecodeExt};
+use fluvio_protocol::{Decoder, DecodeFrom};
 
 use crate::SocketError;
 use crate::ExclusiveFlvSink;
@@ -128,7 +128,7 @@ impl MultiplexerSocket {
         mut req_msg: RequestMessage<R>,
     ) -> Result<R::Response, SocketError>
     where
-        R: Request,
+        R: Request
     {
         use once_cell::sync::Lazy;
 
@@ -292,7 +292,10 @@ impl<R> PinnedDrop for AsyncResponse<R> {
     }
 }
 
-impl<R: Request> Stream for AsyncResponse<R> {
+impl<R: Request> Stream for AsyncResponse<R>
+    where
+        R::Response: Decoder + DecodeFrom
+ {
     type Item = Result<R::Response, SocketError>;
 
     #[instrument(
