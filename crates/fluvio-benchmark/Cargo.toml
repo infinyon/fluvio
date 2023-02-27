@@ -20,7 +20,7 @@ madato = "0.5.3"
 tracing = {workspace = true}
 rand = "0.8.5"
 serde = { version = "1.0.103", features = ['derive'] }
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 statrs = "0.16.0"
 thiserror = { workspace = true }
 anyhow = { workspace = true }

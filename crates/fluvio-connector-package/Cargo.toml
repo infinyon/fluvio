@@ -13,7 +13,7 @@ default = ["toml"]
 [dependencies]
 bytesize = "1.1.0"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde_yaml = "0.8.18"
+serde_yaml = "0.9.17"
 humantime-serde = "1.1.1"
 toml = { workspace = true , default-features = false, optional = true, features = ["preserve_order"] }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata/", default-features = false, features = [

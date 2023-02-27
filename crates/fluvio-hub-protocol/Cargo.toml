@@ -14,7 +14,7 @@ const_format = "0.2"
 dirs = "4.0.0"
 serde = { version="1.0", features=["derive"] }
 serde_json = "1.0"
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 toml = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }

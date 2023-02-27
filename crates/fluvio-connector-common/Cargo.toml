@@ -21,7 +21,7 @@ async-net = { version = "1.7", default-features = false }
 futures-util = { version = "0.3", features = ["sink"], default-features = false }
 serde = { version = "1", features = ["derive", "rc"], default-features = false }
 serde_json = { version = "1" }
-serde_yaml = { version = "0.8" }
+serde_yaml = { version = "0.9" }
 
 fluvio = { path = "../fluvio/", features = ["smartengine"]}
 fluvio-connector-package = { path = "../fluvio-connector-package/" }
