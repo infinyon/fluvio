@@ -22,7 +22,6 @@ futures-util = { version = "0.3", features = ["sink"], default-features = false 
 serde = { version = "1", features = ["derive", "rc"], default-features = false }
 serde_json = { version = "1" }
 serde_yaml = { version = "0.8" }
-once_cell = { version = "1.17" }
 
 fluvio = { path = "../fluvio/", features = ["smartengine"]}
 fluvio-connector-package = { path = "../fluvio-connector-package/" }

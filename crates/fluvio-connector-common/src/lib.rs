@@ -3,7 +3,8 @@ pub mod smartmodule;
 pub mod monitoring;
 pub mod consumer;
 pub mod config;
-pub mod secret;
+
+pub use fluvio_connector_package::secret;
 
 #[cfg(feature = "derive")]
 pub use fluvio_connector_derive::connector;

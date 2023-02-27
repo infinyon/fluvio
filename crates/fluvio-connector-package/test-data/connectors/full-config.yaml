@@ -4,23 +4,6 @@ meta:
   type: mqtt
   topic: my-mqtt
   create_topic: false
-  parameters:
-    param_1: "mqtt.hsl.fi"
-    param_2:
-      - "foo:baz"
-      - "bar"
-    param_3:
-      foo: bar
-      bar: 10.0
-      linger.ms: 10
-    param_4: true
-    param_5: 10.0
-    param_6:
-    - -10
-    - -10.0
-
-  secrets:
-    foo: bar
   producer:
     linger: 1ms
     batch-size: '44.0 MB'

@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 
-use crate::config::ConnectorConfig;
+use crate::{config::ConnectorConfig, secret::detect_secrets};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ConnectorMetadata {
@@ -270,11 +270,11 @@ impl ConnectorMetadata {
             serde_yaml::from_reader(reader).context("unable to parse config into YAML format")?;
         validate_custom_config(&self.custom_config, &value)
             .context("custom config validation failed")?;
+        validate_secrets(&self.secrets, &value)?;
         let config = ConnectorConfig::from_value(value)
             .context("unable to parse common connector config")?;
         validate_direction(&self.direction, &config)?;
         validate_deployment(&self.deployment, &config)?;
-        validate_secrets(&self.secrets, &config)?;
         Ok(config)
     }
 }
@@ -313,16 +313,17 @@ fn validate_deployment(deployment: &Deployment, config: &ConnectorConfig) -> any
     Ok(())
 }
 
-fn validate_secrets(secrets: &Secrets, config: &ConnectorConfig) -> anyhow::Result<()> {
+fn validate_secrets(secrets: &Secrets, config: &serde_yaml::Value) -> anyhow::Result<()> {
+    let cfg_secrets = detect_secrets(config);
     for meta_secret in secrets.keys() {
-        if !config.meta.secrets.contains_key(meta_secret) {
+        if !cfg_secrets.contains(meta_secret.as_str()) {
             return Err(anyhow!(
                 "missing required secret '{}' in config",
                 meta_secret
             ));
         }
     }
-    for cfg_secret in config.meta.secrets.keys() {
+    for cfg_secret in cfg_secrets {
         if !secrets.contains_key(cfg_secret) {
             return Err(anyhow!(
                 "config secret '{}' is not defined in package metadata",
@@ -493,13 +494,13 @@ mod tests_toml {
 }
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, str::FromStr, io::Cursor};
+    use std::{collections::BTreeMap, io::Cursor};
 
     use openapiv3::ObjectType;
 
     use crate::{
         metadata::{Secret, SecretType},
-        config::{SecretString, MetaConfig},
+        config::MetaConfig,
     };
 
     use super::*;
@@ -568,7 +569,7 @@ mod tests {
     #[test]
     fn test_validate_secrets_missing() {
         //given
-        let config = ConnectorConfig::default();
+        let config = Default::default();
         let meta_secrets = Secrets::from(BTreeMap::from([(
             "secret_name".into(),
             Secret {
@@ -590,17 +591,7 @@ mod tests {
     #[test]
     fn test_validate_secrets_undefined() {
         //given
-        let config = ConnectorConfig {
-            meta: MetaConfig {
-                secrets: BTreeMap::from([(
-                    "secret_name".into(),
-                    SecretString::from_str("").unwrap(),
-                )]),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
+        let config = serde_yaml::from_str("config:\n  secret:\n    name: secret_name").unwrap();
         //when
         let res = validate_secrets(&Secrets::default(), &config);
 
@@ -843,10 +834,11 @@ mod tests {
                     type: http-source
                     version: latest
                     param-name: param-value
-                    secrets:
-                        secret_name: ""
                 custom:
                     prop1: 1
+                    api_key:
+                      secret:
+                        name: secret_name
                 "#;
 
         let metadata = ConnectorMetadata {
