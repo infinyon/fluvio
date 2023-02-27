@@ -51,7 +51,7 @@ impl FluvioStream {
         &mut self,
     ) -> impl Stream<Item = Result<RequestMessage<R>, SocketError>> + '_
     where
-        RequestMessage<R>: FluvioDecoder + Debug,
+        RequestMessage<R>: FluvioDecoder + Debug + DecodeExt,
     {
         (&mut self.inner).map(|req_bytes_r| match req_bytes_r {
             Ok(req_bytes) => {
@@ -69,7 +69,7 @@ impl FluvioStream {
     /// as server, get next request from client
     pub async fn next_request_item<R>(&mut self) -> Option<Result<RequestMessage<R>, SocketError>>
     where
-        RequestMessage<R>: FluvioDecoder + Debug,
+        RequestMessage<R>: FluvioDecoder + Debug + DecodeExt,
     {
         let mut stream = self.request_stream();
         stream.next().await

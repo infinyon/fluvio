@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use fluvio_protocol::api::Request;
-use fluvio_protocol::{Decoder, Encoder};
+use fluvio_protocol::{Decoder, Encoder, DecodeExt};
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::record::RecordSet;
 use fluvio_types::PartitionId;
@@ -14,10 +14,7 @@ use super::FetchResponse;
 pub type DefaultFetchRequest = FetchRequest<RecordSet>;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct FetchRequest<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct FetchRequest<R> {
     /// The maximum time in milliseconds to wait for the response.
     pub max_wait: i32,
 
@@ -47,10 +44,7 @@ where
     pub data: PhantomData<R>,
 }
 
-impl<R> Request for FetchRequest<R>
-where
-    R: Debug + Decoder + Encoder,
-{
+impl<R> Request for FetchRequest<R> {
     const API_KEY: u16 = 1;
 
     const MIN_API_VERSION: i16 = 0;

@@ -135,7 +135,7 @@ where
 
 impl<R> Decoder for RequestMessage<R>
 where
-    R: Request,
+    R: Request + DecodeExt + Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
     where
@@ -149,7 +149,7 @@ where
 
 impl<R> Encoder for RequestMessage<R>
 where
-    R: Request,
+    R: Request + Encoder + std::fmt::Debug,
 {
     fn write_size(&self, version: Version) -> usize {
         self.header.write_size(version) + self.request.write_size(self.header.api_version())

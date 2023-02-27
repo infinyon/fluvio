@@ -25,15 +25,13 @@ impl std::fmt::Debug for StoreValue {
     }
 }
 
-pub trait FileWrite: Encoder {
+pub trait FileWrite {
     fn file_encode(
         &self,
         src: &mut BytesMut,
-        _data: &mut Vec<StoreValue>,
+        data: &mut Vec<StoreValue>,
         version: Version,
-    ) -> Result<(), IoError> {
-        self.encode(src, version)
-    }
+    ) -> Result<(), IoError>;
 }
 
 impl<M> FileWrite for Vec<M>
@@ -59,7 +57,8 @@ where
 /// includes the length and can encode async file slice
 impl<P> FileWrite for ResponseMessage<P>
 where
-    P: FileWrite + Default,
+    ResponseMessage<P>: Encoder,
+    P: FileWrite,
 {
     fn file_encode(
         &self,
@@ -89,7 +88,8 @@ where
 /// includes the length and can encode async file slice
 impl<R> FileWrite for RequestMessage<R>
 where
-    R: FileWrite + Default + Request,
+    RequestMessage<R>: Encoder,
+    R: FileWrite,
 {
     fn file_encode(
         &self,

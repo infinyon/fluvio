@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 
 use educe::Educe;
 use fluvio_protocol::record::RawRecords;
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, DecodeExt};
 use fluvio_protocol::api::Request;
 
 use fluvio_protocol::record::RecordSet;
@@ -50,10 +50,7 @@ pub const CHAIN_SMARTMODULE_API: i16 = 18;
 #[allow(deprecated)]
 #[derive(Decoder, Encoder, Default, Educe)]
 #[educe(Debug)]
-pub struct StreamFetchRequest<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct StreamFetchRequest<R> {
     pub topic: String,
     pub partition: PartitionId,
     pub fetch_offset: i64,
@@ -78,10 +75,7 @@ where
     pub data: PhantomData<R>,
 }
 
-impl<R> Request for StreamFetchRequest<R>
-where
-    R: Debug + Decoder + Encoder,
-{
+impl<R> Request for StreamFetchRequest<R> {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
     const DEFAULT_API_VERSION: i16 = CHAIN_SMARTMODULE_API;
     type Response = StreamFetchResponse<R>;
@@ -95,10 +89,7 @@ pub struct DerivedStreamInvocation {
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct StreamFetchResponse<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct StreamFetchResponse<R> {
     pub topic: String,
     pub stream_id: u32,
     pub partition: FetchablePartitionResponse<R>,
