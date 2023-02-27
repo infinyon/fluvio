@@ -16,12 +16,14 @@ pub struct Messages<S> {
     pub messages: Vec<Message<S>>,
 }
 
-impl <S> Decoder for Messages<S> 
-where Message<S>: DecodeFrom + Decoder
+impl<S> Decoder for Messages<S>
+where
+    Message<S>: DecodeFrom + Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
     where
-        T: Buf {
+        T: Buf,
+    {
         let message = Vec::<Message<S>>::decode_from(src, version)?;
         self.messages = message;
         Ok(())

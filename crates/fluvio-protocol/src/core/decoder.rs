@@ -104,7 +104,6 @@ where
     }
 }
 
-
 impl<M> Decoder for Option<M>
 where
     M: Decoder + DecodeFrom,

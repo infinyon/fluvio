@@ -53,8 +53,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct TopicProduceData<R>
-{
+pub struct TopicProduceData<R> {
     /// The topic name.
     pub name: String,
 

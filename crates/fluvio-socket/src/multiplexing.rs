@@ -128,7 +128,7 @@ impl MultiplexerSocket {
         mut req_msg: RequestMessage<R>,
     ) -> Result<R::Response, SocketError>
     where
-        R: Request
+        R: Request,
     {
         use once_cell::sync::Lazy;
 
@@ -293,9 +293,9 @@ impl<R> PinnedDrop for AsyncResponse<R> {
 }
 
 impl<R: Request> Stream for AsyncResponse<R>
-    where
-        R::Response: Decoder + DecodeFrom
- {
+where
+    R::Response: Decoder + DecodeFrom,
+{
     type Item = Result<R::Response, SocketError>;
 
     #[instrument(

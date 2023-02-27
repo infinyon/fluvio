@@ -174,11 +174,9 @@ fn parse_struct_unnamed_props_encoding(
     attr: &ContainerAttributes,
 ) -> TokenStream {
     let recurse = props.iter().enumerate().map(|(idx, prop)| {
-        let field_idx = syn::Index::from(idx);
-        
-         
-        if prop.attrs.varint {
 
+        let field_idx = syn::Index::from(idx);
+        if prop.attrs.varint {
             let trace_st = if attr.trace {
                 quote! {tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);}
             } else {

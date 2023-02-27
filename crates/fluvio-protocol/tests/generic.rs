@@ -84,7 +84,6 @@ pub struct SimpleVecD<R> {
 
 type SVD8 = SimpleVecD<i8>;
 
-
 #[test]
 fn test_decoding_generic_with_vec() {
     let mut src = vec![];
@@ -92,7 +91,6 @@ fn test_decoding_generic_with_vec() {
     let d = SVD8::decode_from(&mut Cursor::new(&src), 0).expect("decoded");
     //assert_eq!(d.value, 3);
 }
-
 
 /*
 #[derive(Encoder, Decoder, Default, Debug)]

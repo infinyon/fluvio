@@ -77,7 +77,7 @@ pub struct StreamFetchRequest<R> {
 
 impl<R> Request for StreamFetchRequest<R>
 where
-    R: Debug + Decoder + Encoder
+    R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
     const DEFAULT_API_VERSION: i16 = CHAIN_SMARTMODULE_API;
