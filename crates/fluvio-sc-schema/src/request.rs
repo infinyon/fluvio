@@ -8,6 +8,7 @@ use std::convert::{TryInto};
 use std::io::Error as IoError;
 use std::fmt::Debug;
 
+use fluvio_protocol::DecodeFrom;
 use tracing::{debug};
 
 use fluvio_protocol::bytes::{Buf};
