@@ -6,6 +6,7 @@ use std::io::ErrorKind;
 
 use fluvio_future::net::ConnectionFd;
 use fluvio_future::net::{BoxReadConnection};
+use fluvio_protocol::DecodeExt;
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;

@@ -59,6 +59,10 @@ pub(crate) fn add_bounds(
                     type_param
                         .bounds
                         .push(parse_quote!(fluvio_protocol::Decoder));
+
+                    type_param
+                        .bounds
+                        .push(parse_quote!(fluvio_protocol::DecodeExt));
                 }
             }
             if attr.trace {

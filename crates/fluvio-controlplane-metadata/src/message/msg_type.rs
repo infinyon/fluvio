@@ -29,16 +29,12 @@ impl ::std::default::Default for MsgType {
 
 #[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Message<C>
-where
-    C: Encoder + Decoder + Debug,
 {
     pub header: MsgType,
     pub content: C,
 }
 
-impl<C> fmt::Display for Message<C>
-where
-    C: Encoder + Decoder + Debug + Display,
+impl<C> fmt::Display for Message<C> where C: Display
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:#?} {}", self.header, self.content)
@@ -46,8 +42,6 @@ where
 }
 
 impl<C> Message<C>
-where
-    C: Encoder + Decoder + Debug,
 {
     pub fn new(typ: MsgType, content: C) -> Self {
         Message {
@@ -81,7 +75,6 @@ where
     S: Spec,
     S::Status: PartialEq,
     C: MetadataItem,
-    D: Encoder + Decoder + Debug,
     D: From<MetadataStoreObject<S, C>>,
 {
     fn from(change: LSChange<S, C>) -> Self {
