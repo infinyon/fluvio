@@ -94,25 +94,16 @@ where
             return Ok(());
         }
 
-        decode_vec(len, self, src, version)?;
+        for _ in 0..len {
+            let mut value = <M>::decode_from(src, version)?;
+            value.decode(src, version)?;
+            self.push(value);
+        }
 
         Ok(())
     }
 }
 
-fn decode_vec<T, M>(len: i32, item: &mut Vec<M>, src: &mut T, version: Version) -> Result<(), Error>
-where
-    T: Buf,
-    M: Decoder + DecodeFrom
-{
-    for _ in 0..len {
-        let mut value = <M>::decode_from(src, version)?;
-        value.decode(src, version)?;
-        item.push(value);
-    }
-
-    Ok(())
-}
 
 impl<M> Decoder for Option<M>
 where
