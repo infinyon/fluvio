@@ -6,7 +6,7 @@
 use std::fmt::{self, Display};
 use std::fmt::Debug;
 
-use fluvio_protocol::{Encoder, Decoder, DecodeExt};
+use fluvio_protocol::{Encoder, Decoder, DecodeFrom};
 
 use super::Message;
 

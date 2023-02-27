@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, fmt::Display};
 use std::fmt;
 use std::io::Cursor;
 
-use fluvio_protocol::DecodeExt;
+use fluvio_protocol::DecodeFrom;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::{Encoder, Decoder, record::Record};
 

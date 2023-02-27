@@ -16,15 +16,15 @@ use tracing::trace;
 use super::varint::varint_decode;
 use crate::Version;
 
-/// Decode itself from a buffer
+/// Decode fields from a buffer
 pub trait Decoder {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf;
 }
 
-/// Create a new type that can be decoded from a buffer
-pub trait DecodeExt: Sized {
+/// Decode Self from a buffer
+pub trait DecodeFrom: Sized {
     /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
@@ -55,7 +55,7 @@ pub trait DecodeExt: Sized {
 }
 
 /// Implement DecodeExt for any type that implements Default
-impl<S: ?Sized> DecodeExt for S
+impl<S: ?Sized> DecodeFrom for S
 where
     S: Default + Decoder,
 {
@@ -78,7 +78,7 @@ pub trait DecoderVarInt {
 
 impl<M> Decoder for Vec<M>
 where
-    M: Decoder + DecodeExt,
+    M: Decoder + DecodeFrom,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -103,7 +103,7 @@ where
 fn decode_vec<T, M>(len: i32, item: &mut Vec<M>, src: &mut T, version: Version) -> Result<(), Error>
 where
     T: Buf,
-    M: Decoder + DecodeExt,
+    M: Decoder + DecodeFrom
 {
     for _ in 0..len {
         let mut value = <M>::decode_from(src, version)?;
@@ -116,7 +116,7 @@ where
 
 impl<M> Decoder for Option<M>
 where
-    M: Decoder + DecodeExt,
+    M: Decoder + DecodeFrom,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -146,8 +146,8 @@ impl<M> Decoder for PhantomData<M> {
 
 impl<K, V> Decoder for BTreeMap<K, V>
 where
-    K: Decoder + Ord + DecodeExt,
-    V: Decoder + DecodeExt,
+    K: Decoder + Ord + DecodeFrom,
+    V: Decoder + DecodeFrom,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where

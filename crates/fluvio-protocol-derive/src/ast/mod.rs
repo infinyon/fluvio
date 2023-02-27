@@ -56,13 +56,17 @@ pub(crate) fn add_bounds(
                         .push(parse_quote!(fluvio_protocol::Encoder));
                 }
                 FluvioBound::Decoder => {
+                    /*
                     type_param
                         .bounds
                         .push(parse_quote!(fluvio_protocol::Decoder));
+                    */
 
+                    // default bounds is DecodeFrom
+                    // need to add DecodeExt to construct itself
                     type_param
                         .bounds
-                        .push(parse_quote!(fluvio_protocol::DecodeExt));
+                        .push(parse_quote!(fluvio_protocol::DecodeFrom));
                 }
             }
             if attr.trace {
