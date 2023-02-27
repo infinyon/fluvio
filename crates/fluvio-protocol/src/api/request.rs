@@ -7,7 +7,7 @@ use tracing::trace;
 use bytes::Buf;
 use bytes::BufMut;
 
-use crate::DecodeExt;
+use crate::DecodeFrom;
 use crate::Decoder;
 use crate::Encoder;
 use crate::Version;
@@ -105,7 +105,7 @@ where
     ) -> Result<ResponseMessage<R::Response>, IoError>
     where
         T: Buf,
-        <R as Request>::Response: DecodeExt,
+        <R as Request>::Response: DecodeFrom,
     {
         ResponseMessage::decode_from(src, version)
     }
@@ -117,7 +117,7 @@ where
         version: Version,
     ) -> Result<ResponseMessage<R::Response>, IoError>
     where
-        <R as Request>::Response: DecodeExt,
+        <R as Request>::Response: DecodeFrom,
     {
         ResponseMessage::decode_from_file(file_name, version)
     }
@@ -135,7 +135,7 @@ where
 
 impl<R> Decoder for RequestMessage<R>
 where
-    R: Request + DecodeExt + Decoder,
+    R: Request + DecodeFrom + Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
     where
@@ -149,7 +149,7 @@ where
 
 impl<R> Encoder for RequestMessage<R>
 where
-    R: Request + Encoder + std::fmt::Debug,
+    R: Request,
 {
     fn write_size(&self, version: Version) -> usize {
         self.header.write_size(version) + self.request.write_size(self.header.api_version())

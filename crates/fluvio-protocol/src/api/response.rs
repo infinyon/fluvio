@@ -3,7 +3,7 @@ use std::io::Error as IoError;
 use tracing::trace;
 
 use bytes::{Buf, BufMut};
-use crate::DecodeExt;
+use crate::DecodeFrom;
 use crate::api::RequestHeader;
 use crate::{Decoder, Encoder, Version};
 
@@ -27,9 +27,9 @@ impl<P> ResponseMessage<P> {
     }
 }
 
-impl<P> DecodeExt for ResponseMessage<P>
+impl<P> DecodeFrom for ResponseMessage<P>
 where
-    P: DecodeExt,
+    P: DecodeFrom,
 {
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, IoError>
     where

@@ -29,7 +29,7 @@ mod common {
     use bytes::Buf;
     use tracing::{debug, trace};
 
-    use crate::{Encoder, Decoder, DecodeExt};
+    use crate::{Encoder, Decoder, DecodeFrom};
 
     const fn max(a: i16, b: i16) -> i16 {
         if a > b {
@@ -39,18 +39,18 @@ mod common {
         }
     }
 
-    pub trait Request {
+    pub trait Request: Encoder + Decoder + Debug {
         const API_KEY: u16;
 
         const DEFAULT_API_VERSION: i16 = 0;
         const MIN_API_VERSION: i16 = max(Self::DEFAULT_API_VERSION - 1, 0); // by default, only suport last version
         const MAX_API_VERSION: i16 = Self::DEFAULT_API_VERSION;
 
-        type Response;
+        type Response: Encoder + Decoder + Debug;
     }
 
     pub trait ApiMessage: Sized + Default {
-        type ApiKey: Decoder + DecodeExt + Debug;
+        type ApiKey: Decoder + DecodeFrom + Debug;
 
         fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
         where

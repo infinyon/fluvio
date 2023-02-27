@@ -29,7 +29,7 @@ pub mod fixture;
 pub mod store;
 
 pub use self::core::ByteBuf;
-pub use self::core::{Decoder, DecodeExt};
+pub use self::core::{Decoder, DecodeFrom};
 pub use self::core::DecoderVarInt;
 pub use self::core::Encoder;
 pub use self::core::EncoderVarInt;

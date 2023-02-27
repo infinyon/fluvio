@@ -614,6 +614,7 @@ mod test {
     use std::io::Cursor;
     use std::io::Error as IoError;
 
+    use crate::DecodeExt;
     use crate::core::Decoder;
     use crate::core::Encoder;
     use crate::record::Record;
