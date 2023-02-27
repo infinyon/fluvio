@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use fluvio_protocol::api::Request;
-use fluvio_protocol::{Decoder, Encoder, DecodeExt};
+use fluvio_protocol::{Decoder, Encoder, DecodeFrom};
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::record::RecordSet;
 use fluvio_types::PartitionId;
@@ -44,7 +44,10 @@ pub struct FetchRequest<R> {
     pub data: PhantomData<R>,
 }
 
-impl<R> Request for FetchRequest<R> {
+impl<R> Request for FetchRequest<R>
+where
+    R: Debug + Decoder + Encoder + DecodeFrom,
+{
     const API_KEY: u16 = 1;
 
     const MIN_API_VERSION: i16 = 0;

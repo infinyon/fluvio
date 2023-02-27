@@ -11,7 +11,7 @@ pub use crate::api_decode;
 #[macro_export]
 macro_rules! api_decode {
     ($api:ident,$req:ident,$src:expr,$header:expr) => {{
-        use fluvio_protocol::{Decoder, DecodeExt};
+        use fluvio_protocol::{Decoder, DecodeFrom};
         let request = $req::decode_from($src, $header.api_version())?;
         Ok($api::$req(RequestMessage::new($header, request)))
     }};
@@ -39,14 +39,14 @@ mod common {
         }
     }
 
-    pub trait Request: Encoder + Decoder + Debug {
+    pub trait Request: Encoder + Decoder + DecodeFrom + Debug {
         const API_KEY: u16;
 
         const DEFAULT_API_VERSION: i16 = 0;
         const MIN_API_VERSION: i16 = max(Self::DEFAULT_API_VERSION - 1, 0); // by default, only suport last version
         const MAX_API_VERSION: i16 = Self::DEFAULT_API_VERSION;
 
-        type Response: Encoder + Decoder + Debug;
+        type Response: Encoder + Decoder + DecodeFrom + Debug;
     }
 
     pub trait ApiMessage: Sized + Default {

@@ -6,13 +6,26 @@
 use std::fmt::{self, Display};
 use std::fmt::Debug;
 
-use fluvio_protocol::{Encoder, Decoder, DecodeFrom};
+use bytes::Buf;
+use fluvio_protocol::{Encoder, Decoder, DecodeFrom, Version};
 
 use super::Message;
 
-#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
+#[derive(Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Messages<S> {
     pub messages: Vec<Message<S>>,
+}
+
+impl <S> Decoder for Messages<S> 
+where Message<S>: DecodeFrom + Decoder
+{
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
+    where
+        T: Buf {
+        let message = Vec::<Message<S>>::decode_from(src, version)?;
+        self.messages = message;
+        Ok(())
+    }
 }
 
 impl<S> fmt::Display for Messages<S>

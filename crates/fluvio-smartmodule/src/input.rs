@@ -87,7 +87,7 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
 
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        DecodeExt::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
+        DecodeFrom::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
     }
 }
 
