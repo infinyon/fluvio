@@ -123,7 +123,7 @@ pub fn detect_secrets(config: &Value) -> HashSet<&str> {
 
 /// Find secrets appearances inside the raw config string and return a set of secret names.
 /// For example, for this input string:
-/// ```
+/// ```yaml
 /// any_name:
 ///   secret:
 ///     name: SECRET_NAME
