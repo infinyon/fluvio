@@ -78,7 +78,7 @@ pub trait DecoderVarInt {
 
 impl<M> Decoder for Vec<M>
 where
-    M: Decoder + DecodeExt
+    M: Decoder + DecodeExt,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -106,7 +106,7 @@ where
     M: Decoder + DecodeExt,
 {
     for _ in 0..len {
-        let mut value = <M>::decode_from(src,version)?;
+        let mut value = <M>::decode_from(src, version)?;
         value.decode(src, version)?;
         item.push(value);
     }
@@ -125,7 +125,7 @@ where
         let mut some = false;
         some.decode(src, version)?;
         if some {
-            let mut value = <M>::decode_from(src,version)?;
+            let mut value = <M>::decode_from(src, version)?;
             value.decode(src, version)?;
             *self = Some(value)
         } else {
@@ -135,8 +135,7 @@ where
     }
 }
 
-impl<M> Decoder for PhantomData<M>
-{
+impl<M> Decoder for PhantomData<M> {
     fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,
@@ -159,9 +158,9 @@ where
 
         let mut map: BTreeMap<K, V> = BTreeMap::new();
         for _i in 0..len {
-            let mut key = K::decode_from(src,version)?;
+            let mut key = K::decode_from(src, version)?;
             key.decode(src, version)?;
-            let mut value = V::decode_from(src,version)?;
+            let mut value = V::decode_from(src, version)?;
             value.decode(src, version)?;
             map.insert(key, value);
         }

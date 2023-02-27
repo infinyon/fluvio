@@ -20,14 +20,12 @@ fn test_generic_with_bounds() {
     assert_eq!(src.len(), 1);
 }
 
-
 #[derive(Encoder)]
 pub struct SimpleVec<R> {
     value: Vec<R>,
 }
 
 type SV8 = SimpleVec<i8>;
-
 
 #[test]
 fn test_generic_with_bounds_vec() {
@@ -64,27 +62,20 @@ fn test_generic_with_bounds_with_trace() {
 }
 */
 
-
-#[derive(Decoder,Default)]
-pub struct SimpleStructD<R>
-{
+#[derive(Decoder, Default)]
+pub struct SimpleStructD<R> {
     value: R,
 }
 
 type SSByteD = SimpleStructD<u8>;
 
-
-
 #[test]
 fn test_decoding_generic() {
-
     let mut src = vec![];
     src.push(3);
     let d = SSByteD::decode_from(&mut Cursor::new(&src), 0).expect("decoded");
-    assert_eq!(d.value,3);
+    assert_eq!(d.value, 3);
 }
-
-
 
 #[derive(Decoder)]
 pub struct SimpleVecD<R> {
@@ -93,9 +84,7 @@ pub struct SimpleVecD<R> {
 
 type SVD8 = SimpleVecD<i8>;
 
-
-
-/* 
+/*
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct GenericRecord<R>
 where

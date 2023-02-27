@@ -5,7 +5,7 @@ use std::time::Duration;
 use bytes::{Buf, BufMut};
 
 use fluvio_protocol::record::RawRecords;
-use fluvio_protocol::Encoder;
+use fluvio_protocol::{Encoder, DecodeExt};
 use fluvio_protocol::Decoder;
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::Version;
@@ -22,10 +22,7 @@ pub type DefaultPartitionRequest = PartitionProduceData<RecordSet<RawRecords>>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet<RawRecords>>;
 
 #[derive(FluvioDefault, Debug)]
-pub struct ProduceRequest<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct ProduceRequest<R> {
     /// The transactional ID, or null if the producer is not transactional.
     #[fluvio(min_version = 3)]
     pub transactional_id: Option<String>,
@@ -44,7 +41,7 @@ where
 
 impl<R> Request for ProduceRequest<R>
 where
-    R: Debug + Decoder + Encoder,
+    R: Debug + Decoder + Encoder + DecodeExt,
 {
     const API_KEY: u16 = 0;
 
@@ -56,10 +53,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct TopicProduceData<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct TopicProduceData<R> {
     /// The topic name.
     pub name: String,
 
@@ -69,10 +63,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct PartitionProduceData<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct PartitionProduceData<R> {
     /// The partition index.
     pub partition_index: PartitionId,
 
