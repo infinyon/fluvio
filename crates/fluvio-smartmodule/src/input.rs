@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, fmt::Display};
 use std::fmt;
 use std::io::Cursor;
 
+use fluvio_protocol::DecodeExt;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::{Encoder, Decoder, record::Record};
 
@@ -86,7 +87,7 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
 
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
+        DecodeExt::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
     }
 }
 

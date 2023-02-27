@@ -78,7 +78,7 @@ pub trait DecoderVarInt {
 
 impl<M> Decoder for Vec<M>
 where
-    M: Default + Decoder,
+    M: Decoder + DecodeExt
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -103,10 +103,10 @@ where
 fn decode_vec<T, M>(len: i32, item: &mut Vec<M>, src: &mut T, version: Version) -> Result<(), Error>
 where
     T: Buf,
-    M: Default + Decoder,
+    M: Decoder + DecodeExt,
 {
     for _ in 0..len {
-        let mut value = <M>::default();
+        let mut value = <M>::decode_from(src,version)?;
         value.decode(src, version)?;
         item.push(value);
     }
@@ -116,7 +116,7 @@ where
 
 impl<M> Decoder for Option<M>
 where
-    M: Default + Decoder,
+    M: Decoder + DecodeExt,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -125,7 +125,7 @@ where
         let mut some = false;
         some.decode(src, version)?;
         if some {
-            let mut value = <M>::default();
+            let mut value = <M>::decode_from(src,version)?;
             value.decode(src, version)?;
             *self = Some(value)
         } else {
@@ -136,8 +136,6 @@ where
 }
 
 impl<M> Decoder for PhantomData<M>
-where
-    M: Default + Decoder,
 {
     fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), Error>
     where
@@ -149,8 +147,8 @@ where
 
 impl<K, V> Decoder for BTreeMap<K, V>
 where
-    K: Decoder + Ord + Default,
-    V: Decoder + Default,
+    K: Decoder + Ord + DecodeExt,
+    V: Decoder + DecodeExt,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -161,9 +159,9 @@ where
 
         let mut map: BTreeMap<K, V> = BTreeMap::new();
         for _i in 0..len {
-            let mut key = K::default();
+            let mut key = K::decode_from(src,version)?;
             key.decode(src, version)?;
-            let mut value = V::default();
+            let mut value = V::decode_from(src,version)?;
             value.decode(src, version)?;
             map.insert(key, value);
         }
