@@ -1,5 +1,6 @@
 meta:
   version: 0.1.0
-  name: {{project-name}}
-  type: json-test-source
-  topic: test-topic
+  name: my-{{project-name}}-test-connector
+  type: {{project-name}}
+  topic: test-{{project-name}}-topic
+custom:

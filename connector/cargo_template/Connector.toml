@@ -7,9 +7,5 @@ description = "{{project-description}}"
 license = "Apache-2.0"
 visibility = {% if connector-public %}"public"{% else %}"private"{% endif %}
 
-[[params]]
-name = "input"
-description = "input description"
-
 [direction]
-{% if connector-type == "source" %} source = true {% else %} source = false {% endif %}
+{% if connector-type == "source" %} source = true {% else %} dest = true {% endif %}
