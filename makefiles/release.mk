@@ -181,7 +181,7 @@ publish-artifacts-hub: unzip-gh-release-artifacts
 			export TARGET=$(shell cat $(basename $(zipf))/.target); \
 			export PACKAGE=$(subst -$(shell cat $(basename $(zipf))/.target), ,$(basename $(zipf))); \
 			export ARTIFACT=$(abspath $$DIRNAME/$$PACKAGE); \
-			$(DRY_RUN_ECHO) actions/upload-bpkg.sh $$PACKAGE $$TARGET ${CHANNEL}; \
+			$(DRY_RUN_ECHO) actions/upload-bpkg.sh $$ARTIFACT $$TARGET ${CHANNEL}; \
 		) \
 	)
 

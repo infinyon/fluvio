@@ -16,9 +16,15 @@ binfile=$(basename $1)
 arch=${2:-'aarch64-apple-darwin'}
 channel=${3:-'latest'}
 
-url="${host}/hub/v0/bpkg-auth/${channel}/${arch}/${binfile}"
+# check if binpath exists
+if [ -e "${binpath}" ]; then
+  echo Upload file ${binpath}
+else
+  echo Error: Upload file ${binpath} does not exist
+  exit 1
+fi
 
-echo Upload file ${binpath}
+url="${host}/hub/v0/bpkg-auth/${channel}/${arch}/${binfile}"
 echo Uploading to ${url}
 
 http_status=$(curl -o /dev/null -s -w "%{response_code}" \
@@ -29,5 +35,6 @@ http_status=$(curl -o /dev/null -s -w "%{response_code}" \
   )
 echo HTTP Response Status ${http_status}
 if [ $http_status != "200" ]; then
-	exit 1
+  exit 1
 fi
+
