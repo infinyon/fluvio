@@ -446,7 +446,7 @@ where
 /// (e.g. on the CLI) does not spend any time waiting for new records to be produced, they are
 /// simply given all the records that are already available.
 struct TakeRecords<S> {
-    remaining: i64,
+    remaining: u64,
     stream: S,
 }
 
@@ -454,7 +454,7 @@ impl<S> TakeRecords<S>
 where
     S: Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>> + std::marker::Unpin,
 {
-    pub fn new(stream: S, until: i64) -> Self {
+    pub fn new(stream: S, until: u64) -> Self {
         Self {
             remaining: until,
             stream,
@@ -488,7 +488,7 @@ where
                     .iter()
                     .map(|it| it.records_len())
                     .sum();
-                let diff = self.remaining - count as i64;
+                let diff = self.remaining - count as u64;
                 self.remaining = diff.max(0);
                 Poll::Ready(Some(Ok(response)))
             }

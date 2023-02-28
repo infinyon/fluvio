@@ -265,6 +265,17 @@ impl Decoder for u64 {
     }
 }
 
+impl DecoderVarInt for u64 {
+    fn decode_varint<T>(&mut self, src: &mut T) -> Result<(), Error>
+    where
+        T: Buf,
+    {
+        let (value, _) = varint_decode(src)?;
+        *self = value;
+        Ok(())
+    }
+}
+
 impl Decoder for i64 {
     fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where

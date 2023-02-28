@@ -78,10 +78,10 @@ impl fmt::Display for PartitionError {
 /// Offset information about Partition
 pub trait PartitionOffset {
     /// last offset that was committed
-    fn last_stable_offset(&self) -> i64;
+    fn last_stable_offset(&self) -> u64;
 
     // beginning offset for the partition
-    fn start_offset(&self) -> i64;
+    fn start_offset(&self) -> u64;
 }
 
 // returns a tuple (topic_name, idx)

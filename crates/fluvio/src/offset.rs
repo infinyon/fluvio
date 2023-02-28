@@ -11,13 +11,13 @@ use fluvio_socket::VersionedSerialSocket;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum OffsetInner {
-    Absolute(i64),
-    FromBeginning(i64),
-    FromEnd(i64),
+    Absolute(u64),
+    FromBeginning(u64),
+    FromEnd(u64),
 }
 
 impl OffsetInner {
-    fn resolve(&self, offsets: &FetchOffsetPartitionResponse) -> i64 {
+    fn resolve(&self, offsets: &FetchOffsetPartitionResponse) -> u64 {
         match self {
             Self::Absolute(offset) => *offset,
             Self::FromBeginning(offset) => {
@@ -120,10 +120,7 @@ impl Offset {
     /// assert!(Offset::absolute(0).is_ok());
     /// assert!(Offset::absolute(-10).is_err());
     /// ```
-    pub fn absolute(index: i64) -> Result<Offset, FluvioError> {
-        if index < 0 {
-            return Err(FluvioError::NegativeOffset(index));
-        }
+    pub fn absolute(index: u64) -> Result<Offset, FluvioError> {
         Ok(Self {
             inner: OffsetInner::Absolute(index),
         })
@@ -184,9 +181,9 @@ impl Offset {
     /// // Creates an offset pointing 4 places after the oldest log entry
     /// let offset: Offset = Offset::from_beginning(4);
     /// ```
-    pub fn from_beginning(offset: u32) -> Offset {
+    pub fn from_beginning(offset: u64) -> Offset {
         Self {
-            inner: OffsetInner::FromBeginning(offset as i64),
+            inner: OffsetInner::FromBeginning(offset),
         }
     }
 
@@ -265,9 +262,9 @@ impl Offset {
     /// // Creates an offset pointing 3 places before the latest log entry
     /// let offset: Offset = Offset::from_end(3);
     /// ```
-    pub fn from_end(offset: u32) -> Offset {
+    pub fn from_end(offset: u64) -> Offset {
         Self {
-            inner: OffsetInner::FromEnd(offset as i64),
+            inner: OffsetInner::FromEnd(offset),
         }
     }
 
@@ -291,7 +288,7 @@ impl Offset {
     pub(crate) async fn resolve(
         &self,
         offsets: &FetchOffsetPartitionResponse,
-    ) -> Result<i64, FluvioError> {
+    ) -> Result<u64, FluvioError> {
         let offset = self.inner.resolve(offsets);
 
         // Offset should never be less than 0, even for absolute

@@ -263,7 +263,7 @@ impl<R: BatchRecords> RecordSet<R> {
         self.batches
             .first()
             .map(|batches| batches.base_offset)
-            .unwrap_or_else(|| -1)
+            .unwrap_or_else(|| u64::MIN)
     }
 }
 
@@ -550,7 +550,7 @@ use Record as DefaultRecord;
 /// Record that can be used by Consumer which needs access to metadata
 pub struct ConsumerRecord<B = DefaultRecord> {
     /// The offset of this Record into its partition
-    pub offset: i64,
+    pub offset: u64,
     /// The partition where this Record is stored
     pub partition: PartitionId,
     /// The Record contents
@@ -561,7 +561,7 @@ pub struct ConsumerRecord<B = DefaultRecord> {
 
 impl<B> ConsumerRecord<B> {
     /// The offset from the initial offset for a given stream.
-    pub fn offset(&self) -> i64 {
+    pub fn offset(&self) -> u64 {
         self.offset
     }
 

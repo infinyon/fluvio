@@ -56,7 +56,7 @@ where
 {
     pub topic: String,
     pub partition: PartitionId,
-    pub fetch_offset: i64,
+    pub fetch_offset: u64,
     pub max_bytes: i32,
     pub isolation: Isolation,
     /// no longer used, but keep to avoid breaking compatibility, this will not be honored

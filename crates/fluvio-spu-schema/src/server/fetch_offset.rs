@@ -104,10 +104,10 @@ pub struct FetchOffsetPartitionResponse {
     pub partition_index: PartitionId,
 
     /// First readable offset.
-    pub start_offset: i64,
+    pub start_offset: u64,
 
     /// Last readable offset
-    pub last_stable_offset: i64,
+    pub last_stable_offset: u64,
 }
 
 impl fmt::Display for FetchOffsetPartitionResponse {
@@ -121,11 +121,11 @@ impl fmt::Display for FetchOffsetPartitionResponse {
 }
 
 impl PartitionOffset for FetchOffsetPartitionResponse {
-    fn last_stable_offset(&self) -> i64 {
+    fn last_stable_offset(&self) -> u64 {
         self.last_stable_offset
     }
 
-    fn start_offset(&self) -> i64 {
+    fn start_offset(&self) -> u64 {
         self.start_offset
     }
 }

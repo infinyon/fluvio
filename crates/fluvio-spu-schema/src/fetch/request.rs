@@ -90,7 +90,7 @@ pub struct FetchPartition {
     pub current_leader_epoch: i32,
 
     /// The message offset.
-    pub fetch_offset: i64,
+    pub fetch_offset: u64,
 
     /// The earliest available offset of the follower replica.  The field is only used when the
     /// request is sent by the follower.

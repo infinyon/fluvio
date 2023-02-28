@@ -315,6 +315,20 @@ impl Encoder for u64 {
     }
 }
 
+impl EncoderVarInt for u64 {
+    fn var_write_size(&self) -> usize {
+        variant_size(*self)
+    }
+
+    fn encode_varint<T>(&self, dest: &mut T) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        variant_encode(dest, *self)?;
+        Ok(())
+    }
+}
+
 impl Encoder for i64 {
     fn write_size(&self, _version: Version) -> usize {
         8
