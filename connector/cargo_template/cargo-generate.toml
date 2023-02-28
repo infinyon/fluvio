@@ -1,7 +1,3 @@
-[placeholders.fluvio-connector-cargo-dependency]
-type = "string"
-prompt = "Value of `fluvio-connector-common` dependency in Cargo.toml"
-
 [placeholders.project-group]
 type = "string"
 prompt = "Please set a group name"
