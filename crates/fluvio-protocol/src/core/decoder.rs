@@ -1,64 +1,19 @@
 use std::cmp::Ord;
 use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::Cursor;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Read;
 use std::marker::PhantomData;
-use std::path::Path;
 
 use bytes::Buf;
 use bytes::BufMut;
-use tracing::debug;
 use tracing::trace;
 
 use super::varint::varint_decode;
 use crate::Version;
 
-/// Decode fields from a buffer
-pub trait Decoder {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: Buf;
-}
-
-/// Decode Self from a buffer
-pub trait DecodeFrom: Sized {
-    /// decode Fluvio compliant protocol values from buf
-    fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
-    where
-        T: Buf;
-
-    fn decode_from_file<H: AsRef<Path>>(file_name: H, version: Version) -> Result<Self, Error> {
-        debug!("decoding from file: {:#?}", file_name.as_ref());
-        let mut f = File::open(file_name)?;
-        let mut buffer: [u8; 1000] = [0; 1000];
-
-        f.read_exact(&mut buffer)?;
-        let data = buffer.to_vec();
-
-        let mut src = Cursor::new(&data);
-
-        let mut size: i32 = 0;
-        size.decode(&mut src, version)?;
-        trace!("decoded response size: {} bytes", size);
-
-        if src.remaining() < size as usize {
-            return Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                "not enough for response",
-            ));
-        }
-        Self::decode_from(&mut src, version)
-    }
-}
-
-/// Implement DecodeExt for any type that implements Default
-impl<S: ?Sized> DecodeFrom for S
-where
-    S: Default + Decoder,
-{
+// trait for encoding and decoding using Kafka Protocol
+pub trait Decoder: Sized + Default {
     /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
@@ -68,6 +23,12 @@ where
         decoder.decode(src, version)?;
         Ok(decoder)
     }
+
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: Buf;
+
+
 }
 
 pub trait DecoderVarInt {
@@ -78,7 +39,7 @@ pub trait DecoderVarInt {
 
 impl<M> Decoder for Vec<M>
 where
-    M: Decoder + DecodeFrom,
+    M: Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -94,19 +55,29 @@ where
             return Ok(());
         }
 
-        for _ in 0..len {
-            let mut value = <M>::decode_from(src, version)?;
-            value.decode(src, version)?;
-            self.push(value);
-        }
+        decode_vec(len, self, src, version)?;
 
         Ok(())
     }
 }
 
+fn decode_vec<T, M>(len: i32, item: &mut Vec<M>, src: &mut T, version: Version) -> Result<(), Error>
+where
+    T: Buf,
+    M: Default + Decoder,
+{
+    for _ in 0..len {
+        let mut value = <M>::default();
+        value.decode(src, version)?;
+        item.push(value);
+    }
+
+    Ok(())
+}
+
 impl<M> Decoder for Option<M>
 where
-    M: Decoder + DecodeFrom,
+    M: Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -136,8 +107,8 @@ impl<M> Decoder for PhantomData<M> {
 
 impl<K, V> Decoder for BTreeMap<K, V>
 where
-    K: Decoder + Ord + DecodeFrom,
-    V: Decoder + DecodeFrom,
+    K: Decoder + Ord,
+    V: Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -148,9 +119,9 @@ where
 
         let mut map: BTreeMap<K, V> = BTreeMap::new();
         for _i in 0..len {
-            let mut key = K::decode_from(src, version)?;
+            let mut key = K::default();
             key.decode(src, version)?;
-            let mut value = V::decode_from(src, version)?;
+            let mut value = V::default();
             value.decode(src, version)?;
             map.insert(key, value);
         }
@@ -430,7 +401,6 @@ impl DecoderVarInt for Option<Vec<u8>> {
 #[cfg(test)]
 mod test {
 
-    use crate::DecodeFrom;
     use crate::Decoder;
     use crate::DecoderVarInt;
     use crate::Version;

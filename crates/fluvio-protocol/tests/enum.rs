@@ -4,7 +4,6 @@ use std::io::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use fluvio_protocol::DecodeExt;
 use fluvio_protocol::bytes::{Buf, BufMut};
 use fluvio_protocol::{Decoder, Encoder, Version};
 

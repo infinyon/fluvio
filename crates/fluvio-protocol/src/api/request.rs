@@ -7,7 +7,6 @@ use tracing::trace;
 use bytes::Buf;
 use bytes::BufMut;
 
-use crate::DecodeFrom;
 use crate::Decoder;
 use crate::Encoder;
 use crate::Version;
@@ -105,7 +104,6 @@ where
     ) -> Result<ResponseMessage<R::Response>, IoError>
     where
         T: Buf,
-        <R as Request>::Response: DecodeFrom,
     {
         ResponseMessage::decode_from(src, version)
     }
@@ -115,10 +113,7 @@ where
         &self,
         file_name: H,
         version: Version,
-    ) -> Result<ResponseMessage<R::Response>, IoError>
-    where
-        <R as Request>::Response: DecodeFrom,
-    {
+    ) -> Result<ResponseMessage<R::Response>, IoError> {
         ResponseMessage::decode_from_file(file_name, version)
     }
 
@@ -135,7 +130,7 @@ where
 
 impl<R> Decoder for RequestMessage<R>
 where
-    R: Request + DecodeFrom + Decoder,
+    R: Request,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
     where
@@ -348,7 +343,7 @@ mod test {
         let mut encode_bytes = Cursor::new(&out);
 
         let res_msg_result: Result<RequestMessage<ApiVersionRequest>, IoError> =
-            DecodeFrom::decode_from(&mut encode_bytes, 0);
+            Decoder::decode_from(&mut encode_bytes, 0);
 
         let msg = res_msg_result.unwrap();
         assert_eq!(msg.header.correlation_id(), 5);
