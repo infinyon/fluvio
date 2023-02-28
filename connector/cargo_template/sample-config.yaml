@@ -4,3 +4,4 @@ meta:
   type: {{project-name}}
   topic: test-{{project-name}}-topic
 custom:
+  foo: bar

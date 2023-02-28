@@ -9,3 +9,11 @@ visibility = {% if connector-public %}"public"{% else %}"private"{% endif %}
 
 [direction]
 {% if connector-type == "source" %} source = true {% else %} dest = true {% endif %}
+
+[deployment]
+binary = "{{project-name}}"
+
+[custom.properties.foo]
+title = "Foo"
+description = "Foo"
+type = "string"
