@@ -47,7 +47,7 @@ include_dir = "0.7.2"
 tempdir = "0.3.7"
 anyhow = { workspace = true }
 async-channel = "1.6.1"
-bytesize = { version = "1.1.0", features = ['serde'] }
+bytesize = { version = "1.2.0", features = ['serde'] }
 indicatif = "0.17.0"
 rand = "0.8.4"
 chrono = { version = "0.4" }
