@@ -5,8 +5,7 @@ use config::CustomConfig;
 use fluvio::{RecordKey, TopicProducer};
 use fluvio_connector_common::{
     connector,
-    tracing::{debug, trace},
-    Result, Source,
+    Result 
 };
 
 #[connector(source)]
@@ -16,15 +15,13 @@ async fn start(config: CustomConfig, producer: TopicProducer) -> Result<()> {
         let value = format!("Hello, Fluvio - {i}");
         producer.send(RecordKey::NULL, value).await?;
         producer.flush().await?;
-        use std::{thread, time};
-
-        thread::sleep(time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(1000));
     }
     Ok(())
 }
 
 {% elsif connector-type == "sink" %}
-use fluvio_connector_common::{connector, consumer::ConsumerStream, tracing::trace, Result, Sink};
+use fluvio_connector_common::{connector, consumer::ConsumerStream, Result};
 
 #[connector(sink)]
 async fn start(config: CustomConfig, mut stream: impl ConsumerStream) -> Result<()> {

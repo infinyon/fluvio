@@ -16,11 +16,6 @@ pub struct GenerateCmd {
     /// SmartConnector Project Name
     name: Option<String>,
 
-    /// SmartConnector Project Group Name.
-    /// Default to Hub ID, if set. Overrides Hub ID if provided.
-    #[clap(long, env = "CDK_PROJECT_GROUP", value_name = "GROUP")]
-    project_group: Option<String>,
-
     /// Local path to generate the SmartConnector project.
     /// Default to directory with project name, created in current directory
     #[clap(long, env = "CDK_DESTINATION", value_name = "PATH")]
