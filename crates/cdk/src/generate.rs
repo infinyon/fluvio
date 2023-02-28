@@ -1,12 +1,11 @@
 use std::{fmt::Debug, path::PathBuf, str::FromStr};
 
-use anyhow::{Result, Context};
-use anyhow::{Error, anyhow};
+use anyhow::{Result, Error, anyhow};
 
-use cargo_builder::{package::PackageInfo, cargo::Cargo};
-use fluvio_connector_deployer::{Deployment, DeploymentType};
+//use cargo_builder::{package::PackageInfo, cargo::Cargo};
+//use fluvio_connector_deployer::{Deployment, DeploymentType};
 
-use crate::{cmd::PackageCmd, deploy::from_cargo_package};
+//use crate::{cmd::PackageCmd, deploy::from_cargo_package};
 
 
 use clap::{Parser, ValueEnum};
@@ -16,14 +15,14 @@ use tempfile::TempDir;
 use enum_display::EnumDisplay;
 use tracing::debug;
 use lib_cargo_crate::{Info, InfoOpts};
-use toml::Value;
+//use toml::Value;
 
 use fluvio_hub_util::HubAccess;
 //use crate::load::DEFAULT_META_LOCATION as SMARTMODULE_META_FILENAME;
 
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../connector/cargo_template");
-const FLUVIO_SMARTMODULE_CRATE_NAME: &str = "fluvio-smartmodule";
+const FLUVIO_CONNECTORS_COMMON_CRATE_NAME: &str = "fluvio-connector-common";
 const FLUVIO_SMARTMODULE_REPO: &str = "https://github.com/infinyon/fluvio.git";
 
 /// Generate new SmartModule project
@@ -254,7 +253,7 @@ impl GenerateCmd {
             CargoSmDependSource::Git(FLUVIO_SMARTMODULE_REPO.to_string())
         } else {
             let latest_sm_crate_info =
-                Info::new().fetch(vec![FLUVIO_SMARTMODULE_CRATE_NAME], &InfoOpts::default())?;
+                Info::new().fetch(vec![FLUVIO_CONNECTORS_COMMON_CRATE_NAME], &InfoOpts::default())?;
             let version = &latest_sm_crate_info[0].krate.crate_data.max_version;
 
             CargoSmDependSource::CratesIo(version.to_string())
