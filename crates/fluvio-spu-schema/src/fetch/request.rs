@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use fluvio_protocol::api::Request;
-use fluvio_protocol::{Decoder, Encoder, DecodeFrom};
+use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::record::RecordSet;
 use fluvio_types::PartitionId;

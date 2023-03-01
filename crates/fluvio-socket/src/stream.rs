@@ -6,7 +6,6 @@ use std::io::ErrorKind;
 
 use fluvio_future::net::ConnectionFd;
 use fluvio_future::net::{BoxReadConnection};
-use fluvio_protocol::DecodeFrom;
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
 use fluvio_protocol::Decoder as FluvioDecoder;
@@ -51,7 +50,7 @@ impl FluvioStream {
         &mut self,
     ) -> impl Stream<Item = Result<RequestMessage<R>, SocketError>> + '_
     where
-        RequestMessage<R>: FluvioDecoder + Debug + DecodeFrom,
+        RequestMessage<R>: FluvioDecoder + Debug,
     {
         (&mut self.inner).map(|req_bytes_r| match req_bytes_r {
             Ok(req_bytes) => {
@@ -69,7 +68,7 @@ impl FluvioStream {
     /// as server, get next request from client
     pub async fn next_request_item<R>(&mut self) -> Option<Result<RequestMessage<R>, SocketError>>
     where
-        RequestMessage<R>: FluvioDecoder + Debug + DecodeFrom,
+        RequestMessage<R>: FluvioDecoder + Debug,
     {
         let mut stream = self.request_stream();
         stream.next().await

@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 
 use educe::Educe;
 use fluvio_protocol::record::RawRecords;
-use fluvio_protocol::{Encoder, Decoder, DecodeFrom};
+use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
 
 use fluvio_protocol::record::RecordSet;

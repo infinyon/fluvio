@@ -31,7 +31,7 @@ use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::{Decoder, DecodeFrom};
+use fluvio_protocol::{Decoder};
 
 use crate::SocketError;
 use crate::ExclusiveFlvSink;
@@ -292,10 +292,7 @@ impl<R> PinnedDrop for AsyncResponse<R> {
     }
 }
 
-impl<R: Request> Stream for AsyncResponse<R>
-where
-    R::Response: Decoder + DecodeFrom,
-{
+impl<R: Request> Stream for AsyncResponse<R> {
     type Item = Result<R::Response, SocketError>;
 
     #[instrument(

@@ -5,7 +5,7 @@ use std::time::Duration;
 use bytes::{Buf, BufMut};
 
 use fluvio_protocol::record::RawRecords;
-use fluvio_protocol::{Encoder, DecodeFrom};
+use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::Version;

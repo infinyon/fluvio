@@ -7,7 +7,7 @@ use std::fmt::{self, Display};
 use std::fmt::Debug;
 
 use bytes::Buf;
-use fluvio_protocol::{Encoder, Decoder, DecodeFrom, Version};
+use fluvio_protocol::{Encoder, Decoder, Version};
 
 use super::Message;
 
@@ -18,7 +18,7 @@ pub struct Messages<S> {
 
 impl<S> Decoder for Messages<S>
 where
-    Message<S>: DecodeFrom + Decoder,
+    Message<S>:  Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
     where
