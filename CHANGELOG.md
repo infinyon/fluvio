@@ -1,6 +1,19 @@
 # Release Notes
 
-## Platform Version 0.10.5 - UNRELEASED
+## Platform Version 0.10.5 - 2023-02-28
+* Upload bpkg logic ([#3028](https://github.com/infinyon/fluvio/issues/3028))
+* Remove secrets and parameters from connector meta config ([#3022](https://github.com/infinyon/fluvio/issues/3022))
+* Migrate fluvio admin api to anyhow ([#3016](https://github.com/infinyon/fluvio/issues/3016))
+* Enhance deploy options ([#2968](https://github.com/infinyon/fluvio/issues/2968))
+* Retry monitoring if there is a failure ([#2975](https://github.com/infinyon/fluvio/issues/2975))
+* Support secrets in connector sdk ([#2983](https://github.com/infinyon/fluvio/issues/2983))
+* Fluvio connector support update ([#2992](https://github.com/infinyon/fluvio/issues/2992))
+* Cdk publish to hub ([#2979](https://github.com/infinyon/fluvio/issues/2979))
+* Optimize smdk Smoke Test ([#2972](https://github.com/infinyon/fluvio/issues/2972))
+* Add bpkg_token to publish workflow ([#3004](https://github.com/infinyon/fluvio/issues/3004))
+* Fluvio-hub-x, update dep cargo_toml to 0.15 ([#3007](https://github.com/infinyon/fluvio/issues/3007))
+* Publicly expose partitioning structs and traits ([#2969](https://github.com/infinyon/fluvio/issues/2969))
+* Remove v1 topic spec ([#2987](https://github.com/infinyon/fluvio/issues/2987))
 
 ## Platform Version 0.10.4 - 2022-01-23
 * Add 'cdk test' command ([#2948](https://github.com/infinyon/fluvio/issues/2948))
