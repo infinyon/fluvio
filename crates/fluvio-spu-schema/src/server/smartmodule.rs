@@ -94,11 +94,9 @@ pub enum SmartModuleKind {
     },
     #[fluvio(min_version = ARRAY_MAP_WASM_API)]
     FilterMap,
-    #[fluvio(min_version = SMART_MODULE_API)]
-    #[fluvio(max_version = CHAIN_SMARTMODULE_API)]
+    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API)]
     Join(String),
-    #[fluvio(min_version = SMART_MODULE_API)]
-    #[fluvio(max_version = CHAIN_SMARTMODULE_API)]
+    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API)]
     JoinStream {
         topic: String,
         derivedstream: String,
