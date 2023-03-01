@@ -27,8 +27,6 @@ pub trait Decoder: Sized + Default {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf;
-
-
 }
 
 pub trait DecoderVarInt {
@@ -86,7 +84,7 @@ where
         let mut some = false;
         some.decode(src, version)?;
         if some {
-            let mut value = <M>::decode_from(src, version)?;
+            let mut value = <M>::default();
             value.decode(src, version)?;
             *self = Some(value)
         } else {

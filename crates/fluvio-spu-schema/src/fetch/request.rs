@@ -46,7 +46,7 @@ pub struct FetchRequest<R> {
 
 impl<R> Request for FetchRequest<R>
 where
-    R: Debug + Decoder + Encoder + DecodeFrom,
+    R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = 1;
 

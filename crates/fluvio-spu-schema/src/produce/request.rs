@@ -41,7 +41,7 @@ pub struct ProduceRequest<R> {
 
 impl<R> Request for ProduceRequest<R>
 where
-    R: Debug + Decoder + DecodeFrom + Encoder,
+    R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = 0;
 

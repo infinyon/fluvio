@@ -11,14 +11,15 @@ use fluvio_protocol::{Encoder, Decoder, Version};
 
 use super::Message;
 
-#[derive(Encoder, Debug, Eq, PartialEq, Clone, Default)]
+#[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Messages<S> {
     pub messages: Vec<Message<S>>,
 }
 
+/*
 impl<S> Decoder for Messages<S>
 where
-    Message<S>:  Decoder,
+    S:  Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
     where
@@ -29,6 +30,7 @@ where
         Ok(())
     }
 }
+*/
 
 impl<S> fmt::Display for Messages<S>
 where
