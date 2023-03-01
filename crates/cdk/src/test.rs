@@ -15,7 +15,7 @@ pub struct TestCmd {
     package: PackageCmd,
 
     /// Path to configuration file in YAML format
-    #[clap(short, long, value_name = "PATH")]
+    #[clap(short, long, value_name = "PATH", default_value = "sample-config.yaml")]
     config: PathBuf,
 
     /// Path to file with secrets. Secrets are 'key=value' pairs separated by the new line character. Optional
