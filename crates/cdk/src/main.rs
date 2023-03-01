@@ -1,4 +1,5 @@
 mod cmd;
+mod generate;
 mod build;
 mod test;
 mod deploy;

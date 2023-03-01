@@ -1,0 +1,14 @@
+[placeholders.project-group]
+type = "string"
+prompt = "Please set a group name"
+
+[placeholders.connector-type]
+type = "string"
+prompt = "Which type of Connector would you like [source/sink]?"
+choices = ["source", "sink"]
+default = "source"
+
+[placeholders.connector-public]
+type = "bool"
+prompt = "Will your Connector be public?"
+default = false

@@ -1,0 +1,20 @@
+[package]
+name = "{{project-name}}"
+group = "{{project-group}}"
+version = "0.1.0"
+apiVersion = "0.1.0"
+fluvio = "0.10.0"
+description = "{{project-description}}"
+license = "Apache-2.0"
+visibility = {% if connector-public %}"public"{% else %}"private"{% endif %}
+
+[direction]
+{% if connector-type == "source" %} source = true {% else %} dest = true {% endif %}
+
+[deployment]
+binary = "{{project-name}}"
+
+[custom.properties.foo]
+title = "Foo"
+description = "Foo"
+type = "string"
