@@ -3,12 +3,9 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
 use syn::{
-    Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, GenericParam, Generics,
-    Ident, ItemEnum, Lit, Meta, NestedMeta, Variant,
+    Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum,
+    Lit, Meta, NestedMeta, Variant,
 };
-
-use super::container::ContainerAttributes;
-use super::FluvioBound;
 
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,

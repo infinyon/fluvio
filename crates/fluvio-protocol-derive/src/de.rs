@@ -23,7 +23,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             let field_tokens =
                 generate_struct_fields(&kf_struct.props(), kf_struct.struct_ident(), attrs);
             let ident = &kf_struct.struct_ident();
-            let generics = add_bounds(kf_struct.generics().clone(), &attrs, FluvioBound::Decoder);
+            let generics = add_bounds(kf_struct.generics().clone(), attrs, FluvioBound::Decoder);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
@@ -37,7 +37,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
         }
         DeriveItem::Enum(kf_enum, attrs) => {
             let ident = &kf_enum.enum_ident;
-            let generics = add_bounds(kf_enum.generics.clone(), &attrs, FluvioBound::Decoder);
+            let generics = add_bounds(kf_enum.generics.clone(), attrs, FluvioBound::Decoder);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             let int_type = if let Some(int_type_name) = &attrs.repr_type_name {
                 format_ident!("{}", int_type_name)
@@ -84,26 +84,38 @@ pub(crate) fn generate_struct_named_fields(
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
-            quote! {
-             //   tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
-                let result = self.#fname.decode_varint(src);
-                if result.is_ok() {
-             //       tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
-                } else {
-              //      tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
-                    return result;
+            if attr.trace {
+                quote! {
+                    tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
+                    let result = self.#fname.decode_varint(src);
+                    if result.is_ok() {
+                        tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
+                    } else {
+                        tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
+            } else {
+                quote! {
+                    self.#fname.decode_varint(src)?;
                 }
             }
         } else {
-            let base = quote! {
-              //  tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#fname));
-                let result = self.#fname.decode(src,version);
-                if result.is_ok() {
-               //     tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
-                } else {
-                //    tracing::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
-                    return result;
+            let base = if attr.trace {
+                quote! {
+                    tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#fname));
+                    let result = self.#fname.decode(src,version);
+                    if result.is_ok() {
+                        tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                    } else {
+                        tracing::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                        return result;
+                    }
                 }
+             } else {
+                    quote! {
+                        self.#fname.decode(src,version)?;
+                    }
             };
 
             prop.version_check_token_stream(base, attr.trace)
@@ -122,25 +134,37 @@ pub(crate) fn generate_struct_unnamed_fields(
     let recurse = props.iter().enumerate().map(|(idx, prop)| {
         let field_idx = syn::Index::from(idx);
         if prop.attrs.varint {
-            quote! {
-             //   tracing::trace!("start decoding varint field <{}>", stringify!(#idx));
-                let result = self.#field_idx.decode_varint(src);
-                if result.is_ok() {
-              //      tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#idx),&self.#field_idx);
-                } else {
-               //     tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
-                    return result;
+            if attrs.trace {
+                quote! {
+                    tracing::trace!("start decoding varint field <{}>", stringify!(#idx));
+                    let result = self.#field_idx.decode_varint(src);
+                    if result.is_ok() {
+                        tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#idx),&self.#field_idx);
+                    } else {
+                        tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
+            } else {
+                quote! {
+                    self.#field_idx.decode_varint(src)?;
                 }
             }
         } else {
-            let base = quote! {
-             //   tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#idx));
-                let result = self.#field_idx.decode(src,version);
-                if result.is_ok() {
-              //      tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
-                } else {
-              //      tracing::trace!("error decoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
-                    return result;
+            let base = if attrs.trace {
+                quote! {
+                    tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#idx));
+                    let result = self.#field_idx.decode(src,version);
+                    if result.is_ok() {
+                        tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                    } else {
+                        tracing::trace!("error decoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
+            }else {
+                quote! {
+                    self.#field_idx.decode(src,version)?;
                 }
             };
 
@@ -362,7 +386,7 @@ pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
         DeriveItem::Struct(kf_struct, attrs) => {
             let ident = &kf_struct.struct_ident();
             let field_tokens = generate_default_impls(&kf_struct.props());
-            let generics = add_bounds(kf_struct.generics().clone(), &attrs, FluvioBound::Default);
+            let generics = add_bounds(kf_struct.generics().clone(), attrs, FluvioBound::Default);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             quote! {
                 impl #impl_generics Default for #ident #ty_generics #where_clause {

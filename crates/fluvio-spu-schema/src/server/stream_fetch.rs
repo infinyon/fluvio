@@ -92,8 +92,7 @@ pub struct DerivedStreamInvocation {
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct StreamFetchResponse<R>
-{
+pub struct StreamFetchResponse<R> {
     pub topic: String,
     pub stream_id: u32,
     pub partition: FetchablePartitionResponse<R>,

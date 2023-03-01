@@ -71,8 +71,7 @@ type SSByteD = SimpleStructD<u8>;
 
 #[test]
 fn test_decoding_generic() {
-    let mut src = vec![];
-    src.push(3);
+    let src = vec![3];
     let d = SSByteD::decode_from(&mut Cursor::new(&src), 0).expect("decoded");
     assert_eq!(d.value, 3);
 }
@@ -82,7 +81,7 @@ pub struct SimpleVecD<R> {
     value: Vec<R>,
 }
 
-type SVD8 = SimpleVecD<i8>;
+type _SVD8 = SimpleVecD<i8>;
 
 /*
 #[test]
@@ -125,8 +124,6 @@ fn test_generic() {
 }
 */
 
-
-
 #[derive(Default, Debug)]
 pub struct Root<R> {
     pub topic: String,
@@ -134,12 +131,10 @@ pub struct Root<R> {
     pub partition: Child<R>,
 }
 
-
 #[derive(Default, Debug)]
 pub struct Child<R> {
     pub value: R,
 }
-
 
 #[derive(Default, Decoder, Debug)]
 pub struct Root2<R> {
@@ -147,7 +142,6 @@ pub struct Root2<R> {
     pub stream_id: u32,
     pub partition: Child2<R>,
 }
-
 
 #[derive(Default, Decoder, Debug)]
 pub struct Child2<R> {

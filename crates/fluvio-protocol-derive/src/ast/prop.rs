@@ -3,8 +3,6 @@ use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
 use syn::{Attribute, Error, Field, Lit, Meta, NestedMeta, Type};
 
-use super::container::ContainerAttributes;
-
 #[derive(Clone)]
 pub(crate) struct NamedProp {
     pub field_name: String,

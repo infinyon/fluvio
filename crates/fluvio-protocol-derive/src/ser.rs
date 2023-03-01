@@ -1,6 +1,6 @@
 use crate::ast::prop::UnnamedProp;
 use crate::ast::r#struct::FluvioStructProps;
-use crate::ast::{add_bounds, container, FluvioBound};
+use crate::ast::{add_bounds, FluvioBound};
 use crate::ast::{
     container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
     DeriveItem,
@@ -16,19 +16,11 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
         DeriveItem::Struct(kf_struct, attrs) => {
             let ident = kf_struct.struct_ident();
-            let generics = add_bounds(kf_struct.generics().clone(), &attrs, FluvioBound::Encoder);
+            let generics = add_bounds(kf_struct.generics().clone(), attrs, FluvioBound::Encoder);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             let encoded_field_tokens =
                 parse_struct_props_encoding(&kf_struct.props(), ident, attrs);
             let size_field_tokens = parse_struct_props_size(&kf_struct.props(), ident, attrs);
-
-            /*
-            let trace_encode = if attrs.trace {
-                quote! { tracing::trace!("encoding struct: {} version: {}",stringify!(#ident),version); }
-            } else {
-                quote! {}
-            };
-            */
 
             let trace_encode = quote! {};
 
@@ -57,7 +49,7 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
         }
         DeriveItem::Enum(kf_enum, attrs) => {
             let ident = &kf_enum.enum_ident;
-            let generics = add_bounds(kf_enum.generics.clone(), &attrs, FluvioBound::Encoder);
+            let generics = add_bounds(kf_enum.generics.clone(), attrs, FluvioBound::Encoder);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             let encoded_variant_tokens = parse_enum_variants_encoding(&kf_enum.props, ident, attrs);
             let size_variant_tokens = parse_enum_variants_size(&kf_enum.props, ident, attrs);
@@ -115,47 +107,34 @@ fn parse_struct_named_props_encoding(
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
-
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);}
+            if attr.trace {
+                quote! {
+                    tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                    let result = self.#fname.encode_varint(dest);
+                    if result.is_err() {
+                        tracing::error!("error varint encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
             } else {
-                quote! {}
-            };
-
-            let error_st = if attr.trace {
-                quote!{ tracing::error!("error varint encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err()); }
-            } else {
-                quote! {}
-            };
-
-            quote! {
-                #trace_st
-                let result = self.#fname.encode_varint(dest);
-                if result.is_err() {
-                    #error_st
-                    return result;
+                quote! {
+                    self.#fname.encode_varint(dest)?;
                 }
             }
         } else {
 
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);}
+            let base = if attr.trace {
+                quote! {
+                    tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                    let result = self.#fname.encode(dest,version);
+                    if result.is_err() {
+                        tracing::error!("Error Encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
             } else {
-                quote! {}
-            };
-
-            let err_st = if attr.trace {
-                quote! { tracing::error!("Error Encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err()); }
-            } else {
-                quote! {}
-            };
-
-            let base = quote! {
-                #trace_st
-                let result = self.#fname.encode(dest,version);
-                if result.is_err() {
-                    #err_st
-                    return result;
+                quote! {
+                    self.#fname.encode(dest,version)?;
                 }
             };
 
@@ -177,38 +156,33 @@ fn parse_struct_unnamed_props_encoding(
 
         let field_idx = syn::Index::from(idx);
         if prop.attrs.varint {
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);}
+            if attr.trace {
+                quote! {
+                    tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                    let result = self.#field_idx.encode_varint(dest);
+                    if result.is_err() {
+                        !("error varint encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
             } else {
-                quote! {}
-            };
-
-            quote! {
-                #trace_st
-                let result = self.#field_idx.encode_varint(dest);
-                if result.is_err() {
-                    !("error varint encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
-                    return result;
+                quote! {
+                    self.#field_idx.encode_varint(dest)?;
                 }
             }
         } else {
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);}
+            let base = if attr.trace {
+                quote! {
+                    tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                    let result = self.#field_idx.encode(dest,version);
+                    if result.is_err() {
+                        tracing::error!("Error Encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
             } else {
-                quote! {}
-            };
-
-            let err_st = if attr.trace {
-                quote! { tracing::error!("Error Encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err()); }
-            } else {
-                quote! {}
-            };
-            let base = quote! {
-                #trace_st
-                let result = self.#field_idx.encode(dest,version);
-                if result.is_err() {
-                    #err_st
-                    return result;
+                quote! {
+                    self.#field_idx.encode(dest,version)?;
                 }
             };
 
@@ -244,28 +218,29 @@ fn parse_struct_named_props_size(
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#fname),write_size);}
+            if attr.trace {
+                quote! {
+                    let write_size = self.#fname.var_write_size();
+                    tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#fname),write_size);
+                    len += write_size;
+                }
             } else {
-                quote! {}
-            };
-            quote! {
-                let write_size = self.#fname.var_write_size();
-                #trace_st
-                len += write_size;
+                quote! {
+                    len += self.#fname.var_write_size();
+                }
             }
         } else {
 
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#fname),write_size);}
+            let base = if attr.trace {
+                quote! {
+                    let write_size = self.#fname.write_size(version);
+                    tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#fname),write_size);
+                    len += write_size;
+                }
             } else {
-                quote! {}
-            };
-
-            let base = quote! {
-                let write_size = self.#fname.write_size(version);
-                #trace_st
-                len += write_size;
+                quote! {
+                    len += self.#fname.write_size(version);
+                }
             };
             prop.version_check_token_stream(base,attr.trace)
         }
@@ -283,31 +258,28 @@ fn parse_struct_unnamed_props_size(
     let recurse = props.iter().enumerate().map(|(idx, prop)| {
         let field_idx = syn::Index::from(idx);
         if prop.attrs.varint {
-
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#idx),write_size);}
+            if attr.trace {
+                quote! {
+                    let write_size = self.#field_idx.var_write_size();
+                    tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#idx),write_size);
+                    len += write_size;
+                }
             } else {
-                quote! {}
-            };
-
-
-            quote! {
-                let write_size = self.#field_idx.var_write_size();
-                #trace_st
-                len += write_size;
+                quote! {
+                    len += self.#field_idx.var_write_size();
+                }
             }
         } else {
-
-            let trace_st = if attr.trace {
-                quote! {tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#idx),write_size);}
+            let base = if attr.trace {
+                quote! {
+                    let write_size = self.#field_idx.write_size(version);
+                    tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#idx),write_size);
+                    len += write_size;
+                }
             } else {
-                quote! {}
-            };
-
-            let base = quote! {
-                let write_size = self.#field_idx.write_size(version);
-                #trace_st
-                len += write_size;
+                quote! {
+                    len += self.#field_idx.write_size(version);
+                }
             };
             prop.version_check_token_stream(base,attr.trace)
         }

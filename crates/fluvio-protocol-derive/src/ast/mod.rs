@@ -40,7 +40,7 @@ impl Parse for DeriveItem {
 pub(crate) enum FluvioBound {
     Encoder,
     Decoder,
-    Default
+    Default,
 }
 
 pub(crate) fn add_bounds(

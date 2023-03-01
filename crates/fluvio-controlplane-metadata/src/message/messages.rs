@@ -6,8 +6,7 @@
 use std::fmt::{self, Display};
 use std::fmt::Debug;
 
-use bytes::Buf;
-use fluvio_protocol::{Encoder, Decoder, Version};
+use fluvio_protocol::{Encoder, Decoder};
 
 use super::Message;
 
@@ -15,22 +14,6 @@ use super::Message;
 pub struct Messages<S> {
     pub messages: Vec<Message<S>>,
 }
-
-/*
-impl<S> Decoder for Messages<S>
-where
-    S:  Decoder,
-{
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
-    where
-        T: Buf,
-    {
-        let message = Vec::<Message<S>>::decode_from(src, version)?;
-        self.messages = message;
-        Ok(())
-    }
-}
-*/
 
 impl<S> fmt::Display for Messages<S>
 where
