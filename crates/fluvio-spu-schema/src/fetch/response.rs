@@ -52,7 +52,7 @@ pub struct FetchableTopicResponse<R> {
     pub data: PhantomData<R>,
 }
 
-#[derive(Encoder, Decoder, FluvioDefault, Debug)]
+#[derive(Encoder,Decoder, FluvioDefault, Debug)]
 pub struct FetchablePartitionResponse<R> {
     /// The partition index.
     pub partition_index: PartitionId,

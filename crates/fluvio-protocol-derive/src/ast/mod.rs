@@ -40,6 +40,7 @@ impl Parse for DeriveItem {
 pub(crate) enum FluvioBound {
     Encoder,
     Decoder,
+    Default
 }
 
 pub(crate) fn add_bounds(
@@ -59,6 +60,9 @@ pub(crate) fn add_bounds(
                     type_param
                         .bounds
                         .push(parse_quote!(fluvio_protocol::Decoder));
+                }
+                FluvioBound::Default => {
+                    type_param.bounds.push(parse_quote!(Default));
                 }
             }
             if attr.trace {

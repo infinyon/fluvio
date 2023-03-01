@@ -362,7 +362,7 @@ pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
         DeriveItem::Struct(kf_struct, attrs) => {
             let ident = &kf_struct.struct_ident();
             let field_tokens = generate_default_impls(&kf_struct.props());
-            let generics = add_bounds(kf_struct.generics().clone(), &attrs, FluvioBound::Decoder);
+            let generics = add_bounds(kf_struct.generics().clone(), &attrs, FluvioBound::Default);
             let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             quote! {
                 impl #impl_generics Default for #ident #ty_generics #where_clause {

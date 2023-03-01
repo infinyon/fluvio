@@ -124,3 +124,32 @@ fn test_generic() {
     assert_eq!(decoded_record.value, 25);
 }
 */
+
+
+
+#[derive(Default, Debug)]
+pub struct Root<R> {
+    pub topic: String,
+    pub stream_id: u32,
+    pub partition: Child<R>,
+}
+
+
+#[derive(Default, Debug)]
+pub struct Child<R> {
+    pub value: R,
+}
+
+
+#[derive(Default, Decoder, Debug)]
+pub struct Root2<R> {
+    pub topic: String,
+    pub stream_id: u32,
+    pub partition: Child2<R>,
+}
+
+
+#[derive(Default, Decoder, Debug)]
+pub struct Child2<R> {
+    pub value: R,
+}
