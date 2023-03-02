@@ -65,13 +65,11 @@ where
     #[fluvio(min_version = 11)]
     pub wasm_module: Vec<u8>,
     // TODO: remove in 0.10
-    #[fluvio(min_version = 12)]
-    #[fluvio(max_version = 18)]
+    #[fluvio(min_version = 12, max_version = 18)]
     pub wasm_payload: Option<LegacySmartModulePayload>,
-    #[fluvio(min_version = 16)]
-    #[fluvio(max_version = 18)]
+    #[fluvio(min_version = 16, max_version = 18)]
     pub smartmodule: Option<SmartModuleInvocation>,
-    #[fluvio(min_version = 16)]
+    #[fluvio(min_version = 16, max_version = 18)]
     pub derivedstream: Option<DerivedStreamInvocation>,
     #[fluvio(min_version = 18)]
     pub smartmodules: Vec<SmartModuleInvocation>,
