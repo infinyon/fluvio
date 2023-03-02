@@ -1,9 +1,3 @@
-use crate::ast::prop::UnnamedProp;
-use crate::ast::r#struct::FluvioStructProps;
-use crate::ast::{
-    container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
-    DeriveItem,
-};
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
@@ -13,17 +7,28 @@ use syn::Ident;
 use syn::LitInt;
 use syn::Token;
 
+use crate::ast::add_bounds;
+use crate::ast::prop::UnnamedProp;
+use crate::ast::r#struct::FluvioStructProps;
+use crate::ast::FluvioBound;
+use crate::ast::{
+    container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
+    DeriveItem,
+};
+
 pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
-        DeriveItem::Struct(kf_struct, _attrs) => {
+        DeriveItem::Struct(kf_struct, attrs) => {
             // TODO: struct level attrs is not used.
-            let field_tokens = generate_struct_fields(&kf_struct.props(), kf_struct.struct_ident());
+            let field_tokens =
+                generate_struct_fields(&kf_struct.props(), kf_struct.struct_ident(), attrs);
             let ident = &kf_struct.struct_ident();
-            let (impl_generics, ty_generics, where_clause) = kf_struct.generics().split_for_impl();
+            let generics = add_bounds(kf_struct.generics().clone(), attrs, FluvioBound::Decoder);
+            let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
-                        tracing::trace!("decoding struct: {}",stringify!(#ident));
+                      //  tracing::trace!("decoding struct: {}",stringify!(#ident));
                         #field_tokens
                         Ok(())
                     }
@@ -32,7 +37,8 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
         }
         DeriveItem::Enum(kf_enum, attrs) => {
             let ident = &kf_enum.enum_ident;
-            let (impl_generics, ty_generics, where_clause) = kf_enum.generics.split_for_impl();
+            let generics = add_bounds(kf_enum.generics.clone(), attrs, FluvioBound::Decoder);
+            let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             let int_type = if let Some(int_type_name) = &attrs.repr_type_name {
                 format_ident!("{}", int_type_name)
             } else {
@@ -58,13 +64,14 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
 pub(crate) fn generate_struct_fields(
     props: &FluvioStructProps,
     struct_ident: &Ident,
+    attr: &ContainerAttributes,
 ) -> TokenStream {
     match props {
         FluvioStructProps::Named(named_fields) => {
-            generate_struct_named_fields(named_fields, struct_ident)
+            generate_struct_named_fields(named_fields, struct_ident, attr)
         }
         FluvioStructProps::Unnamed(unnamed_fields) => {
-            generate_struct_unnamed_fields(unnamed_fields, struct_ident)
+            generate_struct_unnamed_fields(unnamed_fields, struct_ident, attr)
         }
     }
 }
@@ -72,33 +79,46 @@ pub(crate) fn generate_struct_fields(
 pub(crate) fn generate_struct_named_fields(
     props: &[NamedProp],
     struct_ident: &Ident,
+    attr: &ContainerAttributes,
 ) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
-            quote! {
-                tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
-                let result = self.#fname.decode_varint(src);
-                if result.is_ok() {
-                    tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
-                } else {
-                    tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
-                    return result;
+            if attr.trace {
+                quote! {
+                    tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
+                    let result = self.#fname.decode_varint(src);
+                    if result.is_ok() {
+                        tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
+                    } else {
+                        tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
+            } else {
+                quote! {
+                    self.#fname.decode_varint(src)?;
                 }
             }
         } else {
-            let base = quote! {
-                tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#fname));
-                let result = self.#fname.decode(src,version);
-                if result.is_ok() {
-                    tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
-                } else {
-                    tracing::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
-                    return result;
+            let base = if attr.trace {
+                quote! {
+                    tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#fname));
+                    let result = self.#fname.decode(src,version);
+                    if result.is_ok() {
+                        tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                    } else {
+                        tracing::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                        return result;
+                    }
                 }
+             } else {
+                    quote! {
+                        self.#fname.decode(src,version)?;
+                    }
             };
 
-            prop.version_check_token_stream(base)
+            prop.version_check_token_stream(base, attr.trace)
         }
     });
     quote! {
@@ -109,33 +129,46 @@ pub(crate) fn generate_struct_named_fields(
 pub(crate) fn generate_struct_unnamed_fields(
     props: &[UnnamedProp],
     struct_ident: &Ident,
+    attrs: &ContainerAttributes,
 ) -> TokenStream {
     let recurse = props.iter().enumerate().map(|(idx, prop)| {
         let field_idx = syn::Index::from(idx);
         if prop.attrs.varint {
-            quote! {
-                tracing::trace!("start decoding varint field <{}>", stringify!(#idx));
-                let result = self.#field_idx.decode_varint(src);
-                if result.is_ok() {
-                    tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#idx),&self.#field_idx);
-                } else {
-                    tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
-                    return result;
+            if attrs.trace {
+                quote! {
+                    tracing::trace!("start decoding varint field <{}>", stringify!(#idx));
+                    let result = self.#field_idx.decode_varint(src);
+                    if result.is_ok() {
+                        tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#idx),&self.#field_idx);
+                    } else {
+                        tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
+            } else {
+                quote! {
+                    self.#field_idx.decode_varint(src)?;
                 }
             }
         } else {
-            let base = quote! {
-                tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#idx));
-                let result = self.#field_idx.decode(src,version);
-                if result.is_ok() {
-                    tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
-                } else {
-                    tracing::trace!("error decoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
-                    return result;
+            let base = if attrs.trace {
+                quote! {
+                    tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#idx));
+                    let result = self.#field_idx.decode(src,version);
+                    if result.is_ok() {
+                        tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                    } else {
+                        tracing::trace!("error decoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                        return result;
+                    }
+                }
+            }else {
+                quote! {
+                    self.#field_idx.decode(src,version)?;
                 }
             };
 
-            prop.version_check_token_stream(base)
+            prop.version_check_token_stream(base, attrs.trace)
         }
     });
     quote! {
@@ -350,10 +383,11 @@ fn generate_try_enum_from_kf_enum(
 
 pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
-        DeriveItem::Struct(kf_struct, _attrs) => {
+        DeriveItem::Struct(kf_struct, attrs) => {
             let ident = &kf_struct.struct_ident();
             let field_tokens = generate_default_impls(&kf_struct.props());
-            let (impl_generics, ty_generics, where_clause) = kf_struct.generics().split_for_impl();
+            let generics = add_bounds(kf_struct.generics().clone(), attrs, FluvioBound::Default);
+            let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
             quote! {
                 impl #impl_generics Default for #ident #ty_generics #where_clause {
                     fn default() -> Self {

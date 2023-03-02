@@ -7,8 +7,8 @@ use std::path::Path;
 
 use tracing::debug;
 use tracing::trace;
-
 use bytes::{Buf, BufMut};
+
 use crate::api::RequestHeader;
 use crate::{Decoder, Encoder, Version};
 

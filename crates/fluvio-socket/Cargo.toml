@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.13.3"
+version = "0.14.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -33,7 +33,7 @@ semver = "1.0.0"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.4.0", features = ["net", "task", "retry"] }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
     "derive",
     "api",
     "codec",

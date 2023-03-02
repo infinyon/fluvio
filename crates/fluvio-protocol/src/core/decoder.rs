@@ -18,7 +18,6 @@ pub trait Decoder: Sized + Default {
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
         T: Buf,
-        Self: Default,
     {
         let mut decoder = Self::default();
         decoder.decode(src, version)?;
@@ -38,7 +37,7 @@ pub trait DecoderVarInt {
 
 impl<M> Decoder for Vec<M>
 where
-    M: Default + Decoder,
+    M: Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -76,7 +75,7 @@ where
 
 impl<M> Decoder for Option<M>
 where
-    M: Default + Decoder,
+    M: Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -95,10 +94,7 @@ where
     }
 }
 
-impl<M> Decoder for PhantomData<M>
-where
-    M: Default + Decoder,
-{
+impl<M> Decoder for PhantomData<M> {
     fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), Error>
     where
         T: Buf,

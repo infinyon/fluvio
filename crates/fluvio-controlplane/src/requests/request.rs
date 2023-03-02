@@ -5,10 +5,7 @@ use fluvio_controlplane_metadata::message::Message;
 
 /// General control plane request
 #[derive(Decoder, Encoder, Debug, Default)]
-pub struct ControlPlaneRequest<S>
-where
-    S: Encoder + Decoder + Debug,
-{
+pub struct ControlPlaneRequest<S> {
     pub epoch: i64,
     pub changes: Vec<Message<S>>,
     pub all: Vec<S>,

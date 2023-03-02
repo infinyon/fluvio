@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-sc-schema"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SC"
@@ -24,9 +24,9 @@ paste = "1.0"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.4.0", path = "../fluvio-types" }
-fluvio-controlplane-metadata = { version = "0.21.0", default-features = false, path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = ["link"]}
-fluvio-socket = { path = "../fluvio-socket", version = "0.13.1"}
+fluvio-controlplane-metadata = { version = "0.22.0", default-features = false, path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.9.0", features = ["link"]}
+fluvio-socket = { path = "../fluvio-socket", version = "0.14.0"}
 
 [dev-dependencies]
 fluvio-future = { version = "0.4.0", features = ["subscriber"] }

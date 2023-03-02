@@ -57,7 +57,7 @@ impl FluvioSink {
     #[instrument(level = "trace",skip(req_msg),fields(req=?req_msg))]
     pub async fn send_request<R>(&mut self, req_msg: &RequestMessage<R>) -> Result<(), SocketError>
     where
-        RequestMessage<R>: FlvEncoder + Default + Debug,
+        RequestMessage<R>: FlvEncoder + Debug,
     {
         self.inner.send((req_msg, 0)).await?;
         Ok(())
@@ -71,7 +71,7 @@ impl FluvioSink {
         version: Version,
     ) -> Result<(), SocketError>
     where
-        ResponseMessage<P>: FlvEncoder + Default + Debug,
+        ResponseMessage<P>: FlvEncoder + Debug,
     {
         trace!("sending response {:#?}", &resp_msg);
         self.inner.send((resp_msg, version)).await?;
@@ -202,7 +202,7 @@ impl ExclusiveFlvSink {
 
     pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), SocketError>
     where
-        RequestMessage<R>: FlvEncoder + Default + Debug,
+        RequestMessage<R>: FlvEncoder + Debug,
     {
         let mut inner_sink = self.inner.lock().await;
         inner_sink.send_request(req_msg).await
@@ -215,7 +215,7 @@ impl ExclusiveFlvSink {
         version: Version,
     ) -> Result<(), SocketError>
     where
-        ResponseMessage<P>: FlvEncoder + Default + Debug,
+        ResponseMessage<P>: FlvEncoder + Debug,
     {
         let mut inner_sink = self.inner.lock().await;
         inner_sink.send_response(resp_msg, version).await

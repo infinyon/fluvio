@@ -1,5 +1,19 @@
 use fluvio_protocol::{Encoder, EncoderVarInt};
 
+#[derive(Encoder)]
+pub struct ByteRecord {
+    attributes: i8,
+}
+
+#[test]
+fn test_encode_byte_struct() {
+    let rec = ByteRecord { attributes: 10 };
+
+    let mut src = vec![];
+    rec.encode(&mut src, 0).expect("encode");
+    assert_eq!(src.len(), 1);
+}
+
 #[derive(Encoder, Default, Debug)]
 pub struct SimpleRecord {
     #[varint]

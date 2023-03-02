@@ -31,7 +31,7 @@ use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_protocol::Decoder;
+use fluvio_protocol::{Decoder};
 
 use crate::SocketError;
 use crate::ExclusiveFlvSink;

@@ -50,10 +50,7 @@ pub const CHAIN_SMARTMODULE_API: i16 = 18;
 #[allow(deprecated)]
 #[derive(Decoder, Encoder, Default, Educe)]
 #[educe(Debug)]
-pub struct StreamFetchRequest<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct StreamFetchRequest<R> {
     pub topic: String,
     pub partition: PartitionId,
     pub fetch_offset: i64,
@@ -95,10 +92,7 @@ pub struct DerivedStreamInvocation {
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct StreamFetchResponse<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct StreamFetchResponse<R> {
     pub topic: String,
     pub stream_id: u32,
     pub partition: FetchablePartitionResponse<R>,

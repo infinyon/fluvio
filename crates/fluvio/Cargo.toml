@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -54,29 +54,29 @@ fluvio-future = { version = "0.4.4", features = [
 fluvio-types = { version = "0.4.0", features = [
     "events",
 ], path = "../fluvio-types" }
-fluvio-sc-schema = { version = "0.17.0", path = "../fluvio-sc-schema", default-features = false }
-fluvio-socket = { path = "../fluvio-socket", version = "0.13.0" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.8", features = [
+fluvio-sc-schema = { version = "0.18.0", path = "../fluvio-sc-schema", default-features = false }
+fluvio-socket = { path = "../fluvio-socket", version = "0.14.0" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
     "record",
     "api",
 ] }
 fluvio-compression = { version = "0.2", path = "../fluvio-compression" }
-fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.4.0", default-features = false }
+fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.5.0", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "4.0.0"
 chrono = {version =  "0.4", default-features = false, features = ["clock"]}
-fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.6.0",  optional = true}
+fluvio-smartengine = { path = "../fluvio-smartengine", version = "0.7.0",  optional = true}
 
 [target.'cfg(unix)'.dependencies]
-fluvio-spu-schema = { version = "0.12.0", path = "../fluvio-spu-schema", features = [
+fluvio-spu-schema = { version = "0.13.0", path = "../fluvio-spu-schema", features = [
     "file",
 ] }
 [target.'cfg(windows)'.dependencies]
-fluvio-spu-schema = { version = "0.12.0", path = "../fluvio-spu-schema" }
+fluvio-spu-schema = { version = "0.13.0", path = "../fluvio-spu-schema" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-fluvio-spu-schema = { version = "0.12.0", path = "../fluvio-spu-schema" }
+fluvio-spu-schema = { version = "0.13.0", path = "../fluvio-spu-schema" }
 chrono = {version =  "0.4", features = ["wasmbind", "clock"]}
 
 [dev-dependencies]

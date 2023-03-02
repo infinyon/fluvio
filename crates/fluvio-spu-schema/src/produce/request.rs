@@ -22,10 +22,7 @@ pub type DefaultPartitionRequest = PartitionProduceData<RecordSet<RawRecords>>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet<RawRecords>>;
 
 #[derive(FluvioDefault, Debug)]
-pub struct ProduceRequest<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct ProduceRequest<R> {
     /// The transactional ID, or null if the producer is not transactional.
     #[fluvio(min_version = 3)]
     pub transactional_id: Option<String>,
@@ -56,10 +53,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct TopicProduceData<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct TopicProduceData<R> {
     /// The topic name.
     pub name: String,
 
@@ -69,10 +63,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct PartitionProduceData<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct PartitionProduceData<R> {
     /// The partition index.
     pub partition_index: PartitionId,
 

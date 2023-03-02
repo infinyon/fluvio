@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartmodule"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -29,7 +29,7 @@ eyre = { version = ">=0.6.8", default-features = false, features = [
     "auto-install",
 ] }
 fluvio-smartmodule-derive = { version = "0.4.0", path = "../fluvio-smartmodule-derive" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.8.0", features = [
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.9.0", features = [
     "link",
 ] }
 

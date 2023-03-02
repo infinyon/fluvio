@@ -24,6 +24,7 @@ pub struct ContainerAttributes {
     pub api_key: Option<u8>,
     pub response: Option<String>,
     pub repr_type_name: Option<String>,
+    pub trace: bool,
 }
 
 impl ContainerAttributes {
@@ -63,6 +64,8 @@ impl ContainerAttributes {
                         } else if let NestedMeta::Meta(Meta::Path(path)) = kf_attr {
                             if path.is_ident("default") {
                                 cont_attr.default = true;
+                            } else if path.is_ident("trace") {
+                                cont_attr.trace = true;
                             } else if path.is_ident("encode_discriminant") {
                                 cont_attr.encode_discriminant = true;
                             } else {

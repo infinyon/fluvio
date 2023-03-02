@@ -11,10 +11,7 @@ use fluvio_protocol::record::Offset;
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct FetchResponse<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct FetchResponse<R> {
     /// The duration in milliseconds for which the request was throttled due to a quota violation,
     /// or zero if the request did not violate any quota.
     pub throttle_time_ms: i32,
@@ -25,10 +22,7 @@ where
     pub topics: Vec<FetchableTopicResponse<R>>,
 }
 
-impl<R> FetchResponse<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+impl<R> FetchResponse<R> {
     pub fn find_partition(
         self,
         topic: &str,
@@ -49,10 +43,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct FetchableTopicResponse<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct FetchableTopicResponse<R> {
     /// The topic name.
     pub name: String,
 
@@ -62,10 +53,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct FetchablePartitionResponse<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct FetchablePartitionResponse<R> {
     /// The partition index.
     pub partition_index: PartitionId,
 
@@ -113,10 +101,7 @@ pub struct AbortedTransaction {
 // Implementation
 // -----------------------------------
 
-impl<R> FetchResponse<R>
-where
-    R: Encoder + Decoder + Debug,
-{
+impl<R> FetchResponse<R> {
     pub fn find_topic(&self, topic: &str) -> Option<&FetchableTopicResponse<R>>
     where
         R: Debug,

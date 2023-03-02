@@ -14,10 +14,7 @@ use super::FetchResponse;
 pub type DefaultFetchRequest = FetchRequest<RecordSet>;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct FetchRequest<R>
-where
-    R: Encoder + Decoder + Default + Debug,
-{
+pub struct FetchRequest<R> {
     /// The maximum time in milliseconds to wait for the response.
     pub max_wait: i32,
 

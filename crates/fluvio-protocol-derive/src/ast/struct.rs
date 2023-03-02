@@ -9,7 +9,7 @@ pub(crate) enum FluvioStruct {
 pub(crate) struct FluvioNamedStruct {
     pub struct_ident: Ident,
     pub props: Vec<NamedProp>,
-    pub generics: Generics,
+    generics: Generics,
 }
 
 impl FluvioStruct {
