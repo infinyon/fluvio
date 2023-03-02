@@ -26,7 +26,7 @@ cargo-builder = { path = "../cargo-builder"}
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 toml = { workspace=true, default-features = false, features = ["parse", "display", "preserve_order"] }
 comfy-table = { version = "6.1" }
-sysinfo = { version = "0.27", default-features = false }
+sysinfo = { version = "0.28", default-features = false }
 cargo-generate = "0.18.0"
 include_dir = "0.7.2"
 tempfile = "3.3.0"
