@@ -500,7 +500,6 @@ In certain cases, partition may not be deleted correctly.  In this case, you can
 kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' --type merge
 ```
 
-
  ## Optional: Download a published version of Fluvio
 
 Instead of building Fluvio, you may want to prefer just to download it and get to work.  You can use our one-line installation script.  You can use it to install the latest release or prerelease, or install a specific version:
