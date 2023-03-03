@@ -53,7 +53,7 @@ mod cmd {
     use crate::render::ProgressRenderer;
     use crate::{CliError};
     use crate::common::FluvioExtensionMetadata;
-    use crate::util::parse_isolation;
+    use crate::util::{parse_isolation, parse_key_val};
     use crate::common::Terminal;
 
     use super::record_format::{
@@ -206,13 +206,6 @@ mod cmd {
         /// E.g. fluvio consume topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
         #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
         pub transform: Vec<String>,
-    }
-
-    fn parse_key_val(s: &str) -> Result<(String, String)> {
-        let pos = s.find('=').ok_or_else(|| {
-            CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{s}`"))
-        })?;
-        Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
     }
 
     #[async_trait]

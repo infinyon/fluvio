@@ -40,7 +40,7 @@ mod cmd {
     use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
     use crate::monitoring::init_monitoring;
-    use crate::util::parse_isolation;
+    use crate::util::{parse_isolation, parse_key_val};
 
     #[cfg(feature = "stats")]
     use super::stats::*;
@@ -105,6 +105,51 @@ mod cmd {
         /// Max amount of bytes accumulated before sending
         #[clap(long)]
         pub batch_size: Option<usize>,
+
+        /// Name of the smartmodule
+        #[clap(
+            long,
+            group("smartmodule_group"),
+            group("aggregate_group"),
+            alias = "sm"
+        )]
+        pub smartmodule: Option<String>,
+
+        /// Path to the smart module
+        #[clap(
+            long,
+            group("smartmodule_group"),
+            group("aggregate_group"),
+            alias = "sm_path"
+        )]
+        pub smartmodule_path: Option<PathBuf>,
+
+        /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
+        #[clap(long, requires = "aggregate_group", alias = "a-init")]
+        pub aggregate_initial: Option<String>,
+
+        /// (Optional) Extra input parameters passed to the smartmodule module.
+        /// They should be passed using key=value format
+        /// Eg. fluvio produce topic-name --smartmodule my_filter -e foo=bar -e key=value -e one=1
+        #[clap(
+            short = 'e',
+            requires = "smartmodule_group",
+            long="params",
+            value_parser=parse_key_val,
+            // value_parser,
+            // action,
+            number_of_values = 1
+        )]
+        pub params: Option<Vec<(String, String)>>,
+
+        /// (Optional) Path to a file with transformation specification.
+        #[clap(long, conflicts_with = "smartmodule_group")]
+        pub transforms_file: Option<PathBuf>,
+
+        /// (Optional) Transformation specification as JSON formatted string.
+        /// E.g. fluvio produce topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
+        #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
+        pub transform: Vec<String>,
 
         /// Isolation level that producer must respect.
         /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,

@@ -413,6 +413,7 @@ async fn check_for_channel_update() {
 
 mod util {
     use fluvio_spu_schema::Isolation;
+    use crate::{CliError};
 
     pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
         match s {
@@ -420,5 +421,12 @@ mod util {
             "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
             _ => Err(format!("unrecognized isolation: {s}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)")),
         }
+    }
+
+    pub(crate) fn parse_key_val(s: &str) -> Result<(String, String), CliError> {
+        let pos = s.find('=').ok_or_else(|| {
+            CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{s}`"))
+        })?;
+        Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
     }
 }
