@@ -1,0 +1,156 @@
+# All crates
+# Group up where it makes sense
+# Labels to help PR reviewers see scope before looking at code
+"cargo-builder":
+  - "crates/cargo-builder/**"
+
+"CLI:cdk":
+  - "crates/cdk"
+  - "crates/fluvio-connector-common/**"
+  - "crates/fluvio-connector-deployer/**"
+  - "crates/fluvio-connector-derive/**"
+  - "crates/fluvio-connector-package/**"
+
+"fluvio":
+  - "crates/fluvio/**"
+
+"fluvio-auth":
+  - "crates/fluvio-auth/**"
+
+"CLI:fbm":
+  - "crates/fluvio-benchmark/**"
+
+"CLI:fluvio-channel":
+  - "crates/fluvio-channel/**"
+  - "crates/fluvio-channel-cli/**"
+
+"CLI:fluvio":
+  - "crates/fluvio-cli/**"
+
+"fluvio-cli-common":
+  - "crates/fluvio-cli-common/**"
+
+"fluvio-cluster":
+  - "crates/fluvio-cluster/**"
+
+"fluvio-compression":
+  - "crates/fluvio-compression/**"
+
+"fluvio-controlplane":
+  - "crates/fluvio-controlplane/**"
+
+"fluvio-controlplane-metadata":
+  - "crates/fluvio-controlplane-metadata/**"
+
+"fluvio-extension-common":
+  - "crates/fluvio-extension-common/**"
+
+"fluvio-hub":
+  - "crates/fluvio-hub-protocol/**"
+  - "crates/fluvio-hub-util/**"
+
+"fluvio-package-index":
+  - "crates/fluvio-package-index/**"
+
+"fluvio-protocol":
+  - "crates/fluvio-protocol/**"
+
+"fluvio-protocol-derive":
+  - "crates/fluvio-protocol-derive/**"
+
+"CLI:fluvio-run":
+  - "crates/fluvio-run/**"
+
+"fluvio-sc":
+  - "crates/fluvio-sc/**"
+  - "crates/fluvio-sc-schema/**"
+
+"fluvio-service":
+  - "crates/fluvio-service/**"
+
+"fluvio-smartengine":
+  - "crates/fluvio-smartengine/**"
+
+"fluvio-smartmodule":
+  - "crates/fluvio-smartmodule/**"
+  - "crates/fluvio-smartmodule-derive/**"
+
+"fluvio-socket":
+  - "crates/fluvio-socket/**"
+
+"fluvio-spu":
+  - "crates/fluvio-spu/**"
+  - "crates/fluvio-spu-schema/**"
+
+"fluvio-storage":
+  - "crates/fluvio-storage/**"
+
+"fluvio-stream-dispatcher":
+  - "crates/fluvio-stream-dispatcher/**"
+
+"fluvio-stream-model":
+  - "crates/fluvio-stream-model/**"
+
+"CLI:fluvio-test":
+  - "crates/fluvio-test/**"
+  - "crates/fluvio-test-case-derive/**"
+  - "crates/fluvio-test-derive/**"
+  - "crates/fluvio-test-util/**"
+
+"fluvio-types":
+  - "crates/fluvio-types/**"
+
+"CLI:smdk":
+  - "crates/smartmodule-development-kit/**"
+
+# Additional groups
+
+"Smartmodule":
+  - "smartmodule/**"
+  - "crates/fluvio-smartmodule/**"
+  - "crates/fluvio-smartmodule-derive/**"
+
+"Connectors":
+  - "connectors/**"
+
+"Installation":
+  - "install.sh"
+  - "crates/fluvio-cli-common/src/install.rs"
+  - "crates/fluvio-cli/src/install/**"
+
+"CI":
+  - ".github/**"
+  - "bors.toml"
+  - "Makefile"
+  - "makefiles/**"
+  - "deny.toml"
+  - "actions/**"
+  - "build-scripts/**"
+  - "k8-util"
+  - "tls"
+  - "tests"
+  - "action.yaml"
+
+"Release":
+  - "VERSION"
+  - "CHANGELOG.md"
+  - "release-tools/**"
+  - "./github/workflows/publish.yml"
+  - "./github/workflows/release.yml"
+  - "cliff.toml"
+
+"Dev-docs:":
+  - "DEVELOPER.md"
+  - "README.md"
+  - "RELEASE.md"
+  - "examples/**"
+  - "dev-tools/**"
+
+"Repo-related":
+  - "LICENSE"
+  - "CODE-OF-CONDUCT.md"
+  - "CONTRIBUTING.md"
+  - "rustfmt.toml"
+  - ".cargo/**"
+  - ".github/ISSUE_TEMPLATE"
+  - ".github/PULL_REQUEST_TEMPLATE"
