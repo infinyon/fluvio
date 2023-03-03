@@ -94,13 +94,6 @@ pub enum SmartModuleKind {
     },
     #[fluvio(min_version = ARRAY_MAP_WASM_API)]
     FilterMap,
-    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API)]
-    Join(String),
-    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API)]
-    JoinStream {
-        topic: String,
-        derivedstream: String,
-    },
     #[fluvio(min_version = GENERIC_SMARTMODULE_API)]
     Generic(SmartModuleContextData),
 }
@@ -113,8 +106,6 @@ impl std::fmt::Display for SmartModuleKind {
             SmartModuleKind::ArrayMap => "array_map",
             SmartModuleKind::Aggregate { .. } => "aggregate",
             SmartModuleKind::FilterMap => "filter_map",
-            SmartModuleKind::Join(..) => "join",
-            SmartModuleKind::JoinStream { .. } => "join_stream",
             SmartModuleKind::Generic(..) => "smartmodule",
         };
         out.write_str(name)
