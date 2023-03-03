@@ -92,9 +92,43 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
+}
 
-    # Delete smartmodule
-    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+@test "invoke filter smartmodule in producer with params" {
+    # Create topic
+    TOPIC_NAME="$(random_string)"
+    export TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    assert_success
+
+    # Produce a message that should be filtered out
+    FILTERED_OUT_MESSAGE="aaaaa"
+    export FILTERED_OUT_MESSAGE
+    run bash -c 'echo "$FILTERED_OUT_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
+        --smartmodule-path $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_param.wasm \
+        --params key=z'
     echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+
+    # Produce a message that should be retained
+    RETAINED_MESSAGE="zzzzz"
+    export RETAINED_MESSAGE
+    run bash -c 'echo "$RETAINED_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
+        --smartmodule-path $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_filter_param.wasm \
+        --params key=z'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+
+    # Consume from topic and verify we don't see the $FILTERED_OUT_MESSAGE
+    EXPECTED_OUTPUT="${RETAINED_MESSAGE}"
+    export EXPECTED_OUTPUT
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    refute_line --partial "$FILTERED_OUT_MESSAGE"
+    assert_output "$EXPECTED_OUTPUT"
+
+
+
+    # Delete topic
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
     assert_success
 }
