@@ -50,7 +50,8 @@ members = [
     "crates/cdk",
     "crates/cargo-builder",
     "connector/json-test-connector",
-    "connector/sink-test-connector"
+    "connector/sink-test-connector",
+    "release-tools/devops-cli",
 ]
 
 exclude = ["smartmodule/regex-filter"]

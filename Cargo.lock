@@ -1886,6 +1886,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "devops-cli"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap 4.1.8",
+ "semver 1.0.16",
+ "serde",
+ "serde_json",
+ "strum",
+ "subprocess",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "dialoguer"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6681,6 +6696,9 @@ name = "strum"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+dependencies = [
+ "strum_macros",
+]
 
 [[package]]
 name = "strum_macros"
@@ -6693,6 +6711,16 @@ dependencies = [
  "quote",
  "rustversion",
  "syn",
+]
+
+[[package]]
+name = "subprocess"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c2e86926081dda636c546d8c5e641661049d7562a68f5488be4a1f7f66f6086"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
