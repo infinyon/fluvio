@@ -7,6 +7,7 @@ mod cmd {
 
     use std::sync::Arc;
     use std::io::{BufReader, BufRead};
+    use std::collections::BTreeMap;
     use std::fmt::Debug;
     use std::time::Duration;
     #[cfg(feature = "producer-file-io")]
@@ -24,10 +25,9 @@ mod cmd {
 
     use fluvio::{
         Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-        ProduceOutput, DeliverySemantic,
+        ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation,
     };
     use fluvio_extension_common::Terminal;
-    use fluvio_spu_schema::Isolation;
     use fluvio_types::print_cli_ok;
 
     #[cfg(feature = "producer-file-io")]
@@ -41,6 +41,11 @@ mod cmd {
     use crate::common::FluvioExtensionMetadata;
     use crate::monitoring::init_monitoring;
     use crate::util::{parse_isolation, parse_key_val};
+    use crate::client::smartmodule_invocation::{
+        create_smartmodule, create_smartmodule_from_path, create_smartmodule_list,
+    };
+    use crate::CliError;
+    use fluvio_smartengine::transformation::TransformationConfig;
 
     #[cfg(feature = "stats")]
     use super::stats::*;
@@ -255,6 +260,42 @@ mod cmd {
                 warn!("Isolation is ignored for AtMostOnce delivery semantic");
             }
 
+            let initial_param = match &self.params {
+                None => BTreeMap::default(),
+                Some(params) => params.clone().into_iter().collect(),
+            };
+
+            let smartmodule_invocations = if let Some(smart_module_name) = &self.smartmodule {
+                vec![create_smartmodule(
+                    smart_module_name,
+                    self.smart_module_ctx(),
+                    initial_param,
+                )]
+            } else if let Some(path) = &self.smartmodule_path {
+                vec![create_smartmodule_from_path(
+                    path,
+                    self.smart_module_ctx(),
+                    initial_param,
+                )?]
+            } else if !self.transform.is_empty() {
+                let config =
+                    TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
+                        CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
+                    })?;
+                create_smartmodule_list(config)?
+            } else if let Some(transforms_file) = &self.transforms_file {
+                let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
+                    CliError::InvalidArg(format!(
+                        "unable to process `transforms_file` argument: {err}"
+                    ))
+                })?;
+                create_smartmodule_list(config)?
+            } else {
+                Vec::new()
+            };
+
+            let config_builder = config_builder.smartmodules(smartmodule_invocations);
+
             let config = config_builder
                 .delivery_semantic(self.delivery_semantic)
                 .build()
@@ -371,6 +412,16 @@ mod cmd {
             }
 
             Ok(())
+        }
+
+        pub fn smart_module_ctx(&self) -> SmartModuleContextData {
+            if let Some(agg_initial) = &self.aggregate_initial {
+                SmartModuleContextData::Aggregate {
+                    accumulator: agg_initial.clone().into_bytes(),
+                }
+            } else {
+                SmartModuleContextData::None
+            }
         }
 
         async fn produce_lines(

@@ -46,7 +46,7 @@ mod cmd {
 
     use crate::monitoring::init_monitoring;
     use crate::render::ProgressRenderer;
-    use crate::{CliError};
+    use crate::CliError;
     use crate::common::FluvioExtensionMetadata;
     use crate::util::{parse_isolation, parse_key_val};
     use crate::common::Terminal;
