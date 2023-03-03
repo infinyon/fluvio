@@ -41,7 +41,7 @@ once_cell = { version = "1.5.2", optional = true }
 derive_builder = { version = "0.12.0" , optional = true }
 eyre = { version = "0.6", default-features = false, optional = true }
 
-fluvio-protocol-derive = { version = "0.4.0", path = "../fluvio-protocol-derive", optional = true }
+fluvio-protocol-derive = { version = "0.5.0", path = "../fluvio-protocol-derive", optional = true }
 fluvio-future = { version = "0.4.0", optional = true }
 flv-util = { version = "0.5.0", optional = true }
 fluvio-compression = { version = "0.2", path = "../fluvio-compression", optional = true}

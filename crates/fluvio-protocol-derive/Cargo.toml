@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-protocol-derive"
-version = "0.4.5"
+version = "0.5.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description =  "Procedure macro to encode/decode fluvio protocol"
