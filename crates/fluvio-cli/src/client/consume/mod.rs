@@ -180,7 +180,7 @@ mod cmd {
 
         /// (Optional) Extra input parameters passed to the smartmodule module.
         /// They should be passed using key=value format
-        /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
+        /// Eg. fluvio consume topic-name --smartmodule my_filter -e foo=bar -e key=value -e one=1
         #[clap(
             short = 'e',
             requires = "smartmodule_group",
