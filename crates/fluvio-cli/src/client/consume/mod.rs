@@ -13,17 +13,14 @@ pub use cmd::ConsumeOpt;
 
 mod cmd {
 
-    use std::path::Path;
     use std::time::{UNIX_EPOCH, Duration};
     use std::{io::Error as IoError, path::PathBuf};
-    use std::io::{self, ErrorKind, Read, Stdout};
+    use std::io::{self, ErrorKind, Stdout};
     use std::collections::BTreeMap;
     use std::fmt::Debug;
     use std::sync::Arc;
 
     use tracing::{debug, trace, instrument};
-    use flate2::Compression;
-    use flate2::bufread::GzEncoder;
     use clap::{Parser, ValueEnum};
     use futures::{select, FutureExt};
     use async_trait::async_trait;
@@ -39,9 +36,7 @@ mod cmd {
     use anyhow::Result;
 
     use fluvio_types::PartitionId;
-    use fluvio_spu_schema::server::smartmodule::{
-        SmartModuleContextData, SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm,
-    };
+    use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
     use fluvio_protocol::record::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::TableFormatSpec;
     use fluvio_future::io::StreamExt;
@@ -55,6 +50,9 @@ mod cmd {
     use crate::common::FluvioExtensionMetadata;
     use crate::util::{parse_isolation, parse_key_val};
     use crate::common::Terminal;
+    use crate::client::smartmodule_invocation::{
+        create_smartmodule, create_smartmodule_from_path, create_smartmodule_list,
+    };
 
     use super::record_format::{
         format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
@@ -715,58 +713,7 @@ mod cmd {
         }
     }
 
-    /// create smartmodule from predefined name
-    fn create_smartmodule(
-        name: &str,
-        ctx: SmartModuleContextData,
-        params: BTreeMap<String, String>,
-    ) -> SmartModuleInvocation {
-        SmartModuleInvocation {
-            wasm: SmartModuleInvocationWasm::Predefined(name.to_string()),
-            kind: SmartModuleKind::Generic(ctx),
-            params: params.into(),
-        }
-    }
-
-    /// create smartmodule from wasm file
-    fn create_smartmodule_from_path(
-        path: &Path,
-        ctx: SmartModuleContextData,
-        params: BTreeMap<String, String>,
-    ) -> Result<SmartModuleInvocation> {
-        let raw_buffer = std::fs::read(path)?;
-        debug!(len = raw_buffer.len(), "read wasm bytes");
-        let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
-        let mut buffer = Vec::with_capacity(raw_buffer.len());
-        encoder.read_to_end(&mut buffer)?;
-
-        Ok(SmartModuleInvocation {
-            wasm: SmartModuleInvocationWasm::AdHoc(buffer),
-            kind: SmartModuleKind::Generic(ctx),
-            params: params.into(),
-        })
-    }
-
-    /// create list of smartmodules from a list of transformations
-    fn create_smartmodule_list(config: TransformationConfig) -> Result<Vec<SmartModuleInvocation>> {
-        Ok(config
-            .transforms
-            .into_iter()
-            .map(|t| SmartModuleInvocation {
-                wasm: SmartModuleInvocationWasm::Predefined(t.uses),
-                kind: SmartModuleKind::Generic(Default::default()),
-                params: t
-                    .with
-                    .into_iter()
-                    .map(|(k, v)| (k, v.into()))
-                    .collect::<std::collections::BTreeMap<String, String>>()
-                    .into(),
-            })
-            .collect())
-    }
-
     // Uses clap::ArgEnum to choose possible variables
-
     #[derive(ValueEnum, Debug, Clone, Eq, PartialEq)]
     #[allow(non_camel_case_types)]
     pub enum ConsumeOutputType {
