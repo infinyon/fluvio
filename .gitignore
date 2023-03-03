@@ -10,3 +10,4 @@ VERSION
 .vscode/
 vendor/
 *.tmp
+CHANGELOG-generated.md
