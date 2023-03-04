@@ -8,6 +8,7 @@ use anyhow::{Result};
 use clap::Parser;
 
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
+
 #[derive(Debug, Parser)]
 struct FluvioDevOpsOpt {
     #[clap(subcommand)]
@@ -17,8 +18,6 @@ struct FluvioDevOpsOpt {
 #[derive(Debug, Parser)]
 enum FluvioDevOpsCmd {
     /// Generates the most recent changelog for the repo using `git cliff`.
-    ///
-    /// By default, running this
     UpdateChangelog(UpdateChangelogOpt),
     /// Modify the version
     UpdateVersion(UpdateVersionOpt),
