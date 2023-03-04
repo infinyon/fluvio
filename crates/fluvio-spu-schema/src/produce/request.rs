@@ -16,6 +16,7 @@ use fluvio_types::PartitionId;
 use crate::isolation::Isolation;
 
 use super::ProduceResponse;
+use crate::server::smartmodule::SmartModuleInvocation;
 
 pub type DefaultProduceRequest = ProduceRequest<RecordSet<RawRecords>>;
 pub type DefaultPartitionRequest = PartitionProduceData<RecordSet<RawRecords>>;
@@ -37,6 +38,9 @@ pub struct ProduceRequest<R> {
     /// Each topic to produce to.
     pub topics: Vec<TopicProduceData<R>>,
     pub data: PhantomData<R>,
+
+    #[fluvio(min_version = 18)]
+    pub smartmodules: Vec<SmartModuleInvocation>,
 }
 
 impl<R> Request for ProduceRequest<R>
@@ -118,6 +122,7 @@ impl<R: Encoder + Decoder + Default + Debug + Clone> Clone for ProduceRequest<R>
             timeout: self.timeout,
             topics: self.topics.clone(),
             data: self.data,
+            smartmodules: self.smartmodules.clone(),
         }
     }
 }
