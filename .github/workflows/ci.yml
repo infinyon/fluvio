@@ -919,7 +919,7 @@ jobs:
 
   k8_cli_smoke:
     name: CLI smoke tests
-    needs: build_image
+    needs: build_primary_binaries
     #if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -1009,7 +1009,7 @@ jobs:
 
       - name: Start cluster for stable
         timeout-minutes: 10
-        run: fluvio cluster start
+        run: fluvio cluster start --local
       - name: Build smartmodules for E2E test
         run: |
           make build_smartmodules
