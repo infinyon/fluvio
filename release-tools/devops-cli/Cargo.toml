@@ -8,14 +8,14 @@ publish = false
 anyhow = { workspace = true }
 subprocess = "0.2"
 semver = "1.0"
-clap = { workspace = true }
-tracing-subscriber = "0.3.16"
+clap = { workspace = true , features = ["derive"] }
+tracing-subscriber = { version ="0.3.16", features = ["env-filter"] }
 tracing = "0.1"
 strum = { version = "0.24", features = ["derive"] }
 
 #strum_macros = "0.24"
 
-serde = "1.0.148"
+serde = { version = "1.0.148", features = ["derive"] }
 serde_json = "1.0.89"
 #thiserror = "1.0.37"
 #toml = "0.5"

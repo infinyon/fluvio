@@ -1,8 +1,8 @@
 mod changelog;
 use changelog::UpdateChangelogOpt;
 
-mod version;
-use version::UpdateVersionOpt;
+mod repo_version;
+use repo_version::UpdateVersionOpt;
 
 use anyhow::{Result};
 use clap::Parser;
@@ -16,7 +16,9 @@ struct FluvioDevOpsOpt {
 
 #[derive(Debug, Parser)]
 enum FluvioDevOpsCmd {
-    /// Generate the changelog for the repo using `git cliff`
+    /// Generates the most recent changelog for the repo using `git cliff`.
+    ///
+    /// By default, running this
     UpdateChangelog(UpdateChangelogOpt),
     /// Modify the version
     UpdateVersion(UpdateVersionOpt),

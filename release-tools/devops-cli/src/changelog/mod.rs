@@ -5,6 +5,7 @@ use anyhow::{Result};
 use subprocess::{Exec, Redirection};
 use semver::{Version, Prerelease, BuildMetadata};
 use clap::Parser;
+use tracing::info;
 
 #[derive(Debug, Parser)]
 pub struct UpdateChangelogOpt {
@@ -70,12 +71,17 @@ impl UpdateChangelogOpt {
 
         // We want to be able to pipe json output to `jq`,
         if self.verbose {
-            println!("Previous: v{previous_stable}");
-            println!("Current v{version}");
-            println!("Range: {tag_range}");
-            println!("Output file: {git_cliff_config}");
+            info!("Previous: v{previous_stable}");
+            info!("Current v{version}");
+            info!("Range: {tag_range}");
+            info!("Output file: {changelog_path}");
+            info!("Git-cliff config: {git_cliff_config}");
 
             args.push("--verbose");
+        }
+
+        if !self.json {
+            info!("Generating changelog {tag_range}")
         }
 
         let stream = Exec::cmd(cmd)
@@ -90,6 +96,7 @@ impl UpdateChangelogOpt {
         Ok(())
     }
 
+    /// Return the release version of the previous patch release, unless `--prev-version` is used
     fn get_previous_stable(&self, version: &Version) -> Result<Version> {
         let previous_stable: Version = if let Some(prev) = &self.prev_version {
             prev.parse()?
@@ -105,6 +112,7 @@ impl UpdateChangelogOpt {
         Ok(previous_stable)
     }
 
+    /// Read the version from VERSION file, unless `--release-version` used
     fn get_target_version(&self) -> Result<String> {
         let version_str: String = if let Some(v) = &self.release_version {
             v.to_string()
@@ -114,6 +122,8 @@ impl UpdateChangelogOpt {
         Ok(version_str)
     }
 
+    /// Returns range of `v<current-release - 1>..HEAD`,
+    /// unless we override with `--range-start` or `--range-end`
     fn get_commit_range(&self, previous_stable: &Version) -> (String, String) {
         let range_start = if let Some(start) = &self.range_start {
             start.to_string()
