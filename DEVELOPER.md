@@ -446,6 +446,8 @@ Please follow the [bats-core](https://bats-core.readthedocs.io/en/stable/install
 
 ### Running local smoke test
 
+This requires a running cluster.
+
 Perform smoke test using local cluster mode:
 
 ```
