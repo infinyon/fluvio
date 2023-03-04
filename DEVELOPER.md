@@ -475,7 +475,7 @@ make smoke-test-k8
 Perform CLI smoke test against your running cluster (Kubernetes or local)
 
 ```
-make cli-smoke
+make cli-fluvio-smoke
 ```
 
 ## Troubleshooting
