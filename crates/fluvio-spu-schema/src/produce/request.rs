@@ -37,10 +37,11 @@ pub struct ProduceRequest<R> {
 
     /// Each topic to produce to.
     pub topics: Vec<TopicProduceData<R>>,
-    pub data: PhantomData<R>,
 
     #[fluvio(min_version = 18)]
     pub smartmodules: Vec<SmartModuleInvocation>,
+
+    pub data: PhantomData<R>,
 }
 
 impl<R> Request for ProduceRequest<R>
@@ -110,6 +111,9 @@ where
         self.isolation = Isolation::from(IsolationData::decode_from(src, version)?);
         self.timeout = Duration::try_from(TimeoutData::decode_from(src, version)?)?;
         self.topics = Decoder::decode_from(src, version)?;
+        if version >= 18i16 {
+            self.smartmodules.decode(src, version)?;
+        }
         Ok(())
     }
 }
