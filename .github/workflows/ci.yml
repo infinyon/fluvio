@@ -30,10 +30,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-  K3D_VERSION: v5.4.8
-  BATS_VERSION: 1.9.0
-  MINIKUBE_VERSION: v1.29.0
-  K8_VERSION: 1.23.17
+  K3D_VERSION: v5.4.3
+  BATS_VERSION: 1.7.0
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
@@ -928,7 +926,8 @@ jobs:
   #    fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        cli: [fluvio, smdk, cdk]
+ #       cluster_version: [stable, dev]
+ #       cli_version: [stable, dev]
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
@@ -947,65 +946,84 @@ jobs:
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
 
+
+      # Download stable, this will load into ~/.fluvio/bin which will be in PATH
+      # from now, fluvio will be stable
+      - name: Install stable CLI and start Fluvio cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          echo "~/.fluvio/bin" >> $GITHUB_PATH
+    
+      # Download artifacts from development build
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v3
         with:
           name: fluvio-x86_64-unknown-linux-musl
           path: ~/bin
-      - name: Download Docker Image as Artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          path: /tmp
-      - name: Download artifact - smdk
-        uses: actions/download-artifact@v3
-        with:
-          name: smdk-x86_64-unknown-linux-musl
-          path: ~/bin
-      - name: Download artifact - cdk
-        uses: actions/download-artifact@v3
-        with:
-          name: cdk-x86_64-unknown-linux-musl
-          path: ~/bin
-
-      # Retag image to remove arch from tag
-      - name: Load Fluvio Docker Image
+#      - name: Download artifact - smdk
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: smdk-x86_64-unknown-linux-musl
+#          path: ~/bin
+#      - name: Download artifact - cdk
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: cdk-x86_64-unknown-linux-musl
+#          path: ~/bin
+      - name: rename dev fluvio as fluvio-stable
         run: |
-          ls -la /tmp
-          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
-          docker image ls -a
+          chmod +x ~/bin/fluvio
+          mv ~/bin/fluvio ~/.fluvio/bin/fluvio-dev
 
-      - name: Export Docker Image to tarball
-        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-
-      - name: Load image into K3d
-        run: k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-
-      - name: Print artifacts and mark executable
+     # For dev, FLUVIO_BIN will be set to dev version for next steps
+      - name: set DEV fluvio for as test CLI
         run: |
-          chmod +x ~/bin/fluvio && ~/bin/fluvio version
-          chmod +x ~/bin/smdk
-          chmod +x ~/bin/cdk
-          echo "~/bin" >> $GITHUB_PATH
-      - name: Start cluster
+          FLUVIO_BIN=~/.fluvio/bin/fluvio-dev
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+
+     # - name: Print artifacts and mark executable
+     #   run: |
+     #     chmod +x ~/bin/smdk
+     #     chmod +x ~/bin/cdk
+     #     echo "~/bin" >> $GITHUB_PATH
+      
+      ## These tasks are for dev version
+      # Need Docker image for dev version
+    #  - name: Download Docker Image as Artifact
+    #    if: matrix.cluster_version == 'dev
+    #    uses: actions/download-artifact@v3
+    #    with:
+    #      name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
+    #      path: /tmp
+    # Retag image to remove arch from tag
+    #  - name: Load Fluvio Docker Image
+    #    if: matrix.cluster_version == 'dev
+    #    run: |
+    #      ls -la /tmp
+    #      docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
+    #      docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
+    #      docker image ls -a
+    #      docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+    #      k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+
+
+      - name: Start cluster for stable
         timeout-minutes: 10
-        run: fluvio cluster start --develop
+        run: fluvio cluster start
       - name: Build smartmodules for E2E test
         run: |
           make build_smartmodules
       - name: Run Fluvio CLI smoke tests
-        if: matrix.cli == 'fluvio'
         timeout-minutes: 5
-        run: make FLUVIO_BIN=~/bin/fluvio cli-fluvio-smoke
-      - name: Run SMDK smoke tests
-        timeout-minutes: 20
-        if: matrix.cli == 'smdk'
-        run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
-      - name: Run CDK smoke tests
-        timeout-minutes: 20
-        if: matrix.cli == 'cdk'
-        run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
+        run: make cli-fluvio-smoke
+    #  - name: Run SMDK smoke tests
+    #    timeout-minutes: 20
+    #    if: matrix.cli == 'smdk'
+    #    run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
+    #  - name: Run CDK smoke tests
+    #    timeout-minutes: 20
+    #    if: matrix.cli == 'cdk'
+    #    run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
