@@ -917,7 +917,8 @@ jobs:
           path: diagnostics*.gz
           retention-days: 1
 
-  k8_cli_smoke:
+  # Smoke test across different version of fluvio
+  cli_smoke:
     name: CLI smoke tests
     needs: build_primary_binaries
     #if: ${{ false }}
@@ -925,7 +926,17 @@ jobs:
     strategy:
   #    fail-fast: true
       matrix:
-        os: [ubuntu-latest]
+        include:
+        - os: ubuntu-latest
+          cluster_version:  dev
+          cli_version: dev
+        - os: ubuntu-latest
+          cluster_version:  stable
+          cli_version: dev
+        - os: ubuntu-latest
+          cluster_version:  dev
+          cli_version: stable
+        
  #       cluster_version: [stable, dev]
  #       cli_version: [stable, dev]
     steps:
@@ -975,10 +986,16 @@ jobs:
           chmod +x ~/bin/fluvio
           mv ~/bin/fluvio ~/.fluvio/bin/fluvio-dev
 
-     # For dev, FLUVIO_BIN will be set to dev version for next steps
+     # Set FLUVIO_BIN to either stable or dev, this is needed by CLI test
       - name: set DEV fluvio for as test CLI
+        if: matrix.cli_version == 'dev'
         run: |
           FLUVIO_BIN=~/.fluvio/bin/fluvio-dev
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+      - name: set stable fluvio for as test CLI
+        if: matrix.cli_version == 'stable'
+        run: |
+          FLUVIO_BIN=~/.fluvio/bin/fluvio
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
 
      # - name: Print artifacts and mark executable
@@ -1007,9 +1024,16 @@ jobs:
     #      k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
 
 
+      # Start cluster for either stable or dev
       - name: Start cluster for stable
-        timeout-minutes: 10
+        if: matrix.cluster_version == 'stable'
+        timeout-minutes: 5
         run: fluvio cluster start --local
+      - name: Start cluster for dev
+        if: matrix.cluster_version == 'dev'
+        timeout-minutes: 5
+        run: fluvio cluster start --local --develop
+
       - name: Build smartmodules for E2E test
         run: |
           make build_smartmodules
@@ -1027,13 +1051,13 @@ jobs:
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: fluvio cluster diagnostics --k8
+        run: fluvio cluster diagnostics
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
-          name: k8-cli-smoke_log
+          name: cli-smoke_log
           path: diagnostics*.gz
           retention-days: 1
 
