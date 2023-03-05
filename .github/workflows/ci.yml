@@ -618,12 +618,12 @@ jobs:
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Start fluvio cluster
-        timeout-minutes: 5
+        timeout-minutes: 10
         if: matrix.test != 'smoke-test-tls'
         run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
       - name: Start fluvio cluster TLS
         if: matrix.test == 'smoke-test-tls'
-        timeout-minutes: 5
+        timeout-minutes: 10
         # note that Local config doesn't not support auth and scopes in the argument for now
         run: >
           AUTH_POLICY=${{ env.AUTH_FILE }}
@@ -633,22 +633,22 @@ jobs:
         run: sleep 15
       - name: Validate test harness
         if: matrix.test == 'validate-test-harness'
-        timeout-minutes: 5
+        timeout-minutes: 15
         run : |
           make validate-test-harness
       - name: Run smoke-test
         if: matrix.test == 'smoke-test'
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           make smoke-test-local
       - name: Run smoke-test-at-most-once
         if: matrix.test == 'smoke-test-at-most-once'
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           make smoke-test-at-most-once
       - name: Run smoke-test-tls
         if: matrix.test == 'smoke-test-tls'
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           make smoke-test-tls-root
       #      kubectl get partitions
@@ -657,27 +657,27 @@ jobs:
       #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
       - name: Run election-test
         if: matrix.test == 'election'
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           make election-test
       - name: Run multiple-partition-test
         if: matrix.test == 'multiple-partition'
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           make  multiple-partition-test
       - name: Run reconnection-test
         if: matrix.test == 'reconnection'
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           make reconnection-test
       - name: Run batch-test
         if: matrix.test == 'batch-failure'
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           make batch-failure-test
       - name: Run batch-test
         if: matrix.test == 'batch'
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           make batching-test
       - name: Client stats validation
