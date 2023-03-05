@@ -1038,7 +1038,7 @@ jobs:
         run: |
           make build_smartmodules
       - name: Run Fluvio CLI smoke tests
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: make cli-fluvio-smoke
     #  - name: Run SMDK smoke tests
     #    timeout-minutes: 20
