@@ -919,7 +919,7 @@ jobs:
 
   # Smoke test across different version of fluvio
   cli_smoke:
-    name: CLI smoke tests
+    name: CLI smoke tests CLI ${{ matrix.cli_version }}) on cluster ${{ matrix.cluster_version }}
     needs: build_primary_binaries
     #if: ${{ false }}
     runs-on: ${{ matrix.os }}
