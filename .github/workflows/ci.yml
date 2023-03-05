@@ -1057,8 +1057,8 @@ jobs:
           path: ~/.fluvio/bin
       - name: mark smdk and cdk as executable
         run: |
-          chmod +x ~/.fluvio/smdk
-          chmod +x ~/.fluvio/cdk
+          chmod +x ~/.fluvio/bin/smdk
+          chmod +x ~/.fluvio/bin/cdk
 
       - name: Run SMDK smoke tests
         timeout-minutes: 20
