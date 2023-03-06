@@ -30,8 +30,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-  K3D_VERSION: v5.4.3
-  BATS_VERSION: 1.2.1
+  K3D_VERSION: v5.4.8
+  BATS_VERSION: 1.9.0
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
@@ -1033,7 +1033,7 @@ jobs:
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
-          bats-version: 1.7.0
+          bats-version: ${{ env.BATS_VERSION }}
       - name: Install K3d
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
