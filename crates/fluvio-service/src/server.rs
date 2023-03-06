@@ -188,10 +188,10 @@ mod test {
         server
     }
 
-    async fn create_client(addr: String) -> Result<FluvioSocket, SocketError> {
+    async fn create_client(addr: String) -> FluvioSocket {
         debug!("client wait for 1 second for 2nd server to come up");
-        sleep(Duration::from_millis(100)).await;
-        FluvioSocket::connect(&addr).await
+        sleep(Duration::from_millis(200)).await;
+        FluvioSocket::connect(&addr).await.expect("connect failed")
     }
 
     async fn test_client_sync_requests(addr: String) {
@@ -237,7 +237,8 @@ mod test {
         // create fake server, anything will do since we only
         // care about creating tcp stream
 
-        let socket_addr = "127.0.0.1:30001".to_owned();
+        let port = portpicker::pick_unused_port().expect("No free ports left");
+        let addr = format!("127.0.0.1:{port}");
 
         let server = create_server(socket_addr.clone());
         let service = server.service.clone();
