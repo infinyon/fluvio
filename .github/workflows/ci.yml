@@ -987,14 +987,14 @@ jobs:
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
 
 
-      # Start cluster for either stable or dev
+      # Deploy stable cluster
       - name: Start cluster for stable
         if: matrix.cluster_version == 'stable'
         timeout-minutes: 5
         run: fluvio cluster start
 
       # download and start cluster for dev
-      - name: Download Docker Image as Artifact
+      - name: Deploy dev cluster on k8
         uses: actions/download-artifact@v3
         if: matrix.cluster_version == 'dev'
         with:
@@ -1061,7 +1061,7 @@ jobs:
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: fluvio cluster diagnostics
+        run: fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
