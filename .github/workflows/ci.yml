@@ -32,6 +32,8 @@ env:
   VERBOSE: ${{ github.events.input.verbose }}
   K3D_VERSION: v5.4.8
   BATS_VERSION: 1.9.0
+  MINIKUBE_VERSION: v1.29.0
+  K8_VERSION: 1.23.17
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
@@ -808,10 +810,10 @@ jobs:
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
       - name: Install Minikube and import image
         if: matrix.k8 == 'minikube'
-        uses: manusa/actions-setup-minikube@v2.4.3
+        uses: manusa/actions-setup-minikube@v2.7.2
         with:
-          minikube version: "v1.24.0"
-          kubernetes version: "v1.22.8"
+          minikube version: ${{ env.MINIKUBE_VERSION}}
+          kubernetes version: ${{ env.K8_VERSION }}
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
       - name: Load image to minikube
