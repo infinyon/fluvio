@@ -1008,8 +1008,7 @@ jobs:
           docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
           docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-          fluvio version switch dev
-          fluvio cluster start
+          fluvio-dev cluster start --develop
 
       - name: Build smartmodules for E2E test
         run: |
