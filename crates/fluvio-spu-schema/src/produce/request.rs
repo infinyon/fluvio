@@ -38,7 +38,7 @@ pub struct ProduceRequest<R> {
     /// Each topic to produce to.
     pub topics: Vec<TopicProduceData<R>>,
 
-    #[fluvio(min_version = 18)]
+    #[fluvio(min_version = 7)]
     pub smartmodules: Vec<SmartModuleInvocation>,
 
     pub data: PhantomData<R>,
@@ -85,6 +85,11 @@ where
             + IsolationData(0i16).write_size(version)
             + TimeoutData(0i32).write_size(version)
             + self.topics.write_size(version)
+            + if version >= 7i16 {
+                self.smartmodules.write_size(version)
+            } else {
+                0
+            }
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -95,6 +100,9 @@ where
         IsolationData::from(self.isolation).encode(dest, version)?;
         TimeoutData::try_from(self.timeout)?.encode(dest, version)?;
         self.topics.encode(dest, version)?;
+        if version >= 7i16 {
+            self.smartmodules.encode(dest, version)?;
+        }
         Ok(())
     }
 }
@@ -111,7 +119,7 @@ where
         self.isolation = Isolation::from(IsolationData::decode_from(src, version)?);
         self.timeout = Duration::try_from(TimeoutData::decode_from(src, version)?)?;
         self.topics = Decoder::decode_from(src, version)?;
-        if version >= 18i16 {
+        if version >= 7i16 {
             self.smartmodules.decode(src, version)?;
         }
         Ok(())
