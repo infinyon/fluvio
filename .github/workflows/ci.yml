@@ -931,15 +931,7 @@ jobs:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
         cli_version: [stable, dev]
-        test: [fluvio]
-        # only run smdk and cdk on dev to dev for now
-        includes:
-          - cluster_version: dev
-            cli_version: dev
-            test: smdk
-          - cluster_version: dev
-            cli_version: dev
-            test: cdk
+        test: [fluvio,smdk,cdk]
         # no need to test stable to stable
         exclude:
           - cluster_version:  stable
