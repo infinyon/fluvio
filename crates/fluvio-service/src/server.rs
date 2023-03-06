@@ -160,10 +160,8 @@ mod test {
     use tracing::trace;
 
     use fluvio_future::timer::sleep;
-
     use fluvio_protocol::api::RequestMessage;
     use fluvio_socket::FluvioSocket;
-    use fluvio_socket::SocketError;
 
     use crate::test_request::EchoRequest;
     use crate::test_request::SharedTestContext;
@@ -195,7 +193,7 @@ mod test {
     }
 
     async fn test_client_sync_requests(addr: String) {
-        let mut socket = create_client(addr).await.expect("client");
+        let mut socket = create_client(addr).await;
 
         let request = EchoRequest::new("hello".to_owned());
         let msg = RequestMessage::new_request(request);
@@ -213,7 +211,7 @@ mod test {
 
     // send 2 requests and drop socket
     async fn test_client_async_requests(addr: String) {
-        let mut socket = create_client(addr).await.expect("client");
+        let mut socket = create_client(addr).await;
 
         let request = EchoRequest::new("hello".to_owned());
         let msg = RequestMessage::new_request(request);
@@ -232,13 +230,13 @@ mod test {
             .expect("send");
     }
 
-    #[fluvio_future::test]
+    #[fluvio_future::test(ignore)]
     async fn test_server() {
         // create fake server, anything will do since we only
         // care about creating tcp stream
 
         let port = portpicker::pick_unused_port().expect("No free ports left");
-        let addr = format!("127.0.0.1:{port}");
+        let socket_addr = format!("127.0.0.1:{port}");
 
         let server = create_server(socket_addr.clone());
         let service = server.service.clone();

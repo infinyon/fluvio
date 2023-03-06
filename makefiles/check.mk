@@ -45,6 +45,7 @@ run-all-unit-test: install_rustup_target
 run-integration-test: build_smartmodules install_rustup_target
 	cargo test  --lib --all-features $(BUILD_FLAGS) -p fluvio-spu -- --ignored --test-threads=1
 	cargo test  --lib --all-features $(BUILD_FLAGS) -p fluvio-socket -- --ignored --test-threads=1
+	cargo test  --lib --all-features $(BUILD_FLAGS) -p fluvio-service -- --ignored --test-threads=1
 
 	cargo test -p fluvio-smartengine -- --ignored --test-threads=1
 	rustup target add wasm32-wasi
