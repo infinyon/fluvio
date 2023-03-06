@@ -55,8 +55,8 @@ jobs:
           output-file-path: fluvio_protocol_benches.txt
           # GitHub API token to make a commit comment
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Leave a commit comment comparing the current branch with the previous
-          comment-always: true
+          # Leave a job summary with benchmark result comparison
+          summary-always: true
           # Where the previous data file is stored
           external-data-json-path: ./benches_cache/benchmark-data.json
           # Mention @infinyon/developers in the commit comment
@@ -101,8 +101,8 @@ jobs:
           output-file-path: fluvio_smartmodule_benches.txt
           # GitHub API token to make a commit comment
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Leave a commit comment comparing the current branch with the previous
-          comment-always: true
+          # Leave a job summary with benchmark result comparison
+          summary-always: true
           # Where the previous data file is stored
           external-data-json-path: ./benches_cache/benchmark-data.json
           # Mention @infinyon/developers in the commit comment
