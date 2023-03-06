@@ -1035,43 +1035,34 @@ jobs:
         run: |
           make build_smartmodules
       - name: Run Fluvio CLI smoke tests
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: make cli-fluvio-smoke
-    #  - name: Run SMDK smoke tests
-    #    timeout-minutes: 20
-    #    if: matrix.cli == 'smdk'
-    #    run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
-    #  - name: Run CDK smoke tests
-    #    timeout-minutes: 20
-    #    if: matrix.cli == 'cdk'
-    #    run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
       - name: Download artifact - smdk
         if: matrix.cli_version == 'dev' && matrix.cluster_version == 'dev'
         uses: actions/download-artifact@v3
         with:
           name: smdk-x86_64-unknown-linux-musl
-          path: ~/.fluvio/bin
+          path: ~/bin
       - name: Download artifact - cdk
         if: matrix.cli_version == 'dev' && matrix.cluster_version == 'dev'
         uses: actions/download-artifact@v3
         with:
           name: cdk-x86_64-unknown-linux-musl
-          path: ~/.fluvio/bin
+          path: ~/bin
       - name: mark smdk and cdk as executable
         if: matrix.cli_version == 'dev' && matrix.cluster_version == 'dev'
         run: |
-          chmod +x ~/.fluvio/bin/smdk
-          chmod +x ~/.fluvio/bin/cdk
-
+          chmod +x ~/bin/smdk
+          chmod +x ~/bin/cdk
+          echo "~/bin" >> $GITHUB_PATH
       - name: Run SMDK smoke tests
         if: matrix.cli_version == 'dev' && matrix.cluster_version == 'dev'
         timeout-minutes: 20
-        run: make SMDK_BIN=~/.fluvio/bin/smdk cli-smdk-smoke
-      
+        run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
       - name: Run CDK smoke tests
         if: matrix.cli_version == 'dev' && matrix.cluster_version == 'dev'
         timeout-minutes: 20
-        run: make CDK_BIN=~/.fluvio/bin/cdk cli-cdk-smoke
+        run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
 
       - name: Run diagnostics
         if: ${{ !success() }}
