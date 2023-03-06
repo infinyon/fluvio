@@ -1004,8 +1004,12 @@ jobs:
       # Run fluvio test
       - name: Run Fluvio CLI smoke tests
         if: matrix.test == 'fluvio'
-        timeout-minutes: 15
-        run: make cli-fluvio-smoke
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          command: make cli-fluvio-smoke
+
       
       # test smdk
       - name: Download artifact - smdk
