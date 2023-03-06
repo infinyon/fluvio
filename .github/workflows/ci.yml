@@ -30,8 +30,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-  K3D_VERSION: v5.4.3
-  BATS_VERSION: 1.7.0
+  K3D_VERSION: v5.4.8
+  BATS_VERSION: 1.9.0
+  MINIKUBE_VERSION: v1.29.0
+  K8_VERSION: 1.23.17
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
@@ -926,19 +928,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - os: ubuntu-latest
-          cluster_version:  dev
-          cli_version: dev
-        - os: ubuntu-latest
-          cluster_version:  stable
-          cli_version: dev
-        - os: ubuntu-latest
-          cluster_version:  dev
-          cli_version: stable
+        os: [ubuntu-latest]
+        cluster_version: [stable, dev]
+        cli_version: [stable, dev]
+        # no need to test stable to stable
+        exclude:
+          - cluster_version:  stable
+            cli_version: stable
         
- #       cluster_version: [stable, dev]
- #       cli_version: [stable, dev]
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
@@ -1048,6 +1045,30 @@ jobs:
     #    timeout-minutes: 20
     #    if: matrix.cli == 'cdk'
     #    run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
+      - name: Download artifact - smdk
+        uses: actions/download-artifact@v3
+        with:
+          name: smdk-x86_64-unknown-linux-musl
+          path: ~/.fluvio/bin
+      - name: Download artifact - cdk
+        uses: actions/download-artifact@v3
+        with:
+          name: cdk-x86_64-unknown-linux-musl
+          path: ~/.fluvio/bin
+      - name: mark smdk and cdk as executable
+        run: |
+          chmod +x ~/.fluvio/smdk
+          chmod +x ~/.fluvio/cdk
+
+      - name: Run SMDK smoke tests
+        timeout-minutes: 20
+        run: make SMDK_BIN=~/.fluvio/bin/smdk cli-smdk-smoke
+      
+      - name: Run CDK smoke tests
+        timeout-minutes: 20
+        if: matrix.cli == 'cdk'
+        run: make CDK_BIN=~/.fluvio/bin/cdk cli-cdk-smoke
+
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
@@ -1061,6 +1082,7 @@ jobs:
           path: diagnostics*.gz
           retention-days: 1
 
+<<<<<<< HEAD
   k8_cli_cross_compat:
     name: CLI x Cluster compatibility - ${{ matrix.cli_version }} vs ${{ matrix.cluster_version }}
     needs: build_image
@@ -1153,6 +1175,8 @@ jobs:
         run: |
           make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=${{ env.FLUVIO_BIN }} cli-platform-cross-version-test
 
+=======
+>>>>>>> 8b974e05 (add running cdk and smdk)
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
   docker_push:
@@ -1169,7 +1193,6 @@ jobs:
       - k8_upgrade_test
       - cli_smoke
       - build_binaries
-      - k8_cli_cross_compat
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
