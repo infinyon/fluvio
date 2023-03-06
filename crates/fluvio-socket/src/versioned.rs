@@ -248,12 +248,21 @@ impl VersionedSerialSocket {
         self.socket.clone()
     }
 
+    /// Check if inner socket is stale
+    pub fn is_stale(&self) -> bool {
+        self.socket.is_stale()
+    }
+
     /// send and wait for reply serially
     #[instrument(level = "trace", skip(self, request))]
     pub async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
     where
         R: Request + Send + Sync,
     {
+        if self.socket.is_stale() {
+            return Err(SocketError::SocketStale);
+        }
+
         let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & save response
