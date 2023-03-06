@@ -923,10 +923,9 @@ jobs:
   cli_smoke:
     name: CLI smoke test (${{ matrix.test }}) CLI (${{ matrix.cli_version }}) on cluster (${{ matrix.cluster_version }})
     needs: build_image
-    #if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+ #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
