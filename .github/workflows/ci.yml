@@ -1009,7 +1009,7 @@ jobs:
           docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
           fluvio version switch dev
-          fluvio cluster start --develop
+          fluvio cluster start
 
       - name: Build smartmodules for E2E test
         run: |
