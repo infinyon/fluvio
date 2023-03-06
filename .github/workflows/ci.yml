@@ -993,6 +993,13 @@ jobs:
         timeout-minutes: 5
         run: fluvio cluster start
 
+      # download and start cluster for dev
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v3
+        if: matrix.cluster_version == 'dev'
+        with:
+          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          path: /tmp
       - name: Load Fluvio Docker Image
         timeout-minutes: 5
         if: matrix.cluster_version == 'dev'
