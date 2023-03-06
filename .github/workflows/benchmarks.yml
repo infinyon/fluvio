@@ -37,7 +37,7 @@ jobs:
 
       - name: Cache Benchmark data
         uses: actions/cache@v3
-        if: github.ref == 'refs/heads/master'
+        # if: github.ref == 'refs/heads/master'
         with:
           path: ./benches_cache
           key: benches-${{ runner.os }}-unit_fluvio_protocol
@@ -47,7 +47,7 @@ jobs:
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.ref == 'refs/heads/master'
+        # if: github.ref == 'refs/heads/master'
         with:
           # What benchmark tool the output.txt came from
           tool: 'cargo'
@@ -83,7 +83,7 @@ jobs:
 
       - name: Cache Benchmark data
         uses: actions/cache@v3
-        if: github.ref == 'refs/heads/master'
+        # if: github.ref == 'refs/heads/master'
         with:
           path: ./benches_cache
           key: benches-${{ runner.os }}-unit_fluvio_smartmodule
@@ -93,7 +93,7 @@ jobs:
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
-        if: github.ref == 'refs/heads/master'
+        # if: github.ref == 'refs/heads/master'
         with:
           # What benchmark tool the output.txt came from
           tool: 'cargo'
