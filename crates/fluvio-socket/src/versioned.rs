@@ -259,7 +259,7 @@ impl VersionedSerialSocket {
     where
         R: Request + Send + Sync,
     {
-        if self.socket.is_stale() {
+        if self.is_stale() {
             return Err(SocketError::SocketStale);
         }
 
@@ -275,6 +275,10 @@ impl VersionedSerialSocket {
     where
         R: Request + Send + Sync,
     {
+        if self.is_stale() {
+            return Err(SocketError::SocketStale);
+        }
+
         let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & get a Future that resolves to response
@@ -292,6 +296,10 @@ impl VersionedSerialSocket {
         R: Request + Send + Sync + Clone,
         I: IntoIterator<Item = Duration> + Debug + Send,
     {
+        if self.is_stale() {
+            return Err(SocketError::SocketStale);
+        }
+
         let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & retry it if result is Err
