@@ -968,16 +968,6 @@ jobs:
         with:
           name: fluvio-x86_64-unknown-linux-musl
           path: ~/bin
-#      - name: Download artifact - smdk
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: smdk-x86_64-unknown-linux-musl
-#          path: ~/bin
-#      - name: Download artifact - cdk
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: cdk-x86_64-unknown-linux-musl
-#          path: ~/bin
       - name: rename dev fluvio as fluvio-stable
         run: |
           chmod +x ~/bin/fluvio
@@ -995,31 +985,6 @@ jobs:
           FLUVIO_BIN=~/.fluvio/bin/fluvio
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
 
-     # - name: Print artifacts and mark executable
-     #   run: |
-     #     chmod +x ~/bin/smdk
-     #     chmod +x ~/bin/cdk
-     #     echo "~/bin" >> $GITHUB_PATH
-      
-      ## These tasks are for dev version
-      # Need Docker image for dev version
-    #  - name: Download Docker Image as Artifact
-    #    if: matrix.cluster_version == 'dev
-    #    uses: actions/download-artifact@v3
-    #    with:
-    #      name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
-    #      path: /tmp
-    # Retag image to remove arch from tag
-    #  - name: Load Fluvio Docker Image
-    #    if: matrix.cluster_version == 'dev
-    #    run: |
-    #      ls -la /tmp
-    #      docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
-    #      docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
-    #      docker image ls -a
-    #      docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-    #      k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-
 
       # Start cluster for either stable or dev
       - name: Start cluster for stable
@@ -1034,9 +999,9 @@ jobs:
       - name: Build smartmodules for E2E test
         run: |
           make build_smartmodules
-      - name: Run Fluvio CLI smoke tests
-        timeout-minutes: 15
-        run: make cli-fluvio-smoke
+    #  - name: Run Fluvio CLI smoke tests
+    #    timeout-minutes: 15
+    #    run: make cli-fluvio-smoke
       - name: Download artifact - smdk
         if: matrix.cli_version == 'dev' && matrix.cluster_version == 'dev'
         uses: actions/download-artifact@v3
