@@ -49,7 +49,7 @@ impl DiscrimantExpr {
 #[derive(Default)]
 pub(crate) struct EnumProp {
     pub variant_name: String,
-    pub tag: Option<String>,
+    pub tag: String,
     pub discriminant: Option<DiscrimantExpr>,
     pub kind: FieldKind,
 }
@@ -69,7 +69,7 @@ impl EnumProp {
                                 //     prop.tag = Some(lit_str.value());
                                 // }
                                 if let Lit::Int(lit_int) = name_value.lit {
-                                    prop.tag = Some(lit_int.base10_digits().to_owned());
+                                    prop.tag = lit_int.base10_digits().to_owned();
                                 }
                             }
                         }

@@ -302,19 +302,13 @@ fn parse_enum_variants_encoding(
 
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
-        let field_idx = if let Some(tag) = &prop.tag {
-            match TokenStream::from_str(tag) {
+        let field_idx = {
+            match TokenStream::from_str(&prop.tag) {
                 Ok(literal) => literal,
                 _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
             }
-        } else if attrs.encode_discriminant {
-            match &prop.discriminant {
-                Some(dsc) => dsc.as_token_stream(),
-                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
-            }
-        } else {
-            LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
         };
+
         let variant_code = match &prop.kind {
             FieldKind::Named(_expr, props) => {
                 // The "a, b, c, d" in Enum::Variant { a, b, c, d } => { ... }
