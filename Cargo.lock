@@ -2874,6 +2874,7 @@ dependencies = [
  "fluvio-types",
  "futures-util",
  "pin-utils",
+ "portpicker",
  "tokio",
  "tracing",
 ]
