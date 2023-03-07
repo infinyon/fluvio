@@ -30,6 +30,3 @@ fluvio-sc-schema = { path = "../fluvio-sc-schema/"}
 fluvio-smartengine = { path = "../fluvio-smartengine/", default-features = false, features = [
     "transformation",
 ] }
-
-[dev-dependencies]
-tempfile = { version = "3.3" }
