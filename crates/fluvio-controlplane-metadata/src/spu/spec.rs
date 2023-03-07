@@ -345,7 +345,9 @@ impl Default for EncryptionEnum {
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpuType {
+    #[fluvio(tag = 0)]
     Managed,
+    #[fluvio(tag = 1)]
     Custom,
 }
 
