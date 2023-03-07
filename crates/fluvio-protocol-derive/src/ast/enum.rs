@@ -59,29 +59,36 @@ impl EnumProp {
         let mut prop = EnumProp::default();
         let variant_ident = variant.ident.clone();
         prop.variant_name = variant_ident.to_string();
-        // Find all supported field level attributes in one go.
-        for attribute in &variant.attrs {
-            if attribute.path.is_ident("fluvio") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for kf_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
-                            if name_value.path.is_ident("tag") {
-                                if let Lit::Int(lit_int) = name_value.lit {
-                                    prop.tag = lit_int.base10_digits().to_owned();
-                                } else {
-                                    return Err(Error::new(
-                                        variant.span(),
-                                        "Missing `tag` attribute",
-                                    ));
-                                }
+
+        if let Some(fluvio_attr) = variant
+            .attrs
+            .iter()
+            .find(|attr| attr.path.is_ident("fluvio"))
+        {
+            if let Ok(Meta::List(list)) = fluvio_attr.parse_meta() {
+                for kf_attr in list.nested {
+                    if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
+                        if name_value.path.is_ident("tag") {
+                            if let Lit::Int(lit_int) = name_value.lit {
+                                prop.tag = lit_int.base10_digits().to_owned();
+                                break;
                             } else {
-                                return Err(Error::new(variant.span(), "Missing `tag` attribute"));
+                                return Err(Error::new(
+                                    name_value.span(),
+                                    "Invalid `tag` value provided",
+                                ));
                             }
                         }
                     }
                 }
+
+                if prop.tag.is_empty() {
+                    // No tag was provided
+                    return Err(Error::new(fluvio_attr.span(), "Missing `tag` value"));
+                }
             }
         }
+
         prop.discriminant = if let Some((_, discriminant)) = variant.discriminant {
             match discriminant {
                 Expr::Lit(elit) => Some(DiscrimantExpr::Lit(elit)),
