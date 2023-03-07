@@ -17,10 +17,15 @@ static_assertions::const_assert_eq!(
 #[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum AdminPublicApiKey {
+    #[fluvio(tag = 18)]
     ApiVersion = 18, // VERSIONS_API_KEY
+    #[fluvio(tag = 1001)]
     Create = 1001,
+    #[fluvio(tag = 1002)]
     Delete = 1002,
+    #[fluvio(tag = 1003)]
     List = 1003,
+    #[fluvio(tag = 1004)]
     Watch = 1004,
 }
 

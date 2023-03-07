@@ -73,13 +73,17 @@ impl Decoder for Mix {
 
 #[derive(Encoder, Debug)]
 pub enum UnitAndDataEnum {
+    #[fluvio(tag = 0)]
     UnitVariant,
+    #[fluvio(tag = 1)]
     DataVariant(i16),
 }
 
 #[derive(Encoder, Debug)]
 pub enum VariantEnum {
+    #[fluvio(tag = 0)]
     A(u16),
+    #[fluvio(tag = 1)]
     C(String),
 }
 
@@ -95,7 +99,9 @@ fn test_var_encode() {
 
 #[derive(Encoder, Decoder, Debug)]
 pub enum NamedEnum {
+    #[fluvio(tag = 0)]
     Apple { seeds: u16, color: String },
+    #[fluvio(tag = 1)]
     Banana { peel: bool },
 }
 

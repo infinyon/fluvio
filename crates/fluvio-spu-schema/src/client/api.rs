@@ -18,6 +18,7 @@ use super::offset::ReplicaOffsetUpdateRequest;
 /// Request from Spu Server to Client
 #[derive(Debug, Encoder)]
 pub enum SpuClientRequest {
+    #[fluvio(tag = 0)]
     ReplicaOffsetUpdateRequest(RequestMessage<ReplicaOffsetUpdateRequest>),
 }
 

@@ -88,7 +88,10 @@ impl EnumProp {
                 }
             }
         } else {
-            return Err(Error::new(variant.span(), "You must provide `fluvio` annotation when using `Encode`/`Decode` derive macro"));
+            return Err(Error::new(
+                variant.span(),
+                "You must provide `fluvio` annotation when using `Encode`/`Decode` derive macro",
+            ));
         }
 
         prop.discriminant = if let Some((_, discriminant)) = variant.discriminant {

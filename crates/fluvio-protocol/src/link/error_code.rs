@@ -173,8 +173,10 @@ pub enum ErrorCode {
     #[fluvio(tag = 8003)]
     #[error("the derivedstream {0} is invalid")]
     DerivedStreamInvalid(String),
+    #[fluvio(tag = 8003)]
     #[error("can't do recursive derivedstream yet: {0}->{1}")]
     DerivedStreamRecursion(String, String),
+    #[fluvio(tag = 8003)]
     #[error("the derivedstream already exists")]
     DerivedStreamAlreadyExists,
 

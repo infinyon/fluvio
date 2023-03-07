@@ -194,6 +194,7 @@ mod test {
     #[derive(Eq, PartialEq, Debug, Clone, Copy, Encoder, Decoder)]
     #[fluvio(encode_discriminant)]
     pub enum TestApiKey {
+        #[fluvio(tag = 0)]
         ApiVersion = 0,
     }
 
@@ -230,6 +231,7 @@ mod test {
     #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
     #[fluvio(encode_discriminant)]
     pub enum TestApiEnum {
+        #[fluvio(tag = 18)]
         ApiVersion = 18,
     }
 

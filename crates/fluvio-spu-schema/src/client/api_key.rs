@@ -5,6 +5,7 @@ use fluvio_protocol::{Encoder, Decoder};
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum SpuClientApiKey {
+    #[fluvio(tag = 1001)]
     ReplicaOffsetUpdate = 1001,
 }
 

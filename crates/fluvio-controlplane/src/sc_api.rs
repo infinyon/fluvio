@@ -19,8 +19,11 @@ use super::ReplicaRemovedRequest;
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum InternalScKey {
+    #[fluvio(tag = 2000)]
     RegisterSpu = 2000,
+    #[fluvio(tag = 2001)]
     UpdateLrs = 2001,
+    #[fluvio(tag = 2002)]
     ReplicaRemoved = 2002,
 }
 
@@ -33,8 +36,11 @@ impl Default for InternalScKey {
 /// Request made to Spu from Sc
 #[derive(Debug, Encoder)]
 pub enum InternalScRequest {
+    #[fluvio(tag = 0)]
     RegisterSpuRequest(RequestMessage<RegisterSpuRequest>),
+    #[fluvio(tag = 1)]
     UpdateLrsRequest(RequestMessage<UpdateLrsRequest>),
+    #[fluvio(tag = 2)]
     ReplicaRemovedRequest(RequestMessage<ReplicaRemovedRequest>),
 }
 

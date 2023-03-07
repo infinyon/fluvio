@@ -170,6 +170,7 @@ mod common {
     #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
     #[non_exhaustive]
     pub enum RequestKind {
+        #[fluvio(tag = 0)]
         Produce,
     }
 

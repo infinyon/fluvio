@@ -17,10 +17,12 @@ use super::UpdateSmartModuleRequest;
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum InternalSpuApi {
+    #[fluvio(tag = 1001)]
     UpdateSpu = 1001,
+    #[fluvio(tag = 1002)]
     UpdateReplica = 1002,
+    #[fluvio(tag = 1003)]
     UpdateSmartModule = 1003,
-    // UpdateDerivedStream = 1004,
 }
 
 impl Default for InternalSpuApi {
@@ -31,8 +33,11 @@ impl Default for InternalSpuApi {
 
 #[derive(Debug, Encoder)]
 pub enum InternalSpuRequest {
+    #[fluvio(tag = 0)]
     UpdateSpuRequest(RequestMessage<UpdateSpuRequest>),
+    #[fluvio(tag = 1)]
     UpdateReplicaRequest(RequestMessage<UpdateReplicaRequest>),
+    #[fluvio(tag = 2)]
     UpdateSmartModuleRequest(RequestMessage<UpdateSmartModuleRequest>),
 }
 

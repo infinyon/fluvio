@@ -5,7 +5,9 @@ use serde::{Serialize, Deserialize};
 #[fluvio(encode_discriminant)]
 #[repr(u8)]
 pub enum Isolation {
+    #[fluvio(tag = 0)]
     ReadUncommitted = 0,
+    #[fluvio(tag = 1)]
     ReadCommitted = 1,
 }
 
