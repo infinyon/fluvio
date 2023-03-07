@@ -6,6 +6,8 @@ pub enum SocketError {
     Io { source: IoError, msg: String },
     #[error("Socket closed")]
     SocketClosed,
+    #[error("Socket is stale")]
+    SocketStale,
 }
 
 impl From<IoError> for SocketError {

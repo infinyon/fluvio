@@ -248,12 +248,27 @@ impl VersionedSerialSocket {
         self.socket.clone()
     }
 
+    /// Check if inner socket is stale
+    pub fn is_stale(&self) -> bool {
+        self.socket.is_stale()
+    }
+
+    fn check_liveness(&self) -> Result<(), SocketError> {
+        if self.is_stale() {
+            Err(SocketError::SocketStale)
+        } else {
+            Ok(())
+        }
+    }
+
     /// send and wait for reply serially
     #[instrument(level = "trace", skip(self, request))]
     pub async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
     where
         R: Request + Send + Sync,
     {
+        self.check_liveness()?;
+
         let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & save response
@@ -266,6 +281,8 @@ impl VersionedSerialSocket {
     where
         R: Request + Send + Sync,
     {
+        self.check_liveness()?;
+
         let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & get a Future that resolves to response
@@ -283,6 +300,8 @@ impl VersionedSerialSocket {
         R: Request + Send + Sync + Clone,
         I: IntoIterator<Item = Duration> + Debug + Send,
     {
+        self.check_liveness()?;
+
         let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & retry it if result is Err
