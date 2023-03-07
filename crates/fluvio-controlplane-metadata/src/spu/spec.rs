@@ -332,7 +332,9 @@ impl Endpoint {
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum EncryptionEnum {
+    #[fluvio(tag = 0)]
     PLAINTEXT,
+    #[fluvio(tag = 1)]
     SSL,
 }
 

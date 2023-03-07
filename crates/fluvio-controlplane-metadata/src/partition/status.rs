@@ -227,9 +227,13 @@ fn find_status(status: &mut [ReplicaStatus], spu: SpuId) -> Option<&'_ mut Repli
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum PartitionResolution {
-    Offline,             // No leader available for serving partition
-    Online,              // Partition is running normally, status contains replica info
-    LeaderOffline,       // Election has failed, no suitable leader has been found
+    #[fluvio(tag = 0)]
+    Offline, // No leader available for serving partition
+    #[fluvio(tag = 1)]
+    Online, // Partition is running normally, status contains replica info
+    #[fluvio(tag = 2)]
+    LeaderOffline, // Election has failed, no suitable leader has been found
+    #[fluvio(tag = 3)]
     ElectionLeaderFound, // New leader has been selected
 }
 

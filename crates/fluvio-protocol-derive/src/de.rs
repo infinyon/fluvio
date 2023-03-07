@@ -180,15 +180,16 @@ fn generate_decode_enum_impl(
     props: &[EnumProp],
     int_type: &Ident,
     enum_ident: &Ident,
-    attrs: &ContainerAttributes,
+    _attrs: &ContainerAttributes,
 ) -> TokenStream {
     let mut arm_branches = vec![];
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
         let field_idx = {
-            match TokenStream::from_str(&prop.tag) {
-                Ok(literal) => literal,
-                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
+            if let Ok(literal) = TokenStream::from_str(&prop.tag) {
+                literal
+            } else {
+                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
             }
         };
 
@@ -290,9 +291,10 @@ fn generate_try_enum_from_kf_enum(
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
         let field_idx = {
-            match TokenStream::from_str(&prop.tag) {
-                Ok(literal) => literal,
-                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
+            if let Ok(literal) = TokenStream::from_str(&prop.tag) {
+                literal
+            } else {
+                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
             }
         };
 

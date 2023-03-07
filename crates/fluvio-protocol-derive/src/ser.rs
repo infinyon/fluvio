@@ -303,9 +303,10 @@ fn parse_enum_variants_encoding(
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
         let field_idx = {
-            match TokenStream::from_str(&prop.tag) {
-                Ok(literal) => literal,
-                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
+            if let Ok(literal) = TokenStream::from_str(&prop.tag) {
+                literal
+            } else {
+                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
             }
         };
 

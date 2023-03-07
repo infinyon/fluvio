@@ -47,10 +47,15 @@ impl TableFormatStatus {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq)]
 pub enum TableFormatStatusResolution {
+    #[fluvio(tag = 0)]
     Init,
+    #[fluvio(tag = 1)]
     Invalid,
+    #[fluvio(tag = 2)]
     Running,
+    #[fluvio(tag = 3)]
     Pending,
+    #[fluvio(tag = 4)]
     Failed,
 }
 

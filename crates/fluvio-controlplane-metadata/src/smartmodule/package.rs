@@ -125,7 +125,9 @@ pub enum SmartModuleKeyError {
 )]
 pub enum SmartModuleVisibility {
     #[default]
+    #[fluvio(tag = 0)]
     Private,
+    #[fluvio(tag = 1)]
     Public,
 }
 

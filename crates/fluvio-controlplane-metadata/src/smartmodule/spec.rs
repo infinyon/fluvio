@@ -161,8 +161,10 @@ impl SmartModuleWasm {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleWasmFormat {
     #[cfg_attr(feature = "use_serde", serde(rename = "BINARY"))]
+    #[fluvio(tag = 0)]
     Binary,
     #[cfg_attr(feature = "use_serde", serde(rename = "TEXT"))]
+    #[fluvio(tag = 1)]
     Text,
 }
 

@@ -17,7 +17,9 @@ use crate::store::*;
 
 #[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone)]
 pub enum MsgType {
+    #[fluvio(tag = 0)]
     UPDATE,
+    #[fluvio(tag = 1)]
     DELETE,
 }
 

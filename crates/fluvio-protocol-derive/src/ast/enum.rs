@@ -38,6 +38,7 @@ pub(crate) enum DiscrimantExpr {
 }
 
 impl DiscrimantExpr {
+    #[allow(dead_code)]
     pub fn as_token_stream(&self) -> TokenStream {
         match self {
             Self::Lit(exp) => quote! { #exp },
@@ -65,12 +66,16 @@ impl EnumProp {
                     for kf_attr in list.nested {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
                             if name_value.path.is_ident("tag") {
-                                // if let Lit::Str(lit_str) = name_value.lit {
-                                //     prop.tag = Some(lit_str.value());
-                                // }
                                 if let Lit::Int(lit_int) = name_value.lit {
                                     prop.tag = lit_int.base10_digits().to_owned();
+                                } else {
+                                    return Err(Error::new(
+                                        variant.span(),
+                                        "Missing `tag` attribute",
+                                    ));
                                 }
+                            } else {
+                                return Err(Error::new(variant.span(), "Missing `tag` attribute"));
                             }
                         }
                     }
