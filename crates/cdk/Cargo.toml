@@ -31,7 +31,6 @@ cargo-generate = "0.18.0"
 include_dir = "0.7.2"
 tempfile = "3.3.0"
 lib-cargo-crate = "0.1.6"
-enum-display = "0.1.3"
 
 
 fluvio = { path = "../fluvio"}
