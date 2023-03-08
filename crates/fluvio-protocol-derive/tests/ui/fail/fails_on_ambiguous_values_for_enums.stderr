@@ -1,0 +1,5 @@
+error: You must provide one of a fluvio `tag` or a discriminant, for enum types deriving Encode/Decode
+ --> tests/ui/fail/fails_on_ambiguous_values_for_enums.rs:5:5
+  |
+5 |     #[default]
+  |     ^

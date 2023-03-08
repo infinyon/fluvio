@@ -1,0 +1,5 @@
+error: You must either provide a `tag` or a discriminant for enum types deriving Encode/Decode
+ --> tests/ui/fail/fails_missing_fluvio_annotation_with_tag_on_enums.rs:5:5
+  |
+5 |     #[default]
+  |     ^

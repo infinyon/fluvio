@@ -171,7 +171,7 @@ mod common {
     #[non_exhaustive]
     #[derive(Default)]
     pub enum RequestKind {
-        #[default]
+        #[fluvio(tag = 0)]
         Produce,
     }
 

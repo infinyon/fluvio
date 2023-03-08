@@ -77,7 +77,8 @@ impl EnumProp {
                 }
             }
         }
-        prop.discriminant = if let Some((_, discriminant)) = variant.discriminant {
+
+        prop.discriminant = if let Some((_, discriminant)) = variant.discriminant.clone() {
             match discriminant {
                 Expr::Lit(elit) => Some(DiscrimantExpr::Lit(elit)),
                 Expr::Unary(elit) => Some(DiscrimantExpr::Unary(elit)),
@@ -91,6 +92,20 @@ impl EnumProp {
         } else {
             None
         };
+
+        if prop.discriminant.is_none() && prop.tag.is_none() {
+            return Err(Error::new(
+                variant.span(),
+                "You must either provide a `tag` or a discriminant for enum types deriving Encode/Decode",
+            ));
+        }
+
+        if prop.discriminant.is_some() && prop.tag.is_some() {
+            return Err(Error::new(
+                variant.span(),
+                "You must provide one of a fluvio `tag` or a discriminant, for enum types deriving Encode/Decode",
+            ));
+        }
 
         prop.kind = match &variant.fields {
             Fields::Named(struct_like) => {
