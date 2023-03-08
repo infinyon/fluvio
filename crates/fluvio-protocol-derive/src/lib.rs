@@ -47,6 +47,7 @@ use syn::parse_macro_input;
 /// # use fluvio_protocol::Decoder;
 /// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
 /// #[derive(Decoder)]
+/// #[fluvio(encode_discriminant)]
 /// pub enum ThreeChoice {
 ///     First = 1,
 ///     Second = 2,
@@ -61,8 +62,11 @@ use syn::parse_macro_input;
 /// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
 /// #[derive(Decoder)]
 /// pub enum ThreeChoice {
+///     #[fluvio(tag = 0)]
 ///     First,
+///     #[fluvio(tag = 1)]
 ///     Second,
+///     #[fluvio(tag = 2)]
 ///     Third
 /// }
 /// ```
