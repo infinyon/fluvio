@@ -22,6 +22,9 @@ version = "1.0.0"
 features = ["full"]
 
 [dev-dependencies]
+trybuild = { version = "1.0" }
+
+# Local Crates
 fluvio-protocol = { path = "../fluvio-protocol", features = ["derive", "api"] }
 
 [package.metadata.cargo-udeps.ignore]
