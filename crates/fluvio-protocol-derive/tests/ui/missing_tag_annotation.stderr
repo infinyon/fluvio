@@ -1,0 +1,11 @@
+error: You must provide `fluvio` annotation when using `Encode`/`Decode` derive macro
+ --> tests/ui/missing_tag_annotation.rs:5:5
+  |
+5 |     Predefined(String),
+  |     ^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/missing_tag_annotation.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/missing_tag_annotation.rs`
