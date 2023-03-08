@@ -73,9 +73,6 @@ impl EnumProp {
                     for kf_attr in list.nested {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
                             if name_value.path.is_ident("tag") {
-                                // if let Lit::Str(lit_str) = name_value.lit {
-                                //     prop.tag = Some(lit_str.value());
-                                // }
                                 if let Lit::Int(lit_int) = name_value.lit {
                                     prop.tag = Some(lit_int.base10_digits().to_owned());
                                 }
