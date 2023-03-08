@@ -1,7 +1,9 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
+use fluvio_smartengine::SmartModuleChainInstance;
 use tokio::select;
+use tracing::warn;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
@@ -15,6 +17,7 @@ use fluvio_spu_schema::produce::{
     ProduceResponse, TopicProduceResponse, PartitionProduceResponse, PartitionProduceData,
     DefaultProduceRequest, DefaultTopicRequest,
 };
+use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use fluvio_protocol::{api::RequestMessage, link::ErrorCode};
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
@@ -23,6 +26,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::smartengine::context::SmartModuleContext;
 use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
@@ -51,6 +55,9 @@ pub async fn handle_produce_request(
 ) -> Result<ResponseMessage<ProduceResponse>, Error> {
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
+
+    let mut sm_chain_instance =
+        smartmodule_chain(produce_request.smartmodules, header.api_version(), &ctx).await?;
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
@@ -154,6 +161,35 @@ async fn handle_produce_partition<R: BatchRecords>(
                 PartitionWriteResult::error(replica_id, ErrorCode::StorageError)
             }
         },
+    }
+}
+
+async fn smartmodule_chain(
+    sm_invocations: Vec<SmartModuleInvocation>,
+    api_version: i16,
+    ctx: &DefaultSharedGlobalContext,
+) -> Result<Option<SmartModuleChainInstance>, Error> {
+    println!(
+        "handling produce request, smartmodules: {:#?}",
+        sm_invocations
+    );
+
+    let sm_ctx = match SmartModuleContext::try_from(sm_invocations, api_version, &ctx).await {
+        Ok(ctx) => ctx,
+        Err(error_code) => {
+            warn!("smartmodule context init failed: {:?}", error_code);
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!("smartmodule context init failed: {:?}", error_code),
+            ));
+        }
+    };
+
+    if let Some(ctx) = sm_ctx {
+        let SmartModuleContext { chain: st } = ctx;
+        Ok(Some(st))
+    } else {
+        Ok(None)
     }
 }
 
