@@ -7,6 +7,8 @@ use syn::{
     Lit, Meta, NestedMeta, Variant,
 };
 
+use super::container::ContainerAttributes;
+
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
     pub props: Vec<EnumProp>,
@@ -14,12 +16,18 @@ pub(crate) struct FluvioEnum {
 }
 
 impl FluvioEnum {
-    pub fn from_ast(item: ItemEnum) -> syn::Result<Self> {
+    pub fn from_ast(item: ItemEnum, attrs: &ContainerAttributes) -> syn::Result<Self> {
         let enum_ident = item.ident;
-
         let mut props = vec![];
+
         for variant in item.variants {
-            props.push(EnumProp::from_ast(variant)?);
+            let enum_prop = EnumProp::from_ast(variant.clone())?;
+
+            if !attrs.encode_discriminant && enum_prop.tag.is_none() {
+                return Err(Error::new(variant.span(), "You must provide `fluvio(encode_discriminant)` if `fluvio(tag)` is not provided"));
+            }
+
+            props.push(enum_prop);
         }
 
         let generics = item.generics;

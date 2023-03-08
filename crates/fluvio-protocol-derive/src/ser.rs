@@ -313,7 +313,7 @@ fn parse_enum_variants_encoding(
                 _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
             }
         } else {
-            LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+            unreachable!()
         };
         let variant_code = match &prop.kind {
             FieldKind::Named(_expr, props) => {
