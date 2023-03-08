@@ -12,6 +12,7 @@ use super::UpdateOffsetRequest;
 
 #[derive(Debug, Encoder)]
 pub enum LeaderPeerRequest {
+    #[fluvio(tag = 0)]
     UpdateOffsets(RequestMessage<UpdateOffsetRequest>),
 }
 

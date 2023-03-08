@@ -31,8 +31,11 @@ impl Default for InternalSpuApi {
 
 #[derive(Debug, Encoder)]
 pub enum InternalSpuRequest {
+    #[fluvio(tag = 0)]
     UpdateSpuRequest(RequestMessage<UpdateSpuRequest>),
+    #[fluvio(tag = 1)]
     UpdateReplicaRequest(RequestMessage<UpdateReplicaRequest>),
+    #[fluvio(tag = 2)]
     UpdateSmartModuleRequest(RequestMessage<UpdateSmartModuleRequest>),
 }
 

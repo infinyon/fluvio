@@ -47,8 +47,11 @@ impl SpuGroupStatus {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq)]
 pub enum SpuGroupStatusResolution {
+    #[fluvio(tag = 0)]
     Init,
+    #[fluvio(tag = 1)]
     Invalid,
+    #[fluvio(tag = 2)]
     Reserved,
 }
 

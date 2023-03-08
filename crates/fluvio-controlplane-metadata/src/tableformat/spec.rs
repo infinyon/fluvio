@@ -43,6 +43,7 @@ impl TableFormatSpec {
     serde(rename_all = "UPPERCASE")
 )]
 pub enum DataFormat {
+    #[fluvio(tag = 0)]
     JSON,
     //YAML,
     //TOML,
@@ -78,8 +79,11 @@ pub struct TableFormatColumnConfig {
 )]
 #[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
 pub enum TableFormatAlignment {
+    #[fluvio(tag = 0)]
     Left,
+    #[fluvio(tag = 1)]
     Right,
+    #[fluvio(tag = 2)]
     Center,
 }
 
@@ -135,8 +139,11 @@ impl TableFormatColumnConfig {
 )]
 #[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone)]
 pub enum Color {
+    #[fluvio(tag = 0)]
     Blue,
+    #[fluvio(tag = 1)]
     Yellow,
+    #[fluvio(tag = 2)]
     Green,
 }
 

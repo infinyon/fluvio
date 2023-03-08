@@ -100,13 +100,6 @@ impl EnumProp {
             ));
         }
 
-        if prop.discriminant.is_some() && prop.tag.is_some() {
-            return Err(Error::new(
-                variant.span(),
-                "You must provide one of a fluvio `tag` or a discriminant, for enum types deriving Encode/Decode",
-            ));
-        }
-
         prop.kind = match &variant.fields {
             Fields::Named(struct_like) => {
                 let props = struct_like

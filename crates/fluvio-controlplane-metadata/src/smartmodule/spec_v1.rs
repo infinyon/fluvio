@@ -23,6 +23,7 @@ pub struct SmartModuleSourceCode {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleSourceCodeLanguage {
     #[default]
+    #[fluvio(tag = 0)]
     Rust,
 }
 
@@ -30,7 +31,9 @@ pub enum SmartModuleSourceCodeLanguage {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleInputKind {
     #[default]
+    #[fluvio(tag = 0)]
     Stream,
+    #[fluvio(tag = 1)]
     External,
 }
 
@@ -38,8 +41,11 @@ pub enum SmartModuleInputKind {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleOutputKind {
     #[default]
+    #[fluvio(tag = 0)]
     Stream,
+    #[fluvio(tag = 1)]
     External,
+    #[fluvio(tag = 2)]
     Table,
 }
 

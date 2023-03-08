@@ -333,8 +333,9 @@ impl Endpoint {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Default)]
 pub enum EncryptionEnum {
-    #[default]
+    #[fluvio(tag = 1)]
     PLAINTEXT,
+    #[fluvio(tag = 2)]
     SSL,
 }
 
@@ -342,8 +343,9 @@ pub enum EncryptionEnum {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Default)]
 pub enum SpuType {
-    #[default]
+    #[fluvio(tag = 0)]
     Managed,
+    #[fluvio(tag = 1)]
     Custom,
 }
 

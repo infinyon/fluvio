@@ -28,13 +28,19 @@ use super::update_offset::UpdateOffsetsRequest;
 #[derive(Debug, Encoder)]
 pub enum SpuServerRequest {
     /// list of versions supported
+    #[fluvio(tag = 0)]
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
 
     // Kafka compatible requests
+    #[fluvio(tag = 1)]
     ProduceRequest(RequestMessage<DefaultProduceRequest>),
+    #[fluvio(tag = 2)]
     FileFetchRequest(RequestMessage<FileFetchRequest>),
+    #[fluvio(tag = 3)]
     FetchOffsetsRequest(RequestMessage<FetchOffsetsRequest>),
+    #[fluvio(tag = 4)]
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
+    #[fluvio(tag = 5)]
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
 }
 
