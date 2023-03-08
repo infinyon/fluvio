@@ -185,7 +185,9 @@ fn test_named_custom_tag_decode() {
 
 #[derive(Encoder, Decoder, Debug)]
 pub enum MultiUnnamedEnum {
+    #[fluvio(tag = 0)]
     Apple(u16, String),
+    #[fluvio(tag = 1)]
     Banana(bool),
 }
 
@@ -261,7 +263,9 @@ fn test_multi_unnamed_custom_tag_decode() {
 #[derive(Encoder, Eq, PartialEq, Decoder, Debug)]
 #[repr(u8)]
 pub enum EnumNoExprTest {
+    #[fluvio(tag = 0)]
     A,
+    #[fluvio(tag = 1)]
     B,
 }
 
@@ -406,7 +410,9 @@ fn test_gl_colors() {
 #[derive(Encoder, Decoder, PartialEq, Debug)]
 #[fluvio(encode_discriminant)]
 enum EvenOdd {
+    #[fluvio(tag = 2)]
     Even = 2,
+    #[fluvio(tag = 1)]
     Odd = 1,
 }
 impl Default for EvenOdd {
@@ -435,7 +441,9 @@ fn test_encode_discriminant() {
 #[fluvio(encode_discriminant)]
 #[repr(u16)]
 pub enum TestWideEnum {
+    #[fluvio(tag = 1000)]
     Echo = 1000,
+    #[fluvio(tag = 1001)]
     Status = 1001,
 }
 impl Default for TestWideEnum {
@@ -456,7 +464,9 @@ fn test_simple_conversion() {
 #[fluvio(encode_discriminant)]
 pub enum TestErrorCode {
     // The server experienced an unexpected error when processing the request
+    #[fluvio(tag = -1)]
     UnknownServerError = -1,
+    #[fluvio(tag = 0)]
     None = 0,
 }
 

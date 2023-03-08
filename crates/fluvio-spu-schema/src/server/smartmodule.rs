@@ -41,8 +41,10 @@ pub struct SmartModuleInvocation {
 #[derive(Clone, Encoder, Decoder)]
 pub enum SmartModuleInvocationWasm {
     /// Name of SmartModule
+    #[fluvio(tag = 0)]
     Predefined(String),
     /// Compressed WASM module payload using Gzip
+    #[fluvio(tag = 1)]
     AdHoc(Vec<u8>),
 }
 
@@ -85,23 +87,24 @@ impl Debug for SmartModuleInvocationWasm {
 #[derive(Debug, Clone, Encoder, Decoder, Default)]
 pub enum SmartModuleKind {
     #[default]
+    #[fluvio(tag = 0)]
     Filter,
+    #[fluvio(tag = 1)]
     Map,
-    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
+    #[fluvio(min_version = ARRAY_MAP_WASM_API, tag = 2)]
     ArrayMap,
-    Aggregate {
-        accumulator: Vec<u8>,
-    },
-    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
+    #[fluvio(tag = 3)]
+    Aggregate { accumulator: Vec<u8> },
+    #[fluvio(min_version = ARRAY_MAP_WASM_API, tag = 4)]
     FilterMap,
-    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API)]
+    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API, tag = 5)]
     Join(String),
-    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API)]
+    #[fluvio(min_version = SMART_MODULE_API, max_version = CHAIN_SMARTMODULE_API, tag = 6)]
     JoinStream {
         topic: String,
         derivedstream: String,
     },
-    #[fluvio(min_version = GENERIC_SMARTMODULE_API)]
+    #[fluvio(min_version = GENERIC_SMARTMODULE_API, tag = 7)]
     Generic(SmartModuleContextData),
 }
 
@@ -124,11 +127,13 @@ impl std::fmt::Display for SmartModuleKind {
 #[derive(Debug, Clone, Encoder, Decoder, Default)]
 pub enum SmartModuleContextData {
     #[default]
+    #[fluvio(tag = 0)]
     None,
-    Aggregate {
-        accumulator: Vec<u8>,
-    },
+    #[fluvio(tag = 1)]
+    Aggregate { accumulator: Vec<u8> },
+    #[fluvio(tag = 2)]
     Join(String),
+    #[fluvio(tag = 3)]
     JoinStream {
         topic: String,
         derivedstream: String,
@@ -146,9 +151,10 @@ pub enum SmartModuleContextData {
 )]
 #[derive(Clone, Encoder, Decoder, Debug)]
 pub enum SmartModuleWasmCompressed {
+    #[fluvio(tag = 0)]
     Raw(Vec<u8>),
     /// compressed WASM module payload using Gzip
-    #[fluvio(min_version = 14)]
+    #[fluvio(min_version = 14, tag = 1)]
     Gzip(Vec<u8>),
     // TODO implement named WASM modules once we have a WASM store
     // Url(String),

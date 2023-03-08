@@ -13,7 +13,9 @@ use fluvio_protocol::derive::{Decoder, Encoder};
 #[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum TestKafkaApiEnum {
+    #[fluvio(tag = 1000)]
     Echo = 1000,
+    #[fluvio(tag = 1001)]
     Status = 1001,
 }
 
@@ -63,8 +65,11 @@ pub struct AsyncStatusResponse {
 
 #[derive(Encoder, Debug)]
 pub enum TestApiRequest {
+    #[fluvio(tag = 0)]
     EchoRequest(RequestMessage<EchoRequest>),
+    #[fluvio(tag = 1)]
     AsyncStatusRequest(RequestMessage<AsyncStatusRequest>),
+    #[fluvio(tag = 2)]
     Noop(bool),
 }
 
