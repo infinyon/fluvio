@@ -1,0 +1,46 @@
+error: expected expression, found keyword `as`
+ --> tests/ui/missing_fluvio_annotation_with_tag.rs:3:17
+  |
+3 | #[derive(Clone, Encoder, Decoder)]
+  |                 ^^^^^^^ expected expression
+  |
+  = note: this error originates in the derive macro `Encoder` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: proc-macro derive produced unparseable tokens
+ --> tests/ui/missing_fluvio_annotation_with_tag.rs:3:17
+  |
+3 | #[derive(Clone, Encoder, Decoder)]
+  |                 ^^^^^^^
+
+error: expected pattern, found `=>`
+ --> tests/ui/missing_fluvio_annotation_with_tag.rs:3:26
+  |
+3 | #[derive(Clone, Encoder, Decoder)]
+  |                          ^^^^^^^ expected pattern
+  |
+  = note: this error originates in the derive macro `Decoder` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: proc-macro derive produced unparseable tokens
+ --> tests/ui/missing_fluvio_annotation_with_tag.rs:3:26
+  |
+3 | #[derive(Clone, Encoder, Decoder)]
+  |                          ^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/missing_fluvio_annotation_with_tag.rs:9:2
+  |
+9 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/missing_fluvio_annotation_with_tag.rs`
+
+error[E0277]: the trait bound `SmartModuleInvocationWasm: Default` is not satisfied
+ --> tests/ui/missing_fluvio_annotation_with_tag.rs:3:26
+  |
+3 | #[derive(Clone, Encoder, Decoder)]
+  |                          ^^^^^^^ the trait `Default` is not implemented for `SmartModuleInvocationWasm`
+  |
+note: required by a bound in `Decoder`
+ --> $WORKSPACE/crates/fluvio-protocol/src/core/decoder.rs
+  |
+  | pub trait Decoder: Sized + Default {
+  |                            ^^^^^^^ required by this bound in `Decoder`
+  = note: this error originates in the derive macro `Decoder` (in Nightly builds, run with -Z macro-backtrace for more info)
