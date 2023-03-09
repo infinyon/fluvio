@@ -22,6 +22,15 @@ pub struct ListSmartModuleOpt {
     filter: Option<String>,
 }
 
+impl ListSmartModuleOpt {
+    pub fn new(output: OutputFormat) -> Self {
+        Self {
+            output,
+            filter: None,
+        }
+    }
+}
+
 #[async_trait]
 impl ClientCmd for ListSmartModuleOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
