@@ -693,19 +693,17 @@ pub struct TopicStorageConfig {
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub enum CompressionAlgorithm {
     None,
     Gzip,
     Snappy,
     Lz4,
+    #[default]
     Any,
 }
 
-impl Default for CompressionAlgorithm {
-    fn default() -> Self {
-        CompressionAlgorithm::Any
-    }
-}
+
 
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid compression type in topic")]

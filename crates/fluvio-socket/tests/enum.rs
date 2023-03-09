@@ -5,16 +5,14 @@ use fluvio_protocol::derive::{Decoder, Encoder};
 #[repr(u16)]
 #[derive(Encoder, Decoder, Eq, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum TestKafkaApiEnum {
+    #[default]
     Echo = 1000,
     Status = 1001,
 }
 
-impl Default for TestKafkaApiEnum {
-    fn default() -> TestKafkaApiEnum {
-        TestKafkaApiEnum::Echo
-    }
-}
+
 
 #[test]
 fn test_conversion() {

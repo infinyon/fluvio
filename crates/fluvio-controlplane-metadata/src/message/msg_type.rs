@@ -16,16 +16,14 @@ use crate::core::*;
 use crate::store::*;
 
 #[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone)]
+#[derive(Default)]
 pub enum MsgType {
+    #[default]
     UPDATE,
     DELETE,
 }
 
-impl ::std::default::Default for MsgType {
-    fn default() -> Self {
-        MsgType::UPDATE
-    }
-}
+
 
 #[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Message<C> {

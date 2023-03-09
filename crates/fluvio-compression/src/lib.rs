@@ -14,18 +14,16 @@ use serde::{Serialize, Deserialize};
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "lowercase")]
 #[repr(i8)]
+#[derive(Default)]
 pub enum Compression {
+    #[default]
     None = 0,
     Gzip = 1,
     Snappy = 2,
     Lz4 = 3,
 }
 
-impl Default for Compression {
-    fn default() -> Self {
-        Compression::None
-    }
-}
+
 
 impl TryFrom<i8> for Compression {
     type Error = CompressionError;

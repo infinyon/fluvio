@@ -193,15 +193,13 @@ mod test {
     #[repr(u16)]
     #[derive(Eq, PartialEq, Debug, Clone, Copy, Encoder, Decoder)]
     #[fluvio(encode_discriminant)]
+    #[derive(Default)]
     pub enum TestApiKey {
+        #[default]
         ApiVersion = 0,
     }
 
-    impl Default for TestApiKey {
-        fn default() -> TestApiKey {
-            TestApiKey::ApiVersion
-        }
-    }
+    
 
     #[derive(Decoder, Encoder, Debug, Default)]
     pub struct ApiVersionRequest {}
@@ -229,15 +227,13 @@ mod test {
     #[repr(u16)]
     #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
     #[fluvio(encode_discriminant)]
+    #[derive(Default)]
     pub enum TestApiEnum {
+        #[default]
         ApiVersion = 18,
     }
 
-    impl Default for TestApiEnum {
-        fn default() -> TestApiEnum {
-            TestApiEnum::ApiVersion
-        }
-    }
+    
 
     #[test]
     fn test_decode_header() -> Result<(), IoError> {
