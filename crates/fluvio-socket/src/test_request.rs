@@ -19,8 +19,6 @@ pub enum TestKafkaApiEnum {
     Status = 1001,
 }
 
-
-
 #[derive(Decoder, Encoder, Debug, Default)]
 pub struct EchoRequest {
     pub msg: String,

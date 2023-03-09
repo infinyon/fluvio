@@ -168,8 +168,6 @@ pub enum SmartModuleWasmFormat {
     Text,
 }
 
-
-
 #[cfg(feature = "use_serde")]
 mod base64 {
     use std::ops::Deref;

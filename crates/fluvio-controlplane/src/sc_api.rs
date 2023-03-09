@@ -26,8 +26,6 @@ pub enum InternalScKey {
     ReplicaRemoved = 2002,
 }
 
-
-
 /// Request made to Spu from Sc
 #[derive(Debug, Encoder)]
 pub enum InternalScRequest {

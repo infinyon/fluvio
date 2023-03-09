@@ -175,8 +175,6 @@ mod common {
         Produce,
     }
 
-    
-
     impl Display for RequestKind {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(f, "{self:?}")

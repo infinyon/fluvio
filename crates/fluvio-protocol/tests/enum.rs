@@ -41,8 +41,6 @@ impl Encoder for Mix {
     }
 }
 
-
-
 impl Decoder for Mix {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
@@ -259,8 +257,6 @@ pub enum EnumNoExprTest {
     B,
 }
 
-
-
 #[test]
 fn test_enum_encode() {
     let v1 = EnumNoExprTest::B;
@@ -303,8 +299,6 @@ pub enum EnumExprTest {
     E = 10,
 }
 
-
-
 #[test]
 fn test_enum_expr_encode() {
     let v1 = EnumExprTest::D;
@@ -338,8 +332,6 @@ pub enum WideEnum {
     #[fluvio(tag = 10)]
     E = 10,
 }
-
-
 
 #[test]
 fn test_wide_encode() {
@@ -447,8 +439,6 @@ pub enum TestErrorCode {
     #[default]
     None = 0,
 }
-
-
 
 #[test]
 fn test_error_code_from_conversion2() {

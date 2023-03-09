@@ -12,8 +12,6 @@ pub enum TestKafkaApiEnum {
     Status = 1001,
 }
 
-
-
 #[test]
 fn test_conversion() {
     let key: u16 = 1000;

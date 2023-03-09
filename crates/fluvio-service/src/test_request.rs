@@ -31,8 +31,6 @@ pub(crate) enum TestKafkaApiEnum {
     Save = 1001,
 }
 
-
-
 #[derive(Decoder, Encoder, Debug, Default)]
 pub(crate) struct EchoRequest {
     msg: String,

@@ -338,8 +338,6 @@ pub enum EncryptionEnum {
     SSL,
 }
 
-
-
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Default)]
@@ -348,8 +346,6 @@ pub enum SpuType {
     Managed,
     Custom,
 }
-
-
 
 /// Return type label in String format
 impl SpuType {

@@ -186,8 +186,6 @@ pub enum ErrorCode {
     CompressionError,
 }
 
-
-
 impl ErrorCode {
     pub fn is_ok(&self) -> bool {
         matches!(self, ErrorCode::None)

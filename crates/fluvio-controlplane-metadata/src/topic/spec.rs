@@ -703,8 +703,6 @@ pub enum CompressionAlgorithm {
     Any,
 }
 
-
-
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid compression type in topic")]
 pub struct InvalidCompressionAlgorithm;

@@ -15,15 +15,12 @@ use crate::store::actions::*;
 use crate::core::*;
 use crate::store::*;
 
-#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone)]
-#[derive(Default)]
+#[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub enum MsgType {
     #[default]
     UPDATE,
     DELETE,
 }
-
-
 
 #[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Message<C> {

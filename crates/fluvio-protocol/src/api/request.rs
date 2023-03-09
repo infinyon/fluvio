@@ -199,8 +199,6 @@ mod test {
         ApiVersion = 0,
     }
 
-    
-
     #[derive(Decoder, Encoder, Debug, Default)]
     pub struct ApiVersionRequest {}
 
@@ -232,8 +230,6 @@ mod test {
         #[default]
         ApiVersion = 18,
     }
-
-    
 
     #[test]
     fn test_decode_header() -> Result<(), IoError> {

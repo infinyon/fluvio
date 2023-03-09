@@ -10,5 +10,3 @@ pub enum Isolation {
     ReadUncommitted = 0,
     ReadCommitted = 1,
 }
-
-

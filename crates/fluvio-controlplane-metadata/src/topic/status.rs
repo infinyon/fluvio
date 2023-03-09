@@ -38,7 +38,7 @@ impl fmt::Display for TopicStatus {
 #[derive(Default)]
 pub enum TopicResolution {
     #[default]
-    Init,                  // Initializing this is starting state.
+    Init, // Initializing this is starting state.
     Pending,               // Has valid config, ready for replica mapping assignment
     InsufficientResources, // Replica map cannot be created due to lack of capacity
     InvalidConfig,         // Invalid configuration
@@ -112,8 +112,6 @@ impl ::std::default::Default for TopicStatus {
         }
     }
 }
-
-
 
 // -----------------------------------
 // Implementation

@@ -23,8 +23,6 @@ pub enum Compression {
     Lz4 = 3,
 }
 
-
-
 impl TryFrom<i8> for Compression {
     type Error = CompressionError;
     fn try_from(v: i8) -> Result<Self, CompressionError> {
