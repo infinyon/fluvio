@@ -2513,7 +2513,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "bytes 1.4.0",
  "flate2",
