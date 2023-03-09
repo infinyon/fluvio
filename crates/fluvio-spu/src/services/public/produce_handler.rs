@@ -1,7 +1,11 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
+use std::time::Instant;
 
+use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
 use fluvio_smartengine::SmartModuleChainInstance;
+use fluvio_smartengine::metrics::SmartModuleChainMetrics;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use tokio::select;
 use tracing::warn;
 use tracing::{debug, trace, error};
@@ -9,7 +13,7 @@ use tracing::instrument;
 
 use fluvio_protocol::api::RequestKind;
 use fluvio_spu_schema::Isolation;
-use fluvio_protocol::record::{BatchRecords, Offset};
+use fluvio_protocol::record::{BatchRecords, Offset, Batch, MemoryRecords, RawRecords};
 use fluvio::Compression;
 use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
 use fluvio_storage::StorageError;
@@ -21,6 +25,8 @@ use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use fluvio_protocol::{api::RequestMessage, link::ErrorCode};
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
+use fluvio_protocol::record::Record;
+use fluvio_protocol::record::RecordData;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use fluvio_future::timer::sleep;
@@ -61,7 +67,13 @@ pub async fn handle_produce_request(
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
-        let topic_result = handle_produce_topic(&ctx, topic_request, header.is_connector()).await;
+        let topic_result = handle_produce_topic(
+            &ctx,
+            topic_request,
+            header.is_connector(),
+            sm_chain_instance.as_mut(),
+        )
+        .await;
         topic_results.push(topic_result);
     }
     wait_for_acks(
@@ -84,6 +96,7 @@ async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
     topic_request: DefaultTopicRequest,
     is_connector: bool,
+    mut sm_chain_instance: Option<&mut SmartModuleChainInstance>,
 ) -> TopicWriteResult {
     let topic = &topic_request.name;
 
@@ -94,13 +107,125 @@ async fn handle_produce_topic(
         partitions: vec![],
     };
 
-    for partition_request in topic_request.partitions.into_iter() {
+    for mut partition_request in topic_request.partitions.into_iter() {
+        if let Some(sm_chain_instance) = &mut sm_chain_instance {
+            let records = &partition_request.records;
+            let mut batches = &records.batches;
+
+            let (sm_result, smartmodule_error) = process_batch(
+                *sm_chain_instance,
+                batches.to_vec(),
+                ctx.metrics().chain_metrics(),
+            )
+            .unwrap();
+
+            let batch_of_raw_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
+
+            partition_request.records = RecordSet {
+                batches: vec![batch_of_raw_records],
+            };
+        }
+
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
         let partition_response =
             handle_produce_partition(ctx, replica_id, partition_request, is_connector).await;
         topic_result.partitions.push(partition_response);
     }
     topic_result
+}
+
+fn process_batch(
+    sm_chain_instance: &mut SmartModuleChainInstance,
+    batches: Vec<Batch<RawRecords>>,
+    metric: &SmartModuleChainMetrics,
+) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
+    let mut smartmodule_batch = Batch::<MemoryRecords>::default();
+    Ok((smartmodule_batch, None))
+    // smartmodule_batch.base_offset = -1; // indicate this is uninitialized
+    // smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
+
+    // let mut total_bytes = 0;
+    // let iter = batches.iter();
+
+    // loop {
+    //     let file_batch = match iter.next() {
+    //         // we process entire batches.  entire batches are process as group
+    //         Some(batch_result) => batch_result,
+    //         None => {
+    //             debug!(
+    //                 total_records = smartmodule_batch.records().len(),
+    //                 "No more batches, SmartModuleInstance end"
+    //             );
+    //             return Ok((smartmodule_batch, None));
+    //         }
+    //     };
+
+    //     // debug!(
+    //     //     current_batch_offset = file_batch.batch.base_offset,
+    //     //     current_batch_offset_delta = file_batch.offset_delta(),
+    //     //     smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
+    //     //     smartmodule_base_offset = smartmodule_batch.base_offset,
+    //     //     smartmodule_records = smartmodule_batch.records().len(),
+    //     //     "Starting SmartModuleInstance processing"
+    //     // );
+
+    //     let now = Instant::now();
+
+    //     //  let mut join_record = vec![];
+    //     //  join_last_record.encode(&mut join_record, 0)?;
+
+    //     let input =
+    //         SmartModuleInput::new(file_batch.records().clone(), file_batch.batch.base_offset);
+
+    //     let output = sm_chain_instance.process(input, metric)?;
+    //     debug!(smartmodule_execution_time = %now.elapsed().as_millis());
+
+    //     let maybe_error = output.error;
+    //     let mut records = output.successes;
+
+    //     trace!("smartmodule processed records: {:#?}", records);
+
+    //     // there are smartmoduleed records!!
+    //     if records.is_empty() {
+    //         debug!("smartmodules records empty");
+    //     } else {
+    //         // set base offset if this is first time
+    //         if smartmodule_batch.base_offset == -1 {
+    //             smartmodule_batch.base_offset = file_batch.base_offset();
+    //         }
+
+    //         // difference between smartmodule batch and and current batch
+    //         // since base are different we need update delta offset for each records
+    //         let relative_base_offset = smartmodule_batch.base_offset - file_batch.base_offset();
+
+    //         for record in &mut records {
+    //             record.add_base_offset(relative_base_offset);
+    //         }
+
+    //         let record_bytes = records.write_size(0);
+    //         total_bytes += record_bytes;
+
+    //         debug!(
+    //             smartmodule_records = records.len(),
+    //             total_bytes, "finished smartmoduleing"
+    //         );
+    //         smartmodule_batch.mut_records().append(&mut records);
+    //     }
+
+    //     // only increment smartmodule offset delta if smartmodule_batch has been initialized
+    //     if smartmodule_batch.base_offset != -1 {
+    //         debug!(
+    //             offset_delta = file_batch.offset_delta(),
+    //             "adding to offset delta"
+    //         );
+    //         smartmodule_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
+    //     }
+
+    //     // If we had a processing error, return current batch and error
+    //     if maybe_error.is_some() {
+    //         return Ok((smartmodule_batch, maybe_error));
+    //     }
+    // }
 }
 
 #[instrument(
