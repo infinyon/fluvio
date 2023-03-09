@@ -11,10 +11,11 @@ use fluvio::Fluvio;
 use fluvio_future::io::StreamExt;
 
 use crate::client::cmd::ClientCmd;
+use crate::client::smartmodule::list::ListSmartModuleOpt;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
-/// List all existing SmartModules
+/// Watch for changes to SmartModules
 #[derive(Debug, Parser)]
 pub struct WatchSmartModuleOpt {
     #[clap(flatten)]
@@ -25,7 +26,7 @@ pub struct WatchSmartModuleOpt {
 impl ClientCmd for WatchSmartModuleOpt {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
-        _out: Arc<O>,
+        out: Arc<O>,
         fluvio: &Fluvio,
     ) -> Result<()> {
         let admin = fluvio.admin().await;
@@ -34,11 +35,11 @@ impl ClientCmd for WatchSmartModuleOpt {
         loop {
             select! {
                 next = watch_stream.next() => {
-                    if let Some(Ok(event)) = next {
-                        // low level printing, should be replaced
-                        println!("SmartModule event: {event:?}");
+                    if let Some(Ok(_event)) = next {
+                        out.println("");    // add newline
+                        let opt = ListSmartModuleOpt::new(self.output.clone());
+                        opt.process_client(out.clone(), fluvio).await?;
                     } else {
-                        println!("SmartModule event stream ended");
                         break;
                     }
                 }
