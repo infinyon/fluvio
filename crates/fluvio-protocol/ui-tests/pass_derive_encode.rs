@@ -22,13 +22,18 @@ enum PassUnitEnum {
 
 #[derive(Encoder)]
 enum PassTupleEnum {
+    #[fluvio(tag = 0)]
     First(String),
+    #[fluvio(tag = 1)]
     Second(u16),
+    #[fluvio(tag = 2)]
     Third(Vec<u8>),
 }
 
 #[derive(Encoder)]
 enum PassNamedEnum {
+    #[fluvio(tag = 0)]
     Alpha { name: String, number: i32 },
+    #[fluvio(tag = 1)]
     Beta { data: Vec<u8> },
 }

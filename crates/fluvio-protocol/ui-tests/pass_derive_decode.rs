@@ -29,7 +29,9 @@ impl Default for PassUnitEnum {
 
 #[derive(Decoder)]
 enum PassTupleEnum {
+    #[fluvio(tag = 0)]
     First(String),
+    #[fluvio(tag = 2)]
     Second(u16),
     #[fluvio(tag = 50)]
     Third(Vec<u8>),
@@ -43,6 +45,7 @@ impl Default for PassTupleEnum {
 
 #[derive(Decoder)]
 enum PassNamedEnum {
+    #[fluvio(tag = 0)]
     Alpha {
         name: String,
         number: i32,
