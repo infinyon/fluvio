@@ -175,11 +175,6 @@ pub enum ErrorCode {
     #[fluvio(tag = 8003)]
     #[error("the derivedstream {0} is invalid")]
     DerivedStreamInvalid(String),
-    // #[error("can't do recursive derivedstream yet: {0}->{1}")]
-    // DerivedStreamRecursion(String, String),
-    // #[error("the derivedstream already exists")]
-    // DerivedStreamAlreadyExists,
-
     // Compression errors
     #[fluvio(tag = 9000)]
     #[error("a compression error occurred in the SPU")]
