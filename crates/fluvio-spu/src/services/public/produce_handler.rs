@@ -25,8 +25,7 @@ use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use fluvio_protocol::{api::RequestMessage, link::ErrorCode};
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
-use fluvio_protocol::record::Record;
-use fluvio_protocol::record::RecordData;
+use fluvio_protocol::Encoder;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use fluvio_future::timer::sleep;
@@ -110,7 +109,7 @@ async fn handle_produce_topic(
     for mut partition_request in topic_request.partitions.into_iter() {
         if let Some(sm_chain_instance) = &mut sm_chain_instance {
             let records = &partition_request.records;
-            let mut batches = &records.batches;
+            let batches = &records.batches;
 
             let (sm_result, smartmodule_error) = process_batch(
                 *sm_chain_instance,
@@ -140,92 +139,106 @@ fn process_batch(
     metric: &SmartModuleChainMetrics,
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
     let mut smartmodule_batch = Batch::<MemoryRecords>::default();
-    Ok((smartmodule_batch, None))
-    // smartmodule_batch.base_offset = -1; // indicate this is uninitialized
-    // smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
+    smartmodule_batch.base_offset = -1; // indicate this is uninitialized
+    smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
 
-    // let mut total_bytes = 0;
-    // let iter = batches.iter();
+    let mut total_bytes = 0;
+    let mut iter = batches.iter();
 
-    // loop {
-    //     let file_batch = match iter.next() {
-    //         // we process entire batches.  entire batches are process as group
-    //         Some(batch_result) => batch_result,
-    //         None => {
-    //             debug!(
-    //                 total_records = smartmodule_batch.records().len(),
-    //                 "No more batches, SmartModuleInstance end"
-    //             );
-    //             return Ok((smartmodule_batch, None));
-    //         }
-    //     };
+    loop {
+        let file_batch = match iter.next() {
+            // we process entire batches.  entire batches are process as group
+            Some(batch_result) => batch_result,
+            None => {
+                debug!(
+                    total_records = smartmodule_batch.records().len(),
+                    "No more batches, SmartModuleInstance end"
+                );
+                return Ok((smartmodule_batch, None));
+            }
+        };
 
-    //     // debug!(
-    //     //     current_batch_offset = file_batch.batch.base_offset,
-    //     //     current_batch_offset_delta = file_batch.offset_delta(),
-    //     //     smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
-    //     //     smartmodule_base_offset = smartmodule_batch.base_offset,
-    //     //     smartmodule_records = smartmodule_batch.records().len(),
-    //     //     "Starting SmartModuleInstance processing"
-    //     // );
+        // debug!(
+        //     current_batch_offset = file_batch.batch.base_offset,
+        //     current_batch_offset_delta = file_batch.offset_delta(),
+        //     smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
+        //     smartmodule_base_offset = smartmodule_batch.base_offset,
+        //     smartmodule_records = smartmodule_batch.records().len(),
+        //     "Starting SmartModuleInstance processing"
+        // );
 
-    //     let now = Instant::now();
+        let now = Instant::now();
 
-    //     //  let mut join_record = vec![];
-    //     //  join_last_record.encode(&mut join_record, 0)?;
+        //  let mut join_record = vec![];
+        //  join_last_record.encode(&mut join_record, 0)?;
 
-    //     let input =
-    //         SmartModuleInput::new(file_batch.records().clone(), file_batch.batch.base_offset);
+        let r = file_batch.records();
+        let b = &r.0;
+        let raw_bytes: &[u8] = &b;
+        let vec_bytes = raw_bytes.to_vec();
 
-    //     let output = sm_chain_instance.process(input, metric)?;
-    //     debug!(smartmodule_execution_time = %now.elapsed().as_millis());
+        let input = SmartModuleInput::new(vec_bytes, file_batch.base_offset);
 
-    //     let maybe_error = output.error;
-    //     let mut records = output.successes;
+        let output = match sm_chain_instance.process(input, metric) {
+            Ok(output) => output,
+            Err(e) => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    format!("SmartModule application failure: {:?}", e),
+                ));
+            }
+        };
 
-    //     trace!("smartmodule processed records: {:#?}", records);
+        debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
-    //     // there are smartmoduleed records!!
-    //     if records.is_empty() {
-    //         debug!("smartmodules records empty");
-    //     } else {
-    //         // set base offset if this is first time
-    //         if smartmodule_batch.base_offset == -1 {
-    //             smartmodule_batch.base_offset = file_batch.base_offset();
-    //         }
+        let maybe_error = output.error;
+        let mut records = output.successes;
 
-    //         // difference between smartmodule batch and and current batch
-    //         // since base are different we need update delta offset for each records
-    //         let relative_base_offset = smartmodule_batch.base_offset - file_batch.base_offset();
+        trace!("smartmodule processed records: {:#?}", records);
 
-    //         for record in &mut records {
-    //             record.add_base_offset(relative_base_offset);
-    //         }
+        // there are smartmoduleed records!!
+        if records.is_empty() {
+            debug!("smartmodules records empty");
+        } else {
+            // set base offset if this is first time
+            if smartmodule_batch.base_offset == -1 {
+                smartmodule_batch.base_offset = file_batch.base_offset;
+            }
 
-    //         let record_bytes = records.write_size(0);
-    //         total_bytes += record_bytes;
+            // difference between smartmodule batch and and current batch
+            // since base are different we need update delta offset for each records
+            let relative_base_offset = smartmodule_batch.base_offset - file_batch.base_offset;
 
-    //         debug!(
-    //             smartmodule_records = records.len(),
-    //             total_bytes, "finished smartmoduleing"
-    //         );
-    //         smartmodule_batch.mut_records().append(&mut records);
-    //     }
+            for record in &mut records {
+                record.add_base_offset(relative_base_offset);
+            }
 
-    //     // only increment smartmodule offset delta if smartmodule_batch has been initialized
-    //     if smartmodule_batch.base_offset != -1 {
-    //         debug!(
-    //             offset_delta = file_batch.offset_delta(),
-    //             "adding to offset delta"
-    //         );
-    //         smartmodule_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
-    //     }
+            let record_bytes = records
+                .iter()
+                .fold(0, |sum, record| sum + record.write_size(0));
+            total_bytes += record_bytes;
 
-    //     // If we had a processing error, return current batch and error
-    //     if maybe_error.is_some() {
-    //         return Ok((smartmodule_batch, maybe_error));
-    //     }
-    // }
+            debug!(
+                smartmodule_records = records.len(),
+                total_bytes, "finished smartmoduleing"
+            );
+            smartmodule_batch.mut_records().append(&mut records);
+        }
+
+        // only increment smartmodule offset delta if smartmodule_batch has been initialized
+        if smartmodule_batch.base_offset != -1 {
+            debug!(
+                offset_delta = file_batch.last_offset_delta(),
+                "adding to offset delta"
+            );
+            smartmodule_batch.add_to_offset_delta(file_batch.last_offset_delta() + 1);
+        }
+
+        // If we had a processing error, return current batch and error
+        if maybe_error.is_some() {
+            return Ok((smartmodule_batch, maybe_error));
+        }
+    }
 }
 
 #[instrument(
