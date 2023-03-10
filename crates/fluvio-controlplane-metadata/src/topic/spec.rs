@@ -695,7 +695,6 @@ pub struct TopicStorageConfig {
 #[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CompressionAlgorithm {
-    #[default]
     #[fluvio(tag = 0)]
     None,
     #[fluvio(tag = 1)]
@@ -704,6 +703,7 @@ pub enum CompressionAlgorithm {
     Snappy,
     #[fluvio(tag = 3)]
     Lz4,
+    #[default]
     #[fluvio(tag = 4)]
     Any,
 }
