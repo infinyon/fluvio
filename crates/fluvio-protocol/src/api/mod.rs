@@ -169,14 +169,10 @@ mod common {
 
     #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
     #[non_exhaustive]
+    #[derive(Default)]
     pub enum RequestKind {
+        #[default]
         Produce,
-    }
-
-    impl Default for RequestKind {
-        fn default() -> Self {
-            RequestKind::Produce
-        }
     }
 
     impl Display for RequestKind {

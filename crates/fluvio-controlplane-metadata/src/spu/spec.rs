@@ -331,28 +331,20 @@ impl Endpoint {
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub enum EncryptionEnum {
+    #[default]
     PLAINTEXT,
     SSL,
 }
 
-impl Default for EncryptionEnum {
-    fn default() -> Self {
-        EncryptionEnum::PLAINTEXT
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub enum SpuType {
+    #[default]
     Managed,
     Custom,
-}
-
-impl Default for SpuType {
-    fn default() -> Self {
-        SpuType::Managed
-    }
 }
 
 /// Return type label in String format

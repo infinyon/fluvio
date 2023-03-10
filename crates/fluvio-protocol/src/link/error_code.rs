@@ -14,6 +14,7 @@ use crate::{Encoder, Decoder, api::RequestKind};
 #[repr(i16)]
 #[derive(thiserror::Error, Encoder, Decoder, Eq, PartialEq, Debug, Clone)]
 #[non_exhaustive]
+#[derive(Default)]
 pub enum ErrorCode {
     #[fluvio(tag = -1)]
     #[error("An unknown server error occurred")]
@@ -22,6 +23,7 @@ pub enum ErrorCode {
     // Not an error
     #[fluvio(tag = 0)]
     #[error("ErrorCode indicated success. If you see this it is likely a bug.")]
+    #[default]
     None,
 
     #[fluvio(tag = 2)]
@@ -182,12 +184,6 @@ pub enum ErrorCode {
     #[fluvio(tag = 9000)]
     #[error("a compression error occurred in the SPU")]
     CompressionError,
-}
-
-impl Default for ErrorCode {
-    fn default() -> ErrorCode {
-        ErrorCode::None
-    }
 }
 
 impl ErrorCode {

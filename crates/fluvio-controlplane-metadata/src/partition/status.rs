@@ -226,17 +226,13 @@ fn find_status(status: &mut [ReplicaStatus], spu: SpuId) -> Option<&'_ mut Repli
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub enum PartitionResolution {
-    Offline,             // No leader available for serving partition
+    #[default]
+    Offline, // No leader available for serving partition
     Online,              // Partition is running normally, status contains replica info
     LeaderOffline,       // Election has failed, no suitable leader has been found
     ElectionLeaderFound, // New leader has been selected
-}
-
-impl Default for PartitionResolution {
-    fn default() -> Self {
-        PartitionResolution::Offline
-    }
 }
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]

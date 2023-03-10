@@ -18,16 +18,12 @@ use super::ReplicaRemovedRequest;
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum InternalScKey {
+    #[default]
     RegisterSpu = 2000,
     UpdateLrs = 2001,
     ReplicaRemoved = 2002,
-}
-
-impl Default for InternalScKey {
-    fn default() -> InternalScKey {
-        InternalScKey::RegisterSpu
-    }
 }
 
 /// Request made to Spu from Sc

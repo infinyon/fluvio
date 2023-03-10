@@ -159,17 +159,13 @@ impl SmartModuleWasm {
 
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub enum SmartModuleWasmFormat {
     #[cfg_attr(feature = "use_serde", serde(rename = "BINARY"))]
+    #[default]
     Binary,
     #[cfg_attr(feature = "use_serde", serde(rename = "TEXT"))]
     Text,
-}
-
-impl Default for SmartModuleWasmFormat {
-    fn default() -> SmartModuleWasmFormat {
-        SmartModuleWasmFormat::Binary
-    }
 }
 
 #[cfg(feature = "use_serde")]

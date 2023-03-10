@@ -8,7 +8,9 @@ use fluvio_protocol::bytes::{Buf, BufMut};
 use fluvio_protocol::{Decoder, Encoder, Version};
 
 // manual encode
+#[derive(Default)]
 pub enum Mix {
+    #[default]
     A = 2,
     C = 3,
 }
@@ -36,12 +38,6 @@ impl Encoder for Mix {
             }
         }
         Ok(())
-    }
-}
-
-impl Default for Mix {
-    fn default() -> Mix {
-        Mix::A
     }
 }
 
@@ -254,15 +250,11 @@ fn test_multi_unnamed_custom_tag_decode() {
 
 #[derive(Encoder, Eq, PartialEq, Decoder, Debug)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum EnumNoExprTest {
+    #[default]
     A,
     B,
-}
-
-impl Default for EnumNoExprTest {
-    fn default() -> EnumNoExprTest {
-        EnumNoExprTest::A
-    }
 }
 
 #[test]
@@ -298,17 +290,13 @@ fn test_enum_decode() {
 
 #[derive(Encoder, Decoder, Eq, PartialEq, Debug)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum EnumExprTest {
     #[fluvio(tag = 5)]
+    #[default]
     D = 5,
     #[fluvio(tag = 10)]
     E = 10,
-}
-
-impl Default for EnumExprTest {
-    fn default() -> EnumExprTest {
-        EnumExprTest::D
-    }
 }
 
 #[test]
@@ -336,17 +324,13 @@ fn test_enum_expr_decode() {
 #[repr(u16)]
 #[derive(Encoder, Decoder, Eq, PartialEq, Debug)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum WideEnum {
     #[fluvio(tag = 5)]
+    #[default]
     D = 5,
     #[fluvio(tag = 10)]
     E = 10,
-}
-
-impl Default for WideEnum {
-    fn default() -> WideEnum {
-        WideEnum::D
-    }
 }
 
 #[test]
@@ -448,16 +432,12 @@ fn test_simple_conversion() {
 #[repr(i16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder)]
 #[fluvio(encode_discriminant)]
+#[derive(Default)]
 pub enum TestErrorCode {
     // The server experienced an unexpected error when processing the request
     UnknownServerError = -1,
+    #[default]
     None = 0,
-}
-
-impl Default for TestErrorCode {
-    fn default() -> Self {
-        TestErrorCode::None
-    }
 }
 
 #[test]

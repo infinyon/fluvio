@@ -35,8 +35,10 @@ impl fmt::Display for TopicStatus {
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub enum TopicResolution {
-    Init,                  // Initializing this is starting state.
+    #[default]
+    Init, // Initializing this is starting state.
     Pending,               // Has valid config, ready for replica mapping assignment
     InsufficientResources, // Replica map cannot be created due to lack of capacity
     InvalidConfig,         // Invalid configuration
@@ -108,12 +110,6 @@ impl ::std::default::Default for TopicStatus {
             replica_map: BTreeMap::new(),
             reason: "".to_owned(),
         }
-    }
-}
-
-impl ::std::default::Default for TopicResolution {
-    fn default() -> Self {
-        TopicResolution::Init
     }
 }
 

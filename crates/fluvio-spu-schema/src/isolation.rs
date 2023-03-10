@@ -4,13 +4,9 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Encoder, Decoder, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash)]
 #[fluvio(encode_discriminant)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum Isolation {
+    #[default]
     ReadUncommitted = 0,
     ReadCommitted = 1,
-}
-
-impl Default for Isolation {
-    fn default() -> Self {
-        Isolation::ReadUncommitted
-    }
 }
