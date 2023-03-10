@@ -33,10 +33,10 @@ impl fmt::Display for TopicStatus {
     }
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
+#[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Default)]
 pub enum TopicResolution {
+    #[default]
     #[fluvio(tag = 0)]
     Init, // Initializing this is starting state.
     #[fluvio(tag = 1)]

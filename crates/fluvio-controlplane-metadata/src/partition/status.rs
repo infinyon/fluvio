@@ -224,10 +224,10 @@ fn find_status(status: &mut [ReplicaStatus], spu: SpuId) -> Option<&'_ mut Repli
     status.iter_mut().find(|status| status.spu == spu)
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
+#[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Default)]
 pub enum PartitionResolution {
+    #[default]
     #[fluvio(tag = 0)]
     Offline, // No leader available for serving partition
     #[fluvio(tag = 1)]
