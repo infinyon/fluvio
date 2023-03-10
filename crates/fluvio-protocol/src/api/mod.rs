@@ -167,11 +167,11 @@ mod common {
         }
     }
 
-    #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
+    #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
     #[non_exhaustive]
-    #[derive(Default)]
     pub enum RequestKind {
         #[default]
+        #[fluvio(tag = 0)]
         Produce,
     }
 

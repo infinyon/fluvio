@@ -59,8 +59,11 @@ pub struct AsyncStatusResponse {
 
 #[derive(Encoder, Debug)]
 pub enum TestApiRequest {
+    #[fluvio(tag = 0)]
     EchoRequest(RequestMessage<EchoRequest>),
+    #[fluvio(tag = 1)]
     AsyncStatusRequest(RequestMessage<AsyncStatusRequest>),
+    #[fluvio(tag = 2)]
     Noop(bool),
 }
 

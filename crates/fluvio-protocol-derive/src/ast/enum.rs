@@ -7,6 +7,8 @@ use syn::{
     Lit, Meta, NestedMeta, Variant,
 };
 
+use super::container::ContainerAttributes;
+
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
     pub props: Vec<EnumProp>,
@@ -14,12 +16,18 @@ pub(crate) struct FluvioEnum {
 }
 
 impl FluvioEnum {
-    pub fn from_ast(item: ItemEnum) -> syn::Result<Self> {
+    pub fn from_ast(item: ItemEnum, attrs: &ContainerAttributes) -> syn::Result<Self> {
         let enum_ident = item.ident;
-
         let mut props = vec![];
+
         for variant in item.variants {
-            props.push(EnumProp::from_ast(variant)?);
+            let enum_prop = EnumProp::from_ast(variant.clone())?;
+
+            if !attrs.encode_discriminant && enum_prop.tag.is_none() {
+                return Err(Error::new(variant.span(), "You must provide `fluvio(encode_discriminant)` if `fluvio(tag)` is not provided"));
+            }
+
+            props.push(enum_prop);
         }
 
         let generics = item.generics;
@@ -65,9 +73,6 @@ impl EnumProp {
                     for kf_attr in list.nested {
                         if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
                             if name_value.path.is_ident("tag") {
-                                // if let Lit::Str(lit_str) = name_value.lit {
-                                //     prop.tag = Some(lit_str.value());
-                                // }
                                 if let Lit::Int(lit_int) = name_value.lit {
                                     prop.tag = Some(lit_int.base10_digits().to_owned());
                                 }
@@ -77,7 +82,8 @@ impl EnumProp {
                 }
             }
         }
-        prop.discriminant = if let Some((_, discriminant)) = variant.discriminant {
+
+        prop.discriminant = if let Some((_, discriminant)) = variant.discriminant.clone() {
             match discriminant {
                 Expr::Lit(elit) => Some(DiscrimantExpr::Lit(elit)),
                 Expr::Unary(elit) => Some(DiscrimantExpr::Unary(elit)),
@@ -91,6 +97,13 @@ impl EnumProp {
         } else {
             None
         };
+
+        if prop.discriminant.is_none() && prop.tag.is_none() {
+            return Err(Error::new(
+                variant.span(),
+                "You must either provide a `tag` or a discriminant for enum types deriving Encode/Decode",
+            ));
+        }
 
         prop.kind = match &variant.fields {
             Fields::Named(struct_like) => {

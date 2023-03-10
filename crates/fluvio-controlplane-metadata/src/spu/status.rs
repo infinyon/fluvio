@@ -64,8 +64,11 @@ impl SpuStatus {
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpuStatusResolution {
+    #[fluvio(tag = 0)]
     Online,
+    #[fluvio(tag = 1)]
     Offline,
+    #[fluvio(tag = 2)]
     Init,
 }
 

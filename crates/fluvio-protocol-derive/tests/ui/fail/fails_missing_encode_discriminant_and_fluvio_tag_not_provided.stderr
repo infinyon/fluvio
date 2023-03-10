@@ -1,0 +1,5 @@
+error: You must provide `fluvio(encode_discriminant)` if `fluvio(tag)` is not provided
+ --> tests/ui/fail/fails_missing_encode_discriminant_and_fluvio_tag_not_provided.rs:5:5
+  |
+5 |     #[default]
+  |     ^

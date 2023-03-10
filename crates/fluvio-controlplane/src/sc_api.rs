@@ -29,8 +29,11 @@ pub enum InternalScKey {
 /// Request made to Spu from Sc
 #[derive(Debug, Encoder)]
 pub enum InternalScRequest {
+    #[fluvio(tag = 0)]
     RegisterSpuRequest(RequestMessage<RegisterSpuRequest>),
+    #[fluvio(tag = 1)]
     UpdateLrsRequest(RequestMessage<UpdateLrsRequest>),
+    #[fluvio(tag = 2)]
     ReplicaRemovedRequest(RequestMessage<ReplicaRemovedRequest>),
 }
 

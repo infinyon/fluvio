@@ -13,7 +13,9 @@ use super::reject_request::RejectOffsetRequest;
 
 #[derive(Debug, Encoder)]
 pub enum FollowerPeerRequest {
+    #[fluvio(tag = 0)]
     SyncRecords(RequestMessage<DefaultSyncRequest>),
+    #[fluvio(tag = 1)]
     RejectedOffsetRequest(RequestMessage<RejectOffsetRequest>),
 }
 

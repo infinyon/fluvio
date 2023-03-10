@@ -647,6 +647,7 @@ pub struct PartitionMap {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CleanupPolicy {
     #[cfg_attr(feature = "use_serde", serde(rename = "segment"))]
+    #[fluvio(tag = 0)]
     Segment(SegmentBasedPolicy),
 }
 
@@ -691,15 +692,19 @@ pub struct TopicStorageConfig {
     pub max_partition_size: Option<u64>, // max partition size
 }
 
-#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
+#[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Default)]
 pub enum CompressionAlgorithm {
+    #[fluvio(tag = 0)]
     None,
+    #[fluvio(tag = 1)]
     Gzip,
+    #[fluvio(tag = 2)]
     Snappy,
+    #[fluvio(tag = 3)]
     Lz4,
     #[default]
+    #[fluvio(tag = 4)]
     Any,
 }
 

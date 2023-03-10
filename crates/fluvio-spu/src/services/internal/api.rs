@@ -24,6 +24,7 @@ impl Default for SPUPeerApiEnum {
 
 #[derive(Debug, Encoder)]
 pub enum SpuPeerRequest {
+    #[fluvio(tag = 0)]
     FetchStream(RequestMessage<FetchStreamRequest>),
 }
 

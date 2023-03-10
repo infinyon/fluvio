@@ -64,7 +64,9 @@ pub(crate) struct SaveResponse {}
 
 #[derive(Debug, Encoder)]
 pub(crate) enum TestApiRequest {
+    #[fluvio(tag = 0)]
     EchoRequest(RequestMessage<EchoRequest>),
+    #[fluvio(tag = 1)]
     SaveRequest(RequestMessage<SaveRequest>),
 }
 
