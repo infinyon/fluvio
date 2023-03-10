@@ -256,10 +256,10 @@ fn test_multi_unnamed_custom_tag_decode() {
     }
 }
 
-#[derive(Encoder, Eq, PartialEq, Decoder, Debug)]
+#[derive(Default, Encoder, Eq, PartialEq, Decoder, Debug)]
 #[repr(u8)]
-#[derive(Default)]
 pub enum EnumNoExprTest {
+    #[default]
     #[fluvio(tag = 0)]
     A,
     #[fluvio(tag = 1)]
