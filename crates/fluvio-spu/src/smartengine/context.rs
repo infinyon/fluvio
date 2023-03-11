@@ -41,49 +41,6 @@ impl SmartModuleContext {
     }
 }
 
-<<<<<<< HEAD
-=======
-async fn extract_right_stream<'a, 'b>(
-    invocation: &'a SmartModuleInvocation,
-    ctx: &'b DefaultSharedGlobalContext,
-) -> Result<Option<BoxStream<'static, Result<ConsumerRecord, ErrorCode>>>, ErrorCode> {
-    let right_consumer_stream = match invocation.kind {
-        // for join, create consumer stream
-        SmartModuleKind::Join(ref topic)
-        | SmartModuleKind::Generic(SmartModuleContextData::Join(ref topic)) => {
-            let consumer = ctx.leaders().partition_consumer(topic.to_owned(), 0).await;
-
-            Some(
-                consumer
-                    .stream(fluvio::Offset::beginning())
-                    .await
-                    .map_err(|err| {
-                        error!("error fetching join data {}", err);
-                        ErrorCode::DerivedStreamJoinFetchError
-                    })?
-                    .boxed(),
-            )
-        }
-        SmartModuleKind::JoinStream {
-            topic: ref _topic,
-            derivedstream: ref derivedstream_name,
-        }
-        | SmartModuleKind::Generic(SmartModuleContextData::JoinStream {
-            topic: ref _topic,
-            derivedstream: ref derivedstream_name,
-        }) => {
-            // first ensure derivedstream exists
-
-            return Err(ErrorCode::DerivedStreamNotFound(
-                derivedstream_name.to_owned(),
-            ));
-        }
-        _ => None,
-    };
-    Ok(right_consumer_stream)
-}
-
->>>>>>> 79be59ec (remove derivedstream)
 fn resolve_invocation(
     invocation: SmartModuleInvocation,
     ctx: &DefaultSharedGlobalContext,

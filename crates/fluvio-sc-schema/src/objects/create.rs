@@ -7,11 +7,7 @@ use anyhow::Result;
 
 use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
-<<<<<<< HEAD
-use fluvio_protocol::Version;
-=======
 use fluvio_protocol::core::ByteBuf;
->>>>>>> 8823db0a (wip)
 
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom};
 
