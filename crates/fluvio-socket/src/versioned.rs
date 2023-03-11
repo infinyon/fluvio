@@ -292,7 +292,7 @@ impl VersionedSerialSocket {
         R: Request + Send + Sync,
     {
         self.check_liveness()?;
-        
+
         let req_msg = self.new_request(request, self.lookup_version::<R>());
 
         // send request & get a Future that resolves to response
