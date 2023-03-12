@@ -202,8 +202,10 @@ mod metadata {
 
 #[cfg(test)]
 mod object_macro {
+    use std::io::Cursor;
+
     use fluvio_controlplane_metadata::topic::TopicSpec;
-    use fluvio_protocol::Encoder;
+    use fluvio_protocol::{Encoder, Decoder};
 
     use crate::{
         objects::{ListRequest, ObjectApiListRequest, COMMON_VERSION},
@@ -341,19 +343,28 @@ mod object_macro {
             .expect("encoding");
 
         assert_eq!(new_src.len(), old_src.len());
+        assert_eq!(new_src, old_src);
     }
 
     #[test]
     fn test_req_old_to_new() {
         let raw_req: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
 
-        let raw_req2: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        let mut old_src: Vec<u8> = vec![];
-
-        let old_topic_request = ObjectApiOldListRequest::Topic(raw_req2);
+        let old_topic_request = ObjectApiOldListRequest::Topic(raw_req);
+        let mut dest = vec![];
         old_topic_request
-            .encode(&mut old_src, COMMON_VERSION)
+            .encode(&mut dest, COMMON_VERSION)
             .expect("encoding");
+
+        let new_topic_request = ObjectApiListRequest::decode_from(
+            &mut Cursor::new(dest),
+            COMMON_VERSION,
+        ).expect("decode");
+
+        assert!(
+            (new_topic_request.downcast().expect("downcast") as Option<ListRequest<TopicSpec>>)
+                .is_some()
+        );
     }
 }
 
