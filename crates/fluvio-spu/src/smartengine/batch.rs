@@ -65,6 +65,10 @@ impl BatchSmartEngine for SmartModuleChainInstance {
             //  let mut join_record = vec![];
             //  join_last_record.encode(&mut join_record, 0)?;
 
+            println!(
+                "consumer, file_batch.base_offset: {:?}",
+                file_batch.batch.base_offset
+            );
             let input =
                 SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
 
@@ -73,6 +77,7 @@ impl BatchSmartEngine for SmartModuleChainInstance {
 
             let maybe_error = output.error;
             let mut records = output.successes;
+            println!("consumer, records: {:#?}", records);
 
             trace!("smartmodule processed records: {:#?}", records);
 
@@ -81,8 +86,16 @@ impl BatchSmartEngine for SmartModuleChainInstance {
                 debug!("smartmodules records empty");
             } else {
                 // set base offset if this is first time
+                println!(
+                    "consumer, smartmodule_batch.base_offset: {:?}",
+                    smartmodule_batch.base_offset
+                );
                 if smartmodule_batch.base_offset == -1 {
                     smartmodule_batch.base_offset = file_batch.base_offset();
+                    println!(
+                        "consumer, smartmodule_batch.base_offset reset to: {:?}",
+                        smartmodule_batch.base_offset
+                    );
                 }
 
                 // difference between smartmodule batch and and current batch
@@ -119,7 +132,15 @@ impl BatchSmartEngine for SmartModuleChainInstance {
                     offset_delta = file_batch.offset_delta(),
                     "adding to offset delta"
                 );
+                println!(
+                    "consumer, smartmodule_batch.offset_delta: {:?}",
+                    smartmodule_batch.get_header().last_offset_delta
+                );
                 smartmodule_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
+                println!(
+                    "consumer, smartmodule_batch.offset_delta reset: {:?}",
+                    smartmodule_batch.get_header().last_offset_delta
+                );
             }
 
             // If we had a processing error, return current batch and error

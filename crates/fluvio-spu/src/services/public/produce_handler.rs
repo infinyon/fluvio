@@ -25,7 +25,6 @@ use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use fluvio_protocol::{api::RequestMessage, link::ErrorCode};
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
-use fluvio_protocol::Encoder;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use fluvio_future::timer::sleep;
@@ -107,11 +106,13 @@ async fn handle_produce_topic(
     };
 
     for mut partition_request in topic_request.partitions.into_iter() {
+        println!("Initial batches: {:#?}", partition_request.records.batches);
+
         if let Some(sm_chain_instance) = &mut sm_chain_instance {
             let records = &partition_request.records;
             let batches = &records.batches;
 
-            let (sm_result, smartmodule_error) = process_batch(
+            let (sm_result, _smartmodule_error) = process_batch(
                 *sm_chain_instance,
                 batches.to_vec(),
                 ctx.metrics().chain_metrics(),
@@ -119,6 +120,7 @@ async fn handle_produce_topic(
             .unwrap();
 
             let batch_of_raw_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
+            println!("Smartmoduled batches: {:#?}", batch_of_raw_records);
 
             partition_request.records = RecordSet {
                 batches: vec![batch_of_raw_records],
@@ -139,10 +141,8 @@ fn process_batch(
     metric: &SmartModuleChainMetrics,
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
     let mut smartmodule_batch = Batch::<MemoryRecords>::default();
-    smartmodule_batch.base_offset = -1; // indicate this is uninitialized
-    smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
+    smartmodule_batch.set_offset_delta(0);
 
-    let mut total_bytes = 0;
     let mut iter = batches.iter();
 
     loop {
@@ -158,19 +158,7 @@ fn process_batch(
             }
         };
 
-        // debug!(
-        //     current_batch_offset = file_batch.batch.base_offset,
-        //     current_batch_offset_delta = file_batch.offset_delta(),
-        //     smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
-        //     smartmodule_base_offset = smartmodule_batch.base_offset,
-        //     smartmodule_records = smartmodule_batch.records().len(),
-        //     "Starting SmartModuleInstance processing"
-        // );
-
         let now = Instant::now();
-
-        //  let mut join_record = vec![];
-        //  join_last_record.encode(&mut join_record, 0)?;
 
         let r = file_batch.records();
         let b = &r.0;
@@ -196,42 +184,12 @@ fn process_batch(
 
         trace!("smartmodule processed records: {:#?}", records);
 
-        // there are smartmoduleed records!!
+        println!("records: {:#?}", records);
         if records.is_empty() {
             debug!("smartmodules records empty");
         } else {
-            // set base offset if this is first time
-            if smartmodule_batch.base_offset == -1 {
-                smartmodule_batch.base_offset = file_batch.base_offset;
-            }
-
-            // difference between smartmodule batch and and current batch
-            // since base are different we need update delta offset for each records
-            let relative_base_offset = smartmodule_batch.base_offset - file_batch.base_offset;
-
-            for record in &mut records {
-                record.add_base_offset(relative_base_offset);
-            }
-
-            let record_bytes = records
-                .iter()
-                .fold(0, |sum, record| sum + record.write_size(0));
-            total_bytes += record_bytes;
-
-            debug!(
-                smartmodule_records = records.len(),
-                total_bytes, "finished smartmoduleing"
-            );
+            println!("****** adding records ot sm batch");
             smartmodule_batch.mut_records().append(&mut records);
-        }
-
-        // only increment smartmodule offset delta if smartmodule_batch has been initialized
-        if smartmodule_batch.base_offset != -1 {
-            debug!(
-                offset_delta = file_batch.last_offset_delta(),
-                "adding to offset delta"
-            );
-            smartmodule_batch.add_to_offset_delta(file_batch.last_offset_delta() + 1);
         }
 
         // If we had a processing error, return current batch and error
