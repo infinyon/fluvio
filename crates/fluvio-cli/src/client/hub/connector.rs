@@ -89,8 +89,12 @@ impl ConnectorHubDownloadOpts {
             file_path.to_string_lossy()
         );
 
-        let url = fluvio_hub_util::cli_conn_pkgname_to_url(&package_name, &access.remote)
-            .map_err(|_| CliError::HubError(format!("invalid pkgname {package_name}")))?;
+        let url = fluvio_hub_util::cli_conn_pkgname_to_url(
+            &package_name,
+            &access.remote,
+            current_platform::CURRENT_PLATFORM,
+        )
+        .map_err(|_| CliError::HubError(format!("invalid pkgname {package_name}")))?;
 
         let data = fluvio_hub_util::get_package(&url, &access)
             .await

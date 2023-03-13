@@ -3,7 +3,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use surf::http::mime;
 use surf::StatusCode;
-use tracing::debug;
+use tracing::{debug, info};
 
 use fluvio_hub_protocol::{PackageMeta, Result, HubError};
 use fluvio_hub_protocol::constants::HUB_PACKAGE_EXT;
@@ -53,13 +53,13 @@ pub fn cli_pkgname_to_url(pkgname: &str, remote: &str) -> Result<String> {
 }
 
 /// Returns url string on sucess or Err(InvalidPackageName)
-pub fn cli_conn_pkgname_to_url(pkgname: &str, remote: &str) -> Result<String> {
+pub fn cli_conn_pkgname_to_url(pkgname: &str, remote: &str, target: &str) -> Result<String> {
     let (org, pkg, ver) = cli_pkgname_split(pkgname)?;
     // buildup something like: https://hub.infinyon.cloud/connector/pkg/v0/sm/example/0.0.1
     let urlstring = if org.is_empty() {
-        format!("{remote}/{HUB_API_CONN_PKG}/{pkg}/{ver}")
+        format!("{remote}/{HUB_API_CONN_PKG}/{target}/{pkg}/{ver}")
     } else {
-        format!("{remote}/{HUB_API_CONN_PKG}/{org}/{pkg}/{ver}")
+        format!("{remote}/{HUB_API_CONN_PKG}/{target}/{org}/{pkg}/{ver}")
     };
     Ok(urlstring)
 }
@@ -153,11 +153,12 @@ pub async fn push_package(pkgpath: &str, access: &HubAccess) -> Result<()> {
 }
 
 /// push package to connector api
-pub async fn push_package_conn(pkgpath: &str, access: &HubAccess) -> Result<()> {
+pub async fn push_package_conn(pkgpath: &str, access: &HubAccess, target: &str) -> Result<()> {
+    info!("package target: {target}");
     let pm = package_get_meta(pkgpath)?;
     let host = &access.remote;
     let url = format!(
-        "{host}/{HUB_API_CONN_PKG}/{}/{}/{}",
+        "{host}/{HUB_API_CONN_PKG}/{target}/{}/{}/{}",
         pm.group, pm.name, pm.version
     );
     push_package_api(&url, pkgpath, access).await
@@ -214,6 +215,7 @@ mod util_tests {
     use super::cli_pkgname_split;
     use super::cli_pkgname_to_url;
     use super::cli_pkgname_to_filename;
+    use super::cli_conn_pkgname_to_url;
 
     #[test]
     fn cli_pkgname_split_t() {
@@ -261,6 +263,27 @@ mod util_tests {
         ];
         for rec in recs_good {
             let out = cli_pkgname_to_filename(rec.0);
+            assert!(out.is_ok());
+            let url = out.unwrap();
+            assert_eq!(rec.1, &url);
+        }
+    }
+
+    #[test]
+    fn cli_conn_pkgname_to_url_t() {
+        let recs_good = vec![
+            (
+                "example@0.0.1",
+                "https://hub.infinyon.cloud/hub/v0/connector/pkg/aarch64-unknown-linux-musl/example/0.0.1",
+            ),
+            (
+                "infinyon/example@0.0.1",
+                "https://hub.infinyon.cloud/hub/v0/connector/pkg/aarch64-unknown-linux-musl/infinyon/example/0.0.1",
+            ),
+        ];
+        let remote = "https://hub.infinyon.cloud";
+        for rec in recs_good {
+            let out = cli_conn_pkgname_to_url(rec.0, remote, "aarch64-unknown-linux-musl");
             assert!(out.is_ok());
             let url = out.unwrap();
             assert_eq!(rec.1, &url);

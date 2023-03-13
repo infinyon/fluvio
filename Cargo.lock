@@ -923,6 +923,7 @@ dependencies = [
  "cargo-generate",
  "clap 4.1.8",
  "comfy-table",
+ "current_platform",
  "fluvio",
  "fluvio-connector-deployer",
  "fluvio-connector-package",
