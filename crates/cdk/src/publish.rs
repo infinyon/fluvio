@@ -35,6 +35,13 @@ pub struct PublishCmd {
     #[clap(long, hide_short_help = true)]
     push: bool,
 
+    /// provide target platform for the package. Optional. By default the host's one is used.
+    #[clap(
+        long,
+        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
+    )]
+    target: String,
+
     #[clap(long, hide_short_help = true)]
     remote: Option<String>,
 }
@@ -96,7 +103,7 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
             verify_public_or_exit()?;
         }
     }
-    if let Err(e) = run_block_on(hubutil::push_package_conn(pkgpath, access)) {
+    if let Err(e) = run_block_on(hubutil::push_package_conn(pkgpath, access, &opts.target)) {
         eprintln!("{e}");
         std::process::exit(1);
     }

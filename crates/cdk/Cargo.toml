@@ -30,6 +30,7 @@ sysinfo = { workspace = true, default-features = false }
 cargo-generate = "0.18.0"
 include_dir = "0.7.2"
 tempfile = "3.3.0"
+current_platform = { version = "0.2" }
 
 fluvio = { path = "../fluvio"}
 fluvio-connector-deployer = { path = "../fluvio-connector-deployer"}
