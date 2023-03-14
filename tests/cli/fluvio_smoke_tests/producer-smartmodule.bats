@@ -18,15 +18,7 @@ setup_file() {
 
 }
 
-@test "invoke map smartmodule in producer by name" {
-    # Load the smartmodule
-    SMARTMODULE_NAME="uppercase"
-    export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm
-    # Print out cmd since we need complete trace of cmd not just failing
-    echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_output "smartmodule \"$SMARTMODULE_NAME\" has been created."
-
+@test "invoke map smartmodule in producer by path" {
     # Create topic
     TOPIC_NAME="$(random_string)"
     export TOPIC_NAME
@@ -34,10 +26,11 @@ setup_file() {
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_output "topic \"$TOPIC_NAME\" created"
 
-    # Produce to topic
+    # Produce to topic with smartmodule path
     TEST_MESSAGE="Banana"
     export TEST_MESSAGE
-    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --smartmodule "$SMARTMODULE_NAME"'
+    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
+        --smartmodule-path $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm'
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
@@ -53,11 +46,6 @@ setup_file() {
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
-    echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_success
-
-    # Delete smartmodule
-    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
@@ -98,38 +86,6 @@ setup_file() {
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
-    assert_success
-}
-
-@test "invoke map smartmodule in producer by path" {
-    # Create topic
-    TOPIC_NAME="$(random_string)"
-    export TOPIC_NAME
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
-    echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_output "topic \"$TOPIC_NAME\" created"
-
-    # Produce to topic with smartmodule path
-    TEST_MESSAGE="Banana"
-    export TEST_MESSAGE
-    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
-        --smartmodule-path $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm'
-    echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_success
-
-    EXPECTED_OUTPUT="BANANA"
-    export EXPECTED_OUTPUT
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
-    echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_output "$EXPECTED_OUTPUT"
-    assert_success
-
-
-
-
-    # Delete topic
-    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
-    echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 }
 
@@ -178,3 +134,46 @@ setup_file() {
     assert_success
 }
 
+@test "invoke array-map smartmodule in producer" {
+    # Load the smartmodule
+    SMARTMODULE_NAME="json-object-flatten"
+    export SMARTMODULE_NAME
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME \
+        --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_array_map_object.wasm
+
+    assert_success
+
+    # Create topic
+    TOPIC_NAME="$(random_string)"
+    export TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    assert_success
+
+    # Produce to topic
+    FULL_TEST_MESSAGE='{"a": "Apple", "b": "Banana", "c": "Cranberry"}'
+    export FULL_TEST_MESSAGE
+    FIRST_MESSAGE='"Apple"'
+    export FIRST_MESSAGE
+    SECOND_MESSAGE='"Banana"'
+    export SECOND_MESSAGE
+    THIRD_MESSAGE='"Cranberry"'
+    export THIRD_MESSAGE
+    run bash -c 'echo "$FULL_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
+        --smartmodule "$SMARTMODULE_NAME"'
+    assert_success
+
+    # Consume from topic and verify the smartmodule expanded the full message
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    assert_line --index 0 "$FIRST_MESSAGE"
+    assert_line --index 1 "$SECOND_MESSAGE"
+    assert_line --index 2 "$THIRD_MESSAGE"
+
+
+    # Delete topic
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    assert_success
+
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+    assert_success
+}
