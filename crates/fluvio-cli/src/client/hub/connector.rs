@@ -8,7 +8,7 @@ use anyhow::Result;
 use fluvio_extension_common::Terminal;
 use fluvio_hub_util::HUB_API_CONN_LIST;
 
-use crate::{error::CliError};
+use crate::error::CliError;
 use crate::common::OutputFormat;
 
 use super::{get_pkg_list, get_hub_access};
@@ -61,6 +61,13 @@ pub struct ConnectorHubDownloadOpts {
     #[clap(short, long, value_name = "PATH")]
     output: Option<PathBuf>,
 
+    /// Target platform for the package. Optional. By default the host's one is used.
+    #[clap(
+        long,
+        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
+    )]
+    target: String,
+
     #[clap(long, hide_short_help = true)]
     remote: Option<String>,
 }
@@ -89,12 +96,9 @@ impl ConnectorHubDownloadOpts {
             file_path.to_string_lossy()
         );
 
-        let url = fluvio_hub_util::cli_conn_pkgname_to_url(
-            &package_name,
-            &access.remote,
-            current_platform::CURRENT_PLATFORM,
-        )
-        .map_err(|_| CliError::HubError(format!("invalid pkgname {package_name}")))?;
+        let url =
+            fluvio_hub_util::cli_conn_pkgname_to_url(&package_name, &access.remote, &self.target)
+                .map_err(|_| CliError::HubError(format!("invalid pkgname {package_name}")))?;
 
         let data = fluvio_hub_util::get_package(&url, &access)
             .await
