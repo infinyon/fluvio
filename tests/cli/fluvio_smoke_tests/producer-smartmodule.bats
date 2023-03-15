@@ -276,3 +276,53 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     assert_success
 }
+
+@test "invoke smartmodule in producer with transform json" {
+    # Load the smartmodule
+    SMARTMODULE_NAME="uppercase"
+    export SMARTMODULE_NAME
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm
+    # Print out cmd since we need complete trace of cmd not just failing
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "smartmodule \"$SMARTMODULE_NAME\" has been created."
+
+    # Create topic
+    TOPIC_NAME="$(random_string)"
+    export TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "topic \"$TOPIC_NAME\" created"
+
+    # create a transforms yaml
+    INPUT_FILE="$(mktemp -t producer_aggregate_test_input.XXXXXX)"
+    export INPUT_FILE
+    echo "transforms:" > "$INPUT_FILE"
+    echo "  - uses: uppercase" >> "$INPUT_FILE"
+
+    # Produce to topic with transforms file
+    TEST_MESSAGE="Banana"
+    export TEST_MESSAGE
+    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
+        --transform "{\"uses\":\"$SMARTMODULE_NAME\"}"'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+
+    EXPECTED_OUTPUT="BANANA"
+    export EXPECTED_OUTPUT
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "$EXPECTED_OUTPUT"
+    assert_success
+
+
+
+
+    # Delete topic
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+    assert_success
+}
