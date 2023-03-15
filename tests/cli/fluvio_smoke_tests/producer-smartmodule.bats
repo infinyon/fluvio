@@ -177,3 +177,52 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     assert_success
 }
+
+@test "invoke aggregate smartmodule in producer" {
+    # Load the smartmodule
+    SMARTMODULE_NAME="aggregate-sum"
+    export SMARTMODULE_NAME
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_aggregate_sum.wasm
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "smartmodule \"$SMARTMODULE_NAME\" has been created."
+
+    # Create topic
+    TOPIC_NAME="$(random_string)"
+    export TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "topic \"$TOPIC_NAME\" created"
+
+    # create an input file
+    INPUT_FILE="$(mktemp -t producer_aggregate_test_input.XXXXXX)"
+    export INPUT_FILE
+    echo "2" > "$INPUT_FILE"
+    echo "3" >> "$INPUT_FILE"
+    echo "4" >> "$INPUT_FILE"
+
+    # Produce to topic
+    run timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
+        --smartmodule "$SMARTMODULE_NAME" \
+        --file "$INPUT_FILE" \
+        --aggregate-initial 1
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_line --index 0 "3"
+    assert_line --index 1 "6"
+    assert_line --index 2 "10"
+
+
+
+    # Delete topic
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+}
