@@ -66,7 +66,9 @@ fn package_assemble<P: AsRef<Path>>(
     let pm = PackageMeta::read_from_file(pkgmeta)?;
     let mut pm_clean = pm.clone();
     pm_clean.manifest = Vec::new();
-    augment_arch(&mut pm_clean, target);
+    if let Some(target) = target {
+        augment_arch(&mut pm_clean, target);
+    }
 
     let outdir = outdir.unwrap_or(DEF_HUB_INIT_DIR);
     let pkgtarname = outdir.to_string() + "/" + &pm.packagefile_name_unsigned();
@@ -507,23 +509,21 @@ pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
     Ok(())
 }
 
-fn augment_arch(package_meta: &mut PackageMeta, target: Option<&str>) {
-    if let Some(target) = target {
-        if package_meta
-            .tags
-            .as_ref()
-            .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)))
-            .is_none()
-        {
-            let arch_tag = PkgTag {
-                tag: String::from(ARCH_TAG_NAME),
-                value: target.to_owned(),
-            };
-            if let Some(ref mut tags) = package_meta.tags {
-                tags.push(arch_tag);
-            } else {
-                package_meta.tags = Some(vec![arch_tag]);
-            }
+fn augment_arch(package_meta: &mut PackageMeta, target: &str) {
+    if package_meta
+        .tags
+        .as_ref()
+        .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)))
+        .is_none()
+    {
+        let arch_tag = PkgTag {
+            tag: String::from(ARCH_TAG_NAME),
+            value: target.to_owned(),
+        };
+        if let Some(ref mut tags) = package_meta.tags {
+            tags.push(arch_tag);
+        } else {
+            package_meta.tags = Some(vec![arch_tag]);
         }
     }
 }
@@ -684,7 +684,7 @@ mod tests {
         let mut package_meta = PackageMeta::default();
 
         //when
-        augment_arch(&mut package_meta, Some("some_arch"));
+        augment_arch(&mut package_meta, "some_arch");
 
         //then
         let tag = package_meta
@@ -713,7 +713,7 @@ mod tests {
         };
 
         //when
-        augment_arch(&mut package_meta, Some("some_arch"));
+        augment_arch(&mut package_meta, "some_arch");
 
         //then
         let tag = package_meta
@@ -742,36 +742,7 @@ mod tests {
         };
 
         //when
-        augment_arch(&mut package_meta, Some("some_arch"));
-
-        //then
-        let tag = package_meta
-            .tags
-            .as_ref()
-            .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)));
-
-        assert_eq!(
-            tag,
-            Some(&PkgTag {
-                tag: ARCH_TAG_NAME.to_owned(),
-                value: "present_arch".to_owned()
-            })
-        )
-    }
-
-    #[test]
-    fn test_augment_arch_untouched_if_target_is_none() {
-        //given
-        let mut package_meta = PackageMeta {
-            tags: Some(vec![PkgTag {
-                tag: ARCH_TAG_NAME.to_owned(),
-                value: "present_arch".to_owned(),
-            }]),
-            ..PackageMeta::default()
-        };
-
-        //when
-        augment_arch(&mut package_meta, None);
+        augment_arch(&mut package_meta, "some_arch");
 
         //then
         let tag = package_meta
