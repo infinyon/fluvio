@@ -79,7 +79,7 @@ impl PublishCmd {
 }
 
 pub fn package_assemble(pkgmeta: &str, access: &HubAccess) -> Result<String> {
-    let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None)?;
+    let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None, None)?;
     println!("Package {pkgname} created");
     Ok(pkgname)
 }

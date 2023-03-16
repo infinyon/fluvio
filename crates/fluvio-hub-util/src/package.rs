@@ -6,6 +6,7 @@ use std::path::Path;
 use flate2::Compression;
 use flate2::GzBuilder;
 use flate2::read::GzDecoder;
+use fluvio_hub_protocol::PkgTag;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use tracing::{debug, warn};
@@ -21,6 +22,8 @@ use crate::PackageMetaExt;
 use crate::keymgmt::{Keypair, PublicKey, Signature};
 use crate::HubAccess;
 
+pub(crate) const ARCH_TAG_NAME: &str = "arch";
+
 /// assemble files into an unsigned fluvio package, a file will be created named
 /// packagename-A.B.C.tar after signing it's called an ipkg
 ///
@@ -31,8 +34,9 @@ pub fn package_assemble_and_sign<P: AsRef<Path>>(
     pkgmeta: P,
     access: &HubAccess,
     outdir: Option<&str>,
+    target: Option<&str>,
 ) -> Result<String> {
-    let tarname = package_assemble(pkgmeta, outdir)?;
+    let tarname = package_assemble(pkgmeta, outdir, target)?;
     let ipkgname = tar_to_ipkg(&tarname);
     let keypair = access.keypair()?;
     package_sign(&tarname, &keypair, &ipkgname)?;
@@ -53,11 +57,16 @@ fn tar_to_ipkg(fname: &str) -> String {
 /// * outdir: optional output directory
 ///
 /// # Returns: staging tarfilename
-fn package_assemble<P: AsRef<Path>>(pkgmeta: P, outdir: Option<&str>) -> Result<String> {
+fn package_assemble<P: AsRef<Path>>(
+    pkgmeta: P,
+    outdir: Option<&str>,
+    target: Option<&str>,
+) -> Result<String> {
     debug!(target: "package_assemble", "opening");
     let pm = PackageMeta::read_from_file(pkgmeta)?;
     let mut pm_clean = pm.clone();
     pm_clean.manifest = Vec::new();
+    augment_arch(&mut pm_clean, target);
 
     let outdir = outdir.unwrap_or(DEF_HUB_INIT_DIR);
     let pkgtarname = outdir.to_string() + "/" + &pm.packagefile_name_unsigned();
@@ -498,6 +507,27 @@ pub fn package_verify_with_readio<R: std::io::Read + std::io::Seek>(
     Ok(())
 }
 
+fn augment_arch(package_meta: &mut PackageMeta, target: Option<&str>) {
+    if let Some(target) = target {
+        if package_meta
+            .tags
+            .as_ref()
+            .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)))
+            .is_none()
+        {
+            let arch_tag = PkgTag {
+                tag: String::from(ARCH_TAG_NAME),
+                value: target.to_owned(),
+            };
+            if let Some(ref mut tags) = package_meta.tags {
+                tags.push(arch_tag);
+            } else {
+                package_meta.tags = Some(vec![arch_tag]);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs::read;
@@ -535,8 +565,12 @@ mod tests {
     #[test]
     fn hubutil_package_get_meta() {
         let testfile: &str = "tests/apackage/package-meta.yaml";
-        let pkgfile =
-            package_assemble(testfile, Some("tests/apackage")).expect("package assemble fail");
+        let pkgfile = package_assemble(
+            testfile,
+            Some("tests/apackage"),
+            Some("aarch64-unknown-linux-gnu"),
+        )
+        .expect("package assemble fail");
 
         let pm_from_inner =
             package_get_meta(pkgfile).expect("couldn't get meta file from package file");
@@ -566,7 +600,7 @@ mod tests {
     fn hubutil_package_assemble() {
         rust_log_init();
         let testfile: &str = "tests/apackage/package-meta.yaml";
-        let res = package_assemble(testfile, Some("tests"));
+        let res = package_assemble(testfile, Some("tests"), None);
         assert!(res.is_ok());
         let outpath = std::path::Path::new("tests/example-0.0.1.tar");
         assert!(outpath.exists());
@@ -642,5 +676,115 @@ mod tests {
         let result = validate_wasm_file(wasm_bytes.as_slice());
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_augment_arch_if_not_present() {
+        //given
+        let mut package_meta = PackageMeta::default();
+
+        //when
+        augment_arch(&mut package_meta, Some("some_arch"));
+
+        //then
+        let tag = package_meta
+            .tags
+            .as_ref()
+            .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)));
+
+        assert_eq!(
+            tag,
+            Some(&PkgTag {
+                tag: ARCH_TAG_NAME.to_owned(),
+                value: "some_arch".to_owned()
+            })
+        )
+    }
+
+    #[test]
+    fn test_augment_arch_if_not_present_and_tags_not_empty() {
+        //given
+        let mut package_meta = PackageMeta {
+            tags: Some(vec![PkgTag {
+                tag: "other_tag".to_owned(),
+                value: "value".to_owned(),
+            }]),
+            ..PackageMeta::default()
+        };
+
+        //when
+        augment_arch(&mut package_meta, Some("some_arch"));
+
+        //then
+        let tag = package_meta
+            .tags
+            .as_ref()
+            .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)));
+
+        assert_eq!(
+            tag,
+            Some(&PkgTag {
+                tag: ARCH_TAG_NAME.to_owned(),
+                value: "some_arch".to_owned()
+            })
+        )
+    }
+
+    #[test]
+    fn test_augment_arch_if_present() {
+        //given
+        let mut package_meta = PackageMeta {
+            tags: Some(vec![PkgTag {
+                tag: ARCH_TAG_NAME.to_owned(),
+                value: "present_arch".to_owned(),
+            }]),
+            ..PackageMeta::default()
+        };
+
+        //when
+        augment_arch(&mut package_meta, Some("some_arch"));
+
+        //then
+        let tag = package_meta
+            .tags
+            .as_ref()
+            .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)));
+
+        assert_eq!(
+            tag,
+            Some(&PkgTag {
+                tag: ARCH_TAG_NAME.to_owned(),
+                value: "present_arch".to_owned()
+            })
+        )
+    }
+
+    #[test]
+    fn test_augment_arch_untouched_if_target_is_none() {
+        //given
+        let mut package_meta = PackageMeta {
+            tags: Some(vec![PkgTag {
+                tag: ARCH_TAG_NAME.to_owned(),
+                value: "present_arch".to_owned(),
+            }]),
+            ..PackageMeta::default()
+        };
+
+        //when
+        augment_arch(&mut package_meta, None);
+
+        //then
+        let tag = package_meta
+            .tags
+            .as_ref()
+            .and_then(|tags| tags.iter().find(|t| t.tag.eq(ARCH_TAG_NAME)));
+
+        assert_eq!(
+            tag,
+            Some(&PkgTag {
+                tag: ARCH_TAG_NAME.to_owned(),
+                value: "present_arch".to_owned()
+            })
+        )
     }
 }
