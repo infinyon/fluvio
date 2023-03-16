@@ -319,6 +319,29 @@ mod object_macro {
 
     ObjectApiEnum!(ListRequest);
 
+    /* 
+    #[test]
+    fn test_type_buffer() {
+        use super::TypeBuffer;
+
+        let mut buf = TypeBuffer::default();
+        let topic_spec = TopicSpec::new("test".to_owned(), 1, 1, 1, vec![]);
+        let topic_request = ListRequest::new(vec![topic_spec], false);
+
+        buf.encode_from(topic_request, COMMON_VERSION).expect("encode");
+
+        let mut src = Cursor::new(buf.buf.as_ref());
+        let mut new_buf = TypeBuffer::default();
+        new_buf.decode(&mut src, COMMON_VERSION).expect("decode");
+
+        let mut old_src = Cursor::new(buf.buf.as_ref());
+        let mut old_buf = ObjectApiOldListRequest::default();
+        old_buf.decode(&mut old_src, COMMON_VERSION).expect("decode");
+
+        assert_eq!(new_buf, old_buf);
+    }
+    */
+
     /// test upcasting of list request
     #[test]
     fn test_req_upcast_encoding() {
@@ -342,8 +365,29 @@ mod object_macro {
             .encode(&mut old_src, COMMON_VERSION)
             .expect("encoding");
 
-        assert_eq!(new_src.len(), old_src.len());
         assert_eq!(new_src, old_src);
+    }
+
+    // encoding and decoding request
+    #[test]
+    fn test_req_encoding_decoding() {
+        let raw_req: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
+
+        let test_request = ObjectApiListRequest::try_encode_from(raw_req,COMMON_VERSION).expect("encoded");
+        let mut dest = vec![];
+        test_request
+            .encode(&mut dest, COMMON_VERSION)
+            .expect("encoding");
+
+        let recovered_request = ObjectApiListRequest::decode_from(
+            &mut Cursor::new(dest),
+            COMMON_VERSION,
+        ).expect("decode");
+
+        
+
+        let downcast = recovered_request.downcast().expect("downcast") as Option<ListRequest<TopicSpec>>;
+        assert!(downcast.is_some());
     }
 
     #[test]
@@ -361,11 +405,12 @@ mod object_macro {
             COMMON_VERSION,
         ).expect("decode");
 
-        assert!(
-            (new_topic_request.downcast().expect("downcast") as Option<ListRequest<TopicSpec>>)
-                .is_some()
-        );
+        let downcast = new_topic_request.downcast().expect("downcast") as Option<ListRequest<TopicSpec>>;
+        assert!(downcast.is_some());
     }
+
+
+    
 }
 
 #[cfg(test)]
