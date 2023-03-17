@@ -326,3 +326,36 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     assert_success
 }
+
+@test "invoke map smartmodule in producer with compression algorithm" {
+    # Create topic
+    TOPIC_NAME="$(random_string)"
+    export TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "topic \"$TOPIC_NAME\" created"
+
+    # Produce to topic with smartmodule path
+    TEST_MESSAGE="Banana"
+    export TEST_MESSAGE
+    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" \
+        --smartmodule-path $SMARTMODULE_BUILD_DIR/fluvio_smartmodule_map.wasm \
+        --compression gzip'
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+
+    EXPECTED_OUTPUT="BANANA"
+    export EXPECTED_OUTPUT
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_output "$EXPECTED_OUTPUT"
+    assert_success
+
+
+
+
+    # Delete topic
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    echo "cmd: $BATS_RUN_COMMAND" >&2
+    assert_success
+}
