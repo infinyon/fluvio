@@ -1,6 +1,5 @@
 use std::io::{Error, ErrorKind};
-use std::time::Duration;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
 use fluvio_smartengine::SmartModuleChainInstance;
@@ -112,12 +111,10 @@ async fn handle_produce_topic(
             let records = &partition_request.records;
             let batches = &records.batches;
 
-            let (sm_result, _smartmodule_error) = process_batch(
-                *sm_chain_instance,
-                batches.to_vec(),
-                ctx.metrics().chain_metrics(),
-            )
-            .unwrap();
+            let batches = ProduceBatchIterator::new(batches);
+
+            let (sm_result, _smartmodule_error) =
+                process_batch(*sm_chain_instance, batches, ctx.metrics().chain_metrics()).unwrap();
 
             let batch_of_raw_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
             println!("Smartmoduled batches: {:#?}", batch_of_raw_records);
@@ -135,37 +132,85 @@ async fn handle_produce_topic(
     topic_result
 }
 
+struct ProduceBatch<'a> {
+    pub(crate) batch: &'a Batch<RawRecords>,
+    pub(crate) records: Vec<u8>,
+}
+
+struct ProduceBatchIterator<'a> {
+    batches: &'a Vec<Batch<RawRecords>>,
+    index: usize,
+    len: usize,
+}
+
+impl<'a> ProduceBatchIterator<'a> {
+    fn new(batches: &'a Vec<Batch<RawRecords>>) -> Self {
+        Self {
+            batches,
+            index: 0,
+            len: batches.len(),
+        }
+    }
+}
+
+impl<'a> Iterator for ProduceBatchIterator<'a> {
+    type Item = Result<ProduceBatch<'a>, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.len {
+            return None;
+        }
+
+        let batch = &self.batches[self.index];
+
+        let r = batch.records();
+        let b = &r.0;
+        let raw_bytes: &[u8] = &b;
+        let raw_records = raw_bytes.to_vec();
+
+        let compression = match batch.get_compression() {
+            Ok(compression) => compression,
+            Err(err) => {
+                return Some(Err(Error::new(
+                    ErrorKind::Other,
+                    format!("unknown compression value for batch {err}"),
+                )))
+            }
+        };
+
+        let records = match compression.uncompress(&raw_records) {
+            Ok(Some(records)) => records,
+            Ok(None) => raw_records,
+            Err(err) => {
+                return Some(Err(Error::new(
+                    ErrorKind::Other,
+                    format!("uncompress error {err}"),
+                )))
+            }
+        };
+
+        let produce_batch = ProduceBatch { batch, records };
+
+        self.index += 1;
+
+        Some(Ok(produce_batch))
+    }
+}
+
 fn process_batch(
     sm_chain_instance: &mut SmartModuleChainInstance,
-    batches: Vec<Batch<RawRecords>>,
+    batches: ProduceBatchIterator,
     metric: &SmartModuleChainMetrics,
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
     let mut smartmodule_batch = Batch::<MemoryRecords>::default();
     smartmodule_batch.set_offset_delta(0);
 
-    let mut iter = batches.iter();
-
-    loop {
-        let file_batch = match iter.next() {
-            // we process entire batches.  entire batches are process as group
-            Some(batch_result) => batch_result,
-            None => {
-                debug!(
-                    total_records = smartmodule_batch.records().len(),
-                    "No more batches, SmartModuleInstance end"
-                );
-                return Ok((smartmodule_batch, None));
-            }
-        };
+    for produce_batch in batches {
+        let produce_batch = produce_batch?;
 
         let now = Instant::now();
 
-        let r = file_batch.records();
-        let b = &r.0;
-        let raw_bytes: &[u8] = &b;
-        let vec_bytes = raw_bytes.to_vec();
-
-        let input = SmartModuleInput::new(vec_bytes, file_batch.base_offset);
+        let input = SmartModuleInput::new(produce_batch.records, produce_batch.batch.base_offset);
 
         let output = match sm_chain_instance.process(input, metric) {
             Ok(output) => output,
@@ -184,11 +229,9 @@ fn process_batch(
 
         trace!("smartmodule processed records: {:#?}", records);
 
-        println!("records: {:#?}", records);
         if records.is_empty() {
             debug!("smartmodules records empty");
         } else {
-            println!("****** adding records ot sm batch");
             smartmodule_batch.mut_records().append(&mut records);
         }
 
@@ -197,6 +240,8 @@ fn process_batch(
             return Ok((smartmodule_batch, maybe_error));
         }
     }
+
+    Ok((smartmodule_batch, None))
 }
 
 #[instrument(
