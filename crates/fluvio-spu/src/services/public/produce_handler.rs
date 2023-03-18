@@ -235,6 +235,14 @@ fn process_batch(
             smartmodule_batch.mut_records().append(&mut records);
         }
 
+        // Assumes the entire batch was meant to be compressed with the same algorithm
+        match produce_batch.batch.get_compression() {
+            Ok(compression) => smartmodule_batch.header.set_compression(compression),
+            Err(e) => {
+                debug!("Couldn't get compression value from batch: {}", e)
+            }
+        }
+
         // If we had a processing error, return current batch and error
         if maybe_error.is_some() {
             return Ok((smartmodule_batch, maybe_error));

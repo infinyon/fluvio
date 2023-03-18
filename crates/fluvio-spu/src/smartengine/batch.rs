@@ -65,10 +65,6 @@ impl BatchSmartEngine for SmartModuleChainInstance {
             //  let mut join_record = vec![];
             //  join_last_record.encode(&mut join_record, 0)?;
 
-            println!(
-                "consumer, file_batch.base_offset: {:?}",
-                file_batch.batch.base_offset
-            );
             let input =
                 SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
 
