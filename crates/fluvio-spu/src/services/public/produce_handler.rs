@@ -1,10 +1,7 @@
 use std::io::{Error, ErrorKind};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use fluvio_protocol::link::smartmodule::SmartModuleTransformRuntimeError;
 use fluvio_smartengine::SmartModuleChainInstance;
-use fluvio_smartengine::metrics::SmartModuleChainMetrics;
-use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use tokio::select;
 use tracing::warn;
 use tracing::{debug, trace, error};
@@ -12,7 +9,7 @@ use tracing::instrument;
 
 use fluvio_protocol::api::RequestKind;
 use fluvio_spu_schema::Isolation;
-use fluvio_protocol::record::{BatchRecords, Offset, Batch, MemoryRecords, RawRecords};
+use fluvio_protocol::record::{BatchRecords, Offset, Batch, RawRecords};
 use fluvio::Compression;
 use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
 use fluvio_storage::StorageError;
@@ -31,6 +28,7 @@ use fluvio_future::timer::sleep;
 use crate::core::DefaultSharedGlobalContext;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::produce_batch::ProduceBatchIterator;
+use crate::smartengine::batch::process_produce_batch;
 use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
@@ -113,7 +111,8 @@ async fn handle_produce_topic(
             let batches = ProduceBatchIterator::new(batches);
 
             let (sm_result, _smartmodule_error) =
-                process_batch(*sm_chain_instance, batches, ctx.metrics().chain_metrics()).unwrap();
+                process_produce_batch(*sm_chain_instance, batches, ctx.metrics().chain_metrics())
+                    .unwrap();
 
             let batch_of_raw_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
 
@@ -128,61 +127,6 @@ async fn handle_produce_topic(
         topic_result.partitions.push(partition_response);
     }
     topic_result
-}
-
-fn process_batch(
-    sm_chain_instance: &mut SmartModuleChainInstance,
-    batches: ProduceBatchIterator,
-    metric: &SmartModuleChainMetrics,
-) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
-    let mut smartmodule_batch = Batch::<MemoryRecords>::default();
-    smartmodule_batch.set_offset_delta(0);
-
-    for produce_batch in batches {
-        let produce_batch = produce_batch?;
-
-        let now = Instant::now();
-
-        let input = SmartModuleInput::new(produce_batch.records, produce_batch.batch.base_offset);
-
-        let output = match sm_chain_instance.process(input, metric) {
-            Ok(output) => output,
-            Err(e) => {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("SmartModule application failure: {:?}", e),
-                ));
-            }
-        };
-
-        debug!(smartmodule_execution_time = %now.elapsed().as_millis());
-
-        let maybe_error = output.error;
-        let mut records = output.successes;
-
-        trace!("smartmodule processed records: {:#?}", records);
-
-        if records.is_empty() {
-            debug!("smartmodules records empty");
-        } else {
-            smartmodule_batch.mut_records().append(&mut records);
-        }
-
-        // Assumes the entire batch was meant to be compressed with the same algorithm
-        match produce_batch.batch.get_compression() {
-            Ok(compression) => smartmodule_batch.header.set_compression(compression),
-            Err(e) => {
-                debug!("Couldn't get compression value from batch: {}", e)
-            }
-        }
-
-        // If we had a processing error, return current batch and error
-        if maybe_error.is_some() {
-            return Ok((smartmodule_batch, maybe_error));
-        }
-    }
-
-    Ok((smartmodule_batch, None))
 }
 
 #[instrument(
