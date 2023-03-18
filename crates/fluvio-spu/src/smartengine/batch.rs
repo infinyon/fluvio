@@ -73,7 +73,6 @@ impl BatchSmartEngine for SmartModuleChainInstance {
 
             let maybe_error = output.error;
             let mut records = output.successes;
-            println!("consumer, records: {:#?}", records);
 
             trace!("smartmodule processed records: {:#?}", records);
 
@@ -82,16 +81,8 @@ impl BatchSmartEngine for SmartModuleChainInstance {
                 debug!("smartmodules records empty");
             } else {
                 // set base offset if this is first time
-                println!(
-                    "consumer, smartmodule_batch.base_offset: {:?}",
-                    smartmodule_batch.base_offset
-                );
                 if smartmodule_batch.base_offset == -1 {
                     smartmodule_batch.base_offset = file_batch.base_offset();
-                    println!(
-                        "consumer, smartmodule_batch.base_offset reset to: {:?}",
-                        smartmodule_batch.base_offset
-                    );
                 }
 
                 // difference between smartmodule batch and and current batch

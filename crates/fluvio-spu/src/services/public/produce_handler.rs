@@ -30,6 +30,7 @@ use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::smartengine::context::SmartModuleContext;
+use crate::smartengine::produce_batch::ProduceBatchIterator;
 use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
@@ -105,8 +106,6 @@ async fn handle_produce_topic(
     };
 
     for mut partition_request in topic_request.partitions.into_iter() {
-        println!("Initial batches: {:#?}", partition_request.records.batches);
-
         if let Some(sm_chain_instance) = &mut sm_chain_instance {
             let records = &partition_request.records;
             let batches = &records.batches;
@@ -117,7 +116,6 @@ async fn handle_produce_topic(
                 process_batch(*sm_chain_instance, batches, ctx.metrics().chain_metrics()).unwrap();
 
             let batch_of_raw_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
-            println!("Smartmoduled batches: {:#?}", batch_of_raw_records);
 
             partition_request.records = RecordSet {
                 batches: vec![batch_of_raw_records],
@@ -130,71 +128,6 @@ async fn handle_produce_topic(
         topic_result.partitions.push(partition_response);
     }
     topic_result
-}
-
-struct ProduceBatch<'a> {
-    pub(crate) batch: &'a Batch<RawRecords>,
-    pub(crate) records: Vec<u8>,
-}
-
-struct ProduceBatchIterator<'a> {
-    batches: &'a Vec<Batch<RawRecords>>,
-    index: usize,
-    len: usize,
-}
-
-impl<'a> ProduceBatchIterator<'a> {
-    fn new(batches: &'a Vec<Batch<RawRecords>>) -> Self {
-        Self {
-            batches,
-            index: 0,
-            len: batches.len(),
-        }
-    }
-}
-
-impl<'a> Iterator for ProduceBatchIterator<'a> {
-    type Item = Result<ProduceBatch<'a>, Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.len {
-            return None;
-        }
-
-        let batch = &self.batches[self.index];
-
-        let r = batch.records();
-        let b = &r.0;
-        let raw_bytes: &[u8] = &b;
-        let raw_records = raw_bytes.to_vec();
-
-        let compression = match batch.get_compression() {
-            Ok(compression) => compression,
-            Err(err) => {
-                return Some(Err(Error::new(
-                    ErrorKind::Other,
-                    format!("unknown compression value for batch {err}"),
-                )))
-            }
-        };
-
-        let records = match compression.uncompress(&raw_records) {
-            Ok(Some(records)) => records,
-            Ok(None) => raw_records,
-            Err(err) => {
-                return Some(Err(Error::new(
-                    ErrorKind::Other,
-                    format!("uncompress error {err}"),
-                )))
-            }
-        };
-
-        let produce_batch = ProduceBatch { batch, records };
-
-        self.index += 1;
-
-        Some(Ok(produce_batch))
-    }
 }
 
 fn process_batch(
@@ -318,11 +251,6 @@ async fn smartmodule_chain(
     api_version: i16,
     ctx: &DefaultSharedGlobalContext,
 ) -> Result<Option<SmartModuleChainInstance>, Error> {
-    println!(
-        "handling produce request, smartmodules: {:#?}",
-        sm_invocations
-    );
-
     let sm_ctx = match SmartModuleContext::try_from(sm_invocations, api_version, &ctx).await {
         Ok(ctx) => ctx,
         Err(error_code) => {
