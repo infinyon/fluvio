@@ -85,7 +85,7 @@ pub async fn handle_produce_request(
 }
 
 #[instrument(
-    skip(ctx, topic_request),
+    skip(ctx, topic_request, sm_chain_instance),
     fields(topic = %topic_request.name),
 )]
 async fn handle_produce_topic(
@@ -114,10 +114,10 @@ async fn handle_produce_topic(
                 process_produce_batch(*sm_chain_instance, batches, ctx.metrics().chain_metrics())
                     .unwrap();
 
-            let batch_of_raw_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
+            let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
 
             partition_request.records = RecordSet {
-                batches: vec![batch_of_raw_records],
+                batches: vec![smartmoduled_records],
             };
         }
 
@@ -207,8 +207,7 @@ async fn smartmodule_chain(
     };
 
     if let Some(ctx) = sm_ctx {
-        let SmartModuleContext { chain: st } = ctx;
-        Ok(Some(st))
+        Ok(Some(ctx.chain))
     } else {
         Ok(None)
     }
