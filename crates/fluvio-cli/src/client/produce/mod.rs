@@ -25,7 +25,7 @@ mod cmd {
 
     use fluvio::{
         Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-        ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation,
+        ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation, SmartModuleInvocation,
     };
     use fluvio_extension_common::Terminal;
     use fluvio_types::print_cli_ok;
@@ -265,36 +265,8 @@ mod cmd {
                 Some(params) => params.clone().into_iter().collect(),
             };
 
-            let smartmodule_invocations = if let Some(smart_module_name) = &self.smartmodule {
-                vec![create_smartmodule(
-                    smart_module_name,
-                    self.smart_module_ctx(),
-                    initial_param,
-                )]
-            } else if let Some(path) = &self.smartmodule_path {
-                vec![create_smartmodule_from_path(
-                    path,
-                    self.smart_module_ctx(),
-                    initial_param,
-                )?]
-            } else if !self.transform.is_empty() {
-                let config =
-                    TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
-                        CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
-                    })?;
-                create_smartmodule_list(config)?
-            } else if let Some(transforms_file) = &self.transforms_file {
-                let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
-                    CliError::InvalidArg(format!(
-                        "unable to process `transforms_file` argument: {err}"
-                    ))
-                })?;
-                create_smartmodule_list(config)?
-            } else {
-                Vec::new()
-            };
-
-            let config_builder = config_builder.smartmodules(smartmodule_invocations);
+            let config_builder =
+                config_builder.smartmodules(self.smartmodule_invocations(initial_param)?);
 
             let config = config_builder
                 .delivery_semantic(self.delivery_semantic)
@@ -628,6 +600,52 @@ mod cmd {
                 package: Some("fluvio/fluvio".parse().unwrap()),
                 description: "Produce new data in a stream".into(),
                 version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
+            }
+        }
+
+        fn smartmodule_invocations(
+            &self,
+            initial_param: BTreeMap<String, String>,
+        ) -> Result<Vec<SmartModuleInvocation>> {
+            let invocations = if let Some(smart_module_name) = &self.smartmodule {
+                vec![create_smartmodule(
+                    smart_module_name,
+                    self.smart_module_ctx(),
+                    initial_param,
+                )]
+            } else if let Some(path) = &self.smartmodule_path {
+                vec![create_smartmodule_from_path(
+                    path,
+                    self.smart_module_ctx(),
+                    initial_param,
+                )?]
+            } else if !self.transform.is_empty() {
+                let config =
+                    TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
+                        CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
+                    })?;
+                create_smartmodule_list(config)?
+            } else if let Some(transforms_file) = &self.transforms_file {
+                let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
+                    CliError::InvalidArg(format!(
+                        "unable to process `transforms_file` argument: {err}"
+                    ))
+                })?;
+                create_smartmodule_list(config)?
+            } else {
+                Vec::new()
+            };
+
+            Ok(invocations)
+        }
+
+        fn smart_module_ctx(&self) -> SmartModuleContextData {
+            if let Some(agg_initial) = &self.aggregate_initial {
+                SmartModuleContextData::Aggregate {
+                    accumulator: agg_initial.clone().into_bytes(),
+                }
+            } else {
+                SmartModuleContextData::None
             }
         }
     }
