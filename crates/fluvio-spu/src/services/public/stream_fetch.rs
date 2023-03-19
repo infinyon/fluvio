@@ -31,7 +31,7 @@ use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::conn_context::ConnectionContext;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::context::SmartModuleContext;
-use crate::smartengine::batch::BatchSmartEngine;
+use crate::smartengine::batch::process_file_batch;
 use crate::smartengine::file_batch::FileBatchIterator;
 use crate::core::metrics::SpuMetrics;
 use crate::traffic::TrafficType;
@@ -400,8 +400,8 @@ impl StreamFetchHandler {
                 let mut file_batch_iterator =
                     FileBatchIterator::from_raw_slice(records.raw_slice());
 
-                let (batch, smartmodule_error) = chain
-                    .process_batch(
+                let (batch, smartmodule_error) = process_file_batch(
+                        chain,
                         &mut file_batch_iterator,
                         self.max_bytes as usize,
                         self.metrics.chain_metrics(),
