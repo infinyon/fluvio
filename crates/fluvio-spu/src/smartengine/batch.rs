@@ -144,7 +144,7 @@ pub fn process_produce_batch(
 
         let now = Instant::now();
 
-        let input = SmartModuleInput::new(produce_batch.records, produce_batch.batch.base_offset);
+        let input = SmartModuleInput::producer_smartmodule_input(produce_batch.records);
 
         let output = match sm_chain_instance.process(input, metric) {
             Ok(output) => output,
