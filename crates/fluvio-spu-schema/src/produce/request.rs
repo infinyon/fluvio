@@ -352,6 +352,7 @@ mod tests {
                 data: Default::default(),
             }],
             data: Default::default(),
+            smartmodules: Default::default(),
         };
         let version = DefaultProduceRequest::DEFAULT_API_VERSION;
 
