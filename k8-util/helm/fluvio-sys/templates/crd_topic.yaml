@@ -95,22 +95,23 @@ spec:
                     type: object
                     required:
                     - name
-                    - ty
+                    - typ
                     properties:
                       name:
                         type: string
-                      ty:
+                      key:
+                        type: boolean
+                      typ:
                         type: string
                         enum:
-                          - String
-                          - Int
-                          - Long
-                          - Float
-                          - Double
-                          - Bool
-                          - Bytes
-                          - Timestamp
-                          - Json
+                          - bool
+                          - string
+                          - integer
+                          - long
+                          - float
+                          - double
+                          - timestamp
+
       subresources:
           status: {}
       additionalPrinterColumns:

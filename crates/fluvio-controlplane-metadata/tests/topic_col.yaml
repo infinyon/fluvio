@@ -8,13 +8,13 @@ spec:
       partitions: 1
   columns:
     - name: route
-      ty: String
+      ty: string
     - name: speed
-      ty: Int
+      ty: integer
     - name: longitude
-      ty: Double
+      ty: double
     - name: latitude
-      ty: Double
+      ty: double
     - name: time
-      ty: Timestamp
+      ty: timestamp
 
