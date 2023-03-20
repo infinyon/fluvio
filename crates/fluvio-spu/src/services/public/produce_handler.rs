@@ -69,7 +69,7 @@ pub async fn handle_produce_request(
             header.is_connector(),
             sm_chain_instance.as_mut(),
         )
-        .await;
+        .await?;
         topic_results.push(topic_result);
     }
     wait_for_acks(
@@ -93,7 +93,7 @@ async fn handle_produce_topic(
     topic_request: DefaultTopicRequest,
     is_connector: bool,
     mut sm_chain_instance: Option<&mut SmartModuleChainInstance>,
-) -> TopicWriteResult {
+) -> Result<TopicWriteResult, Error> {
     let topic = &topic_request.name;
 
     trace!("Handling produce request for topic: {topic}");
@@ -105,20 +105,11 @@ async fn handle_produce_topic(
 
     for mut partition_request in topic_request.partitions.into_iter() {
         if let Some(sm_chain_instance) = &mut sm_chain_instance {
-            let records = &partition_request.records;
-            let batches = &records.batches;
-
-            let batches = ProduceBatchIterator::new(batches);
-
-            let (sm_result, _smartmodule_error) =
-                process_produce_batch(*sm_chain_instance, batches, ctx.metrics().chain_metrics())
-                    .unwrap();
-
-            let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
-
-            partition_request.records = RecordSet {
-                batches: vec![smartmoduled_records],
-            };
+            apply_smartmodules_for_partition_request(
+                &mut partition_request,
+                *sm_chain_instance,
+                ctx,
+            )?;
         }
 
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
@@ -126,7 +117,7 @@ async fn handle_produce_topic(
             handle_produce_partition(ctx, replica_id, partition_request, is_connector).await;
         topic_result.partitions.push(partition_response);
     }
-    topic_result
+    Ok(topic_result)
 }
 
 #[instrument(
@@ -211,6 +202,45 @@ async fn smartmodule_chain(
     } else {
         Ok(None)
     }
+}
+
+fn apply_smartmodules_for_partition_request(
+    partition_request: &mut PartitionProduceData<RecordSet<RawRecords>>,
+    sm_chain_instance: &mut SmartModuleChainInstance,
+    ctx: &DefaultSharedGlobalContext,
+) -> Result<(), Error> {
+    let records = &partition_request.records;
+    let batches = &records.batches;
+
+    let batches = ProduceBatchIterator::new(batches);
+
+    let sm_result =
+        match process_produce_batch(sm_chain_instance, batches, ctx.metrics().chain_metrics()) {
+            Ok((result, sm_runtime_error)) => {
+                if sm_runtime_error.is_some() {
+                    return Err(Error::new(
+                        ErrorKind::Other,
+                        format!("smartmodule runtime error: {:?}", sm_runtime_error.unwrap()),
+                    ));
+                } else {
+                    result
+                }
+            }
+            Err(general_error) => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    format!("smartmodule chain failed: {:?}", general_error),
+                ));
+            }
+        };
+
+    let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
+
+    partition_request.records = RecordSet {
+        batches: vec![smartmoduled_records],
+    };
+
+    Ok(())
 }
 
 fn validate_records<R: BatchRecords>(

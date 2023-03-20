@@ -56,7 +56,8 @@ pub(crate) fn process_file_batch(
         //  let mut join_record = vec![];
         //  join_last_record.encode(&mut join_record, 0)?;
 
-        let input = SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
+        let input =
+            SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
 
         let output = sm_chain_instance.process(input, metric)?;
         debug!(smartmodule_execution_time = %now.elapsed().as_millis());
