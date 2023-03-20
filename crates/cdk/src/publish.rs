@@ -63,7 +63,7 @@ impl PublishCmd {
                     .package_meta
                     .clone()
                     .unwrap_or_else(|| hubutil::DEF_HUB_PKG_META.to_string());
-                let pkgdata = package_assemble(&pkgmetapath, &access)?;
+                let pkgdata = package_assemble(&pkgmetapath, &self.target, &access)?;
                 package_push(self, &pkgdata, &access)?;
             }
 
@@ -73,7 +73,7 @@ impl PublishCmd {
                     .package_meta
                     .clone()
                     .unwrap_or_else(|| hubutil::DEF_HUB_PKG_META.to_string());
-                package_assemble(&pkgmetapath, &access)?;
+                package_assemble(&pkgmetapath, &self.target, &access)?;
             }
 
             // --push only, needs ipkg file
@@ -90,8 +90,8 @@ impl PublishCmd {
     }
 }
 
-pub fn package_assemble(pkgmeta: &str, access: &HubAccess) -> Result<String> {
-    let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None)?;
+pub fn package_assemble(pkgmeta: &str, target: &str, access: &HubAccess) -> Result<String> {
+    let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None, Some(target))?;
     println!("Package {pkgname} created");
     Ok(pkgname)
 }

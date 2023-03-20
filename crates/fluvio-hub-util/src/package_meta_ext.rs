@@ -242,6 +242,10 @@ fn hub_package_meta_t_read() {
         name: "example".into(),
         version: "0.0.1".into(),
         manifest: ["tests/apackage/module.wasm".into()].to_vec(),
+        tags: Some(vec![fluvio_hub_protocol::PkgTag {
+            tag: "arch".to_owned(),
+            value: "aarch64-unknown-linux-gnu".to_owned(),
+        }]),
         ..PackageMeta::default()
     };
 

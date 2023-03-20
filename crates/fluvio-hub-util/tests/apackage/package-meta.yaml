@@ -9,3 +9,5 @@ visibility: private
 manifest:
   - tests/apackage/module.wasm
 tags:
+  - tag: arch
+    value: aarch64-unknown-linux-gnu
