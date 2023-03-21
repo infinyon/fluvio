@@ -8,6 +8,7 @@ use tracing::{debug, info};
 
 use fluvio_hub_protocol::{Result, HubError};
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
+use fluvio_hub_protocol::infinyon_tok::read_infinyon_token_rem;
 use fluvio_hub_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI_CONFIG_HUB};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
@@ -225,10 +226,11 @@ impl HubAccess {
         } else if let Ok(envurl) = std::env::var(INFINYON_HUB_REMOTE) {
             info!("using {INFINYON_HUB_REMOTE}={envurl}");
             envurl
+        } else if let Some(hubremote) = get_hubref() {
+            hubremote
         } else {
             HUB_REMOTE.to_string()
         };
-
         Ok(ha)
     }
 
@@ -288,4 +290,27 @@ pub fn default_cfg_path() -> Result<PathBuf> {
     hub_cfg_path.push(CLI_CONFIG_PATH); // .fluvio
     hub_cfg_path.push(CLI_CONFIG_HUB);
     Ok(hub_cfg_path)
+}
+
+#[derive(Deserialize)]
+struct ReplyHubref {
+    hub_remote: String,
+}
+
+fn get_hubref() -> Option<String> {
+    use async_std::task::block_on;
+    let Ok((_, fcremote)) = read_infinyon_token_rem() else {
+        return None;
+    };
+    if fcremote == "https://infinyon.cloud" {
+        return None; // use default
+    }
+    let hubref_url = format!("{fcremote}/api/v1/hubref");
+    let reply: std::result::Result<String, surf::Error> = block_on(async {
+        let req = surf::get(hubref_url);
+        let mut res = req.await?;
+        let reply: ReplyHubref = res.body_json().await?;
+        Ok(reply.hub_remote)
+    });
+    reply.ok()
 }

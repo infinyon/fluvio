@@ -2708,6 +2708,7 @@ dependencies = [
 name = "fluvio-hub-util"
 version = "0.0.0"
 dependencies = [
+ "async-std",
  "cargo_toml",
  "const_format",
  "dirs",
@@ -2730,7 +2731,6 @@ dependencies = [
  "tar",
  "tempfile",
  "thiserror",
- "tokio",
  "toml 0.7.2",
  "tracing",
  "tracing-subscriber",

@@ -25,7 +25,6 @@ serde_yaml = "0.8"
 ssh-key = { version="0.4.3", features=[ "ed25519" ] }
 tar = "0.4"
 tempfile = "3.3.0"
-tokio = "1.20"
 toml = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
@@ -34,6 +33,7 @@ wasmparser = { workspace = true }
 fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { path = "../fluvio-types" }
+async-std = "1.12.0"
 
 # feature control
 [dependencies.surf]
