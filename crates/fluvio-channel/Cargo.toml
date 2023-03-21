@@ -21,7 +21,7 @@ cfg-if = "1.0"
 semver = "1.0.0"
 thiserror = "1.0.20"
 tracing = { workspace = true }
-dirs = "4.0.0"
+dirs = { workspace = true}
 toml = { workspace = true }
 serde = { version = "1.0.118", features = ["derive"] }
 anyhow = { workspace = true }

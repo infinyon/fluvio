@@ -62,7 +62,6 @@ tracing = "0.1.19"
 thiserror = "1.0.20"
 clap = "4.0.10"
 bytes = "1"
-fluvio-future = "0.4.0"
 convert_case = "0.6.0"
 derive_builder = "0.12.0"
 portpicker = "0.1.1"
@@ -72,12 +71,16 @@ cargo_toml = "0.15"
 base64 = "0.21.0"
 toml = "0.7.0"
 wasmparser = { version = "0.102.0" }
+dirs = "5.0.0"
+serde = { version = "1.0.0" }
 
 # fluvio dep
 k8-client = { version = "10.0.0" }
 k8-types = { version = "0.8.0" }
 k8-config = { version = "2.0.0"}
 k8-metadata-client = { version = "5.1.0" }
+fluvio-future = { version = "0.4.0" }
+flv-util = { version = "0.5.0" }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

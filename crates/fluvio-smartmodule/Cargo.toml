@@ -23,8 +23,8 @@ default = ["smartmodule"]
 smartmodule = []
 
 [dependencies]
-tracing = "0.1.27"
-thiserror = "1"
+tracing = { workspace = true }
+thiserror = { workspace = true }
 eyre = { version = ">=0.6.8", default-features = false, features = [
     "auto-install",
 ] }

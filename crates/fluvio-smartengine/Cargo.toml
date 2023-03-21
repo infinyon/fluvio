@@ -19,9 +19,9 @@ default = ["engine"]
 
 
 [dependencies]
-tracing = "0.1.27"
-thiserror = "1"
-anyhow = { version = "1.0.38" }
+tracing ={ workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
 wasmtime = { version = "7.0.0", optional = true }
 wasmtime-wasi = { version = "7.0.0", optional = true }
 serde = { version = "1", features = ['derive'] }
