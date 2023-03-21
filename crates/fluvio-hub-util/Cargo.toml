@@ -30,10 +30,10 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 wasmparser = { workspace = true }
 
+fluvio-future = { workspace = true, features = ["task"]}
 fluvio-controlplane-metadata = { path="../fluvio-controlplane-metadata", features = [ "smartmodule" ] }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { path = "../fluvio-types" }
-async-std = "1.12.0"
 
 # feature control
 [dependencies.surf]

@@ -6,6 +6,7 @@ use surf::http::mime;
 use surf::StatusCode;
 use tracing::{debug, info};
 
+use fluvio_future::task::run_block_on;
 use fluvio_hub_protocol::{Result, HubError};
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token_rem;
@@ -17,6 +18,7 @@ use crate::keymgmt::Keypair;
 // in .fluvio/hub/hcurrent
 const ACCESS_FILE_PTR: &str = "hcurrent";
 const ACCESS_FILE_DEF: &str = "default"; // default profile name
+const DEFAULT_CLOUD_REMOTE: &str = "https://infinyon.cloud";
 
 pub const ACTION_LIST: &str = "list";
 pub const ACTION_LIST_WITH_META: &str = "lwm";
@@ -298,15 +300,14 @@ struct ReplyHubref {
 }
 
 fn get_hubref() -> Option<String> {
-    use async_std::task::block_on;
     let Ok((_, fcremote)) = read_infinyon_token_rem() else {
         return None;
     };
-    if fcremote == "https://infinyon.cloud" {
+    if fcremote == DEFAULT_CLOUD_REMOTE {
         return None; // use default
     }
     let hubref_url = format!("{fcremote}/api/v1/hubref");
-    let reply: std::result::Result<String, surf::Error> = block_on(async {
+    let reply: std::result::Result<String, surf::Error> = run_block_on(async {
         let req = surf::get(hubref_url);
         let mut res = req.await?;
         let reply: ReplyHubref = res.body_json().await?;

@@ -2708,13 +2708,13 @@ dependencies = [
 name = "fluvio-hub-util"
 version = "0.0.0"
 dependencies = [
- "async-std",
  "cargo_toml",
  "const_format",
  "dirs",
  "ed25519-dalek",
  "flate2",
  "fluvio-controlplane-metadata",
+ "fluvio-future",
  "fluvio-hub-protocol",
  "fluvio-types",
  "hex",

@@ -45,7 +45,10 @@ pub fn read_infinyon_token_rem() -> Result<(InfinyonToken, InfinyonRemote), Infi
     // the ENV variable should point directly to the applicable profile
     if let Ok(profilepath) = env::var(INFINYON_CONFIG_PATH_ENV) {
         let cred = Credentials::load(Path::new(&profilepath))?;
-        debug!("{INFINYON_CONFIG_PATH_ENV} {profilepath} loaded");
+        debug!(
+            path = profilepath,
+            "profile loaded from INFINYON_CONFIG_PATH_ENV"
+        );
         return Ok((cred.token, cred.remote));
     }
     let cfgpath = default_file_path();
