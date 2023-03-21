@@ -2409,7 +2409,7 @@ dependencies = [
  "indicatif",
  "k8-client",
  "k8-config",
- "k8-types",
+ "k8-types 0.7.1",
  "semver 1.0.16",
  "serde",
  "serde_json",
@@ -2483,7 +2483,7 @@ dependencies = [
  "k8-client",
  "k8-config",
  "k8-metadata-client",
- "k8-types",
+ "k8-types 0.7.1",
  "once_cell",
  "portpicker",
  "rand 0.8.5",
@@ -2832,7 +2832,7 @@ dependencies = [
  "futures-util",
  "k8-client",
  "k8-metadata-client",
- "k8-types",
+ "k8-types 0.7.1",
  "once_cell",
  "rand 0.8.5",
  "regex",
@@ -3057,7 +3057,7 @@ dependencies = [
  "fluvio-types",
  "futures-lite",
  "k8-metadata-client",
- "k8-types",
+ "k8-types 0.7.1",
  "once_cell",
  "serde",
  "serde_json",
@@ -3074,7 +3074,7 @@ dependencies = [
  "event-listener",
  "fluvio-future",
  "fluvio-stream-model",
- "k8-types",
+ "k8-types 0.7.1",
  "once_cell",
  "serde",
  "tokio",
@@ -4344,7 +4344,7 @@ dependencies = [
  "k8-config",
  "k8-diff",
  "k8-metadata-client",
- "k8-types",
+ "k8-types 0.7.1",
  "pin-utils",
  "rand 0.8.5",
  "serde",
@@ -4382,14 +4382,14 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "5.0.0"
+version = "5.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "651501c896262bc478f439514f9f36114f88a460f65661ed18688f3886a8ee89"
+checksum = "c229be3cd93fc47d21cca9ff4cac6ca32ec9b94a3443d125a839ddbbd1c642a8"
 dependencies = [
  "async-trait",
  "futures-util",
  "k8-diff",
- "k8-types",
+ "k8-types 0.8.0",
  "pin-utils",
  "serde",
  "serde_json",
@@ -4401,6 +4401,16 @@ name = "k8-types"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1dd2af92a6a6f18bc1e7e218e50305e2fd110e94ed22ad8e0672d175f291267"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "k8-types"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dca562b914622948cd827ea6120a5b7ac9df96980364d73dee073a039b42b6e8"
 dependencies = [
  "serde",
  "serde_json",

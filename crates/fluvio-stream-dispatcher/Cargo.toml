@@ -28,7 +28,7 @@ fluvio-types = { path = "../fluvio-types", version = "0.4.0" }
 fluvio-stream-model = { features = [
     "k8",
 ], version = "0.8.0", path = "../fluvio-stream-model" }
-k8-metadata-client = { version = "5.0.0" }
+k8-metadata-client = { version = "5.1.0" }
 k8-types = { version = "0.7.0" }
 fluvio-future = { version = "0.4.0", features = ["task", "timer"] }
 
