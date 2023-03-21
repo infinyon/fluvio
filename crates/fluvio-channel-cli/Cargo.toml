@@ -25,7 +25,7 @@ colored = "2"
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 tracing = { workspace = true }
 cfg-if = "1.0"
-dirs = "4.0.0"
+dirs = { workspace = true}
 anyhow = { workspace = true }
 
 fluvio-cli-common = { path = "../fluvio-cli-common" }

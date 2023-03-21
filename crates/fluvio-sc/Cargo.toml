@@ -60,9 +60,9 @@ fluvio-controlplane-metadata = { features = [
     "serde",
 ], path = "../fluvio-controlplane-metadata" }
 fluvio-stream-dispatcher = { path = "../fluvio-stream-dispatcher" }
-k8-client = { version = "8.0.0", optional = true }
-k8-metadata-client = { version = "5.0.0" }
-k8-types = { version = "0.7.0", features = ["app"] }
+k8-client = { workspace = true, optional = true }
+k8-metadata-client = { workspace = true }
+k8-types = { workspace = true, features = ["app"] }
 fluvio-protocol = { path = "../fluvio-protocol" }
 fluvio-socket = { path = "../fluvio-socket" }
 fluvio-service = { path = "../fluvio-service" }

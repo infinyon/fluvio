@@ -43,7 +43,7 @@ url = "2.1.1"
 semver = "1.0.0"
 clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"], default-features = false }
 clap_complete = "4.0.2"
-dirs = "4.0.0"
+dirs = { workspace = true}
 thiserror = { workspace = true }
 eyre = "0.6.1"
 which = "4.0.2"
@@ -77,9 +77,9 @@ anyhow = { workspace = true }
 current_platform = "0.2"
 
 # Fluvio dependencies
-k8-config = { version = "2.0.0", optional = true }
-k8-client = { version = "8.0.0", optional = true }
-k8-types = { version = "0.7.0", features = ["core"] }
+k8-config = { workspace = true, optional = true }
+k8-client = { workspace = true, optional = true }
+k8-types = { workspace = true , features = ["core"] }
 fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
 
 fluvio = { path = "../fluvio", default-features = false }

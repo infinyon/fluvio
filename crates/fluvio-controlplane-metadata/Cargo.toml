@@ -17,23 +17,23 @@ use_serde = ["serde","semver/serde"]
 k8 = ["use_serde", "fluvio-stream-model/k8"]
 
 [dependencies]
-tracing = "0.1.19"
-serde = { version = "1.0.0", features = ['derive'], optional = true }
+tracing = { workspace = true }
+serde = { workspace = true, features = ['derive'], optional = true }
 async-trait = "0.1.21"
-thiserror = "1.0.20"
+thiserror = { workspace = true }
 base64 = { workspace = true }
-bytes = { version = "1" }
+bytes = { workspace = true }
 flate2 = { version = "1.0.22", optional = true }
 semver = "1.0"
 toml = { workspace = true, optional = true }
 lenient_semver = "0.4.2"
 
 # External Fluvio dependencies
-fluvio-future = { version = "0.4.0" }
-flv-util = { version = "0.5.0" }
+fluvio-future = { workspace = true }
+flv-util = { workspace = true }
 
 fluvio-types = { version = "0.4.0", path = "../fluvio-types" }
-fluvio-stream-model = { path = "../fluvio-stream-model", version = "0.8.0" }
+fluvio-stream-model = { path = "../fluvio-stream-model", version = "0.9.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
     "record",
 ] }
