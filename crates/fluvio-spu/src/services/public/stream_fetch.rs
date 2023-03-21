@@ -401,14 +401,14 @@ impl StreamFetchHandler {
                     FileBatchIterator::from_raw_slice(records.raw_slice());
 
                 let (batch, smartmodule_error) = process_file_batch(
-                        chain,
-                        &mut file_batch_iterator,
-                        self.max_bytes as usize,
-                        self.metrics.chain_metrics(),
-                    )
-                    .map_err(|err| {
-                        StreamFetchError::Fetch(ErrorCode::Other(format!("SmartModule err {err}")))
-                    })?;
+                    chain,
+                    &mut file_batch_iterator,
+                    self.max_bytes as usize,
+                    self.metrics.chain_metrics(),
+                )
+                .map_err(|err| {
+                    StreamFetchError::Fetch(ErrorCode::Other(format!("SmartModule err {err}")))
+                })?;
                 let metrics_update = IncreaseValue::from(&batch);
 
                 let (offset, wait) = self
