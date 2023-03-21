@@ -70,7 +70,7 @@ nix = "0.26.0"
 sysinfo = "0.28.0"
 cargo_toml = "0.15"
 base64 = "0.21.0"
-toml = "0.7.0"
+toml = "0.7.2"
 wasmparser = { version = "0.101.0" }
 
 # Used to make eyre faster on debug builds
