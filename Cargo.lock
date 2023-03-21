@@ -2416,7 +2416,7 @@ dependencies = [
  "indicatif",
  "k8-client",
  "k8-config",
- "k8-types 0.8.0",
+ "k8-types",
  "semver 1.0.17",
  "serde",
  "serde_json",
@@ -2490,7 +2490,7 @@ dependencies = [
  "k8-client",
  "k8-config",
  "k8-metadata-client",
- "k8-types 0.8.0",
+ "k8-types",
  "once_cell",
  "portpicker",
  "rand 0.8.5",
@@ -2839,7 +2839,7 @@ dependencies = [
  "futures-util",
  "k8-client",
  "k8-metadata-client",
- "k8-types 0.8.0",
+ "k8-types",
  "once_cell",
  "rand 0.8.5",
  "regex",
@@ -3053,7 +3053,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.9.3"
+version = "0.10.0"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -3064,7 +3064,7 @@ dependencies = [
  "fluvio-types",
  "futures-lite",
  "k8-metadata-client",
- "k8-types 0.7.1",
+ "k8-types",
  "once_cell",
  "serde",
  "serde_json",
@@ -3074,14 +3074,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.8.4"
+version = "0.9.0"
 dependencies = [
  "async-rwlock",
  "async-std",
  "event-listener",
  "fluvio-future",
  "fluvio-stream-model",
- "k8-types 0.7.1",
+ "k8-types",
  "once_cell",
  "serde",
  "tokio",
@@ -4352,7 +4352,7 @@ dependencies = [
  "k8-config",
  "k8-diff",
  "k8-metadata-client",
- "k8-types 0.8.0",
+ "k8-types",
  "pin-utils",
  "rand 0.8.5",
  "serde",
@@ -4397,21 +4397,11 @@ dependencies = [
  "async-trait",
  "futures-util",
  "k8-diff",
- "k8-types 0.8.0",
+ "k8-types",
  "pin-utils",
  "serde",
  "serde_json",
  "tracing",
-]
-
-[[package]]
-name = "k8-types"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1dd2af92a6a6f18bc1e7e218e50305e2fd110e94ed22ad8e0672d175f291267"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]

@@ -115,7 +115,7 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
     use k8_client::http::status::StatusCode;
 
     let ns = namespace.unwrap_or("default");
-    let svc = match K8Client::default()?
+    let svc = match K8Client::try_default()?
         .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("fluvio-sc-public", ns))
         .await
     {
