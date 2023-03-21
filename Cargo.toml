@@ -71,7 +71,13 @@ sysinfo = "0.28.0"
 cargo_toml = "0.15"
 base64 = "0.21.0"
 toml = "0.7.0"
-wasmparser = { version = "0.101.0" }
+wasmparser = { version = "0.102.0" }
+
+# fluvio dep
+k8-client = { version = "10.0.0" }
+k8-types = { version = "0.8.0" }
+k8-config = { version = "2.0.0"}
+k8-metadata-client = { version = "5.1.0" }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
