@@ -108,8 +108,8 @@ mod inline {
     use std::io::Write;
 
     use tracing::{debug, trace};
-    use tempdir::TempDir;
     use include_dir::{Dir};
+    use tempfile::TempDir;
 
     /// Inline chart contains only a single chart
     pub struct InlineChart {
@@ -120,7 +120,7 @@ mod inline {
     impl InlineChart {
         /// create new inline chart
         pub fn new(inline: &Dir<'static>) -> Result<Self, IoError> {
-            let temp_dir = TempDir::new("chart")?;
+            let temp_dir = tempfile::Builder::new().prefix("chart").tempdir()?;
             let chart = Self::unpack(inline, temp_dir.path())?;
             Ok(Self {
                 _dir: temp_dir,

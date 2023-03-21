@@ -98,3 +98,6 @@ codegen-units = 256
 [profile.release-lto]
 inherits = "release"
 lto = true
+
+[patch.crates-io]
+cargo-generate = { git = 'https://github.com/cargo-generate/cargo-generate.git' }
