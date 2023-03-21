@@ -311,6 +311,10 @@ fn get_hubref() -> Option<String> {
         let req = surf::get(hubref_url);
         let mut res = req.await?;
         let reply: ReplyHubref = res.body_json().await?;
+        // fluvio profile switch does not switch the cloud login
+        // so hub remote can be pointed to the cloud login different that the profile
+        // this will only be printed when using a nonstd hub
+        println!("Using hub {}", reply.hub_remote);
         Ok(reply.hub_remote)
     });
     reply.ok()
