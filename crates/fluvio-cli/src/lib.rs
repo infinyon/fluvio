@@ -423,7 +423,7 @@ mod util {
         }
     }
 
-    pub(crate) fn parse_key_val(s: &str) -> Result<(String, String), CliError> {
+    pub(crate) fn parse_key_val(s: &str) -> anyhow::Result<(String, String)> {
         let pos = s.find('=').ok_or_else(|| {
             CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{s}`"))
         })?;

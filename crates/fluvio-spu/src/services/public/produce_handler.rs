@@ -107,7 +107,7 @@ async fn handle_produce_topic(
         if let Some(sm_chain_instance) = &mut sm_chain_instance {
             apply_smartmodules_for_partition_request(
                 &mut partition_request,
-                *sm_chain_instance,
+                sm_chain_instance,
                 ctx,
             )?;
         }
@@ -186,7 +186,7 @@ async fn smartmodule_chain(
     api_version: i16,
     ctx: &DefaultSharedGlobalContext,
 ) -> Result<Option<SmartModuleChainInstance>, Error> {
-    let sm_ctx = match SmartModuleContext::try_from(sm_invocations, api_version, &ctx).await {
+    let sm_ctx = match SmartModuleContext::try_from(sm_invocations, api_version, ctx).await {
         Ok(ctx) => ctx,
         Err(error_code) => {
             warn!("smartmodule context init failed: {:?}", error_code);
