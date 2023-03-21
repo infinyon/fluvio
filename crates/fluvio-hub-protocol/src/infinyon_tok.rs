@@ -16,6 +16,7 @@ const DEFAULT_LOGINS_DIR: &str = "logins"; // from logins.rs
 const CURRENT_LOGIN_FILE_NAME: &str = "current";
 
 type InfinyonToken = String;
+type InfinyonRemote = String;
 
 #[derive(thiserror::Error, Debug)]
 pub enum InfinyonCredentialError {
@@ -37,6 +38,23 @@ pub fn read_infinyon_token() -> Result<InfinyonToken, InfinyonCredentialError> {
     // this will read the indirection file to resolve the profile
     let cred = Credentials::try_load(cfgpath)?;
     Ok(cred.token)
+}
+
+pub fn read_infinyon_token_rem() -> Result<(InfinyonToken, InfinyonRemote), InfinyonCredentialError>
+{
+    // the ENV variable should point directly to the applicable profile
+    if let Ok(profilepath) = env::var(INFINYON_CONFIG_PATH_ENV) {
+        let cred = Credentials::load(Path::new(&profilepath))?;
+        debug!(
+            path = profilepath,
+            "profile loaded from INFINYON_CONFIG_PATH_ENV"
+        );
+        return Ok((cred.token, cred.remote));
+    }
+    let cfgpath = default_file_path();
+    // this will read the indirection file to resolve the profile
+    let cred = Credentials::try_load(cfgpath)?;
+    Ok((cred.token, cred.remote))
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
