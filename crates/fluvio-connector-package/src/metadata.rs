@@ -315,14 +315,6 @@ fn validate_deployment(deployment: &Deployment, config: &ConnectorConfig) -> any
 
 fn validate_secrets(secrets: &Secrets, config: &serde_yaml::Value) -> anyhow::Result<()> {
     let cfg_secrets = detect_secrets(config);
-    for meta_secret in secrets.keys() {
-        if !cfg_secrets.contains(meta_secret.as_str()) {
-            return Err(anyhow!(
-                "missing required secret '{}' in config",
-                meta_secret
-            ));
-        }
-    }
     for cfg_secret in cfg_secrets {
         if !secrets.contains_key(cfg_secret) {
             return Err(anyhow!(
@@ -582,10 +574,8 @@ mod tests {
         let res = validate_secrets(&meta_secrets, &config);
 
         //then
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "missing required secret 'secret_name' in config"
-        );
+        assert!(res.is_ok()); // config file is not obligated to use all secrets defined in
+                              // Connector.toml
     }
 
     #[test]
