@@ -249,7 +249,7 @@ mod cmd {
 
             #[cfg(feature = "producer-file-io")]
             if self.raw {
-                self.process_raw_file().await?;
+                self.process_raw_file(&producer).await?;
             } else {
                 // Read input line-by-line and send as individual records
                 #[cfg(feature = "stats")]
@@ -281,9 +281,11 @@ mod cmd {
 
             Ok(())
         }
+    }
 
+    impl ProduceOpt {
         #[cfg(feature = "producer-file-io")]
-        async fn process_raw_file(self) -> Result<()> {
+        async fn process_raw_file(&self, producer: &TopicProducer) -> Result<()> {
             let key = self.key.clone().map(Bytes::from);
             // Read all input and send as one record
             let buffer = match &self.file {
@@ -325,9 +327,7 @@ mod cmd {
 
             Ok(())
         }
-    }
 
-    impl ProduceOpt {
         async fn produce_lines(
             &self,
             producer: Arc<TopicProducer>,
