@@ -28,7 +28,7 @@ use fluvio_future::timer::sleep;
 use crate::core::DefaultSharedGlobalContext;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::produce_batch::ProduceBatchIterator;
-use crate::smartengine::batch::process_produce_batch;
+use crate::smartengine::batch::process_batch;
 use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
@@ -217,27 +217,31 @@ fn apply_smartmodules_for_partition_request(
     let records = &partition_request.records;
     let batches = &records.batches;
 
-    let batches = ProduceBatchIterator::new(batches);
+    let mut batches = ProduceBatchIterator::new(batches);
 
-    let sm_result =
-        match process_produce_batch(sm_chain_instance, batches, ctx.metrics().chain_metrics()) {
-            Ok((result, sm_runtime_error)) => {
-                if sm_runtime_error.is_some() {
-                    return Err(Error::new(
-                        ErrorKind::Other,
-                        format!("smartmodule runtime error: {:?}", sm_runtime_error.unwrap()),
-                    ));
-                } else {
-                    result
-                }
-            }
-            Err(general_error) => {
+    let sm_result = match process_batch(
+        sm_chain_instance,
+        &mut batches,
+        std::usize::MAX,
+        ctx.metrics().chain_metrics(),
+    ) {
+        Ok((result, sm_runtime_error)) => {
+            if sm_runtime_error.is_some() {
                 return Err(Error::new(
                     ErrorKind::Other,
-                    format!("smartmodule chain failed: {:?}", general_error),
+                    format!("smartmodule runtime error: {:?}", sm_runtime_error.unwrap()),
                 ));
+            } else {
+                result
             }
-        };
+        }
+        Err(general_error) => {
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!("smartmodule chain failed: {:?}", general_error),
+            ));
+        }
+    };
 
     let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
 

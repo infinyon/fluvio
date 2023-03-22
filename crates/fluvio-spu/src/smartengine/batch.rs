@@ -1,24 +1,33 @@
 use std::time::Instant;
+use std::io::Error as IoError;
 
 use anyhow::Error;
+use fluvio_compression::{Compression, CompressionError};
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::{instrument, debug, trace};
 
 use fluvio_protocol::{Encoder};
 use fluvio_protocol::{
-    record::{Batch, MemoryRecords},
+    record::{Batch, MemoryRecords, Offset},
     link::smartmodule::SmartModuleTransformRuntimeError,
 };
 use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
-use super::file_batch::FileBatchIterator;
-use super::produce_batch::ProduceBatchIterator;
+pub(crate) trait SmartModuleInputBatch {
+    fn records(&self) -> &Vec<u8>;
 
-#[instrument(skip(sm_chain_instance, iter, max_bytes, metric))]
-pub(crate) fn process_file_batch(
+    fn base_offset(&self) -> Offset;
+
+    fn offset_delta(&self) -> i32;
+
+    fn get_compression(&self) -> Result<Compression, CompressionError>;
+}
+
+#[instrument(skip(sm_chain_instance, input_batches, max_bytes, metric))]
+pub(crate) fn process_batch<R: SmartModuleInputBatch>(
     sm_chain_instance: &mut SmartModuleChainInstance,
-    iter: &mut FileBatchIterator,
+    input_batches: &mut impl Iterator<Item = Result<R, IoError>>, //consider getting ride ofSmartModuleInputRecord iterator and making this iter: &mut Iter<R>
     max_bytes: usize,
     metric: &SmartModuleChainMetrics,
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
@@ -28,23 +37,12 @@ pub(crate) fn process_file_batch(
 
     let mut total_bytes = 0;
 
-    loop {
-        let file_batch = match iter.next() {
-            // we process entire batches.  entire batches are process as group
-            // if we can't fit current batch into max bytes then it is discarded
-            Some(batch_result) => batch_result?,
-            None => {
-                debug!(
-                    total_records = smartmodule_batch.records().len(),
-                    "No more batches, SmartModuleInstance end"
-                );
-                return Ok((smartmodule_batch, None));
-            }
-        };
+    for batch_result in input_batches {
+        let input_batch = batch_result?;
 
         debug!(
-            current_batch_offset = file_batch.batch.base_offset,
-            current_batch_offset_delta = file_batch.offset_delta(),
+            current_batch_offset = input_batch.base_offset(),
+            current_batch_offset_delta = input_batch.offset_delta(),
             smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
             smartmodule_base_offset = smartmodule_batch.base_offset,
             smartmodule_records = smartmodule_batch.records().len(),
@@ -53,12 +51,10 @@ pub(crate) fn process_file_batch(
 
         let now = Instant::now();
 
-        //  let mut join_record = vec![];
-        //  join_last_record.encode(&mut join_record, 0)?;
-
-        let input = SmartModuleInput::new(file_batch.records.clone(), file_batch.batch.base_offset);
+        let input = SmartModuleInput::new(input_batch.records().clone(), input_batch.base_offset());
 
         let output = sm_chain_instance.process(input, metric)?;
+
         debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
         let maybe_error = output.error;
@@ -70,14 +66,17 @@ pub(crate) fn process_file_batch(
         if records.is_empty() {
             debug!("smartmodules records empty");
         } else {
-            // set base offset if this is first time
             if smartmodule_batch.base_offset == -1 {
-                smartmodule_batch.base_offset = file_batch.base_offset();
+                // set compression if this is the first time
+                set_compression(&input_batch, &mut smartmodule_batch);
+
+                // set base offset if this is first time
+                smartmodule_batch.base_offset = input_batch.base_offset();
             }
 
             // difference between smartmodule batch and and current batch
             // since base are different we need update delta offset for each records
-            let relative_base_offset = smartmodule_batch.base_offset - file_batch.base_offset();
+            let relative_base_offset = smartmodule_batch.base_offset - input_batch.base_offset();
 
             for record in &mut records {
                 record.add_base_offset(relative_base_offset);
@@ -106,10 +105,10 @@ pub(crate) fn process_file_batch(
         // only increment smartmodule offset delta if smartmodule_batch has been initialized
         if smartmodule_batch.base_offset != -1 {
             debug!(
-                offset_delta = file_batch.offset_delta(),
+                offset_delta = input_batch.offset_delta(),
                 "adding to offset delta"
             );
-            smartmodule_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
+            smartmodule_batch.add_to_offset_delta(input_batch.offset_delta() + 1);
         }
 
         // If we had a processing error, return current batch and error
@@ -117,55 +116,22 @@ pub(crate) fn process_file_batch(
             return Ok((smartmodule_batch, maybe_error));
         }
     }
+
+    debug!(
+        total_records = smartmodule_batch.records().len(),
+        "No more batches, SmartModuleInstance end"
+    );
+    return Ok((smartmodule_batch, None));
 }
 
-#[instrument(skip(sm_chain_instance, batches, metric))]
-pub(crate) fn process_produce_batch(
-    sm_chain_instance: &mut SmartModuleChainInstance,
-    batches: ProduceBatchIterator,
-    metric: &SmartModuleChainMetrics,
-) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
-    let mut smartmodule_batch = Batch::<MemoryRecords>::default();
-    smartmodule_batch.set_offset_delta(0);
-
-    for produce_batch in batches {
-        let produce_batch = produce_batch?;
-
-        let now = Instant::now();
-
-        let input = SmartModuleInput::producer_smartmodule_input(produce_batch.records);
-
-        let output = match sm_chain_instance.process(input, metric) {
-            Ok(output) => output,
-            Err(e) => return Err(e),
-        };
-
-        debug!(smartmodule_execution_time = %now.elapsed().as_millis());
-
-        let maybe_error = output.error;
-        let mut records = output.successes;
-
-        trace!("smartmodule processed records: {:#?}", records);
-
-        if records.is_empty() {
-            debug!("smartmodules records empty");
-        } else {
-            smartmodule_batch.mut_records().append(&mut records);
-        }
-
-        // Assumes the entire batch was compressed with the same algorithm
-        match produce_batch.batch.get_compression() {
-            Ok(compression) => smartmodule_batch.header.set_compression(compression),
-            Err(e) => {
-                debug!("Couldn't get compression value from batch: {}", e)
-            }
-        }
-
-        // If we had a processing error, return current batch and error
-        if maybe_error.is_some() {
-            return Ok((smartmodule_batch, maybe_error));
+fn set_compression(
+    input_batch: &impl SmartModuleInputBatch,
+    smartmodule_batch: &mut Batch<MemoryRecords>,
+) {
+    match input_batch.get_compression() {
+        Ok(compression) => smartmodule_batch.header.set_compression(compression),
+        Err(e) => {
+            debug!("Couldn't get compression value from batch: {}", e)
         }
     }
-
-    Ok((smartmodule_batch, None))
 }
