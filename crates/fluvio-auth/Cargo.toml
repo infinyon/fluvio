@@ -19,7 +19,7 @@ serde = { version = "1.0.103", features = ['derive'] }
 serde_json = "1.0.59"
 thiserror = { workspace = true }
 tracing = { workspace = true }
-x509-parser = "0.14.0"
+x509-parser = "0.15.0"
 
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
 fluvio-future = { version = "0.4.0", features = ["net", "openssl_tls"] }

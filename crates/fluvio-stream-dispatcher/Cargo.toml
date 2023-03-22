@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-stream-dispatcher"
 edition = "2021"
-version = "0.9.3"
+version = "0.10.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Event Stream access"
 repository = "https://github.com/infinyon/fluvio"
@@ -27,9 +27,9 @@ once_cell = "1.5"
 fluvio-types = { path = "../fluvio-types", version = "0.4.0" }
 fluvio-stream-model = { features = [
     "k8",
-], version = "0.8.0", path = "../fluvio-stream-model" }
-k8-metadata-client = { version = "5.0.0" }
-k8-types = { version = "0.7.0" }
+], version = "0.9.0", path = "../fluvio-stream-model" }
+k8-metadata-client = { workspace = true }
+k8-types = { workspace = true }
 fluvio-future = { version = "0.4.0", features = ["task", "timer"] }
 
 [dev-dependencies]

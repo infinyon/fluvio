@@ -65,10 +65,10 @@ sysinfo = { workspace = true, default-features = false}
 # External Fluvio dependencies
 fluvio-helm = "0.4.1"
 flv-util = "0.5.2"
-k8-config = { version = "2.0.0" }
-k8-client = { version = "8.0.0" }
-k8-metadata-client = { version = "5.0.0" }
-k8-types = { version = "0.7.0", features = ["app"] }
+k8-config = { workspace = true }
+k8-client = { workspace = true }
+k8-metadata-client = { workspace = true }
+k8-types = { workspace = true, features = ["app"] }
 fluvio-command = { version = "0.2.0" }
 fluvio-future = { workspace = true }
 
