@@ -74,7 +74,7 @@ mod cmd {
 
         /// Sends key/value records split on the first instance of the separator.
         #[cfg(feature = "producer-file-io")]
-        #[clap(long, value_parser = validate_key_separator, group = "RecordKey")]
+        #[clap(long, value_parser = validate_key_separator, group = "RecordKey", conflicts_with = "raw")]
         pub key_separator: Option<String>,
         #[cfg(not(feature = "producer-file-io"))]
         #[clap(long, value_parser = validate_key_separator, group = "RecordKey")]
@@ -453,6 +453,8 @@ mod cmd {
             let produce_output = if let Some(separator) = &self.key_separator {
                 self.produce_key_value(producer.clone(), line, separator)
                     .await?
+            } else if let Some(key) = &self.key {
+                Some(producer.send(RecordKey::from(key.as_bytes()), line).await?)
             } else {
                 Some(producer.send(RecordKey::NULL, line).await?)
             };
