@@ -809,7 +809,7 @@ dependencies = [
 [[package]]
 name = "cargo-generate"
 version = "0.18.1"
-source = "git+https://github.com/cargo-generate/cargo-generate.git#c467a9313ba4a3a95f744a6ceb3cd6393eb47b46"
+source = "git+https://github.com/cargo-generate/cargo-generate.git?rev=241a598f1031f2df52f96e03fd3a96a5229883cc#241a598f1031f2df52f96e03fd3a96a5229883cc"
 dependencies = [
  "anyhow",
  "clap 4.1.8",

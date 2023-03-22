@@ -72,6 +72,7 @@ cargo_toml = "0.15"
 base64 = "0.21.0"
 toml = "0.7.0"
 wasmparser = { version = "0.101.0" }
+tempfile = "3.4.0"
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
@@ -100,4 +101,4 @@ inherits = "release"
 lto = true
 
 [patch.crates-io]
-cargo-generate = { git = 'https://github.com/cargo-generate/cargo-generate.git' }
+cargo-generate = { git = "https://github.com/cargo-generate/cargo-generate.git", rev = "241a598f1031f2df52f96e03fd3a96a5229883cc"}

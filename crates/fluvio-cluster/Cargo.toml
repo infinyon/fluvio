@@ -42,7 +42,7 @@ once_cell = "1.5"
 
 which = "4.1.0"
 directories = "4.0.0"
-tempfile = "3.4.0"
+tempfile = { workspace = true }
 include_dir = "0.7.2"
 anyhow = { workspace = true }
 async-channel = "1.6.1"

@@ -23,7 +23,7 @@ dirs = "4.0.0"
 toml = { workspace = true }
 cargo-generate = "0.18.0"
 include_dir = "0.7.2"
-tempfile = "3.3.0"
+tempfile = { workspace = true }
 enum-display = "0.1.3"
 lib-cargo-crate = "0.1.6"
 
