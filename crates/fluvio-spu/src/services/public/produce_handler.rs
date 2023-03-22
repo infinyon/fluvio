@@ -113,8 +113,13 @@ async fn handle_produce_topic(
         }
 
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
-        let partition_response =
-            handle_produce_partition(ctx, replica_id, partition_request, is_connector).await;
+
+        let partition_response = if partition_request.records.total_records() == 0 {
+            PartitionWriteResult::filtered(replica_id)
+        } else {
+            handle_produce_partition(ctx, replica_id, partition_request, is_connector).await
+        };
+
         topic_result.partitions.push(partition_response);
     }
     Ok(topic_result)
@@ -357,6 +362,13 @@ impl PartitionWriteResult {
             replica_id,
             base_offset,
             leo,
+            ..Default::default()
+        }
+    }
+
+    fn filtered(replica_id: ReplicaKey) -> Self {
+        Self {
+            replica_id,
             ..Default::default()
         }
     }
