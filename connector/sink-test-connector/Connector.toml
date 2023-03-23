@@ -14,3 +14,5 @@ dest = true
 [deployment]
 binary = "sink-test-connector"
 
+[secret.TEST_API_KEY]
+type = "env"
