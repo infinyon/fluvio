@@ -443,6 +443,11 @@ Bats-core is used for our CLI-based testing.
 
 Please follow the [bats-core](https://bats-core.readthedocs.io/en/stable/installation.html) installation guide.
 
+#### Building smart modules
+
+```
+make build_smartmodules
+```
 
 ### Running local smoke test
 
@@ -477,8 +482,6 @@ make smoke-test-k8
 Perform CLI smoke test against your running cluster (Kubernetes or local)
 
 ```
-export FLUVIO=target/debug/fluvio
-make build_smartmodules
 make cli-fluvio-smoke
 ```
 
