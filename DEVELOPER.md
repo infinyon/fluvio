@@ -443,6 +443,11 @@ Bats-core is used for our CLI-based testing.
 
 Please follow the [bats-core](https://bats-core.readthedocs.io/en/stable/installation.html) installation guide.
 
+#### Building smart modules
+
+```
+make build_smartmodules
+```
 
 ### Running local smoke test
 
