@@ -43,7 +43,9 @@ impl DiagnosticsOpt {
     pub async fn process(self) -> Result<()> {
         let profile_ty = self.get_profile_ty()?;
         println!("Using profile type: {profile_ty:#?}");
-        let temp_dir = tempdir::TempDir::new("fluvio-diagnostics")?;
+        let temp_dir = tempfile::Builder::new()
+            .prefix("fluvio-diagnostics")
+            .tempdir()?;
         let temp_path = temp_dir.path();
 
         let spu_specs = match self.copy_fluvio_specs(temp_path).await {
