@@ -477,7 +477,7 @@ make smoke-test-k8
 Perform CLI smoke test against your running cluster (Kubernetes or local)
 
 ```
-export FLUVIO=<path to fluvio binary,e.g. target/debug/fluvio>
+export FLUVIO=target/debug/fluvio
 make build_smartmodules
 make cli-fluvio-smoke
 ```
