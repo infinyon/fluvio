@@ -121,7 +121,8 @@ pub(crate) fn process_batch<R: SmartModuleInputBatch>(
         total_records = smartmodule_batch.records().len(),
         "No more batches, SmartModuleInstance end"
     );
-    return Ok((smartmodule_batch, None));
+
+    Ok((smartmodule_batch, None))
 }
 
 fn set_compression(
