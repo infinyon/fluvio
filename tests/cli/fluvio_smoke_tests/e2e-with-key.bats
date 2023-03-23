@@ -26,7 +26,7 @@ setup_file() {
     VAL3=$(random_string)
     export VAL3
     
-    SEPARATOR='='
+    SEPARATOR='||'
     export SEPARATOR
     
     MULTI_LINE_FILE_CONTENTS=$KEY1$SEPARATOR$VAL1$'\n'$KEY2$SEPARATOR$VAL2$'\n'$KEY3$SEPARATOR$VAL3
