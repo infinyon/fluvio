@@ -23,7 +23,7 @@ serde = { version = "1", features = ["derive", "rc"], default-features = false }
 serde_json = { version = "1" }
 serde_yaml = { version = "0.8" }
 
-fluvio = { path = "../fluvio/", features = ["smartengine"]}
+fluvio = { path = "../fluvio/", features = ["smartengine"], default-features = false }
 fluvio-connector-package = { path = "../fluvio-connector-package/" }
 fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true}
 fluvio-sc-schema = { path = "../fluvio-sc-schema/"}
