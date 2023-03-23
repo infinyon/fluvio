@@ -91,9 +91,7 @@ impl PackageInfo {
     }
 
     pub fn package_relative_path<P: AsRef<Path>>(&self, child: P) -> PathBuf {
-        let mut package_path = self.package_path().to_path_buf();
-        package_path.push(child);
-        package_path
+        self.package_path().join(child)
     }
 
     /// path to package's bin target
