@@ -9,15 +9,16 @@ on:
         required: true
         type: string
       branch:
-        required: true
         type: string
         default: "main"
       rust-profile:
         type: string
         default: "release"
       cloud-url:
-        required: true  
         type: string
+      fail-fast:
+        type: boolean
+        default: true  
     secrets:
       CLOUD_USER_EMAIL:
         required: true
@@ -29,7 +30,7 @@ jobs:
     name: linux
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: ${{ inputs.fail-fast }}
       matrix:
         rust-target: [aarch64-unknown-linux-musl, aarch64-unknown-linux-gnu, x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu]  
     env:
@@ -42,7 +43,7 @@ jobs:
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop
       - name: Fluvio Login
-        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} --remote ${{ inputs.cloud-url }}
+        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
       - uses: actions/checkout@v3
         with:
           ref: ${{ inputs.branch }}
@@ -64,7 +65,7 @@ jobs:
     name: macos
     runs-on: macos-latest
     strategy:
-      fail-fast: false
+      fail-fast: ${{ inputs.fail-fast }}
       matrix:
         rust-target: [x86_64-apple-darwin, aarch64-apple-darwin]  
     env:
@@ -77,7 +78,7 @@ jobs:
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop
       - name: Fluvio Login
-        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} --remote ${{ inputs.cloud-url }}
+        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
       - uses: actions/checkout@v3
         with:
           ref: ${{ inputs.branch }}
