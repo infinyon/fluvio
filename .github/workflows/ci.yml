@@ -977,11 +977,15 @@ jobs:
       - name: set DEV fluvio for as test CLI
         if: matrix.cli_version == 'dev'
         run: |
+          FLUVIO_CLI_RELEASE_CHANNEL=dev
+          echo "FLUVIO_CLI_RELEASE_CHANNEL=${FLUVIO_CLI_RELEASE_CHANNEL}" >> $GITHUB_ENV
           FLUVIO_BIN=~/.fluvio/bin/fluvio-dev
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
       - name: set stable fluvio for as test CLI
         if: matrix.cli_version == 'stable'
         run: |
+          FLUVIO_CLI_RELEASE_CHANNEL=stable
+          echo "FLUVIO_CLI_RELEASE_CHANNEL=${FLUVIO_CLI_RELEASE_CHANNEL}" >> $GITHUB_ENV
           FLUVIO_BIN=~/.fluvio/bin/fluvio
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
 

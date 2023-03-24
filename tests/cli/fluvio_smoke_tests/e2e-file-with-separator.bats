@@ -44,21 +44,33 @@ teardown_file() {
 }
 
 # Create topic
-@test "Create a topic" {
+@test "Create a topic for file message with separator" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on stable version"
+    fi
+    
     debug_msg "topic: $TOPIC_NAME"
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
     assert_success
 }
 
-# Produce lines from file with separator
-@test "Produce lines from file with separator" {
+# Produce message
+@test "Produce file message with separator" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on stable version"
+    fi
+    
     run bash -c 'timeout 15s "$FLUVIO_BIN" produce --file "$MULTI_LINE_FILE_NAME" --key-separator "$SEPARATOR" "$TOPIC_NAME"'
     assert_success
 }
 
 # Consume message and compare message
 # Warning: Adding anything extra to the `debug_msg` skews the message comparison
-@test "Consume message" {
+@test "Consume file message with separator" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on stable version"
+    fi
+    
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d -F '{{key}}={{value}}'
 
     assert_output $KEY1=$VAL1$'\n'$KEY2=$VAL2$'\n'$KEY3=$VAL3
