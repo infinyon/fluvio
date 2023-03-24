@@ -1,0 +1,98 @@
+name: Connector Publish workflow
+
+permissions: read-all
+
+on:
+  workflow_call:
+    inputs:
+      package-name:
+        required: true
+        type: string
+      branch:
+        type: string
+        default: "main"
+      rust-profile:
+        type: string
+        default: "release"
+      cloud-url:
+        type: string
+      fail-fast:
+        type: boolean
+        default: true  
+    secrets:
+      CLOUD_USER_EMAIL:
+        required: true
+      CLOUD_USER_PASSWORD:
+        required: true
+
+jobs:
+  linux:
+    name: linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        rust-target: [aarch64-unknown-linux-musl, aarch64-unknown-linux-gnu, x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu]  
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+    steps:
+      - name: Install Fluvio
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Install Fluvio CDK
+        run: fluvio install cdk --develop
+      - name: Fluvio Login
+        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: "false"
+          cache-on-failure: "true"
+      - name: Install Cross
+        run: cargo install cross
+      - name: Build
+        run: |
+          cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
+          cp target/${{ matrix.rust-target }}/${{ inputs.rust-profile }}/* target/${{ inputs.rust-profile }}/ | true
+      - name: Publish
+        run: |
+          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
+
+  macos:
+    name: macos
+    runs-on: macos-latest
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+      matrix:
+        rust-target: [x86_64-apple-darwin, aarch64-apple-darwin]  
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+    steps:
+      - name: Install Fluvio
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Install Fluvio CDK
+        run: fluvio install cdk --develop
+      - name: Fluvio Login
+        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: "false"
+          cache-on-failure: "true"
+      - name: Build
+        run: |
+          rustup target add ${{ matrix.rust-target }}
+          cargo build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
+          cp target/${{ matrix.rust-target }}/${{ inputs.rust-profile }}/* target/${{ inputs.rust-profile }}/ | true
+      - name: Publish
+        run: |
+          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
+
+
