@@ -79,7 +79,15 @@ impl PublishCmd {
 }
 
 pub fn package_assemble(pkgmeta: &str, access: &HubAccess) -> Result<String> {
-    let pkgname = hubutil::package_assemble_and_sign(pkgmeta, access, None, None)?;
+    let pkgmeta = Path::new(pkgmeta);
+    let pkgname = hubutil::package_assemble_and_sign(
+        pkgmeta,
+        access,
+        pkgmeta
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("invalid package meta path"))?,
+        None,
+    )?;
     println!("Package {pkgname} created");
     Ok(pkgname)
 }

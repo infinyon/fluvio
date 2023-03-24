@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 
 use flate2::Compression;
 use flate2::GzBuilder;
@@ -14,8 +15,7 @@ use wasmparser::{Parser, Chunk, Payload};
 
 use fluvio_hub_protocol::{HubError, PackageMeta, Result};
 use fluvio_hub_protocol::constants::{
-    DEF_HUB_INIT_DIR, HUB_PACKAGE_META, HUB_SIGNFILE_BASE, HUB_MANIFEST_BLOB,
-    HUB_PACKAGE_META_CLEAN,
+    HUB_PACKAGE_META, HUB_SIGNFILE_BASE, HUB_MANIFEST_BLOB, HUB_PACKAGE_META_CLEAN,
 };
 
 use crate::PackageMetaExt;
@@ -30,10 +30,10 @@ pub(crate) const ARCH_TAG_NAME: &str = "arch";
 /// # Arguments
 /// * pkgmeta: package-meta.yaml path
 /// * outdir: optional output directory
-pub fn package_assemble_and_sign<P: AsRef<Path>>(
+pub fn package_assemble_and_sign<P: AsRef<Path>, T: AsRef<Path>>(
     pkgmeta: P,
     access: &HubAccess,
-    outdir: Option<&str>,
+    outdir: T,
     target: Option<&str>,
 ) -> Result<String> {
     let tarname = package_assemble(pkgmeta, outdir, target)?;
@@ -44,9 +44,8 @@ pub fn package_assemble_and_sign<P: AsRef<Path>>(
     Ok(ipkgname)
 }
 
-fn tar_to_ipkg(fname: &str) -> String {
-    let path = Path::new(fname);
-    path.with_extension("ipkg").display().to_string()
+fn tar_to_ipkg<P: AsRef<Path>>(path: P) -> String {
+    path.as_ref().with_extension("ipkg").display().to_string()
 }
 
 /// assemble files into an unsigned fluvio package, a file will be created named
@@ -57,40 +56,49 @@ fn tar_to_ipkg(fname: &str) -> String {
 /// * outdir: optional output directory
 ///
 /// # Returns: staging tarfilename
-fn package_assemble<P: AsRef<Path>>(
+fn package_assemble<P: AsRef<Path>, T: AsRef<Path>>(
     pkgmeta: P,
-    outdir: Option<&str>,
+    outdir: T,
     target: Option<&str>,
-) -> Result<String> {
+) -> Result<PathBuf> {
     debug!(target: "package_assemble", "opening");
-    let pm = PackageMeta::read_from_file(pkgmeta)?;
+    let pm = PackageMeta::read_from_file(&pkgmeta)?;
     let mut pm_clean = pm.clone();
     pm_clean.manifest = Vec::new();
     if let Some(target) = target {
         augment_arch(&mut pm_clean, target);
     }
 
-    let outdir = outdir.unwrap_or(DEF_HUB_INIT_DIR);
-    let pkgtarname = outdir.to_string() + "/" + &pm.packagefile_name_unsigned();
+    let pkgtarname = outdir.as_ref().join(&pm.packagefile_name_unsigned());
 
     // crate manifest blob
     //todo: create in tmpdir/tmpfile?
-    let manipath = Path::new(outdir).join(HUB_MANIFEST_BLOB);
-    debug!(target: "package_assemble", "{pkgtarname}, creating temporary manifest blob");
+    let manipath = outdir.as_ref().join(HUB_MANIFEST_BLOB);
+    debug!(target: "package_assemble", "{}, creating temporary manifest blob", pkgtarname.to_string_lossy());
     let tfio = std::fs::File::create(&manipath)?;
     let mut tfgz = GzBuilder::new()
         .filename(HUB_MANIFEST_BLOB)
         .write(tfio, Compression::default());
     let mut tf = tar::Builder::new(&mut tfgz);
 
+    let base_directory = pkgmeta.as_ref().parent().ok_or_else(|| {
+        HubError::UnableToAssemblePackage("invalid package meta file path".to_string())
+    })?;
+    debug!("base directory: {}", base_directory.to_string_lossy());
     for fname in &pm.manifest {
-        let fname = Path::new(fname);
+        let fname = base_directory.join(fname);
 
         // in package, the source path is stripped
         let just_fname = fname
             .file_name()
             .ok_or_else(|| HubError::ManifestInvalidFile(fname.to_string_lossy().to_string()))?;
-        tf.append_path_with_name(fname, just_fname)?;
+        tf.append_path_with_name(&fname, just_fname)
+            .map_err(|err| {
+                HubError::UnableToAssemblePackage(format!(
+                    "unable to put {} into archive: {err}",
+                    fname.to_string_lossy()
+                ))
+            })?;
         let just_fname = just_fname.to_string_lossy().to_string();
         pm_clean.manifest.push(just_fname);
     }
@@ -98,10 +106,10 @@ fn package_assemble<P: AsRef<Path>>(
     tf.finish()?;
     drop(tf);
     tfgz.finish()?;
-    debug!(target: "package_assemble", "{pkgtarname}, temporary manifest blob done");
+    debug!(target: "package_assemble", "{}, temporary manifest blob done", pkgtarname.to_string_lossy());
 
     // write the clean temporary package file
-    let clean_tmp = Path::new(outdir).join(HUB_PACKAGE_META_CLEAN);
+    let clean_tmp = outdir.as_ref().join(HUB_PACKAGE_META_CLEAN);
     debug!(target: "package_assemble", "writing clean pkg meta");
     pm_clean.write(&clean_tmp)?;
 
@@ -177,10 +185,14 @@ impl PackageSignatureBulder {
 /// the signature is added as signature.0 for the first signature
 /// but subsequent signatures are added as .1, .2 etc.
 /// the later signatures will also sign the earlier signature files.
-pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Result<()> {
+pub fn package_sign<P: AsRef<Path>, T: AsRef<Path>>(
+    in_pkgfile: P,
+    key: &Keypair,
+    out_pkgfile: T,
+) -> Result<()> {
     // todo: add public key from credentials
 
-    let file = std::fs::File::open(in_pkgfile)?;
+    let file = std::fs::File::open(&in_pkgfile)?;
     let mut ar = tar::Archive::new(file);
     let entries = ar.entries()?;
 
@@ -221,12 +233,16 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
     }
     if num_files == 0 {
         return Err(HubError::PackageSigning(format!(
-            "{in_pkgfile}: no files in package"
+            "{}: no files in package",
+            in_pkgfile.as_ref().to_string_lossy()
         )));
     }
     let buf = serde_json::to_string(&sig.pkgsig).map_err(|e| {
         warn!("signature serialization: {}", e);
-        HubError::PackageSigning(format!("{in_pkgfile}: signature serialization fault"))
+        HubError::PackageSigning(format!(
+            "{}: signature serialization fault",
+            in_pkgfile.as_ref().to_string_lossy()
+        ))
     })?;
     let signame = format!("{HUB_SIGNFILE_BASE}.{sig_number}");
     let tmpsigfile = tempdir.path().join(&signame);
@@ -236,11 +252,14 @@ pub fn package_sign(in_pkgfile: &str, key: &Keypair, out_pkgfile: &str) -> Resul
     drop(signedpkg);
     signedfile.flush()?;
     let sf_path = signedfile.path().to_path_buf();
-    if let Err(e) = signedfile.persist(out_pkgfile) {
+    if let Err(e) = signedfile.persist(&out_pkgfile) {
         warn!("{}, falling back to copy", e);
-        std::fs::copy(sf_path, out_pkgfile).map_err(|e| {
+        std::fs::copy(sf_path, &out_pkgfile).map_err(|e| {
             warn!("copy failure {}", e);
-            HubError::PackageSigning(format!("{in_pkgfile}: fault creating signed package\n{e}"))
+            HubError::PackageSigning(format!(
+                "{}: fault creating signed package\n{e}",
+                in_pkgfile.as_ref().to_string_lossy()
+            ))
         })?;
     }
     Ok(())
@@ -567,7 +586,7 @@ mod tests {
         let testfile: &str = "tests/apackage/package-meta.yaml";
         let pkgfile = package_assemble(
             testfile,
-            Some("tests/apackage"),
+            "tests/apackage",
             Some("aarch64-unknown-linux-gnu"),
         )
         .expect("package assemble fail");
@@ -600,7 +619,7 @@ mod tests {
     fn hubutil_package_assemble() {
         rust_log_init();
         let testfile: &str = "tests/apackage/package-meta.yaml";
-        let res = package_assemble(testfile, Some("tests"), None);
+        let res = package_assemble(testfile, "tests", None);
         assert!(res.is_ok());
         let outpath = std::path::Path::new("tests/example-0.0.1.tar");
         assert!(outpath.exists());
