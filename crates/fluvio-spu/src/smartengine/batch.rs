@@ -27,7 +27,7 @@ pub(crate) trait SmartModuleInputBatch {
 #[instrument(skip(sm_chain_instance, input_batches, max_bytes, metric))]
 pub(crate) fn process_batch<R: SmartModuleInputBatch>(
     sm_chain_instance: &mut SmartModuleChainInstance,
-    input_batches: &mut impl Iterator<Item = Result<R, IoError>>, //consider getting ride ofSmartModuleInputRecord iterator and making this iter: &mut Iter<R>
+    input_batches: &mut impl Iterator<Item = Result<R, IoError>>,
     max_bytes: usize,
     metric: &SmartModuleChainMetrics,
 ) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
