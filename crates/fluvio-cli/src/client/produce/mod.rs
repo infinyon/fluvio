@@ -74,7 +74,7 @@ mod cmd {
 
         /// Sends key/value records split on the first instance of the separator.
         #[cfg(feature = "producer-file-io")]
-        #[clap(long, value_parser = validate_key_separator, group = "RecordKey", conflicts_with = "TestFile")]
+        #[clap(long, value_parser = validate_key_separator, group = "RecordKey", conflicts_with = "raw")]
         pub key_separator: Option<String>,
         #[cfg(not(feature = "producer-file-io"))]
         #[clap(long, value_parser = validate_key_separator, group = "RecordKey")]
@@ -249,44 +249,7 @@ mod cmd {
 
             #[cfg(feature = "producer-file-io")]
             if self.raw {
-                let key = self.key.clone().map(Bytes::from);
-                // Read all input and send as one record
-                let buffer = match &self.file {
-                    Some(path) => UserInputRecords::try_from(UserInputType::File {
-                        key: key.clone(),
-                        path: path.to_path_buf(),
-                    })
-                    .unwrap_or_default(),
-
-                    None => {
-                        let mut buffer = Vec::new();
-                        std::io::Read::read_to_end(&mut std::io::stdin(), &mut buffer)?;
-                        UserInputRecords::try_from(UserInputType::Text {
-                            key: key.clone(),
-                            data: Bytes::from(buffer),
-                        })
-                        .unwrap_or_default()
-                    }
-                };
-
-                let key = if let Some(key) = buffer.key() {
-                    RecordKey::from(key)
-                } else {
-                    RecordKey::NULL
-                };
-
-                let data: RecordData = buffer.into();
-
-                let produce_output = producer.send(key, data).await?;
-
-                if self.delivery_semantic != DeliverySemantic::AtMostOnce {
-                    produce_output.wait().await?;
-                }
-
-                #[cfg(feature = "stats")]
-                if self.is_stats_collect() && self.is_print_live_stats() {
-                    self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "");
-                }
+                self.process_raw_file(&producer).await?;
             } else {
                 // Read input line-by-line and send as individual records
                 #[cfg(feature = "stats")]
@@ -321,6 +284,50 @@ mod cmd {
     }
 
     impl ProduceOpt {
+        #[cfg(feature = "producer-file-io")]
+        async fn process_raw_file(&self, producer: &TopicProducer) -> Result<()> {
+            let key = self.key.clone().map(Bytes::from);
+            // Read all input and send as one record
+            let buffer = match &self.file {
+                Some(path) => UserInputRecords::try_from(UserInputType::File {
+                    key: key.clone(),
+                    path: path.to_path_buf(),
+                })
+                .unwrap_or_default(),
+
+                None => {
+                    let mut buffer = Vec::new();
+                    std::io::Read::read_to_end(&mut std::io::stdin(), &mut buffer)?;
+                    UserInputRecords::try_from(UserInputType::Text {
+                        key: key.clone(),
+                        data: Bytes::from(buffer),
+                    })
+                    .unwrap_or_default()
+                }
+            };
+
+            let key = if let Some(key) = buffer.key() {
+                RecordKey::from(key)
+            } else {
+                RecordKey::NULL
+            };
+
+            let data: RecordData = buffer.into();
+
+            let produce_output = producer.send(key, data).await?;
+
+            if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                produce_output.wait().await?;
+            }
+
+            #[cfg(feature = "stats")]
+            if self.is_stats_collect() && self.is_print_live_stats() {
+                self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "");
+            }
+
+            Ok(())
+        }
+
         async fn produce_lines(
             &self,
             producer: Arc<TopicProducer>,
@@ -446,6 +453,8 @@ mod cmd {
             let produce_output = if let Some(separator) = &self.key_separator {
                 self.produce_key_value(producer.clone(), line, separator)
                     .await?
+            } else if let Some(key) = &self.key {
+                Some(producer.send(RecordKey::from(key.as_bytes()), line).await?)
             } else {
                 Some(producer.send(RecordKey::NULL, line).await?)
             };
