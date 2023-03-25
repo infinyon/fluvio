@@ -22,7 +22,7 @@ semver = "1.0.0"
 home = "0.5.3"
 sha2 = "0.10.0"
 hex = "0.4.2"
-tempdir = "0.3.7"
+tempfile = { workspace = true }
 thiserror = "1.0.20"
 http = { version = "0.2", default-features = false}
 isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
@@ -37,4 +37,3 @@ fluvio-protocol = { path = "../fluvio-protocol", optional = true }
 
 [dev-dependencies]
 fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
-tempfile = "3.3.0"

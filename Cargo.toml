@@ -73,6 +73,7 @@ toml = "0.7.0"
 wasmparser = { version = "0.102.0" }
 dirs = "5.0.0"
 serde = { version = "1.0.0" }
+tempfile = "3.4.0"
 
 # fluvio dep
 k8-client = { version = "10.0.0" }
@@ -107,3 +108,6 @@ codegen-units = 256
 [profile.release-lto]
 inherits = "release"
 lto = true
+
+[patch.crates-io]
+cargo-generate = { git = "https://github.com/cargo-generate/cargo-generate.git", rev = "241a598f1031f2df52f96e03fd3a96a5229883cc"}

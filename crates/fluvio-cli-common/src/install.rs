@@ -177,7 +177,9 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
     std::fs::create_dir_all(parent)?;
 
     // Create a temporary dir to write file to
-    let tmp_dir = tempdir::TempDir::new_in(parent, "fluvio-tmp")?;
+    let tmp_dir = tempfile::Builder::new()
+        .prefix("fluvio-tmp")
+        .tempdir_in(parent)?;
 
     // Write bin to temporary file
     let tmp_path = tmp_dir.path().join("fluvio-exe-tmp");

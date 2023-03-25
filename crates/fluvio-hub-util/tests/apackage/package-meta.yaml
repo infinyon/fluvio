@@ -7,7 +7,7 @@ description: Describe the module here
 license: e.g. Apache2
 visibility: private
 manifest:
-  - tests/apackage/module.wasm
+  - module.wasm
 tags:
   - tag: arch
     value: aarch64-unknown-linux-gnu
