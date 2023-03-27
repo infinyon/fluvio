@@ -19,6 +19,10 @@ setup_file() {
 }
 
 @test "invoke map smartmodule in producer by path" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Create topic
     TOPIC_NAME="$(random_string)"
     export TOPIC_NAME
@@ -51,6 +55,10 @@ setup_file() {
 }
 
 @test "invoke filter smartmodule in producer with params" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Create topic
     TOPIC_NAME="$(random_string)"
     export TOPIC_NAME
@@ -90,6 +98,10 @@ setup_file() {
 }
 
 @test "invoke filter-map smartmodule in producer" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Load the smartmodule
     SMARTMODULE_NAME="divide-even-by-2"
     export SMARTMODULE_NAME
@@ -135,6 +147,10 @@ setup_file() {
 }
 
 @test "invoke array-map smartmodule in producer" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Load the smartmodule
     SMARTMODULE_NAME="json-object-flatten"
     export SMARTMODULE_NAME
@@ -179,6 +195,10 @@ setup_file() {
 }
 
 @test "invoke aggregate smartmodule in producer" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Load the smartmodule
     SMARTMODULE_NAME="aggregate-sum"
     export SMARTMODULE_NAME
@@ -228,6 +248,10 @@ setup_file() {
 }
 
 @test "invoke smartmodule in producer with transforms file" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Load the smartmodule
     SMARTMODULE_NAME="uppercase"
     export SMARTMODULE_NAME
@@ -278,6 +302,10 @@ setup_file() {
 }
 
 @test "invoke smartmodule in producer with transform json" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Load the smartmodule
     SMARTMODULE_NAME="uppercase"
     export SMARTMODULE_NAME
@@ -328,6 +356,10 @@ setup_file() {
 }
 
 @test "invoke map smartmodule in producer with compression algorithm" {
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't run on stable version"
+    fi
+
     # Create topic
     TOPIC_NAME="$(random_string)"
     export TOPIC_NAME
