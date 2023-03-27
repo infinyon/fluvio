@@ -7,10 +7,6 @@ pub use eyre::Error;
 pub use eyre::eyre;
 pub type Result<T> = eyre::Result<T>;
 
-/// used only in smartmodule
-#[cfg(feature = "smartmodule")]
-pub mod memory;
-
 pub use fluvio_protocol::record::{Record, RecordData};
 /// remap to old data plane
 pub mod dataplane {
