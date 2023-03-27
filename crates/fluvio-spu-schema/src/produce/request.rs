@@ -22,6 +22,8 @@ pub type DefaultProduceRequest = ProduceRequest<RecordSet<RawRecords>>;
 pub type DefaultPartitionRequest = PartitionProduceData<RecordSet<RawRecords>>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet<RawRecords>>;
 
+const PRODUCER_TRANSFORMATION_API_VERSION: i16 = 8;
+
 #[derive(FluvioDefault, Debug)]
 pub struct ProduceRequest<R> {
     /// The transactional ID, or null if the producer is not transactional.
@@ -38,7 +40,7 @@ pub struct ProduceRequest<R> {
     /// Each topic to produce to.
     pub topics: Vec<TopicProduceData<R>>,
 
-    #[fluvio(min_version = 8)]
+    #[fluvio(min_version = PRODUCER_TRANSFORMATION_API)]
     pub smartmodules: Vec<SmartModuleInvocation>,
 
     pub data: PhantomData<R>,
@@ -85,7 +87,7 @@ where
             + IsolationData(0i16).write_size(version)
             + TimeoutData(0i32).write_size(version)
             + self.topics.write_size(version)
-            + if version >= 8i16 {
+            + if version >= PRODUCER_TRANSFORMATION_API_VERSION {
                 self.smartmodules.write_size(version)
             } else {
                 0
@@ -100,7 +102,7 @@ where
         IsolationData::from(self.isolation).encode(dest, version)?;
         TimeoutData::try_from(self.timeout)?.encode(dest, version)?;
         self.topics.encode(dest, version)?;
-        if version >= 8i16 {
+        if version >= PRODUCER_TRANSFORMATION_API_VERSION {
             self.smartmodules.encode(dest, version)?;
         }
         Ok(())
@@ -119,7 +121,7 @@ where
         self.isolation = Isolation::from(IsolationData::decode_from(src, version)?);
         self.timeout = Duration::try_from(TimeoutData::decode_from(src, version)?)?;
         self.topics = Decoder::decode_from(src, version)?;
-        if version >= 8i16 {
+        if version >= PRODUCER_TRANSFORMATION_API_VERSION {
             self.smartmodules.decode(src, version)?;
         }
         Ok(())
