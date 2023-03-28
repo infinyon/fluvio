@@ -49,14 +49,6 @@ impl SmartModuleInput {
         }
     }
 
-    // When applying smartmodules for the producer, there are no meaningful offsets yet.
-    pub fn producer_smartmodule_input(raw_bytes: Vec<u8>) -> Self {
-        Self {
-            raw_bytes,
-            ..Default::default()
-        }
-    }
-
     pub fn base_offset(&self) -> Offset {
         self.base_offset
     }
