@@ -1,6 +1,22 @@
 # Release Notes
 
-## Platform Version 0.10.6 - UNRELEASED 
+## Platform Version 0.10.6 - 2023-03-31
+* Pin to specific rust release ([#2967](https://github.com/infinyon/fluvio/issues/2967))
+* Added target info on `cdk publish` ([#3075](https://github.com/infinyon/fluvio/issues/3075))
+* Supply `arch` tag on publish if not set ([#3080](https://github.com/infinyon/fluvio/issues/3080))
+* Add `-p package_name` in `cdk publish` ([#3097](https://github.com/infinyon/fluvio/issues/3097))
+* Remove unnecessary bounds for encoder and decoder derive macro ([#3030](https://github.com/infinyon/fluvio/issues/3030))
+* Add target option to connector download ([#3079](https://github.com/infinyon/fluvio/issues/3079))
+* CLI forward and compatibility ([#3048](https://github.com/infinyon/fluvio/issues/3048))
+* SmartModule CLI watch ([#3064](https://github.com/infinyon/fluvio/issues/3064))
+* Disallow untagged or named enum without constant mapping ([#3061](https://github.com/infinyon/fluvio/issues/3061))
+* Use consistent naming for connector config example file ([#3077](https://github.com/infinyon/fluvio/issues/3077))
+* Fluvio hub, use hubref for nonstandard configs ([#3086](https://github.com/infinyon/fluvio/issues/3086))
+* Relax `cdk` secrets validation ([#3093](https://github.com/infinyon/fluvio/issues/3093))
+* Enabled `--file` and `--key-separator` to be used together, fix `--key` handling when producing lines ([#3092](https://github.com/infinyon/fluvio/issues/3092))
+* Fail fast if socket is stale ([#3054](https://github.com/infinyon/fluvio/issues/3054))
+* Set max api version for derived stream ([#3041](https://github.com/infinyon/fluvio/issues/3041))
+* Disable default `fluvio` features for sdk ([#3098](https://github.com/infinyon/fluvio/issues/3098))
 
 ## Platform Version 0.10.5 - 2023-02-28
 * Upload bpkg logic ([#3028](https://github.com/infinyon/fluvio/issues/3028))
