@@ -1,5 +1,7 @@
 # Release Notes
 
+## Platform Version 0.10.7 - UNRELEASED 
+
 ## Platform Version 0.10.6 - 2023-03-31
 * Pin to specific rust release ([#2967](https://github.com/infinyon/fluvio/issues/2967))
 * Added target info on `cdk publish` ([#3075](https://github.com/infinyon/fluvio/issues/3075))
