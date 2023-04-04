@@ -513,6 +513,6 @@ Instead of building Fluvio, you may want to prefer just to download it and get t
 
 ```
 $ curl -fsS https://packages.fluvio.io/v1/install.sh | bash                 # Install latest release
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash  # Install latest pre-release
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=x.y.z bash   # Install specific version
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | FLV_VERSION=latest bash  # Install latest pre-release
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | FLV_VERSION=x.y.z bash   # Install specific version
 ```
