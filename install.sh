@@ -88,10 +88,10 @@ download_fluvio_to_temp() {
     downloader "${_url}" "${_temp_file}"
     _status=$?
     if [ $_status -ne 0 ]; then
-        if [ -n "${VERSION:-""}" ]; then
-            # If a VERSION was set, warn that it may be invalid
-            err "❌ Failed to download Fluvio, could not find custom VERSION=${VERSION}"
-            err "    Make sure this is a valid version, or unset VERSION to download latest"
+        if [ -n "${FLV_VERSION:-""}" ]; then
+            # If a FLV_VERSION was set, warn that it may be invalid
+            err "❌ Failed to download Fluvio, could not find custom FLV_VERSION=${FLV_VERSION}"
+            err "    Make sure this is a valid version, or unset FLV_VERSION to download stable"
         else
             # If downloading the latest version, warn a general download error
             err "❌ Failed to download Fluvio!"
@@ -492,24 +492,24 @@ main() {
     _target=$(normalize_target ${_arch})
 
 
-    VERSION="${VERSION:-stable}"
+    FLV_VERSION="${FLV_VERSION:-stable}"
 
 
     set +e
-    _version=$(fetch_tag_version "${VERSION}")
+    _version=$(fetch_tag_version "${FLV_VERSION}")
     _status=$?
     set -e
 
-    # If we did not find a version via a tag, use VERSION as the version itself
+    # If we did not find a version via a tag, use FLV_VERSION as the version itself
     if [ $_status -ne 0 ]; then
-        _version="${VERSION}"
+        _version="${FLV_VERSION}"
     fi
 
     # If we are using "stable" or "latest"
     # Be sure to use those tags in the installed artifacts
     # Otherwise, use the value from ${_version}
 
-    if [[ "${VERSION}" == "stable" ]] || [[ "${VERSION}" == "latest" ]] ; then
+    if [[ "${FLV_VERSION}" == "stable" ]] || [[ "${FLV_VERSION}" == "latest" ]] ; then
         #say "DEBUG: Using stable or latest"
         _use_tag_file_name="true"
     else
@@ -539,16 +539,16 @@ main() {
     if [[ "${_use_tag_file_name}" == "true" ]] ; then
 
         # Stable extensions go in main dir
-        if [[ "${VERSION}" == "stable" ]] ; then
+        if [[ "${FLV_VERSION}" == "stable" ]] ; then
             ensure mkdir -p "${FLUVIO_EXTENSIONS}"
         fi
 
         # Latest extensions go in latest dir
-        if [[ "${VERSION}" == "latest" ]] ; then
-            ensure mkdir -p "${FLUVIO_EXTENSIONS}-${VERSION}"
+        if [[ "${FLV_VERSION}" == "latest" ]] ; then
+            ensure mkdir -p "${FLUVIO_EXTENSIONS}-${FLV_VERSION}"
         fi
 
-        local _install_file="${FLUVIO_BIN}/fluvio-${VERSION}"
+        local _install_file="${FLUVIO_BIN}/fluvio-${FLV_VERSION}"
     else 
         # If we installed a specific version, place extension in that dir
         # Ex. fluvio-0.x.y
@@ -564,13 +564,13 @@ main() {
     # Download Fluvio-channel to a temporary file
 
     set +e
-    _version=$(fetch_tag_version "${VERSION}" "${FLUVIO_FRONTEND_PACKAGE}")
+    _version=$(fetch_tag_version "${FLV_VERSION}" "${FLUVIO_FRONTEND_PACKAGE}")
     _status=$?
     set -e
 
-    # If we did not find a version via a tag, use VERSION as the version itself
+    # If we did not find a version via a tag, use FLV_VERSION as the version itself
     if [ $_status -ne 0 ]; then
-        _version="${VERSION}"
+        _version="${FLV_VERSION}"
     fi
 
     local _url="${FLUVIO_PREFIX}/packages/${FLUVIO_FRONTEND_PACKAGE}/${_version}/${_target}/fluvio-channel"
@@ -589,9 +589,9 @@ main() {
     say "✅ Successfully installed ${_install_file}"
 
 
-    # If a VERSION env variable is set, use it for fluvio-run:
-    if [ -n "${VERSION:-""}" ]; then
-        local _fluvio_run="fluvio-run:${VERSION}"
+    # If a FLV_VERSION env variable is set, use it for fluvio-run:
+    if [ -n "${FLV_VERSION:-""}" ]; then
+        local _fluvio_run="fluvio-run:${FLV_VERSION}"
     else
         local _fluvio_run="fluvio-run"
     fi
@@ -599,10 +599,10 @@ main() {
     # Let fluvio know it is invoked from installer
     # Also let fluvio know what channel is being installed
     say "☁️ Installing Fluvio Cloud..."
-    FLUVIO_BOOTSTRAP=true CHANNEL_BOOTSTRAP=${VERSION} "${FLUVIO_BIN}/fluvio" install fluvio-cloud
+    FLUVIO_BOOTSTRAP=true CHANNEL_BOOTSTRAP=${FLV_VERSION} "${FLUVIO_BIN}/fluvio" install fluvio-cloud
 
     say "☁️ Installing Fluvio Runner..."
-    FLUVIO_BOOTSTRAP=true CHANNEL_BOOTSTRAP=${VERSION} "${FLUVIO_BIN}/fluvio" install "${_fluvio_run}"
+    FLUVIO_BOOTSTRAP=true CHANNEL_BOOTSTRAP=${FLV_VERSION} "${FLUVIO_BIN}/fluvio" install "${_fluvio_run}"
 
     say "🎉 Install complete!"
     remind_path
