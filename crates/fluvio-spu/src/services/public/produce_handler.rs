@@ -226,10 +226,10 @@ fn apply_smartmodules_for_partition_request(
         ctx.metrics().chain_metrics(),
     ) {
         Ok((result, sm_runtime_error)) => {
-            if sm_runtime_error.is_some() {
+            if let Some(error) = sm_runtime_error {
                 return Err(Error::new(
                     ErrorKind::Other,
-                    format!("smartmodule runtime error: {:?}", sm_runtime_error.unwrap()),
+                    format!("smartmodule runtime error: {:?}", error),
                 ));
             } else {
                 result
@@ -243,7 +243,8 @@ fn apply_smartmodules_for_partition_request(
         }
     };
 
-    let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result).unwrap();
+    let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result)
+        .map_err(|e| Error::new(ErrorKind::Other, format!("Compression Error: {:?}", e)))?;
 
     partition_request.records = RecordSet {
         batches: vec![smartmoduled_records],
