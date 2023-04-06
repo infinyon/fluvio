@@ -92,6 +92,7 @@ mod test {
     use super::ProduceBatchIterator;
     use bytes::Bytes;
     use fluvio::dataplane::record::Record;
+    use fluvio_compression::Compression;
 
     #[test]
     fn test_produce_batch_iterator() {
@@ -99,9 +100,11 @@ mod test {
         let value2: Bytes = Bytes::from_static(b"fries");
 
         let mut batch1 = Batch::default();
+        batch1.header.set_compression(Compression::Gzip);
         batch1.add_record(Record::new(value1));
 
         let mut batch2 = Batch::default();
+        batch2.header.set_compression(Compression::Lz4);
         batch2.add_record(Record::new(value2));
 
         let batches = vec![
