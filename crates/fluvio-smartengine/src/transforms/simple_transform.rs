@@ -23,13 +23,7 @@ pub(crate) struct SimpleTansform {
 
 impl std::fmt::Debug for SimpleTansform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.name.as_str() {
-            FILTER_FN_NAME => write!(f, "FilterFn"),
-            MAP_FN_NAME => write!(f, "MapFnWithParam"),
-            FILTER_MAP_FN_NAME => write!(f, "FilterMapFnWithParam"),
-            ARRAY_MAP_FN_NAME => write!(f, "ArrayMapFnWithParam"),
-            _ => unreachable!("unknown transform function"),
-        }
+        write!(f, "{}", self.name)
     }
 }
 
