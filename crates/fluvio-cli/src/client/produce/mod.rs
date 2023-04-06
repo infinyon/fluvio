@@ -638,16 +638,6 @@ mod cmd {
 
             Ok(invocations)
         }
-
-        fn smart_module_ctx(&self) -> SmartModuleContextData {
-            if let Some(agg_initial) = &self.aggregate_initial {
-                SmartModuleContextData::Aggregate {
-                    accumulator: agg_initial.clone().into_bytes(),
-                }
-            } else {
-                SmartModuleContextData::None
-            }
-        }
     }
 
     #[cfg(feature = "stats")]
