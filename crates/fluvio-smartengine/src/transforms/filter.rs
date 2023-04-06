@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod test {
-    const FILTER_FN_NAME: &str = "filter";
 
     use std::{convert::TryFrom};
 
@@ -11,6 +10,7 @@ mod test {
 
     use crate::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+        transforms::simple_transform::FILTER_FN_NAME,
     };
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";

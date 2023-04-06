@@ -18,8 +18,10 @@ mod instance {
     };
 
     use super::{
-        simple_transform::SimpleTansform, aggregate::SmartModuleAggregate,
-        simple_transform::SimpleTansformKind,
+        simple_transform::{
+            SimpleTansform, FILTER_FN_NAME, MAP_FN_NAME, FILTER_MAP_FN_NAME, ARRAY_MAP_FN_NAME,
+        },
+        aggregate::SmartModuleAggregate,
     };
 
     pub(crate) fn create_transform(
@@ -27,23 +29,20 @@ mod instance {
         initial_data: SmartModuleInitialData,
         store: &mut impl AsContextMut,
     ) -> Result<Box<dyn DowncastableTransform>> {
-        if let Some(tr) = SimpleTansform::try_instantiate(SimpleTansformKind::Filter, ctx, store)?
+        if let Some(tr) = SimpleTansform::try_instantiate(FILTER_FN_NAME, ctx, store)?
             .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
-        } else if let Some(tr) =
-            SimpleTansform::try_instantiate(SimpleTansformKind::Map, ctx, store)?
-                .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
+        } else if let Some(tr) = SimpleTansform::try_instantiate(MAP_FN_NAME, ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
-        } else if let Some(tr) =
-            SimpleTansform::try_instantiate(SimpleTansformKind::FilterMap, ctx, store)?
-                .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
+        } else if let Some(tr) = SimpleTansform::try_instantiate(FILTER_MAP_FN_NAME, ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
-        } else if let Some(tr) =
-            SimpleTansform::try_instantiate(SimpleTansformKind::ArrayMap, ctx, store)?
-                .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
+        } else if let Some(tr) = SimpleTansform::try_instantiate(ARRAY_MAP_FN_NAME, ctx, store)?
+            .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
         } else if let Some(tr) = SmartModuleAggregate::try_instantiate(ctx, initial_data, store)?

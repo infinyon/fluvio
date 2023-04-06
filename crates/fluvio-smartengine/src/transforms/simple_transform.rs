@@ -11,37 +11,24 @@ use crate::{
 
 type WasmFn = TypedFunc<(i32, i32, u32), i32>;
 
-#[derive(Debug)]
-pub enum SimpleTansformKind {
-    Filter,
-    Map,
-    FilterMap,
-    ArrayMap,
-}
-
-impl SimpleTansformKind {
-    fn name(&self) -> &str {
-        match self {
-            Self::Filter => "filter",
-            Self::Map => "map",
-            Self::FilterMap => "filter_map",
-            Self::ArrayMap => "array_map",
-        }
-    }
-}
+pub const FILTER_FN_NAME: &str = "filter";
+pub const MAP_FN_NAME: &str = "map";
+pub const FILTER_MAP_FN_NAME: &str = "filter_map";
+pub const ARRAY_MAP_FN_NAME: &str = "array_map";
 
 pub struct SimpleTansform {
     f: WasmFn,
-    kind: SimpleTansformKind,
+    name: String,
 }
 
 impl std::fmt::Debug for SimpleTansform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.kind {
-            SimpleTansformKind::Filter => write!(f, "FilterFn"),
-            SimpleTansformKind::Map => write!(f, "MapFnWithParam"),
-            SimpleTansformKind::FilterMap => write!(f, "FilterMapFnWithParam"),
-            SimpleTansformKind::ArrayMap => write!(f, "ArrayMapFnWithParam"),
+        match self.name.as_str() {
+            FILTER_FN_NAME => write!(f, "FilterFn"),
+            MAP_FN_NAME => write!(f, "MapFnWithParam"),
+            FILTER_MAP_FN_NAME => write!(f, "FilterMapFnWithParam"),
+            ARRAY_MAP_FN_NAME => write!(f, "ArrayMapFnWithParam"),
+            _ => unreachable!("unknown transform function"),
         }
     }
 }
@@ -49,16 +36,21 @@ impl std::fmt::Debug for SimpleTansform {
 impl SimpleTansform {
     #[tracing::instrument(skip(ctx, store))]
     pub(crate) fn try_instantiate(
-        kind: SimpleTansformKind,
+        name: &str,
         ctx: &SmartModuleInstanceContext,
         store: &mut impl AsContextMut,
     ) -> Result<Option<Self>> {
-        match ctx.get_wasm_func(store, kind.name()) {
+        match ctx.get_wasm_func(store, name) {
             Some(func) => {
                 // check type signature
                 func.typed(&mut *store)
                     .or_else(|_| func.typed(&mut *store))
-                    .map(|f| Some(Self { f, kind }))
+                    .map(|f| {
+                        Some(Self {
+                            f,
+                            name: name.to_string(),
+                        })
+                    })
             }
             None => Ok(None),
         }
@@ -86,6 +78,6 @@ impl SmartModuleTransform for SimpleTansform {
     }
 
     fn name(&self) -> &str {
-        self.kind.name()
+        &self.name
     }
 }

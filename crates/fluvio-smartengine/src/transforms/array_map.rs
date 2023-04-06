@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod test {
 
-    const ARRAY_MAP_FN_NAME: &str = "array_map";
-
     use std::{convert::TryFrom};
 
     use fluvio_smartmodule::{
@@ -12,6 +10,7 @@ mod test {
 
     use crate::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+        transforms::simple_transform::ARRAY_MAP_FN_NAME,
     };
 
     const SM_ARRAY_MAP: &str = "fluvio_smartmodule_array_map_array";

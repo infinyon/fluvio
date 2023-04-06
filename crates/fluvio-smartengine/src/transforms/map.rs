@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod test {
-    const MAP_FN_NAME: &str = "map";
 
     use std::{convert::TryFrom};
 
@@ -11,6 +10,7 @@ mod test {
 
     use crate::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+        transforms::simple_transform::MAP_FN_NAME,
     };
     use crate::fixture::read_wasm_module;
 
