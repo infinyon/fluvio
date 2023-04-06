@@ -3,8 +3,8 @@ pub(crate) mod map;
 pub(crate) mod array_map;
 pub(crate) mod filter_map;
 pub(crate) mod aggregate;
-
 pub(crate) use instance::create_transform;
+mod simple_transform;
 
 mod instance {
 
@@ -18,8 +18,10 @@ mod instance {
     };
 
     use super::{
-        filter::SmartModuleFilter, map::SmartModuleMap, filter_map::SmartModuleFilterMap,
-        array_map::SmartModuleArrayMap, aggregate::SmartModuleAggregate,
+        simple_transform::{
+            SimpleTansform, FILTER_FN_NAME, MAP_FN_NAME, FILTER_MAP_FN_NAME, ARRAY_MAP_FN_NAME,
+        },
+        aggregate::SmartModuleAggregate,
     };
 
     pub(crate) fn create_transform(
@@ -27,19 +29,19 @@ mod instance {
         initial_data: SmartModuleInitialData,
         store: &mut impl AsContextMut,
     ) -> Result<Box<dyn DowncastableTransform>> {
-        if let Some(tr) = SmartModuleFilter::try_instantiate(ctx, store)?
+        if let Some(tr) = SimpleTansform::try_instantiate(FILTER_FN_NAME, ctx, store)?
             .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
-        } else if let Some(tr) = SmartModuleMap::try_instantiate(ctx, store)?
+        } else if let Some(tr) = SimpleTansform::try_instantiate(MAP_FN_NAME, ctx, store)?
             .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
-        } else if let Some(tr) = SmartModuleFilterMap::try_instantiate(ctx, store)?
+        } else if let Some(tr) = SimpleTansform::try_instantiate(FILTER_MAP_FN_NAME, ctx, store)?
             .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
-        } else if let Some(tr) = SmartModuleArrayMap::try_instantiate(ctx, store)?
+        } else if let Some(tr) = SimpleTansform::try_instantiate(ARRAY_MAP_FN_NAME, ctx, store)?
             .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform>)
         {
             Ok(tr)
