@@ -11,12 +11,12 @@ use crate::{
 
 type WasmFn = TypedFunc<(i32, i32, u32), i32>;
 
-pub const FILTER_FN_NAME: &str = "filter";
-pub const MAP_FN_NAME: &str = "map";
-pub const FILTER_MAP_FN_NAME: &str = "filter_map";
-pub const ARRAY_MAP_FN_NAME: &str = "array_map";
+pub(crate) const FILTER_FN_NAME: &str = "filter";
+pub(crate) const MAP_FN_NAME: &str = "map";
+pub(crate) const FILTER_MAP_FN_NAME: &str = "filter_map";
+pub(crate) const ARRAY_MAP_FN_NAME: &str = "array_map";
 
-pub struct SimpleTansform {
+pub(crate) struct SimpleTansform {
     f: WasmFn,
     name: String,
 }
