@@ -4,6 +4,7 @@ use fluvio_protocol::record::{Batch, RawRecords, Offset};
 use super::batch::SmartModuleInputBatch;
 use fluvio_compression::{Compression, CompressionError};
 
+#[derive(Debug)]
 pub struct ProduceBatch<'a> {
     pub(crate) batch: &'a Batch<RawRecords>,
     pub(crate) records: Vec<u8>,
@@ -82,5 +83,41 @@ impl<'a> Iterator for ProduceBatchIterator<'a> {
         self.index += 1;
 
         Some(Ok(produce_batch))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use fluvio_protocol::record::{Batch, RawRecords};
+    use super::ProduceBatchIterator;
+    use bytes::Bytes;
+    use fluvio::dataplane::record::Record;
+
+    #[test]
+    fn test_produce_batch_iterator() {
+        let value1: Bytes = Bytes::from_static(b"soup");
+        let value2: Bytes = Bytes::from_static(b"fries");
+
+        let mut batch1 = Batch::default();
+        batch1.add_record(Record::new(value1));
+
+        let mut batch2 = Batch::default();
+        batch2.add_record(Record::new(value2));
+
+        let batches = vec![
+            Batch::<RawRecords>::try_from(batch1).unwrap(),
+            Batch::<RawRecords>::try_from(batch2).unwrap(),
+        ];
+
+        let mut produce_batch_iterator = ProduceBatchIterator::new(&batches);
+
+        assert_eq!(
+            produce_batch_iterator.next().unwrap().unwrap().records,
+            b"\0\0\0\x01\x14\0\0\0\0\x08soup\0"
+        );
+        assert_eq!(
+            produce_batch_iterator.next().unwrap().unwrap().records,
+            b"\0\0\0\x01\x16\0\0\0\0\nfries\0"
+        );
     }
 }
