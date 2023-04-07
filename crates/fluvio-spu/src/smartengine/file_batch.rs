@@ -4,9 +4,11 @@ use std::io::{Error as IoError, ErrorKind, Cursor};
 use tracing::{warn, debug};
 use nix::sys::uio::pread;
 
-use fluvio_protocol::record::{Batch, BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE};
-use fluvio_protocol::record::Offset;
+use fluvio_protocol::record::{Batch, Offset, BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE};
 use fluvio_future::file_slice::AsyncFileSlice;
+use fluvio_compression::{Compression, CompressionError};
+
+use super::batch::SmartModuleInputBatch;
 
 // only encode information necessary to decode batches efficiently
 pub struct FileBatch {
@@ -14,13 +16,21 @@ pub struct FileBatch {
     pub(crate) records: Vec<u8>,
 }
 
-impl FileBatch {
-    pub(crate) fn base_offset(&self) -> Offset {
+impl SmartModuleInputBatch for FileBatch {
+    fn records(&self) -> &Vec<u8> {
+        &self.records
+    }
+
+    fn base_offset(&self) -> Offset {
         self.batch.base_offset
     }
 
-    pub(crate) fn offset_delta(&self) -> i32 {
+    fn offset_delta(&self) -> i32 {
         self.batch.header.last_offset_delta
+    }
+
+    fn get_compression(&self) -> Result<Compression, CompressionError> {
+        self.batch.get_compression()
     }
 }
 

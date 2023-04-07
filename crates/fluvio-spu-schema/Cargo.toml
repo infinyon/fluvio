@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-spu-schema"
-version = "0.13.0"
+version = "0.13.1"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"

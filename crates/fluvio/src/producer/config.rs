@@ -6,6 +6,8 @@ use derive_builder::Builder;
 
 use fluvio_future::retry::{ExponentialBackoff, FibonacciBackoff, FixedDelay};
 use fluvio_spu_schema::Isolation;
+use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
+
 use fluvio_compression::Compression;
 use serde::{Serialize, Deserialize};
 
@@ -106,6 +108,9 @@ pub struct TopicProducerConfig {
     /// can be configured in [`RetryPolicy`].
     #[builder(default = "default_delivery()")]
     pub(crate) delivery_semantic: DeliverySemantic,
+
+    #[builder(default)]
+    pub(crate) smartmodules: Vec<SmartModuleInvocation>,
 }
 
 impl Default for TopicProducerConfig {
@@ -122,6 +127,7 @@ impl Default for TopicProducerConfig {
             #[cfg(feature = "stats")]
             stats_collect: default_stats_collect(),
             delivery_semantic: default_delivery(),
+            smartmodules: vec![],
         }
     }
 }

@@ -1,13 +1,15 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
+use fluvio_smartengine::SmartModuleChainInstance;
 use tokio::select;
+use tracing::warn;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
 use fluvio_protocol::api::RequestKind;
 use fluvio_spu_schema::Isolation;
-use fluvio_protocol::record::{BatchRecords, Offset};
+use fluvio_protocol::record::{BatchRecords, Offset, Batch, RawRecords};
 use fluvio::Compression;
 use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
 use fluvio_storage::StorageError;
@@ -15,6 +17,7 @@ use fluvio_spu_schema::produce::{
     ProduceResponse, TopicProduceResponse, PartitionProduceResponse, PartitionProduceData,
     DefaultProduceRequest, DefaultTopicRequest,
 };
+use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 use fluvio_protocol::{api::RequestMessage, link::ErrorCode};
 use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
@@ -23,6 +26,9 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::smartengine::context::SmartModuleContext;
+use crate::smartengine::produce_batch::ProduceBatchIterator;
+use crate::smartengine::batch::process_batch;
 use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
@@ -52,9 +58,18 @@ pub async fn handle_produce_request(
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
+    let mut sm_chain_instance =
+        smartmodule_chain(produce_request.smartmodules, header.api_version(), &ctx).await?;
+
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
-        let topic_result = handle_produce_topic(&ctx, topic_request, header.is_connector()).await;
+        let topic_result = handle_produce_topic(
+            &ctx,
+            topic_request,
+            header.is_connector(),
+            sm_chain_instance.as_mut(),
+        )
+        .await?;
         topic_results.push(topic_result);
     }
     wait_for_acks(
@@ -70,14 +85,15 @@ pub async fn handle_produce_request(
 }
 
 #[instrument(
-    skip(ctx, topic_request),
+    skip(ctx, topic_request, sm_chain_instance),
     fields(topic = %topic_request.name),
 )]
 async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
     topic_request: DefaultTopicRequest,
     is_connector: bool,
-) -> TopicWriteResult {
+    mut sm_chain_instance: Option<&mut SmartModuleChainInstance>,
+) -> Result<TopicWriteResult, Error> {
     let topic = &topic_request.name;
 
     trace!("Handling produce request for topic: {topic}");
@@ -87,13 +103,26 @@ async fn handle_produce_topic(
         partitions: vec![],
     };
 
-    for partition_request in topic_request.partitions.into_iter() {
+    for mut partition_request in topic_request.partitions.into_iter() {
+        if let Some(sm_chain_instance) = &mut sm_chain_instance {
+            apply_smartmodules_for_partition_request(
+                &mut partition_request,
+                sm_chain_instance,
+                ctx,
+            )?;
+        }
+
         let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
-        let partition_response =
-            handle_produce_partition(ctx, replica_id, partition_request, is_connector).await;
+
+        let partition_response = if partition_request.records.total_records() == 0 {
+            PartitionWriteResult::filtered(replica_id)
+        } else {
+            handle_produce_partition(ctx, replica_id, partition_request, is_connector).await
+        };
+
         topic_result.partitions.push(partition_response);
     }
-    topic_result
+    Ok(topic_result)
 }
 
 #[instrument(
@@ -155,6 +184,73 @@ async fn handle_produce_partition<R: BatchRecords>(
             }
         },
     }
+}
+
+async fn smartmodule_chain(
+    sm_invocations: Vec<SmartModuleInvocation>,
+    api_version: i16,
+    ctx: &DefaultSharedGlobalContext,
+) -> Result<Option<SmartModuleChainInstance>, Error> {
+    let sm_ctx = match SmartModuleContext::try_from(sm_invocations, api_version, ctx).await {
+        Ok(ctx) => ctx,
+        Err(error_code) => {
+            warn!("smartmodule context init failed: {:?}", error_code);
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!("smartmodule context init failed: {:?}", error_code),
+            ));
+        }
+    };
+
+    if let Some(ctx) = sm_ctx {
+        Ok(Some(ctx.chain))
+    } else {
+        Ok(None)
+    }
+}
+
+fn apply_smartmodules_for_partition_request(
+    partition_request: &mut PartitionProduceData<RecordSet<RawRecords>>,
+    sm_chain_instance: &mut SmartModuleChainInstance,
+    ctx: &DefaultSharedGlobalContext,
+) -> Result<(), Error> {
+    let records = &partition_request.records;
+    let batches = &records.batches;
+
+    let mut batches = ProduceBatchIterator::new(batches);
+
+    let sm_result = match process_batch(
+        sm_chain_instance,
+        &mut batches,
+        std::usize::MAX,
+        ctx.metrics().chain_metrics(),
+    ) {
+        Ok((result, sm_runtime_error)) => {
+            if let Some(error) = sm_runtime_error {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    format!("smartmodule runtime error: {:?}", error),
+                ));
+            } else {
+                result
+            }
+        }
+        Err(general_error) => {
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!("smartmodule chain failed: {:?}", general_error),
+            ));
+        }
+    };
+
+    let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result)
+        .map_err(|e| Error::new(ErrorKind::Other, format!("Compression Error: {:?}", e)))?;
+
+    partition_request.records = RecordSet {
+        batches: vec![smartmoduled_records],
+    };
+
+    Ok(())
 }
 
 fn validate_records<R: BatchRecords>(
@@ -271,6 +367,13 @@ impl PartitionWriteResult {
             replica_id,
             base_offset,
             leo,
+            ..Default::default()
+        }
+    }
+
+    fn filtered(replica_id: ReplicaKey) -> Self {
+        Self {
+            replica_id,
             ..Default::default()
         }
     }

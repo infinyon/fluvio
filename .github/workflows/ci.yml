@@ -994,7 +994,10 @@ jobs:
       - name: Start cluster for stable
         if: matrix.cluster_version == 'stable'
         timeout-minutes: 10
-        run: fluvio cluster start
+        run: |
+          FLUVIO_CLUSTER_RELEASE_CHANNEL=stable
+          echo "FLUVIO_CLUSTER_RELEASE_CHANNEL=${FLUVIO_CLUSTER_RELEASE_CHANNEL}" >> $GITHUB_ENV
+          fluvio cluster start
 
       # download and start cluster for dev
       - name: Deploy dev cluster on k8
@@ -1007,6 +1010,8 @@ jobs:
         timeout-minutes: 10
         if: matrix.cluster_version == 'dev'
         run: |
+          FLUVIO_CLUSTER_RELEASE_CHANNEL=dev
+          echo "FLUVIO_CLUSTER_RELEASE_CHANNEL=${FLUVIO_CLUSTER_RELEASE_CHANNEL}" >> $GITHUB_ENV
           docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
           docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
           docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar

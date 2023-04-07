@@ -125,6 +125,10 @@ impl<R> Batch<R> {
     }
 
     pub fn records_len(&self) -> usize {
+        if self.last_offset_delta() < 0 {
+            return 0;
+        }
+
         self.last_offset_delta() as usize + 1
     }
     /// get last offset delta

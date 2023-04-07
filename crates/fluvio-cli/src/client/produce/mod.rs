@@ -7,6 +7,7 @@ mod cmd {
 
     use std::sync::Arc;
     use std::io::{BufReader, BufRead};
+    use std::collections::BTreeMap;
     use std::fmt::Debug;
     use std::time::Duration;
     #[cfg(feature = "producer-file-io")]
@@ -24,10 +25,9 @@ mod cmd {
 
     use fluvio::{
         Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-        ProduceOutput, DeliverySemantic,
+        ProduceOutput, DeliverySemantic, SmartModuleContextData, Isolation, SmartModuleInvocation,
     };
     use fluvio_extension_common::Terminal;
-    use fluvio_spu_schema::Isolation;
     use fluvio_types::print_cli_ok;
 
     #[cfg(feature = "producer-file-io")]
@@ -40,7 +40,12 @@ mod cmd {
     use crate::client::cmd::ClientCmd;
     use crate::common::FluvioExtensionMetadata;
     use crate::monitoring::init_monitoring;
-    use crate::util::parse_isolation;
+    use crate::util::{parse_isolation, parse_key_val};
+    use crate::client::smartmodule_invocation::{create_smartmodule, create_smartmodule_list};
+    #[cfg(feature = "producer-file-io")]
+    use crate::client::smartmodule_invocation::create_smartmodule_from_path;
+    use crate::CliError;
+    use fluvio_smartengine::transformation::TransformationConfig;
 
     #[cfg(feature = "stats")]
     use super::stats::*;
@@ -105,6 +110,53 @@ mod cmd {
         /// Max amount of bytes accumulated before sending
         #[clap(long)]
         pub batch_size: Option<usize>,
+
+        /// Name of the smartmodule
+        #[clap(
+            long,
+            group("smartmodule_group"),
+            group("aggregate_group"),
+            alias = "sm"
+        )]
+        pub smartmodule: Option<String>,
+
+        #[cfg(feature = "producer-file-io")]
+        /// Path to the smart module
+        #[clap(
+            long,
+            group("smartmodule_group"),
+            group("aggregate_group"),
+            alias = "sm_path"
+        )]
+        pub smartmodule_path: Option<PathBuf>,
+
+        /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
+        #[clap(long, requires = "aggregate_group", alias = "a-init")]
+        pub aggregate_initial: Option<String>,
+
+        /// (Optional) Extra input parameters passed to the smartmodule module.
+        /// They should be passed using key=value format
+        /// Eg. fluvio produce topic-name --smartmodule my_filter -e foo=bar -e key=value -e one=1
+        #[clap(
+            short = 'e',
+            requires = "smartmodule_group",
+            long="params",
+            value_parser=parse_key_val,
+            // value_parser,
+            // action,
+            number_of_values = 1
+        )]
+        pub params: Option<Vec<(String, String)>>,
+
+        #[cfg(feature = "producer-file-io")]
+        /// (Optional) Path to a file with transformation specification.
+        #[clap(long, conflicts_with = "smartmodule_group")]
+        pub transforms_file: Option<PathBuf>,
+
+        /// (Optional) Transformation specification as JSON formatted string.
+        /// E.g. fluvio produce topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
+        #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
+        pub transform: Vec<String>,
 
         /// Isolation level that producer must respect.
         /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
@@ -209,6 +261,14 @@ mod cmd {
             if self.delivery_semantic == DeliverySemantic::AtMostOnce && self.isolation.is_some() {
                 warn!("Isolation is ignored for AtMostOnce delivery semantic");
             }
+
+            let initial_param = match &self.params {
+                None => BTreeMap::default(),
+                Some(params) => params.clone().into_iter().collect(),
+            };
+
+            let config_builder =
+                config_builder.smartmodules(self.smartmodule_invocations(initial_param)?);
 
             let config = config_builder
                 .delivery_semantic(self.delivery_semantic)
@@ -326,6 +386,16 @@ mod cmd {
             }
 
             Ok(())
+        }
+
+        pub fn smart_module_ctx(&self) -> SmartModuleContextData {
+            if let Some(agg_initial) = &self.aggregate_initial {
+                SmartModuleContextData::Aggregate {
+                    accumulator: agg_initial.clone().into_bytes(),
+                }
+            } else {
+                SmartModuleContextData::None
+            }
         }
 
         async fn produce_lines(
@@ -533,6 +603,49 @@ mod cmd {
                 description: "Produce new data in a stream".into(),
                 version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
             }
+        }
+
+        fn smartmodule_invocations(
+            &self,
+            initial_param: BTreeMap<String, String>,
+        ) -> Result<Vec<SmartModuleInvocation>> {
+            if let Some(smart_module_name) = &self.smartmodule {
+                return Ok(vec![create_smartmodule(
+                    smart_module_name,
+                    self.smart_module_ctx(),
+                    initial_param,
+                )]);
+            }
+
+            #[cfg(feature = "producer-file-io")]
+            if let Some(path) = &self.smartmodule_path {
+                return Ok(vec![create_smartmodule_from_path(
+                    path,
+                    self.smart_module_ctx(),
+                    initial_param,
+                )?]);
+            }
+
+            if !self.transform.is_empty() {
+                let config =
+                    TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
+                        CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
+                    })?;
+                return create_smartmodule_list(config);
+            }
+
+            #[cfg(feature = "producer-file-io")]
+            if let Some(transforms_file) = &self.transforms_file {
+                let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
+                    CliError::InvalidArg(format!(
+                        "unable to process `transforms_file` argument: {err}"
+                    ))
+                })?;
+
+                return create_smartmodule_list(config);
+            }
+
+            Ok(Vec::new())
         }
     }
 
