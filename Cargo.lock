@@ -2277,7 +2277,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.19.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2631,7 +2631,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.23.0"
+version = "0.22.0"
 dependencies = [
  "async-trait",
  "base64 0.21.0",
@@ -2653,7 +2653,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.13.0"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2782,7 +2782,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.0"
+version = "0.9.1"
 dependencies = [
  "bytes 1.4.0",
  "content_inspector",
@@ -2875,7 +2875,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.19.0"
+version = "0.18.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-future",
@@ -2909,7 +2909,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.8.0"
+version = "0.7.2"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -2929,7 +2929,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.6.0"
+version = "0.5.0"
 dependencies = [
  "criterion",
  "eyre",
@@ -2951,7 +2951,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.15.0"
+version = "0.14.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -3024,7 +3024,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.14.0"
+version = "0.13.1"
 dependencies = [
  "bytes 1.4.0",
  "educe",
