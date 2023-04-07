@@ -40,5 +40,5 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
 
 
 [dev-dependencies]
-serde_yaml = "0.9.4"
+serde_yaml = "0.9.19"
 fluvio-future = { version = "0.4.0", features = ["fixture"] }
