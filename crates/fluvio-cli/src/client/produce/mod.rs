@@ -614,7 +614,7 @@ mod cmd {
                     smart_module_name,
                     self.smart_module_ctx(),
                     initial_param,
-               )])
+                )]);
             }
 
             #[cfg(feature = "producer-file-io")]
@@ -623,7 +623,7 @@ mod cmd {
                     path,
                     self.smart_module_ctx(),
                     initial_param,
-                )?])
+                )?]);
             }
 
             if !self.transform.is_empty() {
@@ -631,7 +631,7 @@ mod cmd {
                     TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
                         CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
                     })?;
-                return Ok(create_smartmodule_list(config)?)
+                return Ok(create_smartmodule_list(config)?);
             }
 
             #[cfg(feature = "producer-file-io")]
@@ -642,7 +642,7 @@ mod cmd {
                     ))
                 })?;
 
-                return Ok(create_smartmodule_list(config)?)
+                return Ok(create_smartmodule_list(config)?);
             }
 
             Ok(Vec::new())
