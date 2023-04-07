@@ -631,7 +631,7 @@ mod cmd {
                     TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
                         CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
                     })?;
-                return Ok(create_smartmodule_list(config)?);
+                return create_smartmodule_list(config);
             }
 
             #[cfg(feature = "producer-file-io")]
@@ -642,7 +642,7 @@ mod cmd {
                     ))
                 })?;
 
-                return Ok(create_smartmodule_list(config)?);
+                return create_smartmodule_list(config);
             }
 
             Ok(Vec::new())
