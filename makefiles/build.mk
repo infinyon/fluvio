@@ -13,7 +13,8 @@ build-fbm: install_rustup_target
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
-	cargo build --bin fluvio -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer
+	cargo build --bin fluvio -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) \
+	    --no-default-features --features consumer,producer-file-io
 
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG)
