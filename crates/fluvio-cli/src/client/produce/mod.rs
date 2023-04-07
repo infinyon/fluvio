@@ -41,9 +41,9 @@ mod cmd {
     use crate::common::FluvioExtensionMetadata;
     use crate::monitoring::init_monitoring;
     use crate::util::{parse_isolation, parse_key_val};
-    use crate::client::smartmodule_invocation::{
-        create_smartmodule, create_smartmodule_from_path, create_smartmodule_list,
-    };
+    use crate::client::smartmodule_invocation::{create_smartmodule, create_smartmodule_list};
+    #[cfg(feature = "producer-file-io")]
+    use crate::client::smartmodule_invocation::create_smartmodule_from_path;
     use crate::CliError;
     use fluvio_smartengine::transformation::TransformationConfig;
 
@@ -120,6 +120,7 @@ mod cmd {
         )]
         pub smartmodule: Option<String>,
 
+        #[cfg(feature = "producer-file-io")]
         /// Path to the smart module
         #[clap(
             long,
@@ -147,6 +148,7 @@ mod cmd {
         )]
         pub params: Option<Vec<(String, String)>>,
 
+        #[cfg(feature = "producer-file-io")]
         /// (Optional) Path to a file with transformation specification.
         #[clap(long, conflicts_with = "smartmodule_group")]
         pub transforms_file: Option<PathBuf>,
@@ -607,36 +609,43 @@ mod cmd {
             &self,
             initial_param: BTreeMap<String, String>,
         ) -> Result<Vec<SmartModuleInvocation>> {
-            let invocations = if let Some(smart_module_name) = &self.smartmodule {
-                vec![create_smartmodule(
+            if let Some(smart_module_name) = &self.smartmodule {
+                return Ok(vec![create_smartmodule(
                     smart_module_name,
                     self.smart_module_ctx(),
                     initial_param,
-                )]
-            } else if let Some(path) = &self.smartmodule_path {
-                vec![create_smartmodule_from_path(
+               )])
+            }
+
+            #[cfg(feature = "producer-file-io")]
+            if let Some(path) = &self.smartmodule_path {
+                return Ok(vec![create_smartmodule_from_path(
                     path,
                     self.smart_module_ctx(),
                     initial_param,
-                )?]
-            } else if !self.transform.is_empty() {
+                )?])
+            }
+
+            if !self.transform.is_empty() {
                 let config =
                     TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
                         CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
                     })?;
-                create_smartmodule_list(config)?
-            } else if let Some(transforms_file) = &self.transforms_file {
+                return Ok(create_smartmodule_list(config)?)
+            }
+
+            #[cfg(feature = "producer-file-io")]
+            if let Some(transforms_file) = &self.transforms_file {
                 let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
                     CliError::InvalidArg(format!(
                         "unable to process `transforms_file` argument: {err}"
                     ))
                 })?;
-                create_smartmodule_list(config)?
-            } else {
-                Vec::new()
-            };
 
-            Ok(invocations)
+                return Ok(create_smartmodule_list(config)?)
+            }
+
+            Ok(Vec::new())
         }
     }
 
