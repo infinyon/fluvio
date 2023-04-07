@@ -13,6 +13,7 @@ use fluvio_connector_package::metadata::ConnectorMetadata;
 use fluvio_connector_package::metadata::ConnectorVisibility;
 use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
+use hubutil::package_meta_relative_path;
 use hubutil::{DEF_HUB_INIT_DIR, HubAccess, PackageMeta, PkgVisibility, PackageMetaExt};
 use hubutil::packagename_validate;
 use tracing::{debug, info};
@@ -139,9 +140,9 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-// todo: review for Connectors
 pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
-    // fill out template w/ defaults
+    let connector_toml_path = find_connector_toml(package_info)?;
+    let connector_metadata = ConnectorMetadata::from_toml_file(&connector_toml_path)?;
 
     let mut pm = PackageMeta {
         group: "no-hubid".into(),
@@ -150,22 +151,32 @@ pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
         manifest: Vec::new(),
         ..PackageMeta::default()
     };
-    let pkg_toml_file = find_connector_toml(package_info)?;
-    pm.update_from_connector_toml(&pkg_toml_file.to_string_lossy())?;
+
+    let package_hub_path = package_info.package_relative_path(hubutil::DEF_HUB_INIT_DIR);
+    if package_hub_path.exists() {
+        return Err(anyhow::anyhow!("package hub directory exists already"));
+    }
+    std::fs::create_dir(&package_hub_path)?;
+    let package_meta_path = package_hub_path.join(hubutil::HUB_PACKAGE_META);
+
+    pm.update_from(&connector_metadata)?;
+
+    let connector_toml_relative_path =
+        package_meta_relative_path(&package_meta_path, &connector_toml_path);
+    pm.manifest.push(
+        connector_toml_relative_path
+            .unwrap_or_else(|| connector_toml_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
+    );
 
     println!("Creating package {}", pm.pkg_name());
     pm.naming_check()?;
 
-    // create directoy name pkgname
-    let pkgdir = package_info.package_relative_path(hubutil::DEF_HUB_INIT_DIR);
-    if pkgdir.exists() {
-        return Err(anyhow::anyhow!("package hub directory exists already"));
-    }
-    std::fs::create_dir(&pkgdir)?;
-    let pmetapath = pkgdir.join(hubutil::HUB_PACKAGE_META);
-    pm.write(&pmetapath)?;
+    pm.write(&package_meta_path)?;
 
-    println!(".. fill out info in {}", pmetapath.to_string_lossy());
+    println!(
+        ".. fill out info in {}",
+        package_meta_path.to_string_lossy()
+    );
     Ok(())
 }
 
@@ -223,26 +234,21 @@ fn verify_public_or_exit() -> Result<()> {
 
 trait PackageMetaConnectorExt {
     /// Pull package-meta info from smartmodule meta toml
-    fn update_from_connector_toml(&mut self, fpath: &str) -> Result<()>;
+    fn update_from(&mut self, connector_metadata: &ConnectorMetadata) -> Result<()>;
 }
 
 impl PackageMetaConnectorExt for PackageMeta {
     /// Pull package-meta info from smartmodule meta toml
-    fn update_from_connector_toml(&mut self, fpath: &str) -> Result<()> {
-        info!(fpath, "opening smartmodule toml");
-        let cpkg = ConnectorMetadata::from_toml_file(fpath)?;
-        let cpk = &cpkg.package;
+    fn update_from(&mut self, connector_metadata: &ConnectorMetadata) -> Result<()> {
+        let package = &connector_metadata.package;
+        packagename_validate(&package.name)?;
 
-        packagename_validate(&cpk.name)?;
+        self.name = package.name.clone();
+        self.group = package.group.clone();
+        self.version = package.version.to_string();
+        self.description = package.description.clone().unwrap_or_default();
+        self.visibility = from_connectorvis(&package.visibility);
 
-        self.name = cpk.name.clone();
-        self.group = cpk.group.clone();
-        self.version = cpk.version.to_string();
-        self.description = cpk.description.clone().unwrap_or_default();
-        self.visibility = from_connectorvis(&cpk.visibility);
-
-        // needed for fluvio sm download
-        self.manifest.push(fpath.into());
         Ok(())
     }
 }

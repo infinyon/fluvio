@@ -8,7 +8,7 @@ use clap::Parser;
 use anyhow::{Result, Context, anyhow};
 use tracing::debug;
 
-use cargo_builder::package::{PackageInfo};
+use cargo_builder::package::PackageInfo;
 use fluvio::FluvioConfig;
 use fluvio_future::task::run_block_on;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
@@ -19,7 +19,7 @@ use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use fluvio_protocol::record::Record;
 use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
 
-use crate::build::PackageCmd;
+use crate::cmd::PackageCmd;
 
 /// Test SmartModule
 #[derive(Debug, Parser)]
