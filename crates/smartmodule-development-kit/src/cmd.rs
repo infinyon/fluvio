@@ -1,3 +1,4 @@
+use cargo_builder::package::PackageOption;
 use clap::Parser;
 use anyhow::Result;
 
@@ -38,6 +39,26 @@ impl SmdkCommand {
             SmdkCommand::Publish(opt) => opt.process(),
             SmdkCommand::Hub(opt) => opt.process(),
             SmdkCommand::SetPublic(opt) => opt.process(),
+        }
+    }
+}
+
+#[derive(Debug, Parser)]
+pub(crate) struct PackageCmd {
+    /// Release profile name
+    #[clap(long, default_value = "release-lto")]
+    pub release: String,
+
+    /// Optional package/project name
+    #[clap(long, short)]
+    pub package_name: Option<String>,
+}
+
+impl PackageCmd {
+    pub(crate) fn as_opt(&self) -> PackageOption {
+        PackageOption {
+            release: self.release.clone(),
+            package_name: self.package_name.clone(),
         }
     }
 }

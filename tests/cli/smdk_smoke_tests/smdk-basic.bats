@@ -39,6 +39,44 @@ setup_file() {
 
 ### Using crates.io dependency for `fluvio-smartmodule`
 
+@test "Package" {
+    LABEL=package
+    SMDK_SM_TYPE=filter
+    PARAMS_FLAG=--no-params
+    SM_CRATE_PATH_FLAG=
+    SM_PACKAGE_NAME=$LABEL-$SMDK_SM_TYPE-$PROJECT_NAME_PREFIX
+    SMDK_SM_PUBLIC=false
+
+    # Add SM to workspace
+    cd $TEST_DIR
+    sed -i -e $'/members/a\\\n    "'$SM_PACKAGE_NAME'",' Cargo.toml
+
+    # Generate
+    run $SMDK_BIN generate \
+        $PARAMS_FLAG \
+        $SMDK_TEMPLATE_PATH_FLAG \
+        $SM_CRATE_PATH_FLAG \
+        $TESTING_GROUP_NAME_FLAG \
+        --sm-type $SMDK_SM_TYPE \
+        --sm-public $SMDK_SM_PUBLIC \
+        --silent \
+        $SM_PACKAGE_NAME
+    assert_success
+
+    # Build
+    cd $SM_PACKAGE_NAME
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+
+    # Package without existing package-meta
+    run $SMDK_BIN publish --pack
+    assert_success
+    
+    # Package with package-meta created before
+    run $SMDK_BIN publish --pack
+    assert_success
+}
+
 @test "Generate and test filter - (stable fluvio-smartmodule / no params)" {
     LABEL=default
     SMDK_SM_TYPE=filter

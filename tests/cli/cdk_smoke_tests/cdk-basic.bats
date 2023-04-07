@@ -56,3 +56,16 @@ setup_file() {
     assert_output --partial "producing a value"
     assert_success
 }
+
+@test "Pack connector" {
+    # Pack when package meta doesn't exist
+    cd $CONNECTOR_DIR
+    run $CDK_BIN publish --pack 
+    assert_success
+
+    # Pack when package meta exists
+    cd $CONNECTOR_DIR
+    run $CDK_BIN publish --pack 
+    assert_success
+
+}

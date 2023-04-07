@@ -9,7 +9,7 @@ use fluvio::Fluvio;
 use fluvio_future::task::run_block_on;
 use cargo_builder::package::PackageInfo;
 
-use crate::build::PackageCmd;
+use crate::cmd::PackageCmd;
 
 pub const DEFAULT_META_LOCATION: &str = "SmartModule.toml";
 

@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
+use cargo_builder::package::PackageInfo;
 use clap::Parser;
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
@@ -12,16 +13,21 @@ use hubutil::{
 };
 use tracing::debug;
 
+use crate::cmd::PackageCmd;
+
 pub const SMARTMODULE_TOML: &str = "SmartModule.toml";
 
 /// Publish SmartModule to SmartModule Hub
 #[derive(Debug, Parser)]
 pub struct PublishCmd {
-    pub package_meta: Option<String>,
+    #[clap(flatten)]
+    package: PackageCmd,
+
+    package_meta: Option<String>,
 
     /// don't ask for confirmation of public package publish
     #[clap(long, default_value = "false")]
-    pub public_yes: bool,
+    public_yes: bool,
 
     /// do only the pack portion
     #[clap(long, hide_short_help = true)]
@@ -39,30 +45,31 @@ impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
 
-        let hubdir = Path::new(DEF_HUB_INIT_DIR);
+        let opt = self.package.as_opt();
+        let package_info = PackageInfo::from_options(&opt)?;
+
+        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
         if !hubdir.exists() {
-            init_package_template()?;
+            init_package_template(&package_info)?;
         } else if !self.public_yes {
-            check_package_meta_visiblity()?;
+            check_package_meta_visiblity(&package_info)?;
         }
+
+        let package_meta_path = self
+            .package_meta
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
 
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
-                let pkgmetapath = self
-                    .package_meta
-                    .clone()
-                    .unwrap_or_else(|| hubutil::DEF_HUB_PKG_META.to_string());
-                let pkgdata = package_assemble(&pkgmetapath, &access)?;
+                let pkgdata = package_assemble(&package_meta_path, &access)?;
                 package_push(self, &pkgdata, &access)?;
             }
 
             // --pack only
             (true, false) => {
-                let pkgmetapath = self
-                    .package_meta
-                    .clone()
-                    .unwrap_or_else(|| hubutil::DEF_HUB_PKG_META.to_string());
-                package_assemble(&pkgmetapath, &access)?;
+                package_assemble(&package_meta_path, &access)?;
             }
 
             // --push only, needs ipkg file
@@ -79,12 +86,12 @@ impl PublishCmd {
     }
 }
 
-pub fn package_assemble(pkgmeta: &str, access: &HubAccess) -> Result<String> {
-    let pkgmeta = Path::new(pkgmeta);
+pub fn package_assemble<P: AsRef<Path>>(pkgmeta: P, access: &HubAccess) -> Result<String> {
     let pkgname = hubutil::package_assemble_and_sign(
-        pkgmeta,
+        &pkgmeta,
         access,
         pkgmeta
+            .as_ref()
             .parent()
             .ok_or_else(|| anyhow::anyhow!("invalid package meta path"))?,
         None,
@@ -107,13 +114,11 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-pub fn init_package_template() -> Result<()> {
-    let sm_toml_path = find_smartmodule_toml()?;
+pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
+    let sm_toml_path = find_smartmodule_toml(package_info)?;
     let sm_metadata = SmartModuleMetadata::from_toml(&sm_toml_path)?;
 
     // fill out template w/ defaults
-    let package_meta_path = hubutil::DEF_HUB_PKG_META;
-
     let mut pm = PackageMeta {
         group: "no-hubid".into(),
         name: "not-found".into(),
@@ -121,13 +126,19 @@ pub fn init_package_template() -> Result<()> {
         manifest: Vec::new(),
         ..PackageMeta::default()
     };
-    pm.update_from(&sm_metadata)?;
 
-    println!("Creating package {}", pm.pkg_name());
+    let package_hub_path = package_info.package_relative_path(hubutil::DEF_HUB_INIT_DIR);
+    if package_hub_path.exists() {
+        return Err(anyhow::anyhow!("package hub directory exists already"));
+    }
+    std::fs::create_dir(&package_hub_path)?;
+    let package_meta_path = package_hub_path.join(hubutil::HUB_PACKAGE_META);
+
+    pm.update_from(&sm_metadata)?;
     pm.naming_check()?;
 
     pm.manifest.push(
-        package_meta_relative_path(package_meta_path, &sm_toml_path).ok_or_else(|| {
+        package_meta_relative_path(&package_meta_path, &sm_toml_path).ok_or_else(|| {
             anyhow!(
                 "unable to find package relative path for {}",
                 sm_toml_path.to_string_lossy()
@@ -135,45 +146,48 @@ pub fn init_package_template() -> Result<()> {
         })?,
     );
 
-    let wasmout = hubutil::packagename_transform(&pm.name)? + ".wasm";
-    let wasmpath = format!("target/wasm32-unknown-unknown/release-lto/{wasmout}");
+    let wasmpath = package_info.target_wasm32_path()?;
     pm.manifest.push(
-        package_meta_relative_path(package_meta_path, &wasmpath)
-            .ok_or_else(|| anyhow!("unable to find package relative path for {}", wasmpath))?,
+        package_meta_relative_path(&package_meta_path, &wasmpath).ok_or_else(|| {
+            anyhow!(
+                "unable to find package relative path for {}",
+                wasmpath.to_string_lossy()
+            )
+        })?,
     );
 
-    // create directoy name pkgname
-    let pkgdir = Path::new(hubutil::DEF_HUB_INIT_DIR);
-    if pkgdir.exists() {
-        return Err(anyhow::anyhow!("package hub directory exists already"));
-    }
-    std::fs::create_dir(pkgdir)?;
-    pm.write(package_meta_path)?;
+    println!("Creating package {}", pm.pkg_name());
+    pm.write(&package_meta_path)?;
 
-    println!(".. fill out info in {package_meta_path}");
+    println!(
+        ".. fill out info in {}",
+        package_meta_path.to_string_lossy()
+    );
     Ok(())
 }
 
-fn check_package_meta_visiblity() -> Result<()> {
-    let sm_toml_file = find_smartmodule_toml()?;
+fn check_package_meta_visiblity(package_info: &PackageInfo) -> Result<()> {
+    let sm_toml_file = find_smartmodule_toml(package_info)?;
     let spkg = SmartModuleMetadata::from_toml(sm_toml_file)?;
     let spkg_vis = PkgVisibility::from(&spkg.package.visibility);
-    let mut pm = PackageMeta::read_from_file(DEF_HUB_PKG_META)?;
+
+    let package_meta_path = package_info.package_relative_path(DEF_HUB_PKG_META);
+    let mut pm = PackageMeta::read_from_file(&package_meta_path)?;
     if spkg_vis == PkgVisibility::Public && spkg_vis != pm.visibility {
         println!("Package visibility changing from private to public!");
         verify_public_or_exit()?;
         // writeout package metadata visibility change
         pm.visibility = PkgVisibility::Public;
-        pm.write(DEF_HUB_PKG_META)?;
+        pm.write(package_meta_path)?;
     }
     Ok(())
 }
 
-pub(crate) fn find_smartmodule_toml() -> Result<PathBuf> {
-    let smartmodule_toml = Path::new(SMARTMODULE_TOML);
+pub(crate) fn find_smartmodule_toml(package_info: &PackageInfo) -> Result<PathBuf> {
+    let smartmodule_toml = package_info.package_relative_path(SMARTMODULE_TOML);
 
     if smartmodule_toml.exists() {
-        return Ok(smartmodule_toml.to_path_buf());
+        return Ok(smartmodule_toml);
     }
 
     Err(anyhow::anyhow!("No \"{}\" file found", SMARTMODULE_TOML))
