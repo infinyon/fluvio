@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::Parser;
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
@@ -8,6 +8,7 @@ use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{
     DEF_HUB_INIT_DIR, DEF_HUB_PKG_META, HubAccess, PackageMeta, PkgVisibility, PackageMetaExt,
+    package_meta_relative_path, packagename_validate,
 };
 use tracing::debug;
 
@@ -107,8 +108,11 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
 }
 
 pub fn init_package_template() -> Result<()> {
+    let sm_toml_path = find_smartmodule_toml()?;
+    let sm_metadata = SmartModuleMetadata::from_toml(&sm_toml_path)?;
+
     // fill out template w/ defaults
-    let pmetapath = hubutil::DEF_HUB_PKG_META;
+    let package_meta_path = hubutil::DEF_HUB_PKG_META;
 
     let mut pm = PackageMeta {
         group: "no-hubid".into(),
@@ -117,15 +121,26 @@ pub fn init_package_template() -> Result<()> {
         manifest: Vec::new(),
         ..PackageMeta::default()
     };
-    let sm_toml_file = find_smartmodule_toml()?;
-    pm.update_from_smartmodule_toml(&sm_toml_file.to_string_lossy())?;
+    pm.update_from(&sm_metadata)?;
 
     println!("Creating package {}", pm.pkg_name());
     pm.naming_check()?;
 
+    pm.manifest.push(
+        package_meta_relative_path(package_meta_path, &sm_toml_path).ok_or_else(|| {
+            anyhow!(
+                "unable to find package relative path for {}",
+                sm_toml_path.to_string_lossy()
+            )
+        })?,
+    );
+
     let wasmout = hubutil::packagename_transform(&pm.name)? + ".wasm";
     let wasmpath = format!("target/wasm32-unknown-unknown/release-lto/{wasmout}");
-    pm.manifest.push(wasmpath);
+    pm.manifest.push(
+        package_meta_relative_path(package_meta_path, &wasmpath)
+            .ok_or_else(|| anyhow!("unable to find package relative path for {}", wasmpath))?,
+    );
 
     // create directoy name pkgname
     let pkgdir = Path::new(hubutil::DEF_HUB_INIT_DIR);
@@ -133,9 +148,9 @@ pub fn init_package_template() -> Result<()> {
         return Err(anyhow::anyhow!("package hub directory exists already"));
     }
     std::fs::create_dir(pkgdir)?;
-    pm.write(pmetapath)?;
+    pm.write(package_meta_path)?;
 
-    println!(".. fill out info in {pmetapath}");
+    println!(".. fill out info in {package_meta_path}");
     Ok(())
 }
 
@@ -178,6 +193,26 @@ fn verify_public_or_exit() -> Result<()> {
         }
     }
     Ok(())
+}
+
+trait PackageMetaSmartModuleExt {
+    fn update_from(&mut self, sm_metadata: &SmartModuleMetadata) -> Result<()>;
+}
+
+impl PackageMetaSmartModuleExt for PackageMeta {
+    fn update_from(&mut self, sm_metadata: &SmartModuleMetadata) -> Result<()> {
+        let spk = &sm_metadata.package;
+
+        packagename_validate(&spk.name)?;
+
+        self.name = spk.name.clone();
+        self.group = spk.group.clone();
+        self.version = spk.version.to_string();
+        self.description = spk.description.clone().unwrap_or_default();
+        self.visibility = PkgVisibility::from(&spk.visibility);
+
+        Ok(())
+    }
 }
 
 #[ignore]
