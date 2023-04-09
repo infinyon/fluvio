@@ -1,24 +1,21 @@
+const FILTER_FN_NAME: &str = "filter";
+
 #[cfg(test)]
 mod test {
 
-    use std::{convert::TryFrom};
+    use std::convert::TryFrom;
 
-    use fluvio_smartmodule::{
-        dataplane::smartmodule::{SmartModuleInput},
-        Record,
-    };
+    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
-    use crate::{
-        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
-        transforms::simple_transform::FILTER_FN_NAME,
-    };
+    use crate::engine::metrics::SmartModuleChainMetrics;
+    use crate::engine::wasmedge::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
 
-    use crate::fixture::read_wasm_module;
+    use crate::engine::fixture::read_wasm_module;
 
-    #[ignore]
+    // #[ignore]
     #[test]
     fn test_filter() {
         let engine = SmartEngine::new();
@@ -35,7 +32,7 @@ mod test {
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),
-            FILTER_FN_NAME
+            super::FILTER_FN_NAME
         );
 
         let metrics = SmartModuleChainMetrics::default();
@@ -93,7 +90,7 @@ mod test {
 
         let instance = chain.instances().first().expect("first");
 
-        assert_eq!(instance.transform().name(), FILTER_FN_NAME);
+        assert_eq!(instance.transform().name(), super::FILTER_FN_NAME);
 
         assert!(instance.get_init().is_some());
 

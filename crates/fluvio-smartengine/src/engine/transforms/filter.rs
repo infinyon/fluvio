@@ -1,82 +1,24 @@
-use std::fmt::Debug;
-use std::{convert::TryFrom, sync::Arc};
-
-use anyhow::Result;
-use wasmedge_sdk::{Engine, Executor, Func, Instance};
-
-use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
-};
-
-use crate::wasmedge_engine::instance::SmartModuleInstanceContext;
-use crate::wasmedge_engine::SmartModuleTransform;
-
-const FILTER_FN_NAME: &str = "filter";
-
-type WasmFilterFn = Func;
-
-pub(crate) struct SmartModuleFilter(WasmFilterFn);
-
-impl Debug for SmartModuleFilter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "FilterFn")
-    }
-}
-
-impl SmartModuleFilter {
-    /// Try to create filter by matching function, if function is not found, then return empty
-    pub fn try_instantiate(ctx: &SmartModuleInstanceContext) -> Result<Option<Self>> {
-        match ctx.get_wasm_func(FILTER_FN_NAME) {
-            // check type signature
-            Some(func) => Ok(Some(Self(func))),
-            None => Ok(None),
-        }
-    }
-}
-
-impl SmartModuleTransform for SmartModuleFilter {
-    fn process(
-        &mut self,
-        input: SmartModuleInput,
-        ctx: &mut SmartModuleInstanceContext,
-        engine: &mut Executor,
-    ) -> Result<SmartModuleOutput> {
-        let args = ctx.write_input(&input, engine)?;
-        // FIXME: SIGSEGV here!
-        let filter_output = self.0.call(engine, args)?;
-        let filter_output = filter_output[0].to_i32();
-
-        if filter_output < 0 {
-            let internal_error = SmartModuleTransformErrorStatus::try_from(filter_output)
-                .unwrap_or(SmartModuleTransformErrorStatus::UnknownError);
-            return Err(internal_error.into());
-        }
-
-        let output: SmartModuleOutput = ctx.read_output()?;
-        Ok(output)
-    }
-
-    fn name(&self) -> &str {
-        FILTER_FN_NAME
-    }
-}
-
 #[cfg(test)]
 mod test {
 
-    use std::convert::TryFrom;
+    use std::{convert::TryFrom};
 
-    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
+    use fluvio_smartmodule::{
+        dataplane::smartmodule::{SmartModuleInput},
+        Record,
+    };
 
-    use crate::metrics::SmartModuleChainMetrics;
-    use crate::wasmedge_engine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
+    use crate::engine::{
+        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
+        transforms::simple_transform::FILTER_FN_NAME,
+    };
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
 
-    use crate::fixture::read_wasm_module;
+    use crate::engine::fixture::read_wasm_module;
 
-    // #[ignore]
+    #[ignore]
     #[test]
     fn test_filter() {
         let engine = SmartEngine::new();
@@ -89,11 +31,12 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),
-            super::FILTER_FN_NAME
+            FILTER_FN_NAME
         );
 
         let metrics = SmartModuleChainMetrics::default();
@@ -147,11 +90,12 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         let instance = chain.instances().first().expect("first");
 
-        assert_eq!(instance.transform().name(), super::FILTER_FN_NAME);
+        assert_eq!(instance.transform().name(), FILTER_FN_NAME);
 
         assert!(instance.get_init().is_some());
 

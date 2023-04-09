@@ -7,27 +7,29 @@ use wasmedge_sdk::{
     Memory, Module, Store, WasmValue,
 };
 
+use super::{WasmedgeInstance, WasmedgeContext};
 use super::init::SmartModuleInit;
-use crate::error::EngineError;
+use crate::engine::common::DowncastableTransform;
+use crate::engine::error::EngineError;
 use crate::metrics::SmartModuleChainMetrics;
-use crate::wasmedge_engine::memory;
-use crate::{config::*, WasmSlice};
+use crate::engine::wasmedge::memory;
+use crate::engine::{config::*, WasmSlice};
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 use std::any::Any;
 use std::fmt::{self, Debug};
 use std::sync::{Arc, Mutex};
 
-pub struct SmartModuleInstance {
-    ctx: SmartModuleInstanceContext,
-    transform: Box<dyn DowncastableTransform>,
+pub(crate) struct SmartModuleInstance {
+    pub instance: WasmedgeInstance,
+    pub transform: Box<dyn DowncastableTransform<WasmedgeInstance>>,
     // init: Option<SmartModuleInit>,
 }
 
 impl SmartModuleInstance {
     #[cfg(test)]
     #[allow(clippy::borrowed_box)]
-    pub(crate) fn transform(&self) -> &Box<dyn DowncastableTransform> {
+    pub(crate) fn transform(&self) -> &Box<dyn DowncastableTransform<WasmedgeInstance>> {
         &self.transform
     }
 
@@ -37,12 +39,12 @@ impl SmartModuleInstance {
     }
 
     pub(crate) fn new(
-        ctx: SmartModuleInstanceContext,
+        instance: WasmedgeInstance,
         // init: Option<SmartModuleInit>,
-        transform: Box<dyn DowncastableTransform>,
+        transform: Box<dyn DowncastableTransform<WasmedgeInstance>>,
     ) -> Self {
         Self {
-            ctx,
+            instance,
             // init,
             transform,
         }
@@ -51,9 +53,9 @@ impl SmartModuleInstance {
     pub(crate) fn process(
         &mut self,
         input: SmartModuleInput,
-        engine: &mut Executor,
+        ctx: &mut WasmedgeContext,
     ) -> Result<SmartModuleOutput> {
-        self.transform.process(input, &mut self.ctx, engine)
+        self.transform.process(input, &mut self.instance, ctx)
     }
 }
 
@@ -129,7 +131,7 @@ impl SmartModuleInstanceContext {
     pub(crate) fn write_input<E: Encoder>(
         &mut self,
         input: &E,
-        engine: &mut impl Engine,
+        engine: &impl Engine,
     ) -> Result<Vec<WasmValue>> {
         self.records_cb.clear();
         let mut input_data = Vec::new();
@@ -162,15 +164,15 @@ impl SmartModuleInstanceContext {
 
 // TODO: revise later to see whether Clone is necessary
 #[derive(Clone)]
-pub struct RecordsMemory {
-    ptr: u32,
-    len: u32,
-    memory: Memory,
+pub(crate) struct RecordsMemory {
+    pub ptr: u32,
+    pub len: u32,
+    pub memory: Memory,
 }
 
 impl RecordsMemory {
-    fn copy_memory_from(&self) -> Result<Vec<u8>> {
-        let mut bytes = self.memory.read(self.ptr, self.len)?;
+    pub(crate) fn copy_memory_from(&self) -> Result<Vec<u8>> {
+        let bytes = self.memory.read(self.ptr, self.len)?;
         Ok(bytes)
     }
 }
@@ -195,29 +197,5 @@ impl RecordsCallBack {
     pub(crate) fn get(&self) -> Option<RecordsMemory> {
         let reader = self.0.lock().unwrap();
         reader.clone()
-    }
-}
-
-pub(crate) trait SmartModuleTransform: Send + Sync {
-    /// transform records
-    fn process(
-        &mut self,
-        input: SmartModuleInput,
-        ctx: &mut SmartModuleInstanceContext,
-        engine: &mut Executor,
-    ) -> Result<SmartModuleOutput>;
-
-    /// return name of transform, this is used for identifying transform and debugging
-    fn name(&self) -> &str;
-}
-
-// In order turn to any, need following magic trick
-pub(crate) trait DowncastableTransform: SmartModuleTransform + Any {
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl<T: SmartModuleTransform + Any> DowncastableTransform for T {
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }

@@ -8,14 +8,14 @@ mod test {
         Record,
     };
 
-    use crate::{
+    use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
         transforms::simple_transform::ARRAY_MAP_FN_NAME,
     };
 
     const SM_ARRAY_MAP: &str = "fluvio_smartmodule_array_map_array";
 
-    use crate::fixture::read_wasm_module;
+    use crate::engine::fixture::read_wasm_module;
 
     #[ignore]
     #[test]
@@ -30,7 +30,8 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),

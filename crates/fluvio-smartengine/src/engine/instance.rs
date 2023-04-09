@@ -12,10 +12,10 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
 };
 
-use crate::error::EngineError;
-use crate::init::SmartModuleInit;
-use crate::{WasmSlice, memory};
-use crate::state::WasmState;
+use super::error::EngineError;
+use super::init::SmartModuleInit;
+use super::{WasmSlice, memory};
+use super::state::WasmState;
 
 pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,
@@ -186,7 +186,7 @@ pub struct RecordsMemory {
 }
 
 impl RecordsMemory {
-    fn copy_memory_from(&self, store: impl AsContext) -> Result<Vec<u8>> {
+    pub fn copy_memory_from(&self, store: impl AsContext) -> Result<Vec<u8>> {
         let mut bytes = vec![0u8; self.len as u32 as usize];
         self.memory.read(store, self.ptr as usize, &mut bytes)?;
         Ok(bytes)
