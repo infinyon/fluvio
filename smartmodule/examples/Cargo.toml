@@ -4,6 +4,7 @@ members = [
     "aggregate-sum",
     "aggregate-json",
     "aggregate-average",
+    "aggregate-init",
     "filter",
     "filter_init",
     "filter_with_param",
@@ -29,3 +30,9 @@ fluvio-smartmodule = { path = "../../crates/fluvio-smartmodule" }
 [profile.release]
 lto = true
 strip = "symbols"
+
+[profile.release-lto]
+inherits = "release"
+lto = true
+strip = "symbols"
+
