@@ -180,7 +180,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -234,7 +234,7 @@ name = "fluvio-smartmodule"
 version = "0.5.0"
 dependencies = [
  "eyre",
- "fluvio-protocol 0.9.0",
+ "fluvio-protocol 0.9.1",
  "fluvio-smartmodule-derive 0.4.0",
  "thiserror",
  "tracing",
@@ -832,6 +832,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6528351c9bc8ab22353f9d776db39a20288e8d6c37ef8cfe3317cf875eecfc2d"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "sm-integer-sum-aggegrate"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.5.0",
+ "once_cell",
 ]
 
 [[package]]

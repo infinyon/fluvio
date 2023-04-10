@@ -1,0 +1,14 @@
+[package]
+name = "sm-integer-sum-aggegrate"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fluvio-smartmodule = { workspace = true }
+once_cell = { version = "1.17" }
+

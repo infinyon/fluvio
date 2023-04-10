@@ -1,0 +1,14 @@
+[package]
+name = "integer-sum-aggegrate"
+group = "infinyon"
+version = "0.1.0"
+apiVersion = "0.1.0"
+description = ""
+license = "Apache-2.0"
+visibility = "private"
+
+[[params]]
+name = "initial_value"
+description = "initial value for aggregation"
+optional = false
+

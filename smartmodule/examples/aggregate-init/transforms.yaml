@@ -1,0 +1,4 @@
+transforms:
+  - uses: infinyon/integer-sum-aggegrate@0.1.0
+    with:
+      initial_value: "10"
