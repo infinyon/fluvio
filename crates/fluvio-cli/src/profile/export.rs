@@ -3,8 +3,7 @@ use std::sync::Arc;
 use clap::Parser;
 use anyhow::{anyhow, Result};
 
-use fluvio::config::{ConfigFile, TlsConfig};
-use fluvio_cluster::fluvio_config::TlsPolicy::Verified;
+use fluvio::config::{ConfigFile, TlsConfig, TlsPolicy};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::output::OutputType;
 
@@ -56,7 +55,7 @@ impl ExportOpt {
         let profile_export = if let Some(fluvio_config) =
             config_file.config().cluster(&cluster_name)
         {
-            if let Verified(TlsConfig::Files(_)) = fluvio_config.tls {
+            if let TlsPolicy::Verified(TlsConfig::Files(_)) = fluvio_config.tls {
                 return Err(anyhow!(
                         "Cluster {cluster_name} uses externals TLS certs. Only inline TLS certs are supported."
                     ));
