@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use clap::Parser;
-use serde::Serialize;
 use anyhow::{anyhow, Result};
 
-use fluvio::config::{ConfigFile, TlsPolicy, TlsConfig};
+use fluvio::config::{ConfigFile, TlsConfig, TlsPolicy};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::output::OutputType;
 
@@ -53,55 +52,19 @@ impl ExportOpt {
         } else {
             return Err(CliError::NoActiveProfileInConfig.into());
         };
-
-        let profile_export = if let Some(cluster) = config_file.config().cluster(&cluster_name) {
-            let tls = match &cluster.tls {
-                TlsPolicy::Disabled => ProfileExportTls::Disabled,
-                TlsPolicy::Anonymous => ProfileExportTls::Anonymous,
-                TlsPolicy::Verified(tls_config) => ProfileExportTls::Verified(match tls_config {
-                    TlsConfig::Inline(tls_certs) => ProfileExportTlsCerts {
-                        domain: tls_certs.domain.to_owned(),
-                        key: tls_certs.key.to_owned(),
-                        cert: tls_certs.cert.to_owned(),
-                        ca_cert: tls_certs.ca_cert.to_owned(),
-                    },
-                    TlsConfig::Files(_) => {
-                        return Err(anyhow!("Cluster {cluster_name} uses externals TLS certs. Only inline TLS certs are supported."))
-                    }
-                }),
-            };
-            ProfileExport {
-                endpoint: cluster.endpoint.clone(),
-                tls,
+        let profile_export = if let Some(fluvio_config) =
+            config_file.config().cluster(&cluster_name)
+        {
+            if let TlsPolicy::Verified(TlsConfig::Files(_)) = fluvio_config.tls {
+                return Err(anyhow!(
+                        "Cluster {cluster_name} uses externals TLS certs. Only inline TLS certs are supported."
+                    ));
             }
+            fluvio_config
         } else {
             return Err(CliError::ClusterNotFoundInConfig(cluster_name.to_owned()).into());
         };
 
         Ok(out.render_serde(&profile_export, output_format.into())?)
     }
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ProfileExport {
-    endpoint: String,
-    tls: ProfileExportTls,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase", tag = "policy")]
-enum ProfileExportTls {
-    Disabled,
-    Anonymous,
-    Verified(ProfileExportTlsCerts),
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ProfileExportTlsCerts {
-    pub domain: String,
-    pub key: String,
-    pub cert: String,
-    pub ca_cert: String,
 }
