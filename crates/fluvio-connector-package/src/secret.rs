@@ -306,7 +306,7 @@ mod tests {
         //then
         assert_eq!(
             serialized,
-            "some_secret:\n  secret:\n    name: secret_name\n"
+            "some_secret: !secret\n  name: secret_name\n"
         );
         Ok(())
     }
