@@ -12,12 +12,12 @@ use serde_yaml::Value;
 
 static SECRET_STORE: OnceCell<Box<dyn SecretStore>> = OnceCell::new();
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct SecretString {
     kind: SecretKind,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Secret {
     name: String,
 }
@@ -30,11 +30,17 @@ pub struct FileSecretStore {
     path: PathBuf,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 enum SecretKind {
     String(String),
     Secret(Secret),
+}
+
+impl Default for SecretKind {
+    fn default() -> Self {
+        Self::String(Default::default())
+    }
 }
 
 impl SecretString {
@@ -140,13 +146,23 @@ fn find_secrets<'a>(set: &mut HashSet<&'a str>, src: &'a Value) {
     if let Value::Mapping(mapping) = src {
         let name_value = Value::String("name".to_owned());
         for (key, value) in mapping.iter() {
-            if let (Value::String(name), Value::Mapping(map)) = (key, value) {
-                match map.get(&name_value) {
-                    Some(Value::String(value)) if name.eq("secret") => {
-                        set.insert(value);
+            match (key, value) {
+                (Value::String(name), Value::Mapping(map)) => {
+                    match map.get(&name_value) {
+                        Some(Value::String(value)) if name.eq("secret") => {
+                            set.insert(value);
+                        }
+                        _ => find_secrets(set, value),
+                    };
+                }
+                (Value::String(_), Value::Sequence(seq)) => {
+                    for item in seq {
+                        find_secrets(set, item);
                     }
-                    _ => find_secrets(set, value),
-                };
+                }
+                _ => {
+                    // ignore secret from other types
+                }
             }
         }
     }
@@ -435,14 +451,21 @@ config:
   nested:
     secret:
       name: secret2
+  list:
+    - secret:
+        name: secret3
+    - secret:
+        name: secret4
 "#;
 
         //when
         let secrets = detect_secrets_from_str(raw_config).expect("invalid raw config string");
 
         //then
-        assert_eq!(secrets.len(), 2);
+        assert_eq!(secrets.len(), 4);
         assert!(secrets.get("secret1").is_some());
         assert!(secrets.get("secret2").is_some());
+        assert!(secrets.get("secret3").is_some());
+        assert!(secrets.get("secret4").is_some());
     }
 }
