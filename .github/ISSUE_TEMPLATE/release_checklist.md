@@ -29,8 +29,10 @@ For more detail, refer to [`RELEASE.md`](https://github.com/infinyon/fluvio/blob
 
 ### Generating Release notes
 
-To get a starting point for generating release notes
+To get a starting point for generating release notes. A git ref, or last release tag can also be used.
 
 ```bash
 git cliff 673e60c0..HEAD > changes.md
+
+git cliff v0.10.6..HEAD > changes.md
 ```
