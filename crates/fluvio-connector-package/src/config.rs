@@ -47,6 +47,12 @@ pub struct MetaConfig {
     pub secrets: Option<Vec<SecretConfig>>,
 }
 
+impl MetaConfig {
+    fn secrets(&self) -> HashSet<SecretConfig> {
+        HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
+    }
+}
+
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
@@ -173,7 +179,7 @@ impl ConnectorConfig {
     }
 
     pub fn secrets(&self) -> HashSet<SecretConfig> {
-        HashSet::from_iter(self.meta.secrets.clone().unwrap_or_default().into_iter())
+        self.meta.secrets()
     }
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {

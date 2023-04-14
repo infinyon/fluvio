@@ -113,11 +113,15 @@ fn init_and_parse_config(config_type_path: &Path) -> TokenStream {
 
         ::fluvio_connector_common::tracing::info!("Reading config file from: {}", opts.config.to_string_lossy());
 
-        let config_value = ::fluvio_connector_common::config::value_from_file(opts.config.as_path())?;
-        ::fluvio_connector_common::tracing::trace!("{:#?}", config_value);
+        let config_str = ::std::fs::read_to_string(opts.config.as_path())?;
+        ::fluvio_connector_common::tracing::debug!(%config_str, "input config");
+
+        /// Resolve any secrets/env in the config
+        let config_str_resolved =::fluvio_connector_common::render_config_str(&config_str)?;
+
+        let config_value = ::fluvio_connector_common::config::value_from_reader(config_str_resolved.as_bytes())?;
 
         let common_config = ::fluvio_connector_common::config::ConnectorConfig::from_value(config_value.clone())?;
-        ::fluvio_connector_common::tracing::debug!("{:#?}", common_config);
 
         let user_config: #config_type_path = ::fluvio_connector_common::config::from_value(config_value, Some(#config_type_path::__config_name()))?;
 
@@ -129,6 +133,7 @@ pub(crate) fn generate_connector_config(item: &ConnectorConfigStruct) -> TokenSt
     let config_struct = item.item_struct;
     let ident = &item.item_struct.ident;
     let config_name = &item.config_name;
+
     quote! {
         #[derive(serde::Deserialize)]
         #config_struct
@@ -137,6 +142,7 @@ pub(crate) fn generate_connector_config(item: &ConnectorConfigStruct) -> TokenSt
             pub fn __config_name() -> &'static str {
                 #config_name
             }
+
         }
     }
 }

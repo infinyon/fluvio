@@ -113,6 +113,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "aho-corasick"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5bce8d450891e3b36f85a2230cec441fddd60e0c455b61b15bb3ffba955ca85"
+
+[[package]]
 name = "aligned"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2648,6 +2654,7 @@ dependencies = [
  "fluvio-smartengine",
  "fluvio-types",
  "humantime-serde",
+ "minijinja",
  "once_cell",
  "openapiv3",
  "pretty_assertions",
@@ -3812,7 +3819,7 @@ version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "029d74589adefde59de1a0c4f4732695c32805624aec7b68d91503d4dba79afc"
 dependencies = [
- "aho-corasick",
+ "aho-corasick 0.7.20",
  "bstr",
  "fnv",
  "log",
@@ -4869,6 +4876,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "minijinja"
+version = "0.32.1"
+source = "git+https://github.com/mitsuhiko/minijinja?rev=c4b48dc5be9de0143e06bef97618c7ed029fb155#c4b48dc5be9de0143e06bef97618c7ed029fb155"
+dependencies = [
+ "aho-corasick 1.0.0",
+ "serde",
+]
+
+[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5886,7 +5902,7 @@ version = "1.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b1f693b24f6ac912f4893ef08244d70b6067480d2f1a46e950c9691e6749d1d"
 dependencies = [
- "aho-corasick",
+ "aho-corasick 0.7.20",
  "memchr",
  "regex-syntax",
 ]

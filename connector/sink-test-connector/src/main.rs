@@ -18,4 +18,5 @@ async fn start(config: CustomConfig, mut stream: impl ConsumerStream) -> Result<
 #[connector(config)]
 struct CustomConfig {
     api_key: SecretString,
+    client_id: String,
 }
