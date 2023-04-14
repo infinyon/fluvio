@@ -96,7 +96,7 @@ impl ConnectorConfig {
     }
 
     pub fn write_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        std::fs::write(path, serde_yaml::to_vec(self)?)?;
+        std::fs::write(path, serde_yaml::to_string(self)?)?;
         Ok(())
     }
 
