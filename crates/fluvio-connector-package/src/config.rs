@@ -229,7 +229,7 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "meta: missing field `version` at line 2 column 7",
+            "meta: missing field `version` at line 2 column 3",
             format!("{connector_cfg:?}")
         );
     }
