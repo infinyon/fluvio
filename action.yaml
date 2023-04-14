@@ -26,7 +26,7 @@ runs:
         echo "SPU_NUMBER=${{ inputs.spus }}" >> $GITHUB_ENV
         echo "CLUSTER_TYPE=${{ inputs.cluster-type }}" >> $GITHUB_ENV
         echo "RUST_LOG=${{ inputs.rust-log }}" >> $GITHUB_ENV
-        echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+        echo "FLV_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
         echo "OS=${{ runner.os }}" >> $GITHUB_ENV
       shell: bash
     - id: install-fluvio
