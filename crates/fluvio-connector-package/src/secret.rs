@@ -304,10 +304,7 @@ mod tests {
         let serialized = serde_yaml::to_string(&input)?;
 
         //then
-        assert_eq!(
-            serialized,
-            "some_secret: !secret\n  name: secret_name\n"
-        );
+        assert_eq!(serialized, "some_secret: !secret\n  name: secret_name\n");
         Ok(())
     }
 
