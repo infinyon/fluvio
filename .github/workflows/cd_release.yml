@@ -67,10 +67,10 @@ jobs:
         run: echo "Leave VERSION unset"
       - name: Curl Install - stable
         if: matrix.version == 'stable'
-        run: echo "VERSION=stable" | tee -a $GITHUB_ENV
+        run: echo "FLV_VERSION=stable" | tee -a $GITHUB_ENV
       - name: Curl Install - Version number
         if: matrix.version == 'semver'
-        run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
+        run: echo "FLV_VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
 
         # Utilizes the env var set in the previous step
       - name: Curl Install
@@ -114,7 +114,7 @@ jobs:
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
           
-      - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
+      - run: echo "FLV_VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install Fluvio
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
@@ -170,7 +170,7 @@ jobs:
 
       - name: Install last stable Fluvio CLI and start cluster
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=$PREV_STABLE_VERSION bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | FLV_VERSION=$PREV_STABLE_VERSION bash
           ~/.fluvio/bin/fluvio cluster start
           ~/.fluvio/bin/fluvio version
 
@@ -183,7 +183,7 @@ jobs:
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
 
-      - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
+      - run: echo "FLV_VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install current stable Fluvio CLI and upgrade cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
