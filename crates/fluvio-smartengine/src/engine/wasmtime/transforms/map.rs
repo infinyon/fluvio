@@ -10,7 +10,7 @@ mod test {
 
     use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
-        wasmtime_engine::transforms::simple_transform::MAP_FN_NAME,
+        wasmtime::transforms::simple_transform::MAP_FN_NAME,
     };
     use crate::engine::fixture::read_wasm_module;
 
