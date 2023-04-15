@@ -1,3 +1,5 @@
+use std::fmt::{self, Debug};
+
 use anyhow::Result;
 use tracing::debug;
 use wasmtime::{Engine, Module};
@@ -29,8 +31,8 @@ impl SmartEngine {
     }
 }
 
-impl std::fmt::Debug for SmartEngine {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Debug for SmartEngine {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SmartModuleEngine")
     }
 }
@@ -87,8 +89,8 @@ pub struct SmartModuleChainInstance {
     instances: Vec<SmartModuleInstance>,
 }
 
-impl std::fmt::Debug for SmartModuleChainInstance {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Debug for SmartModuleChainInstance {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SmartModuleChainInstance")
     }
 }

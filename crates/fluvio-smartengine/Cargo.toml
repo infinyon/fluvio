@@ -17,6 +17,7 @@ wasi = ["wasmtime-wasi", "engine"]
 transformation = ["serde_json", "serde_yaml"]
 default = ["engine"]
 
+
 [dependencies]
 tracing ={ workspace = true }
 thiserror = { workspace = true }
