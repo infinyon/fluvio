@@ -29,9 +29,9 @@ impl SmartEngine {
     }
 }
 
-impl std::fmt::Debug for SmartModuleChainInstance {
+impl std::fmt::Debug for SmartEngine {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "SmartModuleChainInstance")
+        write!(f, "SmartModuleEngine")
     }
 }
 
@@ -72,10 +72,25 @@ impl SmartModuleChainBuilder {
         })
     }
 }
+
+impl<T: Into<Vec<u8>>> From<(SmartModuleConfig, T)> for SmartModuleChainBuilder {
+    fn from(pair: (SmartModuleConfig, T)) -> Self {
+        let mut result = Self::default();
+        result.add_smart_module(pair.0, pair.1.into());
+        result
+    }
+}
+
 /// SmartModule Chain Instance that can be executed
 pub struct SmartModuleChainInstance {
     store: WasmState,
     instances: Vec<SmartModuleInstance>,
+}
+
+impl std::fmt::Debug for SmartModuleChainInstance {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "SmartModuleChainInstance")
+    }
 }
 
 impl SmartModuleChainInstance {
