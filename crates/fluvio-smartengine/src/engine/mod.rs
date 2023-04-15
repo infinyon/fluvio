@@ -13,5 +13,5 @@ mod fixture;
 pub type WasmSlice = (i32, i32, u32);
 pub type Version = i16;
 
-mod wasmtime_engine;
-pub use wasmtime_engine::{SmartEngine, SmartModuleChainBuilder, SmartModuleChainInstance};
+mod wasmtime;
+pub use self::wasmtime::{SmartEngine, SmartModuleChainBuilder, SmartModuleChainInstance};

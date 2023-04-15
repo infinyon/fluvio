@@ -10,7 +10,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleTransformErrorStatus,
 };
 use crate::engine::SmartModuleInitialData;
-use crate::engine::wasmtime_engine::{
+use crate::engine::wasmtime::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     state::WasmState,
 };
