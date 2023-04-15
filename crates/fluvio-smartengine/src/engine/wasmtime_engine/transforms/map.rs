@@ -29,8 +29,7 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain")
-            .inner;
+            .expect("failed to build chain");
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),

@@ -4,7 +4,7 @@ use wasmtime::{Engine, Module};
 
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 
-use crate::{SmartEngine, SmartModuleChainInstance};
+use crate::SmartModuleConfig;
 
 use super::init::SmartModuleInit;
 use super::instance::{SmartModuleInstance, SmartModuleInstanceContext};
@@ -14,10 +14,10 @@ use super::state::WasmState;
 use super::transforms::create_transform;
 
 #[derive(Clone)]
-pub struct SmartEngineImp(Engine);
+pub struct SmartEngine(Engine);
 
 #[allow(clippy::new_without_default)]
-impl SmartEngineImp {
+impl SmartEngine {
     pub fn new() -> Self {
         let mut config = wasmtime::Config::default();
         config.consume_fuel(true);
@@ -29,39 +29,56 @@ impl SmartEngineImp {
     }
 }
 
-/// stop adding smartmodule and return SmartModuleChain that can be executed
-pub fn initialize_imp(
-    builder: super::SmartModuleChainBuilder,
-    engine: &SmartEngine,
-) -> Result<SmartModuleChainInstance> {
-    let mut instances = Vec::with_capacity(builder.smart_modules.len());
-    let mut state = engine.inner.new_state();
-    for (config, bytes) in builder.smart_modules {
-        let module = Module::new(&engine.inner.0, bytes)?;
-        let version = config.version();
-        let ctx =
-            SmartModuleInstanceContext::instantiate(&mut state, module, config.params, version)?;
-        let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
-        let transform = create_transform(&ctx, config.initial_data, &mut state)?;
-        let mut instance = SmartModuleInstance::new(ctx, init, transform);
-        instance.init(&mut state)?;
-        instances.push(instance);
+impl std::fmt::Debug for SmartModuleChainInstance {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "SmartModuleChainInstance")
     }
-    Ok(SmartModuleChainInstance {
-        inner: SmartModuleChainInstanceImp {
-            store: state,
-            instances,
-        },
-    })
 }
 
+/// Building SmartModule
+#[derive(Default)]
+pub struct SmartModuleChainBuilder {
+    smart_modules: Vec<(SmartModuleConfig, Vec<u8>)>,
+}
+
+impl SmartModuleChainBuilder {
+    /// Add SmartModule with a single transform and init
+    pub fn add_smart_module(&mut self, config: SmartModuleConfig, bytes: Vec<u8>) {
+        self.smart_modules.push((config, bytes))
+    }
+
+    /// stop adding smartmodule and return SmartModuleChain that can be executed
+    pub fn initialize(self, engine: &SmartEngine) -> Result<SmartModuleChainInstance> {
+        let mut instances = Vec::with_capacity(self.smart_modules.len());
+        let mut state = engine.new_state();
+        for (config, bytes) in self.smart_modules {
+            let module = Module::new(&engine.0, bytes)?;
+            let version = config.version();
+            let ctx = SmartModuleInstanceContext::instantiate(
+                &mut state,
+                module,
+                config.params,
+                version,
+            )?;
+            let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
+            let transform = create_transform(&ctx, config.initial_data, &mut state)?;
+            let mut instance = SmartModuleInstance::new(ctx, init, transform);
+            instance.init(&mut state)?;
+            instances.push(instance);
+        }
+        Ok(SmartModuleChainInstance {
+            store: state,
+            instances,
+        })
+    }
+}
 /// SmartModule Chain Instance that can be executed
-pub struct SmartModuleChainInstanceImp {
+pub struct SmartModuleChainInstance {
     store: WasmState,
     instances: Vec<SmartModuleInstance>,
 }
 
-impl SmartModuleChainInstanceImp {
+impl SmartModuleChainInstance {
     #[cfg(test)]
     pub(crate) fn instances(&self) -> &Vec<SmartModuleInstance> {
         &self.instances
@@ -173,8 +190,7 @@ mod chaining_test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain")
-            .inner;
+            .expect("failed to build chain");
         assert_eq!(chain.instances().len(), 2);
 
         let input = vec![Record::new("hello world")];
@@ -228,8 +244,7 @@ mod chaining_test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain")
-            .inner;
+            .expect("failed to build chain");
         assert_eq!(chain.instances().len(), 2);
 
         let input = vec![
@@ -268,8 +283,7 @@ mod chaining_test {
         let chain_builder = SmartModuleChainBuilder::default();
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain")
-            .inner;
+            .expect("failed to build chain");
 
         assert_eq!(chain.store.get_used_fuel(), 0);
 
