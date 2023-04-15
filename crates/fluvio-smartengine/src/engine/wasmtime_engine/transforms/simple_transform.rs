@@ -4,7 +4,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 use wasmtime::{TypedFunc, AsContextMut};
 use anyhow::Result;
 
-use crate::engine::{
+use crate::engine::wasmtime_engine::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
     state::WasmState,
 };

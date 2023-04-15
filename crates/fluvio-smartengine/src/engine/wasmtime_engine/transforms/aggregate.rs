@@ -9,9 +9,9 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleAggregateOutput,
     SmartModuleTransformErrorStatus,
 };
-use crate::engine::{
+use crate::engine::SmartModuleInitialData;
+use crate::engine::wasmtime_engine::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleInitialData,
     state::WasmState,
 };
 

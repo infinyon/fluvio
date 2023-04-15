@@ -87,12 +87,7 @@ impl SmartModuleChainInstance {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "wasmtime-engine")] {
-        mod memory;
-        mod transforms;
-        mod init;
-        mod state;
-        mod engine;
-        mod instance;
-        use engine::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+        mod wasmtime_engine;
+        use wasmtime_engine::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
     }
 }

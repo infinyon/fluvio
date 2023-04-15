@@ -1,8 +1,8 @@
-pub(crate) mod filter;
-pub(crate) mod map;
-pub(crate) mod array_map;
-pub(crate) mod filter_map;
-pub(crate) mod aggregate;
+mod filter;
+mod map;
+mod array_map;
+mod filter_map;
+mod aggregate;
 pub(crate) use instance::create_transform;
 mod simple_transform;
 
@@ -11,11 +11,8 @@ mod instance {
     use anyhow::{Result};
     use wasmtime::AsContextMut;
 
-    use crate::engine::{
-        instance::{SmartModuleInstanceContext, DowncastableTransform},
-        error::EngineError,
-        SmartModuleInitialData,
-    };
+    use crate::engine::{error::EngineError, SmartModuleInitialData};
+    use super::super::instance::{SmartModuleInstanceContext, DowncastableTransform};
 
     use super::{
         simple_transform::{
