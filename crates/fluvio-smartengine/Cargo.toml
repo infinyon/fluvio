@@ -13,10 +13,10 @@ description = "The official Fluvio SmartEngine"
 
 [features]
 engine = ["wasmtime-engine"]
-wasi = ["wasmtime-wasi", "engine"]
+wasi = ["wasmtime-wasi", "wasmtime-engine", "engine"]
 transformation = ["serde_json", "serde_yaml"]
 default = ["engine"]
-wasmtime-engine = ["wasmtime", "wasmtime-wasi"]
+wasmtime-engine = ["wasmtime"]
 
 [dependencies]
 tracing ={ workspace = true }
