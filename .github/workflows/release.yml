@@ -243,7 +243,7 @@ jobs:
 
   publish_crates:
     name: Publish Crates
-    if: ${{ !github.event.inputs.pre_release }}
+    if: ${{ !inputs.pre_release }}
     uses: ./.github/workflows/publish_crates.yml
     with:
       commit: ${{ github.event.inputs.commit }}
@@ -254,7 +254,7 @@ jobs:
     needs: [setup_job, release_github, release_docker, release_fluvio]
     #permissions: write-all
     runs-on: ubuntu-latest
-    if: ${{ !github.event.inputs.pre_release }}
+    if: ${{ !inputs.pre_release }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
