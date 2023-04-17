@@ -1,5 +1,7 @@
 # Release Notes
 
+## Platform Version 0.10.8 - UNRELEASED
+
 ## Platform Version 0.10.7 - 2023-04-17
 * Apply SmartModule Transformation For Producer ([#3014](https://github.com/infinyon/fluvio/issues/3014))
 * Docs, Example of aggregation sm with initial value ([#3126](https://github.com/infinyon/fluvio/issues/3126))
