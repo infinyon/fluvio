@@ -32,7 +32,7 @@ thiserror = "1.0.20"
 semver = "1.0.0"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.4.0", features = ["net", "task", "retry"] }
+fluvio-future = { workspace = true }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
     "derive",
     "api",
@@ -41,12 +41,7 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
 ] }
 
 [dev-dependencies]
-fluvio-future = { version = "0.4.0", features = [
-    "fixture",
-    "fs",
-    "zero_copy",
-    "native2_tls",
-] }
+fluvio-future = { workspace = true }
 portpicker = "0.1.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

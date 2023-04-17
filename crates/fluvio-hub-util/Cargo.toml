@@ -30,21 +30,11 @@ toml = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 wasmparser = { workspace = true }
+reqwest = { workspace = true }
 
-fluvio-future = { workspace = true, features = ["task"]}
+fluvio-future = { workspace = true }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { path = "../fluvio-types" }
-
-# feature control
-[dependencies.surf]
-version = "2.3.2"
-features = ["h1-client-rustls", "encoding"]
-default-features = false
-
-[dependencies.http-client]
-version = "6.5.3"
-features = ["h1_client", "rustls"]
-default-features = false
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

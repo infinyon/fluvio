@@ -11,7 +11,6 @@ pub use hubaccess::*;
 pub use package::*;
 pub use package_meta_ext::*;
 pub use utils::*;
-pub use surf as http;
 
 pub use fluvio_hub_protocol::*;
 pub use fluvio_hub_protocol::constants::*;

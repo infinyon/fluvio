@@ -47,13 +47,7 @@ anyhow = { workspace = true }
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }
 fluvio-types = { path = "../fluvio-types" }
-fluvio-future = { workspace = true, features = [
-    "io",
-    "task",
-    "timer",
-    "subscriber",
-    "fixture",
-] }
+fluvio-future = { workspace = true }
 fluvio-command = { version = "0.2.0" }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-cli = { path = "../fluvio-cli" }

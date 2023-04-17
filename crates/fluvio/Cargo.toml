@@ -14,11 +14,11 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = ["openssl"]
+default = ["rustls"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
-openssl = ["fluvio-future/openssl_tls"]
-rustls = ["fluvio-future/rust_tls"]
+openssl = ["fluvio-future/openssl_tls", "reqwest/default-tls"]
+rustls = ["fluvio-future/rust_tls", "reqwest/rustls-tls"]
 unstable = []
 
 [dependencies]
@@ -42,15 +42,11 @@ pin-project-lite = "0.2"
 siphasher = "0.3.5"
 cfg-if = "1.0.0"
 async-trait = "0.1.51"
-anyhow = "1.0.38" 
+anyhow = "1.0.38"
+reqwest = { workspace = true }
 
 # Fluvio dependencies
-fluvio-future = { version = "0.4.4", features = [
-    "task",
-    "task_unstable",
-    "retry",
-    "sync"
-] }
+fluvio-future = { workspace = true }
 fluvio-types = { version = "0.4.0", features = [
     "events",
 ], path = "../fluvio-types" }
@@ -80,8 +76,8 @@ fluvio-spu-schema = { version = "0.13.0", path = "../fluvio-spu-schema" }
 chrono = {version =  "0.4", features = ["wasmbind", "clock"]}
 
 [dev-dependencies]
-async-std = { version = "1.6.4", default-features = false }
-fluvio-future = { version = "0.4.4", features = ["io", "fixture"] }
+async-std = { version = "1.6.4", default-features = false, features = ["tokio1"] }
+fluvio-future = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.24"

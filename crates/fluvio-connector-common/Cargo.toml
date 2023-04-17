@@ -14,7 +14,7 @@ derive = ["fluvio-connector-derive"]
 [dependencies]
 anyhow = { workspace = true }
 tracing = { workspace = true }
-fluvio-future = { workspace = true, features = ["subscriber"] }
+fluvio-future = { workspace = true }
 futures = { version = "0.3", default-features = false }
 async-trait = { version = "0.1", default-features = false}
 async-net = { version = "1.7", default-features = false }

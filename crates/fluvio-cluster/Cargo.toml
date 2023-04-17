@@ -81,4 +81,4 @@ fluvio-types = { path = "../fluvio-types" }
 fluvio-channel = { path = "../fluvio-channel" }
 
 [dev-dependencies]
-fluvio-future = { workspace = true, features = ["task", "fixture"] }
+fluvio-future = { workspace = true }

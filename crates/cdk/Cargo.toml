@@ -35,5 +35,5 @@ current_platform = { version = "0.2" }
 fluvio = { path = "../fluvio"}
 fluvio-connector-deployer = { path = "../fluvio-connector-deployer"}
 fluvio-connector-package = { path = "../fluvio-connector-package", features = ["toml"]}
-fluvio-future = { workspace = true, features = ["subscriber"]}
+fluvio-future = { workspace = true }
 fluvio-hub-util = { path = "../fluvio-hub-util" }

@@ -25,7 +25,7 @@ educe = { version = "0.4.19", features = ["Debug"] }
 flate2 = { version = "1.0.20" }
 
 fluvio-types = { version = "0.4.0", path = "../fluvio-types" }
-fluvio-future = { version = "0.4.0", optional = true }
+fluvio-future = { workspace = true, optional = true }
 # Fluvio dependencies
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.9.0", features = [
     "api",
@@ -37,5 +37,5 @@ fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.5.0", defaul
 [dev-dependencies]
 futures-util = { version = "0.3.4" }
 fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
-fluvio-future = { version = "0.4.0", features = ["fixture", "fs"] }
+fluvio-future = { workspace = true }
 flv-util = { version = "0.5.2", features = ["fixture"] }

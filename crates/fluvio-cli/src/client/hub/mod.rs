@@ -81,7 +81,7 @@ pub(crate) async fn get_pkg_list(
     endpoint: &str,
     remote: &Option<String>,
 ) -> Result<PackageListMeta> {
-    use hubutil::http;
+    use reqwest::{Client as HttpClient, header};
 
     let access = get_hub_access(remote)?;
 
@@ -89,12 +89,18 @@ pub(crate) async fn get_pkg_list(
         CliError::HubError("rejected access credentials, try 'fluvio cloud login'".into())
     })?;
     let url = format!("{}/{endpoint}", &access.remote);
-    let mut res = http::get(&url)
-        .header("Authorization", &action_token)
+
+    let client = HttpClient::default();
+
+    let res = client
+        .get(&url)
+        .header(header::AUTHORIZATION, &action_token)
+        .send()
         .await
         .map_err(|e| CliError::HubError(format!("list api access error {e}")))?;
+
     let pl: PackageListMeta = res
-        .body_json()
+        .json()
         .await
         .map_err(|e| CliError::HubError(format!("list api data parse error {e}")))?;
     Ok(pl)

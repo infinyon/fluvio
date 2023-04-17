@@ -74,6 +74,7 @@ tokio = { version = "1.3.0", features = ["macros"] }
 async-net = "1.7.0"
 anyhow = { workspace = true }
 current_platform = "0.2"
+reqwest = { workspace = true }
 
 # Fluvio dependencies
 k8-config = { workspace = true, optional = true }
@@ -96,10 +97,10 @@ fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", featu
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }
-fluvio-future = { version = "0.4.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
+fluvio-future = { workspace = true, optional = true }
 fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 fluvio-spu-schema = { path = "../fluvio-spu-schema", optional = true }
 
 
 [dev-dependencies]
-fluvio-future = { version = "0.4.0", features = ["fixture"] }
+fluvio-future = { workspace = true }

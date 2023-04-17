@@ -29,4 +29,4 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.9.0", features = [
 fluvio-socket = { path = "../fluvio-socket", version = "0.14.0"}
 
 [dev-dependencies]
-fluvio-future = { version = "0.4.0", features = ["subscriber"] }
+fluvio-future = { workspace = true }

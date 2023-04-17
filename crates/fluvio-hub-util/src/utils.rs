@@ -1,8 +1,7 @@
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-use surf::http::mime;
-use surf::StatusCode;
+use reqwest::{Client as HttpClient, StatusCode, header};
 use tracing::{debug, info};
 
 use fluvio_hub_protocol::{PackageMeta, Result, HubError};
@@ -85,16 +84,20 @@ pub async fn get_package(pkgurl: &str, access: &HubAccess) -> Result<Vec<u8>> {
 }
 
 pub async fn get_package_with_token(pkgurl: &str, actiontoken: &str) -> Result<Vec<u8>> {
-    let mut resp = surf::get(pkgurl)
-        .header("Authorization", actiontoken)
+    let client = HttpClient::default();
+
+    let resp = client
+        .get(pkgurl)
+        .header(header::AUTHORIZATION, actiontoken)
+        .send()
         .await
         .map_err(|_| HubError::PackageDownload("authorization error".into()))?;
 
     match resp.status() {
-        StatusCode::Ok => {}
+        StatusCode::OK => {}
         code => {
             let body_err_message = resp
-                .body_string()
+                .text()
                 .await
                 .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
             let msg = format!("Status({code}) {body_err_message}");
@@ -106,29 +109,35 @@ pub async fn get_package_with_token(pkgurl: &str, actiontoken: &str) -> Result<V
     // todo: validate package signing by hub
 
     let data = resp
-        .body_bytes()
+        .bytes()
         .await
         .map_err(|_| HubError::PackageDownload("Data unpack failure".into()))?;
-    Ok(data)
+    Ok(data.into())
 }
 
 // deprecated, but keep for reference for a bit
 pub async fn get_package_noauth(pkgurl: &str) -> Result<Vec<u8>> {
     //todo use auth
-    let mut resp = surf::get(pkgurl)
+
+    let client = HttpClient::default();
+
+    let resp = client
+        .get(pkgurl)
+        .send()
         .await
         .map_err(|_| HubError::PackageDownload("".into()))?;
+
     match resp.status() {
-        StatusCode::Ok => {}
+        StatusCode::OK => {}
         _ => {
             return Err(HubError::PackageDownload("".into()));
         }
     }
     let data = resp
-        .body_bytes()
+        .bytes()
         .await
         .map_err(|_| HubError::PackageDownload("Data unpack failure".into()))?;
-    Ok(data)
+    Ok(data.into())
 }
 
 /// non validating function to make canonical filenames from
@@ -182,29 +191,32 @@ async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) -> R
 
     let pkg_bytes = std::fs::read(pkgpath)?;
     let actiontoken = access.get_publish_token().await?;
-    let req = surf::put(put_url)
-        .content_type(mime::BYTE_STREAM)
-        .body_bytes(pkg_bytes)
-        .header("Authorization", &actiontoken);
-    let mut res = req
+
+    let client = HttpClient::default();
+
+    let res = client
+        .put(put_url)
+        .header(header::CONTENT_TYPE, "application/octet-stream")
+        .body(pkg_bytes)
+        .header(header::AUTHORIZATION, &actiontoken)
+        .send()
         .await
         .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
 
     match res.status() {
-        surf::http::StatusCode::Ok => {
+        StatusCode::OK => {
             println!("Package uploaded!");
             Ok(())
         }
-        surf::http::StatusCode::Unauthorized => {
-            Err(HubError::HubAccess("Unauthorized, please log in".into()))
-        }
+        StatusCode::UNAUTHORIZED => Err(HubError::HubAccess("Unauthorized, please log in".into())),
         _ => {
-            debug!("push result: {} \n{res:?}", res.status());
+            let status = res.status();
+            debug!("push result: {} \n{res:?}", status);
             let bodymsg = res
-                .body_string()
+                .text()
                 .await
                 .map_err(|_e| HubError::HubAccess("Failed to download err body".into()))?;
-            let msg = format!("error status code({}) {}", res.status(), bodymsg);
+            let msg = format!("error status code({}) {}", status, bodymsg);
             Err(HubError::HubAccess(msg))
         }
     }
