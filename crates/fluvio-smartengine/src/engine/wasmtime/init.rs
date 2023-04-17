@@ -7,7 +7,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
 };
 use wasmtime::{AsContextMut, TypedFunc};
 
-use crate::instance::SmartModuleInstanceContext;
+use super::instance::SmartModuleInstanceContext;
 
 pub(crate) const INIT_FN_NAME: &str = "init";
 type WasmInitFn = TypedFunc<(i32, i32, u32), i32>;

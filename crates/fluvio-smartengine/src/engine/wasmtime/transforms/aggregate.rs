@@ -9,9 +9,9 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleAggregateOutput,
     SmartModuleTransformErrorStatus,
 };
-use crate::{
+use crate::engine::SmartModuleInitialData;
+use crate::engine::wasmtime::{
     instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    SmartModuleInitialData,
     state::WasmState,
 };
 
@@ -111,14 +111,14 @@ mod test {
         Record,
     };
 
-    use crate::{
+    use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
         metrics::SmartModuleChainMetrics,
     };
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 
-    use crate::fixture::read_wasm_module;
+    use crate::engine::fixture::read_wasm_module;
 
     #[ignore]
     #[test]

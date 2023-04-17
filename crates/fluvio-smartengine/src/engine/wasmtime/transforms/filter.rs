@@ -8,15 +8,15 @@ mod test {
         Record,
     };
 
-    use crate::{
+    use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
-        transforms::simple_transform::FILTER_FN_NAME,
+        wasmtime::transforms::simple_transform::FILTER_FN_NAME,
     };
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
 
-    use crate::fixture::read_wasm_module;
+    use crate::engine::fixture::read_wasm_module;
 
     #[ignore]
     #[test]
