@@ -75,6 +75,8 @@ async-net = "1.7.0"
 anyhow = { workspace = true }
 current_platform = "0.2"
 reqwest = { workspace = true }
+# added to make sure reqwest works
+async-std = { version = "1.6.4", default-features = false, features = ["tokio1"] }
 
 # Fluvio dependencies
 k8-config = { workspace = true, optional = true }

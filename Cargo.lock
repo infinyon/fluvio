@@ -2235,6 +2235,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-net",
+ "async-std",
  "async-trait",
  "atty",
  "bytesize",
@@ -2572,6 +2573,7 @@ dependencies = [
 name = "fluvio-hub-util"
 version = "0.0.0"
 dependencies = [
+ "async-std",
  "cargo_toml",
  "const_format",
  "dirs 5.0.0",

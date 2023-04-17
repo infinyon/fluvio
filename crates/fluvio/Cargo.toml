@@ -44,6 +44,8 @@ cfg-if = "1.0.0"
 async-trait = "0.1.51"
 anyhow = "1.0.38"
 reqwest = { workspace = true }
+# added to make sure reqwest works
+async-std = { version = "1.6.4", default-features = false, features = ["tokio1"] }
 
 # Fluvio dependencies
 fluvio-future = { workspace = true }

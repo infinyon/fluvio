@@ -31,6 +31,8 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 wasmparser = { workspace = true }
 reqwest = { workspace = true }
+# added to make sure reqwest works
+async-std = { version = "1.6.4", default-features = false, features = ["tokio1"] }
 
 fluvio-future = { workspace = true }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
