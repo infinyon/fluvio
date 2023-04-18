@@ -8,22 +8,27 @@ use wasmedge_sdk::{
 };
 
 use super::{WasmedgeInstance, WasmedgeContext};
-use super::init::SmartModuleInit;
+use crate::engine::common::SmartModuleInit;
 use crate::engine::common::DowncastableTransform;
 use crate::engine::error::EngineError;
 use crate::metrics::SmartModuleChainMetrics;
 use crate::engine::wasmedge::memory;
 use crate::engine::{config::*, WasmSlice};
 use anyhow::Result;
-use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
+use fluvio_smartmodule::dataplane::smartmodule::{
+    SmartModuleInput, SmartModuleOutput, SmartModuleInitInput, SmartModuleExtraParams,
+};
 use std::any::Any;
 use std::fmt::{self, Debug};
 use std::sync::{Arc, Mutex};
+use super::WasmedgeFn;
+
+use super::Init;
 
 pub(crate) struct SmartModuleInstance {
     pub instance: WasmedgeInstance,
     pub transform: Box<dyn DowncastableTransform<WasmedgeInstance>>,
-    // init: Option<SmartModuleInit>,
+    pub init: Option<Init>,
 }
 
 impl SmartModuleInstance {
@@ -34,18 +39,18 @@ impl SmartModuleInstance {
     }
 
     #[cfg(test)]
-    pub(crate) fn get_init(&self) -> &Option<SmartModuleInit> {
-        &None
+    pub(crate) fn get_init(&self) -> &Option<Init> {
+        &self.init
     }
 
     pub(crate) fn new(
         instance: WasmedgeInstance,
-        // init: Option<SmartModuleInit>,
+        init: Option<Init>,
         transform: Box<dyn DowncastableTransform<WasmedgeInstance>>,
     ) -> Self {
         Self {
             instance,
-            // init,
+            init,
             transform,
         }
     }
@@ -57,108 +62,16 @@ impl SmartModuleInstance {
     ) -> Result<SmartModuleOutput> {
         self.transform.process(input, &mut self.instance, ctx)
     }
-}
 
-pub struct SmartModuleInstanceContext {
-    instance: Instance,
-    records_cb: Arc<RecordsCallBack>,
-    // params: SmartModuleExtraParams,
-    version: i16,
-}
-
-impl SmartModuleInstanceContext {
-    /// get wasm function from instance
-    pub(crate) fn get_wasm_func(&self, name: &str) -> Option<Func> {
-        self.instance.func(name)
-    }
-
-    /// instantiate new module instance that contain context
-    pub(crate) fn instantiate(
-        store: &mut Store,
-        executor: &mut Executor,
-        module: Module,
-        // params: SmartModuleExtraParams,
-        version: i16,
-    ) -> Result<Self, EngineError> {
-        debug!("creating WasmModuleInstance");
-        let cb = Arc::new(RecordsCallBack::new());
-        let records_cb = cb.clone();
-
-        // See crates/fluvio-smartmodule-derive/src/generator/transform.rs for copy_records
-        let copy_records_fn = move |caller: CallingFrame,
-                                    inputs: Vec<WasmValue>|
-              -> Result<Vec<WasmValue>, HostFuncError> {
-            assert_eq!(inputs.len(), 2);
-            let ptr = inputs[0].to_i32() as u32;
-            let len = inputs[1].to_i32() as u32;
-
-            debug!(len, "callback from wasm filter");
-            let caller = Caller::new(caller);
-            let memory = caller.memory(0).unwrap();
-
-            let records = RecordsMemory { ptr, len, memory };
-            cb.set(records);
-            Ok(vec![])
-        };
-
-        let import = ImportObjectBuilder::new()
-            .with_func::<(i32, i32), ()>("copy_records", copy_records_fn)
-            .map_err(|e| EngineError::Instantiate(e.into()))?
-            .build("env")
-            .map_err(|e| EngineError::Instantiate(e.into()))?;
-
-        debug!("instantiating WASMtime");
-        store
-            .register_import_module(executor, &import)
-            .map_err(|e| EngineError::Instantiate(e.into()))?;
-        let instance = store
-            .register_active_module(executor, &module)
-            .map_err(|e| EngineError::Instantiate(e.into()))?;
-
-        // This is a hack to avoid them being dropped
-        // FIXME: manage their lifetimes
-        std::mem::forget(import);
-        std::mem::forget(module);
-
-        Ok(Self {
-            instance,
-            records_cb,
-            // params,
-            version,
-        })
-    }
-
-    pub(crate) fn write_input<E: Encoder>(
-        &mut self,
-        input: &E,
-        engine: &impl Engine,
-    ) -> Result<Vec<WasmValue>> {
-        self.records_cb.clear();
-        let mut input_data = Vec::new();
-        input.encode(&mut input_data, self.version)?;
-        debug!(
-            len = input_data.len(),
-            version = self.version,
-            "input encoded"
-        );
-        let array_ptr = memory::copy_memory_to_instance(engine, &self.instance, &input_data)?;
-        let length = input_data.len();
-        Ok(vec![
-            Val::I32(array_ptr as i32).into(),
-            Val::I32(length as i32).into(),
-            Val::I32(self.version as i32).into(),
-        ])
-    }
-
-    pub(crate) fn read_output<D: Decoder + Default>(&mut self) -> Result<D> {
-        let bytes = self
-            .records_cb
-            .get()
-            .and_then(|m| m.copy_memory_from().ok())
-            .unwrap_or_default();
-        let mut output = D::default();
-        output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
-        Ok(output)
+    pub fn init(&mut self, ctx: &mut WasmedgeContext) -> Result<()> {
+        if let Some(init) = &mut self.init {
+            let input = SmartModuleInitInput {
+                params: self.instance.params.clone(),
+            };
+            init.initialize(input, &mut self.instance, ctx)
+        } else {
+            Ok(())
+        }
     }
 }
 

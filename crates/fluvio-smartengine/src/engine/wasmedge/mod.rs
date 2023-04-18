@@ -1,8 +1,6 @@
 mod instance;
 mod transforms;
 use instance::*;
-mod init;
-use init::*;
 mod memory;
 use memory::*;
 
@@ -27,6 +25,10 @@ use std::fmt::{self, Debug};
 use std::sync::{Arc, Mutex};
 
 use self::transforms::create_transform;
+
+use super::common::SmartModuleInit;
+
+type Init = SmartModuleInit<WasmedgeFn>;
 
 pub struct WasmedgeInstance {
     instance: wasmedge_sdk::Instance,
@@ -208,13 +210,15 @@ impl SmartModuleChainBuilder {
                 version,
             )?;
 
-            // let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
+            let init = Init::try_instantiate(&mut instance, &mut ctx)?;
             let transform = create_transform(&mut instance, &mut ctx, config.initial_data)?;
-            // instance.init(&mut state)?;
-            instances.push(SmartModuleInstance {
+            let mut instance = SmartModuleInstance {
                 instance,
                 transform,
-            });
+                init,
+            };
+            instance.init(&mut ctx)?;
+            instances.push(instance);
         }
 
         Ok(SmartModuleChainInstance { ctx, instances })
