@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.19.0"
+version = "0.18.1"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -14,8 +14,11 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
+default = ["rustls"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
+openssl = ["fluvio-future/openssl_tls"]
+rustls = ["fluvio-future/rust_tls"]
 unstable = []
 
 [dependencies]
