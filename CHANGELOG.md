@@ -1,9 +1,14 @@
 # Release Notes
 
-## Platform Version 0.10.7 - UNRELEASED 
+## Platform Version 0.10.8 - UNRELEASED
+
+## Platform Version 0.10.7 - 2023-04-17
 * Apply SmartModule Transformation For Producer ([#3014](https://github.com/infinyon/fluvio/issues/3014))
-* docs, Example of aggregation sm with initial value ([#3126](https://github.com/infinyon/fluvio/issues/3126))
-* Use relative paths in generated package-meta ([#3123](https://github.com/infinyon/fluvio/issues/3123))
+* Docs, Example of aggregation sm with initial value ([#3126](https://github.com/infinyon/fluvio/issues/3126))
+* Smdk, Use relative paths in generated package-meta ([#3123](https://github.com/infinyon/fluvio/issues/3123))
+* Add support to detect secret on sequences ([#3131](https://github.com/infinyon/fluvio/issues/3131))
+* Multiple dependency updates
+
 ## Platform Version 0.10.6 - 2023-03-31
 * Pin to specific rust release ([#2967](https://github.com/infinyon/fluvio/issues/2967))
 * Added target info on `cdk publish` ([#3075](https://github.com/infinyon/fluvio/issues/3075))

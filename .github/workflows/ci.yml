@@ -30,7 +30,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-  K3D_VERSION: v5.4.8
+  K3D_VERSION: v5.4.9
   BATS_VERSION: 1.9.0
   MINIKUBE_VERSION: v1.29.0
   K8_VERSION: 1.23.17

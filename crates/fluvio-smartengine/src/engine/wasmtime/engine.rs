@@ -1,22 +1,19 @@
 use std::fmt::{self, Debug};
 
 use anyhow::Result;
-use derive_builder::Builder;
 use tracing::debug;
 use wasmtime::{Engine, Module};
 
-use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput,
-};
+use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 
-use crate::init::SmartModuleInit;
-use crate::instance::{SmartModuleInstance, SmartModuleInstanceContext};
+use crate::SmartModuleConfig;
 
-use crate::metrics::SmartModuleChainMetrics;
-use crate::state::WasmState;
-use crate::transforms::create_transform;
+use super::init::SmartModuleInit;
+use super::instance::{SmartModuleInstance, SmartModuleInstanceContext};
 
-const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
+use super::metrics::SmartModuleChainMetrics;
+use super::state::WasmState;
+use super::transforms::create_transform;
 
 #[derive(Clone)]
 pub struct SmartEngine(Engine);
@@ -155,79 +152,10 @@ impl SmartModuleChainInstance {
     }
 }
 
-/// Initial seed data to passed, this will be send back as part of the output
-#[derive(Debug, Clone)]
-#[non_exhaustive]
-pub enum SmartModuleInitialData {
-    None,
-    Aggregate { accumulator: Vec<u8> },
-}
-
-impl SmartModuleInitialData {
-    pub fn with_aggregate(accumulator: Vec<u8>) -> Self {
-        Self::Aggregate { accumulator }
-    }
-}
-
-impl Default for SmartModuleInitialData {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-/// SmartModule configuration
-#[derive(Builder)]
-pub struct SmartModuleConfig {
-    #[builder(default, setter(strip_option))]
-    initial_data: SmartModuleInitialData,
-    #[builder(default)]
-    params: SmartModuleExtraParams,
-    // this will be deprecated in the future
-    #[builder(default, setter(into, strip_option))]
-    version: Option<i16>,
-}
-
-impl SmartModuleConfigBuilder {
-    /// add initial parameters
-    pub fn param(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
-        let mut new = self;
-        let mut params = new.params.take().unwrap_or_default();
-        params.insert(key.into(), value.into());
-        new.params = Some(params);
-        new
-    }
-}
-
-impl SmartModuleConfig {
-    pub fn builder() -> SmartModuleConfigBuilder {
-        SmartModuleConfigBuilder::default()
-    }
-
-    pub(crate) fn version(&self) -> i16 {
-        self.version.unwrap_or(DEFAULT_SMARTENGINE_VERSION)
-    }
-}
-
-#[cfg(feature = "transformation")]
-impl From<crate::transformation::TransformationStep> for SmartModuleConfig {
-    fn from(step: crate::transformation::TransformationStep) -> Self {
-        Self {
-            initial_data: SmartModuleInitialData::None,
-            params: step
-                .with
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect::<std::collections::BTreeMap<String, String>>()
-                .into(),
-            version: None,
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
 
-    use super::SmartModuleConfig;
+    use crate::SmartModuleConfig;
 
     #[test]
     fn test_param() {
@@ -247,7 +175,7 @@ mod chaining_test {
 
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
-    use crate::{
+    use super::super::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
         metrics::SmartModuleChainMetrics,
     };
@@ -255,7 +183,7 @@ mod chaining_test {
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
     const SM_MAP: &str = "fluvio_smartmodule_map";
 
-    use crate::fixture::read_wasm_module;
+    use super::super::fixture::read_wasm_module;
 
     #[ignore]
     #[test]
