@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-sc-schema"
-version = "0.18.0"
+version = "0.18.1"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SC"
