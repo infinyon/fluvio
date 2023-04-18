@@ -8,9 +8,13 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams,
 };
 
-pub trait WasmInstance {
+use crate::SmartModuleInitialData;
+
+use super::error::EngineError;
+
+pub(crate) trait WasmInstance {
     type Context;
-    type Func: WasmFn<Context = Self::Context>;
+    type Func: WasmFn<Context = Self::Context> + Send + Sync + 'static;
 
     fn params(&self) -> SmartModuleExtraParams;
 
@@ -26,12 +30,12 @@ pub trait WasmInstance {
 
 /// All smartmodule wasm functions have the same ABI:
 /// `(ptr: *mut u8, len: usize, version: i16) -> i32`, which is `(param i32 i32 i32) (result i32)` in wasm.
-pub trait WasmFn {
+pub(crate) trait WasmFn {
     type Context;
     fn call(&self, ptr: i32, len: i32, version: i32, ctx: &mut Self::Context) -> Result<i32>;
 }
 
-pub trait SmartModuleTransform<I: WasmInstance>: Send + Sync {
+pub(crate) trait SmartModuleTransform<I: WasmInstance>: Send + Sync {
     /// transform records
     fn process(
         &mut self,
@@ -57,13 +61,13 @@ impl<T: SmartModuleTransform<I> + Any, I: WasmInstance> DowncastableTransform<I>
     }
 }
 
-pub struct SimpleTransformImpl<F: WasmFn + Send + Sync> {
+pub(crate) struct SimpleTransform<F: WasmFn + Send + Sync> {
     name: String,
     func: F,
 }
 
 impl<I: WasmInstance, F: WasmFn<Context = I::Context> + Send + Sync> SmartModuleTransform<I>
-    for SimpleTransformImpl<F>
+    for SimpleTransform<F>
 {
     fn process(
         &mut self,
@@ -89,15 +93,15 @@ impl<I: WasmInstance, F: WasmFn<Context = I::Context> + Send + Sync> SmartModule
     }
 }
 
-impl<F: WasmFn + Send + Sync> SimpleTransformImpl<F> {
-    pub(crate) fn try_instantiate<I>(
+impl<F: WasmFn + Send + Sync> SimpleTransform<F> {
+    pub(crate) fn try_instantiate<I, C>(
         name: &str,
         instance: &mut I,
-        ctx: &mut <I as WasmInstance>::Context,
+        ctx: &mut C,
     ) -> Result<Option<Self>>
     where
-        I: WasmInstance<Func = F>,
-        F: WasmFn<Context = I::Context>,
+        I: WasmInstance<Func = F, Context = C>,
+        F: WasmFn<Context = C>,
     {
         let func = instance
             .get_fn(name, ctx)?
@@ -106,6 +110,45 @@ impl<F: WasmFn + Send + Sync> SimpleTransformImpl<F> {
             name: name.to_owned(),
             func,
         }))
+    }
+}
+
+pub(crate) const FILTER_FN_NAME: &str = "filter";
+pub(crate) const MAP_FN_NAME: &str = "map";
+pub(crate) const FILTER_MAP_FN_NAME: &str = "filter_map";
+pub(crate) const ARRAY_MAP_FN_NAME: &str = "array_map";
+
+pub(crate) fn create_transform<I, C>(
+    instance: &mut I,
+    ctx: &mut C,
+    _initial_data: SmartModuleInitialData,
+) -> Result<Box<dyn DowncastableTransform<I>>>
+where
+    I: WasmInstance<Context = C>,
+{
+    if let Some(tr) = SimpleTransform::try_instantiate(FILTER_FN_NAME, instance, ctx)?
+        .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform<I>>)
+    {
+        Ok(tr)
+    } else if let Some(tr) = SimpleTransform::try_instantiate(MAP_FN_NAME, instance, ctx)?
+        .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform<I>>)
+    {
+        Ok(tr)
+    } else if let Some(tr) = SimpleTransform::try_instantiate(FILTER_MAP_FN_NAME, instance, ctx)?
+        .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform<I>>)
+    {
+        Ok(tr)
+    } else if let Some(tr) = SimpleTransform::try_instantiate(ARRAY_MAP_FN_NAME, instance, ctx)?
+        .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform<I>>)
+    {
+        Ok(tr)
+        // TODO: AGGREGATE
+        // } else if let Some(tr) = SmartModuleAggregate::try_instantiate(ctx, initial_data, store)?
+        //     .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform<I>>)
+        // {
+        //     Ok(tr)
+    } else {
+        Err(EngineError::UnknownSmartModule.into())
     }
 }
 
@@ -217,90 +260,6 @@ impl<I: WasmInstance<Func = F>, F: WasmFn + Send + Sync> SmartModuleInstance<I, 
             init.initialize(input, &mut self.instance, ctx)
         } else {
             Ok(())
-        }
-    }
-}
-
-mod wasmtime {
-    use anyhow::Result;
-    use fluvio_protocol::{Encoder, Decoder};
-    use tracing::debug;
-
-    use std::sync::Arc;
-
-    use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
-    use wasmtime::{Instance, Store};
-
-    use crate::engine::wasmtime::instance::RecordsCallBack;
-
-    pub struct WasmTimeInstance {
-        instance: Instance,
-        records_cb: Arc<RecordsCallBack>,
-        params: SmartModuleExtraParams,
-        version: i16,
-    }
-    pub struct WasmTimeContext {
-        store: Store<()>,
-    }
-
-    pub type WasmTimeFn = wasmtime::TypedFunc<(i32, i32, i32), i32>;
-
-    impl super::WasmInstance for WasmTimeInstance {
-        type Context = WasmTimeContext;
-
-        type Func = WasmTimeFn;
-
-        fn get_fn(&self, name: &str, ctx: &mut Self::Context) -> Result<Option<Self::Func>> {
-            match self.instance.get_func(&mut ctx.store, name) {
-                Some(func) => {
-                    // check type signature
-                    func.typed(&mut ctx.store)
-                        .or_else(|_| func.typed(&ctx.store))
-                        .map(|f| Some(f))
-                }
-                None => Ok(None),
-            }
-        }
-
-        fn write_input<E: Encoder>(
-            &mut self,
-            input: &E,
-            ctx: &mut Self::Context,
-        ) -> anyhow::Result<(i32, i32, i32)> {
-            self.records_cb.clear();
-            let mut input_data = Vec::new();
-            input.encode(&mut input_data, self.version)?;
-            debug!(
-                len = input_data.len(),
-                version = self.version,
-                "input encoded"
-            );
-            let array_ptr = crate::engine::wasmtime::memory::copy_memory_to_instance(
-                &mut ctx.store,
-                &self.instance,
-                &input_data,
-            )?;
-            let length = input_data.len();
-            Ok((array_ptr as i32, length as i32, self.version as i32))
-        }
-
-        fn read_output<D: Decoder + Default>(&mut self, ctx: &mut Self::Context) -> Result<D> {
-            let bytes = self
-                .records_cb
-                .get()
-                .and_then(|m| m.copy_memory_from(&ctx.store).ok())
-                .unwrap_or_default();
-            let mut output = D::default();
-            output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
-            Ok(output)
-        }
-    }
-
-    impl super::WasmFn for WasmTimeFn {
-        type Context = WasmTimeContext;
-
-        fn call(&self, ptr: i32, len: i32, version: i32, ctx: &mut Self::Context) -> Result<i32> {
-            WasmTimeFn::call(self, &mut ctx.store, (ptr, len, version))
         }
     }
 }

@@ -1,5 +1,3 @@
-const FILTER_FN_NAME: &str = "filter";
-
 #[cfg(test)]
 mod test {
 
@@ -7,6 +5,7 @@ mod test {
 
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
+    use crate::engine::common::FILTER_FN_NAME;
     use crate::engine::metrics::SmartModuleChainMetrics;
     use crate::engine::{SmartEngine, SmartModuleChainBuilder};
     use crate::engine::config::SmartModuleConfig;
@@ -34,7 +33,7 @@ mod test {
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),
-            super::FILTER_FN_NAME
+            FILTER_FN_NAME
         );
 
         let metrics = SmartModuleChainMetrics::default();
@@ -93,7 +92,7 @@ mod test {
 
         let instance = chain.instances().first().expect("first");
 
-        assert_eq!(instance.transform().name(), super::FILTER_FN_NAME);
+        assert_eq!(instance.transform().name(), FILTER_FN_NAME);
 
         assert!(instance.get_init().is_some());
 

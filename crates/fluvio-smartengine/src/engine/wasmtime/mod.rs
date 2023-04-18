@@ -4,6 +4,7 @@ pub(crate) mod init;
 pub(crate) mod state;
 pub(crate) mod engine;
 pub(crate) mod instance;
+pub(crate) mod imp;
 pub use engine::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
 
 use super::*;
