@@ -97,7 +97,7 @@ colored = "2.0.0"
 semver = "1.0.3"
 url = "2.1.1"
 which = "4.1.0"
-reqwest = "0.11"
+reqwest = { version = "0.11", default-features = false }
 
 # fluvio dep
 k8-client = { version = "10.0.0" }
