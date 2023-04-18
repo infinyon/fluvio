@@ -11,11 +11,17 @@ description = "Fluvio Connector Package"
 default = ["toml"]
 
 [dependencies]
-bytesize = "1.1.0"
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde_yaml = "0.8.18"
+anyhow = { workspace = true }
+bytesize = { workspace = true}
 humantime-serde = "1.1.1"
+openapiv3 = { git = "https://github.com/galibey/openapiv3", rev = "bdd22f046d2bc19ede257504645d31f835545222", default-features = false }
+once_cell = { workspace = true }
+serde = { workspace = true, default-features = false, features = ["derive"] }
+serde_yaml = { workspace = true }
 toml = { workspace = true , default-features = false, optional = true, features = ["preserve_order"] }
+tracing = { workspace = true }
+
+# fluvio dependencies
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata/", default-features = false, features = [
     "use_serde",
 ] }
@@ -24,11 +30,6 @@ fluvio-smartengine = { path = "../fluvio-smartengine", default-features = false,
 ] }
 fluvio-compression = { path = "../fluvio-compression" }
 fluvio-types = { path = "../fluvio-types" }
-
-tracing = { workspace = true }
-anyhow = { workspace = true }
-openapiv3 = { git = "https://github.com/galibey/openapiv3", rev = "bdd22f046d2bc19ede257504645d31f835545222", default-features = false }
-once_cell = { version = "1.17" }
 
 [dev-dependencies]
 tempfile = { workspace = true }

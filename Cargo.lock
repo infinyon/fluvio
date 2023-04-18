@@ -2458,7 +2458,7 @@ dependencies = [
  "madato",
  "rand 0.8.5",
  "serde",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.21",
  "statrs",
  "thiserror",
  "tracing",
@@ -2675,7 +2675,7 @@ dependencies = [
  "futures-util",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.21",
  "tracing",
 ]
 
@@ -2717,7 +2717,7 @@ dependencies = [
  "openapiv3",
  "pretty_assertions",
  "serde",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.21",
  "tempfile",
  "toml 0.7.3",
  "tracing",
@@ -2736,7 +2736,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.22.0"
+version = "0.22.1"
 dependencies = [
  "async-trait",
  "base64 0.21.0",
@@ -2758,7 +2758,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.12.0"
+version = "0.12.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2832,7 +2832,7 @@ dependencies = [
  "fluvio-types",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.21",
  "thiserror",
  "toml 0.7.3",
  "tracing",
@@ -2858,7 +2858,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.21",
  "sha2 0.10.6",
  "ssh-key",
  "surf",
