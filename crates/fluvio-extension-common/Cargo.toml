@@ -27,5 +27,5 @@ thiserror = "1.0.20"
 semver = { version = "1.0.0", features = ["serde"] }
 anyhow = { workspace = true}
 
-fluvio = { version = "0.18", path = "../fluvio", optional = true }
+fluvio = { version = "0.19", path = "../fluvio", optional = true }
 fluvio-package-index = { version = "0.7.0", path = "../fluvio-package-index" }
