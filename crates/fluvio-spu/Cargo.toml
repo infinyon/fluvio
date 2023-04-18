@@ -65,7 +65,7 @@ flv-tls-proxy = { version = "0.6.0" }
 flv-util = { version = "0.5.0" }
 fluvio-future = { workspace = true, features = [
     "subscriber",
-    "rust_tls",
+    "openssl_tls",
     "zero_copy",
 ] }
 fluvio-smartengine = { path = "../fluvio-smartengine"}
