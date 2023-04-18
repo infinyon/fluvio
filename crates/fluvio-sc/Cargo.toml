@@ -44,7 +44,7 @@ anyhow = { version = "1.0.38" }
 
 # Fluvio dependencies
 fluvio-auth = { path = "../fluvio-auth" }
-fluvio-future = { version = "0.4", features = [
+fluvio-future = { workspace = true, features = [
     "subscriber",
     "openssl_tls",
     "zero_copy",
@@ -70,6 +70,6 @@ flv-tls-proxy = { version = "0.6.0" }
 
 [dev-dependencies]
 rand = "0.8.4"
-fluvio-future = { version = "0.4", features = ["fixture"] }
+fluvio-future = { workspace = true, features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
 fluvio-stream-model = { path = "../fluvio-stream-model", features = ["fixture"] }

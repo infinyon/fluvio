@@ -22,7 +22,7 @@ tracing = { workspace = true }
 x509-parser = "0.15.0"
 
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
-fluvio-future = { version = "0.4", features = ["net", "openssl_tls"] }
+fluvio-future = { workspace = true, features = ["net", "openssl_tls"] }
 fluvio-protocol = { path = "../fluvio-protocol" }
 fluvio-socket = { path = "../fluvio-socket" }
 fluvio-types = { path = "../fluvio-types" }

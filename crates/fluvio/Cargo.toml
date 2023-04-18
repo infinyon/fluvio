@@ -45,7 +45,7 @@ async-trait = "0.1.51"
 anyhow = "1.0.38"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.4", features = [
+fluvio-future = { workspace = true, features = [
     "task",
     "task_unstable",
     "retry",
@@ -81,7 +81,7 @@ chrono = {version =  "0.4", features = ["wasmbind", "clock"]}
 
 [dev-dependencies]
 async-std = { version = "1.6.4", default-features = false }
-fluvio-future = { version = "0.4", features = ["io", "fixture"] }
+fluvio-future = { workspace = true, features = ["io", "fixture"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.24"

@@ -34,7 +34,7 @@ reqwest = { workspace = true, default-features = false, features = ["json", "gzi
 # added to make sure reqwest works
 async-std = { version = "1.6.4", default-features = false, features = ["tokio1"] }
 
-fluvio-future = { version = "0.4", features = ["task"] }
+fluvio-future = { workspace = true, features = ["task"] }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { path = "../fluvio-types" }
 
