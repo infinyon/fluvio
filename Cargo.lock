@@ -311,7 +311,7 @@ dependencies = [
  "log",
  "parking",
  "polling",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "slab",
  "socket2",
  "waker-fn",
@@ -372,7 +372,7 @@ dependencies = [
  "cfg-if",
  "event-listener",
  "futures-lite",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "signal-hook",
  "windows-sys 0.48.0",
 ]
@@ -689,7 +689,7 @@ dependencies = [
  "io-lifetimes",
  "ipnet",
  "maybe-owned",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
  "winx",
 ]
@@ -713,7 +713,7 @@ dependencies = [
  "cap-primitives",
  "io-extras",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
 ]
 
 [[package]]
@@ -724,7 +724,7 @@ checksum = "4afa389ffcd0c66daca4497d1a9992d18b985eff6b747ee8b4c86c2beae1f708"
 dependencies = [
  "cap-primitives",
  "once_cell",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "winx",
 ]
 
@@ -861,7 +861,7 @@ dependencies = [
  "fluvio",
  "fluvio-connector-deployer",
  "fluvio-connector-package",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-hub-util",
  "include_dir",
  "serde",
@@ -2116,7 +2116,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39ae6b3d9530211fb3b12a95374b8b0823be812f53d09e18c5675c0146b09642"
 dependencies = [
  "cfg-if",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
@@ -2189,7 +2189,7 @@ dependencies = [
  "dirs 5.0.0",
  "event-listener",
  "fluvio-compression",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-smartengine",
@@ -2218,7 +2218,7 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-types",
@@ -2243,7 +2243,7 @@ dependencies = [
  "derive_builder",
  "fluvio",
  "fluvio-cli-common",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "futures-util",
  "hdrhistogram",
  "madato",
@@ -2283,7 +2283,7 @@ dependencies = [
  "dirs 5.0.0",
  "fluvio-channel",
  "fluvio-cli-common",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-package-index",
  "fluvio-types",
  "predicates 2.1.5",
@@ -2319,7 +2319,7 @@ dependencies = [
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-hub-util",
  "fluvio-package-index",
  "fluvio-protocol",
@@ -2361,7 +2361,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "fluvio",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-package-index",
  "fluvio-protocol",
  "fluvio-types",
@@ -2399,7 +2399,7 @@ dependencies = [
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-helm",
  "fluvio-sc-schema",
  "fluvio-types",
@@ -2461,7 +2461,7 @@ dependencies = [
  "fluvio",
  "fluvio-connector-derive",
  "fluvio-connector-package",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-sc-schema",
  "fluvio-smartengine",
  "futures 0.3.28",
@@ -2535,7 +2535,7 @@ dependencies = [
  "base64 0.21.0",
  "bytes 1.4.0",
  "flate2",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
@@ -2574,6 +2574,29 @@ version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37174044230084d1cfd7c02f194c5ec127bb8bc17c76f0cd74e943f2fe86ec34"
 dependencies = [
+ "async-io",
+ "async-net",
+ "async-std",
+ "async-trait",
+ "cfg-if",
+ "fluvio-wasm-timer",
+ "futures-lite",
+ "futures-util",
+ "log",
+ "openssl",
+ "openssl-sys",
+ "pin-project",
+ "thiserror",
+ "tracing",
+ "ws_stream_wasm",
+]
+
+[[package]]
+name = "fluvio-future"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8186006d0ce6a5a65b200f53139ad151c568644a47dd122f3d0a683c74c4fad5"
+dependencies = [
  "async-fs",
  "async-io",
  "async-native-tls",
@@ -2587,7 +2610,7 @@ dependencies = [
  "futures-lite",
  "futures-util",
  "log",
- "memmap",
+ "memmap2",
  "native-tls",
  "nix",
  "openssl",
@@ -2641,7 +2664,7 @@ dependencies = [
  "dirs 5.0.0",
  "ed25519-dalek",
  "flate2",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-hub-protocol",
  "fluvio-types",
  "hex",
@@ -2689,7 +2712,7 @@ dependencies = [
  "derive_builder",
  "eyre",
  "fluvio-compression",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-protocol-derive",
  "fluvio-types",
@@ -2721,7 +2744,7 @@ version = "0.0.0"
 dependencies = [
  "clap 4.2.2",
  "fluvio-extension-common",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-sc",
  "fluvio-spu",
  "semver 1.0.17",
@@ -2746,7 +2769,7 @@ dependencies = [
  "fluvio-auth",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-service",
@@ -2776,7 +2799,7 @@ name = "fluvio-sc-schema"
 version = "0.18.1"
 dependencies = [
  "fluvio-controlplane-metadata",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-types",
@@ -2794,7 +2817,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-types",
@@ -2812,7 +2835,7 @@ dependencies = [
  "anyhow",
  "cfg-if",
  "derive_builder",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-types",
@@ -2859,7 +2882,7 @@ dependencies = [
  "bytes 1.4.0",
  "cfg-if",
  "event-listener",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "futures-util",
  "once_cell",
@@ -2894,7 +2917,7 @@ dependencies = [
  "fluvio-compression",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-service",
  "fluvio-smartengine",
@@ -2927,7 +2950,7 @@ dependencies = [
  "bytes 1.4.0",
  "educe",
  "flate2",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-socket",
@@ -2953,7 +2976,7 @@ dependencies = [
  "clap 4.2.2",
  "derive_builder",
  "fluvio-controlplane-metadata",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-spu-schema",
@@ -2979,7 +3002,7 @@ dependencies = [
  "async-rwlock",
  "async-trait",
  "event-listener",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-stream-model",
  "fluvio-types",
  "futures-lite",
@@ -2999,7 +3022,7 @@ dependencies = [
  "async-rwlock",
  "async-std",
  "event-listener",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-stream-model",
  "k8-types",
  "once_cell",
@@ -3027,7 +3050,7 @@ dependencies = [
  "fluvio-cluster",
  "fluvio-command",
  "fluvio-controlplane-metadata",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-protocol",
  "fluvio-test-case-derive",
  "fluvio-test-derive 0.0.0",
@@ -3069,7 +3092,7 @@ dependencies = [
  "clap 4.2.2",
  "crossbeam-channel",
  "fluvio",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-test-util",
  "inflections",
  "inventory",
@@ -3108,7 +3131,7 @@ dependencies = [
  "fluvio-cluster",
  "fluvio-command",
  "fluvio-controlplane-metadata",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-types",
  "futures-lite",
  "hdrhistogram",
@@ -3131,7 +3154,7 @@ name = "fluvio-types"
 version = "0.4.2"
 dependencies = [
  "event-listener",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "thiserror",
  "tokio",
  "tracing",
@@ -3172,14 +3195,14 @@ dependencies = [
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f4ce092ccd15314ac22e1f1ac34e31e1aa99d8cfdb2fc8de912cf117f751108"
+checksum = "b27a60f82edd03c090cd66888d6fe5ca247538d53a54ea1ec9329ec3089b9e68"
 dependencies = [
  "async-trait",
  "cfg-if",
  "event-listener",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "futures-lite",
  "futures-util",
  "log",
@@ -3257,7 +3280,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7833d0f115a013d51c55950a3b09d30e4b057be9961b709acb9b5b17a1108861"
 dependencies = [
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
@@ -4093,7 +4116,7 @@ checksum = "adcf93614601c8129ddf72e2d5633df827ba6551541c6d8c59520a371475be1f"
 dependencies = [
  "hermit-abi 0.3.1",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
@@ -4199,7 +4222,7 @@ dependencies = [
  "base64 0.13.1",
  "bytes 1.4.0",
  "cfg-if",
- "fluvio-future",
+ "fluvio-future 0.4.5",
  "futures-util",
  "http",
  "hyper",
@@ -4582,7 +4605,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffc89ccdc6e10d6907450f753537ebc5c5d3460d2e4e62ea74bd571db62c0f9e"
 dependencies = [
- "rustix 0.37.11",
+ "rustix 0.37.12",
 ]
 
 [[package]]
@@ -5833,9 +5856,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.37.11"
+version = "0.37.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85597d61f83914ddeba6a47b3b8ffe7365107221c2e557ed94426489fefb5f77"
+checksum = "722529a737f5a942fdbac3a46cee213053196737c5eaa3386d52e85b786f2659"
 dependencies = [
  "bitflags",
  "errno",
@@ -6333,7 +6356,7 @@ dependencies = [
  "fluvio-cli-common",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future",
+ "fluvio-future 0.5.0",
  "fluvio-hub-util",
  "fluvio-protocol",
  "fluvio-sc-schema",
@@ -6535,7 +6558,7 @@ dependencies = [
  "cap-std",
  "fd-lock",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
  "winx",
 ]
@@ -6566,7 +6589,7 @@ dependencies = [
  "cfg-if",
  "fastrand",
  "redox_syscall 0.3.5",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.45.0",
 ]
 
@@ -6585,7 +6608,7 @@ version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e6bf6f19e9f8ed8d4048dc22981458ebcf406d67e94cd422e5ecd73d63b3237"
 dependencies = [
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
