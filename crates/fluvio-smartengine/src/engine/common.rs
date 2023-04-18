@@ -5,11 +5,14 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
     SmartModuleInitErrorStatus, SmartModuleInitOutput, SmartModuleInitInput,
+    SmartModuleExtraParams,
 };
 
 pub trait WasmInstance {
     type Context;
     type Func: WasmFn<Context = Self::Context>;
+
+    fn params(&self) -> SmartModuleExtraParams;
 
     fn get_fn(&self, name: &str, ctx: &mut Self::Context) -> Result<Option<Self::Func>>;
 
@@ -158,6 +161,60 @@ impl<F: WasmFn + Send + Sync> SmartModuleInit<F> {
                 }
                 _ => Err(internal_error.into()),
             }
+        } else {
+            Ok(())
+        }
+    }
+}
+
+pub(crate) struct SmartModuleInstance<I: WasmInstance<Func = F>, F: WasmFn> {
+    pub instance: I,
+    pub transform: Box<dyn DowncastableTransform<I>>,
+    pub init: Option<SmartModuleInit<F>>,
+}
+
+impl<I: WasmInstance<Func = F>, F: WasmFn + Send + Sync> SmartModuleInstance<I, F> {
+    #[cfg(test)]
+    #[allow(clippy::borrowed_box)]
+    pub(crate) fn transform(&self) -> &Box<dyn DowncastableTransform<I>> {
+        &self.transform
+    }
+
+    #[cfg(test)]
+    pub(crate) fn get_init(&self) -> &Option<SmartModuleInit<F>> {
+        &self.init
+    }
+
+    pub(crate) fn new(
+        instance: I,
+        init: Option<SmartModuleInit<F>>,
+        transform: Box<dyn DowncastableTransform<I>>,
+    ) -> Self {
+        Self {
+            instance,
+            init,
+            transform,
+        }
+    }
+
+    pub(crate) fn process(
+        &mut self,
+        input: SmartModuleInput,
+        ctx: &mut I::Context,
+    ) -> Result<SmartModuleOutput> {
+        self.transform.process(input, &mut self.instance, ctx)
+    }
+
+    pub fn init<C>(&mut self, ctx: &mut I::Context) -> Result<()>
+    where
+        I: WasmInstance<Context = C>,
+        F: WasmFn<Context = C>,
+    {
+        if let Some(init) = &mut self.init {
+            let input = SmartModuleInitInput {
+                params: self.instance.params(),
+            };
+            init.initialize(input, &mut self.instance, ctx)
         } else {
             Ok(())
         }

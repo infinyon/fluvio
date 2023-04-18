@@ -2,33 +2,28 @@ mod instance;
 mod transforms;
 use instance::*;
 mod memory;
-use memory::*;
 
 use tracing::debug;
 use wasmedge_sdk::error::HostFuncError;
 use wasmedge_sdk::types::Val;
 use wasmedge_sdk::{
-    Executor, Func, Instance, Memory, Module, Store, CallingFrame, WasmValue, Caller,
-    ImportObjectBuilder,
+    Executor, Func, Module, Store, CallingFrame, WasmValue, Caller, ImportObjectBuilder,
 };
 
+use crate::{SmartModuleChainBuilder};
 use crate::engine::common::WasmFn;
-use crate::engine::config::*;
 use crate::engine::error::EngineError;
 use crate::metrics::SmartModuleChainMetrics;
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleExtraParams,
 };
-use std::any::Any;
-use std::fmt::{self, Debug};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use self::transforms::create_transform;
 
-use super::common::SmartModuleInit;
-
-type Init = SmartModuleInit<WasmedgeFn>;
+type SmartModuleInit = super::common::SmartModuleInit<WasmedgeFn>;
+type SmartModuleInstance = super::common::SmartModuleInstance<WasmedgeInstance, WasmedgeFn>;
 
 pub struct WasmedgeInstance {
     instance: wasmedge_sdk::Instance,
@@ -72,7 +67,7 @@ impl super::common::WasmInstance for WasmedgeInstance {
         let array_ptr =
             memory::copy_memory_to_instance(&mut ctx.engine, &self.instance, &input_data)?;
         let length = input_data.len();
-        Ok((array_ptr as i32, length as i32, self.version as i32))
+        Ok((array_ptr, length as i32, self.version as i32))
     }
 
     fn read_output<D: fluvio_protocol::Decoder + Default>(
@@ -88,6 +83,10 @@ impl super::common::WasmInstance for WasmedgeInstance {
         output.decode(&mut std::io::Cursor::new(bytes), self.version)?;
         Ok(output)
     }
+
+    fn params(&self) -> SmartModuleExtraParams {
+        self.params.clone()
+    }
 }
 
 impl WasmFn for WasmedgeFn {
@@ -97,9 +96,9 @@ impl WasmFn for WasmedgeFn {
         let res = self.call(
             &ctx.engine,
             vec![
-                Val::I32(ptr as i32).into(),
-                Val::I32(len as i32).into(),
-                Val::I32(version as i32).into(),
+                Val::I32(ptr).into(),
+                Val::I32(len).into(),
+                Val::I32(version).into(),
             ],
         )?;
         Ok(res[0].to_i32())
@@ -164,88 +163,58 @@ impl WasmedgeInstance {
     }
 }
 
-pub struct SmartEngine();
+#[derive(Clone)]
+pub struct SmartEngineImp();
 
 #[allow(clippy::new_without_default)]
-impl SmartEngine {
+impl SmartEngineImp {
     pub fn new() -> Self {
         Self()
     }
 }
 
-impl Debug for SmartEngine {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SmartModuleEngine")
+pub fn initialize_imp(
+    builder: SmartModuleChainBuilder,
+    _engine: &SmartEngineImp,
+) -> Result<SmartModuleChainInstanceImp> {
+    let executor = Executor::new(None, None).expect("Failed to create WasmEdge executor");
+    let mut store = Store::new().expect("Failed to create WasmEdge store");
+    let mut ctx = WasmedgeContext { engine: executor };
+
+    let mut instances = Vec::with_capacity(builder.smart_modules.len());
+    // let mut state = engine.new_state();
+    for (config, bytes) in builder.smart_modules {
+        let module = Module::from_bytes(None, bytes)?;
+        let version = config.version();
+        let mut instance = WasmedgeInstance::instantiate(
+            &mut store,
+            &mut ctx.engine,
+            module,
+            config.params,
+            version,
+        )?;
+
+        let init = SmartModuleInit::try_instantiate(&mut instance, &mut ctx)?;
+        let transform = create_transform(&mut instance, &mut ctx, config.initial_data)?;
+        let mut instance = SmartModuleInstance {
+            instance,
+            transform,
+            init,
+        };
+        instance.init(&mut ctx)?;
+        instances.push(instance);
     }
-}
 
-/// Building SmartModule
-#[derive(Default)]
-pub struct SmartModuleChainBuilder {
-    smart_modules: Vec<(SmartModuleConfig, Vec<u8>)>,
-}
-
-impl SmartModuleChainBuilder {
-    /// Add SmartModule with a single transform and init
-    pub fn add_smart_module(&mut self, config: SmartModuleConfig, bytes: Vec<u8>) {
-        self.smart_modules.push((config, bytes))
-    }
-
-    /// stop adding smartmodule and return SmartModuleChain that can be executed
-    pub fn initialize(self, _engine: &SmartEngine) -> Result<SmartModuleChainInstance> {
-        let mut executor = Executor::new(None, None).expect("Failed to create WasmEdge executor");
-        let mut store = Store::new().expect("Failed to create WasmEdge store");
-        let mut ctx = WasmedgeContext { engine: executor };
-
-        let mut instances = Vec::with_capacity(self.smart_modules.len());
-        // let mut state = engine.new_state();
-        for (config, bytes) in self.smart_modules {
-            let module = Module::from_bytes(None, bytes)?;
-            let version = config.version();
-            let mut instance = WasmedgeInstance::instantiate(
-                &mut store,
-                &mut ctx.engine,
-                module,
-                config.params,
-                version,
-            )?;
-
-            let init = Init::try_instantiate(&mut instance, &mut ctx)?;
-            let transform = create_transform(&mut instance, &mut ctx, config.initial_data)?;
-            let mut instance = SmartModuleInstance {
-                instance,
-                transform,
-                init,
-            };
-            instance.init(&mut ctx)?;
-            instances.push(instance);
-        }
-
-        Ok(SmartModuleChainInstance { ctx, instances })
-    }
-}
-
-impl<T: Into<Vec<u8>>> From<(SmartModuleConfig, T)> for SmartModuleChainBuilder {
-    fn from(pair: (SmartModuleConfig, T)) -> Self {
-        let mut result = Self::default();
-        result.add_smart_module(pair.0, pair.1.into());
-        result
-    }
+    Ok(SmartModuleChainInstanceImp { ctx, instances })
 }
 
 /// SmartModule Chain Instance that can be executed
-pub struct SmartModuleChainInstance {
+pub struct SmartModuleChainInstanceImp {
     ctx: WasmedgeContext,
     instances: Vec<SmartModuleInstance>,
 }
 
-impl Debug for SmartModuleChainInstance {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SmartModuleChainInstance")
-    }
-}
-
-impl SmartModuleChainInstance {
+impl SmartModuleChainInstanceImp {
     /// A single record is processed thru all smartmodules in the chain.
     /// The output of one smartmodule is the input of the next smartmodule.
     /// A single record may result in multiple records.

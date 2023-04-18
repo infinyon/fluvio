@@ -8,7 +8,8 @@ mod test {
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
     use crate::engine::metrics::SmartModuleChainMetrics;
-    use crate::engine::wasmedge::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
+    use crate::engine::{SmartEngine, SmartModuleChainBuilder};
+    use crate::engine::config::SmartModuleConfig;
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
@@ -28,7 +29,8 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),
@@ -86,7 +88,8 @@ mod test {
 
         let mut chain = chain_builder
             .initialize(&engine)
-            .expect("failed to build chain");
+            .expect("failed to build chain")
+            .inner;
 
         let instance = chain.instances().first().expect("first");
 

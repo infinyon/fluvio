@@ -12,7 +12,7 @@ use anyhow::Result;
 pub(crate) fn create_transform(
     instance: &mut WasmedgeInstance,
     ctx: &mut WasmedgeContext,
-    initial_data: SmartModuleInitialData,
+    _initial_data: SmartModuleInitialData,
 ) -> Result<Box<dyn DowncastableTransform<WasmedgeInstance>>> {
     if let Some(tr) = SimpleTransformImpl::try_instantiate("filter", instance, ctx)?
         .map(|transform| Box::new(transform) as Box<dyn DowncastableTransform<WasmedgeInstance>>)

@@ -51,7 +51,7 @@ impl SmartModuleChainBuilder {
     }
 
     pub fn initialize(self, engine: &SmartEngine) -> anyhow::Result<SmartModuleChainInstance> {
-        initialize_imp(self, engine)
+        initialize_imp(self, &engine.inner).map(|inner| SmartModuleChainInstance { inner })
     }
 }
 
@@ -97,16 +97,15 @@ cfg_if::cfg_if! {
 
 
     if #[cfg(feature = "wasmtime-engine")] {
-        mod wasmtime;
-        use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+        // mod wasmtime;
+        // use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
     }
 }
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "wasmedge-engine")] {
         mod wasmedge;
-        mod test_use {
-            pub use super::wasmedge::{SmartEngine, SmartModuleChainBuilder, SmartModuleChainInstance};
-        }
+        use self::wasmedge::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+
     }
 }

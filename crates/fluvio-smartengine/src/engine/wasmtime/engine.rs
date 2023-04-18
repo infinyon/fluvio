@@ -4,7 +4,7 @@ use wasmtime::{Engine, Module};
 
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 
-use crate::{SmartEngine, SmartModuleChainInstance};
+use crate::SmartModuleChainInstance;
 
 use super::init::SmartModuleInit;
 use super::instance::{SmartModuleInstance, SmartModuleInstanceContext};
@@ -32,12 +32,12 @@ impl SmartEngineImp {
 /// stop adding smartmodule and return SmartModuleChain that can be executed
 pub fn initialize_imp(
     builder: super::SmartModuleChainBuilder,
-    engine: &SmartEngine,
+    engine: &SmartEngineImp,
 ) -> Result<SmartModuleChainInstance> {
     let mut instances = Vec::with_capacity(builder.smart_modules.len());
-    let mut state = engine.inner.new_state();
+    let mut state = engine.new_state();
     for (config, bytes) in builder.smart_modules {
-        let module = Module::new(&engine.inner.0, bytes)?;
+        let module = Module::new(&engine.0, bytes)?;
         let version = config.version();
         let ctx =
             SmartModuleInstanceContext::instantiate(&mut state, module, config.params, version)?;
