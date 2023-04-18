@@ -15,7 +15,7 @@ dirs = { workspace = true}
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 flate2 = "1.0"
 hex = "0.4"
-pem = "1.1"
+pem = "2.0"
 rand = "0.8"
 rand_core = "0.6"
 sha2 = "0.10.6"
