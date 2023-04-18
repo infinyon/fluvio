@@ -136,7 +136,7 @@ impl MultiplexerSocket {
             use std::env;
 
             let var_value = env::var("FLV_SOCKET_WAIT").unwrap_or_default();
-            let wait_time: u64 = var_value.parse().unwrap_or(300); // match TCP socket timeout
+            let wait_time: u64 = var_value.parse().unwrap_or(60);
             wait_time
         });
 

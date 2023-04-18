@@ -96,7 +96,7 @@ impl ConnectorConfig {
     }
 
     pub fn write_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        std::fs::write(path, serde_yaml::to_vec(self)?)?;
+        std::fs::write(path, serde_yaml::to_string(self)?)?;
         Ok(())
     }
 
@@ -229,7 +229,7 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "meta: missing field `version` at line 2 column 7",
+            "meta: missing field `version` at line 2 column 3",
             format!("{connector_cfg:?}")
         );
     }
