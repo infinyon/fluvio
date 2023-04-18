@@ -10,7 +10,7 @@ use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::link::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
-use fluvio_future::retry::retry;
+use fluvio_future::retry::retry_if;
 
 use crate::{SocketError, FluvioSocket, SharedMultiplexerSocket, AsyncResponse};
 
@@ -305,7 +305,12 @@ impl VersionedSerialSocket {
         let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
 
         // send request & retry it if result is Err
-        retry(retries, || self.socket.send_and_receive(req_msg.clone())).await
+        retry_if(
+            retries,
+            || self.socket.send_and_receive(req_msg.clone()),
+            is_retryable,
+        )
+        .await
     }
 
     /// create new request based on version
@@ -329,6 +334,26 @@ impl VersionedSerialSocket {
 impl SerialFrame for VersionedSerialSocket {
     fn config(&self) -> &ClientConfig {
         &self.config
+    }
+}
+
+fn is_retryable(err: &SocketError) -> bool {
+    use std::io::ErrorKind;
+    match err {
+        SocketError::Io { source, .. } => matches!(
+            source.kind(),
+            ErrorKind::AddrNotAvailable
+                | ErrorKind::ConnectionAborted
+                | ErrorKind::ConnectionRefused
+                | ErrorKind::ConnectionReset
+                | ErrorKind::NotConnected
+                | ErrorKind::Other
+                | ErrorKind::TimedOut
+                | ErrorKind::UnexpectedEof
+                | ErrorKind::Interrupted
+        ),
+
+        SocketError::SocketClosed | SocketError::SocketStale => false,
     }
 }
 
