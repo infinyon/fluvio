@@ -1,44 +1,19 @@
 pub use fluvio_controlplane_metadata::topic::*;
+
 pub mod validate {
+    use crate::shared::is_valid_resource_name;
+
     /// Ensure a topic can be created with a given name.
     /// Topics name can only be formed by lowercase alphanumeric elements and hyphens.
     /// They should start and finish with an alphanumeric character.
+    #[inline]
     pub fn valid_topic_name(name: &str) -> bool {
-        name.chars()
-            .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-')
-            && !name.ends_with('-')
-            && !name.starts_with('-')
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use crate::topic::validate::valid_topic_name;
-
-        #[test]
-        fn reject_topics_with_spaces() {
-            assert!(!valid_topic_name("hello world"));
-        }
-
-        #[test]
-        fn reject_topics_with_uppercase() {
-            assert!(!valid_topic_name("helloWorld"));
-        }
-
-        #[test]
-        fn reject_topics_with_underscore() {
-            assert!(!valid_topic_name("hello_world"));
-        }
-
-        #[test]
-        fn valid_topic() {
-            assert!(valid_topic_name("hello-world"));
-        }
-        #[test]
-        fn reject_topics_that_start_with_hyphen() {
-            assert!(!valid_topic_name("-helloworld"));
-        }
+        // TODO: This reference is used to avoid introducing breaking changes
+        // in other projects
+        is_valid_resource_name(name)
     }
 }
+
 mod convert {
 
     use crate::CreatableAdminSpec;

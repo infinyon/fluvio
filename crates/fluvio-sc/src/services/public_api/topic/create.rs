@@ -13,7 +13,7 @@ use std::io::{Error as IoError, ErrorKind};
 
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_sc_schema::objects::CommonCreateRequest;
-use fluvio_sc_schema::topic::validate::valid_topic_name;
+use fluvio_sc_schema::shared::is_valid_resource_name;
 use tracing::{info, debug, trace, instrument};
 
 use fluvio_protocol::link::ErrorCode;
@@ -80,7 +80,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
 async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &Context) -> Status {
     debug!("validating topic: {}", name);
 
-    let valid_name = valid_topic_name(name);
+    let valid_name = is_valid_resource_name(name);
     if !valid_name {
         return Status::new(
             name.to_string(),
