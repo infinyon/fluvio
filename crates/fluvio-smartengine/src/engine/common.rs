@@ -115,7 +115,7 @@ mod wasmtime {
     use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
     use wasmtime::{Instance, Store};
 
-    use super::super::instance::RecordsCallBack;
+    use crate::engine::wasmtime::instance::RecordsCallBack;
 
     pub struct WasmTimeInstance {
         instance: Instance,
@@ -159,7 +159,7 @@ mod wasmtime {
                 version = self.version,
                 "input encoded"
             );
-            let array_ptr = super::super::memory::copy_memory_to_instance(
+            let array_ptr = crate::engine::wasmtime::memory::copy_memory_to_instance(
                 &mut ctx.store,
                 &self.instance,
                 &input_data,
