@@ -28,5 +28,5 @@ fluvio-protocol = { path = "../fluvio-protocol", features = ["derive", "api", "c
 fluvio-types = { features = ["events"], path = "../fluvio-types" }
 
 [dev-dependencies]
-fluvio-future = { workspace = true }
+fluvio-future = { workspace = true, features = ["fixture"] }
 portpicker = "0.1.1"

@@ -12,7 +12,7 @@ publish = false
 name = "storage-cli"
 path = "src/bin/cli.rs"
 doc = false
-required-features = ["cli"]
+required-features = ["cli", "fluvio-future/subscriber"]
 
 [features]
 cli = ["clap"]
@@ -43,7 +43,7 @@ blocking = "1.1.0"
 fluvio-types = { path = "../fluvio-types", features = [
     "events",
 ], version = "0.4.0" }
-fluvio-future = { workspace = true }
+fluvio-future = { workspace = true, features = ["fs", "mmap", "zero_copy"]  }
 fluvio-protocol = { path = "../fluvio-protocol" }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
 fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
@@ -51,7 +51,7 @@ fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
 ] }
 
 [dev-dependencies]
-fluvio-future = { workspace = true }
+fluvio-future = { workspace = true, features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
 fluvio-storage = { path = ".", features = ["fixture"] }

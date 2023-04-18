@@ -51,5 +51,10 @@ fluvio-types = { version = "0.4.0", path = "../fluvio-types", optional = true }
 criterion = "0.4.0"
 trybuild = "1.0.64"
 fluvio-protocol = { path = ".", features = ["derive", "api"] }
-fluvio-future = { workspace = true }
+fluvio-future = { workspace = true, features = [
+    "fixture",
+    "subscriber",
+    "timer",
+    "net",
+] }
 futures = { version = "0.3.1" }

@@ -30,11 +30,11 @@ toml = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 wasmparser = { workspace = true }
-reqwest = { workspace = true }
+reqwest = { workspace = true, default-features = false, features = ["json", "gzip", "rustls-tls"] }
 # added to make sure reqwest works
 async-std = { version = "1.6.4", default-features = false, features = ["tokio1"] }
 
-fluvio-future = { workspace = true }
+fluvio-future = { workspace = true, features = ["task"] }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { path = "../fluvio-types" }
 

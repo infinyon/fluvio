@@ -74,7 +74,7 @@ tokio = { version = "1.3.0", features = ["macros"] }
 async-net = "1.7.0"
 anyhow = { workspace = true }
 current_platform = "0.2"
-reqwest = { workspace = true }
+reqwest = { workspace = true, default-features = false, features = ["json", "gzip", "rustls-tls"] }
 # added to make sure reqwest works
 async-std = { version = "1.6.4", default-features = false, features = ["tokio1"] }
 
@@ -99,7 +99,7 @@ fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", featu
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }
-fluvio-future = { workspace = true, optional = true }
+fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "rust_tls"], optional = true }
 fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 fluvio-spu-schema = { path = "../fluvio-spu-schema", optional = true }
 

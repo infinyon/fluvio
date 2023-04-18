@@ -31,7 +31,7 @@ lib-cargo-crate = "0.1.6"
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-hub-util = { path = "../fluvio-hub-util" }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
-fluvio-future = { workspace = true }
+fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation"] }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
