@@ -1,7 +1,13 @@
-const K8S_MAX_RESOURCE_NAME_LEN: usize = 63;
+pub const MAX_RESOURCE_NAME_LEN: usize = 63;
 
+/// Checks if the Resource Name is valid for internal resources.
+///
+/// ```test
+/// let name = "prices-list-scrapper";
+/// assert!(is_valid_resource_name(name));
+/// ```
 pub fn is_valid_resource_name(name: &str) -> bool {
-    if name.len() > K8S_MAX_RESOURCE_NAME_LEN {
+    if name.len() > MAX_RESOURCE_NAME_LEN {
         return false;
     }
 
