@@ -10,7 +10,7 @@ mod test {
 
     use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
-        transforms::simple_transform::FILTER_MAP_FN_NAME,
+        wasmtime::transforms::simple_transform::FILTER_MAP_FN_NAME,
     };
 
     const SM_FILTER_MAP: &str = "fluvio_smartmodule_filter_map";

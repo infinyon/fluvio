@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.7.2"
+version = "0.7.3"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -12,12 +12,11 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-engine = ["wasmedge-engine", "wasmtime-engine"]
-wasi = ["wasmtime-wasi", "engine"]
+engine = ["wasmtime-engine"]
+wasi = ["wasmtime-wasi", "wasmtime-engine", "engine"]
 transformation = ["serde_json", "serde_yaml"]
 default = ["engine"]
-wasmtime-engine = ["wasmtime", "wasmtime-wasi"]
-wasmedge-engine = ["wasmedge-sdk"]
+wasmtime-engine = ["wasmtime"]
 
 [dependencies]
 tracing ={ workspace = true }
