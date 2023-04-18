@@ -33,7 +33,7 @@ anyhow = { workspace = true }
 
 fluvio = { path = "../fluvio" }
 fluvio-types = { path = "../fluvio-types" }
-fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
+fluvio-future = { version = "0.4", features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-command = { version = "0.2.0" }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../fluvio-controlplane-metadata" }

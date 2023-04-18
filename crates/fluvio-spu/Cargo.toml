@@ -63,7 +63,7 @@ fluvio-socket = { path = "../fluvio-socket", features = [
 fluvio-service = { path = "../fluvio-service" }
 flv-tls-proxy = { version = "0.6.0" }
 flv-util = { version = "0.5.0" }
-fluvio-future = { workspace = true, features = [
+fluvio-future = { version = "0.4", features = [
     "subscriber",
     "openssl_tls",
     "zero_copy",
@@ -79,6 +79,6 @@ flate2 = "1.0.22"
 portpicker = "0.1.1"
 
 flv-util = { version = "0.5.2", features = ["fixture"] }
-fluvio-future = { workspace = true, features = ["fixture", "subscriber"] }
+fluvio-future = { version = "0.4", features = ["fixture", "subscriber"] }
 fluvio-protocol = { path = "../fluvio-protocol", features = ["fixture"] }
 

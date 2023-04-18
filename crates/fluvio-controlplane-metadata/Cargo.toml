@@ -29,7 +29,7 @@ toml = { workspace = true, optional = true }
 lenient_semver = "0.4.2"
 
 # External Fluvio dependencies
-fluvio-future = { workspace = true }
+fluvio-future = { version = "0.4" }
 flv-util = { workspace = true }
 
 fluvio-types = { version = "0.4.0", path = "../fluvio-types" }
@@ -41,4 +41,4 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
 
 [dev-dependencies]
 serde_yaml = "0.9.4"
-fluvio-future = { workspace = true, features = ["fixture"] }
+fluvio-future = { version = "0.4", features = ["fixture"] }
