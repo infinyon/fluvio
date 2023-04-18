@@ -1,11 +1,10 @@
 use std::any::Any;
 
 use anyhow::Result;
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Decoder, Encoder};
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
-    SmartModuleInitErrorStatus, SmartModuleInitOutput, SmartModuleInitInput,
-    SmartModuleExtraParams,
+    SmartModuleExtraParams, SmartModuleInitErrorStatus, SmartModuleInitInput,
+    SmartModuleInitOutput, SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
 };
 
 use crate::SmartModuleInitialData;

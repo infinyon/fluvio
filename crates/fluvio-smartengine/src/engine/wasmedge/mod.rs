@@ -1,21 +1,16 @@
+/// Implementations of the traits in `common` for the WasmEdge engine
 mod instance;
-mod transforms;
-
 mod memory;
-mod imp;
+mod transforms;
+use instance::{WasmedgeContext, WasmedgeFn, WasmedgeInstance};
 
 use tracing::debug;
-
 use wasmedge_sdk::{Executor, Module, Store};
-
-use crate::{SmartModuleChainBuilder};
-
-use crate::metrics::SmartModuleChainMetrics;
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 
-use self::imp::{WasmedgeFn, WasmedgeInstance, WasmedgeContext};
-
+use crate::metrics::SmartModuleChainMetrics;
+use super::SmartModuleChainBuilder;
 use super::common::create_transform;
 
 type SmartModuleInit = super::common::SmartModuleInit<WasmedgeFn>;
