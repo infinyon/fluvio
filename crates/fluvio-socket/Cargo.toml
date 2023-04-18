@@ -45,7 +45,7 @@ fluvio-future = { workspace = true, features = [
     "fixture",
     "fs",
     "zero_copy",
-    "native2_tls",
+    "rust_tls",
 ] }
 portpicker = "0.1.1"
 

@@ -36,4 +36,4 @@ fluvio = { path = "../fluvio", default-features = false, optional = true }
 fluvio-protocol = { path = "../fluvio-protocol", optional = true }
 
 [dev-dependencies]
-fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
+fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "rust_tls", "fixture"] }

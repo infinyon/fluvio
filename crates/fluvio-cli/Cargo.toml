@@ -99,7 +99,7 @@ fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", featu
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }
-fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls", "openssl_tls"], optional = true }
+fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "rust_tls"], optional = true }
 fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 fluvio-spu-schema = { path = "../fluvio-spu-schema", optional = true }
 

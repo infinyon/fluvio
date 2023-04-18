@@ -46,7 +46,7 @@ anyhow = { version = "1.0.38" }
 fluvio-auth = { path = "../fluvio-auth" }
 fluvio-future = { workspace = true, features = [
     "subscriber",
-    "openssl_tls",
+    "rust_tls",
     "zero_copy",
 ] }
 fluvio-types = { path = "../fluvio-types", features = [
