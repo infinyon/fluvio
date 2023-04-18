@@ -36,5 +36,5 @@ fluvio-package-index = { path = "../fluvio-package-index" }
 
 [dev-dependencies]
 assert_cmd = "2.0.4"
-predicates = "2.1.1"
+predicates = "3.0.3"
 rand = "0.8.4"
