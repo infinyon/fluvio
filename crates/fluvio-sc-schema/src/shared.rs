@@ -1,10 +1,14 @@
+use thiserror::Error;
+
 pub type Result = std::result::Result<(), ValidateResourceNameError>;
 
 pub const MAX_RESOURCE_NAME_LEN: usize = 63;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Error)]
 pub enum ValidateResourceNameError {
+    #[error("Name exceeds max characters allowed {MAX_RESOURCE_NAME_LEN}")]
     NameLengthExceeded,
+    #[error("Contain only lowercase alphanumeric characters or '-'")]
     InvalidCharacterEncountered,
 }
 
@@ -12,9 +16,15 @@ pub enum ValidateResourceNameError {
 ///
 /// ```test
 /// let name = "prices-list-scrapper";
-/// assert!(is_valid_resource_name(name));
+/// assert!(validate_resource_name(name).is_ok());
+///
+/// let name = "prices list scrapper";
+/// assert!(validate_resource_name(name).is_err());
+///
+/// let name = "price$-l1st-scr@pper";
+/// assert!(validate_resource_name(name).is_err());
 /// ```
-pub fn is_valid_resource_name(name: &str) -> Result {
+pub fn validate_resource_name(name: &str) -> Result {
     if name.len() > MAX_RESOURCE_NAME_LEN {
         return Err(ValidateResourceNameError::NameLengthExceeded);
     }

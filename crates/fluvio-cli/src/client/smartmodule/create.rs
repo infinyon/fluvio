@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use fluvio_extension_common::Terminal;
-use fluvio_sc_schema::shared::{MAX_RESOURCE_NAME_LEN, is_valid_resource_name};
+use fluvio_sc_schema::shared::validate_resource_name;
 
 use crate::client::cmd::ClientCmd;
 
@@ -70,9 +70,13 @@ impl ClientCmd for CreateSmartModuleOpt {
         };
         */
 
-        if is_valid_resource_name(&self.name).is_err() {
+        if let Err(err) = validate_resource_name(&self.name) {
             debug!(name = self.name, "Invalid name provided for SmartModule");
-            return Err(anyhow!("Invalid name for SmartModule {}. Names must have a maximum of {} characters, and don't include any special characters nor spaces.", self.name, MAX_RESOURCE_NAME_LEN));
+            return Err(anyhow!(
+                "Invalid name for SmartModule {}. {}",
+                self.name,
+                err.to_string()
+            ));
         }
 
         let raw = std::fs::read(self.wasm_file)?;
