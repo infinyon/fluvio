@@ -1,4 +1,12 @@
+pub type Result = std::result::Result<(), ValidateResourceNameError>;
+
 pub const MAX_RESOURCE_NAME_LEN: usize = 63;
+
+#[derive(Copy, Clone, Debug)]
+pub enum ValidateResourceNameError {
+    NameLengthExceeded,
+    InvalidCharacterEncountered,
+}
 
 /// Checks if the Resource Name is valid for internal resources.
 ///
@@ -6,15 +14,21 @@ pub const MAX_RESOURCE_NAME_LEN: usize = 63;
 /// let name = "prices-list-scrapper";
 /// assert!(is_valid_resource_name(name));
 /// ```
-pub fn is_valid_resource_name(name: &str) -> bool {
+pub fn is_valid_resource_name(name: &str) -> Result {
     if name.len() > MAX_RESOURCE_NAME_LEN {
-        return false;
+        return Err(ValidateResourceNameError::NameLengthExceeded);
     }
 
-    name.chars()
+    if name
+        .chars()
         .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-')
         && !name.ends_with('-')
         && !name.starts_with('-')
+    {
+        return Err(ValidateResourceNameError::InvalidCharacterEncountered);
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

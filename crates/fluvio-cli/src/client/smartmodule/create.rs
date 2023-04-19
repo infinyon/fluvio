@@ -70,7 +70,7 @@ impl ClientCmd for CreateSmartModuleOpt {
         };
         */
 
-        if !is_valid_resource_name(&self.name) {
+        if is_valid_resource_name(&self.name).is_err() {
             debug!(name = self.name, "Invalid name provided for SmartModule");
             return Err(anyhow!("Invalid name for SmartModule {}. Names must have a maximum of {} characters, and don't include any special characters nor spaces.", self.name, MAX_RESOURCE_NAME_LEN));
         }

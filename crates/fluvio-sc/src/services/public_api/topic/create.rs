@@ -81,7 +81,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
     debug!("validating topic: {}", name);
 
     let valid_name = is_valid_resource_name(name);
-    if !valid_name {
+    if valid_name.is_err() {
         return Status::new(
             name.to_string(),
             ErrorCode::TopicInvalidName,

@@ -133,7 +133,7 @@ impl CreateTopicOpt {
         };
 
         let is_valid = is_valid_resource_name(&self.topic);
-        if !is_valid {
+        if is_valid.is_err() {
             return Err(CliError::InvalidArg(
                 "Topic name must only contain lowercase alphanumeric characters or '-'."
                     .to_string(),

@@ -10,7 +10,7 @@ pub mod validate {
     pub fn valid_topic_name(name: &str) -> bool {
         // TODO: This reference is used to avoid introducing breaking changes
         // in other projects
-        is_valid_resource_name(name)
+        is_valid_resource_name(name).is_ok()
     }
 }
 
