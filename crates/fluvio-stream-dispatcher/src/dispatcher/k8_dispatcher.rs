@@ -14,6 +14,7 @@ use serde::Serialize;
 use once_cell::sync::Lazy;
 
 use fluvio_future::task::spawn;
+use fluvio_future::task::JoinHandle;
 use fluvio_future::timer::sleep;
 
 use k8_metadata_client::{MetadataClient, SharedClient, NameSpace};
@@ -78,7 +79,11 @@ where
     S::IndexKey: Display,
 {
     /// start dispatcher
-    pub fn start(namespace: impl Into<NameSpace>, client: SharedClient<C>, ctx: StoreContext<S>) {
+    pub fn start(
+        namespace: impl Into<NameSpace>,
+        client: SharedClient<C>,
+        ctx: StoreContext<S>,
+    ) -> JoinHandle<()> {
         let ws_update_service = K8WSUpdateService::new(client.clone());
         let dispatcher = Self {
             namespace: namespace.into(),
@@ -87,7 +92,7 @@ where
             ws_update_service,
         };
 
-        spawn(dispatcher.outer_loop());
+        spawn(dispatcher.outer_loop())
     }
 
     #[instrument(

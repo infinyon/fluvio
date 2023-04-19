@@ -105,10 +105,14 @@ k8-client = { version = "10.0.0" }
 k8-types = { version = "0.8.0" }
 k8-config = { version = "2.0.0"}
 k8-metadata-client = { version = "5.1.0" }
-fluvio-future = { version = "0.4.0" }
+fluvio-future = { version = "0.5.1" }
 flv-util = { version = "0.5.0" }
 fluvio-helm = { version = "0.4.1"}
 fluvio-command = { version = "0.2.0"}
+flv-tls-proxy = { version = "0.7" }
+
+[patch.crates-io]
+fluvio-future = { git = "https://github.com/infinyon/future-aio.git", rev = "2020e1ceb3489ef41b32dca201638b48a03008f9"}
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

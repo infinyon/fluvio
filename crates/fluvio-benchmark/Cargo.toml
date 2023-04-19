@@ -27,7 +27,7 @@ anyhow = { workspace = true }
 
 fluvio = { path = "../fluvio" }
 fluvio-cli-common = { path = "../fluvio-cli-common"}
-fluvio-future = { version = "0.4.3", features = [
+fluvio-future = { workspace = true, features = [
     'task',
     'future',
     'sync',

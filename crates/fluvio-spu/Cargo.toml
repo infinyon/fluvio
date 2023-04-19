@@ -61,7 +61,7 @@ fluvio-socket = { path = "../fluvio-socket", features = [
     "file",
 ] }
 fluvio-service = { path = "../fluvio-service" }
-flv-tls-proxy = { version = "0.6.0" }
+flv-tls-proxy = { workspace = true }
 flv-util = { version = "0.5.0" }
 fluvio-future = { workspace = true,features = [
     "subscriber",

@@ -29,7 +29,7 @@ k8-types = { workspace = true, optional = true }
 [dev-dependencies]
 
 tokio = { version = "1.3.0", features = ["macros"] }
-fluvio-future = { version = "0.4.0", features = ["fixture"] }
+fluvio-future = { workspace = true, features = ["fixture"] }
 fluvio-stream-model = { path = ".", features = ["fixture"] }
 async-std = { version = "1.8.0", default-features = false, features = [
     "attributes",
