@@ -16,5 +16,5 @@ semver = "1.0.13"
 serde = { version = "1.0.144", features = ["serde_derive"] }
 serde_json = "1.0.85"
 tar = "0.4.38"
-toml = "0.5.9"
+toml = "0.7.3"
 tokio = { version = "1.21.0", features = ["rt-multi-thread", "macros"] }

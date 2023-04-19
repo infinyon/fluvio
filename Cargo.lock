@@ -988,7 +988,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tokio",
- "toml 0.5.11",
+ "toml 0.7.3",
  "toml-diff",
 ]
 
