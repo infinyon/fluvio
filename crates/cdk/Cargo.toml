@@ -27,7 +27,7 @@ serde = { version = "1.0", default-features = false, features = ["derive"] }
 toml = { workspace=true, default-features = false, features = ["parse", "display", "preserve_order"] }
 comfy-table = { version = "6.1" }
 sysinfo = { workspace = true, default-features = false }
-cargo-generate = "0.18.0"
+cargo-generate = { workspace = true }
 include_dir = "0.7.2"
 tempfile = { workspace = true }
 current_platform = { version = "0.2" }
