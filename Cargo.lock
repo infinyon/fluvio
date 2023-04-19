@@ -384,7 +384,7 @@ dependencies = [
  "log",
  "parking",
  "polling",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "slab",
  "socket2",
  "waker-fn",
@@ -445,7 +445,7 @@ dependencies = [
  "cfg-if",
  "event-listener",
  "futures-lite",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "signal-hook",
  "windows-sys 0.48.0",
 ]
@@ -787,7 +787,7 @@ dependencies = [
  "io-lifetimes",
  "ipnet",
  "maybe-owned",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
  "winx",
 ]
@@ -811,7 +811,7 @@ dependencies = [
  "cap-primitives",
  "io-extras",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
 ]
 
 [[package]]
@@ -822,7 +822,7 @@ checksum = "4afa389ffcd0c66daca4497d1a9992d18b985eff6b747ee8b4c86c2beae1f708"
 dependencies = [
  "cap-primitives",
  "once_cell",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "winx",
 ]
 
@@ -843,7 +843,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a02c0984fe2a3b3d1e84a4b8ab862786f83daf58338689afdc948787002b42f9"
 dependencies = [
  "anyhow",
- "clap 4.2.2",
+ "clap 4.2.3",
  "console",
  "dialoguer",
  "dirs 5.0.0",
@@ -953,7 +953,7 @@ dependencies = [
  "anyhow",
  "cargo-builder",
  "cargo-generate",
- "clap 4.2.2",
+ "clap 4.2.3",
  "comfy-table",
  "current_platform",
  "fluvio",
@@ -980,7 +980,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "check-crate-version"
 version = "0.0.0"
 dependencies = [
- "clap 4.2.2",
+ "clap 4.2.3",
  "flate2",
  "reqwest",
  "semver 1.0.17",
@@ -1068,9 +1068,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.2.2"
+version = "4.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b802d85aaf3a1cdb02b224ba472ebdea62014fccfcb269b95a4d76443b5ee5a"
+checksum = "49f9152d70e42172fdb87de2efd7327160beee37886027cf86f30a233d5b30b4"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -1079,9 +1079,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.2.2"
+version = "4.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14a1a858f532119338887a4b8e1af9c60de8249cd7bafd68036a489e261e37b6"
+checksum = "e067b220911598876eb55d52725ddcc201ffe3f0904018195973bc5b012ea2ca"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1097,7 +1097,7 @@ version = "4.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01c22dcfb410883764b29953103d9ef7bb8fe21b3fa1158bc99986c2067294bd"
 dependencies = [
- "clap 4.2.2",
+ "clap 4.2.3",
 ]
 
 [[package]]
@@ -2325,7 +2325,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39ae6b3d9530211fb3b12a95374b8b0823be812f53d09e18c5675c0146b09642"
 dependencies = [
  "cfg-if",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
@@ -2448,7 +2448,7 @@ dependencies = [
  "async-channel",
  "bincode",
  "chrono",
- "clap 4.2.2",
+ "clap 4.2.3",
  "derive_builder",
  "fluvio",
  "fluvio-cli-common",
@@ -2470,7 +2470,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "cfg-if",
- "clap 4.2.2",
+ "clap 4.2.3",
  "dirs 5.0.0",
  "fluvio-types",
  "semver 1.0.17",
@@ -2487,7 +2487,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "cfg-if",
- "clap 4.2.2",
+ "clap 4.2.3",
  "colored",
  "dirs 5.0.0",
  "fluvio-channel",
@@ -2509,7 +2509,7 @@ dependencies = [
  "async-trait",
  "atty",
  "bytesize",
- "clap 4.2.2",
+ "clap 4.2.3",
  "clap_complete",
  "colored",
  "comfy-table",
@@ -2593,7 +2593,7 @@ dependencies = [
  "async-trait",
  "bytesize",
  "chrono",
- "clap 4.2.2",
+ "clap 4.2.3",
  "color-eyre",
  "colored",
  "comfy-table",
@@ -2762,7 +2762,7 @@ version = "0.12.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "clap 4.2.2",
+ "clap 4.2.3",
  "comfy-table",
  "fluvio",
  "fluvio-package-index",
@@ -2868,7 +2868,7 @@ dependencies = [
  "toml 0.7.3",
  "tracing",
  "tracing-subscriber",
- "wasmparser 0.102.0",
+ "wasmparser 0.103.0",
 ]
 
 [[package]]
@@ -2926,7 +2926,7 @@ dependencies = [
 name = "fluvio-run"
 version = "0.0.0"
 dependencies = [
- "clap 4.2.2",
+ "clap 4.2.3",
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-sc",
@@ -2948,7 +2948,7 @@ dependencies = [
  "async-trait",
  "base64 0.21.0",
  "cfg-if",
- "clap 4.2.2",
+ "clap 4.2.3",
  "event-listener",
  "fluvio-auth",
  "fluvio-controlplane",
@@ -3056,7 +3056,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -3093,7 +3093,7 @@ dependencies = [
  "async-trait",
  "bytes 1.4.0",
  "cfg-if",
- "clap 4.2.2",
+ "clap 4.2.3",
  "derive_builder",
  "event-listener",
  "flate2",
@@ -3157,7 +3157,7 @@ dependencies = [
  "async-trait",
  "blocking",
  "bytes 1.4.0",
- "clap 4.2.2",
+ "clap 4.2.3",
  "derive_builder",
  "fluvio-controlplane-metadata",
  "fluvio-future",
@@ -3224,7 +3224,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "bytes 1.4.0",
- "clap 4.2.2",
+ "clap 4.2.3",
  "comfy-table",
  "crc",
  "crossbeam-channel",
@@ -3273,7 +3273,7 @@ dependencies = [
 name = "fluvio-test-derive"
 version = "0.0.0"
 dependencies = [
- "clap 4.2.2",
+ "clap 4.2.3",
  "crossbeam-channel",
  "fluvio",
  "fluvio-future",
@@ -3308,7 +3308,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bytes 1.4.0",
- "clap 4.2.2",
+ "clap 4.2.3",
  "comfy-table",
  "dyn-clone",
  "fluvio",
@@ -3464,7 +3464,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7833d0f115a013d51c55950a3b09d30e4b057be9961b709acb9b5b17a1108861"
 dependencies = [
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
@@ -4390,7 +4390,7 @@ checksum = "adcf93614601c8129ddf72e2d5633df827ba6551541c6d8c59520a371475be1f"
 dependencies = [
  "hermit-abi 0.3.1",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
@@ -4734,9 +4734,9 @@ checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
+checksum = "3f508063cc7bb32987c71511216bd5a32be15bccb6a80b52df8b9d7f01fc3aa2"
 
 [[package]]
 name = "liquid"
@@ -4892,7 +4892,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffc89ccdc6e10d6907450f753537ebc5c5d3460d2e4e62ea74bd571db62c0f9e"
 dependencies = [
- "rustix 0.37.11",
+ "rustix 0.37.12",
 ]
 
 [[package]]
@@ -6185,16 +6185,16 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.37.11"
+version = "0.37.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85597d61f83914ddeba6a47b3b8ffe7365107221c2e557ed94426489fefb5f77"
+checksum = "722529a737f5a942fdbac3a46cee213053196737c5eaa3386d52e85b786f2659"
 dependencies = [
  "bitflags",
  "errno",
  "io-lifetimes",
  "itoa",
  "libc",
- "linux-raw-sys 0.3.1",
+ "linux-raw-sys 0.3.2",
  "once_cell",
  "windows-sys 0.48.0",
 ]
@@ -6745,7 +6745,7 @@ dependencies = [
  "bytes 1.4.0",
  "cargo-builder",
  "cargo-generate",
- "clap 4.2.2",
+ "clap 4.2.3",
  "dirs 5.0.0",
  "enum-display",
  "fluvio",
@@ -7036,7 +7036,7 @@ dependencies = [
  "cap-std",
  "fd-lock",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
  "winx",
 ]
@@ -7067,7 +7067,7 @@ dependencies = [
  "cfg-if",
  "fastrand",
  "redox_syscall 0.3.5",
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.45.0",
 ]
 
@@ -7086,7 +7086,7 @@ version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e6bf6f19e9f8ed8d4048dc22981458ebcf406d67e94cd422e5ecd73d63b3237"
 dependencies = [
- "rustix 0.37.11",
+ "rustix 0.37.12",
  "windows-sys 0.48.0",
 ]
 
@@ -7875,9 +7875,9 @@ dependencies = [
 
 [[package]]
 name = "wasmparser"
-version = "0.102.0"
+version = "0.103.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48134de3d7598219ab9eaf6b91b15d8e50d31da76b8519fe4ecfcec2cf35104b"
+checksum = "2c437373cac5ea84f1113d648d51f71751ffbe3d90c00ae67618cf20d0b5ee7b"
 dependencies = [
  "indexmap",
  "url",
@@ -8653,8 +8653,3 @@ dependencies = [
  "libc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "cargo-generate"
-version = "0.18.1"
-source = "git+https://github.com/cargo-generate/cargo-generate.git?rev=241a598f1031f2df52f96e03fd3a96a5229883cc#241a598f1031f2df52f96e03fd3a96a5229883cc"

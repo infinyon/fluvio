@@ -21,7 +21,7 @@ bytes = { workspace = true }
 clap = { workspace = true,features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 dirs = { workspace = true}
 toml = { workspace = true }
-cargo-generate = "0.18.0"
+cargo-generate = { workspace = true }
 include_dir = "0.7.2"
 tempfile = { workspace = true }
 enum-display = "0.1.3"
