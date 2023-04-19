@@ -40,7 +40,8 @@ use crate::FluvioStream;
 
 pub type SharedMultiplexerSocket = Arc<MultiplexerSocket>;
 
-type SharedMsg = (Arc<Mutex<Option<Bytes>>>, Arc<Event>);
+#[derive(Clone)]
+struct SharedMsg(Arc<Mutex<Option<Bytes>>>, Arc<Event>);
 
 /// Handle different way to multiplex
 enum SharedSender {
@@ -141,7 +142,7 @@ impl MultiplexerSocket {
         });
 
         let correlation_id = self.next_correlation_id();
-        let bytes_lock: SharedMsg = (Arc::new(Mutex::new(None)), Arc::new(Event::new()));
+        let bytes_lock = SharedMsg(Arc::new(Mutex::new(None)), Arc::new(Event::new()));
 
         req_msg.header.set_correlation_id(correlation_id);
 
@@ -150,7 +151,7 @@ impl MultiplexerSocket {
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
         drop(senders);
 
-        let (msg, msg_event) = bytes_lock;
+        let SharedMsg(msg, msg_event) = bytes_lock;
         // make sure we set up listener, otherwise dispatcher may notify before
         let listener = msg_event.listen();
 
@@ -396,8 +397,8 @@ impl MultiPlexingResponseDispatcher {
 
             select! {
                 frame = frame_stream.next() => {
-                    if let Some(request) = frame {
-                        if let Ok(mut msg) = request {
+                    match frame {
+                        Some(Ok(mut msg)) => {
                             let mut correlation_id: i32 = 0;
                             match correlation_id.decode(&mut msg, 0) {
                                 Ok(_) => {
@@ -410,25 +411,17 @@ impl MultiPlexingResponseDispatcher {
                                 }
                                 Err(err) => error!("error decoding response, {}", err),
                             }
-                        } else {
-                            info!("problem getting frame from stream. terminating");
+                        },
+                        Some(Err(err)) => {
+                            warn!("problem getting frame from stream: {err}. terminating");
+                            self.close().await;
+                            break;
+                        },
+                        None => {
+                            info!("inner stream has terminated ");
+                            self.close().await;
                             break;
                         }
-                    } else {
-                        info!("inner stream has terminated ");
-                        self.stale.store(true, SeqCst);
-
-                        let guard = self.senders.lock().await;
-                        for sender in guard.values() {
-                            match sender {
-                                SharedSender::Serial(_) => {},
-                                SharedSender::Queue(stream_sender) => {
-                                    let _ = stream_sender.send(None).await;
-                                }
-                            }
-                        }
-
-                        break;
                     }
                 },
 
@@ -438,7 +431,7 @@ impl MultiPlexingResponseDispatcher {
                     let guard = self.senders.lock().await;
                     for sender in guard.values() {
                         match sender {
-                            SharedSender::Serial(_) => {},
+                            SharedSender::Serial(msg) => msg.close().await,
                             SharedSender::Queue(stream_sender) => {
                                 stream_sender.close();
                             }
@@ -506,6 +499,31 @@ impl MultiPlexingResponseDispatcher {
             );
             Ok(())
         }
+    }
+
+    async fn close(&self) {
+        self.stale.store(true, SeqCst);
+
+        let guard = self.senders.lock().await;
+        for sender in guard.values() {
+            match sender {
+                SharedSender::Serial(msg) => msg.close().await,
+                SharedSender::Queue(stream_sender) => {
+                    let _ = stream_sender.send(None).await;
+                }
+            }
+        }
+
+        info!("multiplexer closed")
+    }
+}
+
+impl SharedMsg {
+    async fn close(&self) {
+        let mut guard = self.0.lock().await;
+        *guard = None;
+        drop(guard);
+        self.1.notify(1);
     }
 }
 
