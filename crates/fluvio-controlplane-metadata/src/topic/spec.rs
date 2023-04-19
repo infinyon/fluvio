@@ -11,17 +11,12 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
-use tracing::{trace};
-
 use fluvio_types::defaults::{
     STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
     SPU_PARTITION_MAX_BYTES_MIN, SPU_LOG_SEGMENT_MAX_BYTES,
 };
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
-
-use fluvio_protocol::Version;
-use fluvio_protocol::bytes::{Buf, BufMut};
 use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
@@ -159,12 +154,14 @@ impl TopicSpec {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ReplicaSpec {
     #[cfg_attr(feature = "use_serde", serde(rename = "assigned"))]
+    #[fluvio(tag = 0)]
     Assigned(PartitionMaps),
     #[cfg_attr(feature = "use_serde", serde(rename = "computed"))]
+    #[fluvio(tag = 1)]
     Computed(TopicReplicaParam),
 }
 
@@ -291,90 +288,6 @@ impl ReplicaSpec {
                 ErrorKind::InvalidInput,
                 "replication factor must be greater than 0",
             ));
-        }
-
-        Ok(())
-    }
-}
-
-impl Decoder for ReplicaSpec {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: Buf,
-    {
-        let mut typ: u8 = 0;
-        typ.decode(src, version)?;
-        trace!("decoded type: {}", typ);
-
-        match typ {
-            // Assigned Replicas
-            0 => {
-                let mut partition_map = PartitionMaps::default();
-                partition_map.decode(src, version)?;
-                *self = Self::Assigned(partition_map);
-                Ok(())
-            }
-
-            // Computed Replicas
-            1 => {
-                let mut param = TopicReplicaParam::default();
-                param.decode(src, version)?;
-                *self = Self::Computed(param);
-                Ok(())
-            }
-
-            // Unexpected type
-            _ => Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                format!("unknown replica type {typ}"),
-            )),
-        }
-    }
-}
-
-// -----------------------------------
-// Encoder / Decoder
-// -----------------------------------
-impl Encoder for ReplicaSpec {
-    // compute size for fluvio replicas
-    fn write_size(&self, version: Version) -> usize {
-        let typ_size = (0u8).write_size(version);
-        match self {
-            Self::Assigned(partitions) => typ_size + partitions.write_size(version),
-            Self::Computed(param) => typ_size + param.write_size(version),
-        }
-    }
-
-    // encode fluvio replicas
-    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
-    where
-        T: BufMut,
-    {
-        // ensure buffer is large enough
-        if dest.remaining_mut() < self.write_size(version) {
-            return Err(Error::new(
-                ErrorKind::UnexpectedEof,
-                format!(
-                    "not enough capacity for replica len of {}",
-                    self.write_size(version)
-                ),
-            ));
-        }
-
-        match self {
-            // encode assign partitions
-            Self::Assigned(partitions) => {
-                let typ: u8 = 0;
-                typ.encode(dest, version)?;
-                partitions.encode(dest, version)?;
-            }
-
-            // encode computed partitions
-            Self::Computed(param) => {
-                let typ: u8 = 1;
-                typ.encode(dest, version)?;
-                param.encode(dest, version)?;
-            }
         }
 
         Ok(())
