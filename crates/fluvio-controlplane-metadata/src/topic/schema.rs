@@ -1,25 +1,23 @@
 use anyhow::{anyhow, Result};
 
-
 use fluvio_protocol::{Encoder, Decoder};
 
-
-
-#[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
+#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-
 pub enum TopicSchema {
-    #[default]
     #[fluvio(tag = 0)]
     Columns(ColumnSchema),
 }
 
-
-
+impl Default for TopicSchema {
+    fn default() -> Self {
+        Self::Columns(ColumnSchema::default())
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
 #[cfg_attr(
@@ -28,15 +26,12 @@ pub enum TopicSchema {
     serde(rename_all = "camelCase")
 )]
 pub struct ColumnSchema {
-
     #[fluvio(min_version = 11)]
     #[cfg_attr(feature = "use_serde", serde(default))]
     columns: Vec<ColumnDef>,
 }
 
-
 impl ColumnSchema {
-
     pub fn get_columns(&self) -> &Vec<ColumnDef> {
         &self.columns
     }
@@ -45,9 +40,6 @@ impl ColumnSchema {
         self.columns = columns;
     }
 }
-
-
-
 
 #[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
@@ -104,8 +96,6 @@ pub enum ColumnType {
     #[fluvio(tag = 6)]
     Timestamp,
 }
-
-
 
 #[cfg(test)]
 pub mod test {

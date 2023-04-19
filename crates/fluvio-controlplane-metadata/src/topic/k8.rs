@@ -30,7 +30,9 @@ mod test_col_spec {
     use std::{io::BufReader, fs::File};
 
     use fluvio_stream_model::k8_types::K8Obj;
-    use crate::{topic::ColumnType};
+
+
+    use crate::topic::schema::ColumnType;
 
     use super::TopicSpec;
 
@@ -44,7 +46,7 @@ mod test_col_spec {
         let metadata = topic_k8.metadata;
         assert_eq!(metadata.name, "vehicle");
 
-        let col_route = &topic_k8.spec.get_columns()[0];
+        let col_route = &topic_k8.spec.get_schema().get_columns()[0];
         assert_eq!(col_route.name, "route");
         assert_eq!(col_route.ty, ColumnType::String);
     }
