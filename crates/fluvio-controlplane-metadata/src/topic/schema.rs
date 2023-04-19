@@ -12,15 +12,13 @@ use fluvio_protocol::{Encoder, Decoder};
     serde(rename_all = "camelCase")
 )]
 
-pub struct TopicSchema {
-
+pub enum TopicSchema {
+    #[default]
+    #[fluvio(tag = 0)]
+    Columns(ColumnSchema),
 }
 
 
-
-pub enum Schema {
-
-}
 
 
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
