@@ -9,7 +9,8 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use fluvio_controlplane_metadata::topic::ColumnDef;
+
+use fluvio_controlplane_metadata::topic::schema::ColumnDef;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
@@ -151,7 +152,7 @@ impl CreateTopicOpt {
 
         let mut topic_spec: TopicSpec = replica_spec.into();
 
-        topic_spec.set_columns(self.columns_mappings()?);
+        topic_spec.get_schema_mut().set_columns(self.columns_mappings()?);
 
         if let Some(retention) = self.setting.retention_time {
             topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {

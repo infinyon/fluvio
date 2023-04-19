@@ -118,6 +118,14 @@ impl TopicSpec {
         self.storage = Some(storage);
     }
 
+    pub fn get_schema(&self) -> &ColumnSchema {
+        &self.schema
+    }
+
+    pub fn get_schema_mut(&mut self) -> &mut ColumnSchema {
+        &mut self.schema
+    }
+
     /// get retention secs that can be displayed
     pub fn retention_secs(&self) -> u32 {
         self.get_clean_policy()
