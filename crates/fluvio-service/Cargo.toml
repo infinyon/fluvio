@@ -22,11 +22,11 @@ anyhow = { workspace = true }
 
 # Fluvio dependencies
 futures-util = { version = "0.3.5" }
-fluvio-future = { version = "0.4.0" }
+fluvio-future = { workspace = true }
 fluvio-socket = { path = "../fluvio-socket" }
 fluvio-protocol = { path = "../fluvio-protocol", features = ["derive", "api", "codec"] }
 fluvio-types = { features = ["events"], path = "../fluvio-types" }
 
 [dev-dependencies]
-fluvio-future = { version = "0.4.0", features = ["fixture"] }
+fluvio-future = { workspace = true, features = ["fixture"] }
 portpicker = "0.1.1"
