@@ -2801,7 +2801,8 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.5.1"
-source = "git+https://github.com/infinyon/future-aio.git?rev=2020e1ceb3489ef41b32dca201638b48a03008f9#2020e1ceb3489ef41b32dca201638b48a03008f9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5f2d572470f98b25383ffe78d9c3fba2b986d9891efd78808025397e54eb1ec"
 dependencies = [
  "async-fs",
  "async-io",
@@ -3315,7 +3316,8 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "git+https://github.com/infinyon/future-aio.git?rev=2020e1ceb3489ef41b32dca201638b48a03008f9#2020e1ceb3489ef41b32dca201638b48a03008f9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
 dependencies = [
  "proc-macro2",
  "quote",

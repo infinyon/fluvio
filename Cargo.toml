@@ -111,9 +111,6 @@ fluvio-helm = { version = "0.4.1"}
 fluvio-command = { version = "0.2.0"}
 flv-tls-proxy = { version = "0.7" }
 
-[patch.crates-io]
-fluvio-future = { git = "https://github.com/infinyon/future-aio.git", rev = "2020e1ceb3489ef41b32dca201638b48a03008f9"}
-
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
