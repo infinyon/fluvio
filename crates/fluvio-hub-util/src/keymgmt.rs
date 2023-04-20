@@ -76,19 +76,16 @@ impl Keypair {
     pub fn read_from_file(fname: &str) -> Result<Keypair> {
         let buf = std::fs::read(fname)?;
         let pem = pem::parse(buf).map_err(|_| HubError::InvalidKeyPairFile(fname.into()))?;
-        if pem.tag != "PRIVATE KEY" {
+        if pem.tag() != "PRIVATE KEY" {
             return Err(HubError::InvalidKeyPairFile(fname.into()));
         }
-        Keypair::from_secret_bytes(&pem.contents)
+        Keypair::from_secret_bytes(pem.contents())
     }
 
     /// writes the private key from which the public is derivable on load
     pub fn write_keypair(&self, fname: &str) -> Result<()> {
-        let pubpem = Pem {
-            tag: "PRIVATE KEY".into(),
-            contents: self.kp.secret.to_bytes().to_vec(),
-        };
-        let buf = pem::encode(&pubpem);
+        let pem = Pem::new("PRIVATE_KEY", self.kp.secret.to_bytes().to_vec());
+        let buf = pem::encode(&pem);
         let mut file = std::fs::File::create(fname)?;
         set_perms_owner_rw(&mut file)?;
         file.write_all(buf.as_bytes())?;
@@ -133,11 +130,11 @@ impl PublicKey {
     pub fn read_from_file(fname: &str) -> Result<PublicKey> {
         let buf = std::fs::read(fname)?;
         let pem = pem::parse(buf).map_err(|_| HubError::InvalidPublicKeyFile(fname.into()))?;
-        if pem.tag != "PUBLIC KEY" {
+        if pem.tag() != "PUBLIC KEY" {
             return Err(HubError::InvalidPublicKeyFile(fname.into()));
         }
-        let pubkey =
-            ed25519_dalek::PublicKey::from_bytes(&pem.contents).map_err(|_| HubError::KeyVerify)?;
+        let pubkey = ed25519_dalek::PublicKey::from_bytes(pem.contents())
+            .map_err(|_| HubError::KeyVerify)?;
         Ok(PublicKey { pubkey })
     }
 
@@ -146,11 +143,8 @@ impl PublicKey {
     }
 
     pub fn write(&self, fname: &str) -> Result<()> {
-        let pubpem = Pem {
-            tag: "PUBLIC KEY".into(),
-            contents: self.to_bytes().to_vec(),
-        };
-        let buf = pem::encode(&pubpem);
+        let pem = Pem::new("PUBLIC_KEY", self.to_bytes().to_vec());
+        let buf = pem::encode(&pem);
         std::fs::write(fname, buf)?;
         Ok(())
     }
