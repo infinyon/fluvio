@@ -111,6 +111,18 @@ mod cmd {
         #[clap(long)]
         pub batch_size: Option<usize>,
 
+        /// Isolation level that producer must respect.
+        /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
+        /// read_uncommitted (ReadUncommitted) - just wait for leader to accept records.
+        #[clap(long, value_parser=parse_isolation)]
+        pub isolation: Option<Isolation>,
+
+        /// Delivery guarantees that producer must respect. Supported values:
+        /// at_most_once (AtMostOnce) - send records without waiting from response,
+        /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
+        #[clap(long, default_value = "at-least-once")]
+        pub delivery_semantic: DeliverySemantic,
+
         /// Name of the smartmodule
         #[clap(
             long,
@@ -130,11 +142,11 @@ mod cmd {
         )]
         pub smartmodule_path: Option<PathBuf>,
 
-        /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
+        /// (Optional) Value to use as an initial accumulator for aggregate SmartModules
         #[clap(long, requires = "aggregate_group", alias = "a-init")]
         pub aggregate_initial: Option<String>,
 
-        /// (Optional) Extra input parameters passed to the smartmodule module.
+        /// (Optional) Extra input parameters passed to the smartmodule.
         /// They should be passed using key=value format
         /// Eg. fluvio produce topic-name --smartmodule my_filter -e foo=bar -e key=value -e one=1
         #[clap(
@@ -157,12 +169,6 @@ mod cmd {
         /// E.g. fluvio produce topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
         #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
         pub transform: Vec<String>,
-
-        /// Isolation level that producer must respect.
-        /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
-        /// read_uncommitted (ReadUncommitted) - just wait for leader to accept records.
-        #[clap(long, value_parser=parse_isolation)]
-        pub isolation: Option<Isolation>,
 
         /*
         #[cfg(feature = "stats")]
@@ -190,11 +196,6 @@ mod cmd {
         #[clap(long)]
         pub stats_summary: bool,
         */
-        /// Delivery guarantees that producer must respect. Supported values:
-        /// at_most_once (AtMostOnce) - send records without waiting from response,
-        /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
-        #[clap(long, default_value = "at-least-once")]
-        pub delivery_semantic: DeliverySemantic,
     }
 
     fn validate_key_separator(separator: &str) -> std::result::Result<String, String> {
