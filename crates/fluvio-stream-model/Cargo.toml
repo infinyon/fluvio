@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-stream-model"
 edition = "2021"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Event Stream Model"
 repository = "https://github.com/infinyon/fluvio"
@@ -27,7 +27,6 @@ once_cell = "1.5"
 k8-types = { workspace = true, optional = true }
 
 [dev-dependencies]
-
 tokio = { version = "1.3.0", features = ["macros"] }
 fluvio-future = { workspace = true, features = ["fixture"] }
 fluvio-stream-model = { path = ".", features = ["fixture"] }
