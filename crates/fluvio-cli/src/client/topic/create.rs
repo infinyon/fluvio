@@ -133,12 +133,9 @@ impl CreateTopicOpt {
         };
 
         if let Err(err) = validate_resource_name(&self.topic) {
-            return Err(CliError::InvalidArg(format!(
-                "Invalid Topic name {}. {}",
-                self.topic,
-                err.to_string()
-            ))
-            .into());
+            return Err(
+                CliError::InvalidArg(format!("Invalid Topic name {}. {err}", self.topic,)).into(),
+            );
         }
 
         let mut topic_spec: TopicSpec = replica_spec.into();

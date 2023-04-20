@@ -84,7 +84,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         return Status::new(
             name.to_string(),
             ErrorCode::TopicInvalidName,
-            Some(format!("Invalid topic name: '{name}'. {}", err.to_string())),
+            Some(format!("Invalid topic name: '{name}'. {err}")),
         );
     }
 

@@ -72,11 +72,7 @@ impl ClientCmd for CreateSmartModuleOpt {
 
         if let Err(err) = validate_resource_name(&self.name) {
             debug!(name = self.name, "Invalid name provided for SmartModule");
-            return Err(anyhow!(
-                "Invalid name for SmartModule {}. {}",
-                self.name,
-                err.to_string()
-            ));
+            return Err(anyhow!("Invalid name for SmartModule {}, {err}", self.name));
         }
 
         let raw = std::fs::read(self.wasm_file)?;
