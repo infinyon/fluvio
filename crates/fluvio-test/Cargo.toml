@@ -13,7 +13,7 @@ publish = false
 tracing = { workspace = true }
 bytes = { workspace = true }
 nix = { workspace = true }
-futures-lite = "1.11.0"
+futures-lite = { workspace = true }
 futures = "0.3"
 clap = { workspace = true , features = [
     "std",
@@ -24,11 +24,11 @@ rand = "0.8"
 # Cryptographically secure rand is unnecessary and slow enough to affect for benchmark testing
 fastrand = "1.8.0"
 md-5 = "0.10"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { worskpace = true}
 serde_yaml = { workspace = true }
 inventory = "0.3"
-tokio = { version = "1.4", features = ["macros"] }
+tokio = { workspace = true,  features = ["macros"] }
 comfy-table = "6.0.0"
 hdrhistogram = "7.3.0"
 crc = "3.0"
@@ -41,7 +41,7 @@ async-std = { version = "1.8.0", default-features = false, features = [
     "attributes",
 ] }
 uuid = { version = "1.1", features = ["serde", "v4"] }
-async-channel = "1.6"
+async-channel = { worskpace = true }
 anyhow = { workspace = true }
 
 # Fluvio dependencies

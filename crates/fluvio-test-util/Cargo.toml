@@ -12,9 +12,9 @@ publish = false
 [dependencies]
 bytes = { workspace = true }
 tracing = { workspace = true }
-futures-lite = "1.11.0"
+futures-lite = { workspace = true }
 clap = { workspace = true , features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
-async-trait = "0.1.21"
+async-trait = { workspace = true }
 tokio = { version = "1.4", features = ["macros"] }
 syn = "1.0"
 serde = "1.0"
