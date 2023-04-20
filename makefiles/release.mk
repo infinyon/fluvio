@@ -199,6 +199,7 @@ publish-artifacts-stable: publish-artifacts publish-artifacts-stable-hub
 
 # Need to ensure that version is always a semver
 # Version convention is different here. Notice the `+`
+# Note, the fluvio package "--release" tag is always needed to bump stable/latest
 bump-fluvio: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
 bump-fluvio: PUBLIC_VERSION?=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
 bump-fluvio: install-fluvio-package
@@ -207,7 +208,7 @@ bump-fluvio: install-fluvio-package
 	@$(foreach bin, $(PUBLISH_BINARIES), \
 		printf "\n"; \
 		echo $(FLUVIO_BIN) package tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force; \
-		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force; \
+		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package --release tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force; \
 	)
 
 bump-fluvio-stable: CHANNEL_TAG=stable
