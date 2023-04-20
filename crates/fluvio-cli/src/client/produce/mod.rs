@@ -169,7 +169,6 @@ mod cmd {
         /// E.g. fluvio produce topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
         #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
         pub transform: Vec<String>,
-
         /*
         #[cfg(feature = "stats")]
         /// Experimental: Collect basic producer session statistics and print in stats bar

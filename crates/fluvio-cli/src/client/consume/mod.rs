@@ -196,7 +196,6 @@ mod cmd {
         )]
         pub params: Option<Vec<(String, String)>>,
 
-
         /// (Optional) Path to a file with transformation specification.
         #[clap(long, conflicts_with = "smartmodule_group")]
         pub transforms_file: Option<PathBuf>,
