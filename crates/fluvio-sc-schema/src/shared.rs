@@ -43,27 +43,27 @@ pub fn validate_resource_name(name: &str) -> Result {
 
 #[cfg(test)]
 mod test {
-    use super::is_valid_resource_name;
+    use super::validate_resource_name;
 
     #[test]
     fn validates_name_length() {
         let name = "this-is-a-very-long-long-long-long-long-long-name-and-its-not-valid";
 
-        assert!(!is_valid_resource_name(name));
+        assert!(validate_resource_name(name).is_err());
     }
 
     #[test]
     fn validates_no_spaces_allowed() {
         let name = "Hello World";
 
-        assert!(!is_valid_resource_name(name));
+        assert!(validate_resource_name(name).is_err());
     }
 
     #[test]
     fn validates_no_special_chars_allowed() {
         let name = "!@#$%^&*()👻";
 
-        assert!(!is_valid_resource_name(name));
+        assert!(validate_resource_name(name).is_err());
     }
 
     #[test]
@@ -78,31 +78,31 @@ mod test {
         ];
 
         for name in names {
-            assert!(is_valid_resource_name(name));
+            assert!(validate_resource_name(name).is_ok());
         }
     }
 
     #[test]
     fn reject_topics_with_spaces() {
-        assert!(!is_valid_resource_name("hello world"));
+        assert!(validate_resource_name("hello world").is_err());
     }
 
     #[test]
     fn reject_topics_with_uppercase() {
-        assert!(!is_valid_resource_name("helloWorld"));
+        assert!(validate_resource_name("helloWorld").is_err());
     }
 
     #[test]
     fn reject_topics_with_underscore() {
-        assert!(!is_valid_resource_name("hello_world"));
+        assert!(validate_resource_name("hello_world").is_err());
     }
 
     #[test]
     fn valid_topic() {
-        assert!(is_valid_resource_name("hello-world"));
+        assert!(validate_resource_name("hello-world").is_ok());
     }
     #[test]
     fn reject_topics_that_start_with_hyphen() {
-        assert!(!is_valid_resource_name("-helloworld"));
+        assert!(validate_resource_name("-helloworld").is_err());
     }
 }

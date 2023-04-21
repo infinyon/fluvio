@@ -6,10 +6,6 @@ pub mod validate {
     /// Ensure a topic can be created with a given name.
     /// Topics name can only be formed by lowercase alphanumeric elements and hyphens.
     /// They should start and finish with an alphanumeric character.
-    #[deprecated(
-        since = "0.18.1",
-        note = "Will be removed in the next version. Use `fluvio_sc_schema::shared::validate_resource_name` instead."
-    )]
     pub fn valid_topic_name(name: &str) -> bool {
         validate_resource_name(name).is_ok()
     }
