@@ -140,6 +140,12 @@ mod cmd {
         #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
         pub max_bytes: Option<i32>,
 
+        /// Isolation level that consumer must respect.
+        /// Supported values: read_committed (ReadCommitted) - consume only committed records,
+        /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
+        #[clap(long, value_parser=parse_isolation)]
+        pub isolation: Option<Isolation>,
+
         /// Suppress items items that have an unknown output type
         #[clap(long = "suppress-unknown")]
         pub suppress_unknown: bool,
@@ -172,11 +178,11 @@ mod cmd {
         )]
         pub smartmodule_path: Option<PathBuf>,
 
-        /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
+        /// (Optional) Value to use as an initial accumulator for aggregate SmartModules
         #[clap(long, requires = "aggregate_group", alias = "a-init")]
         pub aggregate_initial: Option<String>,
 
-        /// (Optional) Extra input parameters passed to the smartmodule module.
+        /// (Optional) Extra input parameters passed to the smartmodule.
         /// They should be passed using key=value format
         /// Eg. fluvio consume topic-name --smartmodule my_filter -e foo=bar -e key=value -e one=1
         #[clap(
@@ -189,12 +195,6 @@ mod cmd {
             number_of_values = 1
         )]
         pub params: Option<Vec<(String, String)>>,
-
-        /// Isolation level that consumer must respect.
-        /// Supported values: read_committed (ReadCommitted) - consume only committed records,
-        /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
-        #[clap(long, value_parser=parse_isolation)]
-        pub isolation: Option<Isolation>,
 
         /// (Optional) Path to a file with transformation specification.
         #[clap(long, conflicts_with = "smartmodule_group")]
