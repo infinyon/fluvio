@@ -25,7 +25,7 @@ rand = "0.8"
 fastrand = "1.8.0"
 md-5 = "0.10"
 serde = { workspace = true, features = ["derive"] }
-serde_json = { worskpace = true}
+serde_json = { workspace = true}
 serde_yaml = { workspace = true }
 inventory = "0.3"
 tokio = { workspace = true,  features = ["macros"] }
@@ -41,7 +41,7 @@ async-std = { version = "1.8.0", default-features = false, features = [
     "attributes",
 ] }
 uuid = { version = "1.1", features = ["serde", "v4"] }
-async-channel = { worskpace = true }
+async-channel = { workspace = true }
 anyhow = { workspace = true }
 
 # Fluvio dependencies
