@@ -6,6 +6,7 @@ pub mod smartmodule;
 pub mod partition;
 pub mod versions;
 pub mod objects;
+pub mod shared;
 pub mod tableformat;
 
 mod apis;

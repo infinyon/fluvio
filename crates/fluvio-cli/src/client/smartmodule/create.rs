@@ -5,11 +5,12 @@ use std::sync::Arc;
 use tracing::debug;
 use async_trait::async_trait;
 use clap::Parser;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
 use fluvio_extension_common::Terminal;
+use fluvio_sc_schema::shared::validate_resource_name;
 
 use crate::client::cmd::ClientCmd;
 
@@ -68,6 +69,11 @@ impl ClientCmd for CreateSmartModuleOpt {
             (None, BTreeMap::new())
         };
         */
+
+        if let Err(err) = validate_resource_name(&self.name) {
+            debug!(name = self.name, "Invalid name provided for SmartModule");
+            return Err(anyhow!("Invalid name for SmartModule {}, {err}", self.name));
+        }
 
         let raw = std::fs::read(self.wasm_file)?;
 
