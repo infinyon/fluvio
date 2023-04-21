@@ -25,7 +25,7 @@ base64 = { workspace = true }
 bytes = { workspace = true }
 flate2 = { version = "1.0.22", optional = true }
 semver = "1.0"
-toml = { workspace = true, optional = true }
+toml = { workspace = true, default-features = true, optional = true }
 lenient_semver = "0.4.2"
 
 # External Fluvio dependencies
