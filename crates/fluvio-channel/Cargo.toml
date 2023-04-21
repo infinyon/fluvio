@@ -22,7 +22,7 @@ semver = "1.0.0"
 thiserror = "1.0.20"
 tracing = { workspace = true }
 dirs = { workspace = true}
-toml = { workspace = true }
+toml = { workspace = true, default-features = true}
 serde = { version = "1.0.118", features = ["derive"] }
 anyhow = { workspace = true }
 
