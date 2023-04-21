@@ -24,7 +24,7 @@ clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-
 cargo-builder = { path = "../cargo-builder"}
 
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-toml = { workspace=true, default-features = false, features = ["parse", "display", "preserve_order"] }
+toml = { workspace=true, features = ["parse", "display", "preserve_order"] }
 comfy-table = { version = "6.1" }
 sysinfo = { workspace = true, default-features = false }
 cargo-generate = { workspace = true }

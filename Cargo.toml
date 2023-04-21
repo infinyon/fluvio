@@ -94,7 +94,7 @@ tar = { version = "0.4", default-features = false }
 tempfile = "3.4.0"
 thiserror = "1.0.20"
 tokio = "1.4.0"
-toml = { version = "0.7.0" }
+toml = { version = "0.7.0", default-features = false }
 tracing = "0.1.19"
 url = "2.1.1"
 wasmparser = "0.103.0"
