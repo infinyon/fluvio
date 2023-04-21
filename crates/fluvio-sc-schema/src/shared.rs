@@ -35,10 +35,10 @@ pub fn validate_resource_name(name: &str) -> Result {
         && !name.ends_with('-')
         && !name.starts_with('-')
     {
-        return Err(ValidateResourceNameError::InvalidCharacterEncountered);
+        return Ok(());
     }
 
-    Ok(())
+    Err(ValidateResourceNameError::InvalidCharacterEncountered)
 }
 
 #[cfg(test)]

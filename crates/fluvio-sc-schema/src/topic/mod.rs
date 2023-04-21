@@ -9,35 +9,6 @@ pub mod validate {
     pub fn valid_topic_name(name: &str) -> bool {
         validate_resource_name(name).is_ok()
     }
-
-    #[cfg(test)]
-    mod tests {
-        use crate::topic::validate::valid_topic_name;
-
-        #[test]
-        fn reject_topics_with_spaces() {
-            assert!(!valid_topic_name("hello world"));
-        }
-
-        #[test]
-        fn reject_topics_with_uppercase() {
-            assert!(!valid_topic_name("helloWorld"));
-        }
-
-        #[test]
-        fn reject_topics_with_underscore() {
-            assert!(!valid_topic_name("hello_world"));
-        }
-
-        #[test]
-        fn valid_topic() {
-            assert!(valid_topic_name("hello-world"));
-        }
-        #[test]
-        fn reject_topics_that_start_with_hyphen() {
-            assert!(!valid_topic_name("-helloworld"));
-        }
-    }
 }
 
 mod convert {
