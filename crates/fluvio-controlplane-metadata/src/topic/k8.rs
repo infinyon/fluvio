@@ -31,7 +31,6 @@ mod test_col_spec {
 
     use fluvio_stream_model::k8_types::K8Obj;
 
-
     use crate::topic::schema::ColumnType;
 
     use super::TopicSpec;
