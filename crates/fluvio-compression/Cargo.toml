@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-compression"
-version = "0.2.5"
+version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -19,4 +19,4 @@ snap = { version = "1" }
 serde = { workspace = true,  features = ['derive'] }
 lz4_flex = { version = "0.10.0", default-features = false, features = ["safe-decode", "safe-encode", "frame"] }
 thiserror = { workspace = true }
-
+zstd = { version = "0.12.3+zstd.1.5.2", features = ['wasm'], default-features = false }

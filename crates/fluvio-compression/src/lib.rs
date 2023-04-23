@@ -6,6 +6,7 @@ mod error;
 mod gzip;
 mod snappy;
 mod lz4;
+mod zstd;
 
 pub use error::CompressionError;
 use serde::{Serialize, Deserialize};
@@ -21,6 +22,7 @@ pub enum Compression {
     Gzip = 1,
     Snappy = 2,
     Lz4 = 3,
+    Zstd = 4,
 }
 
 impl TryFrom<i8> for Compression {
@@ -31,6 +33,7 @@ impl TryFrom<i8> for Compression {
             1 => Ok(Compression::Gzip),
             2 => Ok(Compression::Snappy),
             3 => Ok(Compression::Lz4),
+            4 => Ok(Compression::Zstd),
             _ => Err(CompressionError::UnknownCompressionFormat(format!(
                 "i8 representation: {v}"
             ))),
@@ -47,6 +50,7 @@ impl FromStr for Compression {
             "gzip" => Ok(Compression::Gzip),
             "snappy" => Ok(Compression::Snappy),
             "lz4" => Ok(Compression::Lz4),
+            "zstd" => Ok(Compression::Zstd),
             _ => Err(CompressionError::UnknownCompressionFormat(s.into())),
         }
     }
@@ -60,6 +64,7 @@ impl Compression {
             Compression::Gzip => gzip::compress(src),
             Compression::Snappy => snappy::compress(src),
             Compression::Lz4 => lz4::compress(src),
+            Compression::Zstd => zstd::compress(src),
         }
     }
 
@@ -79,6 +84,10 @@ impl Compression {
                 let output = lz4::uncompress(src)?;
                 Ok(Some(output))
             }
+            Compression::Zstd => {
+                let output = zstd::uncompress(src)?;
+                Ok(Some(output))
+            }
         }
     }
 }
@@ -89,6 +98,7 @@ impl std::fmt::Display for Compression {
             Compression::Gzip => write!(f, "gzip"),
             Compression::Snappy => write!(f, "snappy"),
             Compression::Lz4 => write!(f, "lz4"),
+            Compression::Zstd => write!(f, "zstd"),
         }
     }
 }

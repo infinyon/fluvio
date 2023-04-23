@@ -53,6 +53,7 @@ spec:
                     - Gzip
                     - Snappy
                     - Lz4
+                    - Zstd
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

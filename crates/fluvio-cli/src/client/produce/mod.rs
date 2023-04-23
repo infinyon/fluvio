@@ -4,7 +4,6 @@ mod stats;
 pub use cmd::ProduceOpt;
 
 mod cmd {
-
     use std::sync::Arc;
     use std::io::{BufReader, BufRead};
     use std::collections::BTreeMap;
@@ -91,7 +90,7 @@ mod cmd {
         pub raw: bool,
 
         /// Compression algorithm to use when sending records.
-        /// Supported values: none, gzip, snappy and lz4.
+        /// Supported values: none, gzip, snappy, zstd and lz4.
         #[arg(long)]
         pub compression: Option<Compression>,
 
