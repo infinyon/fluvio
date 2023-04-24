@@ -14,4 +14,4 @@ tracing = { workspace = true }
 anyhow = { workspace = true }
 derive_builder = { workspace = true }
 
-fluvio-connector-package = { path = "../fluvio-connector-package" }
+fluvio-connector-package = { workspace = true  }
