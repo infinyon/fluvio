@@ -2584,7 +2584,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "bytes 1.4.0",
  "flate2",
@@ -2808,7 +2808,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-package-index"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "http",
  "lazy_static",
@@ -2968,7 +2968,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "criterion",
  "eyre",
