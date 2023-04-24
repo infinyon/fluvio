@@ -77,14 +77,14 @@ clap = { version = "4.0.10", default-features = false }
 color-eyre = { version = "0.6.0", default-features = false }
 colored = "2.0.0"
 crc32c = { version = "0.6"}
-comfy-table = { version = "6.0.0", default-features = false }
+comfy-table = { version = "6.1.0", default-features = false }
 convert_case = "0.6.0"
 derive_builder = "0.12.0"
 directories = "5.0.0"
 dirs = "5.0.0"
 duct = { version = "0.13", default-features = false }
 event-listener = "2.5.1"
-flate2 = { version = "1.0.22", default-features = false }
+flate2 = { version = "1.0.25" }
 futures = { version = "0.3.1" , default-features = false }
 futures-util = { version = "0.3.6", default-features = false }
 futures-channel = "0.3"
