@@ -56,7 +56,7 @@ clap = { workspace = true, features = [
 ], default-features = false, optional = true }
 duct = { workspace = true, default-features = false, optional = true }
 comfy-table = { workspace = true, default-features = false, optional = true }
-flate2 = { workspace = true, default-features = false, optional = true }
+flate2 = { workspace = true, optional = true }
 tar = { workspace = true , default-features = false, optional = true }
 sysinfo = { workspace = true, default-features = false}
 

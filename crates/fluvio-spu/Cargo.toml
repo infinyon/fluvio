@@ -44,7 +44,7 @@ sysinfo = { workspace = true }
 
 
 # Fluvio dependencies
-fluvio = { workspace = true }
+fluvio = { workspace = true, features = ["smartengine"]}
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-storage = { workspace = true }
 fluvio-compression = { workspace = true }

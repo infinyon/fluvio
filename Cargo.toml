@@ -140,7 +140,7 @@ fluvio-controlplane-metadata = { version = "0.22.0", default-features = false, p
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-package-index = { version = "0.7.0", path = "crates/fluvio-package-index", default-features = false }
-fluvio-protocol = { version = "0.9.0", path = "crates/fluvio-protocol", default-features = false }
+fluvio-protocol = { version = "0.9.0", path = "crates/fluvio-protocol" }
 fluvio-spu-schema = { version = "0.13.0", path = "crates/fluvio-spu-schema", def-features = false }
 fluvio-sc-schema = { version = "0.18.0", path = "crates/fluvio-sc-schema", default-features = false }
 fluvio-service = { path = "crates/fluvio-service" }
