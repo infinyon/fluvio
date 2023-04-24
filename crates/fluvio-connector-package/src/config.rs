@@ -41,6 +41,9 @@ pub struct MetaConfig {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub consumer: Option<ConsumerParameters>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secrets: Option<Vec<SecretConfig>>,
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -69,6 +72,73 @@ pub struct ProducerParameters {
     #[serde(skip)]
     pub batch_size: Option<ByteSize>,
 }
+#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct SecretConfig {
+    /// The name of the secret. It can only contain alphanumeric ASCII characters and underscores. It cannot start with a number.
+    name: SecretName,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct SecretName {
+    inner: String,
+}
+
+impl SecretName {
+    fn validate(&self) -> anyhow::Result<()> {
+        if self.inner.chars().count() == 0 {
+            return Err(anyhow::anyhow!("Secret name cannot be empty"));
+        }
+        if !self
+            .inner
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+        {
+            return Err(anyhow::anyhow!(
+                "Secret name {} can only contain alphanumeric ASCII characters and underscores",
+                self.inner
+            ));
+        }
+        if self.inner.chars().next().unwrap().is_ascii_digit() {
+            return Err(anyhow::anyhow!(
+                "Secret name {} cannot start with a number",
+                self.inner
+            ));
+        }
+        Ok(())
+    }
+}
+impl TryFrom<String> for SecretName {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let secret_name = Self { inner: value };
+        secret_name.validate()?;
+        Ok(secret_name)
+    }
+}
+
+impl<'a> Deserialize<'a> for SecretName {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'a>,
+    {
+        let inner = String::deserialize(deserializer)?;
+        if inner.chars().count() == 0 {
+            return Err(serde::de::Error::custom("Secret name cannot be empty"));
+        }
+        if !inner.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+            return Err(serde::de::Error::custom(
+                "Secret name can only contain alphanumeric ASCII characters and underscores",
+            ));
+        }
+        if inner.chars().next().unwrap().is_ascii_digit() {
+            return Err(serde::de::Error::custom(
+                "Secret name cannot start with a number",
+            ));
+        }
+        Ok(Self { inner })
+    }
+}
 
 impl ConnectorConfig {
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
@@ -82,9 +152,19 @@ impl ConnectorConfig {
     pub fn config_from_str(config_str: &str) -> Result<Self> {
         let mut connector_config: Self = serde_yaml::from_str(config_str)?;
         connector_config.normalize_batch_size()?;
+        connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
         Ok(connector_config)
+    }
+
+    fn validate_secret_names(&self) -> Result<()> {
+        if let Some(secrets) = &self.meta.secrets {
+            for secret in secrets {
+                secret.name.validate()?;
+            }
+        }
+        Ok(())
     }
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
@@ -156,6 +236,9 @@ mod tests {
                 consumer: Some(ConsumerParameters {
                     partition: Some(10),
                 }),
+                secrets: Some(vec![SecretConfig {
+                    name: "secret1".to_string().try_into().unwrap(),
+                }]),
             },
             transforms: Some(
                 TransformationStep {
@@ -191,6 +274,7 @@ mod tests {
                 version: "0.1.0".to_string(),
                 producer: None,
                 consumer: None,
+                secrets: None,
             },
             transforms: None,
         };
@@ -232,6 +316,24 @@ mod tests {
             "meta: missing field `version` at line 2 column 3",
             format!("{connector_cfg:?}")
         );
+
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-secret-with-spaces.yaml")
+                .expect_err("This yaml should error");
+        #[cfg(unix)]
+        assert_eq!(
+            "meta.secrets[0]: Secret name can only contain alphanumeric ASCII characters and underscores at line 8 column 7",
+            format!("{connector_cfg:?}")
+        );
+
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-secret-starts-with-number.yaml")
+                .expect_err("This yaml should error");
+        #[cfg(unix)]
+        assert_eq!(
+            "meta.secrets[0]: Secret name cannot start with a number at line 8 column 7",
+            format!("{connector_cfg:?}")
+        );
     }
 
     #[test]
@@ -253,6 +355,7 @@ mod tests {
                 version: "latest".to_string(),
                 producer: None,
                 consumer: None,
+                secrets: None,
             },
             transforms: None,
         };
