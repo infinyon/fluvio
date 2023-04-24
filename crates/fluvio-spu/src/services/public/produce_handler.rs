@@ -1,12 +1,13 @@
 use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
-use fluvio_smartengine::SmartModuleChainInstance;
 use tokio::select;
 use tracing::warn;
 use tracing::{debug, trace, error};
 use tracing::instrument;
+use anyhow::{anyhow, Result};
 
+use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_protocol::api::RequestKind;
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset, Batch, RawRecords};
@@ -54,7 +55,7 @@ struct PartitionWriteResult {
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
     ctx: DefaultSharedGlobalContext,
-) -> Result<ResponseMessage<ProduceResponse>, Error> {
+) -> Result<ResponseMessage<ProduceResponse>> {
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
@@ -93,7 +94,7 @@ async fn handle_produce_topic(
     topic_request: DefaultTopicRequest,
     is_connector: bool,
     mut sm_chain_instance: Option<&mut SmartModuleChainInstance>,
-) -> Result<TopicWriteResult, Error> {
+) -> Result<TopicWriteResult> {
     let topic = &topic_request.name;
 
     trace!("Handling produce request for topic: {topic}");
@@ -190,15 +191,12 @@ async fn smartmodule_chain(
     sm_invocations: Vec<SmartModuleInvocation>,
     api_version: i16,
     ctx: &DefaultSharedGlobalContext,
-) -> Result<Option<SmartModuleChainInstance>, Error> {
+) -> Result<Option<SmartModuleChainInstance>> {
     let sm_ctx = match SmartModuleContext::try_from(sm_invocations, api_version, ctx).await {
         Ok(ctx) => ctx,
         Err(error_code) => {
             warn!("smartmodule context init failed: {:?}", error_code);
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!("smartmodule context init failed: {:?}", error_code),
-            ));
+            return Err(anyhow!("smartmodule context init failed: {}", error_code));
         }
     };
 
@@ -213,7 +211,7 @@ fn apply_smartmodules_for_partition_request(
     partition_request: &mut PartitionProduceData<RecordSet<RawRecords>>,
     sm_chain_instance: &mut SmartModuleChainInstance,
     ctx: &DefaultSharedGlobalContext,
-) -> Result<(), Error> {
+) -> Result<()> {
     let records = &partition_request.records;
     let batches = &records.batches;
 
@@ -227,20 +225,12 @@ fn apply_smartmodules_for_partition_request(
     ) {
         Ok((result, sm_runtime_error)) => {
             if let Some(error) = sm_runtime_error {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("smartmodule runtime error: {:?}", error),
-                ));
+                return Err(anyhow!("smartmodule runtime error: {error}"));
             } else {
                 result
             }
         }
-        Err(general_error) => {
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!("smartmodule chain failed: {:?}", general_error),
-            ));
-        }
+        Err(general_error) => return Err(anyhow!("smartmodule chain failed: {general_error}")),
     };
 
     let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result)
@@ -256,7 +246,7 @@ fn apply_smartmodules_for_partition_request(
 fn validate_records<R: BatchRecords>(
     records: &RecordSet<R>,
     compression: CompressionAlgorithm,
-) -> Result<(), Error> {
+) -> Result<()> {
     if records.batches.iter().all(|batch| {
         let batch_compression = if let Ok(compression) = batch.get_compression() {
             compression
@@ -273,10 +263,7 @@ fn validate_records<R: BatchRecords>(
     }) {
         Ok(())
     } else {
-        Err(Error::new(
-            ErrorKind::Other,
-            "Compression not supported by topic",
-        ))
+        Err(anyhow!("Compression not supported by topic"))
     }
 }
 /// For isolation = ReadCommitted wait until the replica's `hw` includes written records offsets or

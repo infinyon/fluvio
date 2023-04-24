@@ -1,6 +1,8 @@
+use tracing::{trace, debug};
+use anyhow::Result;
+
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_socket::{VersionedSerialSocket, MultiplexerSocket, SerialFrame};
-use tracing::{trace, debug};
 
 use crate::objects::{ListFilter, ObjectApiListRequest, ListRequest, ListResponse, Metadata};
 pub use fluvio_socket::{ClientConfig, SocketError};
@@ -11,7 +13,7 @@ pub struct SmartModuleApiClient {
 }
 
 impl SmartModuleApiClient {
-    pub async fn connect_with_config(config: ClientConfig) -> Result<Self, SocketError> {
+    pub async fn connect_with_config(config: ClientConfig) -> Result<Self> {
         let inner_client = config.connect().await?;
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
@@ -24,7 +26,7 @@ impl SmartModuleApiClient {
         })
     }
 
-    pub async fn get<F>(&self, name: F) -> Result<Option<SmartModuleSpec>, SocketError>
+    pub async fn get<F>(&self, name: F) -> Result<Option<SmartModuleSpec>>
     where
         ListFilter: From<F>,
     {
@@ -36,7 +38,7 @@ impl SmartModuleApiClient {
         &self,
         filters: Vec<F>,
         summary: bool,
-    ) -> Result<Vec<Metadata<SmartModuleSpec>>, SocketError>
+    ) -> Result<Vec<Metadata<SmartModuleSpec>>>
     where
         ListFilter: From<F>,
     {

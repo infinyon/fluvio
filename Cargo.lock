@@ -2917,6 +2917,7 @@ dependencies = [
 name = "fluvio-sc-schema"
 version = "0.18.1"
 dependencies = [
+ "anyhow",
  "fluvio-controlplane-metadata",
  "fluvio-future",
  "fluvio-protocol",
@@ -2940,7 +2941,6 @@ dependencies = [
  "fluvio-socket",
  "fluvio-types",
  "futures-util",
- "pin-utils",
  "portpicker",
  "tokio",
  "tracing",
@@ -3049,7 +3049,6 @@ dependencies = [
  "futures-util",
  "nix",
  "once_cell",
- "pin-utils",
  "portpicker",
  "regex",
  "serde",

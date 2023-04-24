@@ -4,9 +4,8 @@
 //! Converts TableFormat API request into KV request and sends to KV store for processing.
 //!
 
-use std::io::{Error, ErrorKind};
-
 use tracing::{debug, info, trace, instrument};
+use anyhow::{anyhow, Result};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{Status};
@@ -24,7 +23,7 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
     create: CommonCreateRequest,
     spec: TableFormatSpec,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<Status, Error> {
+) -> Result<Status> {
     let name = create.name;
 
     info!(%name,"creating tableformat");
@@ -58,7 +57,7 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
             ));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(anyhow!("authorization io error"));
     }
 
     let status = process_tableformat_request(&auth_ctx.global_ctx, name, spec).await;
