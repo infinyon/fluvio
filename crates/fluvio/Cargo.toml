@@ -36,11 +36,11 @@ futures-util = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
 serde_json = { workspace = true }
-tokio = { version = "1.3.0", features = ["macros", "sync"] }
+tokio = { workspace = true, features = ["macros", "sync"] }
 thiserror = { workspace = true }
 semver = { workspace = true }
 pin-project = { workspace = true }
-siphasher = "0.3.5"
+siphasher = { workspace = true }
 
 
 toml = { workspace = true }
@@ -79,5 +79,5 @@ async-std = { workspace = true }
 fluvio-future = { workspace = true, features = ["io", "fixture"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
-wasm-bindgen-test = "0.3.24"
-fluvio_ws_stream_wasm = "0.7.0"
+wasm-bindgen-test = { workspace = true }
+fluvio_ws_stream_wasm = { workspace = true}

@@ -15,12 +15,12 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = { workspace = true }
-futures-util = { version = "0.3.5" }
+futures-util = { workspace = true  }
 serde = { workspace = true, features = ['derive'] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-x509-parser = "0.15.0"
+x509-parser = { workspace = true }
 
 fluvio-controlplane-metadata = { workspace = true  }
 fluvio-future = { workspace = true, features = ["net", "openssl_tls"] }
