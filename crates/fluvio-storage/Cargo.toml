@@ -31,8 +31,8 @@ futures-lite = { workspace = true }
 pin-utils = "0.1.0"
 async-channel = { workspace = true }
 async-trait = { workspace = true }
-clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false, optional = true }
-serde = { workspace = true, features = ['derive'] }
+clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], optional = true }
+serde = { workspace = true, features = ['derive','std'] }
 tracing = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 
