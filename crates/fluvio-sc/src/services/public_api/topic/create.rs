@@ -9,15 +9,13 @@
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
 //!
 
+use fluvio_sc_schema::objects::CreateRequest;
 use tracing::{info, debug, trace, instrument};
 use anyhow::{anyhow, Result};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
-use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::shared::validate_resource_name;
-use fluvio_sc_schema::topic::validate::valid_topic_name;
-use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_auth::{AuthContext, TypeAction};

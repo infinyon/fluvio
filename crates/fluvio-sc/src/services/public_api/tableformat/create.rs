@@ -23,6 +23,7 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
     req: CreateRequest<TableFormatSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status> {
+    let (create, spec) = req.parts();
     let name = create.name;
 
     info!(%name,"creating tableformat");

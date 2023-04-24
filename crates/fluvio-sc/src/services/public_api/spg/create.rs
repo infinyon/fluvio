@@ -28,7 +28,8 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
     req: CreateRequest<SpuGroupSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status> {
-    let name = common.name;
+    let (create, spg) = req.parts();
+    let name = create.name;
 
     info!( spg = %name,
          replica = %spg.replicas,
@@ -51,7 +52,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
         return Err(anyhow!("authorization io error"));
     }
 
-    let status = process_custom_spu_request(&auth_ctx.global_ctx, name, common.timeout, spg).await;
+    let status = process_custom_spu_request(&auth_ctx.global_ctx, name, create.timeout, spg).await;
     trace!("create spu-group response {:#?}", status);
 
     Ok(status)

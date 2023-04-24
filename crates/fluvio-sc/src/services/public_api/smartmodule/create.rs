@@ -23,6 +23,7 @@ pub async fn handle_create_smartmodule_request<AC: AuthContext>(
     req: CreateRequest<SmartModuleSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status> {
+    let (create, spec) = req.parts();
     let name = create.name;
 
     info!(%name,"creating smartmodule");
