@@ -31,8 +31,6 @@ tracing = { workspace = true }
 
 fluvio-package-index = { workspace = true,  features = ["http_agent"] }
 fluvio-types = { workspace = true , optional = true }
-
-fluvio = { workspace = true,  optional = true }
 fluvio-protocol = { workspace = true,  optional = true }
 
 [dev-dependencies]

@@ -46,6 +46,7 @@ members = [
     "crates/fluvio-connector-common",
     "crates/fluvio-connector-derive",
     "release-tools/check-crate-version",
+    "release-tools/check-crate-version/toml-diff",
     "crates/smartmodule-development-kit",
     "crates/cdk",
     "crates/cargo-builder",
