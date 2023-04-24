@@ -4,9 +4,8 @@
 //! Converts SmartModule API request into KV request and sends to KV store for processing.
 //!
 
-use std::io::{Error, ErrorKind};
-
 use tracing::{info, trace, debug, instrument};
+use anyhow::{anyhow, Result};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{Status};
@@ -24,7 +23,7 @@ pub async fn handle_create_smartmodule_request<AC: AuthContext>(
     create: CommonCreateRequest,
     spec: SmartModuleSpec,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<Status, Error> {
+) -> Result<Status> {
     let name = create.name;
 
     info!(%name,"creating smartmodule");
@@ -43,7 +42,7 @@ pub async fn handle_create_smartmodule_request<AC: AuthContext>(
             ));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(anyhow!("authorization io error"));
     }
 
     let status = process_smartmodule_request(&auth_ctx.global_ctx, name, spec).await;

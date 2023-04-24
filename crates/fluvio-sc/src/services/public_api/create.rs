@@ -1,6 +1,5 @@
-use std::io::Error as IoError;
-
 use tracing::{instrument, debug};
+use anyhow::Result;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
@@ -14,7 +13,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_create_request<AC: AuthContext>(
     request: Box<RequestMessage<ObjectApiCreateRequest>>,
     auth_context: &AuthServiceContext<AC>,
-) -> Result<ResponseMessage<Status>, IoError> {
+) -> Result<ResponseMessage<Status>> {
     let (header, obj_req) = request.get_header_request();
 
     debug!(?obj_req, "create request");

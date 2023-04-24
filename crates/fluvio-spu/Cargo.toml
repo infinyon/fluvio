@@ -18,67 +18,60 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-cfg-if = "1.0.0"
+cfg-if = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 bytes = { workspace = true }
-clap = { workspace = true, features = ["std", "derive", "env"], default-features = false }
+clap = { workspace = true, features = ["std", "derive", "env"]}
 thiserror = { workspace = true }
 nix = { workspace = true }
 toml = { workspace = true }
-futures-util = { version = "0.3.5", features = ["sink"] }
-async-trait = "0.1.51"
-serde = { version = "1.0.103", features = ['derive'] }
-serde_json = "1.0.39"
-pin-utils = "0.1.0-alpha.4"
-regex = "1.3.1"
-tokio = { version = "1.3.0", features = ["macros"] }
-async-channel = "1.5.1"
+futures-util = { workspace = true, features = ["sink"] }
+async-trait = { workspace = true }
+serde = { workspace = true,  features = ['derive'] }
+serde_json = { workspace = true }
+regex = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+async-channel = { workspace = true }
 async-rwlock = "1.1.0"
-async-lock = "2.4.0"
-event-listener = "2.4.0"
-async-io = "1.3.0"
-async-net = "1.7.0"
-adaptive_backoff = "0.2.1"
-once_cell = "1.5"
+async-lock = { workspace = true }
+event-listener = { workspace = true }
+async-io = { workspace = true }
+async-net = { workspace = true }
+adaptive_backoff = { workspace = true }
+once_cell = { workspace = true }
 sysinfo = { workspace = true }
 
 
 # Fluvio dependencies
-fluvio = { path = "../fluvio" }
-fluvio-types = { features = [
-    "events",
-], path = "../fluvio-types" }
-fluvio-storage = { path = "../fluvio-storage" }
-fluvio-compression = { path = "../fluvio-compression" }
-fluvio-controlplane = { path = "../fluvio-controlplane" }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
-fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
-    "file",
-] }
-fluvio-protocol = { path = "../fluvio-protocol" }
-fluvio-socket = { path = "../fluvio-socket", features = [
-    "file",
-] }
-fluvio-service = { path = "../fluvio-service" }
+fluvio = { workspace = true, features = ["smartengine"]}
+fluvio-types = { workspace = true, features = ["events"] }
+fluvio-storage = { workspace = true }
+fluvio-compression = { workspace = true }
+fluvio-controlplane = { workspace = true }
+fluvio-controlplane-metadata = { workspace = true }
+fluvio-spu-schema = { workspace = true,  features = ["file"] }
+fluvio-protocol = { workspace = true }
+fluvio-socket = { workspace = true, features = ["file",] }
+fluvio-service = { workspace = true }
 flv-tls-proxy = { workspace = true }
-flv-util = { version = "0.5.0" }
+flv-util = { workspace = true }
 fluvio-future = { workspace = true,features = [
     "subscriber",
     "openssl_tls",
     "zero_copy",
 ] }
-fluvio-smartengine = { path = "../fluvio-smartengine"}
-fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
+fluvio-smartengine = { workspace = true }
+fluvio-smartmodule = { workspace = true}
 
 [dev-dependencies]
-once_cell = "1.5.2"
+once_cell = { workspace = true}
 derive_builder =  { workspace = true }
-serde_json = "1"
-flate2 = "1.0.22"
-portpicker = "0.1.1"
+serde_json = { workspace = true }
+flate2 = { workspace = true }
+portpicker = { workspace = true }
 
-flv-util = { version = "0.5.2", features = ["fixture"] }
+flv-util = { workspace = true, features = ["fixture"] }
 fluvio-future = { workspace = true,features = ["fixture", "subscriber"] }
-fluvio-protocol = { path = "../fluvio-protocol", features = ["fixture"] }
+fluvio-protocol = { workspace = true,  features = ["fixture"] }
 

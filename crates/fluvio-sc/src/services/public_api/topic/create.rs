@@ -9,18 +9,15 @@
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
 //!
 
-use std::io::{Error as IoError, ErrorKind};
+use tracing::{info, debug, trace, instrument};
+use anyhow::{anyhow, Result};
 
+use fluvio_protocol::link::ErrorCode;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::shared::validate_resource_name;
-use tracing::{info, debug, trace, instrument};
-
-use fluvio_protocol::link::ErrorCode;
-
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::topic::TopicSpec;
-
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
@@ -37,7 +34,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
     create: CommonCreateRequest,
     topic: TopicSpec,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<Status, IoError> {
+) -> Result<Status> {
     let name = create.name;
 
     info!( topic = %name,"creating topic");
@@ -56,10 +53,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
             ));
         }
     } else {
-        return Err(IoError::new(
-            ErrorKind::Interrupted,
-            "authorization io error",
-        ));
+        return Err(anyhow!("authorization io error"));
     }
 
     // validate topic request

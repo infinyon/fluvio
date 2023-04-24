@@ -13,10 +13,9 @@ name = "fluvio_controlplane"
 path = "src/lib.rs"
 
 [dependencies]
-log = "0.4.8"
 tracing = { workspace = true }
 
 # Fluvio dependencies
-fluvio-types = { path = "../fluvio-types" }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
-fluvio-protocol = { path = "../fluvio-protocol", features = ["api"]}
+fluvio-types = { workspace = true  }
+fluvio-controlplane-metadata = { workspace = true  }
+fluvio-protocol = { workspace = true,  features = ["api"]}

@@ -53,11 +53,11 @@ color-eyre = { workspace = true, default-features = false, optional = true }
 clap = { workspace = true, features = [
     "std",
     "derive",
-], default-features = false, optional = true }
-duct = { workspace = true, default-features = false, optional = true }
-comfy-table = { workspace = true, default-features = false, optional = true }
-flate2 = { workspace = true, default-features = false, optional = true }
-tar = { workspace = true , default-features = false, optional = true }
+], optional = true }
+duct = { workspace = true, optional = true }
+comfy-table = { workspace = true, optional = true }
+flate2 = { workspace = true, optional = true }
+tar = { workspace = true ,  optional = true }
 sysinfo = { workspace = true, default-features = false}
 
 
@@ -71,14 +71,12 @@ k8-types = { workspace = true, features = ["app"] }
 fluvio-command = { workspace = true }
 fluvio-future = { workspace = true }
 
-fluvio = { path = "../fluvio", default-features = false }
-fluvio-extension-common = { path = "../fluvio-extension-common", optional = true }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = [
-    "k8",
-] }
-fluvio-sc-schema = { path = "../fluvio-sc-schema", default-features = false }
-fluvio-types = { path = "../fluvio-types" }
-fluvio-channel = { path = "../fluvio-channel" }
+fluvio = { workspace = true  }
+fluvio-extension-common = { workspace = true,  optional = true }
+fluvio-controlplane-metadata = { workspace = true,  features = ["k8",] }
+fluvio-sc-schema = { workspace = true  }
+fluvio-types = { workspace = true  }
+fluvio-channel = { workspace = true  }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["task", "fixture"] }
