@@ -84,6 +84,7 @@ dirs = "5.0.0"
 duct = { version = "0.13", default-features = false }
 event-listener = "2.5.1"
 flate2 = { version = "1.0.22", default-features = false }
+futures = { version = "0.3" , default-features = false }
 futures-util = "0.3.6"
 futures-channel = "0.3"
 futures-lite = "1.11"
@@ -126,10 +127,14 @@ flv-tls-proxy = { version = "0.7" }
 # internal fluvio dep
 fluvio = { path = "crates/fluvio", default-features = false }
 fluvio-auth = { path = "crates/fluvio-auth" }
-fluvio-compression = { version = "0.2", path = "crates/fluvio-compression" }
+fluvio-channel = { path = "crates/fluvio-channel" }
 fluvio-cli-common = { path = "crates/fluvio-cli-common"}
+fluvio-compression = { version = "0.2", path = "crates/fluvio-compression" }
 fluvio-controlplane = { path = "crates/fluvio-controlplane" }
 fluvio-controlplane-metadata = { version = "0.22.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-hub-util = { path = "crates/fluvio-hub-util" }
+fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
+fluvio-package-index = { path = "crates/fluvio-package-index", default-features = false }
 fluvio-protocol = { version = "0.9.0", path = "crates/fluvio-protocol", default-features = false }
 fluvio-spu-schema = { version = "0.13.0", path = "crates/fluvio-spu-schema", def-features = false }
 fluvio-sc-schema = { version = "0.18.0", path = "crates/fluvio-sc-schema", default-features = false }

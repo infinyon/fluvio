@@ -38,42 +38,44 @@ smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
-tracing = { workspace = true }
-url = "2.1.1"
-semver = "1.0.0"
+
+async-net = { workspace = true }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"], default-features = false }
 clap_complete = "4.0.2"
 dirs = { workspace = true}
-thiserror = { workspace = true }
+indicatif = "0.17.0"
 eyre = "0.6.1"
-which = "4.0.2"
 sha2 = "0.10.0"
 hex = "0.4.2"
 home = "0.5.3"
-serde = { version = "1.0.118", features = ["derive"] }
-serde_json = "1.0"
-serde_yaml = { workspace = true }
+current_platform = "0.2"
 comfy-table = "6.0.0"
-static_assertions = { workspace = true }
-sysinfo = { workspace = true }
 atty = { version = "0.2.14", optional = true }
 ctrlc = { version = "3.1.3", optional = true }
 colored = "2"
 handlebars = "4"
 content_inspector = { version = "0.2.4", optional = true }
-flate2 = "1.0.22"
+flate2 = { workspace = true }
 crossterm = { version = "0.26.0", features = ['event-stream']}
 tui = { version = "0.19.0", default-features = false, features = ['crossterm'] }
 futures = "0.3"
-futures-util = { version = "0.3.5", features = ["sink"] }
+futures-util = { workspace = true, features = ["sink"] }
 humantime = "2.1.0"
-bytesize = { version = "1.1.0", features = ['serde'] }
-indicatif = "0.17.0"
-async-trait = "0.1.21"
-tokio = { version = "1.3.0", features = ["macros"] }
-async-net = "1.7.0"
-anyhow = { workspace = true }
-current_platform = "0.2"
+static_assertions = { workspace = true }
+sysinfo = { workspace = true }
+serde_yaml = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+semver = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true,  features = ["macros"] }
+tracing = { workspace = true }
+
+which = "4.0.2"
+url = "2.1.1"
 
 # Fluvio dependencies
 k8-config = { workspace = true, optional = true }
@@ -81,24 +83,24 @@ k8-client = { workspace = true, optional = true }
 k8-types = { workspace = true , features = ["core"] }
 fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
 
-fluvio = { path = "../fluvio", default-features = false }
-fluvio-socket = { path = "../fluvio-socket" }
-fluvio-command = { version = "0.2.0" }
-fluvio-package-index = { path = "../fluvio-package-index" }
-fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
-fluvio-channel = { path = "../fluvio-channel" }
-fluvio-cli-common = { path = "../fluvio-cli-common" }
-fluvio-hub-util = { path = "../fluvio-hub-util" }
-fluvio-smartengine = { path = "../fluvio-smartengine",  features = ["transformation"], default-features = false}
-fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
-fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
+fluvio = { workspace = true  }
+fluvio-socket = { workspace = true }
+fluvio-command = { workspace = true  }
+fluvio-package-index = { workspace = true }
+fluvio-extension-common = { workspace = true,  features = ["target"] }
+fluvio-channel = { workspace = true }
+fluvio-cli-common = { workspace = true  }
+fluvio-hub-util = { workspace = true  }
+fluvio-smartengine = { workspace = true,  features = ["transformation"]}
+fluvio-protocol = { workspace = true, features=["record","api"] }
+fluvio-smartmodule = { workspace = true  }
+fluvio-controlplane-metadata = { workspace = true, features = ["smartmodule"] }
 
 # Optional Fluvio dependencies
-fluvio-types = { path = "../fluvio-types", optional = true }
+fluvio-types = { workspace = true,  optional = true }
 fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
-fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
-fluvio-spu-schema = { path = "../fluvio-spu-schema", optional = true }
+fluvio-sc-schema = { workspace = true,  features = ["use_serde"], optional = true }
+fluvio-spu-schema = { workspace = true, optional = true }
 
 
 [dev-dependencies]
