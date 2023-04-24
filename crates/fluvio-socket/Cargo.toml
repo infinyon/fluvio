@@ -21,19 +21,19 @@ cfg-if = { workspace = true }
 bytes = { workspace = true }
 once_cell = { workspace = true }
 futures-util = { version = "0.3.5", features = ["sink", "io"] }
-async-lock = "2.4.0"
-event-listener = "2.0.0"
-async-channel = "1.6.1"
+async-lock = { workspace = true }
+event-listener = { workspace = true }
+async-channel = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
 async-trait = { workspace = true }
-pin-project = "1.0.1"
+pin-project = { workspace = true }
 thiserror = { workspace = true }
-semver = "1.0.0"
+semver = { workspace = true }
 
 # Fluvio dependencies
 fluvio-future = { workspace = true, features = ["net", "task", "retry"] }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
+fluvio-protocol = { workspace = true, features = [
     "derive",
     "api",
     "codec",

@@ -2345,7 +2345,7 @@ dependencies = [
  "fluvio_ws_stream_wasm",
  "futures-util",
  "once_cell",
- "pin-project-lite",
+ "pin-project",
  "semver 1.0.17",
  "serde",
  "serde_json",

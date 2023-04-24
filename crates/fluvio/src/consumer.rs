@@ -503,20 +503,20 @@ mod publish_stream {
     use std::sync::Arc;
     use std::task::{Poll, Context};
 
-    use pin_project_lite::pin_project;
+    use pin_project::pin_project;
     use futures_util::ready;
 
     use super::Stream;
     use super::OffsetPublisher;
 
     // signal offset when stream is done
-    pin_project! {
-        pub struct EndPublishSt<St> {
-            #[pin]
-            stream: St,
-            publisher: Arc<OffsetPublisher>
-        }
+    #[pin_project]
+    pub struct EndPublishSt<St> {
+        #[pin]
+        stream: St,
+        publisher: Arc<OffsetPublisher>
     }
+    
 
     impl<St> EndPublishSt<St> {
         pub fn new(stream: St, publisher: Arc<OffsetPublisher>) -> Self {
