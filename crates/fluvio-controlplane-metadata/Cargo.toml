@@ -26,7 +26,7 @@ flate2 = { workspace = true,  optional = true }
 lenient_semver = "0.4.2"
 semver = { workspace = true }
 serde = { workspace = true, features = ['derive'], optional = true }
-toml = { workspace = true,  optional = true }
+toml = { workspace = true,  features = ["parse"], optional = true }
 tracing = { workspace = true }
 
 # External Fluvio dependencies
@@ -41,3 +41,4 @@ fluvio-protocol = { workspace = true, features = [ "record",] }
 [dev-dependencies]
 serde_yaml = { workspace = true }
 fluvio-future = { workspace = true, features = ["fixture"] }
+
