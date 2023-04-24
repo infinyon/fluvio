@@ -129,7 +129,7 @@ fluvio-command = { version = "0.2.0" }
 flv-tls-proxy = { version = "0.7" }
 
 # internal fluvio dep
-fluvio = { version = "0.18", path = "crates/fluvio", default-features = false }
+fluvio = { version = "0.18", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-channel = { path = "crates/fluvio-channel" }
 fluvio-cli-common = { path = "crates/fluvio-cli-common"}
