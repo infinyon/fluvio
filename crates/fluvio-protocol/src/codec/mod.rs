@@ -113,16 +113,15 @@ mod test {
     use tracing::debug;
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
-    use futures::AsyncWriteExt;    
+    use futures::AsyncWriteExt;
     use futures::future::join;
     use futures::SinkExt;
     use futures::stream::StreamExt;
-   
+
     use fluvio_future::net::TcpListener;
     use fluvio_future::net::TcpStream;
     use fluvio_future::timer::sleep;
     use crate::{Encoder, Decoder};
- 
 
     use super::FluvioCodec;
 
