@@ -16,5 +16,5 @@ semver = "1.0.13"
 serde = { workspace = true, features = ["serde_derive"] }
 serde_json = { workspace = true }
 tar = "0.4.38"
-toml = "0.5.9"
+toml = { workspace = true, features = ["parse"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

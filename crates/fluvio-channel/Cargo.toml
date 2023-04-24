@@ -22,7 +22,7 @@ semver = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 dirs = { workspace = true}
-toml = { workspace = true, default-features = true}
+toml = { workspace = true, features = ["display", "parse"]}
 serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 

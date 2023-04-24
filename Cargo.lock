@@ -945,7 +945,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tokio",
- "toml 0.5.11",
+ "toml 0.7.3",
  "toml-diff",
 ]
 
@@ -2503,7 +2503,6 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "fluvio",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-protocol",
@@ -7256,7 +7255,7 @@ name = "toml-diff"
 version = "0.0.0"
 dependencies = [
  "serde",
- "toml 0.5.11",
+ "toml 0.7.3",
 ]
 
 [[package]]
