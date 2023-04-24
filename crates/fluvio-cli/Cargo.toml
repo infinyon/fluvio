@@ -43,7 +43,7 @@ async-net = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
-clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"], default-features = false }
+clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"] }
 clap_complete = "4.0.2"
 dirs = { workspace = true}
 indicatif = "0.17.0"

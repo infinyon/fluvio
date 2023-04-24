@@ -36,7 +36,7 @@ async-lock = { workspace = true }
 async-channel = { workspace = true }
 event-listener = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
-clap = { workspace = true,features = ["std", "derive", "env"], default-features = false }
+clap = { workspace = true,features = ["std", "derive", "env"]}
 semver = { workspace = true }
 once_cell = { workspace = true }
 cfg-if = { workspace = true }

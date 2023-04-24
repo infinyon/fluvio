@@ -85,7 +85,7 @@ dirs = "5.0.0"
 duct = { version = "0.13", default-features = false }
 event-listener = "2.5.1"
 flate2 = { version = "1.0.25" }
-futures = { version = "0.3.1" , default-features = false }
+futures = { version = "0.3.1" }
 futures-util = { version = "0.3.6", default-features = false }
 futures-channel = "0.3"
 futures-lite = "1.11"

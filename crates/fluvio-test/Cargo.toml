@@ -16,10 +16,7 @@ async-trait = { workspace = true }
 bytes = { workspace = true }
 futures-lite = { workspace = true }
 futures ={ workspace = true }
-clap = { workspace = true , features = [
-    "std",
-    "derive",
-], default-features = false }
+clap = { workspace = true , features = [   "std",  "derive"]}
 
 rand = { workspace = true }
 # Cryptographically secure rand is unnecessary and slow enough to affect for benchmark testing

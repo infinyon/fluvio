@@ -13,7 +13,7 @@ publish = false
 bytes = { workspace = true }
 tracing = { workspace = true }
 futures-lite = { workspace = true }
-clap = { workspace = true , features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
+clap = { workspace = true , features = ["std", "derive", "help", "usage", "error-context"] }
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 syn = { workspace = true }

@@ -56,4 +56,4 @@ fluvio-future = { workspace = true, features = [
     "timer",
     "net",
 ] }
-futures = { workspace = true  }
+futures = { workspace = true }
