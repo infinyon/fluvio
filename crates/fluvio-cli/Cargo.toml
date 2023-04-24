@@ -54,7 +54,7 @@ serde = { version = "1.0.118", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = { workspace = true }
 comfy-table = "6.0.0"
-static_assertions = "1.1.0"
+static_assertions = { workspace = true }
 sysinfo = { workspace = true }
 atty = { version = "0.2.14", optional = true }
 ctrlc = { version = "3.1.3", optional = true }

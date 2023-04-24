@@ -50,19 +50,20 @@ members = [
     "crates/cdk",
     "crates/cargo-builder",
     "connector/json-test-connector",
-    "connector/sink-test-connector"
+    "connector/sink-test-connector",
 ]
 
 exclude = ["smartmodule/regex-filter"]
 resolver = "2"
 
 [workspace.dependencies]
-anyhow = "1.0.38" 
+anyhow = "1.0.38"
 async-channel = { version = "1.6.1", default-features = false }
 async-trait = "0.1.21"
 base64 = "0.21.0"
 bytes = "1"
 bytesize = "1.1.0"
+cargo-generate = { version = "0.18.2", default-features = false }
 cargo_toml = "0.15"
 chrono = "0.4"
 clap = { version = "4.0.10", default-features = false }
@@ -90,6 +91,7 @@ serde_json = "1.0.60"
 serde_yaml = { version = "0.9.0", default-features = false }
 sysinfo = { version = "0.28.0", default-features = false }
 semver = "1.0.3"
+static_assertions = "1.1.0"
 tar = { version = "0.4", default-features = false }
 tempfile = "3.4.0"
 thiserror = "1.0.20"
@@ -99,18 +101,23 @@ tracing = "0.1.19"
 url = "2.1.1"
 wasmparser = "0.103.0"
 which = "4.1.0"
-cargo-generate = "0.18.2"
+
 
 # fluvio dep
 k8-client = { version = "10.0.0" }
 k8-types = { version = "0.8.0" }
-k8-config = { version = "2.0.0"}
+k8-config = { version = "2.0.0" }
 k8-metadata-client = { version = "5.1.0" }
 fluvio-future = { version = "0.5.1", default-features = false }
 flv-util = { version = "0.5.0" }
-fluvio-helm = { version = "0.4.1"}
-fluvio-command = { version = "0.2.0"}
+fluvio-helm = { version = "0.4.1" }
+fluvio-command = { version = "0.2.0" }
 flv-tls-proxy = { version = "0.7" }
+fluvio-types = { version = "0.4.0", path = "crates/fluvio-types", default-features = false }
+fluvio-controlplane-metadata = { version = "0.22.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-protocol = { version = "0.9.0", path = "crates/fluvio-protocol", default-features = false }
+fluvio-socket = { version = "0.14.0", path = "crates/fluvio-socket", default-features = false }
+fluvio-smartmodule = { version = "0.5.0", path = "crates/fluvio-smartmodule", default-features = false }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

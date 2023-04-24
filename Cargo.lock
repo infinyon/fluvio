@@ -2666,7 +2666,6 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-protocol",
  "fluvio-types",
- "log",
  "tracing",
 ]
 
@@ -2923,7 +2922,6 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-types",
- "log",
  "paste",
  "serde",
  "static_assertions",
@@ -3077,7 +3075,6 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "futures-util",
- "log",
  "serde",
  "static_assertions",
  "tracing",
