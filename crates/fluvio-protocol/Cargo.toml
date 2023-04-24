@@ -27,25 +27,24 @@ link = ["api","record","thiserror","flv-util","semver","eyre"]
 fixture = ["record","derive_builder"]
 
 [dependencies]
-tracing = "0.1"
-bytes = { version = "1" }
-crc32c = { version = "0.6", optional = true}
-thiserror = { version = "1", optional = true }
-tokio-util = { version = "0.7.0", features = [
-    "codec",
-    "compat",
-], optional = true }
-semver = { version = "1.0.0", optional = true }
+
+bytes = { workspace = true  }
+crc32c = { workspace = true,  optional = true}
 content_inspector = { version = "0.2.4", optional = true }
-once_cell = { version = "1.5.2", optional = true }
-derive_builder = { version = "0.12.0" , optional = true }
+once_cell = { workspace = true, optional = true }
+derive_builder = { workspace = true,  optional = true }
 eyre = { version = "0.6", default-features = false, optional = true }
+semver = { workspace = true, optional = true }
+thiserror = { workspace = true,  optional = true }
+tokio-util = { workspace = true, features = ["codec","compat"], optional = true }
+tracing = { workspace = true }
+
 
 fluvio-protocol-derive = { version = "0.5.0", path = "../fluvio-protocol-derive", optional = true }
 fluvio-future = { workspace = true, optional = true }
-flv-util = { version = "0.5.0", optional = true }
-fluvio-compression = { version = "0.2", path = "../fluvio-compression", optional = true}
-fluvio-types = { version = "0.4.0", path = "../fluvio-types", optional = true }
+flv-util = { workspace = true,  optional = true }
+fluvio-compression = { workspace = true, optional = true}
+fluvio-types = { workspace = true,  optional = true }
 
 [dev-dependencies]
 criterion = "0.4.0"
@@ -57,4 +56,4 @@ fluvio-future = { workspace = true, features = [
     "timer",
     "net",
 ] }
-futures = { version = "0.3.1" }
+futures = { workspace = true  }

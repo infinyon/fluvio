@@ -15,28 +15,28 @@ tracing = { workspace = true }
 futures-lite = { workspace = true }
 clap = { workspace = true , features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 async-trait = { workspace = true }
-tokio = { version = "1.4", features = ["macros"] }
-syn = "1.0"
-serde = "1.0"
-serde_json = "1.0"
+tokio = { workspace = true, features = ["macros"] }
+syn = { workspace = true }
+serde = { workspace = true}
+serde_json = { workspace = true}
 humantime = "2.1"
 quote = "1.0"
 proc-macro2 = "1.0"
 inventory = "0.3"
 comfy-table = "6.0.0"
-once_cell = "1.7.2"
+once_cell = { workspace = true }
 dyn-clone = "1.0"
-semver = "1.0.0"
+semver = { workspace = true }
 hdrhistogram = "7.3.0"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 anyhow = { workspace = true }
 
-fluvio = { path = "../fluvio" }
-fluvio-types = { path = "../fluvio-types" }
+fluvio = { workspace = true  }
+fluvio-types = { workspace = true }
 fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-cluster = { path = "../fluvio-cluster" }
-fluvio-command = { version = "0.2.0" }
-fluvio-controlplane-metadata = { features = ["k8"], path = "../fluvio-controlplane-metadata" }
+fluvio-command = { workspace = true  }
+fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
 
 [lib]
 path = "lib.rs"

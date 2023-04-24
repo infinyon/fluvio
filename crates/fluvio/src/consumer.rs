@@ -514,9 +514,8 @@ mod publish_stream {
     pub struct EndPublishSt<St> {
         #[pin]
         stream: St,
-        publisher: Arc<OffsetPublisher>
+        publisher: Arc<OffsetPublisher>,
     }
-    
 
     impl<St> EndPublishSt<St> {
         pub fn new(stream: St, publisher: Arc<OffsetPublisher>) -> Self {

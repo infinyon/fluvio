@@ -47,10 +47,10 @@ fluvio-future = { workspace = true, features = [
     "zero_copy",
     "native2_tls",
 ] }
-portpicker = "0.1.1"
+portpicker = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-async-net = "1.4.3"
+async-net = { workspace = true }
 
 [build-dependencies]
 built = "0.6.0"

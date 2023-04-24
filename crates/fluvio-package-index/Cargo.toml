@@ -16,11 +16,11 @@ path = "src/lib.rs"
 http_agent = ["http"]
 
 [dependencies]
-tracing = "0.1.21"
-thiserror = "1.0.21"
-serde = { version = "1.0.117", features = ["derive"] }
-serde_json = "1.0.59"
-semver = { version = "1.0.0", features = ["serde"] }
-url = { version = "2.1.1", features = ["serde"] }
 lazy_static = "1.4.0"
 http = { version = "0.2", default-features = false, optional = true}
+serde = { workspace = true,  features = ["derive"] }
+serde_json = { workspace = true }
+semver = { workspace = true,  features = ["serde"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true, features = ["serde"] }

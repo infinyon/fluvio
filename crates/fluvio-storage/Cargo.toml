@@ -20,7 +20,8 @@ fixture = []
 
 [dependencies]
 anyhow = { workspace = true}
-tracing = { workspace = true }
+async-lock = { workspace = true }
+blocking = "1.1.0"
 derive_builder = { workspace = true}
 bytes = { workspace = true }
 nix = { workspace = true }
@@ -32,26 +33,21 @@ async-channel = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false, optional = true }
 serde = { workspace = true, features = ['derive'] }
-async-lock = "2.4.0"
+tracing = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
-blocking = "1.1.0"
 
 
 # Fluvio dependencies
-fluvio-types = { path = "../fluvio-types", features = [
-    "events",
-], version = "0.4.0" }
+fluvio-types = { workspace = true, features = ["events",]}
 fluvio-future = { workspace = true, features = ["fs", "mmap", "zero_copy"] }
-fluvio-protocol = { path = "../fluvio-protocol" }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
-fluvio-spu-schema = { path = "../fluvio-spu-schema", features = [
-    "file",
-] }
+fluvio-protocol = { workspace = true }
+fluvio-controlplane-metadata = { workspace = true  }
+fluvio-spu-schema = { workspace = true, features = [ "file"] }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture"] }
-flv-util = { version = "0.5.2", features = ["fixture"] }
-fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
+flv-util = { workspace = true, features = ["fixture"] }
+fluvio-socket = { workspace = true,  features = ["file"] }
 fluvio-storage = { path = ".", features = ["fixture"] }
-fluvio-protocol = { path = "../fluvio-protocol", features = ["fixture"] }
+fluvio-protocol = { workspace = true,  features = ["fixture"] }
 
