@@ -26,7 +26,6 @@ impl Default for TopicSchema {
     serde(rename_all = "camelCase")
 )]
 pub struct ColumnSchema {
-    #[fluvio(min_version = 11)]
     #[cfg_attr(feature = "use_serde", serde(default))]
     columns: Vec<ColumnDef>,
 }

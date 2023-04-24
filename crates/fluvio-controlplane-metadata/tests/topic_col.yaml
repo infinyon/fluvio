@@ -6,15 +6,16 @@ spec:
   replicas:
     computed:
       partitions: 1
-  columns:
-    - name: route
-      ty: string
-    - name: speed
-      ty: integer
-    - name: longitude
-      ty: double
-    - name: latitude
-      ty: double
-    - name: time
-      ty: timestamp
+  schema:
+    columns:
+      - name: route
+        ty: string
+      - name: speed
+        ty: integer
+      - name: longitude
+        ty: double
+      - name: latitude
+        ty: double
+      - name: time
+        ty: timestamp
 
