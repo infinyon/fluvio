@@ -12,3 +12,4 @@ toml = { workspace = true, features = ["display"] }
 
 [dev-dependencies]
 serde = { workspace = true }
+toml = { workspace = true, features = ["display", "parse"] }

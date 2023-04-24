@@ -37,10 +37,8 @@ impl<'a> TomlDiff<'a> {
             match (a, b) {
                 (TomlValue::Array(a), TomlValue::Array(b)) => {
                     // Get each value's toml representation and store it alongside
-                    let mut a: Vec<_> =
-                        a.iter().map(|e| (e, toml::to_string(e).unwrap())).collect();
-                    let mut b: Vec<_> =
-                        b.iter().map(|e| (e, toml::to_string(e).unwrap())).collect();
+                    let mut a: Vec<_> = a.iter().map(|e| (e, e.to_string())).collect();
+                    let mut b: Vec<_> = b.iter().map(|e| (e, e.to_string())).collect();
                     // Sort the lists by their toml representations
                     a.sort_by(|x, y| x.1.cmp(&y.1));
                     b.sort_by(|x, y| x.1.cmp(&y.1));
