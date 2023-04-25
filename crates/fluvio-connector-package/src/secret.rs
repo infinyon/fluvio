@@ -2,13 +2,11 @@ use std::{
     io::{BufReader, BufRead},
     path::{PathBuf, Path},
     fs::File,
-    collections::HashSet,
 };
 
 use once_cell::sync::OnceCell;
 use serde::{Serialize, Deserialize, de::Visitor, Deserializer};
 use anyhow::{Result, anyhow};
-use serde_yaml::Value;
 
 static SECRET_STORE: OnceCell<Box<dyn SecretStore>> = OnceCell::new();
 
@@ -119,53 +117,6 @@ pub fn set_default_secret_store(store: Box<dyn SecretStore>) -> Result<()> {
     SECRET_STORE
         .set(store)
         .map_err(|_| anyhow!("secret store is already set"))
-}
-
-pub fn detect_secrets(config: &Value) -> HashSet<&str> {
-    let mut result = HashSet::default();
-    find_secrets(&mut result, config);
-    result
-}
-
-/// Find secrets appearances inside the raw config string and return a set of secret names.
-/// For example, for this input string:
-/// ```yaml
-/// any_name:
-///   secret:
-///     name: SECRET_NAME
-/// ```
-/// it returns a set with one value: SECRET_NAME.
-pub fn detect_secrets_from_str(raw_config: &str) -> Result<HashSet<String>> {
-    let mut result = HashSet::default();
-    let config: Value = serde_yaml::from_str(raw_config)?;
-    find_secrets(&mut result, &config);
-    Ok(HashSet::from_iter(result.iter().map(|s| s.to_string())))
-}
-
-fn find_secrets<'a>(set: &mut HashSet<&'a str>, src: &'a Value) {
-    if let Value::Mapping(mapping) = src {
-        let name_value = Value::String("name".to_owned());
-        for (key, value) in mapping.iter() {
-            match (key, value) {
-                (Value::String(name), Value::Mapping(map)) => {
-                    match map.get(&name_value) {
-                        Some(Value::String(value)) if name.eq("secret") => {
-                            set.insert(value);
-                        }
-                        _ => find_secrets(set, value),
-                    };
-                }
-                (Value::String(_), Value::Sequence(seq)) => {
-                    for item in seq {
-                        find_secrets(set, item);
-                    }
-                }
-                _ => {
-                    // ignore secret from other types
-                }
-            }
-        }
-    }
 }
 
 struct SecretStringVisitor;
@@ -401,68 +352,5 @@ mod tests {
         //then
         assert_eq!(resolved, "secret_value");
         Ok(())
-    }
-
-    #[test]
-    fn test_detect_secrets_empty() {
-        //given
-        let config = Value::Null;
-
-        //when
-        let secrets = detect_secrets(&config);
-
-        //then
-        assert!(secrets.is_empty())
-    }
-
-    #[test]
-    fn test_detect_secrets_one() {
-        //given
-        let config = serde_yaml::from_str(
-            r#"---
-config:
-  secret:
-    name: secret1
-"#,
-        )
-        .expect("invalid yaml str");
-
-        //when
-        let secrets = detect_secrets(&config);
-
-        //then
-        assert_eq!(secrets.len(), 1);
-        assert_eq!(secrets.into_iter().next(), Some("secret1"))
-    }
-
-    #[test]
-    fn test_detect_secrets_from_str() {
-        //given
-        let raw_config = r#"---
-config:
-  timeout:
-    secs: 30
-    nanos: 0
-  secret:
-    name: secret1
-  nested:
-    secret:
-      name: secret2
-  list:
-    - secret:
-        name: secret3
-    - secret:
-        name: secret4
-"#;
-
-        //when
-        let secrets = detect_secrets_from_str(raw_config).expect("invalid raw config string");
-
-        //then
-        assert_eq!(secrets.len(), 4);
-        assert!(secrets.get("secret1").is_some());
-        assert!(secrets.get("secret2").is_some());
-        assert!(secrets.get("secret3").is_some());
-        assert!(secrets.get("secret4").is_some());
     }
 }

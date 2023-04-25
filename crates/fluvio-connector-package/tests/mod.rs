@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use fluvio_connector_package::metadata::*;
 use openapiv3::SchemaData;
@@ -44,22 +42,6 @@ fn test_read_from_toml_file() {
                 )],
                 ["template"]
             ),
-            secrets: Secrets::from(BTreeMap::from([
-                (
-                    "password".into(),
-                    Secret {
-                        ty: SecretType::Env,
-                        mount: None,
-                    }
-                ),
-                (
-                    "my_cert".into(),
-                    Secret {
-                        ty: SecretType::File,
-                        mount: Some("/mydata/secret1".into())
-                    }
-                )
-            ])),
         }
     )
 }
@@ -94,13 +76,6 @@ source = true
 
 [deployment]
 binary = "json-test-connector"
-
-[secret.my_cert]
-type = "file"
-mount = "/mydata/secret1"
-
-[secret.password]
-type = "env"
 
 [custom]
 required = ["template"]

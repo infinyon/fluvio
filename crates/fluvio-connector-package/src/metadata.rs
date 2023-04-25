@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, ops::Deref, fmt::Display};
+use std::{ops::Deref, fmt::Display};
 
 use anyhow::{anyhow, Context};
 use openapiv3::{Schema, AnySchema, ReferenceOr, Type, SchemaKind};
@@ -6,15 +6,13 @@ use serde::{Serialize, Deserialize};
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 
-use crate::{config::ConnectorConfig, secret::detect_secrets};
+use crate::config::ConnectorConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ConnectorMetadata {
     pub package: ConnectorPackage,
     pub direction: Direction,
     pub deployment: Deployment,
-    #[serde(rename = "secret", default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub secrets: Secrets,
     #[serde(rename = "custom", default, skip_serializing_if = "Option::is_none")]
     pub custom_config: CustomConfigSchema,
 }
@@ -63,25 +61,6 @@ pub struct CustomConfigSchema {
     pub schema: Option<openapiv3::Schema>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub struct Secrets(BTreeMap<String, Secret>);
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub struct Secret {
-    #[serde(rename = "type")]
-    pub ty: SecretType,
-
-    pub mount: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum SecretType {
-    #[default]
-    Env,
-    File,
-}
-
 impl Default for ConnectorMetadata {
     fn default() -> Self {
         Self {
@@ -101,13 +80,6 @@ impl Default for ConnectorMetadata {
                 [("prop1", Type::String(Default::default()))],
                 [],
             ),
-            secrets: Secrets::from(BTreeMap::from([(
-                "secret_name".into(),
-                Secret {
-                    ty: SecretType::Env,
-                    mount: None,
-                },
-            )])),
         }
     }
 }
@@ -145,25 +117,11 @@ impl Display for Direction {
     }
 }
 
-impl Deref for Secrets {
-    type Target = BTreeMap<String, Secret>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 impl Deref for CustomConfigSchema {
     type Target = Option<openapiv3::Schema>;
 
     fn deref(&self) -> &Self::Target {
         &self.schema
-    }
-}
-
-impl From<BTreeMap<String, Secret>> for Secrets {
-    fn from(secrets: BTreeMap<String, Secret>) -> Self {
-        Self(secrets)
     }
 }
 
@@ -270,7 +228,6 @@ impl ConnectorMetadata {
             serde_yaml::from_reader(reader).context("unable to parse config into YAML format")?;
         validate_custom_config(&self.custom_config, &value)
             .context("custom config validation failed")?;
-        validate_secrets(&self.secrets, &value)?;
         let config = ConnectorConfig::from_value(value)
             .context("unable to parse common connector config")?;
         validate_direction(&self.direction, &config)?;
@@ -310,19 +267,6 @@ fn validate_deployment(deployment: &Deployment, config: &ConnectorConfig) -> any
         }
     };
 
-    Ok(())
-}
-
-fn validate_secrets(secrets: &Secrets, config: &serde_yaml::Value) -> anyhow::Result<()> {
-    let cfg_secrets = detect_secrets(config);
-    for cfg_secret in cfg_secrets {
-        if !secrets.contains_key(cfg_secret) {
-            return Err(anyhow!(
-                "config secret '{}' is not defined in package metadata",
-                cfg_secret
-            ));
-        }
-    }
     Ok(())
 }
 
@@ -411,13 +355,6 @@ mod tests_toml {
             [deployment]
             image = "image_url"
 
-            [secret.password]
-            type = "env"
-
-            [secret.my_cert]
-            type = "file"
-            mount = "/mydata/secret1"
-
             [package]
             name = "p_name"
             group = "p_group"
@@ -464,36 +401,17 @@ mod tests_toml {
                     ],
                     ["prop1"]
                 ),
-                secrets: Secrets(BTreeMap::from([
-                    (
-                        "password".into(),
-                        Secret {
-                            ty: SecretType::Env,
-                            mount: None,
-                        }
-                    ),
-                    (
-                        "my_cert".into(),
-                        Secret {
-                            ty: SecretType::File,
-                            mount: Some("/mydata/secret1".into())
-                        }
-                    )
-                ]))
             }
         )
     }
 }
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, io::Cursor};
+    use std::io::Cursor;
 
     use openapiv3::ObjectType;
 
-    use crate::{
-        metadata::{Secret, SecretType},
-        config::MetaConfig,
-    };
+    use crate::config::MetaConfig;
 
     use super::*;
 
@@ -556,40 +474,6 @@ mod tests {
 
         //then
         assert_eq!(res.unwrap_err().to_string(), "deployment image in metadata: 'infinyon/fluvio-connect-http_sink:latest' mismatches image in config: 'infinyon/fluvio-connect-http_source:latest'");
-    }
-
-    #[test]
-    fn test_validate_secrets_missing() {
-        //given
-        let config = Default::default();
-        let meta_secrets = Secrets::from(BTreeMap::from([(
-            "secret_name".into(),
-            Secret {
-                ty: SecretType::Env,
-                mount: None,
-            },
-        )]));
-
-        //when
-        let res = validate_secrets(&meta_secrets, &config);
-
-        //then
-        assert!(res.is_ok()); // config file is not obligated to use all secrets defined in
-                              // Connector.toml
-    }
-
-    #[test]
-    fn test_validate_secrets_undefined() {
-        //given
-        let config = serde_yaml::from_str("config:\n  secret:\n    name: secret_name").unwrap();
-        //when
-        let res = validate_secrets(&Secrets::default(), &config);
-
-        //then
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "config secret 'secret_name' is not defined in package metadata"
-        );
     }
 
     #[test]
@@ -834,13 +718,6 @@ mod tests {
         let metadata = ConnectorMetadata {
             direction: Direction::source(),
             deployment: Deployment::from_image_name("infinyon/fluvio-connect-http-source:latest"),
-            secrets: Secrets::from(BTreeMap::from([(
-                "secret_name".into(),
-                Secret {
-                    ty: SecretType::Env,
-                    mount: None,
-                },
-            )])),
             custom_config: CustomConfigSchema::new(
                 [("prop1", Type::Integer(Default::default()))],
                 ["prop1"],
