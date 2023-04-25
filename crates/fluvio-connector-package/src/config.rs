@@ -101,13 +101,13 @@ impl SecretName {
             .all(|c| c.is_ascii_alphanumeric() || c == '_')
         {
             return Err(anyhow::anyhow!(
-                "Secret name {} can only contain alphanumeric ASCII characters and underscores",
+                "Secret name `{}` can only contain alphanumeric ASCII characters and underscores",
                 self.inner
             ));
         }
         if self.inner.chars().next().unwrap().is_ascii_digit() {
             return Err(anyhow::anyhow!(
-                "Secret name {} cannot start with a number",
+                "Secret name `{}` cannot start with a number",
                 self.inner
             ));
         }
@@ -130,20 +130,11 @@ impl<'a> Deserialize<'a> for SecretName {
         D: serde::Deserializer<'a>,
     {
         let inner = String::deserialize(deserializer)?;
-        if inner.chars().count() == 0 {
-            return Err(serde::de::Error::custom("Secret name cannot be empty"));
-        }
-        if !inner.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-            return Err(serde::de::Error::custom(
-                "Secret name can only contain alphanumeric ASCII characters and underscores",
-            ));
-        }
-        if inner.chars().next().unwrap().is_ascii_digit() {
-            return Err(serde::de::Error::custom(
-                "Secret name cannot start with a number",
-            ));
-        }
-        Ok(Self { inner })
+        let secret = Self { inner };
+        secret
+            .validate()
+            .map_err(|err| serde::de::Error::custom(err))?;
+        Ok(secret)
     }
 }
 
@@ -342,7 +333,7 @@ mod tests {
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "meta.secrets[0]: Secret name can only contain alphanumeric ASCII characters and underscores at line 8 column 7",
+            "meta.secrets[0]: Secret name `secret name` can only contain alphanumeric ASCII characters and underscores at line 8 column 7",
             format!("{connector_cfg:?}")
         );
 
@@ -351,7 +342,7 @@ mod tests {
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "meta.secrets[0]: Secret name cannot start with a number at line 8 column 7",
+            "meta.secrets[0]: Secret name `1secret` cannot start with a number at line 8 column 7",
             format!("{connector_cfg:?}")
         );
     }
