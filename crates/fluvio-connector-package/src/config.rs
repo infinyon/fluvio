@@ -131,9 +131,7 @@ impl<'a> Deserialize<'a> for SecretName {
     {
         let inner = String::deserialize(deserializer)?;
         let secret = Self { inner };
-        secret
-            .validate()
-            .map_err(|err| serde::de::Error::custom(err))?;
+        secret.validate().map_err(serde::de::Error::custom)?;
         Ok(secret)
     }
 }
