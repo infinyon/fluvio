@@ -5,7 +5,7 @@ permissions: read-all
 #permissions:
 #  contents: read
 
-concurrency: 
+concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
@@ -68,7 +68,8 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk]
+        binary:
+          [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -84,10 +85,9 @@ jobs:
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
@@ -117,7 +117,7 @@ jobs:
       - name: Build smdk
         if: matrix.binary == 'smdk'
         run: make build-smdk
-      
+
       - name: Build cdk
         if: matrix.binary == 'cdk'
         run: make build-cdk
@@ -206,7 +206,7 @@ jobs:
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: smdk
-          
+
           # cdk
           - os: macos-12
             rust: stable
@@ -262,11 +262,9 @@ jobs:
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
@@ -285,7 +283,7 @@ jobs:
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
         run: |
           sudo apt-get update -o="APT::Acquire::Retries=3"
-          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64  
+          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64
 
       - name: Build fluvio.exe
         timeout-minutes: 30
@@ -316,7 +314,7 @@ jobs:
         timeout-minutes: 30
         if: matrix.binary == 'smdk.exe'
         run: make build-smdk
-      
+
       - name: Build cdk
         timeout-minutes: 30
         if: matrix.binary == 'cdk'
@@ -369,11 +367,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
@@ -423,11 +419,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.rust-target }}-check-integration
@@ -447,12 +441,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
 
       - name: Build Regex SmartModule
         run: make -C smartmodule/regex-filter
@@ -479,12 +471,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
 
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
@@ -515,12 +505,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-
       - name: check for ${{ matrix.wasm-crate }} with ${{matrix.features}}
         run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --${{matrix.features}}
 
@@ -544,11 +531,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-      - name: Rust version 
+      - name: Rust version
         run: rustc --version
       - uses: Swatinem/rust-cache@v2
         with:
@@ -572,7 +558,7 @@ jobs:
       TEST_BIN: ~/bin/fluvio-test
       SERVER_LOG: fluvio=info
     strategy:
- #     fail-fast: false
+      #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
@@ -636,7 +622,7 @@ jobs:
       - name: Validate test harness
         if: matrix.test == 'validate-test-harness'
         timeout-minutes: 15
-        run : |
+        run: |
           make validate-test-harness
       - name: Run smoke-test
         if: matrix.test == 'smoke-test'
@@ -745,19 +731,14 @@ jobs:
       UNINSTALL: noclean
       SERVER_LOG: fluvio=debug
     strategy:
- #     fail-fast: true
+      #     fail-fast: true
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test:
-          [
-            smoke-test-k8,
-            smoke-test-k8-tls,
-            smoke-test-k8-tls-root-unclean,
-          ]
+        test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
         k8: [k3d]
-        spu: [1,2]
+        spu: [1, 2]
     steps:
       - uses: actions/checkout@v3
       # Download artifacts
@@ -861,7 +842,7 @@ jobs:
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
- #     fail-fast: false
+      #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         run: [r1]
@@ -925,25 +906,23 @@ jobs:
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
- #     fail-fast: false
+      #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
         cli_version: [stable, dev]
-        test: [fluvio,smdk,cdk]
+        test: [fluvio, smdk, cdk]
         # no need to test stable to stable
         exclude:
-          - cluster_version:  stable
+          - cluster_version: stable
             cli_version: stable
-        
+
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          profile: minimal
-          override: true
       - uses: Swatinem/rust-cache@v2
       - name: Setup BATS
         uses: mig4/setup-bats@v1
@@ -954,14 +933,13 @@ jobs:
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
 
-
       # Download stable, this will load into ~/.fluvio/bin which will be in PATH
       # from now, fluvio will be stable
       - name: Install stable CLI and start Fluvio cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           echo "~/.fluvio/bin" >> $GITHUB_PATH
-    
+
       # Download artifacts from development build
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v3
@@ -973,7 +951,7 @@ jobs:
           chmod +x ~/bin/fluvio
           mv ~/bin/fluvio ~/.fluvio/bin/fluvio-dev
 
-     # Set FLUVIO_BIN to either stable or dev, this is needed by CLI test
+      # Set FLUVIO_BIN to either stable or dev, this is needed by CLI test
       - name: set DEV fluvio for as test CLI
         if: matrix.cli_version == 'dev'
         run: |
@@ -988,7 +966,6 @@ jobs:
           echo "FLUVIO_CLI_RELEASE_CHANNEL=${FLUVIO_CLI_RELEASE_CHANNEL}" >> $GITHUB_ENV
           FLUVIO_BIN=~/.fluvio/bin/fluvio
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
-
 
       # Deploy stable cluster
       - name: Start cluster for stable
@@ -1031,7 +1008,6 @@ jobs:
           max_attempts: 3
           command: make cli-fluvio-smoke
 
-      
       # test smdk
       - name: Download artifact - smdk
         if: matrix.test == 'smdk'
@@ -1048,7 +1024,7 @@ jobs:
         if: matrix.test == 'smdk'
         timeout-minutes: 20
         run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
-      
+
       # test cdk
       - name: Download artifact - cdk
         if: matrix.test == 'cdk'

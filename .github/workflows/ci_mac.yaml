@@ -11,10 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
-#  pull_request:
-#    branches: [master]
-#  push:
-#    branches: [master]
+  #  pull_request:
+  #    branches: [master]
+  #  push:
+  #    branches: [master]
   workflow_dispatch:
     inputs:
       verbose:
@@ -26,13 +26,12 @@ env:
   VERBOSE: ${{ github.events.input.verbose }}
 
 jobs:
-
   config:
     name: Set up Config
     runs-on: ubuntu-latest
     env:
       ENABLE_CHECK: true
-      TEST_RUNS: "[r1]"   # default runs
+      TEST_RUNS: "[r1]" # default runs
     outputs:
       check: ${{ steps.check.outputs.check }}
       runs: ${{ steps.runs.outputs.runs }}
@@ -88,11 +87,9 @@ jobs:
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
@@ -129,7 +126,7 @@ jobs:
       - build_primary_binaries
       - config
     env:
-      UNINSTALL:  noclean
+      UNINSTALL: noclean
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
     strategy:
@@ -139,7 +136,7 @@ jobs:
         rust-target: [x86_64-apple-darwin]
         run: [r1]
         spu: [1]
-     #   run: ${{ fromJson(needs.config.outputs.runs )}}
+      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
       - uses: actions/checkout@v3
@@ -176,7 +173,7 @@ jobs:
           kind create cluster --config k8-util/cluster/kind.yaml
       - name: Start fluvio cluster
         timeout-minutes: 5
-        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug 
+        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
       - name: Run smoke-test
         timeout-minutes: 5
         run: |
@@ -255,7 +252,7 @@ jobs:
           [ $? -eq 0 ] && { echo "Expected nonzero exit code, got $?"; exit 2; }
           grep -qF "${log_dir}" $stderr || { echo "Expected to find '${log_dir}' in stderr"; exit 3; }
 
- # same as in ci.yaml except no aa64
+  # same as in ci.yaml except no aa64
   build_image:
     name: Build Fluvio Docker image
     needs: build_primary_binaries
@@ -299,8 +296,8 @@ jobs:
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
       UNINSTALL: noclean
-      DEFAULT_SPU:  1
-      REPL:  1
+      DEFAULT_SPU: 1
+      REPL: 1
     strategy:
       fail-fast: false
       matrix:
@@ -367,10 +364,10 @@ jobs:
       - name: Run smoke-test-k8
         timeout-minutes: 3
         run: |
-            date
-            make smoke-test-k8
+          date
+          make smoke-test-k8
       - name: Run diagnostics
-   #     if: ${{ !success() }}
+        #     if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
