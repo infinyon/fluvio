@@ -10,11 +10,11 @@ license = "Apache-2.0"
 [dependencies]
 toml-diff = { path = "toml-diff" }
 clap = { workspace = true,features = ["std", "derive", "env"] }
-flate2 = "1.0.24"
+flate2 = { workspace = true }
 reqwest = { version = "0.11.11", features = ["json"] }
-semver = "1.0.13"
+semver = { workspace = true }
 serde = { workspace = true, features = ["serde_derive"] }
 serde_json = { workspace = true }
-tar = "0.4.38"
+tar = { workspace = true }
 toml = { workspace = true, features = ["parse"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
