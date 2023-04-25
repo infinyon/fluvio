@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::fs::remove_dir_all;
 
 use anyhow::{Result, anyhow};
 use cargo_builder::package::PackageInfo;
@@ -44,16 +45,18 @@ pub struct PublishCmd {
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
-
         let opt = self.package.as_opt();
         let package_info = PackageInfo::from_options(&opt)?;
-
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
-        if !hubdir.exists() {
-            init_package_template(&package_info)?;
-        } else if !self.public_yes {
-            check_package_meta_visiblity(&package_info)?;
+
+        if hubdir.exists() {
+            // Delete the `.hub` directory if already exists
+            tracing::warn!("Removing directory at {:?}", hubdir);
+            remove_dir_all(&hubdir)?;
         }
+
+        init_package_template(&package_info)?;
+        check_package_meta_visiblity(&package_info)?;
 
         let package_meta_path = self
             .package_meta
