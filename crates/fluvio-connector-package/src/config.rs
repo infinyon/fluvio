@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 use std::path::{PathBuf, Path};
@@ -72,13 +73,19 @@ pub struct ProducerParameters {
     #[serde(skip)]
     pub batch_size: Option<ByteSize>,
 }
-#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct SecretConfig {
     /// The name of the secret. It can only contain alphanumeric ASCII characters and underscores. It cannot start with a number.
     name: SecretName,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize)]
+impl SecretConfig {
+    pub fn name(&self) -> &str {
+        &self.name.inner
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Hash)]
 pub struct SecretName {
     inner: String,
 }
@@ -165,6 +172,10 @@ impl ConnectorConfig {
             }
         }
         Ok(())
+    }
+
+    pub fn secrets(&self) -> HashSet<SecretConfig> {
+        HashSet::from_iter(self.meta.secrets.clone().unwrap_or_default().into_iter())
     }
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {

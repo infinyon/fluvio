@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 
-use crate::{config::ConnectorConfig, secret::detect_secrets};
+use crate::config::ConnectorConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ConnectorMetadata {
@@ -270,7 +270,7 @@ impl ConnectorMetadata {
             serde_yaml::from_reader(reader).context("unable to parse config into YAML format")?;
         validate_custom_config(&self.custom_config, &value)
             .context("custom config validation failed")?;
-        validate_secrets(&self.secrets, &value)?;
+        //  validate_secrets(&self.secrets, &value)?;
         let config = ConnectorConfig::from_value(value)
             .context("unable to parse common connector config")?;
         validate_direction(&self.direction, &config)?;
@@ -310,19 +310,6 @@ fn validate_deployment(deployment: &Deployment, config: &ConnectorConfig) -> any
         }
     };
 
-    Ok(())
-}
-
-fn validate_secrets(secrets: &Secrets, config: &serde_yaml::Value) -> anyhow::Result<()> {
-    let cfg_secrets = detect_secrets(config);
-    for cfg_secret in cfg_secrets {
-        if !secrets.contains_key(cfg_secret) {
-            return Err(anyhow!(
-                "config secret '{}' is not defined in package metadata",
-                cfg_secret
-            ));
-        }
-    }
     Ok(())
 }
 
@@ -556,40 +543,6 @@ mod tests {
 
         //then
         assert_eq!(res.unwrap_err().to_string(), "deployment image in metadata: 'infinyon/fluvio-connect-http_sink:latest' mismatches image in config: 'infinyon/fluvio-connect-http_source:latest'");
-    }
-
-    #[test]
-    fn test_validate_secrets_missing() {
-        //given
-        let config = Default::default();
-        let meta_secrets = Secrets::from(BTreeMap::from([(
-            "secret_name".into(),
-            Secret {
-                ty: SecretType::Env,
-                mount: None,
-            },
-        )]));
-
-        //when
-        let res = validate_secrets(&meta_secrets, &config);
-
-        //then
-        assert!(res.is_ok()); // config file is not obligated to use all secrets defined in
-                              // Connector.toml
-    }
-
-    #[test]
-    fn test_validate_secrets_undefined() {
-        //given
-        let config = serde_yaml::from_str("config:\n  secret:\n    name: secret_name").unwrap();
-        //when
-        let res = validate_secrets(&Secrets::default(), &config);
-
-        //then
-        assert_eq!(
-            res.unwrap_err().to_string(),
-            "config secret 'secret_name' is not defined in package metadata"
-        );
     }
 
     #[test]
