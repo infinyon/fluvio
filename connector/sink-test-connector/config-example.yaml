@@ -3,6 +3,8 @@ meta:
   name: my-sink-test-connector
   type: test-sink
   topic: test-topic
+  secrets:
+    - name: TEST_API_KEY
 custom:
   api_key:
     secret:

@@ -85,7 +85,7 @@ impl SecretConfig {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Hash)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SecretName {
     inner: String,
 }
@@ -144,6 +144,15 @@ impl<'a> Deserialize<'a> for SecretName {
             ));
         }
         Ok(Self { inner })
+    }
+}
+
+impl Serialize for SecretName {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.inner)
     }
 }
 
