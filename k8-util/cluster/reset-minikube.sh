@@ -3,12 +3,12 @@
 # it uses docker as default driver
 set -e
 set -x
-K8_VERSION=${2:-1.21.2}
+K8_VERSION=${K8_VERSION:-v1.26.3}
 
 # set up default driver, use hyperkit for mac
 if [ "$(uname)" == "Darwin" ]; then
 
-DRIVER=${1:-hyperkit}
+DRIVER=${DRIVER:-hyperkit}
 echo "Using driver: $DRIVER"
 # for mac, if driver is docker, set up proxy
 if [ ${DRIVER} == "docker" ]; then
@@ -16,7 +16,7 @@ EXTRA_CONFIG="--extra-config=apiserver.service-node-port-range=32700-32800 --por
 fi
 
 else 
-DRIVER=${1:-docker}
+DRIVER=${DRIVER:-docker}
 fi
 
 
