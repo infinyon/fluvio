@@ -6,4 +6,4 @@ set -e
 K8_VERSION=${K8_VERSION:-v1.26.3}
 
 k3d cluster delete fluvio
-k3d cluster create fluvio --image rancher/k3s:${K8_VERSION}+k3s1
+k3d cluster create fluvio --image rancher/k3s:${K8_VERSION}-k3s1
