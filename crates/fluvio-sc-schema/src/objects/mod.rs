@@ -322,17 +322,17 @@ mod object_macro {
         let raw_req: ListRequest<TopicSpec> = ListRequest::new("test", false);
         // upcast
         let list_request =
-            ObjectApiListRequest::try_encode_from(raw_req, COMMON_VERSION-1).expect("encoded");
+            ObjectApiListRequest::try_encode_from(raw_req, COMMON_VERSION - 1).expect("encoded");
         let mut new_dest = vec![];
         list_request
-            .encode(&mut new_dest, COMMON_VERSION-1)
+            .encode(&mut new_dest, COMMON_VERSION - 1)
             .expect("encoding");
 
         let raw_req2: ListRequest<TopicSpec> = ListRequest::new("test", false);
         let old_topic_request = ObjectApiOldListRequest::Topic(raw_req2);
         let mut old_dest: Vec<u8> = vec![];
         old_topic_request
-            .encode(&mut old_dest, COMMON_VERSION-1)
+            .encode(&mut old_dest, COMMON_VERSION - 1)
             .expect("encoding");
 
         //  assert_eq!(new_dest.len(),20);
@@ -371,7 +371,7 @@ mod object_macro {
             .expect("encoding");
 
         let new_topic_request =
-            ObjectApiListRequest::decode_from(&mut Cursor::new(dest), COMMON_VERSION)
+            ObjectApiListRequest::decode_from(&mut Cursor::new(dest), COMMON_VERSION - 1)
                 .expect("decode");
 
         let downcast =
@@ -559,15 +559,12 @@ mod test {
         header.set_correlation_id(11);
         let res_msg = ResponseMessage::from_header(&header, resp);
         let mut src = vec![];
-        res_msg.encode(&mut src, 0).expect("encoding");
+        res_msg.encode(&mut src, COMMON_VERSION).expect("encoding");
 
         println!("output: {src:#?}");
 
-        let dec_msg: ResponseMessage<ObjectApiListResponse> = ResponseMessage::decode_from(
-            &mut Cursor::new(&src),
-            ObjectApiListRequest::API_KEY as i16,
-        )
-        .expect("decode");
+        let dec_msg: ResponseMessage<ObjectApiListResponse> =
+            ResponseMessage::decode_from(&mut Cursor::new(&src), COMMON_VERSION).expect("decode");
 
         let response = (dec_msg.response.downcast().expect("downcast")
             as Option<ListResponse<CustomSpuSpec>>)
