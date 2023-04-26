@@ -4,11 +4,13 @@ use std::marker::PhantomData;
 use anyhow::Result;
 
 use fluvio_controlplane_metadata::store::KeyFilter;
+use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 
+use crate::objects::classic::{ObjectApiOldListRequest, ObjectApiOldListResponse};
 use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
-use super::{COMMON_VERSION, Metadata, TypeBuffer};
+use super::{COMMON_VERSION, Metadata, TypeBuffer, DYN_OBJ};
 
 /// Filter for List
 #[derive(Debug, Encoder, Decoder, Default)]
@@ -80,7 +82,7 @@ impl<S> ListRequest<S> {
     }
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
+#[derive(Debug, Default, Encoder)]
 pub struct ObjectApiListRequest(TypeBuffer);
 
 impl<S> TryEncodableFrom<ListRequest<S>> for ObjectApiListRequest
@@ -99,24 +101,31 @@ where
     }
 }
 
-/*
-impl ObjectApiListRequest {
-
-
-    fn try_decode_from<T: Buf>(src: &mut T, version: Version, factory: AdminFactory) -> Result<ListRequest<Box<dyn Admin>>>
+// need for compatibility with prev version
+impl Decoder for ObjectApiListRequest {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
+    where
+        T: Buf,
     {
-        //TypeBuffer::decode::<S, _>(buffer, version)
-        let mut typ = "".to_owned();
-        typ.decode(src, version)?;
-        //tracing::trace!(%typ,"decoded type");
-        println!("decoded type: {:#?}", typ);
-        let ty = factory.create_admin(&typ)?;
-        let request = ListRequest::<Box<dyn Admin>>::default();
-        Err(anyhow::anyhow!("not implemented"))
+        if version >= DYN_OBJ {
+            println!("decoding new");
+            self.0.decode(src, version)?;
+        } else {
+            println!("decoding classical");
+            let mut typ = "".to_owned();
+            typ.decode(src, version)?;
+            tracing::trace!(%typ,"decoded type");
+            println!("decoded type: {:#?}", typ);
+            // decode using class
+            let classic_list = ObjectApiOldListRequest::new(&typ)?;
+            let len = classic_list.write_size(version);
+            println!("using old decoding with size: {}", len);
+            self.0.set_size_hint(len as u32, typ);
+            self.0.decode(src, version)?;
+        }
+        Ok(())
     }
-
 }
-*/
 
 impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
@@ -124,7 +133,7 @@ impl Request for ObjectApiListRequest {
     type Response = ObjectApiListResponse;
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
+#[derive(Debug, Default, Encoder)]
 pub struct ObjectApiListResponse(TypeBuffer);
 
 impl<S> TryEncodableFrom<ListResponse<S>> for ObjectApiListResponse
@@ -140,6 +149,31 @@ where
 
     fn downcast(&self) -> Result<Option<ListResponse<S>>> {
         self.0.downcast::<S, _>()
+    }
+}
+
+impl Decoder for ObjectApiListResponse {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
+    where
+        T: Buf,
+    {
+        if version >= DYN_OBJ {
+            println!("decoding new");
+            self.0.decode(src, version)?;
+        } else {
+            println!("decoding classical");
+            let mut typ = "".to_owned();
+            typ.decode(src, version)?;
+            tracing::trace!(%typ,"decoded type");
+            println!("decoded type: {:#?}", typ);
+            // decode using class
+            let classic_list = ObjectApiOldListResponse::new(&typ)?;
+            let len = classic_list.write_size(version);
+            println!("using old decoding with size: {}", len);
+            self.0.set_size_hint(len as u32, typ);
+            self.0.decode(src, version)?;
+        }
+        Ok(())
     }
 }
 
