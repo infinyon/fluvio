@@ -33,6 +33,16 @@ impl From<Vec<ListFilter>> for ListFilters {
     }
 }
 
+impl From<&str> for ListFilters {
+    fn from(name: &str) -> Self {
+        Self {
+            filters: vec![ListFilter {
+                name: name.to_owned(),
+            }],
+        }
+    }
+}
+
 impl From<ListFilters> for Vec<ListFilter> {
     fn from(filter: ListFilters) -> Self {
         filter.filters
@@ -53,17 +63,14 @@ impl KeyFilter<str> for ListFilters {
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct ListRequest<S: AdminSpec> {
+pub struct ListRequest<S> {
     pub name_filters: ListFilters,
     #[fluvio(min_version = 10)]
     pub summary: bool, // if true, only return summary
     data: PhantomData<S>, // satisfy generic
 }
 
-impl<S> ListRequest<S>
-where
-    S: AdminSpec,
-{
+impl<S> ListRequest<S> {
     pub fn new(name_filters: impl Into<ListFilters>, summary: bool) -> Self {
         Self {
             name_filters: name_filters.into(),
@@ -91,6 +98,25 @@ where
         self.0.downcast::<S, _>()
     }
 }
+
+/*
+impl ObjectApiListRequest {
+
+
+    fn try_decode_from<T: Buf>(src: &mut T, version: Version, factory: AdminFactory) -> Result<ListRequest<Box<dyn Admin>>>
+    {
+        //TypeBuffer::decode::<S, _>(buffer, version)
+        let mut typ = "".to_owned();
+        typ.decode(src, version)?;
+        //tracing::trace!(%typ,"decoded type");
+        println!("decoded type: {:#?}", typ);
+        let ty = factory.create_admin(&typ)?;
+        let request = ListRequest::<Box<dyn Admin>>::default();
+        Err(anyhow::anyhow!("not implemented"))
+    }
+
+}
+*/
 
 impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;

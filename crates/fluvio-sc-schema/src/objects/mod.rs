@@ -9,7 +9,8 @@ pub use list::*;
 pub use watch::*;
 pub use metadata::*;
 
-pub(crate) const COMMON_VERSION: i16 = 10; // from now, we use a single version for all objects
+pub(crate) const COMMON_VERSION: i16 = 11; // from now, we use a single version for all objects
+pub(crate) const DYN_OBJ: i16 = 11; // version indicate dynamic object
 
 mod metadata {
 
@@ -28,7 +29,7 @@ mod metadata {
     use crate::AdminSpec;
     use crate::core::Spec;
 
-    use super::COMMON_VERSION;
+    use super::{COMMON_VERSION, DYN_OBJ};
 
     #[derive(Encoder, Decoder, Default, Clone, Debug)]
     #[cfg_attr(
@@ -134,9 +135,11 @@ mod metadata {
             O: Decoder + Debug,
         {
             if self.is_kind_of::<S>() {
+                println!("is kind of: {:#?}", S::LABEL);
                 let mut buf = Cursor::new(self.buf.as_ref());
                 Ok(Some(O::decode_from(&mut buf, COMMON_VERSION)?))
             } else {
+                println!("not kind of: {:#?}", S::LABEL);
                 Ok(None)
             }
         }
@@ -144,7 +147,14 @@ mod metadata {
 
     impl Encoder for TypeBuffer {
         fn write_size(&self, version: Version) -> usize {
-            self.ty.write_size(version) + self.buf.len()
+            self.ty.write_size(version)
+                + self.buf.len()
+                + (if version >= DYN_OBJ {
+                    let u32 = 0;
+                    u32.write_size(version)
+                } else {
+                    0
+                })
         }
 
         fn encode<T>(&self, dest: &mut T, version: Version) -> std::result::Result<(), IoError>
@@ -152,6 +162,11 @@ mod metadata {
             T: fluvio_protocol::bytes::BufMut,
         {
             self.ty.encode(dest, version)?;
+            if version >= DYN_OBJ {
+                let len: u32 = self.buf.len() as u32;
+                len.encode(dest, version)?; // write len
+                println!("encoded len: {:#?}", len);
+            }
             dest.put(self.buf.as_ref());
             Ok(())
         }
@@ -162,38 +177,20 @@ mod metadata {
         where
             T: fluvio_protocol::bytes::Buf,
         {
-            let mut typ = "".to_owned();
-            typ.decode(src, version)?;
-            tracing::trace!(%typ,"decoded type");
+            self.ty.decode(src, version)?;
+            tracing::trace!(ty = self.ty, "decoded type");
+            println!("decoded type: {:#?}", self.ty);
 
-            /*
-            // map to type
-
-            match typ.as_ref() {
-                crate::topic::TopicSpec::LABEL => {
-                    tracing::trace!("detected topic");
-                    let mut request = $api::<crate::topic::TopicSpec>::default();
-                    request.decode(src, version)?;
-                    *self = Self::Topic(request);
-                    return Ok(())
-                }
-
-                crate::spu::SpuSpec::LABEL  => {
-                    tracing::trace!("detected spu");
-                    let mut request = $api::<crate::spu::SpuSpec>::default();
-                    request.decode(src, version)?;
-                    *self = Self::Spu(request);
-                    return Ok(())
-                }
-
-
-                // Unexpected type
-                _ => Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    format!("invalid object type {:#?}", typ),
-                ))
+            if version >= DYN_OBJ {
+                let mut len: u32 = 0;
+                len.decode(src, version)?;
+                tracing::trace!(len, "decoded len");
+                println!("copy bytes: {:#?}", len);
+                self.buf = src.copy_to_bytes(len as usize).into();
+            } else {
+                // old version, we need to compute len using old way which may not be reliable
+                self.buf = src.copy_to_bytes(src.remaining()).into();
             }
-            */
 
             Ok(())
         }
@@ -208,7 +205,7 @@ mod object_macro {
     use fluvio_protocol::{Encoder, Decoder};
 
     use crate::{
-        objects::{ListRequest, ObjectApiListRequest, COMMON_VERSION, ListFilter},
+        objects::{ListRequest, ObjectApiListRequest, COMMON_VERSION},
         TryEncodableFrom,
     };
 
@@ -319,36 +316,33 @@ mod object_macro {
 
     ObjectApiEnum!(ListRequest);
 
-    /// test upcasting of list request
+    /// encode same request using new and old version
     #[test]
     fn test_req_upcast_encoding() {
-        let raw_req: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-
+        let raw_req: ListRequest<TopicSpec> = ListRequest::new("test", false);
         // upcast
         let list_request =
-            ObjectApiListRequest::try_encode_from(raw_req, COMMON_VERSION).expect("encoded");
-
-        //
-        let mut new_src = vec![];
+            ObjectApiListRequest::try_encode_from(raw_req, COMMON_VERSION-1).expect("encoded");
+        let mut new_dest = vec![];
         list_request
-            .encode(&mut new_src, COMMON_VERSION)
+            .encode(&mut new_dest, COMMON_VERSION-1)
             .expect("encoding");
 
-        let raw_req2: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        let mut old_src: Vec<u8> = vec![];
-
+        let raw_req2: ListRequest<TopicSpec> = ListRequest::new("test", false);
         let old_topic_request = ObjectApiOldListRequest::Topic(raw_req2);
+        let mut old_dest: Vec<u8> = vec![];
         old_topic_request
-            .encode(&mut old_src, COMMON_VERSION)
+            .encode(&mut old_dest, COMMON_VERSION-1)
             .expect("encoding");
 
-        assert_eq!(new_src, old_src);
+        //  assert_eq!(new_dest.len(),20);
+        assert_eq!(old_dest, new_dest);
     }
 
     // encoding and decoding request
     #[test]
     fn test_req_encoding_decoding() {
-        let raw_req: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
+        let raw_req: ListRequest<TopicSpec> = ListRequest::new("test", false);
 
         let test_request =
             ObjectApiListRequest::try_encode_from(raw_req, COMMON_VERSION).expect("encoded");

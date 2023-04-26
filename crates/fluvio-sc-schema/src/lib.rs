@@ -83,7 +83,7 @@ mod error {
 
 mod admin {
 
-    use std::fmt::Debug;
+    use std::{fmt::Debug};
 
     use anyhow::Result;
 
@@ -128,6 +128,4 @@ mod admin {
 
         fn downcast(&self) -> Result<Option<T>>;
     }
-
-    //pub fn str_to_spec(ty_name: &str) ->
 }
