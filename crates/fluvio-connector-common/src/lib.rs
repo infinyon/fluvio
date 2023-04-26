@@ -4,6 +4,7 @@ pub mod monitoring;
 pub mod consumer;
 pub mod config;
 
+pub use fluvio_connector_package::render_config_str;
 pub use fluvio_connector_package::secret;
 
 #[cfg(feature = "derive")]

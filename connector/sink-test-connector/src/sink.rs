@@ -14,7 +14,9 @@ impl TestSink {
     pub(crate) fn new(config: &CustomConfig) -> Result<Self> {
         debug!(?config.api_key);
         let resolved = config.api_key.resolve()?;
+        let resolved_2 = config.client_id.clone();
         debug!(resolved);
+        debug!(resolved_2);
         Ok(Self {})
     }
 }
