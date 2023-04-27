@@ -8,9 +8,9 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 
-use crate::objects::classic::{ObjectApiOldListRequest, ObjectApiOldListResponse};
 use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
 use super::{COMMON_VERSION, Metadata, TypeBuffer, DYN_OBJ};
+use super::classic::{ClassicObjectApiEnum, ClassicDecoding};
 
 /// Filter for List
 #[derive(Debug, Encoder, Decoder, Default)]
@@ -101,32 +101,6 @@ where
     }
 }
 
-// need for compatibility with prev version
-impl Decoder for ObjectApiListRequest {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
-    where
-        T: Buf,
-    {
-        if version >= DYN_OBJ {
-            println!("decoding new");
-            self.0.decode(src, version)?;
-        } else {
-            println!("decoding classical");
-            let mut typ = "".to_owned();
-            typ.decode(src, version)?;
-            tracing::trace!(%typ,"decoded type");
-            println!("decoded type: {:#?}", typ);
-            // decode using class
-            let classic_list = ObjectApiOldListRequest::new(&typ)?;
-            let len = classic_list.write_size(version);
-            println!("using old decoding with size: {}", len);
-            self.0.set_size_hint(len as u32, typ);
-            self.0.decode(src, version)?;
-        }
-        Ok(())
-    }
-}
-
 impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
@@ -152,31 +126,6 @@ where
     }
 }
 
-impl Decoder for ObjectApiListResponse {
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
-    where
-        T: Buf,
-    {
-        if version >= DYN_OBJ {
-            println!("decoding new");
-            self.0.decode(src, version)?;
-        } else {
-            println!("decoding classical");
-            let mut typ = "".to_owned();
-            typ.decode(src, version)?;
-            tracing::trace!(%typ,"decoded type");
-            println!("decoded type: {:#?}", typ);
-            // decode using class
-            let classic_list = ObjectApiOldListResponse::new(&typ)?;
-            let len = classic_list.write_size(version);
-            println!("using old decoding with size: {}", len);
-            self.0.set_size_hint(len as u32, typ);
-            self.0.decode(src, version)?;
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListResponse<S: AdminSpec>
 where
@@ -198,3 +147,9 @@ where
         self.inner
     }
 }
+
+// for supporting classic, this should go away after we remove classic
+ClassicObjectApiEnum!(ListRequest);
+ClassicObjectApiEnum!(ListResponse);
+ClassicDecoding!(ListRequest);
+ClassicDecoding!(ListResponse);

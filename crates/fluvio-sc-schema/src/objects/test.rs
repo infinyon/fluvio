@@ -6,9 +6,10 @@ use fluvio_protocol::api::Request;
 use fluvio_controlplane_metadata::spu::SpuStatus;
 
 use crate::TryEncodableFrom;
-use crate::objects::classic::ObjectApiOldListRequest;
+
 use crate::objects::{
     Metadata, MetadataUpdate, ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
+    ClassicObjectApiListRequest,
 };
 
 use crate::topic::TopicSpec;
@@ -17,7 +18,7 @@ use crate::customspu::CustomSpuSpec;
 use super::{ListRequest, ObjectApiListRequest, WatchResponse, ObjectApiWatchResponse, COMMON_VERSION};
 
 #[test]
-fn test_req_upcast_encoding() {
+fn test_encoding_compatibility() {
     let raw_req: ListRequest<TopicSpec> = ListRequest::new("test", false);
     // upcast
     let list_request =
@@ -28,7 +29,7 @@ fn test_req_upcast_encoding() {
         .expect("encoding");
 
     let raw_req2: ListRequest<TopicSpec> = ListRequest::new("test", false);
-    let old_topic_request = ObjectApiOldListRequest::Topic(raw_req2);
+    let old_topic_request = ClassicObjectApiListRequest::Topic(raw_req2);
     let mut old_dest: Vec<u8> = vec![];
     old_topic_request
         .encode(&mut old_dest, COMMON_VERSION - 1)
@@ -62,7 +63,7 @@ fn test_req_encoding_decoding() {
 fn test_req_old_to_new() {
     let raw_req: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
 
-    let old_topic_request = ObjectApiOldListRequest::Topic(raw_req);
+    let old_topic_request = ClassicObjectApiListRequest::Topic(raw_req);
     let mut dest = vec![];
     old_topic_request
         .encode(&mut dest, COMMON_VERSION)

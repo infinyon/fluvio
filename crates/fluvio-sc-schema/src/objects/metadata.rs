@@ -88,7 +88,6 @@ where
 pub struct TypeBuffer {
     ty: String,
     buf: ByteBuf,
-    size_hint: u32,
 }
 
 impl TypeBuffer {
@@ -103,7 +102,6 @@ impl TypeBuffer {
         input.encode(&mut buf, version)?;
         Ok(Self {
             ty,
-            size_hint: 0,
             buf: ByteBuf::from(buf),
         })
     }
@@ -130,9 +128,8 @@ impl TypeBuffer {
         }
     }
 
-    // for classical, set size and ty
-    pub(crate) fn set_size_hint(&mut self, size: u32, ty: String) {
-        self.size_hint = size;
+    pub(crate) fn set_buf(&mut self, ty: String, buf: ByteBuf) {
+        self.buf = buf;
         self.ty = ty;
     }
 }
@@ -172,36 +169,26 @@ impl Decoder for TypeBuffer {
     where
         T: fluvio_protocol::bytes::Buf,
     {
-        if version >= DYN_OBJ {
-            println!("decoding tybuffer using new protocol");
-            self.ty.decode(src, version)?;
-            tracing::trace!(ty = self.ty, "decoded type");
-            println!("decoded type: {:#?}", self.ty);
+        println!("decoding tybuffer using new protocol");
+        self.ty.decode(src, version)?;
+        tracing::trace!(ty = self.ty, "decoded type");
+        println!("decoded type: {:#?}", self.ty);
 
-            let mut len: u32 = 0;
-            len.decode(src, version)?;
-            tracing::trace!(len, "decoded len");
-            println!("copy bytes: {:#?}", len);
-            if src.remaining() < len as usize {
-                return Err(IoError::new(
-                    ErrorKind::UnexpectedEof,
-                    format!(
-                        "not enough bytes, need: {}, remaining: {}",
-                        len,
-                        src.remaining()
-                    ),
-                ));
-            }
-            self.buf = src.copy_to_bytes(len as usize).into();
-        } else {
-            // old classic, skip decoding ty and using hints
-            println!(
-                "decoding tybuffer old protocol, using size: {}, ty: {}",
-                self.size_hint, self.ty
-            );
-            // old version, we need to compute len using old way which may not be reliable
-            self.buf = src.copy_to_bytes(self.size_hint as usize).into();
+        let mut len: u32 = 0;
+        len.decode(src, version)?;
+        tracing::trace!(len, "decoded len");
+        println!("copy bytes: {:#?}", len);
+        if src.remaining() < len as usize {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                format!(
+                    "not enough bytes, need: {}, remaining: {}",
+                    len,
+                    src.remaining()
+                ),
+            ));
         }
+        self.buf = src.copy_to_bytes(len as usize).into();
 
         Ok(())
     }

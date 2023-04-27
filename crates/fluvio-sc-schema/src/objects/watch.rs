@@ -13,6 +13,7 @@ use fluvio_controlplane_metadata::message::Message;
 use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
 use crate::core::Spec;
 
+use super::classic::ClassicObjectApiEnum;
 use super::{Metadata, COMMON_VERSION, TypeBuffer};
 
 /// Watch resources
@@ -131,3 +132,8 @@ where
         }
     }
 }
+
+// class backware compatibility
+
+ClassicObjectApiEnum!(WatchRequest);
+ClassicObjectApiEnum!(WatchResponse);
