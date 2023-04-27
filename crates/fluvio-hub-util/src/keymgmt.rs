@@ -10,6 +10,9 @@ use pem::Pem;
 
 use fluvio_hub_protocol::{HubError, Result};
 
+const PRIVATE_KEY_TAG: &str = "PRIVATE KEY";
+const PUBLIC_KEY_TAG: &str = "PUBLIC KEY";
+
 // keypair containing private and public keys
 pub struct Keypair {
     kp: ed25519_dalek::Keypair,
@@ -76,7 +79,7 @@ impl Keypair {
     pub fn read_from_file(fname: &str) -> Result<Keypair> {
         let buf = std::fs::read(fname)?;
         let pem = pem::parse(buf).map_err(|_| HubError::InvalidKeyPairFile(fname.into()))?;
-        if pem.tag() != "PRIVATE KEY" {
+        if pem.tag() != PRIVATE_KEY_TAG {
             return Err(HubError::InvalidKeyPairFile(fname.into()));
         }
         Keypair::from_secret_bytes(pem.contents())
@@ -84,7 +87,7 @@ impl Keypair {
 
     /// writes the private key from which the public is derivable on load
     pub fn write_keypair(&self, fname: &str) -> Result<()> {
-        let pem = Pem::new("PRIVATE_KEY", self.kp.secret.to_bytes().to_vec());
+        let pem = Pem::new(PRIVATE_KEY_TAG, self.kp.secret.to_bytes().to_vec());
         let buf = pem::encode(&pem);
         let mut file = std::fs::File::create(fname)?;
         set_perms_owner_rw(&mut file)?;
@@ -130,7 +133,7 @@ impl PublicKey {
     pub fn read_from_file(fname: &str) -> Result<PublicKey> {
         let buf = std::fs::read(fname)?;
         let pem = pem::parse(buf).map_err(|_| HubError::InvalidPublicKeyFile(fname.into()))?;
-        if pem.tag() != "PUBLIC KEY" {
+        if pem.tag() != PUBLIC_KEY_TAG {
             return Err(HubError::InvalidPublicKeyFile(fname.into()));
         }
         let pubkey = ed25519_dalek::PublicKey::from_bytes(pem.contents())
@@ -143,7 +146,7 @@ impl PublicKey {
     }
 
     pub fn write(&self, fname: &str) -> Result<()> {
-        let pem = Pem::new("PUBLIC_KEY", self.to_bytes().to_vec());
+        let pem = Pem::new(PUBLIC_KEY_TAG, self.to_bytes().to_vec());
         let buf = pem::encode(&pem);
         std::fs::write(fname, buf)?;
         Ok(())
@@ -202,14 +205,14 @@ fn set_perms_owner_rw(_file: &mut std::fs::File) -> Result<()> {
 #[cfg(test)]
 mod sshkeys {
 
-    const PRIVFILE: &str = "tests/id_ed25519";
-    const PUBFILE: &str = "tests/id_ed25519.pub";
-
     use super::Keypair;
     use super::PublicKey;
 
     #[test]
     fn workflow() {
+        const PRIVFILE: &str = "tests/id_ed25519";
+        const PUBFILE: &str = "tests/id_ed25519.pub";
+
         let buf = std::fs::read_to_string(PRIVFILE).expect("read in");
         let kp = Keypair::from_ssh(&buf).expect("keypair from_ssh failure");
 
@@ -220,5 +223,23 @@ mod sshkeys {
         let sig = kp.sign(msg).expect("sign failure");
         let verify = pubkey.verify(msg, &sig);
         assert!(verify.is_ok());
+    }
+    #[test]
+    fn test_read_from_file() {
+        const KEYFILE: &str = "tests/key_test.pem";
+
+        let kp: Keypair = Keypair::new().expect("keypair creation error");
+        kp.write_keypair(KEYFILE).expect("keypair write error");
+
+        let _keypair = Keypair::read_from_file(KEYFILE).expect("key read error");
+    }
+
+    #[test]
+    fn test_from_hex() {
+        let kp: Keypair = Keypair::new().expect("keypair creation error");
+
+        let pubhex = kp.public().to_hex();
+
+        let _pubkey_from_hex = PublicKey::from_hex(&pubhex).expect("hex read error");
     }
 }
