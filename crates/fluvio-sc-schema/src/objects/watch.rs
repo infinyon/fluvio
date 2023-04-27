@@ -133,7 +133,6 @@ where
     }
 }
 
-
 // for supporting classic, this should go away after we remove classic
 ClassicObjectApiEnum!(WatchRequest);
 ClassicObjectApiEnum!(WatchResponse);

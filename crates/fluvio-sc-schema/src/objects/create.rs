@@ -2,6 +2,7 @@
 
 use std::fmt::Debug;
 use std::io::Cursor;
+use std::marker::PhantomData;
 
 use anyhow::Result;
 
@@ -9,33 +10,21 @@ use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 use fluvio_protocol::core::ByteBuf;
 
+use crate::objects::classic::ClassicObjectCreateRequest;
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom};
 
 /// Every create request must have this parameters
 #[derive(Encoder, Decoder, Default, Debug, Clone)]
-pub struct CommonCreateRequest {
+pub struct CreateRequest<S> {
     pub name: String,
     pub dry_run: bool,
     #[fluvio(min_version = 7)]
     pub timeout: Option<u32>, // timeout in milliseconds
+    data: PhantomData<S>, // satisfy generic
 }
 
-#[derive(Debug)]
-pub struct CreateRequest<R> {
-    common: CommonCreateRequest,
-    spec: R,
-}
-
-impl<S> CreateRequest<S> {
-    pub fn new(common: CommonCreateRequest, spec: S) -> Self {
-        Self { common, spec }
-    }
-
-    /// deconstruct
-    pub fn parts(self) -> (CommonCreateRequest, S) {
-        (self.common, self.spec)
-    }
-}
+#[derive(Debug, Default, Encoder)]
+pub struct ObjectApiCreateRequest(CreateTypeBuffer);
 
 impl Request for ObjectApiCreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
@@ -44,92 +33,46 @@ impl Request for ObjectApiCreateRequest {
     type Response = Status;
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct ObjectApiCreateRequest {
-    common: CommonCreateRequest,
-    encoded_spec: CreateTypeBuffer,
-}
-
 impl<S> TryEncodableFrom<CreateRequest<S>> for ObjectApiCreateRequest
 where
+    CreateRequest<S>: Encoder + Decoder + Debug,
     S: CreatableAdminSpec,
 {
-    fn try_encode_from(request: CreateRequest<S>, version: Version) -> Result<Self> {
-        let CreateRequest { common, spec } = request;
-        let encoded_spec = CreateTypeBuffer::encode(spec, version)?;
-        Ok(Self {
-            common,
-            encoded_spec,
-        })
+    fn try_encode_from(input: CreateRequest<S>, version: Version) -> Result<Self> {
+        Ok(Self(CreateTypeBuffer::encode::<S, _>(input, version)?))
     }
 
     fn downcast(&self) -> Result<Option<CreateRequest<S>>> {
-        Ok(self.encoded_spec.downcast()?.map(|spec| CreateRequest {
-            common: self.common.clone(),
-            spec,
-        }))
+        self.0.downcast::<S, _>()
     }
 }
 
-/// special type buffer for create request
-/// unlike other request, this uses int for legacy reason
-#[derive(Encoder, Decoder, Default, Debug)]
-pub struct CreateTypeBuffer {
-    pub ty: u8,
-    pub buf: ByteBuf,
-}
-
-impl CreateTypeBuffer {
-    fn encode<S: CreatableAdminSpec>(spec: S, version: Version) -> Result<Self> {
-        let mut buf = vec![];
-        spec.encode(&mut buf, version)?;
-        Ok(Self {
-            ty: S::CREATE_TYPE,
-            buf: ByteBuf::from(buf),
-        })
-    }
-
-    // check if this object is kind of spec
-    pub fn is_kind_of<S: CreatableAdminSpec>(&self) -> bool {
-        self.ty == S::CREATE_TYPE
-    }
-
-    /// try to decode as spec
-    /// if it is not kind of spec, return None
-    pub fn downcast<S: CreatableAdminSpec>(&self) -> Result<Option<S>> {
-        if self.is_kind_of::<S>() {
-            let mut buf = Cursor::new(self.buf.as_ref());
-            Ok(Some(S::decode_from(&mut buf, 0)?))
-        } else {
-            Ok(None)
-        }
-    }
-}
-
-/// Macro to convert create request
-/// impl From<(CommonCreateRequest TopicSpec)> for ObjectApiCreateRequest {
-/// fn from(req: (CommonCreateRequest TopicSpec)) -> Self {
-///       ObjectApiCreateRequest {
-///           common: req.0,
-///           request: req.1
-///       }
-/// }
-/// ObjectFrom!(WatchRequest, Topic);
-/*
-macro_rules! CreateFrom {
-    ($create:ty,$specTy:ident) => {
-        impl From<(crate::objects::CommonCreateRequest, $create)>
-            for crate::objects::ObjectApiCreateRequest
-        {
-            fn from(fr: (crate::objects::CommonCreateRequest, $create)) -> Self {
-                crate::objects::ObjectApiCreateRequest {
-                    common: fr.0,
-                    request: crate::objects::ObjectCreateRequest::$specTy(fr.1),
-                }
-            }
-        }
-    };
-}
-*/
 //pub(crate) use CreateFrom;
-use super::COMMON_VERSION;
+use super::{COMMON_VERSION, TypeBuffer, CreateTypeBuffer};
+
+// this is for compatibility with older version
+impl Decoder for ObjectApiCreateRequest {
+    fn decode<T>(
+        &mut self,
+        src: &mut T,
+        version: fluvio_protocol::Version,
+    ) -> Result<(), std::io::Error>
+    where
+        T: fluvio_protocol::bytes::Buf,
+    {
+        if version >= crate::objects::DYN_OBJ {
+            println!("decoding new");
+            self.0.decode(src, version)?;
+        } else {
+            println!("decoding classical");
+
+            let classic_obj = ClassicObjectCreateRequest::decode_from(src, version)?;
+            // reencode using new version
+            self.0.set_buf(
+                classic_obj.type_string().to_owned(),
+                classic_obj.as_bytes(COMMON_VERSION)?.into(),
+            );
+        }
+        Ok(())
+    }
+}

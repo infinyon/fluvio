@@ -4,7 +4,6 @@ use std::marker::PhantomData;
 use anyhow::Result;
 
 use fluvio_controlplane_metadata::store::KeyFilter;
-use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 
@@ -90,10 +89,8 @@ where
     ListRequest<S>: Encoder + Decoder + Debug,
     S: AdminSpec,
 {
-    fn try_encode_from(input: ListRequest<S>, version: Version) -> Result<ObjectApiListRequest> {
-        Ok(ObjectApiListRequest(TypeBuffer::encode::<S, _>(
-            input, version,
-        )?))
+    fn try_encode_from(input: ListRequest<S>, version: Version) -> Result<Self> {
+        Ok(Self(TypeBuffer::encode::<S, _>(input, version)?))
     }
 
     fn downcast(&self) -> Result<Option<ListRequest<S>>> {

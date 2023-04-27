@@ -193,3 +193,114 @@ impl Decoder for TypeBuffer {
         Ok(())
     }
 }
+
+/// This is same as TypeBuffer but
+#[derive(Debug, Default)]
+pub struct CreateTypeBuffer {
+    ty: String,
+    buf: ByteBuf,
+}
+
+impl CreateTypeBuffer {
+    // encode admin spec into a request
+    pub fn encode<S, I>(input: I, version: Version) -> Result<Self>
+    where
+        S: Spec,
+        I: Encoder,
+    {
+        let ty = S::LABEL.to_owned();
+        let mut buf = vec![];
+        input.encode(&mut buf, version)?;
+        Ok(Self {
+            ty,
+            buf: ByteBuf::from(buf),
+        })
+    }
+
+    // check if this object is kind of spec
+    pub fn is_kind_of<S: Spec>(&self) -> bool {
+        self.ty == S::LABEL
+    }
+
+    // downcast to specific spec type and return object
+    // if doens't match to ty, return None
+    pub fn downcast<S, O>(&self) -> Result<Option<O>>
+    where
+        S: Spec,
+        O: Decoder + Debug,
+    {
+        if self.is_kind_of::<S>() {
+            println!("is kind of: {:#?}", S::LABEL);
+            let mut buf = Cursor::new(self.buf.as_ref());
+            Ok(Some(O::decode_from(&mut buf, COMMON_VERSION)?))
+        } else {
+            println!("not kind of: {:#?}", S::LABEL);
+            Ok(None)
+        }
+    }
+
+    pub(crate) fn set_buf(&mut self, ty: String, buf: ByteBuf) {
+        self.buf = buf;
+        self.ty = ty;
+    }
+}
+
+impl Encoder for CreateTypeBuffer {
+    fn write_size(&self, version: Version) -> usize {
+        self.ty.write_size(version)
+            + self.buf.len()
+            + (if version >= DYN_OBJ {
+                let u32 = 0;
+                u32.write_size(version)
+            } else {
+                0
+            })
+    }
+
+    fn encode<T>(&self, dest: &mut T, version: Version) -> std::result::Result<(), IoError>
+    where
+        T: fluvio_protocol::bytes::BufMut,
+    {
+        self.ty.encode(dest, version)?;
+        if version >= DYN_OBJ {
+            let len: u32 = self.buf.len() as u32;
+            len.encode(dest, version)?; // write len
+            println!("encoding using new with len: {:#?}", len);
+        } else {
+            println!("encoding using old with len: {}", self.buf.len());
+        }
+        dest.put(self.buf.as_ref());
+
+        Ok(())
+    }
+}
+
+impl Decoder for CreateTypeBuffer {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> std::result::Result<(), IoError>
+    where
+        T: fluvio_protocol::bytes::Buf,
+    {
+        println!("decoding tybuffer using new protocol");
+        self.ty.decode(src, version)?;
+        tracing::trace!(ty = self.ty, "decoded type");
+        println!("decoded type: {:#?}", self.ty);
+
+        let mut len: u32 = 0;
+        len.decode(src, version)?;
+        tracing::trace!(len, "decoded len");
+        println!("copy bytes: {:#?}", len);
+        if src.remaining() < len as usize {
+            return Err(IoError::new(
+                ErrorKind::UnexpectedEof,
+                format!(
+                    "not enough bytes, need: {}, remaining: {}",
+                    len,
+                    src.remaining()
+                ),
+            ));
+        }
+        self.buf = src.copy_to_bytes(len as usize).into();
+
+        Ok(())
+    }
+}

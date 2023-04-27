@@ -1,5 +1,6 @@
 pub(crate) use object_macro::*;
 pub(crate) use delete_macro::*;
+pub(crate) use create::*;
 
 /// carry from prev version for compatibility test
 mod object_macro {
@@ -181,8 +182,6 @@ mod object_macro {
         }
     }
 
-    
-
     pub(crate) use ClassicObjectApiEnum;
 }
 
@@ -362,3 +361,148 @@ macro_rules! ClassicDecoding {
 }
 
 pub(crate) use ClassicDecoding;
+
+mod create {
+
+    use fluvio_protocol::bytes::{BufMut, Buf};
+    use fluvio_protocol::{Encoder, Decoder};
+    use fluvio_protocol::Version;
+
+    use crate::topic::TopicSpec;
+    use crate::customspu::CustomSpuSpec;
+    use crate::smartmodule::SmartModuleSpec;
+    use crate::tableformat::TableFormatSpec;
+    use crate::spg::SpuGroupSpec;
+    use crate::CreatableAdminSpec;
+
+    #[derive(Debug)]
+    pub enum ClassicObjectCreateRequest {
+        Topic(TopicSpec),
+        CustomSpu(CustomSpuSpec),
+        SmartModule(SmartModuleSpec),
+        SpuGroup(SpuGroupSpec),
+        TableFormat(TableFormatSpec),
+    }
+
+    impl Default for ClassicObjectCreateRequest {
+        fn default() -> Self {
+            Self::Topic(TopicSpec::default())
+        }
+    }
+
+    impl ClassicObjectCreateRequest {
+        fn type_value(&self) -> u8 {
+            match self {
+                Self::Topic(_) => TopicSpec::CREATE_TYPE,
+                Self::CustomSpu(_) => CustomSpuSpec::CREATE_TYPE,
+                Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
+                Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
+                Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
+            }
+        }
+
+        pub(crate) fn type_string(&self) -> &'static str {
+            use fluvio_controlplane_metadata::core::Spec;
+            match self {
+                Self::Topic(_) => crate::topic::TopicSpec::LABEL,
+                Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
+                Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
+                Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
+                Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
+            }
+        }
+    }
+
+    impl Encoder for ClassicObjectCreateRequest {
+        fn write_size(&self, version: Version) -> usize {
+            let type_size = (0u8).write_size(version);
+
+            type_size
+                + match self {
+                    Self::Topic(s) => s.write_size(version),
+                    Self::CustomSpu(s) => s.write_size(version),
+                    Self::SmartModule(s) => s.write_size(version),
+                    Self::SpuGroup(s) => s.write_size(version),
+                    Self::TableFormat(s) => s.write_size(version),
+                }
+        }
+
+        fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), std::io::Error>
+        where
+            T: BufMut,
+        {
+            self.type_value().encode(dest, version)?;
+            match self {
+                Self::Topic(s) => s.encode(dest, version)?,
+                Self::CustomSpu(s) => s.encode(dest, version)?,
+                Self::SmartModule(s) => s.encode(dest, version)?,
+                Self::SpuGroup(s) => s.encode(dest, version)?,
+                Self::TableFormat(s) => s.encode(dest, version)?,
+            }
+
+            Ok(())
+        }
+    }
+
+    // We implement decode signature even thought this will be never called.
+    // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
+    // to provide decode implementation but should be never called
+    impl Decoder for ClassicObjectCreateRequest {
+        fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
+        where
+            T: Buf,
+        {
+            let mut typ: u8 = 0;
+            typ.decode(src, version)?;
+            tracing::trace!("decoded type: {}", typ);
+
+            match typ {
+                TopicSpec::CREATE_TYPE => {
+                    tracing::trace!("detected topic");
+                    let mut request = TopicSpec::default();
+                    request.decode(src, version)?;
+                    *self = Self::Topic(request);
+                    Ok(())
+                }
+
+                TableFormatSpec::CREATE_TYPE => {
+                    tracing::trace!("detected table");
+                    let mut request = TableFormatSpec::default();
+                    request.decode(src, version)?;
+                    *self = Self::TableFormat(request);
+                    Ok(())
+                }
+
+                CustomSpuSpec::CREATE_TYPE => {
+                    tracing::trace!("detected custom spu");
+                    let mut request = CustomSpuSpec::default();
+                    request.decode(src, version)?;
+                    *self = Self::CustomSpu(request);
+                    Ok(())
+                }
+
+                SpuGroupSpec::CREATE_TYPE => {
+                    tracing::trace!("detected custom spu");
+                    let mut request = SpuGroupSpec::default();
+                    request.decode(src, version)?;
+                    *self = Self::SpuGroup(request);
+                    Ok(())
+                }
+
+                SmartModuleSpec::CREATE_TYPE => {
+                    tracing::trace!("detected smartmodule");
+                    let mut request = SmartModuleSpec::default();
+                    request.decode(src, version)?;
+                    *self = Self::SmartModule(request);
+                    Ok(())
+                }
+
+                // Unexpected type
+                _ => Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("invalid create type {typ:#?}"),
+                )),
+            }
+        }
+    }
+}
