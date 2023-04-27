@@ -13,7 +13,7 @@ use fluvio_controlplane_metadata::message::Message;
 use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
 use crate::core::Spec;
 
-use super::classic::ClassicObjectApiEnum;
+use super::classic::{ClassicObjectApiEnum, ClassicDecoding};
 use super::{Metadata, COMMON_VERSION, TypeBuffer};
 
 /// Watch resources
@@ -38,7 +38,7 @@ where
     }
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
+#[derive(Debug, Default, Encoder)]
 pub struct ObjectApiWatchRequest(TypeBuffer);
 
 impl<S> TryEncodableFrom<WatchRequest<S>> for ObjectApiWatchRequest
@@ -60,7 +60,7 @@ impl Request for ObjectApiWatchRequest {
     type Response = ObjectApiWatchResponse;
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
+#[derive(Debug, Default, Encoder)]
 pub struct ObjectApiWatchResponse(TypeBuffer);
 
 impl<S> TryEncodableFrom<WatchResponse<S>> for ObjectApiWatchResponse
@@ -133,7 +133,9 @@ where
     }
 }
 
-// class backware compatibility
 
+// for supporting classic, this should go away after we remove classic
 ClassicObjectApiEnum!(WatchRequest);
 ClassicObjectApiEnum!(WatchResponse);
+ClassicDecoding!(WatchRequest);
+ClassicDecoding!(WatchResponse);

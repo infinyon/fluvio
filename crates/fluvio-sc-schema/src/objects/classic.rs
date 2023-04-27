@@ -181,57 +181,9 @@ mod object_macro {
         }
     }
 
-    /// Macro to convert request with generic signature with ObjectAPI which is non generic which then can be transported
-    /// over network.
-    /// This conversion is possible because ObjectAPI (ex: ObjectApiListRequest) is built on Enum with matching object
-    /// which make it possible to convert ListRequest<TopicSpec> => ObjectApiListRequest::Topic(req)
-    /// This should generate code such as:
-    /// impl From<WatchRequest<TopicSpec>> for ObjectApiWatchRequest {
-    /// fn from(req: WatchRequest<TopicSpec>) -> Self {
-    ///       ObjectApiWatchRequest::Topic(req
-    /// }
-    /// ObjectFrom!(WatchRequest, Topic);
-    macro_rules! ClassicObjectFrom {
-        ($from:ident,$spec:ident) => {
-            paste::paste! {
-
-                impl From<$from<[<$spec Spec>]>> for crate::objects::[<ClassicObjectApi $from>] {
-                    fn from(fr: $from<[<$spec Spec>]>) -> Self {
-                        crate::objects::[<ObjectApi $from>]::$spec(fr)
-                    }
-                }
-            }
-        };
-
-        ($from:ident,$spec:ident) => {
-            crate::objects::ObjectFrom!($from, $spec, Object);
-        };
-    }
-
-    /// Convert unknown object type to ObjectApi<T>
-    /// Since we don't know the type of object, we perform Try
-    macro_rules! ClassicObjectTryFrom {
-        ($from:ident,$spec:ident) => {
-
-            paste::paste! {
-
-                impl std::convert::TryFrom<crate::objects::[<ClassicObjectApi $from>]> for $from<[<$spec Spec>]> {
-                    type Error = std::io::Error;
-
-                    fn try_from(response: crate::objects::[<ClassicObjectApi $from>]) -> Result<Self, Self::Error> {
-                        match response {
-                            crate::objects::[<ClassicObjectApi $from>]::$spec(response) => Ok(response),
-                            _ => Err(std::io::Error::new(std::io::ErrorKind::Other, concat!("not ",stringify!($spec)))),
-                        }
-                    }
-                }
-            }
-        };
-    }
+    
 
     pub(crate) use ClassicObjectApiEnum;
-    pub(crate) use ClassicObjectFrom;
-    pub(crate) use ClassicObjectTryFrom;
 }
 
 mod delete_macro {
@@ -391,7 +343,7 @@ macro_rules! ClassicDecoding {
                 where
                     T: fluvio_protocol::bytes::Buf
                 {
-                    if version >= DYN_OBJ {
+                    if version >= crate::objects::DYN_OBJ {
                         println!("decoding new");
                         self.0.decode(src, version)?;
                     } else {
@@ -399,8 +351,7 @@ macro_rules! ClassicDecoding {
                         use fluvio_protocol::Encoder;
                         let classic_obj = [<ClassicObjectApi $api>]::decode_from(src, version)?;
                         // reencode using new version
-                      //  let bytes = classic_obj.as_bytes(version, COMMON_VERSION)?;
-                      //  self.0.set_buf(bytes.into());
+                        self.0.set_buf(classic_obj.type_string().to_owned(),classic_obj.as_bytes(COMMON_VERSION)?.into());
                     }
                     Ok(())
                 }
