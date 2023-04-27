@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
+use std::ops::Deref;
 use std::path::{PathBuf, Path};
+use std::str::FromStr;
 use std::time::Duration;
 
 use fluvio_types::PartitionId;
@@ -89,6 +91,10 @@ impl SecretConfig {
     pub fn name(&self) -> &str {
         &self.name.inner
     }
+
+    pub fn new(secret_name: SecretName) -> Self {
+        Self { name: secret_name }
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -120,13 +126,23 @@ impl SecretName {
         Ok(())
     }
 }
-impl TryFrom<String> for SecretName {
-    type Error = anyhow::Error;
+impl FromStr for SecretName {
+    type Err = anyhow::Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let secret_name = Self { inner: value };
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let secret_name = Self {
+            inner: value.into(),
+        };
         secret_name.validate()?;
         Ok(secret_name)
+    }
+}
+
+impl Deref for SecretName {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 
@@ -252,7 +268,7 @@ mod tests {
                     partition: Some(10),
                 }),
                 secrets: Some(vec![SecretConfig {
-                    name: "secret1".to_string().try_into().unwrap(),
+                    name: "secret1".parse().unwrap(),
                 }]),
             },
             transforms: Some(
@@ -402,6 +418,63 @@ mod tests {
         );
         assert_eq!(connector_spec.transforms.as_ref().unwrap().transforms[0].with,
                        BTreeMap::from([("mapping".to_string(), "{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":0,\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message\"}".into())]));
+    }
+
+    #[test]
+    fn test_deserialize_secret_name() {
+        let secret_name: SecretName = serde_yaml::from_str("secret_name").unwrap();
+        assert_eq!("secret_name", &*secret_name);
+
+        assert!(
+            serde_yaml::from_str::<SecretName>("secret name").is_err(),
+            "string with space is not a valid secret name"
+        );
+    }
+
+    #[test]
+    fn test_serialize_secret_config() {
+        let secrets = ["secret_name", "secret_name2"];
+        let secret_configs = secrets
+            .iter()
+            .map(|s| SecretConfig::new(s.parse().unwrap()))
+            .collect::<Vec<_>>();
+
+        let serialized = serde_yaml::to_string(&secret_configs).expect("failed to serialize");
+        assert_eq!(
+            "- name: secret_name
+- name: secret_name2
+",
+            serialized
+        );
+    }
+
+    #[test]
+    fn test_parse_secret_name() {
+        let secret_name: SecretName = "secret_name".parse().unwrap();
+        assert_eq!("secret_name", &*secret_name);
+
+        assert!(
+            "secret name".parse::<SecretName>().is_err(),
+            "secret name should fail if has space"
+        );
+
+        assert!(
+            "1secretname".parse::<SecretName>().is_err(),
+            "secret name should fail if starts with number"
+        );
+        assert!(
+            "secret-name".parse::<SecretName>().is_err(),
+            "secret name should fail if has dash"
+        );
+    }
+
+    #[test]
+    fn test_serialize_secret_name() {
+        let secret_name: SecretName = "secret_name".parse().unwrap();
+        assert_eq!("secret_name", &*secret_name);
+
+        let secret_name: SecretName = serde_yaml::from_str("secret_name").unwrap();
+        assert_eq!("secret_name", &*secret_name);
     }
 
     #[test]
