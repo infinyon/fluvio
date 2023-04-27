@@ -32,6 +32,14 @@ impl Keypair {
     }
 }
 
+// Add a debug impl that hides the contents to make errors a little easier
+// to work with
+impl std::fmt::Debug for Keypair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "Keypair (*)")
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct PublicKey {
     pubkey: ed25519_dalek::PublicKey,
@@ -224,6 +232,7 @@ mod sshkeys {
         let verify = pubkey.verify(msg, &sig);
         assert!(verify.is_ok());
     }
+
     #[test]
     fn test_read_from_file() {
         const KEYFILE: &str = "tests/key_test.pem";
@@ -241,5 +250,17 @@ mod sshkeys {
         let pubhex = kp.public().to_hex();
 
         let _pubkey_from_hex = PublicKey::from_hex(&pubhex).expect("hex read error");
+    }
+
+    #[test]
+    fn new_write_read_roundtrip() {
+        let tmpdir = std::env::temp_dir();
+        let kpfile = tmpdir.join("file.kp");
+        let kp = Keypair::new().expect("keypair creation error");
+        let kpfile_s = kpfile.display().to_string();
+        let res = kp.write_keypair(&kpfile_s);
+        assert!(res.is_ok(), "{res:?}");
+        let res = Keypair::read_from_file(&kpfile_s);
+        assert!(res.is_ok(), "{res:?}");
     }
 }
