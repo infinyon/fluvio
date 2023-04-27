@@ -12,6 +12,8 @@ use fluvio_controlplane_metadata::core::{MetadataContext, MetadataItem};
 
 use crate::AdminSpec;
 use crate::core::Spec;
+use crate::objects::ObjectApiCreateRequest;
+use crate::objects::classic::ClassicObjectCreateRequest;
 
 use super::{COMMON_VERSION, DYN_OBJ};
 
@@ -247,26 +249,27 @@ impl CreateTypeBuffer {
 
 impl Encoder for CreateTypeBuffer {
     fn write_size(&self, version: Version) -> usize {
-        self.ty.write_size(version)
-            + self.buf.len()
-            + (if version >= DYN_OBJ {
-                let u32 = 0;
-                u32.write_size(version)
-            } else {
-                0
-            })
+        if version >= DYN_OBJ {
+            self.ty.write_size(version) + (0 as u32).write_size(version) + self.buf.len()
+        } else {
+            // for classic, we use int and buffer
+            (0 as u8).write_size(version) + self.buf.len()
+        }
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> std::result::Result<(), IoError>
     where
         T: fluvio_protocol::bytes::BufMut,
     {
-        self.ty.encode(dest, version)?;
         if version >= DYN_OBJ {
+            self.ty.encode(dest, version)?;
             let len: u32 = self.buf.len() as u32;
             len.encode(dest, version)?; // write len
             println!("encoding using new with len: {:#?}", len);
         } else {
+            // encode string type as integer for classic protocol
+            let int_ty = ClassicObjectCreateRequest::convert_type_string_to_int(&self.ty)?;
+            int_ty.encode(dest, version)?;
             println!("encoding using old with len: {}", self.buf.len());
         }
         dest.put(self.buf.as_ref());

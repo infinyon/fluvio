@@ -411,6 +411,23 @@ mod create {
                 Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
             }
         }
+
+        // convert type string to int
+        pub(crate) fn convert_type_string_to_int(ty: &str) -> Result<u8,std::io::Error> {
+            use fluvio_controlplane_metadata::core::Spec;
+            match ty {
+                crate::topic::TopicSpec::LABEL => Ok(TopicSpec::CREATE_TYPE),
+                crate::customspu::CustomSpuSpec::LABEL => Ok(CustomSpuSpec::CREATE_TYPE),
+                crate::smartmodule::SmartModuleSpec::LABEL => Ok(SmartModuleSpec::CREATE_TYPE),
+                crate::spg::SpuGroupSpec::LABEL => Ok(SpuGroupSpec::CREATE_TYPE),
+                crate::tableformat::TableFormatSpec::LABEL => Ok(TableFormatSpec::CREATE_TYPE),
+                _ => Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("invalid create string type {ty}"),
+                )),
+            }
+        }
+
     }
 
     impl Encoder for ClassicObjectCreateRequest {

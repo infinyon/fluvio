@@ -8,20 +8,37 @@ use anyhow::Result;
 
 use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
-use fluvio_protocol::core::ByteBuf;
+
 
 use crate::objects::classic::ClassicObjectCreateRequest;
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom};
 
-/// Every create request must have this parameters
 #[derive(Encoder, Decoder, Default, Debug, Clone)]
-pub struct CreateRequest<S> {
+pub struct CommonCreateRequest {
     pub name: String,
     pub dry_run: bool,
     #[fluvio(min_version = 7)]
     pub timeout: Option<u32>, // timeout in milliseconds
-    data: PhantomData<S>, // satisfy generic
 }
+
+
+/// Every create request must have this parameters
+#[derive(Encoder, Decoder, Default, Debug, Clone)]
+pub struct CreateRequest<S> {
+    pub common: CommonCreateRequest,
+    pub request: S
+}
+
+impl<S> CreateRequest<S> {
+    pub fn new(common: CommonCreateRequest, request: S) -> Self {
+        Self {
+           common,
+           request
+        }
+    }
+}
+
+
 
 #[derive(Debug, Default, Encoder)]
 pub struct ObjectApiCreateRequest(CreateTypeBuffer);
@@ -48,7 +65,7 @@ where
 }
 
 //pub(crate) use CreateFrom;
-use super::{COMMON_VERSION, TypeBuffer, CreateTypeBuffer};
+use super::{COMMON_VERSION, CreateTypeBuffer};
 
 // this is for compatibility with older version
 impl Decoder for ObjectApiCreateRequest {
