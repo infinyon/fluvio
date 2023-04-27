@@ -221,4 +221,22 @@ mod sshkeys {
         let verify = pubkey.verify(msg, &sig);
         assert!(verify.is_ok());
     }
+    #[test]
+    fn test_read_from_file() {
+        const KEYFILE: &str = "tests/key_test.pem";
+
+        let kp: Keypair = Keypair::new().expect("keypair creation error");
+        kp.write_keypair(KEYFILE).expect("keypair write error");
+
+        let _keypair = Keypair::read_from_file(KEYFILE).expect("key read error");
+    }
+
+    #[test]
+    fn test_from_hex() {
+        let kp: Keypair = Keypair::new().expect("keypair creation error");
+
+        let pubhex = kp.public().to_hex();
+
+        let _pubkey_from_hex = PublicKey::from_hex(&pubhex).expect("hex read error");
+    }
 }

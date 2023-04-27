@@ -47,4 +47,4 @@ features = ["h1_client", "rustls"]
 default-features = false
 
 [dev-dependencies]
-tracing-subscriber = { workspace = true,  features = ["env-filter"] }
+tracing-subscriber = { workspace = true,  features = ["env-filter", "fmt"] }
