@@ -1,8 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
 use std::fmt::Debug;
-use std::io::Cursor;
-use std::marker::PhantomData;
 
 use anyhow::Result;
 
@@ -35,6 +33,11 @@ impl<S> CreateRequest<S> {
            common,
            request
         }
+    }
+
+    /// deconstruct
+    pub fn parts(self) -> (CommonCreateRequest, S) {
+        (self.common, self.request)
     }
 }
 
