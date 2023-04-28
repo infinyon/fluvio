@@ -68,7 +68,7 @@ impl PublishCmd {
 
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
         if !hubdir.exists() {
-            init_package_template(&package_info)?;
+            init_package_template(&package_info, &self.target)?;
         } else if !self.public_yes {
             check_package_meta_visiblity(&package_info)?;
         }
@@ -140,7 +140,7 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
+pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> Result<()> {
     let connector_toml_path = find_connector_toml(package_info)?;
     let connector_metadata = ConnectorMetadata::from_toml_file(&connector_toml_path)?;
 
@@ -168,7 +168,7 @@ pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
             .unwrap_or_else(|| connector_toml_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
     );
 
-    let binary_path = package_info.target_bin_path()?;
+    let binary_path = package_info.target_bin_path(binary_arch)?;
     let binary_relative_path = package_meta_relative_path(&package_meta_path, &binary_path);
     pm.manifest.push(
         binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute

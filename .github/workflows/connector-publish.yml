@@ -18,7 +18,7 @@ on:
         type: string
       fail-fast:
         type: boolean
-        default: true  
+        default: true
     secrets:
       CLOUD_USER_EMAIL:
         required: true
@@ -32,7 +32,13 @@ jobs:
     strategy:
       fail-fast: ${{ inputs.fail-fast }}
       matrix:
-        rust-target: [aarch64-unknown-linux-musl, aarch64-unknown-linux-gnu, x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu]  
+        rust-target:
+          [
+            aarch64-unknown-linux-musl,
+            aarch64-unknown-linux-gnu,
+            x86_64-unknown-linux-musl,
+            x86_64-unknown-linux-gnu,
+          ]
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     steps:
@@ -55,11 +61,10 @@ jobs:
         run: cargo install cross
       - name: Build
         run: |
-          cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
-          cp target/${{ matrix.rust-target }}/${{ inputs.rust-profile }}/* target/${{ inputs.rust-profile }}/ | true
+          cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
+          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
 
   macos:
     name: macos
@@ -67,7 +72,7 @@ jobs:
     strategy:
       fail-fast: ${{ inputs.fail-fast }}
       matrix:
-        rust-target: [x86_64-apple-darwin, aarch64-apple-darwin]  
+        rust-target: [x86_64-apple-darwin, aarch64-apple-darwin]
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     steps:
@@ -89,10 +94,7 @@ jobs:
       - name: Build
         run: |
           rustup target add ${{ matrix.rust-target }}
-          cargo build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
-          cp target/${{ matrix.rust-target }}/${{ inputs.rust-profile }}/* target/${{ inputs.rust-profile }}/ | true
+          cargo build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }} 
-
-
+          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}

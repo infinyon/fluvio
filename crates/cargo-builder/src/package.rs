@@ -94,6 +94,14 @@ impl PackageInfo {
         self.package_path().join(child)
     }
 
+    pub fn target_bin_path_for_arch(&self, arch: &str) -> anyhow::Result<PathBuf> {
+        let mut path = self.target_dir.clone();
+        path.push(arch);
+        path.push(&self.profile);
+        path.push(self.target_name()?);
+        Ok(path)
+    }
+
     /// path to package's bin target
     pub fn target_bin_path(&self) -> anyhow::Result<PathBuf> {
         let mut path = self.target_dir.clone();
@@ -166,5 +174,10 @@ mod tests {
             .target_wasm32_path()
             .unwrap()
             .ends_with("wasm32-unknown-unknown/release-lto/cargo_builder.wasm"));
+
+        assert!(package_info
+            .target_bin_path_for_arch("x86_64-unknown-linux-gnu")
+            .unwrap()
+            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo-builder"));
     }
 }
