@@ -132,7 +132,8 @@ test-permission-user1:
 		--ca-cert tls/certs/ca.crt \
 		--client-cert tls/certs/client-user1.crt \
 		--client-key tls/certs/client-user1.key \
-		 topic create test3 2> /tmp/topic.err
+		 topic create test3 
+	cat /tmp/topic.err
 	grep -q permission /tmp/topic.err
 
 
