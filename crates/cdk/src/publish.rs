@@ -168,6 +168,12 @@ pub fn init_package_template(package_info: &PackageInfo) -> Result<()> {
             .unwrap_or_else(|| connector_toml_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
     );
 
+    let binary_path = package_info.target_bin_path()?;
+    let binary_relative_path = package_meta_relative_path(&package_meta_path, &binary_path);
+    pm.manifest.push(
+        binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
+    );
+
     println!("Creating package {}", pm.pkg_name());
     pm.naming_check()?;
 
