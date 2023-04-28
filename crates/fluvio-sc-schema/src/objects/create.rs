@@ -174,7 +174,7 @@ mod classic {
     impl Encoder for CreateTypeBuffer {
         fn write_size(&self, version: Version) -> usize {
             if version >= DYN_OBJ {
-                self.ty.write_size(version) + (0 as u32).write_size(version) + self.buf.len()
+                self.ty.write_size(version) + 0_u32.write_size(version) + self.buf.len()
             } else {
                 self.buf.len()
             }

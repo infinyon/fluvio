@@ -8,7 +8,7 @@ use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
-use super::{COMMON_VERSION, Metadata, TypeBuffer, DYN_OBJ};
+use super::{COMMON_VERSION, Metadata, TypeBuffer};
 use super::classic::{ClassicObjectApiEnum, ClassicDecoding};
 
 /// Filter for List

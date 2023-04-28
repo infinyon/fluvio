@@ -85,7 +85,7 @@ mod admin {
 
     use std::{fmt::Debug};
 
-    use anyhow::{anyhow, Result};
+    use anyhow::{Result};
 
     use fluvio_protocol::{Encoder, Decoder, Version};
     use fluvio_controlplane_metadata::{store::MetadataStoreObject};
@@ -121,7 +121,7 @@ mod admin {
         type DeleteKey: Encoder + Decoder + Debug + Default;
     }
 
-    /// try to encode from type
+    /// try to encode type object into dynamic type which can be downcast later
     pub trait TryEncodableFrom<T>: Sized + Encoder + Decoder {
         fn try_encode_from(value: T, version: Version) -> Result<Self>;
 

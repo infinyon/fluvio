@@ -1,5 +1,5 @@
 pub(crate) use object_macro::*;
-pub(crate) use delete_macro::*;
+//pub(crate) use delete_macro::*;
 pub(crate) use create::*;
 
 /// carry from prev version for compatibility test
@@ -185,6 +185,8 @@ mod object_macro {
     pub(crate) use ClassicObjectApiEnum;
 }
 
+// delete macro doesn't seems to be necessary since it doesn't have complex returning type
+/*
 mod delete_macro {
 
     /// Macro to for converting delete object to generic Delete
@@ -328,6 +330,7 @@ mod delete_macro {
 
     pub(crate) use ClassicDeleteApiEnum;
 }
+*/
 
 /// write decoder for classic api
 macro_rules! ClassicDecoding {
