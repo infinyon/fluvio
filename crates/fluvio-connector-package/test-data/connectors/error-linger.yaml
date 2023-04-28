@@ -1,3 +1,4 @@
+schemaVersion: v1
 meta:
   version: 0.1.0
   name: my-test-mqtt
@@ -5,4 +6,4 @@ meta:
   topic: my-mqtt
   create_topic: false
   producer:
-    linger: 1
+    linger: "1"

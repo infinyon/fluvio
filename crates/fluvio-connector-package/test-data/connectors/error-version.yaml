@@ -1,3 +1,4 @@
+schemaVersion: v1
 meta:
   name: my-test-mqtt
   type: mqtt

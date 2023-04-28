@@ -85,7 +85,7 @@ mod test {
 
     use crate::{
         secret::{FileSecretStore},
-        config::ConnectorConfig,
+        config::{ConnectorConfig},
     };
 
     use super::{ConfigRenderer, context::ContextStore};
@@ -197,10 +197,10 @@ mod test {
             serde_yaml::from_str(&value_str).expect("should be yaml");
         let value: serde_yaml::Value = serde_yaml::from_str(&value_str).expect("should be yaml");
 
-        assert_eq!(connector_config.meta.name, "test");
-        assert_eq!(connector_config.meta.version, "0.1.0");
-        assert_eq!(connector_config.meta.topic, "test");
-        assert_eq!(connector_config.meta.type_, "http-source");
+        assert_eq!(connector_config.meta().name, "test");
+        assert_eq!(connector_config.meta().version, "0.1.0");
+        assert_eq!(connector_config.meta().topic, "test");
+        assert_eq!(connector_config.meta().type_, "http-source");
         assert_eq!(
             value["my_service"]["api_key"]
                 .as_str()

@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use serde::Serialize;
 use minijinja::value::Value;
 
-use crate::{secret::SecretStore, config::ConnectorConfig};
+use crate::{
+    secret::SecretStore,
+    config::{ConnectorConfig, ConnectorConfigVersioned},
+};
 
 /// Context for the template engine
 /// This is the data that is available to the template engine
@@ -30,6 +33,8 @@ impl dyn ContextStore {
 impl ContextStore for &dyn SecretStore {
     fn extract_context_values(&self, input: &str) -> anyhow::Result<Value> {
         let connector_config: ConnectorConfig = serde_yaml::from_reader(input.as_bytes())?;
+        let connector_config: ConnectorConfigVersioned = connector_config.into();
+
         let mut values = HashMap::default();
 
         for secret in connector_config.secrets().iter() {
