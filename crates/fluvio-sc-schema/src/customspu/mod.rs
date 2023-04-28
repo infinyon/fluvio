@@ -6,9 +6,7 @@ use crate::DeletableAdminSpec;
 
 impl AdminSpec for CustomSpuSpec {}
 
-impl CreatableAdminSpec for CustomSpuSpec {
-    const CREATE_TYPE: u8 = 1;
-}
+impl CreatableAdminSpec for CustomSpuSpec {}
 
 impl DeletableAdminSpec for CustomSpuSpec {
     type DeleteKey = CustomSpuKey;

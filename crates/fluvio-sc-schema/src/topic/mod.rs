@@ -12,6 +12,7 @@ pub mod validate {
 }
 
 mod convert {
+
     use crate::CreatableAdminSpec;
     use crate::DeletableAdminSpec;
     use crate::{AdminSpec};
@@ -20,9 +21,7 @@ mod convert {
 
     impl AdminSpec for TopicSpec {}
 
-    impl CreatableAdminSpec for TopicSpec {
-        const CREATE_TYPE: u8 = 0;
-    }
+    impl CreatableAdminSpec for TopicSpec {}
 
     impl DeletableAdminSpec for TopicSpec {
         type DeleteKey = String;

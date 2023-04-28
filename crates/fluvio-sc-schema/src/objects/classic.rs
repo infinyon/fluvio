@@ -364,16 +364,34 @@ pub(crate) use ClassicDecoding;
 
 mod create {
 
+    use anyhow::{anyhow, Result};
+
     use fluvio_protocol::bytes::{BufMut, Buf};
     use fluvio_protocol::{Encoder, Decoder};
     use fluvio_protocol::Version;
 
+    use crate::objects::CommonCreateRequest;
     use crate::topic::TopicSpec;
     use crate::customspu::CustomSpuSpec;
     use crate::smartmodule::SmartModuleSpec;
     use crate::tableformat::TableFormatSpec;
     use crate::spg::SpuGroupSpec;
-    use crate::CreatableAdminSpec;
+
+    #[derive(Debug, Default, Encoder, Decoder)]
+    pub struct ClassicObjectApiCreateRequest {
+        pub common: CommonCreateRequest,
+        pub request: ClassicObjectCreateRequest,
+    }
+
+    #[doc(hidden)]
+    pub trait ClassicCreatableAdminSpec: Sized {
+        const CREATE_TYPE: u8 = 0;
+
+        // conversion to classic protocol wrapper
+        fn try_classic_convert(_spec: Self) -> Result<ClassicObjectCreateRequest> {
+            Err(anyhow!("not implemented"))
+        }
+    }
 
     #[derive(Debug)]
     pub enum ClassicObjectCreateRequest {
@@ -411,23 +429,6 @@ mod create {
                 Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
             }
         }
-
-        // convert type string to int
-        pub(crate) fn convert_type_string_to_int(ty: &str) -> Result<u8,std::io::Error> {
-            use fluvio_controlplane_metadata::core::Spec;
-            match ty {
-                crate::topic::TopicSpec::LABEL => Ok(TopicSpec::CREATE_TYPE),
-                crate::customspu::CustomSpuSpec::LABEL => Ok(CustomSpuSpec::CREATE_TYPE),
-                crate::smartmodule::SmartModuleSpec::LABEL => Ok(SmartModuleSpec::CREATE_TYPE),
-                crate::spg::SpuGroupSpec::LABEL => Ok(SpuGroupSpec::CREATE_TYPE),
-                crate::tableformat::TableFormatSpec::LABEL => Ok(TableFormatSpec::CREATE_TYPE),
-                _ => Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    format!("invalid create string type {ty}"),
-                )),
-            }
-        }
-
     }
 
     impl Encoder for ClassicObjectCreateRequest {
@@ -520,6 +521,47 @@ mod create {
                     format!("invalid create type {typ:#?}"),
                 )),
             }
+        }
+    }
+
+    impl ClassicCreatableAdminSpec for TopicSpec {
+        const CREATE_TYPE: u8 = 0;
+
+        fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
+            Ok(ClassicObjectCreateRequest::Topic(spec))
+        }
+    }
+
+    // for classic protocol
+    impl ClassicCreatableAdminSpec for TableFormatSpec {
+        const CREATE_TYPE: u8 = 5;
+
+        fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
+            Ok(ClassicObjectCreateRequest::TableFormat(spec))
+        }
+    }
+
+    impl ClassicCreatableAdminSpec for SpuGroupSpec {
+        const CREATE_TYPE: u8 = 2;
+
+        fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
+            Ok(ClassicObjectCreateRequest::SpuGroup(spec))
+        }
+    }
+
+    impl ClassicCreatableAdminSpec for SmartModuleSpec {
+        const CREATE_TYPE: u8 = 4;
+
+        fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
+            Ok(ClassicObjectCreateRequest::SmartModule(spec))
+        }
+    }
+
+    impl ClassicCreatableAdminSpec for CustomSpuSpec {
+        const CREATE_TYPE: u8 = 1;
+
+        fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
+            Ok(ClassicObjectCreateRequest::CustomSpu(spec))
         }
     }
 }

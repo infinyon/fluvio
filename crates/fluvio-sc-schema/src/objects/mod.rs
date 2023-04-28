@@ -3,7 +3,7 @@ mod delete;
 mod list;
 mod watch;
 mod metadata;
-mod classic;
+pub mod classic;
 
 pub use create::*;
 pub use delete::*;

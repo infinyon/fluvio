@@ -21,9 +21,7 @@ mod convert {
         }
     }
 
-    impl CreatableAdminSpec for SmartModuleSpec {
-        const CREATE_TYPE: u8 = 4;
-    }
+    impl CreatableAdminSpec for SmartModuleSpec {}
 
     impl DeletableAdminSpec for SmartModuleSpec {
         type DeleteKey = String;
