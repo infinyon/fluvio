@@ -9,6 +9,7 @@ use fluvio_protocol::{Encoder, Decoder, ByteBuf, Version};
 
 use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use fluvio_controlplane_metadata::core::{MetadataContext, MetadataItem};
+use tracing::debug;
 
 use crate::AdminSpec;
 use crate::core::Spec;
@@ -119,11 +120,11 @@ impl TypeBuffer {
         O: Decoder + Debug,
     {
         if self.is_kind_of::<S>() {
-            println!("is kind of: {:#?}", S::LABEL);
+            debug!(ty = S::LABEL, "downcasting");
             let mut buf = Cursor::new(self.buf.as_ref());
             Ok(Some(O::decode_from(&mut buf, COMMON_VERSION)?))
         } else {
-            println!("not kind of: {:#?}", S::LABEL);
+            debug!(target_ty = S::LABEL, source_t = self.ty, "downcast failed");
             Ok(None)
         }
     }
@@ -154,9 +155,9 @@ impl Encoder for TypeBuffer {
         if version >= DYN_OBJ {
             let len: u32 = self.buf.len() as u32;
             len.encode(dest, version)?; // write len
-            println!("encoding using new with len: {:#?}", len);
+            debug!(len, "encoding using new with");
         } else {
-            println!("encoding using old with len: {}", self.buf.len());
+            debug!(len = self.buf.len(), "encoding using old with len");
         }
         dest.put(self.buf.as_ref());
 
@@ -170,15 +171,13 @@ impl Decoder for TypeBuffer {
     where
         T: fluvio_protocol::bytes::Buf,
     {
-        println!("decoding tybuffer using new protocol");
+        debug!("decoding tybuffer using new protocol");
         self.ty.decode(src, version)?;
-        tracing::trace!(ty = self.ty, "decoded type");
-        println!("decoded type: {:#?}", self.ty);
-
+        debug!(ty = self.ty, "decoded type");
         let mut len: u32 = 0;
         len.decode(src, version)?;
         tracing::trace!(len, "decoded len");
-        println!("copy bytes: {:#?}", len);
+        debug!(len, "copy bytes");
         if src.remaining() < len as usize {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,

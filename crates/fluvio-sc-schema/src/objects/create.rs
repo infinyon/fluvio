@@ -71,6 +71,7 @@ mod classic {
 
     use fluvio_controlplane_metadata::core::Spec;
     use fluvio_protocol::{Decoder, ByteBuf, Version, Encoder};
+    use tracing::debug;
 
     use crate::CreatableAdminSpec;
     use crate::objects::classic::{ClassicCreatableAdminSpec, ClassicObjectApiCreateRequest};
@@ -93,10 +94,10 @@ mod classic {
             T: fluvio_protocol::bytes::Buf,
         {
             if version >= crate::objects::DYN_OBJ {
-                println!("decoding new");
+                debug!("decoding new");
                 self.0.decode(src, version)?;
             } else {
-                println!("decoding classical");
+                debug!("decoding classical");
 
                 let classic_obj = ClassicObjectCreateRequest::decode_from(src, version)?;
                 // reencode using new version
@@ -156,11 +157,11 @@ mod classic {
             O: Decoder + Debug,
         {
             if self.is_kind_of::<S>() {
-                println!("is kind of: {:#?}", S::LABEL);
+                debug!(ty = S::LABEL, "downcast kind");
                 let mut buf = Cursor::new(self.buf.as_ref());
                 Ok(Some(O::decode_from(&mut buf, COMMON_VERSION)?))
             } else {
-                println!("not kind of: {:#?}", S::LABEL);
+                debug!(target_ty = S::LABEL, my_ty = self.ty, "different kind");
                 Ok(None)
             }
         }
@@ -188,9 +189,9 @@ mod classic {
                 self.ty.encode(dest, version)?;
                 let len: u32 = self.buf.len() as u32;
                 len.encode(dest, version)?; // write len
-                println!("encoding using new with len: {:#?}", len);
+                debug!(len, "encoding using new");
             } else {
-                println!("encoding using old with len: {}", self.buf.len());
+                debug!(len = self.buf.len(), "encoding using old with");
             }
             dest.put(self.buf.as_ref());
 
@@ -205,15 +206,15 @@ mod classic {
         where
             T: fluvio_protocol::bytes::Buf,
         {
-            println!("decoding tybuffer using new protocol");
+            debug!("decoding tybuffer using new protocol");
             self.ty.decode(src, version)?;
             tracing::trace!(ty = self.ty, "decoded type");
-            println!("decoded type: {:#?}", self.ty);
+            debug!(ty = self.ty, "decoded type");
 
             let mut len: u32 = 0;
             len.decode(src, version)?;
             tracing::trace!(len, "decoded len");
-            println!("copy bytes: {:#?}", len);
+            debug!(len, "copy bytes");
             if src.remaining() < len as usize {
                 return Err(IoError::new(
                     ErrorKind::UnexpectedEof,

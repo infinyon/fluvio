@@ -346,10 +346,10 @@ macro_rules! ClassicDecoding {
                     T: fluvio_protocol::bytes::Buf
                 {
                     if version >= crate::objects::DYN_OBJ {
-                        println!("decoding new");
+                        tracing::debug!("decoding new");
                         self.0.decode(src, version)?;
                     } else {
-                        println!("decoding classical");
+                        tracing::debug!("decoding classical");
                         use fluvio_protocol::Encoder;
                         let classic_obj = [<ClassicObjectApi $api>]::decode_from(src, version)?;
                         // reencode using new version

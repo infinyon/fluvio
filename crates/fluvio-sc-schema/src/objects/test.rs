@@ -138,7 +138,7 @@ fn test_watch_response_encoding() {
         .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
         .expect("encoding");
     //watch_response.encode(&mut src, 0).expect("encoding");
-    println!("output: {src:#?}");
+    //println!("output: {src:#?}");
     let dec = WatchResponse::<TopicSpec>::decode_from(
         &mut Cursor::new(&src),
         ObjectApiWatchRequest::API_KEY as i16,
@@ -163,7 +163,7 @@ fn test_obj_watch_response_encode_decoding() {
         .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
         .expect("encoding");
 
-    println!("output: {src:#?}");
+    //println!("output: {src:#?}");
 
     assert_eq!(
         src.len(),
@@ -194,8 +194,6 @@ fn test_obj_watch_api_decoding() {
     res_msg
         .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
         .expect("encoding");
-
-    println!("output: {src:#?}");
 
     assert_eq!(
         src.len(),
@@ -232,7 +230,7 @@ fn test_list_response_encode_decoding() {
     let mut src = vec![];
     res_msg.encode(&mut src, COMMON_VERSION).expect("encoding");
 
-    println!("output: {src:#?}");
+    //println!("output: {src:#?}");
 
     let dec_msg: ResponseMessage<ObjectApiListResponse> =
         ResponseMessage::decode_from(&mut Cursor::new(&src), COMMON_VERSION).expect("decode");
