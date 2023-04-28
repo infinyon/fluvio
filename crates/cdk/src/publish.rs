@@ -168,7 +168,7 @@ pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> R
             .unwrap_or_else(|| connector_toml_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
     );
 
-    let binary_path = package_info.target_bin_path(binary_arch)?;
+    let binary_path = package_info.target_bin_path_for_arch(binary_arch)?;
     let binary_relative_path = package_meta_relative_path(&package_meta_path, &binary_path);
     pm.manifest.push(
         binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
