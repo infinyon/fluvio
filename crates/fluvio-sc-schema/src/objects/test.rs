@@ -66,7 +66,7 @@ fn test_req_old_to_new() {
     let old_topic_request = ClassicObjectApiListRequest::Topic(raw_req);
     let mut dest = vec![];
     old_topic_request
-        .encode(&mut dest, COMMON_VERSION)
+        .encode(&mut dest, COMMON_VERSION - 1)
         .expect("encoding");
 
     let new_topic_request =
