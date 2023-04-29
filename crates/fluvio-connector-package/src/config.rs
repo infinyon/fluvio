@@ -23,7 +23,7 @@ const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 /// Use this config in the places where you need to enforce the version.
 /// for example on the CLI create command.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(tag = "schemaVersion", rename_all = "camelCase")]
+#[serde(tag = "apiVersion", rename_all = "camelCase")]
 pub enum ConnectorConfig {
     // V0 is the version of the config that was used before we introduced the versioning.
     V0(ConnectorConfigV1),
@@ -58,13 +58,13 @@ mod serde_impl {
             #[derive(Deserialize)]
             #[serde(rename_all = "camelCase")]
             struct VersionedConfig {
-                schema_version: Option<Version>,
+                api_version: Option<Version>,
                 #[serde(flatten)]
                 config: serde_yaml::Value,
             }
             let versioned_config = VersionedConfig::deserialize(deserializer)?;
 
-            match versioned_config.schema_version {
+            match versioned_config.api_version {
                 Some(Version::V0) | None => ConnectorConfigV1::deserialize(versioned_config.config)
                     .map(ConnectorConfig::V0)
                     .map_err(serde::de::Error::custom),
@@ -466,7 +466,7 @@ mod tests {
     fn deserialize_test() {
         //given
         let yaml = r#"
-            schemaVersion: v1
+            apiVersion: v1
             meta:
                 name: kafka-out
                 topic: poc1
