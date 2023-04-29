@@ -60,14 +60,18 @@ mod serde_impl {
             struct VersionedConfig {
                 schema_version: Option<Version>,
                 #[serde(flatten)]
-                config: ConnectorConfigV1,
+                config: serde_yaml::Value,
             }
-
             let versioned_config = VersionedConfig::deserialize(deserializer)?;
 
             match versioned_config.schema_version {
-                Some(Version::V0) | None => Ok(ConnectorConfig::V0(versioned_config.config)),
-                Some(Version::V1) => Ok(ConnectorConfig::V1(versioned_config.config)),
+                Some(Version::V0) | None => ConnectorConfigV1::deserialize(versioned_config.config)
+                    .map(ConnectorConfig::V0)
+                    .map_err(serde::de::Error::custom),
+
+                Some(Version::V1) => ConnectorConfigV1::deserialize(versioned_config.config)
+                    .map(ConnectorConfig::V1)
+                    .map_err(serde::de::Error::custom),
             }
         }
     }
