@@ -46,68 +46,115 @@ members = [
     "crates/fluvio-connector-common",
     "crates/fluvio-connector-derive",
     "release-tools/check-crate-version",
+    "release-tools/check-crate-version/toml-diff",
     "crates/smartmodule-development-kit",
     "crates/cdk",
     "crates/cargo-builder",
     "connector/json-test-connector",
-    "connector/sink-test-connector"
+    "connector/sink-test-connector",
 ]
 
 exclude = ["smartmodule/regex-filter"]
 resolver = "2"
 
 [workspace.dependencies]
-anyhow = "1.0.38" 
-async-channel = "1.6.1"
-async-trait = "0.1.21"
+adaptive_backoff = "0.2.1"
+anyhow = "1.0.38"
+async-channel = { version = "1.6.1", default-features = false }
+async-io = "1.3.1"
+async-lock = "2.4.0"
+async-net = { version = "1.7.0", default-features = false  }
+async-rwlock = "1.3.0"
+async-std = { version = "1.8.0", default-features = false }
+async-trait = { version = "0.1.41", default-features = false }
 base64 = "0.21.0"
-bytes = "1"
+bytes = "1.1.0"
 bytesize = "1.1.0"
+cargo-generate = { version = "0.18.2", default-features = false }
 cargo_toml = "0.15"
-chrono = "0.4"
-clap = "4.0.10"
-color-eyre = "0.6.0"
+cfg-if = "1.0.0"
+chrono = { version = "0.4.23", default-feature = false }
+clap = { version = "4.0.10", default-features = false }
+color-eyre = { version = "0.6.0", default-features = false }
 colored = "2.0.0"
-comfy-table = "6.0.0"
+crc32c = { version = "0.6"}
+comfy-table = { version = "6.1.0", default-features = false }
 convert_case = "0.6.0"
 derive_builder = "0.12.0"
 directories = "5.0.0"
 dirs = "5.0.0"
-duct = "0.13"
-flate2 = "1"
-futures-util = "0.3"
+duct = { version = "0.13", default-features = false }
+event-listener = "2.5.1"
+flate2 = { version = "1.0.25" }
+futures = { version = "0.3.1" }
+futures-util = { version = "0.3.6", default-features = false }
 futures-channel = "0.3"
+futures-lite = "1.11"
 include_dir = "0.7.2"
 indicatif = "0.17.0"
 nix = "0.26.0"
-once_cell = "1.5"
+once_cell = "1.7.2"
+pin-project = "1.0.1"
 portpicker = "0.1.1"
-rand = "0.8.4"
+rand = "0.8.5"
 regex = "1.7"
-serde = "1.0.115"
-serde_json = "1.0.57"
-serde_yaml = "0.9.0"
-sysinfo = "0.28.0"
-semver = "1.0.3"
-tar = "0.4"
+semver = "1.0.13"
+serde = { version = "1.0.144", default-features = false }
+serde_json = "1.0.60"
+serde_yaml = { version = "0.9.0", default-features = false }
+siphasher = "0.3.5"
+sysinfo = { version = "0.28.0", default-features = false }
+syn = "1.0"
+static_assertions = "1.1.0"
+tar = { version = "0.4.38", default-features = false }
 tempfile = "3.4.0"
-thiserror = "1.0.20"
-tokio = "1.3.0"
-toml = "0.7.0"
+thiserror = "1.0.30"
+tokio = { version =  "1.4.0", default-features = false }
+tokio-util = { version = "0.7.0", default-features = false }
+toml = { version = "0.7.0", default-features = false }
 tracing = "0.1.19"
+tracing-subscriber = { version = "0.3", default-features = false }
 url = "2.1.1"
-wasmparser = "0.102.0"
+wasm-bindgen-test = "0.3.24"
+wasmparser = "0.103.0"
 which = "4.1.0"
+x509-parser = "0.15.0"
 
-# fluvio dep
+# external fluvio dep
 k8-client = { version = "10.0.0" }
 k8-types = { version = "0.8.0" }
-k8-config = { version = "2.0.0"}
+k8-config = { version = "2.0.0" }
 k8-metadata-client = { version = "5.1.0" }
-fluvio-future = { version = "0.4.0" }
-flv-util = { version = "0.5.0" }
-fluvio-helm = { version = "0.4.1"}
-fluvio-command = { version = "0.2.0"}
+fluvio-future = { version = "0.5.1", default-features = false }
+flv-util = { version = "0.5.2", default-features = false }
+fluvio-helm = { version = "0.4.1" }
+fluvio-command = { version = "0.2.0" }
+flv-tls-proxy = { version = "0.7" }
+fluvio_ws_stream_wasm = "0.7.0"
+
+# internal fluvio dep
+fluvio = { version = "0.18", path = "crates/fluvio" }
+fluvio-auth = { path = "crates/fluvio-auth" }
+fluvio-channel = { path = "crates/fluvio-channel" }
+fluvio-cli-common = { path = "crates/fluvio-cli-common"}
+fluvio-compression = { version = "0.2", path = "crates/fluvio-compression" }
+fluvio-connector-package = { path = "crates/fluvio-connector-package/" }
+fluvio-controlplane = { path = "crates/fluvio-controlplane" }
+fluvio-controlplane-metadata = { version = "0.22.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-hub-util = { path = "crates/fluvio-hub-util" }
+fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
+fluvio-package-index = { version = "0.7.0", path = "crates/fluvio-package-index", default-features = false }
+fluvio-protocol = { version = "0.9.0", path = "crates/fluvio-protocol" }
+fluvio-spu-schema = { version = "0.13.0", path = "crates/fluvio-spu-schema", default-features  = false }
+fluvio-sc-schema = { version = "0.18.0", path = "crates/fluvio-sc-schema", default-features = false }
+fluvio-service = { path = "crates/fluvio-service" }
+fluvio-socket = { version = "0.14.0", path = "crates/fluvio-socket", default-features = false }
+fluvio-smartengine = {  version = "0.7.0", path = "crates/fluvio-smartengine", default-features = false }
+fluvio-smartmodule = { version = "0.5.0", path = "crates/fluvio-smartmodule", default-features = false }
+fluvio-storage = { path = "crates/fluvio-storage" }
+fluvio-stream-model = { version = "0.9.0", path = "crates/fluvio-stream-model", default-features = false }
+fluvio-stream-dispatcher = { path = "crates/fluvio-stream-dispatcher" }
+fluvio-types = { version = "0.4.0", path = "crates/fluvio-types", default-features = false }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
@@ -134,6 +181,3 @@ codegen-units = 256
 [profile.release-lto]
 inherits = "release"
 lto = true
-
-[patch.crates-io]
-cargo-generate = { git = "https://github.com/cargo-generate/cargo-generate.git", rev = "241a598f1031f2df52f96e03fd3a96a5229883cc"}

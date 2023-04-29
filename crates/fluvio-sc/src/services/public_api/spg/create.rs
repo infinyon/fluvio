@@ -4,12 +4,12 @@
 //! Converts Spu Gruups API request into KV request and sends to KV store for processing.
 //!
 
-use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
-use fluvio_stream_dispatcher::actions::WSAction;
 use tracing::{info, trace, instrument};
+use anyhow::{anyhow, Result};
 
+use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::{CommonCreateRequest};
@@ -28,7 +28,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
     common: CommonCreateRequest,
     spg: SpuGroupSpec,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<Status, Error> {
+) -> Result<Status> {
     let name = common.name;
 
     info!( spg = %name,
@@ -49,7 +49,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
             ));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(anyhow!("authorization io error"));
     }
 
     let status = process_custom_spu_request(&auth_ctx.global_ctx, name, common.timeout, spg).await;

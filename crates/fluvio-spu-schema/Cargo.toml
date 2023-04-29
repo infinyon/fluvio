@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-spu-schema"
-version = "0.13.1"
+version = "0.13.2"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"
@@ -16,26 +16,25 @@ file = ["fluvio-future","fluvio-protocol/store"]
 
 [dependencies]
 
-log = "0.4.8"
-tracing = "0.1.19"
-bytes = "1.0.0"
-serde = { version = "1.0.103", features = ['derive'] }
-static_assertions = "1.1.0"
+tracing = { workspace = true }
+bytes = { workspace = true }
+serde = { workspace = true, features = ['derive'] }
+static_assertions = { workspace = true }
 educe = { version = "0.4.19", features = ["Debug"] }
-flate2 = { version = "1.0.20" }
+flate2 = { workspace = true  }
 
-fluvio-types = { version = "0.4.0", path = "../fluvio-types" }
-fluvio-future = { version = "0.4.0", optional = true }
+fluvio-types = { workspace = true }
+fluvio-future = { workspace = true, optional = true }
 # Fluvio dependencies
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.9.0", features = [
+fluvio-protocol = { workspace = true,  features = [
     "api",
     "record",
 ] }
-fluvio-smartmodule = { path = "../fluvio-smartmodule", version = "0.5.0", default-features = false }
+fluvio-smartmodule = { workspace = true }
 
 
 [dev-dependencies]
-futures-util = { version = "0.3.4" }
-fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
-fluvio-future = { version = "0.4.0", features = ["fixture", "fs"] }
-flv-util = { version = "0.5.2", features = ["fixture"] }
+futures-util = { workspace = true }
+fluvio-socket = { workspace = true, features = ["file"] }
+fluvio-future = { workspace = true, features = ["fixture", "fs"] }
+flv-util = { workspace = true, features = ["fixture"] }

@@ -25,5 +25,5 @@ pub const HUB_REMOTE: &str = "https://hub.infinyon.cloud";
 pub const HUB_SIGNFILE_BASE: &str = "signature";
 
 pub const DEF_CARGO_TOML_PATH: &str = "Cargo.toml";
-pub const DEF_HUB_INIT_DIR: &str = "hub";
-pub const DEF_HUB_PKG_META: &str = concatcp!(DEF_HUB_INIT_DIR, "/", HUB_PACKAGE_META); // hub/package-meta.yaml
+pub const DEF_HUB_INIT_DIR: &str = ".hub";
+pub const DEF_HUB_PKG_META: &str = concatcp!(DEF_HUB_INIT_DIR, "/", HUB_PACKAGE_META); // .hub/package-meta.yaml

@@ -21,6 +21,6 @@ proc-macro2 = "1.0"
 
 [dev-dependencies]
 trybuild = { version = "1.0" }
-serde = { version = "1.0", features = ["derive"]}
-fluvio = { path = "../fluvio", default-features = false}
+serde = { workspace = true, features = ["derive"]}
+fluvio = { workspace = true }
 fluvio-connector-common = { path = "../fluvio-connector-common/", features = ["derive"] }

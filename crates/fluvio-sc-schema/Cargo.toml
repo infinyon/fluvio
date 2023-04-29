@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-sc-schema"
-version = "0.18.0"
+version = "0.18.1"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SC"
@@ -15,18 +15,20 @@ path = "src/lib.rs"
 use_serde = ["fluvio-controlplane-metadata/use_serde", "serde"]
 
 [dependencies]
-log = "0.4.8"
-tracing = "0.1.19"
-serde = { version = "1.0.0", features = ['derive'], optional = true }
-thiserror = "1.0.20"
-static_assertions = "1.1.0"
+tracing = { workspace = true }
+serde = { workspace = true, features = ['derive'], optional = true }
+static_assertions = { workspace = true }
+anyhow = { workspace = true }
 paste = "1.0"
 
+# Workspace Dependencies
+thiserror = { workspace = true }
+
 # Fluvio dependencies
-fluvio-types = { version = "0.4.0", path = "../fluvio-types" }
-fluvio-controlplane-metadata = { version = "0.22.0", default-features = false, path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.9.0", features = ["link"]}
-fluvio-socket = { path = "../fluvio-socket", version = "0.14.0"}
+fluvio-types = { workspace = true }
+fluvio-controlplane-metadata = {  workspace = true, features = ["smartmodule"] }
+fluvio-protocol = { workspace = true,  features = ["link"]}
+fluvio-socket = { workspace = true }
 
 [dev-dependencies]
-fluvio-future = { version = "0.4.0", features = ["subscriber"] }
+fluvio-future = { workspace = true, features = ["subscriber"] }

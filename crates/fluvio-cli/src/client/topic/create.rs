@@ -22,7 +22,7 @@ use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
 use fluvio::metadata::topic::CompressionAlgorithm;
 
-use fluvio_sc_schema::topic::validate::valid_topic_name;
+use fluvio_sc_schema::shared::validate_resource_name;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
@@ -132,13 +132,10 @@ impl CreateTopicOpt {
             })
         };
 
-        let is_valid = valid_topic_name(&self.topic);
-        if !is_valid {
-            return Err(CliError::InvalidArg(
-                "Topic name must only contain lowercase alphanumeric characters or '-'."
-                    .to_string(),
-            )
-            .into());
+        if let Err(err) = validate_resource_name(&self.topic) {
+            return Err(
+                CliError::InvalidArg(format!("Invalid Topic name {}. {err}", self.topic,)).into(),
+            );
         }
 
         let mut topic_spec: TopicSpec = replica_spec.into();

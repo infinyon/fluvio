@@ -17,28 +17,28 @@ use_serde = ["serde","semver/serde"]
 k8 = ["use_serde", "fluvio-stream-model/k8"]
 
 [dependencies]
-tracing = { workspace = true }
-serde = { workspace = true, features = ['derive'], optional = true }
-async-trait = "0.1.21"
+async-trait = { workspace = true }
+
 thiserror = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
-flate2 = { version = "1.0.22", optional = true }
-semver = "1.0"
-toml = { workspace = true, optional = true }
+flate2 = { workspace = true,  optional = true }
 lenient_semver = "0.4.2"
+semver = { workspace = true }
+serde = { workspace = true, features = ['derive'], optional = true }
+toml = { workspace = true,  default-features = true, optional = true, features = ["parse"] }
+tracing = { workspace = true }
 
 # External Fluvio dependencies
 fluvio-future = { workspace = true }
 flv-util = { workspace = true }
 
-fluvio-types = { version = "0.4.0", path = "../fluvio-types" }
-fluvio-stream-model = { path = "../fluvio-stream-model", version = "0.9.0" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
-    "record",
-] }
+fluvio-types = { workspace = true }
+fluvio-stream-model = { workspace = true }
+fluvio-protocol = { workspace = true, features = [ "record",] }
 
 
 [dev-dependencies]
 serde_yaml = { workspace = true }
-fluvio-future = { version = "0.4.0", features = ["fixture"] }
+fluvio-future = { workspace = true, features = ["fixture"] }
+

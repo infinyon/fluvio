@@ -24,17 +24,17 @@ default = ["fluvio-future", "fluvio-types"]
 colored = "2"
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 tracing = { workspace = true }
-cfg-if = "1.0"
+cfg-if = { workspace = true }
 dirs = { workspace = true}
 anyhow = { workspace = true }
 
-fluvio-cli-common = { path = "../fluvio-cli-common" }
-fluvio-channel = { path = "../fluvio-channel" }
-fluvio-future = { version = "0.4.0", features = ["task", "subscriber", "native2_tls"], optional = true }
-fluvio-types = { path = "../fluvio-types", default-features = false, optional = true }
-fluvio-package-index = { path = "../fluvio-package-index" }
+fluvio-cli-common = { workspace = true  }
+fluvio-channel = { workspace = true  }
+fluvio-future = { workspace = true, features = ["task", "subscriber", "native2_tls"], optional = true }
+fluvio-types = { workspace = true,  default-features = false, optional = true }
+fluvio-package-index = { workspace = true  }
 
 [dev-dependencies]
 assert_cmd = "2.0.4"
-predicates = "2.1.1"
-rand = "0.8.4"
+predicates = "3.0.3"
+rand = { workspace = true }

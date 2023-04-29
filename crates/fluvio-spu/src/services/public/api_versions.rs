@@ -1,5 +1,5 @@
-use std::io::Error;
 use tracing::{trace, instrument};
+use anyhow::Result;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage, Request};
 use fluvio_spu_schema::produce::DefaultProduceRequest;
@@ -14,7 +14,7 @@ use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 #[instrument(skip(request))]
 pub async fn handle_api_version_request(
     request: RequestMessage<ApiVersionsRequest>,
-) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
+) -> Result<ResponseMessage<ApiVersionsResponse>> {
     let client_version = &request.request.client_version;
     let mut response = ApiVersionsResponse::default();
     response.api_keys.push(make_version_key(

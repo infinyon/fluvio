@@ -1,6 +1,5 @@
-use std::io::{Error, ErrorKind};
-
 use tracing::{trace, debug, instrument};
+use anyhow::{anyhow, Result};
 
 use fluvio_sc_schema::objects::{ListResponse, Metadata, ListFilters};
 use fluvio_sc_schema::spu::SpuSpec;
@@ -15,7 +14,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
     filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse<CustomSpuSpec>, Error> {
+) -> Result<ListResponse<CustomSpuSpec>> {
     debug!("fetching custom spu list");
 
     if let Ok(authorized) = auth_ctx
@@ -29,7 +28,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
             return Ok(ListResponse::new(vec![]));
         }
     } else {
-        return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        return Err(anyhow!("authorization io error"));
     }
 
     let custom_spus: Vec<_> = auth_ctx
@@ -63,7 +62,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
 pub async fn handle_fetch_spus_request<AC: AuthContext>(
     filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse<SpuSpec>, Error> {
+) -> Result<ListResponse<SpuSpec>> {
     debug!("fetching spu list");
 
     if let Ok(authorized) = auth_ctx

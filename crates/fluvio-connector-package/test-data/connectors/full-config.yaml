@@ -6,10 +6,12 @@ meta:
   create_topic: false
   producer:
     linger: 1ms
-    batch-size: '44.0 MB'
+    batch-size: "44.0 MB"
     compression: gzip
   consumer:
     partition: 10
+  secrets:
+    - name: secret1
 transforms:
   - uses: infinyon/json-sql
     with:

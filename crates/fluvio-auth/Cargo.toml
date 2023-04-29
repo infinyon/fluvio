@@ -14,17 +14,18 @@ name = "fluvio_auth"
 path = "src/lib.rs"
 
 [dependencies]
-async-trait = "0.1.41"
-serde = { version = "1.0.103", features = ['derive'] }
-serde_json = "1.0.59"
+async-trait = { workspace = true }
+futures-util = { workspace = true  }
+serde = { workspace = true, features = ['derive'] }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-x509-parser = "0.15.0"
+x509-parser = { workspace = true }
 
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
-fluvio-future = { version = "0.4.0", features = ["net", "openssl_tls"] }
-fluvio-protocol = { path = "../fluvio-protocol" }
-fluvio-socket = { path = "../fluvio-socket" }
-fluvio-types = { path = "../fluvio-types" }
-flv-tls-proxy = { version = "0.6.0" }
-futures-util = { version = "0.3.5" }
+fluvio-controlplane-metadata = { workspace = true  }
+fluvio-future = { workspace = true, features = ["net", "openssl_tls"] }
+fluvio-protocol = { workspace = true }
+fluvio-socket = { workspace = true }
+fluvio-types = { workspace = true  }
+flv-tls-proxy = { workspace = true }
+

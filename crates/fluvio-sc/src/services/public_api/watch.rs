@@ -1,10 +1,9 @@
 use std::sync::Arc;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
+
+use tracing::{debug, trace, error, instrument};
+use anyhow::{anyhow, Result};
 
 use fluvio_sc_schema::AdminSpec;
-use tracing::{debug, trace, error, instrument};
-
 use fluvio_types::event::StickyEvent;
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_protocol::{Encoder, Decoder};
@@ -30,7 +29,7 @@ pub fn handle_watch_request<AC>(
     auth_ctx: &AuthServiceContext<AC>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
-) -> Result<(), IoError> {
+) -> Result<()> {
     let (header, req) = request.get_header_request();
     debug!("handling watch header: {:#?}, request: {:#?}", header, req);
 
@@ -79,10 +78,7 @@ pub fn handle_watch_request<AC>(
         ),
         _ => {
             debug!("Invalid Watch Req {:?}", req);
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                "Not Valid Watch Request",
-            ));
+            return Err(anyhow!("Not Valid Watch Request"));
         }
     }
 

@@ -1,4 +1,5 @@
 use tracing::{debug, trace, instrument};
+use anyhow::Result;
 
 use fluvio_spu_schema::file::FileRecordSet;
 use fluvio_socket::ExclusiveFlvSink;
@@ -24,7 +25,7 @@ pub async fn handle_fetch_request(
     request: RequestMessage<FileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
     sink: ExclusiveFlvSink,
-) -> Result<(), SocketError> {
+) -> Result<()> {
     let (header, fetch_request) = request.get_header_request();
     trace!("Handling FileFetchRequest: {:#?}", fetch_request);
     let mut fetch_response = FileFetchResponse::default();
@@ -59,7 +60,7 @@ async fn handle_fetch_topic(
     fetch_request: &FileFetchRequest,
     topic_request: &FetchableTopic,
     is_connector: bool,
-) -> Result<FetchableTopicResponse<FileRecordSet>, SocketError> {
+) -> Result<FetchableTopicResponse<FileRecordSet>> {
     let topic = &topic_request.name;
 
     let mut topic_response = FileTopicResponse {

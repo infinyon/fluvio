@@ -7,12 +7,8 @@ fluvio = "0.10.0"
 description = "Test Sink Connector"
 license = "Apache-2.0"
 
-
 [direction]
 dest = true
 
 [deployment]
 binary = "sink-test-connector"
-
-[secret.TEST_API_KEY]
-type = "env"

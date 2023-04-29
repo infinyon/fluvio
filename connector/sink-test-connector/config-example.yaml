@@ -3,10 +3,14 @@ meta:
   name: my-sink-test-connector
   type: test-sink
   topic: test-topic
-custom: 
-  api_key: 
+  secrets:
+    - name: TEST_API_KEY
+    - name: TEST_API_CLIENT_ID
+custom:
+  api_key:
     secret:
       name: TEST_API_KEY
+  client_id: ${{ secrets.TEST_API_CLIENT_ID }}
 transforms:
   - uses: infinyon/jolt@0.1.0
     with:

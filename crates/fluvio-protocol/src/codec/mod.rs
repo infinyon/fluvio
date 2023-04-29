@@ -110,18 +110,18 @@ mod test {
     use std::net::SocketAddr;
     use std::time;
 
-    use futures::future::join;
-    use futures::sink::SinkExt;
-    use futures::stream::StreamExt;
+    use tracing::debug;
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
+    use futures::AsyncWriteExt;
+    use futures::future::join;
+    use futures::SinkExt;
+    use futures::stream::StreamExt;
 
     use fluvio_future::net::TcpListener;
     use fluvio_future::net::TcpStream;
     use fluvio_future::timer::sleep;
-    use futures::AsyncWriteExt;
     use crate::{Encoder, Decoder};
-    use tracing::debug;
 
     use super::FluvioCodec;
 

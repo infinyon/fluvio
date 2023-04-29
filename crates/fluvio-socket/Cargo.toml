@@ -16,24 +16,24 @@ path = "src/lib.rs"
 file = ["fluvio-future/zero_copy", "fluvio-protocol/store"]
 
 [dependencies]
-tracing = "0.1.26"
-cfg-if = "1.0.0"
-bytes = "1.1.0"
-once_cell = "1.4.1"
+tracing = { workspace = true }
+cfg-if = { workspace = true }
+bytes = { workspace = true }
+once_cell = { workspace = true }
 futures-util = { version = "0.3.5", features = ["sink", "io"] }
-async-lock = "2.4.0"
-event-listener = "2.0.0"
-async-channel = "1.6.1"
-tokio = { version = "1.11.0", features = ["macros"] }
+async-lock = { workspace = true }
+event-listener = { workspace = true }
+async-channel = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
 tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
-async-trait = "0.1.21"
-pin-project = "1.0.1"
-thiserror = "1.0.20"
-semver = "1.0.0"
+async-trait = { workspace = true }
+pin-project = { workspace = true }
+thiserror = { workspace = true }
+semver = { workspace = true }
 
 # Fluvio dependencies
-fluvio-future = { version = "0.4.0", features = ["net", "task", "retry"] }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
+fluvio-future = { workspace = true, features = ["net", "task", "retry"] }
+fluvio-protocol = { workspace = true, features = [
     "derive",
     "api",
     "codec",
@@ -41,16 +41,16 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.9", features = [
 ] }
 
 [dev-dependencies]
-fluvio-future = { version = "0.4.0", features = [
+fluvio-future = { workspace = true, features = [
     "fixture",
     "fs",
     "zero_copy",
     "native2_tls",
 ] }
-portpicker = "0.1.1"
+portpicker = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-async-net = "1.4.3"
+async-net = { workspace = true }
 
 [build-dependencies]
 built = "0.6.0"

@@ -24,10 +24,10 @@ rand = "0.8.4"
 
 [dev-dependencies]
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
-fluvio = { path = "../fluvio" }
-tokio = { version = "1.4", features = ["macros"] }
-fluvio-future = { version = "0.4.0", features = ["task", "timer", "subscriber", "fixture"] }
-clap = { version = "4.0.9", features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
+fluvio = { workspace = true  }
+tokio = { workspace = true,  features = ["macros"] }
+fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
+clap = { workspace = true,  features = ["std", "derive", "help", "usage", "error-context"] }
 inventory = "0.3"
-tracing = "0.1"
+tracing = { workspace = true }
 crossbeam-channel = "0.5"

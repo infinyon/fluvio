@@ -197,7 +197,7 @@ cfg_if::cfg_if! {
                         info!("Using anonymous TLS");
                         let builder = TlsConnector::builder()
                                 .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?
-                                .with_hostname_vertification_disabled()
+                                .with_hostname_verification_disabled()
                                 .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
 
                         let connector: TlsAnonymousConnector = builder.build().into();

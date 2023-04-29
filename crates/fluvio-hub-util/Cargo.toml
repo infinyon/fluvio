@@ -13,17 +13,17 @@ cargo_toml = { workspace = true }
 const_format = "0.2"
 dirs = { workspace = true}
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
-flate2 = "1.0"
+flate2 = { workspace = true }
 hex = "0.4"
-pem = "1.1"
-rand = "0.8"
+pem = "2.0"
+rand = { workspace = true }
 rand_core = "0.6"
 sha2 = "0.10.6"
-serde = { version="1.0", features=["derive"] }
-serde_json = "1.0"
+serde = { workspace = true, features=["derive"] }
+serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 ssh-key = { version="0.5.1", features=[ "ed25519" ] }
-tar = "0.4"
+tar = { workspace = true }
 pathdiff = { version = "0.2.1", default-features = false }
 tempfile = { workspace = true }
 toml = { workspace = true }
@@ -33,7 +33,7 @@ wasmparser = { workspace = true }
 
 fluvio-future = { workspace = true, features = ["task"]}
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
-fluvio-types = { path = "../fluvio-types" }
+fluvio-types = { workspace = true }
 
 # feature control
 [dependencies.surf]
@@ -47,4 +47,4 @@ features = ["h1_client", "rustls"]
 default-features = false
 
 [dev-dependencies]
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { workspace = true,  features = ["env-filter", "fmt"] }

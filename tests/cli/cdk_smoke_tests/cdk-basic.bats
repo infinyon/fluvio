@@ -39,7 +39,7 @@ setup_file() {
 @test "Build and deploy connector" {
     # Build
     cd $CONNECTOR_DIR
-    run $CDK_BIN build 
+    run $CDK_BIN build -- --target x86_64-unknown-linux-gnu
     assert_success
 
     # Deploy
@@ -60,12 +60,12 @@ setup_file() {
 @test "Pack connector" {
     # Pack when package meta doesn't exist
     cd $CONNECTOR_DIR
-    run $CDK_BIN publish --pack 
+    run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
 
     # Pack when package meta exists
     cd $CONNECTOR_DIR
-    run $CDK_BIN publish --pack 
+    run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
 
 }

@@ -1,6 +1,9 @@
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
+use std::ops::Deref;
 use std::path::{PathBuf, Path};
+use std::str::FromStr;
 use std::time::Duration;
 
 use fluvio_types::PartitionId;
@@ -41,6 +44,15 @@ pub struct MetaConfig {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub consumer: Option<ConsumerParameters>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secrets: Option<Vec<SecretConfig>>,
+}
+
+impl MetaConfig {
+    fn secrets(&self) -> HashSet<SecretConfig> {
+        HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
+    }
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -69,6 +81,91 @@ pub struct ProducerParameters {
     #[serde(skip)]
     pub batch_size: Option<ByteSize>,
 }
+#[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
+pub struct SecretConfig {
+    /// The name of the secret. It can only contain alphanumeric ASCII characters and underscores. It cannot start with a number.
+    name: SecretName,
+}
+
+impl SecretConfig {
+    pub fn name(&self) -> &str {
+        &self.name.inner
+    }
+
+    pub fn new(secret_name: SecretName) -> Self {
+        Self { name: secret_name }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SecretName {
+    inner: String,
+}
+
+impl SecretName {
+    fn validate(&self) -> anyhow::Result<()> {
+        if self.inner.chars().count() == 0 {
+            return Err(anyhow::anyhow!("Secret name cannot be empty"));
+        }
+        if !self
+            .inner
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+        {
+            return Err(anyhow::anyhow!(
+                "Secret name `{}` can only contain alphanumeric ASCII characters and underscores",
+                self.inner
+            ));
+        }
+        if self.inner.chars().next().unwrap().is_ascii_digit() {
+            return Err(anyhow::anyhow!(
+                "Secret name `{}` cannot start with a number",
+                self.inner
+            ));
+        }
+        Ok(())
+    }
+}
+impl FromStr for SecretName {
+    type Err = anyhow::Error;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let secret_name = Self {
+            inner: value.into(),
+        };
+        secret_name.validate()?;
+        Ok(secret_name)
+    }
+}
+
+impl Deref for SecretName {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<'a> Deserialize<'a> for SecretName {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'a>,
+    {
+        let inner = String::deserialize(deserializer)?;
+        let secret = Self { inner };
+        secret.validate().map_err(serde::de::Error::custom)?;
+        Ok(secret)
+    }
+}
+
+impl Serialize for SecretName {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.inner)
+    }
+}
 
 impl ConnectorConfig {
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
@@ -82,9 +179,23 @@ impl ConnectorConfig {
     pub fn config_from_str(config_str: &str) -> Result<Self> {
         let mut connector_config: Self = serde_yaml::from_str(config_str)?;
         connector_config.normalize_batch_size()?;
+        connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
         Ok(connector_config)
+    }
+
+    fn validate_secret_names(&self) -> Result<()> {
+        if let Some(secrets) = &self.meta.secrets {
+            for secret in secrets {
+                secret.name.validate()?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn secrets(&self) -> HashSet<SecretConfig> {
+        self.meta.secrets()
     }
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
@@ -156,6 +267,9 @@ mod tests {
                 consumer: Some(ConsumerParameters {
                     partition: Some(10),
                 }),
+                secrets: Some(vec![SecretConfig {
+                    name: "secret1".parse().unwrap(),
+                }]),
             },
             transforms: Some(
                 TransformationStep {
@@ -191,6 +305,7 @@ mod tests {
                 version: "0.1.0".to_string(),
                 producer: None,
                 consumer: None,
+                secrets: None,
             },
             transforms: None,
         };
@@ -232,6 +347,24 @@ mod tests {
             "meta: missing field `version` at line 2 column 3",
             format!("{connector_cfg:?}")
         );
+
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-secret-with-spaces.yaml")
+                .expect_err("This yaml should error");
+        #[cfg(unix)]
+        assert_eq!(
+            "meta.secrets[0]: Secret name `secret name` can only contain alphanumeric ASCII characters and underscores at line 8 column 7",
+            format!("{connector_cfg:?}")
+        );
+
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-secret-starts-with-number.yaml")
+                .expect_err("This yaml should error");
+        #[cfg(unix)]
+        assert_eq!(
+            "meta.secrets[0]: Secret name `1secret` cannot start with a number at line 8 column 7",
+            format!("{connector_cfg:?}")
+        );
     }
 
     #[test]
@@ -253,6 +386,7 @@ mod tests {
                 version: "latest".to_string(),
                 producer: None,
                 consumer: None,
+                secrets: None,
             },
             transforms: None,
         };
@@ -284,6 +418,63 @@ mod tests {
         );
         assert_eq!(connector_spec.transforms.as_ref().unwrap().transforms[0].with,
                        BTreeMap::from([("mapping".to_string(), "{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":0,\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message\"}".into())]));
+    }
+
+    #[test]
+    fn test_deserialize_secret_name() {
+        let secret_name: SecretName = serde_yaml::from_str("secret_name").unwrap();
+        assert_eq!("secret_name", &*secret_name);
+
+        assert!(
+            serde_yaml::from_str::<SecretName>("secret name").is_err(),
+            "string with space is not a valid secret name"
+        );
+    }
+
+    #[test]
+    fn test_serialize_secret_config() {
+        let secrets = ["secret_name", "secret_name2"];
+        let secret_configs = secrets
+            .iter()
+            .map(|s| SecretConfig::new(s.parse().unwrap()))
+            .collect::<Vec<_>>();
+
+        let serialized = serde_yaml::to_string(&secret_configs).expect("failed to serialize");
+        assert_eq!(
+            "- name: secret_name
+- name: secret_name2
+",
+            serialized
+        );
+    }
+
+    #[test]
+    fn test_parse_secret_name() {
+        let secret_name: SecretName = "secret_name".parse().unwrap();
+        assert_eq!("secret_name", &*secret_name);
+
+        assert!(
+            "secret name".parse::<SecretName>().is_err(),
+            "secret name should fail if has space"
+        );
+
+        assert!(
+            "1secretname".parse::<SecretName>().is_err(),
+            "secret name should fail if starts with number"
+        );
+        assert!(
+            "secret-name".parse::<SecretName>().is_err(),
+            "secret name should fail if has dash"
+        );
+    }
+
+    #[test]
+    fn test_serialize_secret_name() {
+        let secret_name: SecretName = "secret_name".parse().unwrap();
+        assert_eq!("secret_name", &*secret_name);
+
+        let secret_name: SecretName = serde_yaml::from_str("secret_name").unwrap();
+        assert_eq!("secret_name", &*secret_name);
     }
 
     #[test]
