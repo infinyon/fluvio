@@ -420,14 +420,14 @@ mod tests {
         //given
         let source = Direction::source();
         let dest = Direction::dest();
-        let source_config = ConnectorConfig::V1(ConnectorConfigV1 {
+        let source_config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 type_: "http-source".into(),
                 ..Default::default()
             },
             ..Default::default()
         });
-        let sink_config = ConnectorConfig::V1(ConnectorConfigV1 {
+        let sink_config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 type_: "http-sink".into(),
                 ..Default::default()
@@ -455,15 +455,14 @@ mod tests {
     #[test]
     fn test_validate_deployment() {
         //given
-        let config = ConnectorConfig::V1(ConnectorConfigV1 {
+        let config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 type_: "http_source".into(),
                 version: "latest".into(),
                 ..Default::default()
             },
             ..Default::default()
-        })
-        .into();
+        });
         let deployment1 = Deployment::from_image_name("infinyon/fluvio-connect-http_source:latest");
         let deployment2 = Deployment::from_image_name("infinyon/fluvio-connect-http_sink:latest");
         let deployment3 = Deployment::from_binary_name("http_sink_bin");

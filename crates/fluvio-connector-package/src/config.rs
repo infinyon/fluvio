@@ -23,20 +23,23 @@ const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 /// Use this config in the places where you need to enforce the version.
 /// for example on the CLI create command.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(tag = "apiVersion", rename_all = "camelCase")]
+#[serde(tag = "apiVersion")]
 pub enum ConnectorConfig {
     // V0 is the version of the config that was used before we introduced the versioning.
-    V0(ConnectorConfigV1),
-    V1(ConnectorConfigV1),
+    #[serde(rename = "0.0.0")]
+    V0_0_0(ConnectorConfigV1),
+    #[serde(rename = "0.1.0")]
+    V0_1_0(ConnectorConfigV1),
 }
 
 impl Default for ConnectorConfig {
     fn default() -> Self {
-        ConnectorConfig::V1(ConnectorConfigV1::default())
+        ConnectorConfig::V0_1_0(ConnectorConfigV1::default())
     }
 }
 
 mod serde_impl {
+    use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
     use serde::{Deserialize};
 
     use crate::config::ConnectorConfigV1;
@@ -48,30 +51,32 @@ mod serde_impl {
         where
             D: serde::Deserializer<'a>,
         {
-            #[derive(Deserialize)]
-            #[serde(rename_all = "lowercase")]
-            enum Version {
-                V0,
-                V1,
-            }
+            let v0_0_0: FluvioSemVersion = FluvioSemVersion::parse("0.0.0").expect("failed");
+            let v0_1_0: FluvioSemVersion = FluvioSemVersion::parse("0.1.0").expect("failed");
 
             #[derive(Deserialize)]
             #[serde(rename_all = "camelCase")]
             struct VersionedConfig {
-                api_version: Option<Version>,
+                api_version: Option<FluvioSemVersion>,
                 #[serde(flatten)]
                 config: serde_yaml::Value,
             }
             let versioned_config = VersionedConfig::deserialize(deserializer)?;
+            let version = versioned_config.api_version.unwrap_or(v0_0_0.clone());
+            match version {
+                no_version if no_version == v0_0_0 => {
+                    ConnectorConfigV1::deserialize(versioned_config.config)
+                        .map(ConnectorConfig::V0_0_0)
+                        .map_err(serde::de::Error::custom)
+                }
 
-            match versioned_config.api_version {
-                Some(Version::V0) | None => ConnectorConfigV1::deserialize(versioned_config.config)
-                    .map(ConnectorConfig::V0)
+                v1 if v1 == v0_1_0 => ConnectorConfigV1::deserialize(versioned_config.config)
+                    .map(ConnectorConfig::V0_1_0)
                     .map_err(serde::de::Error::custom),
-
-                Some(Version::V1) => ConnectorConfigV1::deserialize(versioned_config.config)
-                    .map(ConnectorConfig::V1)
-                    .map_err(serde::de::Error::custom),
+                _ => Err(serde::de::Error::custom(format!(
+                    "unsupported version: {}",
+                    version
+                ))),
             }
         }
     }
@@ -284,8 +289,8 @@ impl ConnectorConfig {
     }
     pub fn meta(&self) -> &MetaConfig {
         match self {
-            Self::V1(config) => config.meta(),
-            Self::V0(config) => config.meta(),
+            Self::V0_1_0(config) => config.meta(),
+            Self::V0_0_0(config) => config.meta(),
         }
     }
 
@@ -304,22 +309,22 @@ impl ConnectorConfig {
     }
     pub fn mut_meta(&mut self) -> &mut MetaConfig {
         match self {
-            Self::V1(config) => config.mut_meta(),
-            Self::V0(config) => config.mut_meta(),
+            Self::V0_1_0(config) => config.mut_meta(),
+            Self::V0_0_0(config) => config.mut_meta(),
         }
     }
 
     pub fn secrets(&self) -> HashSet<SecretConfig> {
         match self {
-            Self::V1(config) => config.meta.secrets(),
-            Self::V0(_) => Default::default(),
+            Self::V0_1_0(config) => config.meta.secrets(),
+            Self::V0_0_0(_) => Default::default(),
         }
     }
 
     pub fn transforms(&self) -> Option<&TransformationConfig> {
         match self {
-            Self::V1(config) => config.transforms.as_ref(),
-            Self::V0(config) => config.transforms.as_ref(),
+            Self::V0_1_0(config) => config.transforms.as_ref(),
+            Self::V0_0_0(config) => config.transforms.as_ref(),
         }
     }
 
@@ -346,7 +351,7 @@ mod tests {
     #[test]
     fn full_yaml_test() {
         //given
-        let expected = ConnectorConfig::V1(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
@@ -391,7 +396,7 @@ mod tests {
     #[test]
     fn simple_yaml_test() {
         //given
-        let expected = ConnectorConfig::V1(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
@@ -402,8 +407,7 @@ mod tests {
                 secrets: None,
             },
             transforms: None,
-        })
-        .into();
+        });
 
         //when
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/simple.yaml")
@@ -466,7 +470,7 @@ mod tests {
     fn deserialize_test() {
         //given
         let yaml = r#"
-            apiVersion: v1
+            apiVersion: 0.1.0
             meta:
                 name: kafka-out
                 topic: poc1
@@ -474,7 +478,7 @@ mod tests {
                 version: latest
             "#;
 
-        let expected = ConnectorConfig::V1(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "kafka-out".to_string(),
                 type_: "kafka-sink".to_string(),
@@ -506,7 +510,7 @@ mod tests {
                 version: latest
             "#;
 
-        let expected = ConnectorConfig::V0(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V0_0_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "kafka-out".to_string(),
                 type_: "kafka-sink".to_string(),

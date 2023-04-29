@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: 0.1.0
 meta:
   version: 0.1.0
   name: my-test-mqtt
