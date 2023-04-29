@@ -55,7 +55,7 @@ where
     }
 
     fn downcast(&self) -> Result<Option<CreateRequest<S>>> {
-        self.0.downcast::<S, _>()
+        self.0.downcast::<S>()
     }
 }
 
@@ -75,10 +75,7 @@ mod classic {
 
     use crate::CreatableAdminSpec;
     use crate::objects::classic::{ClassicCreatableAdminSpec, ClassicObjectApiCreateRequest};
-    use crate::objects::{
-        classic::{ClassicObjectCreateRequest},
-        COMMON_VERSION, DYN_OBJ,
-    };
+    use crate::objects::{COMMON_VERSION, DYN_OBJ};
 
     use super::{ObjectApiCreateRequest, CreateRequest};
 
@@ -99,10 +96,12 @@ mod classic {
             } else {
                 debug!("decoding classical");
 
-                let classic_obj = ClassicObjectCreateRequest::decode_from(src, version)?;
+                let classic_obj = ClassicObjectApiCreateRequest::decode_from(src, version)?;
+                let ty = classic_obj.request.type_string();
                 // reencode using new version
                 self.0.set_buf(
-                    classic_obj.type_string().to_owned(),
+                    version,
+                    ty.to_owned(),
                     classic_obj.as_bytes(COMMON_VERSION)?.into(),
                 );
             }
@@ -114,8 +113,9 @@ mod classic {
     /// classic protocol treated differently.  Once classic protocol is deprecated, we can remove this
     #[derive(Debug, Default)]
     pub(crate) struct CreateTypeBuffer {
+        version: Version,
         ty: String,
-        buf: ByteBuf,
+        buf: ByteBuf, // for classical, we stored in the old way
     }
 
     impl CreateTypeBuffer {
@@ -139,6 +139,7 @@ mod classic {
                 create_api_request.encode(&mut buf, version)?;
             }
             Ok(Self {
+                version,
                 ty,
                 buf: ByteBuf::from(buf),
             })
@@ -151,24 +152,39 @@ mod classic {
 
         // downcast to specific spec type and return object
         // if doens't match to ty, return None
-        pub fn downcast<S, O>(&self) -> Result<Option<O>>
+        pub fn downcast<S>(&self) -> Result<Option<CreateRequest<S>>>
         where
-            S: Spec,
-            O: Decoder + Debug,
+            S: CreatableAdminSpec,
         {
             if self.is_kind_of::<S>() {
                 debug!(ty = S::LABEL, "downcast kind");
                 let mut buf = Cursor::new(self.buf.as_ref());
-                Ok(Some(O::decode_from(&mut buf, COMMON_VERSION)?))
+                if self.version < DYN_OBJ {
+                    let classic_obj =
+                        ClassicObjectApiCreateRequest::decode_from(&mut buf, self.version)?;
+                    let ClassicObjectApiCreateRequest { common, request } = classic_obj;
+                    let new_request =
+                        match <S as ClassicCreatableAdminSpec>::try_convert_from_classic(request) {
+                            Some(new_request) => new_request,
+                            None => return Ok(None),
+                        };
+                    Ok(Some(CreateRequest::new(common, new_request)))
+                } else {
+                    Ok(Some(CreateRequest::<S>::decode_from(
+                        &mut buf,
+                        self.version,
+                    )?))
+                }
             } else {
                 debug!(target_ty = S::LABEL, my_ty = self.ty, "different kind");
                 Ok(None)
             }
         }
 
-        pub(crate) fn set_buf(&mut self, ty: String, buf: ByteBuf) {
+        pub(crate) fn set_buf(&mut self, version: Version, ty: String, buf: ByteBuf) {
             self.buf = buf;
             self.ty = ty;
+            self.version = version;
         }
     }
 
@@ -191,7 +207,7 @@ mod classic {
                 len.encode(dest, version)?; // write len
                 debug!(len, "encoding using new");
             } else {
-                debug!(len = self.buf.len(), "encoding using old with");
+                debug!(len = self.buf.len(), "encoding using old protocol");
             }
             dest.put(self.buf.as_ref());
 
@@ -226,6 +242,7 @@ mod classic {
                 ));
             }
             self.buf = src.copy_to_bytes(len as usize).into();
+            self.version = version;
 
             Ok(())
         }

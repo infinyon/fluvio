@@ -185,153 +185,6 @@ mod object_macro {
     pub(crate) use ClassicObjectApiEnum;
 }
 
-// delete macro doesn't seems to be necessary since it doesn't have complex returning type
-/*
-mod delete_macro {
-
-    /// Macro to for converting delete object to generic Delete
-    macro_rules! ClassicDeleteApiEnum {
-        ($api:ident) => {
-
-            paste::paste! {
-
-                #[derive(Debug)]
-                pub enum [<ClassicObjectApi $api>] {
-                    Topic($api<crate::topic::TopicSpec>),
-                    CustomSpu($api<crate::customspu::CustomSpuSpec>),
-                    SmartModule($api<crate::smartmodule::SmartModuleSpec>),
-                    SpuGroup($api<crate::spg::SpuGroupSpec>),
-                    TableFormat($api<crate::tableformat::TableFormatSpec>),
-                }
-
-                impl Default for [<ClassicObjectApi $api>] {
-                    fn default() -> Self {
-                        Self::Topic($api::<crate::topic::TopicSpec>::default())
-                    }
-                }
-
-                impl [<ClassicObjectApi $api>] {
-                    fn type_string(&self) -> &'static str {
-                        use fluvio_controlplane_metadata::core::Spec;
-                        match self {
-                            Self::Topic(_) => crate::topic::TopicSpec::LABEL,
-                            Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
-                            Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
-                            Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
-                            Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
-                        }
-                    }
-                }
-
-                impl  fluvio_protocol::Encoder for [<ClassicObjectApi $api>] {
-
-                    fn write_size(&self, version: fluvio_protocol::Version) -> usize {
-                        let type_size = self.type_string().to_owned().write_size(version);
-
-                        type_size
-                            + match self {
-                                Self::Topic(s) => s.write_size(version),
-                                Self::CustomSpu(s) => s.write_size(version),
-                                Self::SmartModule(s) => s.write_size(version),
-                                Self::SpuGroup(s) => s.write_size(version),
-                                Self::TableFormat(s) => s.write_size(version),
-                            }
-                    }
-
-                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(), std::io::Error>
-                    where
-                        T: fluvio_protocol::bytes::BufMut,
-                    {
-                        let ty = self.type_string().to_owned();
-
-                        tracing::trace!(%ty,len = self.write_size(version),"encoding objects");
-                        ty.encode(dest, version)?;
-
-                        match self {
-                            Self::Topic(s) => s.encode(dest, version)?,
-                            Self::CustomSpu(s) => s.encode(dest, version)?,
-                            Self::SpuGroup(s) => s.encode(dest, version)?,
-                            Self::SmartModule(s) => s.encode(dest, version)?,
-                            Self::TableFormat(s) => s.encode(dest, version)?,
-                        }
-
-                        Ok(())
-                    }
-
-                }
-
-
-                impl  fluvio_protocol::Decoder for [<ClassicObjectApi $api>] {
-
-                    fn decode<T>(&mut self, src: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error>
-                    where
-                        T: fluvio_protocol::bytes::Buf
-                    {
-                        use fluvio_controlplane_metadata::core::Spec;
-
-                        let mut typ = "".to_owned();
-                        typ.decode(src, version)?;
-                        tracing::trace!(%typ,"decoded type");
-
-                        match typ.as_ref() {
-                            crate::topic::TopicSpec::LABEL => {
-                                tracing::trace!("detected topic");
-                                let mut request = $api::<crate::topic::TopicSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Topic(request);
-                                return Ok(())
-                            }
-
-                            crate::tableformat::TableFormatSpec::LABEL => {
-                                tracing::trace!("detected tableformat");
-                                let mut request = $api::<crate::tableformat::TableFormatSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::TableFormat(request);
-                                return Ok(())
-                            }
-
-                            crate::customspu::CustomSpuSpec::LABEL => {
-                                tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::CustomSpu(request);
-                                return Ok(())
-                            }
-
-                            crate::spg::SpuGroupSpec::LABEL => {
-                                tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::spg::SpuGroupSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SpuGroup(request);
-                                return Ok(())
-                            }
-
-                            crate::smartmodule::SmartModuleSpec::LABEL => {
-                                tracing::trace!("detected smartmodule");
-                                let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SmartModule(request);
-                                Ok(())
-                            },
-
-
-                            // Unexpected type
-                            _ => Err(std::io::Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                format!("invalid object type {:#?}", typ),
-                            ))
-                        }
-                    }
-
-                }
-            }
-        }
-    }
-
-    pub(crate) use ClassicDeleteApiEnum;
-}
-*/
-
 /// write decoder for classic api
 macro_rules! ClassicDecoding {
 
@@ -393,6 +246,10 @@ mod create {
         // conversion to classic protocol wrapper
         fn try_classic_convert(_spec: Self) -> Result<ClassicObjectCreateRequest> {
             Err(anyhow!("not implemented"))
+        }
+
+        fn try_convert_from_classic(_request: ClassicObjectCreateRequest) -> Option<Self> {
+            None
         }
     }
 

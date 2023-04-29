@@ -14,7 +14,7 @@ use tracing::debug;
 use crate::AdminSpec;
 use crate::core::Spec;
 
-use super::{COMMON_VERSION, DYN_OBJ};
+use super::{DYN_OBJ};
 
 #[derive(Encoder, Decoder, Default, Clone, Debug)]
 #[cfg_attr(
@@ -87,6 +87,7 @@ where
 /// Type encoded buffer, it uses type label to determine type
 #[derive(Debug, Default)]
 pub struct TypeBuffer {
+    version: Version,
     ty: String,
     buf: ByteBuf,
 }
@@ -102,6 +103,7 @@ impl TypeBuffer {
         let mut buf = vec![];
         input.encode(&mut buf, version)?;
         Ok(Self {
+            version,
             ty,
             buf: ByteBuf::from(buf),
         })
@@ -122,7 +124,7 @@ impl TypeBuffer {
         if self.is_kind_of::<S>() {
             debug!(ty = S::LABEL, "downcasting");
             let mut buf = Cursor::new(self.buf.as_ref());
-            Ok(Some(O::decode_from(&mut buf, COMMON_VERSION)?))
+            Ok(Some(O::decode_from(&mut buf, self.version)?))
         } else {
             debug!(target_ty = S::LABEL, source_t = self.ty, "downcast failed");
             Ok(None)
@@ -188,6 +190,7 @@ impl Decoder for TypeBuffer {
                 ),
             ));
         }
+        self.version = version;
         self.buf = src.copy_to_bytes(len as usize).into();
 
         Ok(())
