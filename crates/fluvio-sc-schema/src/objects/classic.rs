@@ -390,6 +390,13 @@ mod create {
         fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
             Ok(ClassicObjectCreateRequest::Topic(spec))
         }
+
+        fn try_convert_from_classic(request: ClassicObjectCreateRequest) -> Option<Self> {
+            match request {
+                ClassicObjectCreateRequest::Topic(spec) => Some(spec),
+                _ => None,
+            }
+        }
     }
 
     // for classic protocol
@@ -399,6 +406,13 @@ mod create {
         fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
             Ok(ClassicObjectCreateRequest::TableFormat(spec))
         }
+
+        fn try_convert_from_classic(request: ClassicObjectCreateRequest) -> Option<Self> {
+            match request {
+                ClassicObjectCreateRequest::TableFormat(spec) => Some(spec),
+                _ => None,
+            }
+        }
     }
 
     impl ClassicCreatableAdminSpec for SpuGroupSpec {
@@ -406,6 +420,13 @@ mod create {
 
         fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
             Ok(ClassicObjectCreateRequest::SpuGroup(spec))
+        }
+
+        fn try_convert_from_classic(request: ClassicObjectCreateRequest) -> Option<Self> {
+            match request {
+                ClassicObjectCreateRequest::SpuGroup(spec) => Some(spec),
+                _ => None,
+            }
         }
     }
 
@@ -415,6 +436,13 @@ mod create {
         fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
             Ok(ClassicObjectCreateRequest::SmartModule(spec))
         }
+
+        fn try_convert_from_classic(request: ClassicObjectCreateRequest) -> Option<Self> {
+            match request {
+                ClassicObjectCreateRequest::SmartModule(spec) => Some(spec),
+                _ => None,
+            }
+        }
     }
 
     impl ClassicCreatableAdminSpec for CustomSpuSpec {
@@ -422,6 +450,13 @@ mod create {
 
         fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
             Ok(ClassicObjectCreateRequest::CustomSpu(spec))
+        }
+
+        fn try_convert_from_classic(request: ClassicObjectCreateRequest) -> Option<Self> {
+            match request {
+                ClassicObjectCreateRequest::CustomSpu(spec) => Some(spec),
+                _ => None,
+            }
         }
     }
 }
