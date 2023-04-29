@@ -12,23 +12,23 @@ use crate::engine::wasmedge::memory::{RecordsCallBack, RecordsMemory};
 use crate::engine::common::{WasmFn, WasmInstance};
 use crate::engine::error::EngineError;
 
-pub(crate) struct WasmedgeInstance {
+pub(crate) struct WasmEdgeInstance {
     instance: wasmedge_sdk::Instance,
     records_cb: Arc<RecordsCallBack>,
     params: SmartModuleExtraParams,
     version: i16,
 }
 
-pub(crate) struct WasmedgeContext {
+pub(crate) struct WasmEdgeContext {
     pub engine: Executor,
 }
 
-pub type WasmedgeFn = Func;
+pub type WasmEdgeFn = Func;
 
-impl WasmInstance for WasmedgeInstance {
-    type Context = WasmedgeContext;
+impl WasmInstance for WasmEdgeInstance {
+    type Context = WasmEdgeContext;
 
-    type Func = WasmedgeFn;
+    type Func = WasmEdgeFn;
 
     fn get_fn(&self, name: &str, _ctx: &mut Self::Context) -> Result<Option<Self::Func>> {
         match self.instance.func(name) {
@@ -76,8 +76,8 @@ impl WasmInstance for WasmedgeInstance {
     }
 }
 
-impl WasmFn for WasmedgeFn {
-    type Context = WasmedgeContext;
+impl WasmFn for WasmEdgeFn {
+    type Context = WasmEdgeContext;
 
     fn call(&self, ptr: i32, len: i32, version: i32, ctx: &mut Self::Context) -> Result<i32> {
         let res = self.call(
@@ -92,7 +92,7 @@ impl WasmFn for WasmedgeFn {
     }
 }
 
-impl WasmedgeInstance {
+impl WasmEdgeInstance {
     /// instantiate new module instance that contain context
     pub(crate) fn instantiate(
         store: &mut Store,

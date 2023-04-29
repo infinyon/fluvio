@@ -1,4 +1,4 @@
-use super::instance::{WasmedgeContext, WasmedgeFn, WasmedgeInstance};
+use super::instance::{WasmEdgeContext, WasmEdgeFn, WasmEdgeInstance};
 
 use tracing::debug;
 use wasmedge_sdk::{Executor, Module, Store};
@@ -9,8 +9,8 @@ use crate::metrics::SmartModuleChainMetrics;
 use crate::engine::SmartModuleChainBuilder;
 use crate::engine::common::create_transform;
 
-type SmartModuleInit = crate::engine::common::SmartModuleInit<WasmedgeFn>;
-type SmartModuleInstance = crate::engine::common::SmartModuleInstance<WasmedgeInstance, WasmedgeFn>;
+type SmartModuleInit = crate::engine::common::SmartModuleInit<WasmEdgeFn>;
+type SmartModuleInstance = crate::engine::common::SmartModuleInstance<WasmEdgeInstance, WasmEdgeFn>;
 
 #[derive(Clone)]
 pub struct SmartEngineImp();
@@ -28,14 +28,14 @@ pub fn initialize_imp(
 ) -> Result<SmartModuleChainInstanceImp> {
     let executor = Executor::new(None, None).expect("Failed to create WasmEdge executor");
     let mut store = Store::new().expect("Failed to create WasmEdge store");
-    let mut ctx = WasmedgeContext { engine: executor };
+    let mut ctx = WasmEdgeContext { engine: executor };
 
     let mut instances = Vec::with_capacity(builder.smart_modules.len());
     // let mut state = engine.new_state();
     for (config, bytes) in builder.smart_modules {
         let module = Module::from_bytes(None, bytes)?;
         let version = config.version();
-        let mut instance = WasmedgeInstance::instantiate(
+        let mut instance = WasmEdgeInstance::instantiate(
             &mut store,
             &mut ctx.engine,
             module,
@@ -59,7 +59,7 @@ pub fn initialize_imp(
 
 /// SmartModule Chain Instance that can be executed
 pub struct SmartModuleChainInstanceImp {
-    ctx: WasmedgeContext,
+    ctx: WasmEdgeContext,
     instances: Vec<SmartModuleInstance>,
 }
 

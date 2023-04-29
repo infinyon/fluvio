@@ -20,7 +20,7 @@ mod test {
                 crate::engine::common::AggregateTransform<crate::engine::wasmtime::instance::WasmtimeFn>;
         } else if #[cfg(feature = "wasmedge-engine")] {
             type AggregateTransform =
-                crate::engine::common::AggregateTransform<crate::engine::wasmedge::instance::WasmedgeFn>;
+                crate::engine::common::AggregateTransform<crate::engine::wasmedge::instance::WasmEdgeFn>;
         } else {
             compile_error!("no engine specified");
         }
