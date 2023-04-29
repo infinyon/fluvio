@@ -13,7 +13,7 @@ mod test {
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
 
-    // #[ignore]
+    #[ignore]
     #[test]
     fn test_filter() {
         let engine = SmartEngine::new();

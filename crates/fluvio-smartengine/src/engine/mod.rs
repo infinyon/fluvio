@@ -100,9 +100,13 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "wasmtime-engine")] {
         pub(crate) mod wasmtime;
         use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+        #[cfg(test)]
+        use self::wasmtime::WasmFnImp;
     } else if #[cfg(feature = "wasmedge-engine")] {
         pub(crate) mod wasmedge;
         use self::wasmedge::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+        #[cfg(test)]
+        use self::wasmedge::WasmFnImp;
     } else {
         compile_error!("no engine specified");
     }
