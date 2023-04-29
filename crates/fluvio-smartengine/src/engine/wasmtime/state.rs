@@ -18,7 +18,7 @@ pub type WasmState = WasmStore<()>;
 pub type WasmState = WasmStore<wasmtime_wasi::WasiCtx>;
 
 #[derive(Debug)]
-pub struct WasmStore<T>(Store<T>);
+pub struct WasmStore<T>(pub Store<T>);
 
 impl<T> AsContext for WasmStore<T> {
     type Data = T;

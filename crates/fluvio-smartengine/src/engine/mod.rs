@@ -97,15 +97,15 @@ cfg_if::cfg_if! {
 
 
     if #[cfg(feature = "wasmtime-engine")] {
-        // mod wasmtime;
-        // use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+        mod wasmtime;
+        use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
     }
 }
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "wasmedge-engine")] {
-        mod wasmedge;
-        use self::wasmedge::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+        // mod wasmedge;
+        // use self::wasmedge::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
 
     }
 }

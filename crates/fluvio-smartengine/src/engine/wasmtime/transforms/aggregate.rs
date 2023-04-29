@@ -1,124 +1,20 @@
-use std::convert::TryFrom;
-use std::fmt::Debug;
-
-use tracing::{debug, instrument};
-use anyhow::Result;
-use wasmtime::{AsContextMut, TypedFunc};
-
-use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleAggregateInput, SmartModuleAggregateOutput,
-    SmartModuleTransformErrorStatus,
-};
-use crate::engine::SmartModuleInitialData;
-use crate::engine::wasmtime::{
-    instance::{SmartModuleInstanceContext, SmartModuleTransform},
-    state::WasmState,
-};
-
-const AGGREGATE_FN_NAME: &str = "aggregate";
-
-type WasmAggregateFn = TypedFunc<(i32, i32, u32), i32>;
-
-pub(crate) struct SmartModuleAggregate {
-    aggregate_fn: WasmAggregateFn,
-    accumulator: Vec<u8>,
-}
-
-impl Debug for SmartModuleAggregate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "AggregateFn")
-    }
-}
-
-impl SmartModuleAggregate {
-    #[cfg(test)]
-    fn accumulator(&self) -> &[u8] {
-        &self.accumulator
-    }
-
-    pub fn try_instantiate(
-        ctx: &SmartModuleInstanceContext,
-        initial_data: SmartModuleInitialData,
-        store: &mut impl AsContextMut,
-    ) -> Result<Option<Self>> {
-        // get initial -data
-        let accumulator = match initial_data {
-            SmartModuleInitialData::Aggregate { accumulator } => accumulator,
-            SmartModuleInitialData::None => {
-                // if no initial data, then we initialize as default
-                vec![]
-            }
-        };
-
-        match ctx.get_wasm_func(&mut *store, AGGREGATE_FN_NAME) {
-            Some(func) => {
-                // check type signature
-
-                func.typed(&mut *store)
-                    .or_else(|_| func.typed(store))
-                    .map(|aggregate_fn| {
-                        Some(Self {
-                            aggregate_fn,
-                            accumulator,
-                        })
-                    })
-            }
-            None => Ok(None),
-        }
-    }
-}
-
-impl SmartModuleTransform for SmartModuleAggregate {
-    #[instrument(skip(self,ctx,store),fields(offset = input.base_offset()))]
-    fn process(
-        &mut self,
-        input: SmartModuleInput,
-        ctx: &mut SmartModuleInstanceContext,
-        store: &mut WasmState,
-    ) -> Result<SmartModuleOutput> {
-        debug!("start aggregration");
-        let input = SmartModuleAggregateInput {
-            base: input,
-            accumulator: self.accumulator.clone(),
-        };
-        let slice = ctx.write_input(&input, &mut *store)?;
-        let aggregate_output = self.aggregate_fn.call(&mut *store, slice)?;
-
-        debug!(aggregate_output);
-        if aggregate_output < 0 {
-            let internal_error = SmartModuleTransformErrorStatus::try_from(aggregate_output)
-                .unwrap_or(SmartModuleTransformErrorStatus::UnknownError);
-            return Err(internal_error.into());
-        }
-
-        let output: SmartModuleAggregateOutput = ctx.read_output(store)?;
-        self.accumulator = output.accumulator;
-        Ok(output.base)
-    }
-
-    fn name(&self) -> &str {
-        AGGREGATE_FN_NAME
-    }
-}
-
 #[cfg(test)]
 mod test {
 
-    use std::{convert::TryFrom};
+    use std::convert::TryFrom;
+    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
-    use fluvio_smartmodule::{
-        dataplane::smartmodule::{SmartModuleInput},
-        Record,
-    };
-
-    use crate::engine::{
-        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
-        metrics::SmartModuleChainMetrics,
-    };
+    use crate::SmartModuleInitialData;
+    use crate::engine::common::{AGGREGATE_FN_NAME};
+    use crate::engine::metrics::SmartModuleChainMetrics;
+    use crate::engine::{SmartEngine, SmartModuleChainBuilder};
+    use crate::engine::config::SmartModuleConfig;
+    use crate::engine::fixture::read_wasm_module;
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 
-    use crate::engine::fixture::read_wasm_module;
+    type AggregateTransform =
+        crate::engine::common::AggregateTransform<crate::engine::wasmtime::instance::WasmTimeFn>;
 
     #[ignore]
     #[test]
@@ -138,7 +34,7 @@ mod test {
 
         assert_eq!(
             chain.instances().first().expect("first").transform().name(),
-            super::AGGREGATE_FN_NAME
+            AGGREGATE_FN_NAME
         );
 
         let metrics = SmartModuleChainMetrics::default();
@@ -156,7 +52,7 @@ mod test {
             .expect("first")
             .transform()
             .as_any()
-            .downcast_ref::<super::SmartModuleAggregate>()
+            .downcast_ref::<AggregateTransform>()
             .expect("aggregate");
 
         assert_eq!(aggregate.accumulator(), b"a");
@@ -175,7 +71,7 @@ mod test {
             .expect("first")
             .transform()
             .as_any()
-            .downcast_ref::<super::SmartModuleAggregate>()
+            .downcast_ref::<AggregateTransform>()
             .expect("aggregate");
 
         assert_eq!(aggregate.accumulator(), b"ab");
@@ -193,7 +89,7 @@ mod test {
             .expect("first")
             .transform()
             .as_any()
-            .downcast_ref::<super::SmartModuleAggregate>()
+            .downcast_ref::<AggregateTransform>()
             .expect("aggregate");
 
         assert_eq!(aggregate.accumulator(), b"ab");

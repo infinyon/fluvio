@@ -1,10 +1,9 @@
-pub(crate) mod memory;
-pub(crate) mod transforms;
-pub(crate) mod init;
-pub(crate) mod state;
-pub(crate) mod engine;
-pub(crate) mod instance;
-pub(crate) mod imp;
-pub use engine::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
-
-use super::*;
+/// Implementations of the public API
+mod imp;
+pub use imp::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+/// Implementations of the traits in `common` for the Wasmtime engine
+mod instance;
+mod memory;
+mod state;
+/// Transform tests
+mod transforms;
