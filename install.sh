@@ -5,7 +5,16 @@ set -e
 set -u
 set -o pipefail
 
+# Ease transition from VERSION to FLV_VERSION, warn if VERSION but not FLV_VERSION is set
+if [ -z "${FLV_VERSION:-""}" ]; then
+    if [ -n "${VERSION:-""}" ]; then
+        echo "Warning, deprecated VERSION may be in use, set FLV_VERSION instead"
+        echo "Setting FLV_VERSION from VERSION=${VERSION}"
+        FLV_VERSION="${VERSION}"
+    fi
+fi
 
+exit
 readonly TEST="${TEST:-false}"
 if [ "$TEST" = "true" ]; then
     export FLUVIO_PREFIX="https://packages.fluvio.io/test"
