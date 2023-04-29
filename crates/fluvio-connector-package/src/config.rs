@@ -19,51 +19,58 @@ use crate::metadata::Direction;
 const SOURCE_SUFFIX: &str = "-source";
 const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 
-/// Connector config wrapper
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Serialize)]
-#[serde(untagged)]
+/// Versioned connector config
+/// Use this config in the places where you need to enforce the version.
+/// for example on the CLI create command.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "schemaVersion", rename_all = "camelCase")]
 pub enum ConnectorConfig {
-    Tagged(ConnectorConfigVersioned),
-    Untagged(ConnectorConfigV1),
+    // V0 is the version of the config that was used before we introduced the versioning.
+    V0(ConnectorConfigV1),
+    V1(ConnectorConfigV1),
 }
 
 impl Default for ConnectorConfig {
     fn default() -> Self {
-        ConnectorConfig::Tagged(ConnectorConfigVersioned::V1(Default::default()))
+        ConnectorConfig::V1(ConnectorConfigV1::default())
     }
 }
 
-impl From<ConnectorConfigV1> for ConnectorConfig {
-    fn from(config: ConnectorConfigV1) -> Self {
-        ConnectorConfig::Untagged(config)
-    }
-}
+mod serde_impl {
+    use serde::{Deserialize};
 
-impl From<ConnectorConfig> for ConnectorConfigVersioned {
-    fn from(config: ConnectorConfig) -> Self {
-        match config {
-            ConnectorConfig::Tagged(versioned) => versioned,
-            ConnectorConfig::Untagged(mut untagged) => {
-                untagged.clear_secrets();
-                ConnectorConfigVersioned::V1(untagged)
+    use crate::config::ConnectorConfigV1;
+
+    use super::ConnectorConfig;
+
+    impl<'a> Deserialize<'a> for ConnectorConfig {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'a>,
+        {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "lowercase")]
+            enum Version {
+                V0,
+                V1,
+            }
+
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct VersionedConfig {
+                schema_version: Option<Version>,
+                #[serde(flatten)]
+                config: ConnectorConfigV1,
+            }
+
+            let versioned_config = VersionedConfig::deserialize(deserializer)?;
+
+            match versioned_config.schema_version {
+                Some(Version::V0) | None => Ok(ConnectorConfig::V0(versioned_config.config)),
+                Some(Version::V1) => Ok(ConnectorConfig::V1(versioned_config.config)),
             }
         }
     }
-}
-
-impl From<ConnectorConfigVersioned> for ConnectorConfig {
-    fn from(config: ConnectorConfigVersioned) -> Self {
-        ConnectorConfig::Tagged(config)
-    }
-}
-
-/// Versioned connector config
-/// Use this config in the places where you need to enforce the version.
-/// for example on the CLI create command.
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Serialize)]
-#[serde(tag = "schemaVersion", rename_all = "lowercase")]
-pub enum ConnectorConfigVersioned {
-    V1(ConnectorConfigV1),
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -245,13 +252,9 @@ impl ConnectorConfigV1 {
     fn mut_meta(&mut self) -> &mut MetaConfig {
         &mut self.meta
     }
-
-    fn clear_secrets(&mut self) {
-        self.meta.secrets = None;
-    }
 }
 
-impl ConnectorConfigVersioned {
+impl ConnectorConfig {
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
@@ -278,6 +281,7 @@ impl ConnectorConfigVersioned {
     pub fn meta(&self) -> &MetaConfig {
         match self {
             Self::V1(config) => config.meta(),
+            Self::V0(config) => config.meta(),
         }
     }
 
@@ -297,16 +301,21 @@ impl ConnectorConfigVersioned {
     pub fn mut_meta(&mut self) -> &mut MetaConfig {
         match self {
             Self::V1(config) => config.mut_meta(),
+            Self::V0(config) => config.mut_meta(),
         }
     }
 
     pub fn secrets(&self) -> HashSet<SecretConfig> {
-        self.meta().secrets()
+        match self {
+            Self::V1(config) => config.meta.secrets(),
+            Self::V0(_) => Default::default(),
+        }
     }
 
     pub fn transforms(&self) -> Option<&TransformationConfig> {
         match self {
             Self::V1(config) => config.transforms.as_ref(),
+            Self::V0(config) => config.transforms.as_ref(),
         }
     }
 
@@ -319,83 +328,6 @@ impl ConnectorConfigVersioned {
     }
     fn normalize_batch_size(&mut self) -> Result<()> {
         self.mut_meta().normalize_batch_size()
-    }
-}
-
-impl ConnectorConfig {
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
-        let mut file = File::open(path.into())?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        Self::config_from_str(&contents)
-    }
-
-    /// Only parses the meta section of the config
-    pub fn config_from_str(config_str: &str) -> Result<Self> {
-        let mut connector_config: Self = serde_yaml::from_str(config_str)?;
-        connector_config.normalize_batch_size()?;
-        connector_config.validate_secret_names()?;
-
-        debug!("Using connector config {connector_config:#?}");
-        Ok(connector_config)
-    }
-
-    pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
-        let mut connector_config: Self = serde_yaml::from_value(value)?;
-        connector_config.normalize_batch_size()?;
-        connector_config.validate_secret_names()?;
-
-        debug!("Using connector config {connector_config:#?}");
-        Ok(connector_config)
-    }
-
-    pub fn write_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        std::fs::write(path, serde_yaml::to_string(self)?)?;
-        Ok(())
-    }
-
-    pub fn meta(&self) -> &MetaConfig {
-        match self {
-            Self::Tagged(config) => config.meta(),
-            Self::Untagged(config) => config.meta(),
-        }
-    }
-
-    pub fn mut_meta(&mut self) -> &mut MetaConfig {
-        match self {
-            Self::Tagged(config) => config.mut_meta(),
-            Self::Untagged(config) => config.mut_meta(),
-        }
-    }
-
-    fn normalize_batch_size(&mut self) -> Result<()> {
-        self.mut_meta().normalize_batch_size()
-    }
-
-    pub fn direction(&self) -> Direction {
-        self.meta().direction()
-    }
-
-    pub fn image(&self) -> String {
-        self.meta().image()
-    }
-
-    fn validate_secret_names(&self) -> Result<()> {
-        for secret in self.secrets() {
-            secret.name.validate()?;
-        }
-        Ok(())
-    }
-
-    pub fn secrets(&self) -> HashSet<SecretConfig> {
-        self.meta().secrets()
-    }
-
-    pub fn transforms(&self) -> Option<&TransformationConfig> {
-        match self {
-            Self::Tagged(config) => config.transforms(),
-            Self::Untagged(config) => config.transforms.as_ref(),
-        }
     }
 }
 
@@ -410,7 +342,7 @@ mod tests {
     #[test]
     fn full_yaml_test() {
         //given
-        let expected: ConnectorConfig = ConnectorConfigVersioned::V1(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V1(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
@@ -442,8 +374,7 @@ mod tests {
                 }
                 .into(),
             ),
-        })
-        .into();
+        });
 
         //when
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
@@ -456,7 +387,7 @@ mod tests {
     #[test]
     fn simple_yaml_test() {
         //given
-        let expected: ConnectorConfig = ConnectorConfigVersioned::V1(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V1(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
@@ -480,16 +411,15 @@ mod tests {
 
     #[test]
     fn error_yaml_tests() {
-        let connector_cfg =
-            ConnectorConfigVersioned::from_file("test-data/connectors/error-linger.yaml")
-                .expect_err("This yaml should error");
+        let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-linger.yaml")
+            .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "invalid value: string \"1\", expected a duration",
             format!("{connector_cfg}")
         );
         let connector_cfg =
-            ConnectorConfigVersioned::from_file("test-data/connectors/error-compression.yaml")
+            ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
@@ -497,34 +427,30 @@ mod tests {
             format!("{connector_cfg}")
         );
 
-        let connector_cfg =
-            ConnectorConfigVersioned::from_file("test-data/connectors/error-batchsize.yaml")
-                .expect_err("This yaml should error");
+        let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
+            .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "Fail to parse byte size couldn't parse \"aoeu\" into a known SI unit, couldn't parse unit of \"aoeu\"",
             format!("{connector_cfg:?}")
         );
-        let connector_cfg =
-            ConnectorConfigVersioned::from_file("test-data/connectors/error-version.yaml")
-                .expect_err("This yaml should error");
+        let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
+            .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!("missing field `version`", format!("{connector_cfg:?}"));
 
-        let connector_cfg = ConnectorConfigVersioned::from_file(
-            "test-data/connectors/error-secret-with-spaces.yaml",
-        )
-        .expect_err("This yaml should error");
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-secret-with-spaces.yaml")
+                .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "Secret name `secret name` can only contain alphanumeric ASCII characters and underscores",
             format!("{connector_cfg:?}")
         );
 
-        let connector_cfg = ConnectorConfigVersioned::from_file(
-            "test-data/connectors/error-secret-starts-with-number.yaml",
-        )
-        .expect_err("This yaml should error");
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-secret-starts-with-number.yaml")
+                .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
             "Secret name `1secret` cannot start with a number",
@@ -544,7 +470,7 @@ mod tests {
                 version: latest
             "#;
 
-        let expected: ConnectorConfig = ConnectorConfigVersioned::V1(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V1(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "kafka-out".to_string(),
                 type_: "kafka-sink".to_string(),
@@ -555,8 +481,7 @@ mod tests {
                 secrets: None,
             },
             transforms: None,
-        })
-        .into();
+        });
 
         //when
         let connector_spec: ConnectorConfig =
@@ -577,7 +502,7 @@ mod tests {
                 version: latest
             "#;
 
-        let expected = ConnectorConfig::Untagged(ConnectorConfigV1 {
+        let expected = ConnectorConfig::V0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "kafka-out".to_string(),
                 type_: "kafka-sink".to_string(),
