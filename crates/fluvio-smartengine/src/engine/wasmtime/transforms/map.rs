@@ -9,7 +9,7 @@ mod test {
     use crate::engine::{SmartEngine, SmartModuleChainBuilder};
     use crate::engine::config::SmartModuleConfig;
     use crate::engine::fixture::read_wasm_module;
-    
+
     const SM_MAP: &str = "fluvio_smartmodule_map";
 
     #[ignore]

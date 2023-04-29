@@ -15,22 +15,22 @@ use crate::engine::{
 
 use super::{memory::RecordsCallBack, state::WasmState};
 
-pub struct WasmTimeInstance {
+pub struct WasmtimeInstance {
     instance: Instance,
     records_cb: Arc<RecordsCallBack>,
     params: SmartModuleExtraParams,
     version: i16,
 }
-pub struct WasmTimeContext {
+pub struct WasmtimeContext {
     pub state: WasmState,
 }
 
-pub type WasmTimeFn = wasmtime::TypedFunc<(i32, i32, i32), i32>;
+pub type WasmtimeFn = wasmtime::TypedFunc<(i32, i32, i32), i32>;
 
-impl WasmInstance for WasmTimeInstance {
-    type Context = WasmTimeContext;
+impl WasmInstance for WasmtimeInstance {
+    type Context = WasmtimeContext;
 
-    type Func = WasmTimeFn;
+    type Func = WasmtimeFn;
 
     fn get_fn(&self, name: &str, ctx: &mut Self::Context) -> Result<Option<Self::Func>> {
         match self.instance.get_func(&mut ctx.state.0, name) {
@@ -82,15 +82,15 @@ impl WasmInstance for WasmTimeInstance {
     }
 }
 
-impl WasmFn for WasmTimeFn {
-    type Context = WasmTimeContext;
+impl WasmFn for WasmtimeFn {
+    type Context = WasmtimeContext;
 
     fn call(&self, ptr: i32, len: i32, version: i32, ctx: &mut Self::Context) -> Result<i32> {
-        WasmTimeFn::call(self, &mut ctx.state, (ptr, len, version))
+        WasmtimeFn::call(self, &mut ctx.state, (ptr, len, version))
     }
 }
 
-impl WasmTimeInstance {
+impl WasmtimeInstance {
     pub(crate) fn instantiate(
         state: &mut WasmState,
         module: Module,

@@ -14,7 +14,7 @@ mod test {
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 
     type AggregateTransform =
-        crate::engine::common::AggregateTransform<crate::engine::wasmtime::instance::WasmTimeFn>;
+        crate::engine::common::AggregateTransform<crate::engine::wasmtime::instance::WasmtimeFn>;
 
     #[ignore]
     #[test]

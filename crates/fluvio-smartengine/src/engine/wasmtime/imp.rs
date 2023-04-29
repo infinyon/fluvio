@@ -7,11 +7,11 @@ use crate::metrics::SmartModuleChainMetrics;
 use crate::engine::SmartModuleChainBuilder;
 use crate::engine::common::create_transform;
 
-use super::instance::{WasmTimeFn, WasmTimeInstance, WasmTimeContext};
+use super::instance::{WasmtimeFn, WasmtimeInstance, WasmtimeContext};
 use super::state::WasmState;
 
-type SmartModuleInit = crate::engine::common::SmartModuleInit<WasmTimeFn>;
-type SmartModuleInstance = crate::engine::common::SmartModuleInstance<WasmTimeInstance, WasmTimeFn>;
+type SmartModuleInit = crate::engine::common::SmartModuleInit<WasmtimeFn>;
+type SmartModuleInstance = crate::engine::common::SmartModuleInstance<WasmtimeInstance, WasmtimeFn>;
 
 #[derive(Clone)]
 pub struct SmartEngineImp(Engine);
@@ -36,13 +36,13 @@ pub fn initialize_imp(
 ) -> Result<SmartModuleChainInstanceImp> {
     let mut instances = Vec::with_capacity(builder.smart_modules.len());
     let state = engine.new_state();
-    let mut ctx = WasmTimeContext { state };
+    let mut ctx = WasmtimeContext { state };
     for (config, bytes) in builder.smart_modules {
         let module = Module::new(&engine.0, bytes)?;
         let version = config.version();
 
         let mut instance =
-            WasmTimeInstance::instantiate(&mut ctx.state, module, config.params, version)?;
+            WasmtimeInstance::instantiate(&mut ctx.state, module, config.params, version)?;
 
         let init = SmartModuleInit::try_instantiate(&mut instance, &mut ctx)?;
 
@@ -56,7 +56,7 @@ pub fn initialize_imp(
 
 /// SmartModule Chain Instance that can be executed
 pub struct SmartModuleChainInstanceImp {
-    ctx: WasmTimeContext,
+    ctx: WasmtimeContext,
     instances: Vec<SmartModuleInstance>,
 }
 

@@ -12,7 +12,6 @@ mod test {
 
     const SM_FILTER_MAP: &str = "fluvio_smartmodule_filter_map";
 
-
     #[ignore]
     #[test]
     fn test_filter_map() {
