@@ -2,18 +2,16 @@
 mod test {
 
     use std::convert::TryFrom;
-
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
     use crate::engine::common::FILTER_FN_NAME;
     use crate::engine::metrics::SmartModuleChainMetrics;
     use crate::engine::{SmartEngine, SmartModuleChainBuilder};
     use crate::engine::config::SmartModuleConfig;
+    use crate::engine::fixture::read_wasm_module;
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
-
-    use crate::engine::fixture::read_wasm_module;
 
     // #[ignore]
     #[test]

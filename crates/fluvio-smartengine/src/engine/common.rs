@@ -102,13 +102,13 @@ impl<F: WasmFn + Send + Sync> SimpleTransform<F> {
         I: WasmInstance<Func = F, Context = C>,
         F: WasmFn<Context = C>,
     {
-        let func = instance
-            .get_fn(name, ctx)?
-            .ok_or_else(|| anyhow::anyhow!("{} not found", name))?;
-        Ok(Some(Self {
-            name: name.to_owned(),
-            func,
-        }))
+        match instance.get_fn(name, ctx)? {
+            Some(func) => Ok(Some(Self {
+                name: name.to_owned(),
+                func,
+            })),
+            None => Ok(None),
+        }
     }
 }
 
