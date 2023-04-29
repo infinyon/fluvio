@@ -186,7 +186,8 @@ impl FluvioAdmin {
         debug!("sending create request: {:#?}", create_request);
 
         self.send_receive_admin::<ObjectApiCreateRequest, _>(create_request)
-            .await?;
+            .await?
+            .as_result()?;
 
         Ok(())
     }
@@ -203,7 +204,8 @@ impl FluvioAdmin {
         debug!("sending delete request: {:#?}", delete_request);
 
         self.send_receive_admin::<ObjectApiDeleteRequest, _>(delete_request)
-            .await?;
+            .await?
+            .as_result()?;
         Ok(())
     }
 
