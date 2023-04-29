@@ -12,7 +12,7 @@ description = "The official Fluvio SmartEngine"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-engine = ["wasmtime-engine", "wasmedge-engine"]
+engine = []
 wasi = ["wasmtime-wasi", "wasmtime-engine", "engine"]
 transformation = ["serde_json", "serde_yaml"]
 default = ["engine"]
@@ -25,7 +25,8 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 # Use the Clone trait
 wasmedge-sdk = { git = "https://github.com/WasmEdge/WasmEdge", rev = "fe5fe2c", optional = true }
-serde = { workspace = true,  features = ['derive'] }
+# std is needed for ser/de AtomicU64
+serde = { workspace = true,  features = ['derive', 'std'] }
 serde_json = { workspace = true, optional = true }
 serde_yaml = { workspace = true, default-features = false, optional = true }
 cfg-if = { workspace = true }

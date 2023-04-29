@@ -13,8 +13,18 @@ mod test {
 
     const SM_AGGEGRATE: &str = "fluvio_smartmodule_aggregate";
 
-    type AggregateTransform =
-        crate::engine::common::AggregateTransform<crate::engine::wasmedge::instance::WasmedgeFn>;
+    cfg_if::cfg_if! {
+
+        if #[cfg(feature = "wasmtime-engine")] {
+            type AggregateTransform =
+                crate::engine::common::AggregateTransform<crate::engine::wasmtime::instance::WasmtimeFn>;
+        } else if #[cfg(feature = "wasmedge-engine")] {
+            type AggregateTransform =
+                crate::engine::common::AggregateTransform<crate::engine::wasmedge::instance::WasmedgeFn>;
+        } else {
+            compile_error!("no engine specified");
+        }
+    }
 
     #[ignore]
     #[test]

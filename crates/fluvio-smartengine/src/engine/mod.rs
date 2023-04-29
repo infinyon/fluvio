@@ -89,23 +89,21 @@ impl SmartModuleChainInstance {
 
 cfg_if::cfg_if! {
     // TODO: turn on this check when ready
-    // #[cfg(all(feature = "wasmedge_engine", feature = "wasmtime_engine"))]
-    // compile_error!(
-    //     "Both `wasmedge_engine` and `wasmtime_engine` features are enabled, but \
-    //     only one WASM runtime is supported at a time"
-    // );
-
-
-    if #[cfg(feature = "wasmtime-engine")] {
-        mod wasmtime;
-        use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+    if #[cfg(all(feature = "wasmedge-engine", feature = "wasmtime-engine"))] {
+        compile_error!(
+            "Only one WASM runtime is allowed, but both `wasmedge-engine` and `wasmtime-engine` features are enabled"
+        );
     }
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "wasmedge-engine")] {
-        // mod wasmedge;
-        // use self::wasmedge::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
-
+    if #[cfg(feature = "wasmtime-engine")] {
+        pub(crate) mod wasmtime;
+        use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+    } else if #[cfg(feature = "wasmedge-engine")] {
+        pub(crate) mod wasmedge;
+        use self::wasmedge::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
+    } else {
+        compile_error!("no engine specified");
     }
 }
