@@ -75,14 +75,17 @@ mod object_macro {
                     where
                         T: fluvio_protocol::bytes::BufMut,
                     {
+
+                        // only write header for classical version
                         if version < crate::objects::DYN_OBJ {
                             // only write header for classic object
                             let ty = self.type_string().to_owned();
 
-                            tracing::trace!(%ty,len = self.write_size(version),"encoding objects");
+                            tracing::debug!(%ty,len = self.write_size(version),"encoding as new object");
                             ty.encode(dest, version)?;
                         }
 
+                        tracing::debug!(version,"encoding class api encoding");
                         match self {
                             Self::Topic(s) => s.encode(dest, version)?,
                             Self::CustomSpu(s) => s.encode(dest, version)?,
@@ -202,11 +205,12 @@ macro_rules! ClassicDecoding {
                         tracing::debug!("decoding new");
                         self.0.decode(src, version)?;
                     } else {
-                        tracing::debug!("decoding classical");
+
                         use fluvio_protocol::Encoder;
                         let classic_obj = [<ClassicObjectApi $api>]::decode_from(src, version)?;
-                        // reencode using new version
-                        self.0.set_buf(classic_obj.type_string().to_owned(),classic_obj.as_bytes(COMMON_VERSION)?.into());
+                        tracing::debug!(ty = classic_obj.type_string(),version,"decoding as classical");
+                        // reencode as DYN OBJECT to strip out type
+                        self.0.set_buf(crate::objects::DYN_OBJ,classic_obj.type_string().to_owned(),classic_obj.as_bytes(crate::objects::DYN_OBJ)?.into());
                     }
                     Ok(())
                 }

@@ -129,6 +129,7 @@ mod classic {
             if version >= DYN_OBJ {
                 input.encode(&mut buf, version)?;
             } else {
+                debug!("encoding classic");
                 // for classical, we use old way
                 let parts = input.parts();
                 let request = <S as ClassicCreatableAdminSpec>::try_classic_convert(parts.1)?;

@@ -131,9 +131,10 @@ impl TypeBuffer {
         }
     }
 
-    pub(crate) fn set_buf(&mut self, ty: String, buf: ByteBuf) {
+    pub(crate) fn set_buf(&mut self, version: Version, ty: String, buf: ByteBuf) {
         self.buf = buf;
         self.ty = ty;
+        self.version = version;
     }
 }
 
