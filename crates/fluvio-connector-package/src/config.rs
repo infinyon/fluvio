@@ -39,7 +39,6 @@ impl Default for ConnectorConfig {
 }
 
 mod serde_impl {
-    use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
     use serde::{Deserialize};
 
     use crate::config::ConnectorConfigV1;
@@ -51,30 +50,30 @@ mod serde_impl {
         where
             D: serde::Deserializer<'a>,
         {
-            let v0_0_0: FluvioSemVersion = FluvioSemVersion::parse("0.0.0").expect("failed");
-            let v0_1_0: FluvioSemVersion = FluvioSemVersion::parse("0.1.0").expect("failed");
-
+            #[derive(Deserialize)]
+            enum Version {
+                #[serde(rename = "0.0.0")]
+                V0,
+                #[serde(rename = "0.1.0")]
+                V1,
+            }
             #[derive(Deserialize)]
             #[serde(rename_all = "camelCase")]
             struct VersionedConfig {
-                api_version: Option<FluvioSemVersion>,
+                api_version: Option<Version>,
                 #[serde(flatten)]
                 config: serde_yaml::Value,
             }
-            let versioned_config = VersionedConfig::deserialize(deserializer)?;
-            let version = versioned_config.api_version.unwrap_or(v0_0_0.clone());
+            let versioned_config: VersionedConfig = VersionedConfig::deserialize(deserializer)?;
+            let version = versioned_config.api_version.unwrap_or(Version::V0);
             match version {
-                v0 if v0 == v0_0_0 => ConnectorConfigV1::deserialize(versioned_config.config)
+                Version::V0 => ConnectorConfigV1::deserialize(versioned_config.config)
                     .map(ConnectorConfig::V0_0_0)
                     .map_err(serde::de::Error::custom),
 
-                v1 if v1 == v0_1_0 => ConnectorConfigV1::deserialize(versioned_config.config)
+                Version::V1 => ConnectorConfigV1::deserialize(versioned_config.config)
                     .map(ConnectorConfig::V0_1_0)
                     .map_err(serde::de::Error::custom),
-                _ => Err(serde::de::Error::custom(format!(
-                    "unsupported version: {}",
-                    version
-                ))),
             }
         }
     }
