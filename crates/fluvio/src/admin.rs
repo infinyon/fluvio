@@ -16,7 +16,7 @@ use fluvio_sc_schema::objects::{
     CommonCreateRequest,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec, TryEncodableFrom};
-use fluvio_socket::{SocketError, ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
+use fluvio_socket::{ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
 
 use crate::FluvioConfig;
 use crate::metadata::objects::{ListResponse, ListRequest};
@@ -134,14 +134,6 @@ impl FluvioAdmin {
         } else {
             Err(anyhow!("WatchApi version not found"))
         }
-    }
-
-    #[instrument(skip(self, request))]
-    async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
-    where
-        R: Request + Send + Sync,
-    {
-        self.socket.send_receive(request).await
     }
 
     #[instrument(skip(self, request))]
