@@ -64,11 +64,9 @@ mod serde_impl {
             let versioned_config = VersionedConfig::deserialize(deserializer)?;
             let version = versioned_config.api_version.unwrap_or(v0_0_0.clone());
             match version {
-                no_version if no_version == v0_0_0 => {
-                    ConnectorConfigV1::deserialize(versioned_config.config)
-                        .map(ConnectorConfig::V0_0_0)
-                        .map_err(serde::de::Error::custom)
-                }
+                v0 if v0 == v0_0_0 => ConnectorConfigV1::deserialize(versioned_config.config)
+                    .map(ConnectorConfig::V0_0_0)
+                    .map_err(serde::de::Error::custom),
 
                 v1 if v1 == v0_1_0 => ConnectorConfigV1::deserialize(versioned_config.config)
                     .map(ConnectorConfig::V0_1_0)
