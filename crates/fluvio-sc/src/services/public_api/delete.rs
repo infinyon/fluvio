@@ -7,7 +7,7 @@
 
 use fluvio_protocol::link::ErrorCode;
 use tracing::{instrument, trace, debug, error};
-use anyhow::{anyhow, Result};
+use anyhow::{Result};
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
