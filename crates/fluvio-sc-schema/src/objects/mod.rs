@@ -3,6 +3,8 @@ mod delete;
 mod list;
 mod watch;
 mod metadata;
+
+// backward compatibility with classic protocol. this should go away once we deprecate classic
 pub mod classic;
 
 pub use create::*;
