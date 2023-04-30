@@ -5,7 +5,8 @@
 //! and send K8 a delete message.
 //!
 
-use tracing::{instrument, trace, debug};
+use fluvio_protocol::link::ErrorCode;
+use tracing::{instrument, trace, debug, error};
 use anyhow::{anyhow, Result};
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
@@ -41,7 +42,12 @@ pub async fn handle_delete_request<AC: AuthContext>(
     } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TableFormatSpec>> {
         super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
     } else {
-        return Err(anyhow!("invalid object type"));
+        error!("unknown create request: {:#?}", del_req);
+        Status::new(
+            "create error".to_owned(),
+            ErrorCode::Other("unknown admin object type".to_owned()),
+            None,
+        )
     };
 
     trace!("flv delete topics resp {:#?}", status);
