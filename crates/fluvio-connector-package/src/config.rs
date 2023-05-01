@@ -19,16 +19,75 @@ use crate::metadata::Direction;
 const SOURCE_SUFFIX: &str = "-source";
 const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-pub struct ConnectorConfig {
+/// Versioned connector config
+/// Use this config in the places where you need to enforce the version.
+/// for example on the CLI create command.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "apiVersion")]
+pub enum ConnectorConfig {
+    // V0 is the version of the config that was used before we introduced the versioning.
+    #[serde(rename = "0.0.0")]
+    V0_0_0(ConnectorConfigV1),
+    #[serde(rename = "0.1.0")]
+    V0_1_0(ConnectorConfigV1),
+}
+
+impl Default for ConnectorConfig {
+    fn default() -> Self {
+        ConnectorConfig::V0_1_0(ConnectorConfigV1::default())
+    }
+}
+
+mod serde_impl {
+    use serde::{Deserialize};
+
+    use crate::config::ConnectorConfigV1;
+
+    use super::ConnectorConfig;
+
+    impl<'a> Deserialize<'a> for ConnectorConfig {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'a>,
+        {
+            #[derive(Deserialize)]
+            enum Version {
+                #[serde(rename = "0.0.0")]
+                V0,
+                #[serde(rename = "0.1.0")]
+                V1,
+            }
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct VersionedConfig {
+                api_version: Option<Version>,
+                #[serde(flatten)]
+                config: serde_yaml::Value,
+            }
+            let versioned_config: VersionedConfig = VersionedConfig::deserialize(deserializer)?;
+            let version = versioned_config.api_version.unwrap_or(Version::V0);
+            match version {
+                Version::V0 => ConnectorConfigV1::deserialize(versioned_config.config)
+                    .map(ConnectorConfig::V0_0_0)
+                    .map_err(serde::de::Error::custom),
+
+                Version::V1 => ConnectorConfigV1::deserialize(versioned_config.config)
+                    .map(ConnectorConfig::V0_1_0)
+                    .map_err(serde::de::Error::custom),
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+pub struct ConnectorConfigV1 {
     pub meta: MetaConfig,
 
     #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
     pub transforms: Option<TransformationConfig>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct MetaConfig {
     pub name: String,
 
@@ -53,17 +112,41 @@ impl MetaConfig {
     fn secrets(&self) -> HashSet<SecretConfig> {
         HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
     }
+
+    fn direction(&self) -> Direction {
+        if self.type_.ends_with(SOURCE_SUFFIX) {
+            Direction::source()
+        } else {
+            Direction::dest()
+        }
+    }
+
+    pub fn image(&self) -> String {
+        format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
+    }
+
+    fn normalize_batch_size(&mut self) -> Result<()> {
+        // This is needed because we want to use a human readable version of `BatchSize` but the
+        // serde support for BatchSize serializes and deserializes as bytes.
+        if let Some(ref mut producer) = &mut self.producer {
+            if let Some(batch_size_string) = &producer.batch_size_string {
+                let batch_size = batch_size_string
+                    .parse::<ByteSize>()
+                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
+                producer.batch_size = Some(batch_size);
+            }
+        };
+        Ok(())
+    }
 }
 
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub partition: Option<PartitionId>,
 }
 
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -167,12 +250,22 @@ impl Serialize for SecretName {
     }
 }
 
+impl ConnectorConfigV1 {
+    fn meta(&self) -> &MetaConfig {
+        &self.meta
+    }
+
+    fn mut_meta(&mut self) -> &mut MetaConfig {
+        &mut self.meta
+    }
+}
+
 impl ConnectorConfig {
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        ConnectorConfig::config_from_str(&contents)
+        Self::config_from_str(&contents)
     }
 
     /// Only parses the meta section of the config
@@ -186,21 +279,22 @@ impl ConnectorConfig {
     }
 
     fn validate_secret_names(&self) -> Result<()> {
-        if let Some(secrets) = &self.meta.secrets {
-            for secret in secrets {
-                secret.name.validate()?;
-            }
+        for secret in self.secrets() {
+            secret.name.validate()?;
         }
         Ok(())
     }
-
-    pub fn secrets(&self) -> HashSet<SecretConfig> {
-        self.meta.secrets()
+    pub fn meta(&self) -> &MetaConfig {
+        match self {
+            Self::V0_1_0(config) => config.meta(),
+            Self::V0_0_0(config) => config.meta(),
+        }
     }
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
         let mut connector_config: Self = serde_yaml::from_value(value)?;
         connector_config.normalize_batch_size()?;
+        connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
         Ok(connector_config)
@@ -210,34 +304,36 @@ impl ConnectorConfig {
         std::fs::write(path, serde_yaml::to_string(self)?)?;
         Ok(())
     }
-
-    pub fn direction(&self) -> Direction {
-        if self.meta.type_.ends_with(SOURCE_SUFFIX) {
-            Direction::source()
-        } else {
-            Direction::dest()
+    pub fn mut_meta(&mut self) -> &mut MetaConfig {
+        match self {
+            Self::V0_1_0(config) => config.mut_meta(),
+            Self::V0_0_0(config) => config.mut_meta(),
         }
     }
 
-    pub fn image(&self) -> String {
-        format!(
-            "{}-{}:{}",
-            IMAGE_PREFFIX, self.meta.type_, self.meta.version
-        )
+    pub fn secrets(&self) -> HashSet<SecretConfig> {
+        match self {
+            Self::V0_1_0(config) => config.meta.secrets(),
+            Self::V0_0_0(_) => Default::default(),
+        }
     }
 
+    pub fn transforms(&self) -> Option<&TransformationConfig> {
+        match self {
+            Self::V0_1_0(config) => config.transforms.as_ref(),
+            Self::V0_0_0(config) => config.transforms.as_ref(),
+        }
+    }
+
+    pub fn direction(&self) -> Direction {
+        self.meta().direction()
+    }
+
+    pub fn image(&self) -> String {
+        self.meta().image()
+    }
     fn normalize_batch_size(&mut self) -> Result<()> {
-        // This is needed because we want to use a human readable version of `BatchSize` but the
-        // serde support for BatchSize serializes and deserializes as bytes.
-        if let Some(ref mut producer) = &mut self.meta.producer {
-            if let Some(batch_size_string) = &producer.batch_size_string {
-                let batch_size = batch_size_string
-                    .parse::<ByteSize>()
-                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
-                producer.batch_size = Some(batch_size);
-            }
-        };
-        Ok(())
+        self.mut_meta().normalize_batch_size()
     }
 }
 
@@ -252,7 +348,7 @@ mod tests {
     #[test]
     fn full_yaml_test() {
         //given
-        let expected = ConnectorConfig {
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
@@ -284,7 +380,7 @@ mod tests {
                 }
                 .into(),
             ),
-        };
+        });
 
         //when
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
@@ -297,7 +393,7 @@ mod tests {
     #[test]
     fn simple_yaml_test() {
         //given
-        let expected = ConnectorConfig {
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
@@ -308,7 +404,7 @@ mod tests {
                 secrets: None,
             },
             transforms: None,
-        };
+        });
 
         //when
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/simple.yaml")
@@ -324,14 +420,17 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "meta.producer.linger: invalid value: string \"1\", expected a duration at line 8 column 13",
-            format!("{connector_cfg:?}")
+            "invalid value: string \"1\", expected a duration",
+            format!("{connector_cfg}")
         );
         let connector_cfg =
             ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!("meta.producer.compression: unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4` at line 8 column 18", format!("{connector_cfg:?}"));
+        assert_eq!(
+            "unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`",
+            format!("{connector_cfg}")
+        );
 
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
             .expect_err("This yaml should error");
@@ -343,17 +442,14 @@ mod tests {
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
             .expect_err("This yaml should error");
         #[cfg(unix)]
-        assert_eq!(
-            "meta: missing field `version` at line 2 column 3",
-            format!("{connector_cfg:?}")
-        );
+        assert_eq!("missing field `version`", format!("{connector_cfg:?}"));
 
         let connector_cfg =
             ConnectorConfig::from_file("test-data/connectors/error-secret-with-spaces.yaml")
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "meta.secrets[0]: Secret name `secret name` can only contain alphanumeric ASCII characters and underscores at line 8 column 7",
+            "Secret name `secret name` can only contain alphanumeric ASCII characters and underscores",
             format!("{connector_cfg:?}")
         );
 
@@ -362,7 +458,16 @@ mod tests {
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "meta.secrets[0]: Secret name `1secret` cannot start with a number at line 8 column 7",
+            "Secret name `1secret` cannot start with a number",
+            format!("{connector_cfg:?}")
+        );
+
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-invalid-api-version.yaml")
+                .expect_err("This yaml should error");
+        #[cfg(unix)]
+        assert_eq!(
+            "apiVersion: unknown variant `v1`, expected `0.0.0` or `0.1.0` at line 1 column 13",
             format!("{connector_cfg:?}")
         );
     }
@@ -371,6 +476,7 @@ mod tests {
     fn deserialize_test() {
         //given
         let yaml = r#"
+            apiVersion: 0.1.0
             meta:
                 name: kafka-out
                 topic: poc1
@@ -378,7 +484,7 @@ mod tests {
                 version: latest
             "#;
 
-        let expected = ConnectorConfig {
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 name: "kafka-out".to_string(),
                 type_: "kafka-sink".to_string(),
@@ -389,7 +495,39 @@ mod tests {
                 secrets: None,
             },
             transforms: None,
-        };
+        });
+
+        //when
+        let connector_spec: ConnectorConfig =
+            serde_yaml::from_str(yaml).expect("Failed to deserialize");
+
+        //then
+        assert_eq!(connector_spec, expected);
+    }
+
+    #[test]
+    fn deserialize_test_untagged() {
+        //given
+        let yaml = r#"
+            meta:
+                name: kafka-out
+                topic: poc1
+                type: kafka-sink
+                version: latest
+            "#;
+
+        let expected = ConnectorConfig::V0_0_0(ConnectorConfigV1 {
+            meta: MetaConfig {
+                name: "kafka-out".to_string(),
+                type_: "kafka-sink".to_string(),
+                topic: "poc1".to_string(),
+                version: "latest".to_string(),
+                producer: None,
+                consumer: None,
+                secrets: None,
+            },
+            transforms: None,
+        });
 
         //when
         let connector_spec: ConnectorConfig =
@@ -409,14 +547,14 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms.is_some());
+        assert!(connector_spec.transforms().is_some());
         assert_eq!(
-            connector_spec.transforms.as_ref().unwrap().transforms[0]
+            connector_spec.transforms().unwrap().transforms[0]
                 .uses
                 .as_str(),
             "infinyon/sql"
         );
-        assert_eq!(connector_spec.transforms.as_ref().unwrap().transforms[0].with,
+        assert_eq!(connector_spec.transforms().unwrap().transforms[0].with,
                        BTreeMap::from([("mapping".to_string(), "{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":0,\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message\"}".into())]));
     }
 
@@ -487,8 +625,8 @@ mod tests {
                 .expect("Failed to deserialize");
 
         //then
-        assert!(connector_spec.transforms.is_some());
-        let transform = connector_spec.transforms.unwrap().transforms;
+        assert!(connector_spec.transforms().is_some());
+        let transform = &connector_spec.transforms().unwrap().transforms;
         assert_eq!(transform.len(), 3);
         assert_eq!(transform[0].uses.as_str(), "infinyon/json-sql");
         assert_eq!(

@@ -1,4 +1,5 @@
 use minijinja::{Environment};
+use tracing::error;
 
 use crate::{
     secret::{self},
@@ -49,7 +50,10 @@ impl ConfigRenderer {
         let context = self.build_context(input)?;
         match self.inner_renderer.render_str(input, context) {
             Ok(rendered) => Ok(rendered),
-            Err(_) => Err(anyhow::anyhow!("failed to render: `{}`.", input)),
+            Err(err) => {
+                error!(%err, %input, "failed to render");
+                Err(anyhow::anyhow!("failed to render: `{}`.", input))
+            }
         }
     }
 
@@ -85,7 +89,7 @@ mod test {
 
     use crate::{
         secret::{FileSecretStore},
-        config::ConnectorConfig,
+        config::{ConnectorConfig},
     };
 
     use super::{ConfigRenderer, context::ContextStore};
@@ -177,6 +181,7 @@ mod test {
         )));
 
         let value_str = r#"
+            apiVersion: 0.1.0
             meta:
                 name: test
                 version: 0.1.0
@@ -192,15 +197,15 @@ mod test {
                 interval: ${{ secrets.interval }}
             "#;
 
-        let value_str = render_config_str(value_str).unwrap();
+        let value_str = render_config_str(value_str).expect("failed to render config");
         let connector_config: ConnectorConfig =
             serde_yaml::from_str(&value_str).expect("should be yaml");
         let value: serde_yaml::Value = serde_yaml::from_str(&value_str).expect("should be yaml");
 
-        assert_eq!(connector_config.meta.name, "test");
-        assert_eq!(connector_config.meta.version, "0.1.0");
-        assert_eq!(connector_config.meta.topic, "test");
-        assert_eq!(connector_config.meta.type_, "http-source");
+        assert_eq!(connector_config.meta().name, "test");
+        assert_eq!(connector_config.meta().version, "0.1.0");
+        assert_eq!(connector_config.meta().topic, "test");
+        assert_eq!(connector_config.meta().type_, "http-source");
         assert_eq!(
             value["my_service"]["api_key"]
                 .as_str()

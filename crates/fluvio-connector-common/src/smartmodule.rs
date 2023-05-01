@@ -7,7 +7,7 @@ pub async fn smartmodule_chain_from_config(
 ) -> Result<Option<fluvio::SmartModuleChainBuilder>> {
     use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
 
-    if let Some(TransformationConfig { transforms }) = &config.transforms {
+    if let Some(TransformationConfig { transforms }) = config.transforms() {
         if transforms.is_empty() {
             return Ok(None);
         }
@@ -34,8 +34,7 @@ pub async fn smartmodule_chain_from_config(
 pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<SmartModuleInvocation>> {
     Some(
         config
-            .transforms
-            .as_ref()?
+            .transforms()?
             .transforms
             .iter()
             .map(|s| SmartModuleInvocation {

@@ -42,13 +42,13 @@ pub trait Sink<I> {
 pub async fn ensure_topic_exists(config: &config::ConnectorConfig) -> Result<()> {
     let admin = fluvio::FluvioAdmin::connect().await?;
     let topics = admin
-        .list::<TopicSpec, String>(vec![config.meta.topic.clone()])
+        .list::<TopicSpec, String>(vec![config.meta().topic.clone()])
         .await?;
-    let topic_exists = topics.iter().any(|t| t.name.eq(&config.meta.topic));
+    let topic_exists = topics.iter().any(|t| t.name.eq(&config.meta().topic));
     if !topic_exists {
         let _ = admin
             .create(
-                config.meta.topic.clone(),
+                config.meta().topic.clone(),
                 false,
                 TopicSpec::new_computed(1, 1, Some(false)),
             )
