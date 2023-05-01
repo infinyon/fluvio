@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use bytesize::ByteSize;
 use serde::{Serializer, Deserializer, Deserialize};
 
@@ -8,7 +6,7 @@ where
     S: Serializer,
 {
     match input {
-        Some(size) => serializer.serialize_str(&size.to_string()),
+        Some(size) => bytesize_serde::serialize(size, serializer),
         None => serializer.serialize_none(),
     }
 }
@@ -17,8 +15,10 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<ByteSize>, D::Error
 where
     D: Deserializer<'de>,
 {
-    let s = Option::<String>::deserialize(deserializer)?;
+    let value = Option::<serde_yaml::Value>::deserialize(deserializer)?;
 
-    s.map(|s| ByteSize::from_str(&s).map_err(serde::de::Error::custom))
+    value
+        .map(|v| bytesize_serde::deserialize(v))
         .transpose()
+        .map_err(serde::de::Error::custom)
 }

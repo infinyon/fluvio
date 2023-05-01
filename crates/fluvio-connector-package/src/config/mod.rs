@@ -156,7 +156,7 @@ pub struct ProducerParameters {
         skip_serializing_if = "Option::is_none",
         default
     )]
-    pub batch_size: Option<ByteSize>,
+    batch_size: Option<ByteSize>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct SecretConfig {
@@ -425,7 +425,7 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "couldn't parse \"aoeu\" into a known SI unit, couldn't parse unit of \"aoeu\"",
+            "invalid value: string \"1aoeu\", expected parsable string",
             format!("{connector_cfg:?}")
         );
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
@@ -513,6 +513,50 @@ mod tests {
                 version: "latest".to_string(),
                 producer: None,
                 consumer: None,
+                secrets: None,
+            },
+            transforms: None,
+        });
+
+        //when
+        let connector_spec: ConnectorConfig =
+            serde_yaml::from_str(yaml).expect("Failed to deserialize");
+
+        //then
+        assert_eq!(connector_spec, expected);
+    }
+
+    #[test]
+    fn deserialize_with_integer_batch_size() {
+        //given
+        let yaml = r#"
+        apiVersion: 0.1.0
+        meta:
+          version: 0.1.0
+          name: my-test-mqtt
+          type: mqtt-source
+          topic: my-mqtt
+          consumer:
+            max_bytes: 1400
+          producer:
+            batch_size: 1600
+        "#;
+
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
+            meta: MetaConfig {
+                name: "my-test-mqtt".to_string(),
+                type_: "mqtt-source".to_string(),
+                topic: "my-mqtt".to_string(),
+                version: "0.1.0".to_string(),
+                producer: Some(ProducerParameters {
+                    linger: None,
+                    compression: None,
+                    batch_size: Some(ByteSize::b(1600)),
+                }),
+                consumer: Some(ConsumerParameters {
+                    max_bytes: Some(ByteSize::b(1400)),
+                    partition: None,
+                }),
                 secrets: None,
             },
             transforms: None,
