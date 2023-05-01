@@ -126,21 +126,6 @@ impl MetaConfig {
     pub fn image(&self) -> String {
         format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
     }
-
-    fn normalize_bytesize_fields(&mut self) -> Result<()> {
-        // This is needed because we want to use a human readable version of `BatchSize` but the
-        // serde support for BatchSize serializes and deserializes as bytes.
-        if let Some(ref mut producer) = &mut self.producer {
-            if let Some(batch_size_string) = &producer.batch_size_string {
-                let batch_size = batch_size_string
-                    .parse::<ByteSize>()
-                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
-                producer.batch_size = Some(batch_size);
-            }
-        };
-
-        Ok(())
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -164,14 +149,14 @@ pub struct ProducerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compression: Option<Compression>,
 
-    // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
-    // feature to populate `batch_size`.
-    #[serde(rename = "batch-size")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    batch_size_string: Option<String>,
-
-    #[serde(skip)]
-    pub batch_size: Option<ByteSize>,
+    #[serde(
+        rename = "batch-size",
+        alias = "batch_size",
+        with = "bytesize_serde",
+        skip_serializing_if = "Option::is_none",
+        default
+    )]
+    batch_size: Option<ByteSize>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct SecretConfig {
@@ -279,8 +264,7 @@ impl ConnectorConfig {
 
     /// Only parses the meta section of the config
     pub fn config_from_str(config_str: &str) -> Result<Self> {
-        let mut connector_config: Self = serde_yaml::from_str(config_str)?;
-        connector_config.normalize_bytesize_fields()?;
+        let connector_config: Self = serde_yaml::from_str(config_str)?;
         connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -301,8 +285,7 @@ impl ConnectorConfig {
     }
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
-        let mut connector_config: Self = serde_yaml::from_value(value)?;
-        connector_config.normalize_bytesize_fields()?;
+        let connector_config: Self = serde_yaml::from_value(value)?;
         connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -341,9 +324,6 @@ impl ConnectorConfig {
     pub fn image(&self) -> String {
         self.meta().image()
     }
-    fn normalize_bytesize_fields(&mut self) -> Result<()> {
-        self.mut_meta().normalize_bytesize_fields()
-    }
 }
 
 #[cfg(test)]
@@ -366,7 +346,6 @@ mod tests {
                 producer: Some(ProducerParameters {
                     linger: Some(Duration::from_millis(1)),
                     compression: Some(Compression::Gzip),
-                    batch_size_string: Some("44.0 MB".to_string()),
                     batch_size: Some(ByteSize::mb(44)),
                 }),
                 consumer: Some(ConsumerParameters {
@@ -446,7 +425,7 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "Fail to parse byte size couldn't parse \"aoeu\" into a known SI unit, couldn't parse unit of \"aoeu\"",
+            "couldn't parse \"aoeu\" into a known SI unit, couldn't parse unit of \"aoeu\"",
             format!("{connector_cfg:?}")
         );
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
