@@ -18,7 +18,7 @@ where
     let value = Option::<serde_yaml::Value>::deserialize(deserializer)?;
 
     value
-        .map(|v| bytesize_serde::deserialize(v))
+        .map(bytesize_serde::deserialize)
         .transpose()
         .map_err(serde::de::Error::custom)
 }
