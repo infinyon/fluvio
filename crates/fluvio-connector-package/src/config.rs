@@ -461,6 +461,15 @@ mod tests {
             "Secret name `1secret` cannot start with a number",
             format!("{connector_cfg:?}")
         );
+
+        let connector_cfg =
+            ConnectorConfig::from_file("test-data/connectors/error-invalid-api-version.yaml")
+                .expect_err("This yaml should error");
+        #[cfg(unix)]
+        assert_eq!(
+            "apiVersion: unknown variant `0.0.1`, expected `0.0.0` or `0.1.0` at line 1 column 13",
+            format!("{connector_cfg:?}")
+        );
     }
 
     #[test]
