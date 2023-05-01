@@ -16,6 +16,8 @@ use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_compression::Compression;
 use crate::metadata::Direction;
 
+mod bytesize_serde;
+
 const SOURCE_SUFFIX: &str = "-source";
 const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 
@@ -137,15 +139,6 @@ impl MetaConfig {
             }
         };
 
-        if let Some(ref mut consumer) = &mut self.consumer {
-            if let Some(max_bytes_string) = &consumer.max_bytes_string {
-                let max_bytes = max_bytes_string
-                    .parse::<ByteSize>()
-                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
-                consumer.max_bytes = Some(max_bytes);
-            }
-        };
-
         Ok(())
     }
 }
@@ -154,12 +147,11 @@ impl MetaConfig {
 pub struct ConsumerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub partition: Option<PartitionId>,
-    // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
-    // feature to populate `max_bytes`.
-    #[serde(rename = "max-bytes")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    max_bytes_string: Option<String>,
-    #[serde(skip)]
+    #[serde(
+        with = "bytesize_serde",
+        skip_serializing_if = "Option::is_none",
+        default
+    )]
     pub max_bytes: Option<ByteSize>,
 }
 
@@ -379,7 +371,6 @@ mod tests {
                 }),
                 consumer: Some(ConsumerParameters {
                     partition: Some(10),
-                    max_bytes_string: Some("1 MB".to_string()),
                     max_bytes: Some(ByteSize::mb(1)),
                 }),
                 secrets: Some(vec![SecretConfig {

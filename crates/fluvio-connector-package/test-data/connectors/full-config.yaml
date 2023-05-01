@@ -11,7 +11,7 @@ meta:
     compression: gzip
   consumer:
     partition: 10
-    max-bytes: "1 MB"
+    max_bytes: "1 MB"
   secrets:
     - name: secret1
 transforms:
