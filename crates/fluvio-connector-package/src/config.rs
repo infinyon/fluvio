@@ -125,7 +125,7 @@ impl MetaConfig {
         format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
     }
 
-    fn normalize_batch_size(&mut self) -> Result<()> {
+    fn normalize_bytesize_fields(&mut self) -> Result<()> {
         // This is needed because we want to use a human readable version of `BatchSize` but the
         // serde support for BatchSize serializes and deserializes as bytes.
         if let Some(ref mut producer) = &mut self.producer {
@@ -136,6 +136,16 @@ impl MetaConfig {
                 producer.batch_size = Some(batch_size);
             }
         };
+
+        if let Some(ref mut consumer) = &mut self.consumer {
+            if let Some(max_bytes_string) = &consumer.max_bytes_string {
+                let max_bytes = max_bytes_string
+                    .parse::<ByteSize>()
+                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
+                consumer.max_bytes = Some(max_bytes);
+            }
+        };
+
         Ok(())
     }
 }
@@ -144,6 +154,13 @@ impl MetaConfig {
 pub struct ConsumerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub partition: Option<PartitionId>,
+    // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
+    // feature to populate `max_bytes`.
+    #[serde(rename = "max-bytes")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    max_bytes_string: Option<String>,
+    #[serde(skip)]
+    pub max_bytes: Option<ByteSize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -271,7 +288,7 @@ impl ConnectorConfig {
     /// Only parses the meta section of the config
     pub fn config_from_str(config_str: &str) -> Result<Self> {
         let mut connector_config: Self = serde_yaml::from_str(config_str)?;
-        connector_config.normalize_batch_size()?;
+        connector_config.normalize_bytesize_fields()?;
         connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -293,7 +310,7 @@ impl ConnectorConfig {
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
         let mut connector_config: Self = serde_yaml::from_value(value)?;
-        connector_config.normalize_batch_size()?;
+        connector_config.normalize_bytesize_fields()?;
         connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -332,8 +349,8 @@ impl ConnectorConfig {
     pub fn image(&self) -> String {
         self.meta().image()
     }
-    fn normalize_batch_size(&mut self) -> Result<()> {
-        self.mut_meta().normalize_batch_size()
+    fn normalize_bytesize_fields(&mut self) -> Result<()> {
+        self.mut_meta().normalize_bytesize_fields()
     }
 }
 
@@ -362,6 +379,8 @@ mod tests {
                 }),
                 consumer: Some(ConsumerParameters {
                     partition: Some(10),
+                    max_bytes_string: Some("1 MB".to_string()),
+                    max_bytes: Some(ByteSize::mb(1)),
                 }),
                 secrets: Some(vec![SecretConfig {
                     name: "secret1".parse().unwrap(),
