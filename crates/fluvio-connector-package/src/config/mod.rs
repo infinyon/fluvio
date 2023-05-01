@@ -156,7 +156,7 @@ pub struct ProducerParameters {
         skip_serializing_if = "Option::is_none",
         default
     )]
-    batch_size: Option<ByteSize>,
+    pub batch_size: Option<ByteSize>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct SecretConfig {
