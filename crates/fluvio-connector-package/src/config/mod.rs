@@ -16,6 +16,8 @@ use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_compression::Compression;
 use crate::metadata::Direction;
 
+mod bytesize_serde;
+
 const SOURCE_SUFFIX: &str = "-source";
 const IMAGE_PREFFIX: &str = "infinyon/fluvio-connect";
 
@@ -124,26 +126,18 @@ impl MetaConfig {
     pub fn image(&self) -> String {
         format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
     }
-
-    fn normalize_batch_size(&mut self) -> Result<()> {
-        // This is needed because we want to use a human readable version of `BatchSize` but the
-        // serde support for BatchSize serializes and deserializes as bytes.
-        if let Some(ref mut producer) = &mut self.producer {
-            if let Some(batch_size_string) = &producer.batch_size_string {
-                let batch_size = batch_size_string
-                    .parse::<ByteSize>()
-                    .map_err(|err| anyhow::anyhow!("Fail to parse byte size {}", err))?;
-                producer.batch_size = Some(batch_size);
-            }
-        };
-        Ok(())
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub partition: Option<PartitionId>,
+    #[serde(
+        with = "bytesize_serde",
+        skip_serializing_if = "Option::is_none",
+        default
+    )]
+    pub max_bytes: Option<ByteSize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -155,13 +149,13 @@ pub struct ProducerParameters {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compression: Option<Compression>,
 
-    // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
-    // feature to populate `batch_size`.
-    #[serde(rename = "batch-size")]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    batch_size_string: Option<String>,
-
-    #[serde(skip)]
+    #[serde(
+        rename = "batch-size",
+        alias = "batch_size",
+        with = "bytesize_serde",
+        skip_serializing_if = "Option::is_none",
+        default
+    )]
     pub batch_size: Option<ByteSize>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
@@ -270,8 +264,7 @@ impl ConnectorConfig {
 
     /// Only parses the meta section of the config
     pub fn config_from_str(config_str: &str) -> Result<Self> {
-        let mut connector_config: Self = serde_yaml::from_str(config_str)?;
-        connector_config.normalize_batch_size()?;
+        let connector_config: Self = serde_yaml::from_str(config_str)?;
         connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -292,8 +285,7 @@ impl ConnectorConfig {
     }
 
     pub fn from_value(value: serde_yaml::Value) -> Result<Self> {
-        let mut connector_config: Self = serde_yaml::from_value(value)?;
-        connector_config.normalize_batch_size()?;
+        let connector_config: Self = serde_yaml::from_value(value)?;
         connector_config.validate_secret_names()?;
 
         debug!("Using connector config {connector_config:#?}");
@@ -332,9 +324,6 @@ impl ConnectorConfig {
     pub fn image(&self) -> String {
         self.meta().image()
     }
-    fn normalize_batch_size(&mut self) -> Result<()> {
-        self.mut_meta().normalize_batch_size()
-    }
 }
 
 #[cfg(test)]
@@ -357,11 +346,11 @@ mod tests {
                 producer: Some(ProducerParameters {
                     linger: Some(Duration::from_millis(1)),
                     compression: Some(Compression::Gzip),
-                    batch_size_string: Some("44.0 MB".to_string()),
                     batch_size: Some(ByteSize::mb(44)),
                 }),
                 consumer: Some(ConsumerParameters {
                     partition: Some(10),
+                    max_bytes: Some(ByteSize::mb(1)),
                 }),
                 secrets: Some(vec![SecretConfig {
                     name: "secret1".parse().unwrap(),
@@ -436,7 +425,7 @@ mod tests {
             .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "Fail to parse byte size couldn't parse \"aoeu\" into a known SI unit, couldn't parse unit of \"aoeu\"",
+            "invalid value: string \"1aoeu\", expected parsable string",
             format!("{connector_cfg:?}")
         );
         let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-version.yaml")
@@ -524,6 +513,50 @@ mod tests {
                 version: "latest".to_string(),
                 producer: None,
                 consumer: None,
+                secrets: None,
+            },
+            transforms: None,
+        });
+
+        //when
+        let connector_spec: ConnectorConfig =
+            serde_yaml::from_str(yaml).expect("Failed to deserialize");
+
+        //then
+        assert_eq!(connector_spec, expected);
+    }
+
+    #[test]
+    fn deserialize_with_integer_batch_size() {
+        //given
+        let yaml = r#"
+        apiVersion: 0.1.0
+        meta:
+          version: 0.1.0
+          name: my-test-mqtt
+          type: mqtt-source
+          topic: my-mqtt
+          consumer:
+            max_bytes: 1400
+          producer:
+            batch_size: 1600
+        "#;
+
+        let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
+            meta: MetaConfig {
+                name: "my-test-mqtt".to_string(),
+                type_: "mqtt-source".to_string(),
+                topic: "my-mqtt".to_string(),
+                version: "0.1.0".to_string(),
+                producer: Some(ProducerParameters {
+                    linger: None,
+                    compression: None,
+                    batch_size: Some(ByteSize::b(1600)),
+                }),
+                consumer: Some(ConsumerParameters {
+                    max_bytes: Some(ByteSize::b(1400)),
+                    partition: None,
+                }),
                 secrets: None,
             },
             transforms: None,

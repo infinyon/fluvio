@@ -718,6 +718,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytesize-serde"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86d1eb2fd2668859e9785b99700c66b7ea9fdeda35d99f95827a4e5493440178"
+dependencies = [
+ "bytesize",
+ "serde",
+]
+
+[[package]]
 name = "camino"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2649,6 +2659,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "bytesize",
+ "bytesize-serde",
  "fluvio-compression",
  "fluvio-controlplane-metadata",
  "fluvio-smartengine",
