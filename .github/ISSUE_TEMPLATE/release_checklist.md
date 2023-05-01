@@ -20,6 +20,7 @@ For more detail, refer to [`RELEASE.md`](https://github.com/infinyon/fluvio/blob
 - [ ] Create a PR for release
   - [ ] Update `VERSION` and `CHANGELOG.md` files (do not place a \n in the VERSION file, it breaks the CI)
   - [ ] Update [`CHANGELOG`](https://github.com/infinyon/fluvio/blob/master/CHANGELOG.md) with replacement of the `UNRELEASED` date
+  - [ ] Update dependency in connector [template](https://github.com/infinyon/fluvio/blob/master/connector/cargo_template/Cargo.toml)
   - [ ] Merge the PR
 - [ ] Run the [`Release` workflow in Github Actions](https://github.com/infinyon/fluvio/actions/workflows/release.yml) (Retry at least once if failure)  
 
