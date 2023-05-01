@@ -467,7 +467,7 @@ mod tests {
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "apiVersion: unknown variant `0.0.1`, expected `0.0.0` or `0.1.0` at line 1 column 13",
+            "apiVersion: unknown variant `v1`, expected `0.0.0` or `0.1.0` at line 1 column 13",
             format!("{connector_cfg:?}")
         );
     }
