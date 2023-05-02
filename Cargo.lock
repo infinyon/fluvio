@@ -4630,12 +4630,13 @@ dependencies = [
 
 [[package]]
 name = "lib-cargo-crate"
-version = "0.1.8"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08ebfe974b9c20fa6a2a79a6593912919a0e206bddcf3b2bd801913c6e94d614"
+checksum = "c74381f8300bd7930392e862a25590d27b77927ab0e20f962ea1b6756abbf0a1"
 dependencies = [
  "anyhow",
  "byte-unit",
+ "cargo_toml",
  "chrono",
  "chrono-humanize",
  "crates_io_api",
