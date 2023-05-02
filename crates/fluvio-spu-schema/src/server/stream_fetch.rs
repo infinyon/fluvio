@@ -16,6 +16,7 @@ use fluvio_protocol::record::RecordSet;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 use fluvio_types::PartitionId;
 
+use crate::COMMON_VERSION;
 use crate::fetch::FetchablePartitionResponse;
 use crate::isolation::Isolation;
 
@@ -78,7 +79,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = CHAIN_SMARTMODULE_API;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = StreamFetchResponse<R>;
 }
 
