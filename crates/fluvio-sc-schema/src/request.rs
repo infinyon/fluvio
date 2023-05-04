@@ -18,7 +18,7 @@ use fluvio_protocol::link::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
 use crate::objects::{
-    ObjectApiListRequest, ObjectApiCreateRequest, ObjectApiWatchRequest, ObjectApiDeleteRequest,
+    ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
 };
 
 /// Non generic AdminRequest, This is typically used Decoding
@@ -90,17 +90,17 @@ mod test {
 
     use std::io::Cursor;
 
+    use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_protocol::api::RequestMessage;
     use fluvio_protocol::{Encoder};
     use fluvio_protocol::api::ApiMessage;
 
-    use crate::objects::{ListRequest, ObjectApiListRequest};
-    use crate::{AdminPublicDecodedRequest};
-    use crate::topic::TopicSpec;
+    use crate::objects::{ObjectApiListRequest, ListRequest, COMMON_VERSION};
+    use crate::{AdminPublicDecodedRequest, TryEncodableFrom};
 
     fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![], false);
-        list_request.into()
+        ObjectApiListRequest::try_encode_from(list_request, COMMON_VERSION).expect("encode")
     }
 
     #[test]

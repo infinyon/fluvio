@@ -133,7 +133,7 @@ flv-tls-proxy = { version = "0.7" }
 fluvio_ws_stream_wasm = "0.7.0"
 
 # internal fluvio dep
-fluvio = { version = "0.18", path = "crates/fluvio" }
+fluvio = { version = "0.19.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-channel = { path = "crates/fluvio-channel" }
 fluvio-cli-common = { path = "crates/fluvio-cli-common"}
@@ -146,9 +146,9 @@ fluvio-extension-common = { path = "crates/fluvio-extension-common", default-fea
 fluvio-package-index = { version = "0.7.0", path = "crates/fluvio-package-index", default-features = false }
 fluvio-protocol = { version = "0.9.0", path = "crates/fluvio-protocol" }
 fluvio-spu-schema = { version = "0.13.0", path = "crates/fluvio-spu-schema", default-features  = false }
-fluvio-sc-schema = { version = "0.18.0", path = "crates/fluvio-sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.19.0", path = "crates/fluvio-sc-schema", default-features = false }
 fluvio-service = { path = "crates/fluvio-service" }
-fluvio-socket = { version = "0.14.0", path = "crates/fluvio-socket", default-features = false }
+fluvio-socket = { version = "0.14.2", path = "crates/fluvio-socket", default-features = false }
 fluvio-smartengine = {  version = "0.7.0", path = "crates/fluvio-smartengine", default-features = false }
 fluvio-smartmodule = { version = "0.5.0", path = "crates/fluvio-smartmodule", default-features = false }
 fluvio-storage = { path = "crates/fluvio-storage" }
