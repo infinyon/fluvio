@@ -39,7 +39,7 @@ setup_file() {
 @test "Build and deploy connector" {
     # Build
     cd $CONNECTOR_DIR
-    run $CDK_BIN build
+    run $CDK_BIN build --target x86_64-unknown-linux-gnu
     assert_success
 
     # Deploy
