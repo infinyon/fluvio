@@ -22,6 +22,7 @@ use tracing::{debug, info};
 use crate::cmd::PackageCmd;
 
 pub const CONNECTOR_TOML: &str = "Connector.toml";
+pub const README_MD: &str = "README.md";
 
 /// Publish Connector package to the Hub
 #[derive(Debug, Parser)]
@@ -52,6 +53,10 @@ pub struct PublishCmd {
 
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
+
+    /// Relative path to this connector package README
+    #[clap(long)]
+    readme: Option<PathBuf>,
 }
 
 impl PublishCmd {
@@ -72,7 +77,7 @@ impl PublishCmd {
             remove_dir_all(&hubdir)?;
         }
 
-        init_package_template(&package_info, &self.target)?;
+        init_package_template(&package_info, &self.target, &self.readme)?;
         check_package_meta_visiblity(&package_info)?;
 
         match (self.pack, self.push) {
@@ -142,9 +147,21 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> Result<()> {
+pub fn init_package_template(
+    package_info: &PackageInfo,
+    binary_arch: &str,
+    readme_path: &Option<PathBuf>,
+) -> Result<()> {
     let connector_toml_path = find_connector_toml(package_info)?;
     let connector_metadata = ConnectorMetadata::from_toml_file(&connector_toml_path)?;
+    let readme_md_path = if let Some(readme_path) = readme_path {
+        readme_path
+            .to_owned()
+            .canonicalize()
+            .expect("Failed to build path for README")
+    } else {
+        find_readme_md(package_info)?
+    };
 
     let mut pm = PackageMeta {
         group: "no-hubid".into(),
@@ -174,6 +191,11 @@ pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> R
     let binary_relative_path = package_meta_relative_path(&package_meta_path, &binary_path);
     pm.manifest.push(
         binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
+    );
+
+    let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_md_path);
+    pm.manifest.push(
+        readme_md_relative_path.unwrap_or_else(|| readme_md_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
     );
 
     println!("Creating package {}", pm.pkg_name());
@@ -215,13 +237,23 @@ fn from_connectorvis(cv: &ConnectorVisibility) -> PkgVisibility {
 }
 
 pub(crate) fn find_connector_toml(package_info: &PackageInfo) -> Result<PathBuf> {
-    let smartmodule_toml = package_info.package_relative_path(CONNECTOR_TOML);
+    let connector_toml = package_info.package_relative_path(CONNECTOR_TOML);
 
-    if smartmodule_toml.exists() {
-        return Ok(smartmodule_toml);
+    if connector_toml.exists() {
+        return Ok(connector_toml);
     }
 
     Err(anyhow::anyhow!("No \"{}\" file found", CONNECTOR_TOML))
+}
+
+pub(crate) fn find_readme_md(package_info: &PackageInfo) -> Result<PathBuf> {
+    let readme_md = package_info.package_relative_path(README_MD);
+
+    if readme_md.exists() {
+        return Ok(readme_md);
+    }
+
+    Err(anyhow::anyhow!("No \"{}\" file found", README_MD))
 }
 
 fn verify_public_or_exit() -> Result<()> {

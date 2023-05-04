@@ -19,6 +19,9 @@ on:
       fail-fast:
         type: boolean
         default: true
+      readme_path:
+        type: string
+        default: './README.md'
     secrets:
       CLOUD_USER_EMAIL:
         required: true
@@ -64,7 +67,11 @@ jobs:
           cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
+          cdk publish \
+            --public-yes \
+            --target ${{ matrix.rust-target }} \
+            -p ${{ inputs.package-name }} \
+            --readme ${{ inputs.readme_path }}
 
   macos:
     name: macos
