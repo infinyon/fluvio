@@ -138,4 +138,66 @@ mod test {
             &["build", "--profile", "release", "--lib", "-p", "foo"]
         );
     }
+
+    #[test]
+    fn test_builder_target() {
+        let config = Cargo::build()
+            .package("foo")
+            .target("wasm32-unknown-unknown")
+            .build()
+            .expect("should build");
+
+        assert_eq!(config.profile, "release");
+        assert_eq!(config.package, Some("foo".to_string()));
+
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(
+            args,
+            &[
+                "build",
+                "--profile",
+                "release",
+                "--lib",
+                "-p",
+                "foo",
+                "--target",
+                "wasm32-unknown-unknown"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_builder_extra_args() {
+        let config = Cargo::build()
+            .package("foo")
+            .target("wasm32-unknown-unknown")
+            .extra_arguments(vec![
+                "--benches".to_string(),
+                "--no-default-features".to_string(),
+            ])
+            .build()
+            .expect("should build");
+
+        assert_eq!(config.profile, "release");
+        assert_eq!(config.package, Some("foo".to_string()));
+
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(
+            args,
+            &[
+                "build",
+                "--profile",
+                "release",
+                "--lib",
+                "-p",
+                "foo",
+                "--target",
+                "wasm32-unknown-unknown",
+                "--benches",
+                "--no-default-features"
+            ]
+        );
+    }
 }

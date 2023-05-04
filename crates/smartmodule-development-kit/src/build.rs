@@ -9,6 +9,7 @@ use cargo_builder::cargo::Cargo;
 
 use crate::cmd::PackageCmd;
 
+/// Default Build Target to use when building a Connector
 pub(crate) const BUILD_TARGET: &str = "wasm32-unknown-unknown";
 
 /// Builds the SmartModule in the current working directory into a WASM file
