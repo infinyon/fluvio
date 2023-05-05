@@ -321,7 +321,7 @@ where
 
         debug!(start_absolute_offset, end_absolute_offset, record_count);
 
-        let mut stream_request = DefaultStreamFetchRequest {
+        let stream_request = DefaultStreamFetchRequest {
             topic: self.topic.to_owned(),
             partition: self.partition,
             fetch_offset: start_absolute_offset,
@@ -339,8 +339,6 @@ where
         if stream_fetch_version < CHAIN_SMARTMODULE_API {
             warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
         }
-
-        stream_request.derivedstream = config.derivedstream;
 
         let mut stream = self
             .pool
@@ -575,9 +573,6 @@ pub struct ConsumerConfig {
     pub(crate) isolation: Isolation,
     #[builder(default)]
     pub(crate) smartmodule: Vec<SmartModuleInvocation>,
-    #[builder(default)]
-    pub(crate) derivedstream:
-        Option<fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation>,
 }
 
 impl ConsumerConfig {
