@@ -1,6 +1,7 @@
 //!
 //! Command for hub publishing
 
+use std::fs::remove_dir_all;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -56,9 +57,9 @@ pub struct PublishCmd {
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
-
         let opt = self.package.as_opt();
         let package_info = PackageInfo::from_options(&opt)?;
+        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
         info!(
             "publishing package {} from {}",
@@ -66,12 +67,13 @@ impl PublishCmd {
             package_info.package_path().to_string_lossy()
         );
 
-        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
-        if !hubdir.exists() {
-            init_package_template(&package_info, &self.target)?;
-        } else if !self.public_yes {
-            check_package_meta_visiblity(&package_info)?;
+        if hubdir.exists() {
+            tracing::warn!("Removing directory at {:?}", hubdir);
+            remove_dir_all(&hubdir)?;
         }
+
+        init_package_template(&package_info, &self.target)?;
+        check_package_meta_visiblity(&package_info)?;
 
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
