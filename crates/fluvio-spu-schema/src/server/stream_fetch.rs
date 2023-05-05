@@ -14,7 +14,7 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
 use fluvio_protocol::record::RecordSet;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, defaults::FLUVIO_CLIENT_MAX_FETCH_BYTES};
 
 use crate::COMMON_VERSION;
 use crate::fetch::FetchablePartitionResponse;
@@ -54,9 +54,13 @@ pub const CHAIN_SMARTMODULE_API: i16 = 18;
 #[educe(Debug)]
 pub struct StreamFetchRequest<R> {
     pub topic: String,
+    #[builder(default = "0")]
     pub partition: PartitionId,
+    #[builder(default = "0")]
     pub fetch_offset: i64,
+    #[builder(default = "FLUVIO_CLIENT_MAX_FETCH_BYTES")]
     pub max_bytes: i32,
+    #[builder(default = "Isolation::ReadUncommitted")]
     pub isolation: Isolation,
     // these private fields will be removed
     #[educe(Debug(ignore))]

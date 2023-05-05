@@ -19,7 +19,6 @@ use futures_util::{Future, StreamExt};
 use fluvio_future::timer::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket};
 use fluvio_spu_schema::{
-    Isolation,
     server::smartmodule::{
         SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleContextData,
     },
@@ -119,14 +118,11 @@ async fn test_stream_fetch_basic() {
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-        let stream_request = DefaultStreamFetchRequest {
-            topic: topic.clone(),
-            partition: 0,
-            fetch_offset: 0,
-            isolation: Isolation::ReadUncommitted,
-            max_bytes: 1000,
-            ..Default::default()
-        };
+        let stream_request = DefaultStreamFetchRequest::builder()
+            .topic(topic.clone())
+            .max_bytes(1000)
+            .build()
+            .expect("request");
 
         let mut stream = client_socket
             .create_stream(RequestMessage::new_request(stream_request), version)
@@ -455,15 +451,12 @@ async fn test_stream_fetch_filter(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("build");
 
     // 1 out of 2 are filtered
     let mut records = create_filter_records(2);
@@ -641,15 +634,12 @@ async fn test_stream_fetch_filter_individual(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("builder");
 
     // First, open the consumer stream
     let mut stream = client_socket
@@ -764,15 +754,12 @@ async fn test_stream_filter_error_fetch(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("builder");
 
     fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
         let value = if record_index < 10 {
@@ -912,15 +899,12 @@ async fn test_stream_filter_max(
         .expect("write"); // 3000 bytes total
                           // now total of 300 filter records bytes (min), but last filter record is greater than max
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 250,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(250)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -1040,15 +1024,12 @@ async fn test_stream_fetch_map(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 300,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(300)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -1192,12 +1173,12 @@ async fn test_stream_fetch_map_chain(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        max_bytes: 300,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(300)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -1346,15 +1327,12 @@ async fn test_stream_fetch_map_error(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -1479,15 +1457,12 @@ async fn test_stream_aggregate_fetch_single_batch(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     // Aggregate 5 records
     // These records look like:
@@ -1657,15 +1632,12 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         .await
         .expect("write");
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -1754,15 +1726,12 @@ async fn test_stream_fetch_and_new_request(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let _stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -1858,15 +1827,12 @@ async fn test_stream_fetch_array_map(
         .await
         .expect("write");
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -1980,15 +1946,12 @@ async fn test_stream_fetch_filter_map(
         .await
         .expect("write");
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -2087,7 +2050,7 @@ async fn test_stream_fetch_filter_with_params(
     let mut params = BTreeMap::new();
     params.insert("key".to_string(), "b".to_string());
 
-    let smartmodule_with_params = smartmodules
+    let smartmodule_with_params: Vec<SmartModuleInvocation> = smartmodules
         .clone()
         .into_iter()
         .map(|mut w| {
@@ -2096,15 +2059,12 @@ async fn test_stream_fetch_filter_with_params(
         })
         .collect();
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules: smartmodule_with_params,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodule_with_params)
+        .build()
+        .expect("stream request");
 
     // 1 out of 2 are filtered
     let mut records = create_filter_records(2);
@@ -2153,15 +2113,12 @@ async fn test_stream_fetch_filter_with_params(
         assert_eq!(partition.records.batches.len(), 1);
     }
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -2277,15 +2234,12 @@ async fn test_stream_fetch_invalid_smartmodule(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
-    let stream_request = DefaultStreamFetchRequest {
-        topic: topic.to_owned(),
-        partition: 0,
-        fetch_offset: 0,
-        isolation: Isolation::ReadUncommitted,
-        max_bytes: 10000,
-        smartmodules,
-        ..Default::default()
-    };
+    let stream_request = DefaultStreamFetchRequest::builder()
+        .topic(topic.to_owned())
+        .max_bytes(10000)
+        .smartmodules(smartmodules)
+        .build()
+        .expect("stream request");
 
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
@@ -2357,11 +2311,13 @@ async fn test_stream_metrics() {
     {
         let mut stream = client_socket
             .create_stream(
-                RequestMessage::new_request(DefaultStreamFetchRequest {
-                    topic: topic.to_string(),
-                    max_bytes: 1000,
-                    ..Default::default()
-                }),
+                RequestMessage::new_request(
+                    DefaultStreamFetchRequest::builder()
+                        .topic(topic.to_string())
+                        .max_bytes(1000)
+                        .build()
+                        .expect("stream request"),
+                ),
                 10,
             )
             .await
@@ -2383,11 +2339,13 @@ async fn test_stream_metrics() {
         assert_eq!(ctx.metrics().chain_metrics().invocation_count(), 0);
     }
     {
-        let mut request = RequestMessage::new_request(DefaultStreamFetchRequest {
-            topic: topic.to_string(),
-            max_bytes: 1000,
-            ..Default::default()
-        });
+        let mut request = RequestMessage::new_request(
+            DefaultStreamFetchRequest::builder()
+                .topic(topic.to_string())
+                .max_bytes(1000)
+                .build()
+                .expect("stream request"),
+        );
         request.header.set_client_id("fluvio_connector");
         let mut stream = client_socket
             .create_stream(request, 10)
@@ -2416,12 +2374,15 @@ async fn test_stream_metrics() {
             kind: SmartModuleKind::Filter,
             ..Default::default()
         };
-        let mut request = RequestMessage::new_request(DefaultStreamFetchRequest {
-            topic: topic.to_string(),
-            max_bytes: 1000,
-            smartmodules: vec![smartmodule],
-            ..Default::default()
-        });
+        let mut request = RequestMessage::new_request(
+            DefaultStreamFetchRequest::builder()
+                .topic(topic.to_string())
+                .max_bytes(1000)
+                .smartmodules(vec![smartmodule])
+                .build()
+                .expect("request"),
+        );
+
         request.header.set_client_id("fluvio_connector2");
         let mut stream = client_socket
             .create_stream(request, 10)
