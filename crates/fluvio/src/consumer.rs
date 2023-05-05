@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use fluvio_types::PartitionId;
+use anyhow::Result;
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -8,6 +8,7 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
+use fluvio_types::PartitionId;
 use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
 use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
@@ -116,7 +117,7 @@ where
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -166,7 +167,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let (stream, start_offset) = self
             .inner_stream_batches_with_config(offset, config)
             .await?;
@@ -221,7 +222,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>> {
         let (stream, _start_offset) = self
             .inner_stream_batches_with_config(offset, config)
             .await?;
@@ -235,13 +236,10 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<
-        (
-            impl Stream<Item = Result<Batch, ErrorCode>>,
-            fluvio_protocol::record::Offset,
-        ),
-        FluvioError,
-    > {
+    ) -> Result<(
+        impl Stream<Item = Result<Batch, ErrorCode>>,
+        fluvio_protocol::record::Offset,
+    )> {
         let (stream, start_offset) = self.request_stream(offset, config).await?;
         let metrics = self.metrics.clone();
         let flattened =
@@ -301,13 +299,10 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<
-        (
-            impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
-            fluvio_protocol::record::Offset,
-        ),
-        FluvioError,
-    > {
+    ) -> Result<(
+        impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
+        fluvio_protocol::record::Offset,
+    )> {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
 
@@ -321,15 +316,14 @@ where
 
         debug!(start_absolute_offset, end_absolute_offset, record_count);
 
-        let stream_request = DefaultStreamFetchRequest {
-            topic: self.topic.to_owned(),
-            partition: self.partition,
-            fetch_offset: start_absolute_offset,
-            isolation: config.isolation,
-            max_bytes: config.max_bytes,
-            smartmodules: config.smartmodule,
-            ..Default::default()
-        };
+        let stream_request = DefaultStreamFetchRequest::builder()
+            .topic(self.topic.to_owned())
+            .partition(self.partition)
+            .fetch_offset(start_absolute_offset)
+            .isolation(config.isolation)
+            .max_bytes(config.max_bytes)
+            .smartmodules(config.smartmodule)
+            .build()?;
 
         let stream_fetch_version = serial_socket
             .versions()
@@ -678,7 +672,7 @@ impl MultiplePartitionConsumer {
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -728,7 +722,7 @@ impl MultiplePartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let consumers = self
             .strategy
             .selection(self.pool.clone())
