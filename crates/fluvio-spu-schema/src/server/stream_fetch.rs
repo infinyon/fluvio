@@ -58,20 +58,23 @@ pub struct StreamFetchRequest<R> {
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,
-    /// no longer used, but keep to avoid breaking compatibility, this will not be honored
-    // TODO: remove in 0.10
+    // these private fields will be removed
     #[educe(Debug(ignore))]
+    #[builder(setter(skip))]
     #[fluvio(min_version = 11, max_version = 18)]
     wasm_module: Vec<u8>,
-    // TODO: remove in 0.10
+    #[builder(setter(skip))]
     #[fluvio(min_version = 12, max_version = 18)]
     wasm_payload: Option<LegacySmartModulePayload>,
+    #[builder(setter(skip))]
     #[fluvio(min_version = 16, max_version = 18)]
     smartmodule: Option<SmartModuleInvocation>,
+    #[builder(setter(skip))]
     #[fluvio(min_version = 16, max_version = 18)]
     derivedstream: Option<DerivedStreamInvocation>,
     #[fluvio(min_version = 18)]
     pub smartmodules: Vec<SmartModuleInvocation>,
+    #[builder(setter(skip))]
     data: PhantomData<R>,
 }
 
@@ -95,7 +98,7 @@ where
 
 ///
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
-pub struct DerivedStreamInvocation {
+pub(crate) struct DerivedStreamInvocation {
     pub stream: String,
     pub params: SmartModuleExtraParams,
 }
