@@ -6,10 +6,10 @@ use fluvio::config::ConfigFile;
 #[derive(Debug, Parser)]
 pub struct DeleteClusterOpt {
     /// The name of a cluster connection to delete
-    #[clap(value_name = "cluster name")]
+    #[arg(value_name = "cluster name")]
     pub cluster_name: String,
     /// Deletes a cluster even if its active
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub force: bool,
 }
 

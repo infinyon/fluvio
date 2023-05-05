@@ -31,25 +31,25 @@ pub struct PublishCmd {
     pub package_meta: Option<String>,
 
     /// don't ask for confirmation of public package publish
-    #[clap(long, default_value = "false")]
+    #[arg(long, default_value = "false")]
     pub public_yes: bool,
 
     /// do only the pack portion
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pack: bool,
 
     /// given a packed file do only the push
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     push: bool,
 
     /// provide target platform for the package. Optional. By default the host's one is used.
-    #[clap(
+    #[arg(
         long,
         default_value_t = current_platform::CURRENT_PLATFORM.to_string()
     )]
     target: String,
 
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 

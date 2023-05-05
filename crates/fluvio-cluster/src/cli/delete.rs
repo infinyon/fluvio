@@ -5,18 +5,18 @@ use crate::cli::ClusterCliError;
 
 #[derive(Debug, Parser)]
 pub struct DeleteOpt {
-    #[clap(long, value_name = "Kubernetes namespace")]
+    #[arg(long, value_name = "Kubernetes namespace")]
     namespace: Option<String>,
 
     /// Remove only local spu/sc(custom) fluvio installation
-    #[clap(long, conflicts_with = "k8", conflicts_with = "sys")]
+    #[arg(long, conflicts_with = "k8", conflicts_with = "sys")]
     local: bool,
 
     /// Remove only k8 fluvio installation
-    #[clap(long, conflicts_with = "local", conflicts_with = "sys")]
+    #[arg(long, conflicts_with = "local", conflicts_with = "sys")]
     k8: bool,
 
-    #[clap(long, conflicts_with = "k8", conflicts_with = "local")]
+    #[arg(long, conflicts_with = "k8", conflicts_with = "local")]
     /// delete system chart
     sys: bool,
 }

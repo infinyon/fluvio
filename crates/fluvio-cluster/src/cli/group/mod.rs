@@ -18,21 +18,21 @@ use list::ListManagedSpuGroupsOpt;
 #[derive(Debug, Parser)]
 pub enum SpuGroupCmd {
     /// Create a new managed SPU Group
-    #[clap(
+    #[command(
         name = "create",
         help_template = COMMAND_TEMPLATE,
     )]
     Create(CreateManagedSpuGroupOpt),
 
     /// Delete a managed SPU Group
-    #[clap(
+    #[command(
         name = "delete",
         help_template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteManagedSpuGroupOpt),
 
     /// List all SPU Groups
-    #[clap(
+    #[command(
         name = "list",
         help_template = COMMAND_TEMPLATE,
     )]

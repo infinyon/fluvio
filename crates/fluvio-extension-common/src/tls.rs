@@ -11,27 +11,27 @@ use crate::target::TargetError;
 #[derive(Debug, Parser, Default, Clone)]
 pub struct TlsClientOpt {
     /// Enable TLS
-    #[clap(long)]
+    #[arg(long)]
     pub tls: bool,
 
     /// TLS: use client cert
-    #[clap(long)]
+    #[arg(long)]
     pub enable_client_cert: bool,
 
     /// Required if client cert is used
-    #[clap(long)]
+    #[arg(long)]
     pub domain: Option<String>,
 
     /// Path to TLS ca cert, required when client cert is enabled
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub ca_cert: Option<PathBuf>,
 
     /// Path to TLS client certificate
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub client_cert: Option<PathBuf>,
 
     /// Path to TLS client private key
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub client_key: Option<PathBuf>,
 }
 

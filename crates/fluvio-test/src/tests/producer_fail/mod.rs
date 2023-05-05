@@ -9,7 +9,7 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_case_derive::MyTestCase;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio Producer Batch Test")]
+#[command(name = "Fluvio Producer Batch Test")]
 pub struct ProduceBatchTestOption {}
 
 #[fluvio_test(topic = "batch", async)]

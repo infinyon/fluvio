@@ -23,7 +23,7 @@ use crate::common::OutputFormat;
 #[derive(Debug, Parser)]
 pub struct DescribeTopicsOpt {
     /// The name of the Topic to describe
-    #[clap(value_name = "name")]
+    #[arg(value_name = "name")]
     topic: String,
 
     #[clap(flatten)]

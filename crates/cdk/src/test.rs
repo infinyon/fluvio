@@ -15,15 +15,15 @@ pub struct TestCmd {
     package: PackageCmd,
 
     /// Path to configuration file in YAML format
-    #[clap(short, long, value_name = "PATH", default_value = "sample-config.yaml")]
+    #[arg(short, long, value_name = "PATH", default_value = "sample-config.yaml")]
     config: PathBuf,
 
     /// Path to file with secrets. Secrets are 'key=value' pairs separated by the new line character. Optional
-    #[clap(short, long, value_name = "PATH")]
+    #[arg(short, long, value_name = "PATH")]
     secrets: Option<PathBuf>,
 
     /// Extra arguments to be passed to cargo
-    #[clap(raw = true)]
+    #[arg(raw = true)]
     extra_arguments: Vec<String>,
 }
 

@@ -10,7 +10,7 @@ use crate::common::tls::TlsClientOpt;
 
 #[derive(Debug, Default, Parser)]
 pub struct LocalOpt {
-    #[clap(value_name = "host:port", default_value = "localhost:9003")]
+    #[arg(value_name = "host:port", default_value = "localhost:9003")]
     pub local: String,
 
     #[clap(flatten)]

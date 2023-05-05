@@ -19,21 +19,21 @@ use super::common::output::Terminal;
 #[derive(Debug, Parser)]
 pub enum SpuCmd {
     /// Register a new custom SPU with the cluster
-    #[clap(
+    #[command(
         name = "register",
         help_template = COMMAND_TEMPLATE,
     )]
     Register(RegisterCustomSpuOpt),
 
     /// Unregister a custom SPU from the cluster
-    #[clap(
+    #[command(
         name = "unregister",
         help_template = COMMAND_TEMPLATE,
     )]
     Unregister(UnregisterCustomSpuOpt),
 
     /// List all SPUs known by this cluster (managed AND custom)
-    #[clap(
+    #[command(
         name = "list",
         help_template = COMMAND_TEMPLATE,
     )]

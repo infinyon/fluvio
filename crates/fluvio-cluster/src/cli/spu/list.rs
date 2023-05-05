@@ -21,7 +21,7 @@ use crate::cli::spu::display::format_spu_response_output;
 #[derive(Debug, Parser)]
 pub struct ListSpusOpt {
     /// Whether to list only custom SPUs
-    #[clap(long)]
+    #[arg(long)]
     custom: bool,
     /// The output format to print the SPUs
     #[clap(flatten)]

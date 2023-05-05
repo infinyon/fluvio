@@ -14,12 +14,12 @@ pub struct BuildCmd {
     package: PackageCmd,
 
     /// Extra arguments to be passed to cargo
-    #[clap(raw = true)]
+    #[arg(raw = true)]
     extra_arguments: Vec<String>,
 
     /// Provide target platform for the package. Optional.
     /// By default the host's one is used.
-    #[clap(
+    #[arg(
         long,
         default_value_t = current_platform::CURRENT_PLATFORM.to_string()
     )]

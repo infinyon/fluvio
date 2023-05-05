@@ -11,17 +11,17 @@ use crate::profile::sync::local::LocalOpt;
 use crate::profile::sync::k8::K8Opt;
 
 #[derive(Debug, Parser)]
-#[clap(
+#[command(
     name = "sync",
     help_template = COMMAND_TEMPLATE,
 )]
 pub enum SyncCmd {
     /// Sync a profile from a Kubernetes cluster
     #[cfg(feature = "k8s")]
-    #[clap(name = "k8")]
+    #[command(name = "k8")]
     K8(K8Opt),
     /// Sync a profile from a local cluster
-    #[clap(name = "local")]
+    #[command(name = "local")]
     Local(LocalOpt),
 }
 

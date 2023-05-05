@@ -8,7 +8,7 @@ use crate::output::OutputType;
 #[derive(Debug, Parser, Default, Clone)]
 pub struct OutputFormat {
     /// Output
-    #[clap(
+    #[arg(
         default_value_t,
         short = 'O',
         long = "output",

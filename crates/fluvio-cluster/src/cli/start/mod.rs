@@ -51,7 +51,7 @@ impl FromStr for DefaultLogDirectory {
 #[derive(Debug, Parser)]
 pub struct SpuCliConfig {
     /// set spu storage size
-    #[clap(long, default_value = "10")]
+    #[arg(long, default_value = "10")]
     pub spu_storage_size: u16,
 }
 
@@ -70,54 +70,54 @@ impl SpuCliConfig {
 #[derive(Debug, Parser)]
 pub struct K8Install {
     /// k8: use specific chart version
-    #[clap(long)]
+    #[arg(long)]
     pub chart_version: Option<semver::Version>,
 
     /// k8: use specific image version
-    #[clap(long)]
+    #[arg(long)]
     pub image_version: Option<String>,
 
     /// k8: use custom docker registry
-    #[clap(long)]
+    #[arg(long)]
     pub registry: Option<String>,
 
-    /// k8
-    #[clap(long, default_value = "default")]
+    /// k8 namespace
+    #[arg(long, default_value = "default")]
     pub namespace: String,
 
     /// k8
-    #[clap(long, default_value = "main")]
+    #[arg(long, default_value = "main")]
     pub group_name: String,
 
     /// helm chart installation name
-    #[clap(long, default_value = "fluvio")]
+    #[arg(long, default_value = "fluvio")]
     pub install_name: String,
 
     /// Local path to a helm chart to install
-    #[clap(long)]
+    #[arg(long)]
     pub chart_location: Option<String>,
 
     /// chart values
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub chart_values: Vec<PathBuf>,
 
     /// Uses port forwarding for connecting to SC during install
-    #[clap(long)]
+    #[arg(long)]
     use_k8_port_forwarding: bool,
 
     /// TLS: Client secret name while adding to Kubernetes
-    #[clap(long, default_value = TLS_CLIENT_SECRET_NAME)]
+    #[arg(long, default_value = TLS_CLIENT_SECRET_NAME)]
     tls_client_secret_name: String,
 
     /// TLS: Server secret name while adding to Kubernetes
-    #[clap(long, default_value = TLS_SERVER_SECRET_NAME)]
+    #[arg(long, default_value = TLS_SERVER_SECRET_NAME)]
     tls_server_secret_name: String,
 }
 
 #[derive(Debug, Parser)]
 pub struct StartOpt {
     /// use local image
-    #[clap(long)]
+    #[arg(long)]
     pub develop: bool,
 
     #[clap(flatten)]
@@ -126,52 +126,52 @@ pub struct StartOpt {
     #[clap(flatten)]
     pub spu_config: SpuCliConfig,
 
-    #[clap(long)]
+    #[arg(long)]
     pub skip_profile_creation: bool,
 
     /// number of SPU
-    #[clap(long, default_value = "1")]
+    #[arg(long, default_value = "1")]
     pub spu: u16,
 
     /// RUST_LOG options
-    #[clap(long)]
+    #[arg(long)]
     pub rust_log: Option<String>,
 
     /// log dir
-    #[clap(long, default_value_t)]
+    #[arg(long, default_value_t)]
     pub log_dir: DefaultLogDirectory,
 
-    #[clap(long)]
+    #[arg(long)]
     /// installing/upgrade sys only
     sys_only: bool,
 
     /// install local spu/sc(custom)
-    #[clap(long)]
+    #[arg(long)]
     local: bool,
 
     #[clap(flatten)]
     pub tls: TlsOpt,
 
-    #[clap(long)]
+    #[arg(long)]
     pub authorization_config_map: Option<String>,
 
     /// Whether to skip pre-install checks, defaults to false
-    #[clap(long)]
+    #[arg(long)]
     pub skip_checks: bool,
     /// Tries to setup necessary environment for cluster startup
-    #[clap(long)]
+    #[arg(long)]
     pub setup: bool,
 
     /// Proxy address
-    #[clap(long)]
+    #[arg(long)]
     pub proxy_addr: Option<String>,
 
     /// Service Type
-    #[clap(long)]
+    #[arg(long)]
     pub service_type: Option<String>,
 
     /// Connector Prefix
-    #[clap(long, name = "connector_prefix")]
+    #[arg(long, value_name = "connector_prefix")]
     pub connector_prefix: Vec<String>,
 }
 

@@ -12,10 +12,10 @@ use fluvio::{Offset, RecordKey};
 use futures::StreamExt;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio Longevity Test")]
+#[command(name = "Fluvio Longevity Test")]
 pub struct GeneratorTestOption {
     /// Opt-in to detailed output printed to stdout
-    #[clap(long, short)]
+    #[arg(long, short)]
     verbose: bool,
 }
 

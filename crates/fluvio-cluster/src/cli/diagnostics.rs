@@ -26,16 +26,16 @@ enum ProfileType {
 
 #[derive(Parser, Debug)]
 pub struct DiagnosticsOpt {
-    #[clap(long)]
+    #[arg(long)]
     quiet: bool,
 
-    #[clap(long)]
+    #[arg(long)]
     k8: bool,
 
-    #[clap(long)]
+    #[arg(long)]
     local: bool,
 
-    #[clap(long)]
+    #[arg(long)]
     cloud: bool,
 }
 

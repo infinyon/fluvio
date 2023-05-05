@@ -18,7 +18,7 @@ pub enum CdkCommand {
     Deploy(DeployCmd),
     Publish(PublishCmd),
 
-    #[clap(name = "set-public")]
+    #[command(name = "set-public")]
     SetPublic(SetPublicCmd),
 }
 
@@ -38,11 +38,11 @@ impl CdkCommand {
 #[derive(Debug, Parser)]
 pub struct PackageCmd {
     /// Release profile name
-    #[clap(long, default_value = "release")]
+    #[arg(long, default_value = "release")]
     pub release: String,
 
     /// Optional package/project name
-    #[clap(long, short)]
+    #[arg(long, short)]
     pub package_name: Option<String>,
 }
 

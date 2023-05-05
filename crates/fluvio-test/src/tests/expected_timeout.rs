@@ -17,7 +17,7 @@ impl From<TestCase> for ExpectedTimeoutTestCase {
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(name = "Fluvio Expected timeout Test")]
+#[command(name = "Fluvio Expected timeout Test")]
 pub struct ExpectedTimeoutTestOption {}
 impl TestOption for ExpectedTimeoutTestOption {
     fn as_any(&self) -> &dyn Any {

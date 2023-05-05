@@ -86,11 +86,11 @@ mod cmd {
     #[derive(Parser, Debug)]
     pub enum FluvioCmd {
         /// Read messages from a topic/partition
-        #[clap(name = "consume")]
+        #[command(name = "consume")]
         Consume(Box<ConsumeOpt>),
 
         /// Write messages to a topic/partition
-        #[clap(name = "produce")]
+        #[command(name = "produce")]
         Produce(ProduceOpt),
 
         /// Manage and view Topics
@@ -99,7 +99,7 @@ mod cmd {
         /// are related to each other. Similar to the role of tables in a relational
         /// database, the names and contents of Topics will typically reflect the
         /// structure of the application domain they are used for.
-        #[clap(subcommand, name = "topic")]
+        #[command(subcommand, name = "topic")]
         Topic(TopicCmd),
 
         /// Manage and view Partitions
@@ -109,13 +109,13 @@ mod cmd {
         /// partitions may be processed by separate SPUs on different computers. By
         /// dividing the load of a Topic evenly among partitions, you can increase the
         /// total throughput of the Topic.
-        #[clap(subcommand, name = "partition")]
+        #[command(subcommand, name = "partition")]
         Partition(PartitionCmd),
 
         /// Create and manage SmartModules
         ///
         /// SmartModules are compiled WASM modules used to create SmartModules.
-        #[clap(
+        #[command(
             subcommand,
             name = "smartmodule",
             visible_alias = "sm",
@@ -128,11 +128,11 @@ mod cmd {
         ///
         /// Used with the consumer output type `full_table` to
         /// describe how to render JSON data in a tabular form
-        #[clap(subcommand, name = "table-format", visible_alias = "tf")]
+        #[command(subcommand, name = "table-format", visible_alias = "tf")]
         TableFormat(TableFormatCmd),
 
         /// Work with the SmartModule Hub
-        #[clap(subcommand, name = "hub")]
+        #[command(subcommand, name = "hub")]
         Hub(HubCmd),
     }
 

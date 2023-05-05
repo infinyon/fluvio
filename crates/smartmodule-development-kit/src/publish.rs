@@ -27,18 +27,18 @@ pub struct PublishCmd {
     package_meta: Option<String>,
 
     /// don't ask for confirmation of public package publish
-    #[clap(long, default_value = "false")]
+    #[arg(long, default_value = "false")]
     public_yes: bool,
 
     /// do only the pack portion
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pack: bool,
 
     /// given a packed file do only the push
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     push: bool,
 
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 

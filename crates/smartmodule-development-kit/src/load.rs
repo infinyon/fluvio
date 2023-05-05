@@ -16,18 +16,18 @@ pub const DEFAULT_META_LOCATION: &str = "SmartModule.toml";
 /// Load SmartModule into Fluvio cluster
 #[derive(Debug, Parser)]
 pub struct LoadCmd {
-    #[clap(long)]
+    #[arg(long)]
     name: Option<String>,
 
     /// Optional path to SmartModule package directory
-    #[clap(long)]
+    #[arg(long)]
     package_path: Option<PathBuf>,
 
     #[clap(flatten)]
     package: PackageCmd,
 
     /// Optional wasm file path
-    #[clap(long)]
+    #[arg(long)]
     wasm_file: Option<PathBuf>,
 
     #[clap(flatten)]
@@ -35,7 +35,7 @@ pub struct LoadCmd {
 
     /// Validate package config files, and connection to cluster.
     /// Skip SmartModule load to cluster
-    #[clap(long, action)]
+    #[arg(long)]
     dry_run: bool,
 }
 impl LoadCmd {

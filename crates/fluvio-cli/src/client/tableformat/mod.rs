@@ -31,21 +31,21 @@ mod cmd {
     #[derive(Debug, Parser)]
     pub enum TableFormatCmd {
         /// Create a new TableFormat display
-        #[clap(
+        #[command(
             name = "create",
             help_template = COMMAND_TEMPLATE,
         )]
         Create(CreateTableFormatOpt),
 
         /// Delete a TableFormat display
-        #[clap(
+        #[command(
             name = "delete",
             help_template = COMMAND_TEMPLATE,
         )]
         Delete(DeleteTableFormatOpt),
 
         /// List all TableFormat display
-        #[clap(
+        #[command(
             name = "list",
             help_template = COMMAND_TEMPLATE,
         )]

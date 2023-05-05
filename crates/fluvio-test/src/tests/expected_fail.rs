@@ -17,7 +17,7 @@ impl From<TestCase> for ExpectedFailTestCase {
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(name = "Fluvio Expected Fail Test")]
+#[command(name = "Fluvio Expected Fail Test")]
 pub struct ExpectedFailTestOption {}
 impl TestOption for ExpectedFailTestOption {
     fn as_any(&self) -> &dyn Any {

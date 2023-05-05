@@ -22,10 +22,10 @@ pub enum SmdkCommand {
     /// Publish SmartModule to Hub
     Publish(PublishCmd),
     /// Hub options
-    #[clap(subcommand, hide = true)]
+    #[command(subcommand, hide = true)]
     Hub(HubCmd),
     /// Set package as public
-    #[clap(name = "set-public")]
+    #[command(name = "set-public")]
     SetPublic(SetPublicOpt),
 }
 
@@ -46,11 +46,11 @@ impl SmdkCommand {
 #[derive(Debug, Parser)]
 pub(crate) struct PackageCmd {
     /// Release profile name
-    #[clap(long, default_value = "release-lto")]
+    #[arg(long, default_value = "release-lto")]
     pub release: String,
 
     /// Optional package/project name
-    #[clap(long, short)]
+    #[arg(long, short)]
     pub package_name: Option<String>,
 }
 

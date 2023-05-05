@@ -11,31 +11,31 @@ use crate::cli::ClusterCliError;
 #[derive(Debug, Parser)]
 pub struct TlsOpt {
     /// Whether to use TLS
-    #[clap(long)]
+    #[arg(long)]
     pub tls: bool,
 
     /// TLS: domain
-    #[clap(long)]
+    #[arg(long)]
     pub domain: Option<String>,
 
     /// TLS: ca cert
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub ca_cert: Option<PathBuf>,
 
     /// TLS: client cert
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub client_cert: Option<PathBuf>,
 
     /// TLS: client key
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub client_key: Option<PathBuf>,
 
     /// TLS: path to server certificate
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub server_cert: Option<PathBuf>,
 
     /// TLS: path to server private key
-    #[clap(long, value_parser)]
+    #[arg(long)]
     pub server_key: Option<PathBuf>,
 }
 

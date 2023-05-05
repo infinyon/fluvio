@@ -28,30 +28,30 @@ pub struct InstallOpt {
     /// The ID of a package to install, e.g. "fluvio/fluvio-cloud".
     package: Option<PackageId<MaybeVersion>>,
     /// Used for testing. Specifies alternate package location, e.g. "test/"
-    #[clap(hide = true, long)]
+    #[arg(hide = true, long)]
     prefix: Option<String>,
     /// Install the latest prerelease rather than the latest release
     ///
     /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
-    #[clap(long)]
+    #[arg(long)]
     pub develop: bool,
 
     /// When this flag is provided, use the hub. Dev-only
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pub hub: bool,
 
     /// Use local hub defaults.
     /// Implied if INFINYON_HUB_REMOTE or FLUVIO_CLOUD_PROFILE env vars are set
     /// - Dev-only
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pub use_hub_defaults: bool,
 
     /// When this flag is provided, use the hub. Dev-only
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pub channel: Option<String>,
 
     /// When this flag is provided, use the hub. Dev-only
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pub target: Option<String>,
 }
 

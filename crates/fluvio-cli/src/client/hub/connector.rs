@@ -17,11 +17,11 @@ use super::{get_pkg_list, get_hub_access};
 #[derive(Debug, Parser)]
 pub enum ConnectorHubSubCmd {
     /// List all available SmartConnectors
-    #[clap(name = "list")]
+    #[command(name = "list")]
     List(ConnectorHubListOpts),
 
     /// Download SmartConnector to the local folder
-    #[clap(name = "download")]
+    #[command(name = "download")]
     Download(ConnectorHubDownloadOpts),
 }
 
@@ -39,7 +39,7 @@ pub struct ConnectorHubListOpts {
     #[clap(flatten)]
     output: OutputFormat,
 
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 
@@ -54,21 +54,21 @@ impl ConnectorHubListOpts {
 #[derive(Debug, Parser)]
 pub struct ConnectorHubDownloadOpts {
     /// SmartConnector name: e.g. infinyon/salesforce-sink@v0.0.1
-    #[clap(value_name = "name", required = true)]
+    #[arg(value_name = "name", required = true)]
     package_name: String,
 
     /// Target local folder or file name
-    #[clap(short, long, value_name = "PATH")]
+    #[arg(short, long, value_name = "PATH")]
     output: Option<PathBuf>,
 
     /// Target platform for the package. Optional. By default the host's one is used.
-    #[clap(
+    #[arg(
         long,
         default_value_t = current_platform::CURRENT_PLATFORM.to_string()
     )]
     target: String,
 
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 

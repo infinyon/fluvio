@@ -20,38 +20,38 @@ use super::SpuConfig;
 
 /// cli options
 #[derive(Debug, Default, Parser)]
-#[clap(name = "fluvio-spu", about = "Streaming Processing Unit")]
+#[command(name = "fluvio-spu", about = "Streaming Processing Unit")]
 pub struct SpuOpt {
     /// SPU unique identifier
-    #[clap(short = 'i', long = "id", value_name = "integer")]
+    #[arg(short = 'i', long = "id", value_name = "integer")]
     pub id: Option<i32>,
 
-    #[clap(short = 'p', long = "public-server", value_name = "host:port")]
+    #[arg(short = 'p', long = "public-server", value_name = "host:port")]
     /// Spu server for external communication
     pub bind_public: Option<String>,
 
-    #[clap(short = 'v', long = "private-server", value_name = "host:port")]
+    #[arg(short = 'v', long = "private-server", value_name = "host:port")]
     /// Spu server for internal cluster communication
     pub bind_private: Option<String>,
 
     /// Address of the SC Server
-    #[clap(long, value_name = "host:port", env = "FLV_SC_PRIVATE_HOST")]
+    #[arg(long, value_name = "host:port", env = "FLV_SC_PRIVATE_HOST")]
     pub sc_addr: Option<String>,
 
-    #[clap(long, value_name = "dir", env = "FLV_LOG_BASE_DIR")]
+    #[arg(long, value_name = "dir", env = "FLV_LOG_BASE_DIR")]
     pub log_base_dir: Option<String>,
 
-    #[clap(long, value_name = "log size", env = "FLV_LOG_SIZE")]
+    #[arg(long, value_name = "log size", env = "FLV_LOG_SIZE")]
     pub log_size: Option<String>,
 
-    #[clap(long, value_name = "integer", env = "FLV_LOG_INDEX_MAX_BYTES")]
+    #[arg(long, value_name = "integer", env = "FLV_LOG_INDEX_MAX_BYTES")]
     pub index_max_bytes: Option<u32>,
 
-    #[clap(long, value_name = "integer", env = "FLV_LOG_INDEX_MAX_INTERVAL_BYTES")]
+    #[arg(long, value_name = "integer", env = "FLV_LOG_INDEX_MAX_INTERVAL_BYTES")]
     pub index_max_interval_bytes: Option<u32>,
 
     /// max bytes to transfer between leader and follower
-    #[clap(
+    #[arg(
         long,
         value_name = "integer",
         env = "FLV_PEER_MAX_BYTES",
@@ -237,23 +237,23 @@ fn find_spu_id_from_env() -> Result<SpuId, IoError> {
 #[derive(Debug, Parser, Default)]
 struct TlsConfig {
     /// enable tls
-    #[clap(long)]
+    #[arg(long)]
     pub tls: bool,
 
     /// TLS: path to server certificate
-    #[clap(long)]
+    #[arg(long)]
     pub server_cert: Option<String>,
-    #[clap(long)]
+    #[arg(long)]
     /// TLS: path to server private key
     pub server_key: Option<String>,
     /// TLS: enable client cert
-    #[clap(long)]
+    #[arg(long)]
     pub enable_client_cert: bool,
     /// TLS: path to ca cert, required when client cert is enabled
-    #[clap(long)]
+    #[arg(long)]
     pub ca_cert: Option<String>,
 
-    #[clap(long)]
+    #[arg(long)]
     /// TLS: address of non tls public service, required
     pub bind_non_tls_public: Option<String>,
 }

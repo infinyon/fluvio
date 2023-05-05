@@ -31,7 +31,7 @@ use crate::{CliError};
 #[derive(Debug, Parser)]
 pub struct CreateTopicOpt {
     /// The name of the Topic to create
-    #[clap(value_name = "name")]
+    #[arg(value_name = "name")]
     topic: String,
 
     /// The number of Partitions to give the Topic
@@ -41,7 +41,7 @@ pub struct CreateTopicOpt {
     /// partitions may be processed by separate SPUs on different computers. By
     /// dividing the load of a Topic evenly among partitions, you can increase the
     /// total throughput of the Topic.
-    #[clap(
+    #[arg(
         short = 'p',
         long = "partitions",
         value_name = "partitions",
@@ -59,7 +59,7 @@ pub struct CreateTopicOpt {
     /// This applies to each Partition in the Topic. If we have
     /// 3 partitions and a replication factor of 2, then all 3
     /// of the partitions must exist on at least 2 SPUs.
-    #[clap(
+    #[arg(
         short = 'r',
         long = "replication",
         value_name = "integer",
@@ -68,7 +68,7 @@ pub struct CreateTopicOpt {
     replication: i16,
 
     /// Ignore racks while computing replica assignment
-    #[clap(
+    #[arg(
         short = 'i',
         long = "ignore-rack-assignment",
         conflicts_with = "replica_assignment"
@@ -76,18 +76,17 @@ pub struct CreateTopicOpt {
     ignore_rack_assignment: bool,
 
     /// Replica assignment file
-    #[clap(
+    #[arg(
         short = 'f',
         long = "replica-assignment",
         value_name = "file.json",
-        value_parser,
         conflicts_with = "partitions",
         conflicts_with = "replication"
     )]
     replica_assignment: Option<PathBuf>,
 
     /// Validates configuration, does not provision
-    #[clap(short = 'd', long)]
+    #[arg(short = 'd', long)]
     dry_run: bool,
 
     #[clap(flatten)]
@@ -172,21 +171,21 @@ impl CreateTopicOpt {
 pub struct TopicConfigOpt {
     /// Retention time (round to seconds)
     /// Ex: '1h', '2d 10s', '7 days' (default)
-    #[clap(long, value_name = "time",value_parser=parse_duration)]
+    #[arg(long, value_name = "time",value_parser=parse_duration)]
     retention_time: Option<Duration>,
 
     /// Segment size (by default measured in bytes)
     /// Ex: `2048`, '2 Ki', '10 MiB', `1 GB`
-    #[clap(long, value_name = "bytes")]
+    #[arg(long, value_name = "bytes")]
     segment_size: Option<bytesize::ByteSize>,
 
     /// Compression configuration for topic
-    #[clap(long, value_name = "compression")]
+    #[arg(long, value_name = "compression")]
     compression_type: Option<CompressionAlgorithm>,
 
     /// Max partition size (by default measured in bytes)
     /// Ex: `2048`, '2 Ki', '10 MiB', `1 GB`
-    #[clap(long, value_name = "bytes")]
+    #[arg(long, value_name = "bytes")]
     max_partition_size: Option<bytesize::ByteSize>,
 }
 

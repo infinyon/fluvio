@@ -12,7 +12,7 @@ use crate::error::CliError;
 #[derive(Parser, Debug)]
 pub struct ExportOpt {
     profile_name: Option<String>,
-    #[clap(
+    #[arg(
         default_value_t = OutputType::json,
         short = 'O',
         long = "output",

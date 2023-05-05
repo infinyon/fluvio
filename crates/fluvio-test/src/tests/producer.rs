@@ -33,10 +33,10 @@ impl From<TestCase> for ProducerTestCase {
 }
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
-#[clap(name = "Fluvio Producer Test")]
+#[command(name = "Fluvio Producer Test")]
 pub struct ProducerTestOption {
     /// Num of producers to create
-    #[clap(long, default_value = "3")]
+    #[arg(long, default_value = "3")]
     pub producers: u32,
 
     // Not sure how we're going to support this yet
@@ -46,18 +46,18 @@ pub struct ProducerTestOption {
     //#[clap(long, value_parser=parse_seconds, default_value = "60")]
     //runtime_seconds: Duration,
     /// Total number of records to producer
-    #[clap(long, default_value = "100")]
+    #[arg(long, default_value = "100")]
     pub num_records: u32,
 
     /// Size of test record. This test doesn't use the TestRecord struct so this is the total size, not just the dynamic payload size
-    #[clap(long, default_value = "1000")]
+    #[arg(long, default_value = "1000")]
     pub record_size: usize,
 
     // Eventually we're going to need to support batch options
     // max-linger
     // max-batch
     /// Opt-in to detailed output printed to stdout
-    #[clap(long, short)]
+    #[arg(long, short)]
     verbose: bool,
 }
 
