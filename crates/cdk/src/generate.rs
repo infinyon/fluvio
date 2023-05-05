@@ -42,12 +42,16 @@ impl GenerateCmd {
             ..Default::default()
         };
 
+        let fluvio_dependency_version_hash =
+            format!("fluvio-cargo-dependency-hash={}", env!("GIT_HASH"));
+
         let args = GenerateArgs {
             name: self.name,
             template_path,
             verbose: !self.silent,
             silent: self.silent,
             destination: self.destination,
+            define: vec![fluvio_dependency_version_hash],
             ..Default::default()
         };
 
