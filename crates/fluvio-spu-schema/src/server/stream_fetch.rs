@@ -76,6 +76,7 @@ pub struct StreamFetchRequest<R> {
     #[builder(setter(skip))]
     #[fluvio(min_version = 16, max_version = 18)]
     derivedstream: Option<DerivedStreamInvocation>,
+    #[builder(default)]
     #[fluvio(min_version = 18)]
     pub smartmodules: Vec<SmartModuleInvocation>,
     #[builder(setter(skip))]

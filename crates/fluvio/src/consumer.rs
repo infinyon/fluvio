@@ -93,12 +93,12 @@ where
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{PartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
@@ -139,12 +139,12 @@ where
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{PartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::builder()
@@ -195,12 +195,12 @@ where
     /// Continuously streams batches of messages, starting an offset in the consumer's partition
     ///
     /// ```
-    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{PartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::builder()
@@ -576,7 +576,7 @@ impl ConsumerConfig {
 }
 
 impl ConsumerConfigBuilder {
-    pub fn build(&self) -> Result<ConsumerConfig, FluvioError> {
+    pub fn build(&self) -> Result<ConsumerConfig> {
         let config = self.build_impl().map_err(|e| {
             FluvioError::ConsumerConfig(format!("Missing required config option: {e}"))
         })?;
@@ -593,10 +593,7 @@ pub enum PartitionSelectionStrategy {
 }
 
 impl PartitionSelectionStrategy {
-    async fn selection(
-        &self,
-        spu_pool: Arc<SpuPool>,
-    ) -> Result<Vec<(String, PartitionId)>, FluvioError> {
+    async fn selection(&self, spu_pool: Arc<SpuPool>) -> Result<Vec<(String, PartitionId)>> {
         let pairs = match self {
             PartitionSelectionStrategy::All(topic) => {
                 let topics = spu_pool.metadata.topics();
@@ -648,12 +645,12 @@ impl MultiplePartitionConsumer {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{MultiplePartitionConsumer, FluvioError};
+    /// # use fluvio::{MultiplePartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &MultiplePartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &MultiplePartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
@@ -694,12 +691,12 @@ impl MultiplePartitionConsumer {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{MultiplePartitionConsumer, FluvioError};
+    /// # use fluvio::{MultiplePartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &MultiplePartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &MultiplePartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::builder()
