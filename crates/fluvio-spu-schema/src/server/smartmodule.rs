@@ -21,7 +21,7 @@ use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
     since = "0.10.0",
     note = "will be removed in the next version. Use SmartModuleInvocation instead "
 )]
-pub struct LegacySmartModulePayload {
+pub(crate) struct LegacySmartModulePayload {
     pub wasm: SmartModuleWasmCompressed,
     pub kind: SmartModuleKind,
     pub params: SmartModuleExtraParams,

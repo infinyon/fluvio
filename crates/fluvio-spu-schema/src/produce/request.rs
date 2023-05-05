@@ -53,7 +53,6 @@ where
     const API_KEY: u16 = 0;
 
     const MIN_API_VERSION: i16 = 0;
-    const MAX_API_VERSION: i16 = PRODUCER_TRANSFORMATION_API_VERSION;
     const DEFAULT_API_VERSION: i16 = PRODUCER_TRANSFORMATION_API_VERSION;
 
     type Response = ProduceResponse;

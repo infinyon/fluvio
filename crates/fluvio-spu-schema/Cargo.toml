@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-spu-schema"
-version = "0.13.2"
+version = "0.14.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"
@@ -15,13 +15,13 @@ path = "src/lib.rs"
 file = ["fluvio-future","fluvio-protocol/store"]
 
 [dependencies]
-
-tracing = { workspace = true }
 bytes = { workspace = true }
-serde = { workspace = true, features = ['derive'] }
-static_assertions = { workspace = true }
+derive_builder = { workspace = true }
 educe = { version = "0.4.19", features = ["Debug"] }
 flate2 = { workspace = true  }
+serde = { workspace = true, features = ['derive'] }
+static_assertions = { workspace = true }
+tracing = { workspace = true }
 
 fluvio-types = { workspace = true }
 fluvio-future = { workspace = true, optional = true }

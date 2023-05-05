@@ -3080,9 +3080,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.13.2"
+version = "0.14.0"
 dependencies = [
  "bytes 1.4.0",
+ "derive_builder",
  "educe",
  "flate2",
  "fluvio-future",
