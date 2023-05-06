@@ -20,6 +20,7 @@ on:
       - "**"
       - "!/*.md"
       - "!/**.md"
+      - "!/rfc/**"
   workflow_dispatch:
     inputs:
       verbose:
