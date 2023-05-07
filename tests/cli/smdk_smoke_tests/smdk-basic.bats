@@ -112,7 +112,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text 'a'
+    run $SMDK_BIN test --verbose --text 'a'
     assert_output --partial "1 records outputed"
     assert_success
 }
@@ -152,7 +152,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text '2'
+    run $SMDK_BIN test --verbose --text '2'
     assert_output --partial "1 records outputed"
     assert_output --partial "4"
     assert_success
@@ -193,7 +193,7 @@ setup_file() {
     assert_success    
 
     # Test
-    run $SMDK_BIN test --text '["foo", "bar"]'
+    run $SMDK_BIN test --verbose --text '["foo", "bar"]'
     assert_output --partial "2 records outputed"
     assert_output --partial "foo"
     assert_output --partial "bar"
@@ -236,7 +236,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text '2'
+    run $SMDK_BIN test --verbose --text '2'
     assert_output --partial "1 records outputed"
     assert_output --partial "2"
     assert_success
@@ -277,7 +277,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text '2'
+    run $SMDK_BIN test --verbose --text '2'
     assert_output --partial "1 records outputed"
     assert_output --partial "2"
     assert_success
@@ -320,7 +320,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text 'a' -e key=value
+    run $SMDK_BIN test --verbose --text 'a' -e key=value
     assert_output --partial "1 records outputed"
     assert_success
 }
@@ -502,7 +502,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text 'a'
+    run $SMDK_BIN test --verbose --text 'a'
     assert_output --partial "1 records outputed"
     assert_success
 }
@@ -542,7 +542,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text '2'
+    run $SMDK_BIN test  --verbose  --text '2'
     assert_output --partial "1 records outputed"
     assert_output --partial "4"
     assert_success
@@ -583,7 +583,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text '["foo", "bar"]'
+    run $SMDK_BIN test --verbose --text '["foo", "bar"]'
     assert_output --partial "2 records outputed"
     assert_output --partial "foo"
     assert_output --partial "bar"
@@ -625,7 +625,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text '2'
+    run $SMDK_BIN test --verbose --text '2'
     assert_output --partial "1 records outputed"
     assert_output --partial "2"
     assert_success
@@ -666,7 +666,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text '2'
+    run $SMDK_BIN test --verbose --text '2'
     assert_output --partial "1 records outputed"
     assert_output --partial "2"
     assert_success
@@ -709,7 +709,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --text 'a' -e key=value
+    run $SMDK_BIN test --verbose --text 'a' -e key=value
     assert_output --partial "1 records outputed"
     assert_success
 }
