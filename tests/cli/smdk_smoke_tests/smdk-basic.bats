@@ -192,9 +192,15 @@ setup_file() {
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success    
 
-    # Test
+    # Test with verbose
     run $SMDK_BIN test --verbose --text '["foo", "bar"]'
     assert_output --partial "2 records outputed"
+    assert_output --partial "foo"
+    assert_output --partial "bar"
+    assert_success
+
+     # Test without verbose
+    run $SMDK_BIN test  --text '["foo", "bar"]'   
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
@@ -582,9 +588,15 @@ setup_file() {
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
 
-    # Test
+    # Test with verbose
     run $SMDK_BIN test --verbose --text '["foo", "bar"]'
     assert_output --partial "2 records outputed"
+    assert_output --partial "foo"
+    assert_output --partial "bar"
+    assert_success
+
+    # Test with without verbose
+    run $SMDK_BIN test  --text '["foo", "bar"]'    
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
