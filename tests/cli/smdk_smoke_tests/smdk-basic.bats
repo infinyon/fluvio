@@ -200,7 +200,8 @@ setup_file() {
     assert_success
 
      # Test without verbose
-    run $SMDK_BIN test  --text '["foo", "bar"]'   
+    run $SMDK_BIN test  --text '["foo", "bar"]'
+    refute_output --partial "2 records outputed"   
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
@@ -244,7 +245,7 @@ setup_file() {
     # Test
     run $SMDK_BIN test --verbose --text '2'
     assert_output --partial "1 records outputed"
-    assert_output --partial "2"
+    assert_output --partial "1"
     assert_success
 }
 
@@ -596,7 +597,8 @@ setup_file() {
     assert_success
 
     # Test with without verbose
-    run $SMDK_BIN test  --text '["foo", "bar"]'    
+    run $SMDK_BIN test  --text '["foo", "bar"]' 
+    refute_output --partial "2 records outputed"   
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
@@ -639,7 +641,7 @@ setup_file() {
     # Test
     run $SMDK_BIN test --verbose --text '2'
     assert_output --partial "1 records outputed"
-    assert_output --partial "2"
+    assert_output --partial "1"
     assert_success
 }
 
