@@ -33,12 +33,12 @@ const FLUVIO_FRONTEND: &str = "FLUVIO_FRONTEND";
 
 #[derive(Debug, PartialEq, Parser, Default)]
 struct RootOpt {
-    #[clap(long)]
+    #[arg(long)]
     skip_channel_check: bool,
 }
 
 #[derive(Debug, PartialEq, Parser, Default)]
-#[clap(disable_help_subcommand = true, disable_help_flag = true)]
+#[command(disable_help_subcommand = true, disable_help_flag = true)]
 struct Root {
     #[clap(flatten)]
     opt: RootOpt,
@@ -56,7 +56,7 @@ impl Root {
 struct ChannelOpt {
     #[clap(subcommand)]
     cmd: Option<ChannelCmd>,
-    #[clap(long, short)]
+    #[arg(long, short)]
     help: bool,
 }
 
@@ -84,7 +84,7 @@ impl ChannelCmd {
 }
 
 #[derive(Debug, PartialEq, Parser)]
-#[clap(
+#[command(
     max_term_width = 100,
     disable_version_flag = true,
     // VersionlessSubcommands is now default behaviour. See https://github.com/clap-rs/clap/pull/2831
@@ -92,12 +92,12 @@ impl ChannelCmd {
 )]
 enum RootCmd {
     /// Prints help information
-    #[clap(hide = true)]
+    #[command(hide = true)]
     Help,
     Version(ChannelOpt),
 
     // This should be the fluvio binary's subcommand
-    #[clap(external_subcommand)]
+    #[command(external_subcommand)]
     Other(Vec<String>),
 }
 

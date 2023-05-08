@@ -25,15 +25,15 @@ use crate::cmd::PackageCmd;
 #[derive(Debug, Parser)]
 pub struct TestCmd {
     /// Provide test input with this flag
-    #[clap(long, group = "TestInput")]
+    #[arg(long, group = "TestInput")]
     text: Option<String>,
 
     /// Path to test file. Default: Read file line by line
-    #[clap(long, groups = ["TestInput", "TestFile"])]
+    #[arg(long, groups = ["TestInput", "TestFile"])]
     file: Option<PathBuf>,
 
     /// Read the file as single record
-    #[clap(long, action, requires = "TestFile")]
+    #[arg(long, requires = "TestFile")]
     raw: bool,
 
     /// Key to use with the test record(s)
@@ -43,28 +43,28 @@ pub struct TestCmd {
     package: PackageCmd,
 
     /// Optional wasm file path
-    #[clap(long, group = "TestSmartModule")]
+    #[arg(long, group = "TestSmartModule")]
     wasm_file: Option<PathBuf>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
     /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
-    #[clap(
+    #[arg(
         short = 'e',
         long= "params",
         value_parser=parse_key_val,
-        number_of_values = 1,
+        num_args = 1,
         conflicts_with_all = ["transforms_file", "transform"]
     )]
     params: Vec<(String, String)>,
 
     /// (Optional) File path to transformation specification.
-    #[clap(long, group = "TestSmartModule")]
+    #[arg(long, group = "TestSmartModule")]
     transforms_file: Option<PathBuf>,
 
     /// (Optional) Pass transformation specification as JSON formatted string.
     /// E.g. smdk test --text '{}' --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
-    #[clap(long, short, group = "TestSmartModule")]
+    #[arg(long, short, group = "TestSmartModule")]
     transform: Vec<String>,
 }
 

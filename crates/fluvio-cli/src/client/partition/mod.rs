@@ -20,10 +20,10 @@ mod cmd {
     use super::list::ListPartitionOpt;
 
     #[derive(Debug, Parser)]
-    #[clap(name = "partition", about = "Partition operations")]
+    #[command(name = "partition", about = "Partition operations")]
     pub enum PartitionCmd {
         /// List all of the Partitions in this cluster
-        #[clap(
+        #[command(
             name = "list",
             help_template = crate::common::COMMAND_TEMPLATE,
         )]

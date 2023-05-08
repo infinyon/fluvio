@@ -27,7 +27,7 @@ mod cmd {
         Download(DownloadHubOpt),
         List(ListHubOpt),
 
-        #[clap(subcommand)]
+        #[command(subcommand)]
         Connector(ConnectorHubSubCmd),
     }
 

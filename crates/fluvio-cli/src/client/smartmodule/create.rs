@@ -20,9 +20,9 @@ pub struct CreateSmartModuleOpt {
     /// The name of the SmartModule to create
     name: String,
     /// The path to a WASM binary to create the SmartModule from
-    #[clap(long)]
+    #[arg(long)]
     wasm_file: PathBuf,
-    #[clap(long)]
+    #[arg(long)]
     /// The path to the SmartModule package (experimental)
     package: Option<PathBuf>,
 }

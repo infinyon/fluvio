@@ -43,50 +43,50 @@ impl From<TestCase> for ConsumerTestCase {
 }
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
-#[clap(name = "Fluvio Consumer Test")]
+#[command(name = "Fluvio Consumer Test")]
 pub struct ConsumerTestOption {
     /// Num of consumers to create
-    #[clap(long, default_value = "1")]
+    #[arg(long, default_value = "1")]
     pub consumers: u16,
 
     /// Number of records to send to the topic before running the test
-    #[clap(long, default_value = "100")]
+    #[arg(long, default_value = "100")]
     pub num_setup_records: u32,
 
     /// Size of payload portion of records to send to the topic before running the test
-    #[clap(long, default_value = "1000")]
+    #[arg(long, default_value = "1000")]
     pub setup_record_size: usize,
 
     /// Max records to consume before stopping
     /// Default, stop when end of topic reached
-    #[clap(long, default_value = "0")]
+    #[arg(long, default_value = "0")]
     pub num_records: u32,
 
-    #[clap(long)]
+    #[arg(long)]
     pub max_bytes: Option<usize>,
 
     // TODO: These should be mutually exclusive to each other
     /// Offset should be relative to beginning
-    #[clap(long)]
+    #[arg(long)]
     pub offset_beginning: bool,
     /// Offset should be relative to end
-    #[clap(long)]
+    #[arg(long)]
     pub offset_end: bool,
 
     /// Absolute topic offset
     /// use --offset-beginning or --offset-end to refer to relative offsets
-    #[clap(long, default_value = "0")]
+    #[arg(long, default_value = "0")]
     pub offset: i64,
 
     /// Partition to consume from.
     /// If multiple consumers, they will all use same partition
     // TODO: Support specifying multiple partitions
-    #[clap(long, default_value = "0")]
+    #[arg(long, default_value = "0")]
     pub partition: PartitionId,
 
     // TODO: This option needs to be mutually exclusive w/ partition
     /// Test should use multi-partition consumer, default all partitions
-    #[clap(long)]
+    #[arg(long)]
     pub multi_partition: bool,
 
     // This will need to be mutually exclusive w/ num_records
@@ -94,11 +94,11 @@ pub struct ConsumerTestOption {
     //#[clap(long, value_parser=parse_seconds, default_value = "60")]
     //runtime_seconds: Duration,
     /// Opt-in to detailed output printed to stdout
-    #[clap(long, short)]
+    #[arg(long, short)]
     verbose: bool,
 
     /// Allow the test to pass if no records are received
-    #[clap(long)]
+    #[arg(long)]
     allow_empty_topic: bool,
 }
 

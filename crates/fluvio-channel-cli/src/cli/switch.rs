@@ -17,11 +17,11 @@ pub struct SwitchOpt {
     channel: Option<String>,
 
     /// Path to alternate channel config
-    #[clap(long)]
+    #[arg(long)]
     config: Option<PathBuf>,
 
     /// Display this help message
-    #[clap(short, long)]
+    #[arg(short, long)]
     help: bool,
 }
 

@@ -14,7 +14,7 @@ use fluvio_test_case_derive::MyTestCase;
 const ACK_WAIT: u64 = 20;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio reconnection Test")]
+#[command(name = "Fluvio reconnection Test")]
 pub struct ReconnectionTestOption {}
 
 #[fluvio_test(topic = "reconnection", async)]

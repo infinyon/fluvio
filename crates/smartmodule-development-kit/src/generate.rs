@@ -27,21 +27,21 @@ pub struct GenerateCmd {
 
     /// SmartModule Project Group Name.
     /// Default to Hub ID, if set. Overrides Hub ID if provided.
-    #[clap(long, env = "SMDK_PROJECT_GROUP", value_name = "GROUP")]
+    #[arg(long, env = "SMDK_PROJECT_GROUP", value_name = "GROUP")]
     project_group: Option<String>,
 
     /// Local path to generate the SmartModule project.
     /// Default to directory with project name, created in current directory
-    #[clap(long, env = "SMDK_DESTINATION", value_name = "PATH")]
+    #[arg(long, env = "SMDK_DESTINATION", value_name = "PATH")]
     destination: Option<PathBuf>,
 
     /// Disable interactive prompt. Take all values from CLI flags. Fail if a value is missing.
-    #[clap(long, action, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     silent: bool,
 
     /// URL to git repo containing templates for generating SmartModule projects.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("TemplateSourceGit"),
@@ -52,7 +52,7 @@ pub struct GenerateCmd {
     template_repo: Option<String>,
 
     /// An optional git branch to use with `--template-repo`
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("TemplateGit"),
@@ -63,7 +63,7 @@ pub struct GenerateCmd {
     template_repo_branch: Option<String>,
 
     /// An optional git tag to use with `--template-repo`
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("TemplateGit"),
@@ -75,7 +75,7 @@ pub struct GenerateCmd {
 
     /// Local filepath containing templates for generating SmartModule projects.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("TemplateSourcePath"),
@@ -87,7 +87,7 @@ pub struct GenerateCmd {
 
     /// URL of git repo to include in generated Cargo.toml. Repo used for `fluvio-smartmodule` dependency.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("SmCrateSourceGit"),
@@ -99,7 +99,7 @@ pub struct GenerateCmd {
     sm_crate_repo: Option<String>,
 
     /// An optional git branch to use with `--sm-crate-repo`
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("SmGit"),
@@ -110,7 +110,7 @@ pub struct GenerateCmd {
     sm_repo_branch: Option<String>,
 
     /// An optional git tag to use with `--sm-crate-repo`
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("SmGit"),
@@ -121,7 +121,7 @@ pub struct GenerateCmd {
     sm_repo_tag: Option<String>,
 
     /// An optional git rev to use with `--sm-crate-repo`
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("SmGit"),
@@ -133,7 +133,7 @@ pub struct GenerateCmd {
 
     /// Local filepath to include in generated Cargo.toml. Path used for fluvio-smartmodule dependency.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("SmCrateSourcePath"),
@@ -145,7 +145,7 @@ pub struct GenerateCmd {
 
     /// Public version of `fluvio-smartmodule` from crates.io. Defaults to latest.
     /// Using this option is discouraged. The default value is recommended.
-    #[clap(
+    #[arg(
         long,
         hide_short_help = true,
         group("SmCrateSourceCratesIo"),
@@ -157,30 +157,30 @@ pub struct GenerateCmd {
 
     /// Type of SmartModule project to generate.
     /// Skip prompt if value given.
-    #[clap(long, value_enum, value_name = "TYPE", env = "SMDK_SM_TYPE")]
+    #[arg(long, value_enum, value_name = "TYPE", env = "SMDK_SM_TYPE")]
     sm_type: Option<SmartModuleType>,
 
     /// Visibility of SmartModule project to generate.
     /// Skip prompt if value given.
-    #[clap(long, value_enum, value_name = "PUBLIC", env = "SMDK_SM_PUBLIC")]
+    #[arg(long, value_enum, value_name = "PUBLIC", env = "SMDK_SM_PUBLIC")]
     sm_public: Option<bool>,
 
     /// Include SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, group("SmartModuleParams"), action, env = "SMDK_WITH_PARAMS")]
+    #[arg(long, group("SmartModuleParams"), env = "SMDK_WITH_PARAMS")]
     with_params: bool,
 
     /// No SmartModule input parameters in generated SmartModule project.
     /// Skip prompt if value given.
-    #[clap(long, group("SmartModuleParams"), action, env = "SMDK_NO_PARAMS")]
+    #[arg(long, group("SmartModuleParams"), env = "SMDK_NO_PARAMS")]
     no_params: bool,
 
     /// Set the remote URL for the hub
-    #[clap(long, env = "SMDK_HUB_REMOTE", hide_short_help = true)]
+    #[arg(long, env = "SMDK_HUB_REMOTE", hide_short_help = true)]
     hub_remote: Option<String>,
 
     /// Using this option will always choose the Fluvio repo as source for templates and dependencies
-    #[clap(long, action, env = "SMDK_DEVELOP", hide_short_help = true, conflicts_with_all =
+    #[arg(long, env = "SMDK_DEVELOP", hide_short_help = true, conflicts_with_all =
         &["TemplateSourceGit", "TemplateSourcePath",
         "SmCrateSourceGit", "SmCrateSourceCratesIo", "SmCrateSourcePath"],)]
     develop: bool,

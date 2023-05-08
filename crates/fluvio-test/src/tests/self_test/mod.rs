@@ -7,10 +7,10 @@ use fluvio_test_util::async_process;
 use fluvio_test_case_derive::MyTestCase;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio Test Self Check")]
+#[command(name = "Fluvio Test Self Check")]
 pub struct SelfCheckTestOption {
     /// Intentionally panic to test panic handling
-    #[clap(long)]
+    #[arg(long)]
     pub force_panic: bool,
 }
 

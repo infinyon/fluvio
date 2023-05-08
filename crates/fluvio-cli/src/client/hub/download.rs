@@ -24,21 +24,21 @@ use crate::client::hub::get_hub_access;
 #[derive(Debug, Parser)]
 pub struct DownloadHubOpt {
     /// SmartModule name: e.g. infinyon/jolt@v0.0.1
-    #[clap(value_name = "name", required = true)]
+    #[arg(value_name = "name", required = true)]
     pkgname: String,
 
     #[clap(flatten)]
     target: ClusterTarget,
 
     /// just download package to local filesystem
-    #[clap(long)]
+    #[arg(long)]
     local: bool,
 
     /// given local package file, download to cluster
-    #[clap(long)]
+    #[arg(long)]
     ipkg: bool,
 
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 

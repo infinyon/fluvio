@@ -9,7 +9,7 @@ use fluvio_channel::FluvioChannelConfig;
 #[derive(Debug, Parser, Clone, Eq, PartialEq)]
 pub struct DeleteOpt {
     /// Path to alternate channel config
-    #[clap(long)]
+    #[arg(long)]
     config: Option<PathBuf>,
     /// Name of release channel
     channel: Option<String>,
@@ -17,7 +17,7 @@ pub struct DeleteOpt {
     // extension-path
     // image_tag_strategy
     /// Display this help message
-    #[clap(short, long)]
+    #[arg(short, long)]
     help: bool,
 }
 

@@ -41,15 +41,15 @@ pub(crate) const VERSION: &str = include_str!("../../../../VERSION");
 #[derive(Debug, Parser)]
 pub enum ClusterCmd {
     /// Install Fluvio cluster
-    #[clap(name = "start")]
+    #[command(name = "start")]
     Start(Box<StartOpt>),
 
     /// Upgrades an already-started Fluvio cluster
-    #[clap(name = "upgrade")]
+    #[command(name = "upgrade")]
     Upgrade(Box<UpgradeOpt>),
 
     /// Uninstall a Fluvio cluster
-    #[clap(name = "delete")]
+    #[command(name = "delete")]
     Delete(DeleteOpt),
 
     /// Check that all requirements for cluster startup are met.
@@ -58,7 +58,7 @@ pub enum ClusterCmd {
     /// fluvio on the current Kubernetes context.
     ///
     /// It is not intended to be used in scenarios where user does not have access to Kubernetes resources (eg. Cloud)
-    #[clap(name = "check")]
+    #[command(name = "check")]
     Check(CheckOpt),
 
     /// Manage and view Streaming Processing Units (SPUs)
@@ -67,25 +67,25 @@ pub enum ClusterCmd {
     /// of receiving messages from producers, storing those messages,
     /// and relaying them to consumers. This command lets you see
     /// the status of SPUs in your cluster.
-    #[clap(subcommand, name = "spu")]
+    #[command(subcommand, name = "spu")]
     SPU(SpuCmd),
 
     /// Manage and view SPU Groups (SPGs)
     ///
     /// SPGs are groups of SPUs in a cluster which are managed together.
-    #[clap(subcommand, name = "spg")]
+    #[command(subcommand, name = "spg")]
     SPUGroup(SpuGroupCmd),
 
     /// Collect anonymous diagnostic information to help with debugging
-    #[clap(name = "diagnostics")]
+    #[command(name = "diagnostics")]
     Diagnostics(DiagnosticsOpt),
 
     /// Check the status of a Fluvio cluster
-    #[clap(name = "status")]
+    #[command(name = "status")]
     Status(StatusOpt),
 
     /// Shutdown cluster processes without deleting data
-    #[clap(name = "shutdown")]
+    #[command(name = "shutdown")]
     Shutdown(ShutdownOpt),
 }
 

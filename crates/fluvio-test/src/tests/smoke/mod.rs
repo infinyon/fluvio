@@ -42,21 +42,21 @@ impl From<TestCase> for SmokeTestCase {
 }
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
-#[clap(name = "Fluvio Smoke Test")]
+#[command(name = "Fluvio Smoke Test")]
 pub struct SmokeTestOption {
-    #[clap(long)]
+    #[arg(long)]
     pub use_cli: bool,
-    #[clap(long, default_value = "1")]
+    #[arg(long, default_value = "1")]
     pub producer_iteration: u32,
-    #[clap(long, default_value = "100")]
+    #[arg(long, default_value = "100")]
     pub producer_record_size: u32,
-    #[clap(long)]
+    #[arg(long)]
     pub consumer_wait: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub connector_config: Option<PathBuf>,
-    #[clap(long)]
+    #[arg(long)]
     pub table_format_config: Option<PathBuf>,
-    #[clap(long)]
+    #[arg(long)]
     pub skip_consumer_validate: bool,
 }
 

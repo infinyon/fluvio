@@ -28,7 +28,7 @@ pub struct DeployCmd {
     operation: DeployOperationCmd,
 
     /// Extra arguments to be passed to cargo
-    #[clap(raw = true)]
+    #[arg(raw = true)]
     extra_arguments: Vec<String>,
 }
 
@@ -51,15 +51,15 @@ enum DeployStartCmd {
     #[command(name = "start")]
     Local {
         /// Path to configuration file in YAML format
-        #[clap(short, long, value_name = "PATH")]
+        #[arg(short, long, value_name = "PATH")]
         config: PathBuf,
 
         /// Path to file with secrets. Secrets are 'key=value' pairs separated by the new line character. Optional
-        #[clap(short, long, value_name = "PATH")]
+        #[arg(short, long, value_name = "PATH")]
         secrets: Option<PathBuf>,
 
         /// Deploy from local package file
-        #[clap(long = "ipkg", value_name = "PATH")]
+        #[arg(long = "ipkg", value_name = "PATH")]
         ipkg_file: Option<PathBuf>,
     },
 }
@@ -70,7 +70,7 @@ enum DeployShutdownCmd {
     // As long as there is only one deployment type, we omit to specify its name
     #[command(name = "shutdown")]
     Local {
-        #[clap(value_name = "CONNECTOR_NAME")]
+        #[arg(value_name = "CONNECTOR_NAME")]
         name: String,
     },
 }
@@ -89,7 +89,7 @@ enum DeployLogCmd {
     // As long as there is only one deployment type, we omit to specify its name
     #[command(name = "log")]
     Local {
-        #[clap(value_name = "CONNECTOR_NAME")]
+        #[arg(value_name = "CONNECTOR_NAME")]
         name: String,
     },
 }

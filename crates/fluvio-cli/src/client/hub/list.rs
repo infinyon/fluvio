@@ -17,7 +17,7 @@ pub struct ListHubOpt {
     #[clap(flatten)]
     output: OutputFormat,
 
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 

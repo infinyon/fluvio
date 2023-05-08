@@ -77,7 +77,7 @@ mod root {
     }
 
     #[derive(Debug, Parser)]
-    #[clap(
+    #[command(
         about = "Fluvio Command Line Interface",
         name = "fluvio",
         help_template = COMMAND_TEMPLATE,
@@ -90,7 +90,7 @@ mod root {
         )]
     enum RootCmd {
         /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
-        #[clap(flatten)]
+        #[command(flatten)]
         #[cfg(feature = "consumer")]
         Fluvio(FluvioCmd),
 
@@ -100,13 +100,13 @@ mod root {
         /// This might correspond to Fluvio running on Minikube or in the Cloud.
         /// There is one "active" profile, which determines which cluster all of the
         /// Fluvio CLI commands interact with.
-        #[clap(name = "profile")]
+        #[command(name = "profile")]
         Profile(ProfileOpt),
 
         /// Install or uninstall Fluvio cluster
         ///
         #[cfg(feature = "k8s")]
-        #[clap(subcommand, name = "cluster")]
+        #[command(subcommand, name = "cluster")]
         Cluster(Box<ClusterCmd>),
 
         /// Install Fluvio plugins
@@ -116,15 +116,15 @@ mod root {
         /// be invoked by running `fluvio foo`.
         ///
         /// This command allows you to install plugins from Fluvio's package registry.
-        #[clap(name = "install")]
+        #[command(name = "install")]
         Install(InstallOpt),
 
         /// Update the Fluvio CLI
-        #[clap(name = "update")]
+        #[command(name = "update")]
         Update(UpdateOpt),
 
         /// Print Fluvio version information
-        #[clap(name = "version")]
+        #[command(name = "version")]
         Version(VersionOpt),
 
         /// Generate command-line completions for Fluvio
@@ -135,14 +135,14 @@ mod root {
         ///
         /// $ fluvio completions bash > ~/fluvio_completions.sh
         /// {n}$ echo "source ~/fluvio_completions.sh" >> ~/.bashrc
-        #[clap(subcommand, name = "completions")]
+        #[command(subcommand, name = "completions")]
         Completions(CompletionCmd),
 
         /// Generate metadata for Fluvio base CLI
-        #[clap(name = "metadata", hide = true)]
+        #[command(name = "metadata", hide = true)]
         Metadata(MetadataOpt),
 
-        #[clap(external_subcommand)]
+        #[command(external_subcommand)]
         External(Vec<String>),
     }
 
@@ -244,20 +244,20 @@ mod root {
 
     #[derive(Debug, Parser)]
     struct CompletionOpt {
-        #[clap(long, default_value = "fluvio")]
+        #[arg(long, default_value = "fluvio")]
         name: String,
     }
 
     #[derive(Debug, Parser)]
     enum CompletionCmd {
         /// Generate CLI completions for bash
-        #[clap(name = "bash")]
+        #[command(name = "bash")]
         Bash(CompletionOpt),
         /// Generate CLI completions for zsh
-        #[clap(name = "zsh")]
+        #[command(name = "zsh")]
         Zsh(CompletionOpt),
         /// Generate CLI completions for fish
-        #[clap(name = "fish")]
+        #[command(name = "fish")]
         Fish(CompletionOpt),
     }
 

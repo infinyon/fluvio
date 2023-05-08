@@ -114,13 +114,13 @@ pub mod target {
     #[derive(Debug, Parser, Default, Clone)]
     pub struct ClusterTarget {
         /// Address of cluster
-        #[clap(short = 'c', long, value_name = "host:port")]
+        #[arg(short = 'c', long, value_name = "host:port")]
         pub cluster: Option<String>,
 
         #[clap(flatten)]
         pub tls: TlsClientOpt,
 
-        #[clap(short = 'P', long, value_name = "profile")]
+        #[arg(short = 'P', long, value_name = "profile")]
         pub profile: Option<String>,
     }
 

@@ -10,7 +10,7 @@ use crate::common::{t_println, t_print_cli_err};
 
 #[derive(Debug, Parser)]
 pub struct SwitchOpt {
-    #[clap(value_name = "profile name")]
+    #[arg(value_name = "profile name")]
     pub profile_name: String,
 }
 

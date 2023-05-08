@@ -66,20 +66,20 @@ mod cmd {
     #[derive(Debug, Parser)]
     pub struct ProduceOpt {
         /// The name of the Topic to produce to
-        #[clap(value_name = "topic")]
+        #[arg(value_name = "topic")]
         pub topic: String,
 
         /// Print progress output when sending records
-        #[clap(short, long)]
+        #[arg(short, long)]
         pub verbose: bool,
 
         /// Sends key/value records with this value as key
-        #[clap(long, group = "RecordKey")]
+        #[arg(long, group = "RecordKey")]
         pub key: Option<String>,
 
         /// Sends key/value records split on the first instance of the separator.
         #[cfg(feature = "producer-file-io")]
-        #[clap(long, value_parser = validate_key_separator, group = "RecordKey", conflicts_with = "raw")]
+        #[arg(long, value_parser = validate_key_separator, group = "RecordKey", conflicts_with = "raw")]
         pub key_separator: Option<String>,
         #[cfg(not(feature = "producer-file-io"))]
         #[clap(long, value_parser = validate_key_separator, group = "RecordKey")]
@@ -87,44 +87,44 @@ mod cmd {
 
         #[cfg(feature = "producer-file-io")]
         /// Send all input as one record. Use this when producing binary files.
-        #[clap(long)]
+        #[arg(long)]
         pub raw: bool,
 
         /// Compression algorithm to use when sending records.
         /// Supported values: none, gzip, snappy and lz4.
-        #[clap(long)]
+        #[arg(long)]
         pub compression: Option<Compression>,
 
         #[cfg(feature = "producer-file-io")]
         /// Path to a file to produce to the topic.
         /// Default: Each line treated as single record unless `--raw` specified.
         /// If absent, producer will read stdin.
-        #[clap(short, long, groups = ["TestFile"])]
+        #[arg(short, long, groups = ["TestFile"])]
         pub file: Option<PathBuf>,
 
         /// Time to wait before sending
         /// Ex: '150ms', '20s'
-        #[clap(long, value_parser=parse_duration)]
+        #[arg(long, value_parser=parse_duration)]
         pub linger: Option<Duration>,
 
         /// Max amount of bytes accumulated before sending
-        #[clap(long)]
+        #[arg(long)]
         pub batch_size: Option<usize>,
 
         /// Isolation level that producer must respect.
         /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
         /// read_uncommitted (ReadUncommitted) - just wait for leader to accept records.
-        #[clap(long, value_parser=parse_isolation)]
+        #[arg(long, value_parser=parse_isolation)]
         pub isolation: Option<Isolation>,
 
         /// Delivery guarantees that producer must respect. Supported values:
         /// at_most_once (AtMostOnce) - send records without waiting from response,
         /// at_least_once (AtLeastOnce) - send records and retry if error occurred.
-        #[clap(long, default_value = "at-least-once")]
+        #[arg(long, default_value = "at-least-once")]
         pub delivery_semantic: DeliverySemantic,
 
         /// Name of the smartmodule
-        #[clap(
+        #[arg(
             long,
             group("smartmodule_group"),
             group("aggregate_group"),
@@ -134,7 +134,7 @@ mod cmd {
 
         #[cfg(feature = "producer-file-io")]
         /// Path to the smart module
-        #[clap(
+        #[arg(
             long,
             group("smartmodule_group"),
             group("aggregate_group"),
@@ -143,56 +143,56 @@ mod cmd {
         pub smartmodule_path: Option<PathBuf>,
 
         /// (Optional) Value to use as an initial accumulator for aggregate SmartModules
-        #[clap(long, requires = "aggregate_group", alias = "a-init")]
+        #[arg(long, requires = "aggregate_group", alias = "a-init")]
         pub aggregate_initial: Option<String>,
 
         /// (Optional) Extra input parameters passed to the smartmodule.
         /// They should be passed using key=value format
         /// Eg. fluvio produce topic-name --smartmodule my_filter -e foo=bar -e key=value -e one=1
-        #[clap(
+        #[arg(
             short = 'e',
             requires = "smartmodule_group",
             long="params",
             value_parser=parse_key_val,
             // value_parser,
             // action,
-            number_of_values = 1
+            num_args = 1
         )]
         pub params: Option<Vec<(String, String)>>,
 
         #[cfg(feature = "producer-file-io")]
         /// (Optional) Path to a file with transformation specification.
-        #[clap(long, conflicts_with = "smartmodule_group")]
+        #[arg(long, conflicts_with = "smartmodule_group")]
         pub transforms_file: Option<PathBuf>,
 
         /// (Optional) Transformation specification as JSON formatted string.
         /// E.g. fluvio produce topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
-        #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
+        #[arg(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
         pub transform: Vec<String>,
         /*
         #[cfg(feature = "stats")]
         /// Experimental: Collect basic producer session statistics and print in stats bar
-        #[clap(long)]
+        #[arg(long)]
         pub stats: bool,
 
         #[cfg(feature = "stats")]
         /// Experimental: Collect all producer session statistics and print in stats bar (Implies --stats)
-        #[clap(long)]
+        #[arg(long)]
         pub stats_plus: bool,
 
         #[cfg(feature = "stats")]
         /// Experimental: Save producer session stats to file. The resulting file formatted for spreadsheet, as comma-separated values
-        #[clap(long)]
+        #[arg(long)]
         pub stats_path: Option<PathBuf>,
 
         #[cfg(feature = "stats")]
         /// Experimental: Don't display stats bar when using `--stats` or `--stats-plus`. Use with `--stats-path`.
-        #[clap(long)]
+        #[arg(long)]
         pub no_stats_bar: bool,
 
         #[cfg(feature = "stats")]
         /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
-        #[clap(long)]
+        #[arg(long)]
         pub stats_summary: bool,
         */
     }
