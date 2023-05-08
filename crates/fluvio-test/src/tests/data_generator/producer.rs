@@ -108,12 +108,8 @@ pub async fn producer(
 
     println!("{producer_id}: waiting for start");
     while let Some(Ok(record)) = sync_stream.next().await {
-        //let _key = record
-        //    .key()
-        //    .map(|key| String::from_utf8_lossy(key).to_string());
-        let value = String::from_utf8_lossy(record.value()).to_string();
-
-        if value.eq("start") {
+        let value_str = record.get_value().as_utf8_lossy_string();
+        if value_str.eq("start") {
             println!("Starting producer");
             break;
         }

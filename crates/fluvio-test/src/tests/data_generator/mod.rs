@@ -126,9 +126,9 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
             let mut is_ready = false;
             while let Some(Ok(record)) = sync_stream.next().await {
                 let _key = record
-                    .key()
-                    .map(|key| String::from_utf8_lossy(key).to_string());
-                let value = String::from_utf8_lossy(record.value()).to_string();
+                    .get_key()
+                    .map(|key| key.as_utf8_lossy_string());
+                let value = record.get_value().as_utf8_lossy_string();
 
                 if !is_ready {
                     if value.contains("ready") {

@@ -87,6 +87,8 @@ where
     /// stream using an [`Offset`] and periodically receive events, either individually
     /// or in batches.
     ///
+    /// Note this uses ConsumerRecord instead of batches
+    ///
     /// If you want more fine-grained control over how records are streamed,
     /// check out the [`stream_with_config`] method.
     ///
@@ -102,9 +104,9 @@ where
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value()).to_string();
-    ///     println!("Got event: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got event: key={:?}, value={value_str}", key_str);
     /// }
     /// # Ok(())
     /// # }
@@ -152,9 +154,9 @@ where
     ///     .build()?;
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key: Option<String> = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value());
-    ///     println!("Got record: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got record: key={:?}, value={}", key_str, value_str);
     /// }
     /// # Ok(())
     /// # }
@@ -209,9 +211,9 @@ where
     /// let mut stream = consumer.stream_batches_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(batch)) = stream.next().await {
     ///     for record in batch.records() {
-    ///         let key = record.key.as_ref().map(|key| String::from_utf8_lossy(key.as_ref()).to_string());
-    ///         let value = String::from_utf8_lossy(record.value.as_ref()).to_string();
-    ///         println!("Got record: key={:?}, value={}", key, value);
+    ///         let key_str = record.key().map(|key| key.as_utf8_lossy_string());
+    ///         let value_str = record.value().as_utf8_lossy_string();
+    ///         println!("Got record: key={:?}, value={}", key_str, value_str);
     ///     }
     /// }
     /// # Ok(())
@@ -654,9 +656,9 @@ impl MultiplePartitionConsumer {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value()).to_string();
-    ///     println!("Got event: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got event: key={:?}, value={}", key_str, value_str);
     /// }
     /// # Ok(())
     /// # }
@@ -704,9 +706,9 @@ impl MultiplePartitionConsumer {
     ///     .build()?;
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key: Option<String> = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value());
-    ///     println!("Got record: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got record: key={:?}, value={}", key_str, value_str);
     /// }
     /// # Ok(())
     /// # }
