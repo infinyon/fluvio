@@ -46,7 +46,6 @@ sysinfo = { workspace = true }
 # Fluvio dependencies
 fluvio = { workspace = true, features = ["smartengine"]}
 fluvio-types = { workspace = true, features = ["events"] }
-fluvio-storage = { workspace = true }
 fluvio-compression = { workspace = true }
 fluvio-controlplane = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true }
@@ -54,6 +53,8 @@ fluvio-spu-schema = { workspace = true,  features = ["file"] }
 fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true, features = ["file",] }
 fluvio-service = { workspace = true }
+fluvio-storage = { workspace = true }
+fluvio-storage-replication = { workspace = true }
 flv-tls-proxy = { workspace = true }
 flv-util = { workspace = true }
 fluvio-future = { workspace = true,features = [
