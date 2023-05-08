@@ -27,8 +27,7 @@ use fluvio_connector_common::{connector, consumer::ConsumerStream, Result};
 async fn start(config: CustomConfig, mut stream: impl ConsumerStream) -> Result<()> {
     println!("Starting {{project-name}} sink connector with {config:?}");
     while let Some(Ok(record)) = stream.next().await {
-        let string = String::from_utf8_lossy(record.value());
-        println!("{string}");
+        println!("{}",record.value().as_ut8_lossy_string());
     }
     Ok(())
 }

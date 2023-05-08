@@ -564,17 +564,18 @@ mod cmd {
             pb: &ProgressRenderer,
         ) {
             let formatted_key = record
-                .key()
-                .map(|key| String::from_utf8_lossy(key).to_string())
-                .unwrap_or_else(|| "null".to_string());
+                .get_key()
+                .map(|key| key.as_utf8_lossy_string())
+                .unwrap_or_else(|| "null".into());
 
             let formatted_value = match (&self.output, templates) {
                 (Some(ConsumeOutputType::json), None) => {
                     format_json(record.value(), self.suppress_unknown)
                 }
-                (Some(ConsumeOutputType::text), None) => {
-                    Some(format_text_record(record.value(), self.suppress_unknown))
-                }
+                (Some(ConsumeOutputType::text), None) => Some(format_text_record(
+                    record.get_value(),
+                    self.suppress_unknown,
+                )),
                 (Some(ConsumeOutputType::binary), None) => {
                     Some(format_binary_record(record.value()))
                 }
@@ -600,7 +601,7 @@ mod cmd {
                     }
                 }
                 (_, Some(templates)) => {
-                    let value = String::from_utf8_lossy(record.value()).to_string();
+                    let value = record.get_value().as_utf8_lossy_string();
                     let timestamp_rfc3339 = if record.timestamp() == NO_TIMESTAMP {
                         "NA".to_string()
                     } else {

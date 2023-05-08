@@ -70,9 +70,9 @@
 //!     let mut stream = consumer.stream(Offset::beginning()).await?;
 //!
 //!     while let Some(Ok(record)) = stream.next().await {
-//!         let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-//!         let value = String::from_utf8_lossy(record.value()).to_string();
-//!         println!("Got record: key={:?}, value={}", key, value);
+//!         let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+//!         let value_str = record.get_value().as_utf8_lossy_string();
+//!         println!("Got record: key={:?}, value={}", key_str, value_str);
 //!     }
 //!     Ok(())
 //! }
@@ -210,9 +210,9 @@ pub async fn producer<S: Into<String>>(topic: S) -> anyhow::Result<TopicProducer
 /// let consumer = fluvio::consumer("my-topic", 0).await?;
 /// let mut stream = consumer.stream(Offset::beginning()).await?;
 /// while let Some(Ok(record)) = stream.next().await {
-///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-///     let value = String::from_utf8_lossy(record.value()).to_string();
-///     println!("Got record: key={:?}, value={}", key, value);
+///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+///     let value_str = record.get_value().as_utf8_lossy_string();
+///     println!("Got record: key={:?}, value={}", key_str, value_str);
 /// }
 /// # Ok(())
 /// # }

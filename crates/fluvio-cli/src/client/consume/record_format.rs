@@ -10,6 +10,7 @@ use anyhow::{anyhow, Result};
 
 use fluvio::{metadata::tableformat::TableFormatColumnConfig};
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
+use fluvio_smartmodule::RecordData;
 
 use super::TableModel;
 
@@ -34,11 +35,11 @@ pub fn format_json(value: &[u8], suppress: bool) -> Option<String> {
 // -----------------------------------
 
 /// Print a single record in text format
-pub fn format_text_record(record: &[u8], suppress: bool) -> String {
-    if is_binary(record) && !suppress {
-        format!("binary: ({} bytes)", record.len())
+pub fn format_text_record(data: &RecordData, suppress: bool) -> String {
+    if data.is_binary() && !suppress {
+        format!("binary: ({} bytes)", data.len())
     } else {
-        format!("{}", String::from_utf8_lossy(record))
+        format!("{}", data.as_utf8_lossy_string())
     }
 }
 
