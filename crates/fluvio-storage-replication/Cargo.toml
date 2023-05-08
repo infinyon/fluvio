@@ -1,0 +1,16 @@
+[package]
+edition = "2021"
+name = "fluvio-storage-replication"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Storage Replication Controller"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+
+
+[dependencies]
+anyhow = { workspace = true}
+tracing = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }

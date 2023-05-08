@@ -3122,6 +3122,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-storage-replication"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-stream-dispatcher"
 version = "0.10.1"
 dependencies = [
