@@ -68,7 +68,7 @@ pub struct TestCmd {
     transform: Vec<String>,
 
     /// verbose output
-    #[clap(short = 'v', long = "verbose")]
+    #[arg(short = 'v', long = "verbose")]
     verbose: bool,
 }
 
