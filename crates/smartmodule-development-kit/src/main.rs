@@ -8,6 +8,7 @@ mod hub;
 mod set_public;
 
 use std::path::{PathBuf};
+
 use clap::Parser;
 use anyhow::Result;
 use tracing::debug;
@@ -24,6 +25,6 @@ fn main() -> Result<()> {
 }
 
 pub(crate) fn read_bytes_from_path(path: &PathBuf) -> Result<Vec<u8>> {
-    debug!("loading module at: {}", path.display());
+    debug!(path = ?path.display(), "Loading module");
     std::fs::read(path).map_err(|err| anyhow::anyhow!("error reading wasm file: {}", err))
 }
