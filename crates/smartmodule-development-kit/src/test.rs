@@ -66,6 +66,10 @@ pub struct TestCmd {
     /// E.g. smdk test --text '{}' --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
     #[arg(long, short, group = "TestSmartModule")]
     transform: Vec<String>,
+
+    /// verbose output
+    #[arg(short = 'v', long = "verbose")]
+    verbose: bool,
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String)> {
@@ -125,7 +129,9 @@ impl TestCmd {
 
         let output = chain.process(SmartModuleInput::try_from(test_records)?, &metrics)?;
 
-        println!("{:?} records outputed", output.successes.len());
+        if self.verbose {
+            println!("{:?} records outputed", output.successes.len());
+        }
         for output_record in output.successes {
             let output_value = output_record.value.as_str()?;
             println!("{output_value}");
