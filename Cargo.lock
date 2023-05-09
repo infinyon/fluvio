@@ -2646,7 +2646,6 @@ name = "fluvio-connector-derive"
 version = "0.0.0"
 dependencies = [
  "fluvio",
- "fluvio-connector-common",
  "proc-macro2",
  "quote",
  "serde",

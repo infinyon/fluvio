@@ -10,9 +10,6 @@ description = "Fluvio SmartConnector procedural macro"
 [lib]
 proc-macro = true
 
-[package.metadata.cargo-udeps.ignore]
-development = ["fluvio", "fluvio-connector-common"]
-
 [dependencies]
 syn = { version = "1.0", default-features = false, features = ["full", "parsing", "proc-macro", "derive", "printing"] }
 quote = "1.0"
@@ -23,4 +20,3 @@ proc-macro2 = "1.0"
 trybuild = { version = "1.0" }
 serde = { workspace = true, features = ["derive"]}
 fluvio = { workspace = true }
-fluvio-connector-common = { path = "../fluvio-connector-common/", features = ["derive"] }
