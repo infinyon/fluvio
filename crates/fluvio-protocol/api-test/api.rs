@@ -1,6 +1,5 @@
-
 mod test {
-    
+
     use std::io::Cursor;
 
     use fluvio_protocol::api::Request;
