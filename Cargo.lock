@@ -3109,7 +3109,6 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-spu-schema",
- "fluvio-storage",
  "fluvio-types",
  "flv-util",
  "futures-lite",

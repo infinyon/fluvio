@@ -18,6 +18,12 @@ required-features = ["cli", "fluvio-future/subscriber"]
 cli = ["clap"]
 fixture = []
 
+
+[[test]]
+name = "replication-test"
+path = "tests/replica_test.rs"
+required-features = ["fixture"]
+
 [dependencies]
 anyhow = { workspace = true}
 async-lock = { workspace = true }
@@ -48,6 +54,5 @@ fluvio-spu-schema = { workspace = true, features = [ "file"] }
 fluvio-future = { workspace = true, features = ["fixture"] }
 flv-util = { workspace = true, features = ["fixture"] }
 fluvio-socket = { workspace = true,  features = ["file"] }
-fluvio-storage = { path = ".", features = ["fixture"] }
 fluvio-protocol = { workspace = true,  features = ["fixture"] }
 
