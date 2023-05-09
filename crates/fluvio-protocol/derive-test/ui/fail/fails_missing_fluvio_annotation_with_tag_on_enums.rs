@@ -1,4 +1,4 @@
-use fluvio_protocol_derive::{Decoder, Encoder};
+use fluvio_protocol::{Decoder, Encoder};
 
 #[derive(Clone, Default, Encoder, Decoder)]
 pub enum SmartModuleInvocationWasm {

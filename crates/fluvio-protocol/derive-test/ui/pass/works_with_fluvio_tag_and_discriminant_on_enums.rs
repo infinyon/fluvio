@@ -1,10 +1,11 @@
-use fluvio_protocol_derive::{Decoder, Encoder};
+use fluvio_protocol::{Decoder, Encoder};
 
 #[derive(Clone, Default, Encoder, Decoder)]
-#[fluvio(encode_discriminant)]
 pub enum SmartModuleInvocationWasm {
     #[default]
+    #[fluvio(tag = 0)]
     Predefined = 0,
+    #[fluvio(tag = 1)]
     AdHoc = 1,
 }
 

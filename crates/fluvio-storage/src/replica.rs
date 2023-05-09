@@ -434,6 +434,7 @@ fn replica_dir_name<S: AsRef<str>>(topic_name: S, partition_index: Size) -> Stri
 }
 
 #[cfg(test)]
+#[cfg(feature = "fixture")]
 mod tests {
 
     use fluvio_future::fs::remove_dir_all;

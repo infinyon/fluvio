@@ -560,6 +560,7 @@ mod listener {
 }
 
 #[cfg(test)]
+#[cfg(feature = "fixtures")]
 mod test {
 
     use crate::store::actions::LSUpdate;
@@ -662,6 +663,7 @@ mod test {
 }
 
 #[cfg(test)]
+#[cfg(feature = "fixture")]
 mod test_notify {
 
     use std::sync::Arc;
