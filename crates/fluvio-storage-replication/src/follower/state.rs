@@ -15,7 +15,7 @@ use fluvio_protocol::record::Offset;
 use fluvio_storage::{FileReplica, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 
-use crate::replication::leader::ReplicaOffsetRequest;
+use crate::leader::ReplicaOffsetRequest;
 use crate::core::{FileGlobalContext};
 use crate::storage::SharableReplicaStorage;
 
