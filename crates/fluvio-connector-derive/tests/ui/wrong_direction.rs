@@ -1,4 +1,4 @@
-use fluvio_connector_common::connector;
+use fluvio_connector_derive::connector;
 
 #[connector(wrong)]
 fn start_fn() {}

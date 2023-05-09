@@ -2869,7 +2869,6 @@ dependencies = [
  "quote",
  "syn 1.0.109",
  "tracing",
- "trybuild 1.0.80",
 ]
 
 [[package]]

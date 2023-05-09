@@ -21,6 +21,11 @@ name = "api-test"
 path = "api-test/api.rs"
 required-features = ["api"]
 
+[[test]]
+name = "derive-test"
+path = "derive-test/mod.rs"
+required-features = ["api"]
+
 [features]
 default = ["derive"]
 derive = ["fluvio-protocol-derive"]
