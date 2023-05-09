@@ -2629,6 +2629,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.21",
  "tracing",
+ "trybuild 1.0.80",
 ]
 
 [[package]]
@@ -2645,12 +2646,9 @@ dependencies = [
 name = "fluvio-connector-derive"
 version = "0.0.0"
 dependencies = [
- "fluvio",
  "proc-macro2",
  "quote",
- "serde",
  "syn 1.0.109",
- "trybuild 1.0.80",
 ]
 
 [[package]]
