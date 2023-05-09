@@ -6,7 +6,6 @@ pub struct ContainerAttributes {
     pub varint: bool,
     pub default: bool,
 
-
     pub encode_discriminant: bool,
     pub api_min_version: u16,
     pub api_max_version: Option<u16>,
