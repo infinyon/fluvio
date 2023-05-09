@@ -223,6 +223,7 @@ impl SegmentList {
     }
 
     #[cfg(test)]
+    #[cfg(feature = "fixture")]
     pub fn get_segment(&self, offset: Offset) -> Option<&ReadSegment> {
         self.segments.get(&offset)
     }

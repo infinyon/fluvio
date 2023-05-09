@@ -380,6 +380,7 @@ impl FlushPolicy {
 }
 
 #[cfg(test)]
+#[cfg(feature = "fixture")]
 mod tests {
 
     // use std::time::{Duration, Instant};
