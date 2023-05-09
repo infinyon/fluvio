@@ -30,10 +30,3 @@ k8-types = { workspace = true, optional = true }
 async-std = { workspace = true,  features = [ "attributes",] }
 tokio = { workspace = true,  features = ["macros"] }
 fluvio-future = { workspace = true, features = ["fixture"] }
-fluvio-stream-model = { path = ".", features = ["fixture"] }
-
-
-[package.metadata.cargo-udeps.ignore]
-development = [
-    "fluvio-stream-model",
-] # installed with `fixture` feature in tests

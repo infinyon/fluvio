@@ -3150,7 +3150,6 @@ dependencies = [
  "async-std",
  "event-listener",
  "fluvio-future",
- "fluvio-stream-model",
  "k8-types",
  "once_cell",
  "serde",
