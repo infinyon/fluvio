@@ -168,6 +168,7 @@ mod inner_deriver {
     /// * `response`:  Response struct.  This is required
     ///
     ///
+    #[cfg(feature = "api")]
     pub use fluvio_protocol_derive::RequestApi;
 
     /// Custom derive for generating default structure

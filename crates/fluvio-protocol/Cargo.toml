@@ -16,6 +16,11 @@ bench = false
 name = "bench"
 harness = false
 
+[[test]]
+name = "api-test"
+path = "api-test/api.rs"
+required-features = ["api"]
+
 [features]
 default = ["derive"]
 derive = ["fluvio-protocol-derive"]
@@ -33,7 +38,7 @@ crc32c = { workspace = true,  optional = true}
 content_inspector = { version = "0.2.4", optional = true }
 once_cell = { workspace = true, optional = true }
 derive_builder = { workspace = true,  optional = true }
-eyre = { version = "0.6", default-features = false, optional = true }
+eyre = { workspace = true,  optional = true }
 semver = { workspace = true, optional = true }
 thiserror = { workspace = true,  optional = true }
 tokio-util = { workspace = true, features = ["codec","compat"], optional = true }
@@ -49,7 +54,6 @@ fluvio-types = { workspace = true,  optional = true }
 [dev-dependencies]
 criterion = "0.4.0"
 trybuild = "1.0.64"
-fluvio-protocol = { path = ".", features = ["derive", "api"] }
 fluvio-future = { workspace = true, features = [
     "fixture",
     "subscriber",

@@ -2849,7 +2849,6 @@ dependencies = [
  "eyre",
  "fluvio-compression",
  "fluvio-future",
- "fluvio-protocol",
  "fluvio-protocol-derive",
  "fluvio-types",
  "flv-util",
