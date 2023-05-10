@@ -60,13 +60,11 @@ setup_file() {
 @test "Pack connector" {
     # Pack when package meta doesn't exist
     cd $CONNECTOR_DIR
-    echo "# My Cool Connector" > README.md
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
 
     # Pack when package meta exists
     cd $CONNECTOR_DIR
-    echo "# My Cool Connector" > README.md
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
 }
@@ -74,7 +72,6 @@ setup_file() {
 @test "Packs connector with specific README.md" {
     # Creates a directory to store the dummy readme
     mkdir ../testing
-    echo "# My Cool Connector" > ../testing/README.md
 
     cd $CONNECTOR_DIR
     run $CDK_BIN publish --pack --readme ../testing/README.md
