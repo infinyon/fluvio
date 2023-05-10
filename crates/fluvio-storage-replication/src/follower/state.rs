@@ -16,7 +16,6 @@ use fluvio_storage::{FileReplica, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 
 use crate::leader::ReplicaOffsetRequest;
-use crate::core::{FileGlobalContext};
 use crate::storage::SharableReplicaStorage;
 
 use super::controller::FollowerGroups;
@@ -76,7 +75,7 @@ impl FollowersState<FileReplica> {
     /// otherwise check if there is existing state, if exists return none otherwise create new
     pub async fn add_replica(
         self: Arc<Self>,
-        ctx: &FileGlobalContext,
+        ctx: &FileReplicaContext,
         replica: Replica,
     ) -> Result<Option<FollowerReplicaState<FileReplica>>> {
         let leader = replica.leader;
