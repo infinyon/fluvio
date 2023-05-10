@@ -1,6 +1,7 @@
 //!
 //! Command for hub publishing
 
+use std::env::current_dir;
 use std::fs::remove_dir_all;
 use std::path::Path;
 use std::path::PathBuf;
@@ -55,8 +56,8 @@ pub struct PublishCmd {
     remote: Option<String>,
 
     /// Relative path to this connector package README
-    #[clap(long)]
-    readme: Option<PathBuf>,
+    #[clap(long, default_value = "./README.md")]
+    readme: PathBuf,
 }
 
 impl PublishCmd {
@@ -147,22 +148,22 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
+/// Creates a full path from the provided relative path in the context
+/// of this command execution
+fn make_full_path<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+    let mut full_path = current_dir()?;
+
+    full_path.push(path);
+    Ok(full_path)
+}
+
 pub fn init_package_template(
     package_info: &PackageInfo,
     binary_arch: &str,
-    readme_path: &Option<PathBuf>,
+    readme_path: &PathBuf,
 ) -> Result<()> {
     let connector_toml_path = find_connector_toml(package_info)?;
     let connector_metadata = ConnectorMetadata::from_toml_file(&connector_toml_path)?;
-    let readme_md_path = if let Some(readme_path) = readme_path {
-        readme_path
-            .to_owned()
-            .canonicalize()
-            .expect("Failed to build path for README")
-    } else {
-        find_readme_md(package_info)?
-    };
-
     let mut pm = PackageMeta {
         group: "no-hubid".into(),
         name: "not-found".into(),
@@ -170,7 +171,7 @@ pub fn init_package_template(
         manifest: Vec::new(),
         ..PackageMeta::default()
     };
-
+    let readme_path = make_full_path(readme_path)?;
     let package_hub_path = package_info.package_relative_path(hubutil::DEF_HUB_INIT_DIR);
     if package_hub_path.exists() {
         return Err(anyhow::anyhow!("package hub directory exists already"));
@@ -193,9 +194,11 @@ pub fn init_package_template(
         binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
     );
 
-    let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_md_path);
+    let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_path);
     pm.manifest.push(
-        readme_md_relative_path.unwrap_or_else(|| readme_md_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
+        readme_md_relative_path
+            .clone()
+            .unwrap_or_else(|| readme_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
     );
 
     println!("Creating package {}", pm.pkg_name());
