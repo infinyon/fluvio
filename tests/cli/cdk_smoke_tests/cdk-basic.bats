@@ -72,6 +72,7 @@ setup_file() {
 @test "Packs connector with specific README.md" {
     # Creates a directory to store the dummy readme
     mkdir ../testing
+    echo "# Testing Connector Readme" > ../testing/README.md
 
     cd $CONNECTOR_DIR
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu --readme ../testing/README.md
