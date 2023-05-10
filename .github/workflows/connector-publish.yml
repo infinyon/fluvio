@@ -19,9 +19,12 @@ on:
       fail-fast:
         type: boolean
         default: true
-      readme_path:
+      readme:
         type: string
         default: './README.md'
+      public:
+        type: boolean
+        default: true
     secrets:
       CLOUD_USER_EMAIL:
         required: true
@@ -68,10 +71,10 @@ jobs:
       - name: Publish
         run: |
           cdk publish \
-            --public-yes \
+            ${{ inputs.public && '--public-yes' || '' }} \
             --target ${{ matrix.rust-target }} \
             -p ${{ inputs.package-name }} \
-            --readme ${{ inputs.readme_path }}
+            ${{ (inputs.readme && '--readme ' + inputs.readme) || '' }}
 
   macos:
     name: macos
@@ -104,4 +107,7 @@ jobs:
           cargo build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
+          cdk publish ${{ inputs.public && '--public-yes' || '' }} \
+            --target ${{ matrix.rust-target }} \
+            -p ${{ inputs.package-name }} \
+            ${{ (inputs.readme && '--readme ' + inputs.readme) || '' }}
