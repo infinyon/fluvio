@@ -39,26 +39,21 @@ pub enum DeploymentResult {
 }
 
 impl DeploymentBuilder {
-    fn config_file_error(err: std::io::Error, config: PathBuf) -> Result<DeploymentResult> {
-        Err(err).with_context(|| {
-            format!(
-                "Could not open connector config at: {}. \
-                    \n Please provide a connector config file with \"--config\" \
-                    \n or use the default path: sample-config.yaml \
-                    \n\n For instructions on creating connector config files, \
-                    \n see: https://www.fluvio.io/connectors/connector-config/",
-                config.display(),
-            )
-        })
-    }
-
     pub fn deploy(self) -> Result<DeploymentResult> {
         let deployment = self.build()?;
 
         let config_file = match std::fs::File::open(&deployment.config) {
             Ok(file) => file,
             Err(err) => {
-                return Self::config_file_error(err, deployment.config);
+                return Err(err).with_context(|| {
+                    format!(
+                        "Could not open connector config at: {}. \
+                            \n Please provide a connector config file with \"--config\" \
+                            \n\n For instructions on creating connector config files, \
+                            \n see: https://www.fluvio.io/connectors/connector-config/",
+                        deployment.config.display(),
+                    )
+                });
             }
         };
 

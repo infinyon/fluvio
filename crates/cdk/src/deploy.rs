@@ -70,9 +70,19 @@ enum DeployShutdownCmd {
     /// Shutdown the Connector's deployment
     // As long as there is only one deployment type, we omit to specify its name
     #[command(name = "shutdown")]
+    #[clap(group(
+        clap::ArgGroup::new("name-source")
+            .required(true)
+            .args(&["config", "name"]),
+    ))]
     Local {
-        #[arg(value_name = "CONNECTOR_NAME")]
-        name: String,
+        /// Path to configuration file in YAML format
+        #[arg(short, long, conflicts_with = &"name", value_name = "PATH")]
+        config: Option<PathBuf>,
+
+        /// Name of the connector to shutdown
+        #[arg(short, long, conflicts_with = &"config", value_name = "CONNECTOR_NAME")]
+        name: Option<String>,
     },
 }
 
@@ -89,9 +99,19 @@ enum DeployLogCmd {
     /// Print the connector's logs
     // As long as there is only one deployment type, we omit to specify its name
     #[command(name = "log")]
+    #[clap(group(
+        clap::ArgGroup::new("name-source")
+            .required(true)
+            .args(&["config", "name"]),
+    ))]
     Local {
-        #[arg(value_name = "CONNECTOR_NAME")]
-        name: String,
+        /// Path to configuration file in YAML format
+        #[arg(short, long, conflicts_with = &"name", value_name = "PATH")]
+        config: Option<PathBuf>,
+
+        /// Name of the running connector
+        #[arg(short, long, conflicts_with = &"config", value_name = "CONNECTOR_NAME")]
+        name: Option<String>,
     },
 }
 
@@ -110,9 +130,9 @@ impl DeployOperationCmd {
     pub(crate) fn process(self, package: PackageCmd, _extra_arguments: Vec<String>) -> Result<()> {
         match self {
             Self::Start(deployment_type) => deployment_type.process(package),
-            Self::Shutdown(deployment_type) => deployment_type.process(),
+            Self::Shutdown(deployment_type) => deployment_type.process(package),
             Self::List(deployment_type) => deployment_type.process(),
-            Self::Log(deployment_type) => deployment_type.process(),
+            Self::Log(deployment_type) => deployment_type.process(package),
         }
     }
 }
@@ -138,17 +158,17 @@ impl DeployListCmd {
 }
 
 impl DeployShutdownCmd {
-    pub(crate) fn process(self) -> Result<()> {
+    pub(crate) fn process(self, package: PackageCmd) -> Result<()> {
         match self {
-            Self::Local { name } => local_index::delete_by_name(&name),
+            Self::Local { config, name } => shutdown_local(package, config, name),
         }
     }
 }
 
 impl DeployLogCmd {
-    pub(crate) fn process(self) -> Result<()> {
+    pub(crate) fn process(self, package: PackageCmd) -> Result<()> {
         match self {
-            Self::Local { name } => local_index::print_log(&name),
+            Self::Local { config, name } => print_local_log(package, config, name),
         }
     }
 }
@@ -185,6 +205,53 @@ fn deploy_local(
         });
     let result = builder.deploy()?;
     local_index::store(result)
+}
+
+
+fn shutdown_local(
+    package_cmd: PackageCmd,
+    config: Option<PathBuf>,
+    name: Option<String>,
+) -> Result<()> {
+    let name = match (config, name) {
+        (Some(config_path), None) => connector_name_from_config(package_cmd, config_path)?,
+        (None, Some(name)) => name,
+        _ => return Err(anyhow!("Either name or config must be specified")),
+    };
+
+    local_index::delete_by_name(&name)
+}
+
+fn print_local_log(
+    package_cmd: PackageCmd,
+    config: Option<PathBuf>,
+    name: Option<String>,
+) -> Result<()> {
+    let name = match (config, name) {
+        (Some(config_path), None) => connector_name_from_config(package_cmd, config_path)?,
+        (None, Some(name)) => name,
+        _ => return Err(anyhow!("Either name or config must be specified")),
+    };
+
+    local_index::print_log(&name)
+}
+
+fn connector_name_from_config(package_cmd: PackageCmd, config: PathBuf) -> Result<String> {
+    let (_executable, metadata) = from_cargo_package(package_cmd)
+        .context("Failed to extract metadata from Connector.toml")?;
+
+    let config_file = match std::fs::File::open(&config) {
+        Ok(file) => file,
+        Err(err) => {
+            return Err(err).with_context(|| {
+                format!("Could not open connector config at: {}", config.display())
+            })
+        }
+    };
+
+    let config = metadata.validate_config(config_file)?;
+
+    Ok(config.meta().name.to_owned())
 }
 
 pub(crate) fn from_cargo_package(
