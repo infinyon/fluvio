@@ -11,6 +11,7 @@ use crate::Deployment;
 pub(crate) fn deploy_local<P: AsRef<Path>>(
     deployment: &Deployment,
     output_file: Option<P>,
+    name: &str
 ) -> Result<u32> {
     let (stdout, stderr, wait) = if let Some(log_path) = output_file {
         println!("Log file: {}", log_path.as_ref().to_string_lossy());
@@ -42,6 +43,7 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
     }
     let mut child = cmd.spawn()?;
     println!("Connector runs with process id: {}", child.id());
+    println!("Started connector `{}`", name);
     if wait {
         child.wait()?;
     }
