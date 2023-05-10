@@ -195,9 +195,7 @@ pub fn init_package_template(
 
     let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_path);
     pm.manifest.push(
-        readme_md_relative_path
-            
-            .unwrap_or_else(|| readme_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
+        readme_md_relative_path.unwrap_or_else(|| readme_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
     );
 
     println!("Creating package {}", pm.pkg_name());
