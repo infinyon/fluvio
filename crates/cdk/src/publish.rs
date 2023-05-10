@@ -23,7 +23,6 @@ use tracing::{debug, info};
 use crate::cmd::PackageCmd;
 
 pub const CONNECTOR_TOML: &str = "Connector.toml";
-pub const README_MD: &str = "README.md";
 
 /// Publish Connector package to the Hub
 #[derive(Debug, Parser)]
@@ -197,7 +196,7 @@ pub fn init_package_template(
     let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_path);
     pm.manifest.push(
         readme_md_relative_path
-            .clone()
+            
             .unwrap_or_else(|| readme_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
     );
 
@@ -247,16 +246,6 @@ pub(crate) fn find_connector_toml(package_info: &PackageInfo) -> Result<PathBuf>
     }
 
     Err(anyhow::anyhow!("No \"{}\" file found", CONNECTOR_TOML))
-}
-
-pub(crate) fn find_readme_md(package_info: &PackageInfo) -> Result<PathBuf> {
-    let readme_md = package_info.package_relative_path(README_MD);
-
-    if readme_md.exists() {
-        return Ok(readme_md);
-    }
-
-    Err(anyhow::anyhow!("No \"{}\" file found", README_MD))
 }
 
 fn verify_public_or_exit() -> Result<()> {
