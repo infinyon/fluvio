@@ -74,7 +74,7 @@ setup_file() {
     mkdir ../testing
 
     cd $CONNECTOR_DIR
-    run $CDK_BIN publish --pack --readme ../testing/README.md
+    run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu --readme ../testing/README.md
     assert_success
 
     cat ./.hub/package-meta.yaml | grep '../../testing/README.md'
