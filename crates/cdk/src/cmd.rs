@@ -41,6 +41,14 @@ pub struct PackageCmd {
     #[arg(long, default_value = "release")]
     pub release: String,
 
+    /// Provide target platform for the package. Optional.
+    /// By default the host's one is used.
+    #[arg(
+        long,
+        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
+    )]
+    pub target: String,
+
     /// Optional package/project name
     #[arg(long, short)]
     pub package_name: Option<String>,

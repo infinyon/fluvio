@@ -183,11 +183,13 @@ fn deploy_local(
 
 pub(crate) fn from_cargo_package(package_cmd: PackageCmd) -> Result<(PathBuf, ConnectorMetadata)> {
     debug!("reading connector metadata from cargo package");
+    let target_arch = package_cmd.target.clone();
+
     let opt = package_cmd.as_opt();
     let p = PackageInfo::from_options(&opt)?;
     let connector_metadata =
         ConnectorMetadata::from_toml_file(p.package_relative_path(CONNECTOR_METADATA_FILE_NAME))?;
-    let executable_path = p.target_bin_path()?;
+    let executable_path = p.target_bin_path_for_arch(&target_arch)?;
     Ok((executable_path, connector_metadata))
 }
 
