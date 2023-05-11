@@ -67,5 +67,19 @@ setup_file() {
     cd $CONNECTOR_DIR
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
+}
 
+@test "Packs connector with specific README.md" {
+    # Creates a directory to store the dummy readme
+    cd $CONNECTOR_DIR
+
+    mkdir ../testing
+    echo "# Testing Connector Readme" > ../testing/README.md
+
+    run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu --readme ../testing/README.md
+    assert_success
+
+    # Ensure the correct path is added
+    cat ./.hub/package-meta.yaml | grep '../../testing/README.md'
+    assert_success
 }

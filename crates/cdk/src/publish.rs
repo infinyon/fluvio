@@ -1,6 +1,7 @@
 //!
 //! Command for hub publishing
 
+use std::env::current_dir;
 use std::fs::remove_dir_all;
 use std::path::Path;
 use std::path::PathBuf;
@@ -52,6 +53,10 @@ pub struct PublishCmd {
 
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
+
+    /// Relative path to this connector package README
+    #[clap(long, default_value = "./README.md")]
+    readme: PathBuf,
 }
 
 impl PublishCmd {
@@ -72,7 +77,7 @@ impl PublishCmd {
             remove_dir_all(&hubdir)?;
         }
 
-        init_package_template(&package_info, &self.target)?;
+        init_package_template(&package_info, &self.target, &self.readme)?;
         check_package_meta_visiblity(&package_info)?;
 
         match (self.pack, self.push) {
@@ -142,10 +147,22 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
     Ok(())
 }
 
-pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> Result<()> {
+/// Creates a full path from the provided relative path in the context
+/// of this command execution
+fn make_full_path<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+    let mut full_path = current_dir()?;
+
+    full_path.push(path);
+    Ok(full_path)
+}
+
+pub fn init_package_template(
+    package_info: &PackageInfo,
+    binary_arch: &str,
+    readme_path: &PathBuf,
+) -> Result<()> {
     let connector_toml_path = find_connector_toml(package_info)?;
     let connector_metadata = ConnectorMetadata::from_toml_file(&connector_toml_path)?;
-
     let mut pm = PackageMeta {
         group: "no-hubid".into(),
         name: "not-found".into(),
@@ -153,7 +170,7 @@ pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> R
         manifest: Vec::new(),
         ..PackageMeta::default()
     };
-
+    let readme_path = make_full_path(readme_path)?;
     let package_hub_path = package_info.package_relative_path(hubutil::DEF_HUB_INIT_DIR);
     if package_hub_path.exists() {
         return Err(anyhow::anyhow!("package hub directory exists already"));
@@ -174,6 +191,11 @@ pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> R
     let binary_relative_path = package_meta_relative_path(&package_meta_path, &binary_path);
     pm.manifest.push(
         binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
+    );
+
+    let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_path);
+    pm.manifest.push(
+        readme_md_relative_path.unwrap_or_else(|| readme_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
     );
 
     println!("Creating package {}", pm.pkg_name());
@@ -215,10 +237,10 @@ fn from_connectorvis(cv: &ConnectorVisibility) -> PkgVisibility {
 }
 
 pub(crate) fn find_connector_toml(package_info: &PackageInfo) -> Result<PathBuf> {
-    let smartmodule_toml = package_info.package_relative_path(CONNECTOR_TOML);
+    let connector_toml = package_info.package_relative_path(CONNECTOR_TOML);
 
-    if smartmodule_toml.exists() {
-        return Ok(smartmodule_toml);
+    if connector_toml.exists() {
+        return Ok(connector_toml);
     }
 
     Err(anyhow::anyhow!("No \"{}\" file found", CONNECTOR_TOML))
