@@ -44,13 +44,6 @@ pub struct PublishCmd {
     #[arg(long, hide_short_help = true)]
     push: bool,
 
-    /// provide target platform for the package. Optional. By default the host's one is used.
-    #[arg(
-        long,
-        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
-    )]
-    target: String,
-
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 
@@ -87,7 +80,7 @@ impl PublishCmd {
                     .as_ref()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                let pkgdata = package_assemble(pkgmetapath, &self.target, &access)?;
+                let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
                 package_push(self, &pkgdata, &access)?;
             }
 
@@ -98,7 +91,7 @@ impl PublishCmd {
                     .as_ref()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                package_assemble(pkgmetapath, &self.target, &access)?;
+                package_assemble(pkgmetapath, &opt.target, &access)?;
             }
 
             // --push only, needs ipkg file
@@ -140,7 +133,11 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
             verify_public_or_exit()?;
         }
     }
-    if let Err(e) = run_block_on(hubutil::push_package_conn(pkgpath, access, &opts.target)) {
+    if let Err(e) = run_block_on(hubutil::push_package_conn(
+        pkgpath,
+        access,
+        &opts.package.target,
+    )) {
         eprintln!("{e}");
         std::process::exit(1);
     }
