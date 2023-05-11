@@ -79,7 +79,7 @@ setup_file() {
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu --readme ../testing/README.md
     assert_success
 
+    # Ensure the correct path is added
     cat ./.hub/package-meta.yaml | grep '../../testing/README.md'
-    assert_output --partial "../../testing/README.md"
     assert_success
 }
