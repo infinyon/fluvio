@@ -59,6 +59,7 @@ impl PackageCmd {
         PackageOption {
             release: self.release.clone(),
             package_name: self.package_name.clone(),
+            target: self.target.clone(),
         }
     }
 }
