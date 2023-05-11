@@ -44,7 +44,7 @@ setup_file() {
 
     # Deploy
     cd $CONNECTOR_DIR
-    run $CDK_BIN deploy start \
+    run $CDK_BIN deploy start --target x86_64-unknown-linux-gnu \
         $CONFIG_FILE_FLAG 
     assert_success
 
