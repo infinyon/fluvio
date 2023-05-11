@@ -526,9 +526,33 @@ mod local_index {
 
     pub(super) fn delete_by_name(connector_name: &str) -> Result<()> {
         let mut index = load()?;
-        if let Some((i, _)) = index.find_by_name(connector_name) {
-            index.remove(i)?;
+
+        match index.find_by_name(connector_name) {
+            Some((
+                i,
+                Entry::Local {
+                    process_id,
+                    name,
+                    log_file,
+                },
+            )) => {
+                let log_file = match log_file {
+                    Some(path) => format!("{}", path.display()),
+                    None => "Not found".to_string(),
+                };
+
+                println!(
+                    "Shutting down connector: {} \
+                    \npid: {} \
+                    \nLog File: {}",
+                    name, process_id, log_file
+                );
+
+                index.remove(i)?;
+            }
+            None => println!("Connector not found: {}", connector_name),
         }
+
         index.flush()
     }
 
