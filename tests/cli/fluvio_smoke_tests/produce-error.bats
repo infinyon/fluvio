@@ -49,8 +49,7 @@ teardown_file() {
         skip "don't check output on stable version"
     fi
 
-    # it can be Record too large or Message too large message.
-    assert_output --partial "Record too large"
+    assert_output --partial "Try increasing the producer batch size"
 }
 
 # This should fail due to wrong compression algorithm
