@@ -56,6 +56,9 @@ pub enum HubError {
     #[error("Package verification: {0}")]
     PackageVerify(String),
 
+    #[error("Package already published: {0}")]
+    PackageAlreadyPublished(String),
+
     #[error("Unable to package: {0}")]
     UnableToAssemblePackage(String),
 
