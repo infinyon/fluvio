@@ -183,6 +183,7 @@ fn deploy_local(
 
 pub(crate) fn from_cargo_package(package_cmd: PackageCmd) -> Result<(PathBuf, ConnectorMetadata)> {
     debug!("reading connector metadata from cargo package");
+
     let opt = package_cmd.as_opt();
     let p = PackageInfo::from_options(&opt)?;
     let connector_metadata =
