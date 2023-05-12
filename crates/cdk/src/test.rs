@@ -30,19 +30,19 @@ pub struct TestCmd {
 impl TestCmd {
     pub(crate) fn process(self) -> Result<()> {
         let opt = self.package.as_opt();
-        let p = PackageInfo::from_options(&opt)?;
+        let package_info = PackageInfo::from_options(&opt)?;
 
         let cargo = Cargo::build()
             .profile(opt.release)
             .target(opt.target)
             .lib(false)
-            .package(p.package_name())
+            .package(package_info.package_name())
             .extra_arguments(self.extra_arguments)
             .build()?;
 
         cargo.run()?;
 
-        let (executable, connector_metadata) = from_cargo_package(self.package)
+        let (executable, connector_metadata) = from_cargo_package(&package_info)
             .context("Failed to deploy from within cargo package directory")?;
 
         let mut builder = Deployment::builder();
