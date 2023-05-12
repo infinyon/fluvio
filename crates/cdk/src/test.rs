@@ -3,10 +3,12 @@ use std::{fmt::Debug, path::PathBuf};
 use anyhow::{Result, Context};
 use clap::Parser;
 
-use cargo_builder::{package::PackageInfo, cargo::Cargo};
+use cargo_builder::package::PackageInfo;
 use fluvio_connector_deployer::{Deployment, DeploymentType};
 
-use crate::{cmd::PackageCmd, deploy::from_cargo_package};
+use crate::cmd::PackageCmd;
+use crate::deploy::from_cargo_package;
+use crate::utils::build::{build_connector, BuildOpts};
 
 /// Build and run the Connector in the current working directory
 #[derive(Debug, Parser)]
@@ -31,16 +33,12 @@ impl TestCmd {
     pub(crate) fn process(self) -> Result<()> {
         let opt = self.package.as_opt();
         let package_info = PackageInfo::from_options(&opt)?;
+        let build_options = BuildOpts {
+            release: opt.release,
+            extra_arguments: self.extra_arguments,
+        };
 
-        let cargo = Cargo::build()
-            .profile(opt.release)
-            .target(opt.target)
-            .lib(false)
-            .package(package_info.package_name())
-            .extra_arguments(self.extra_arguments)
-            .build()?;
-
-        cargo.run()?;
+        build_connector(&package_info, build_options)?;
 
         let (executable, connector_metadata) = from_cargo_package(&package_info)
             .context("Failed to deploy from within cargo package directory")?;
