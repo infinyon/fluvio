@@ -21,7 +21,7 @@ on:
         default: true
       readme:
         type: string
-        default: './README.md'
+        default: "./README.md"
       public:
         type: boolean
         default: true
@@ -74,7 +74,7 @@ jobs:
             ${{ inputs.public && '--public-yes' || '' }} \
             --target ${{ matrix.rust-target }} \
             -p ${{ inputs.package-name }} \
-            ${{ (inputs.readme && format('--readme {}', inputs.readme)  || '' }}
+            ${{ (inputs.readme && format('--readme {}', inputs.readme))  || '' }}
 
   macos:
     name: macos
@@ -110,4 +110,4 @@ jobs:
           cdk publish ${{ inputs.public && '--public-yes' || '' }} \
             --target ${{ matrix.rust-target }} \
             -p ${{ inputs.package-name }} \
-            ${{ (inputs.readme && format('--readme {}', inputs.readme)  || '' }}
+            ${{ (inputs.readme && format('--readme {}', inputs.readme)) || '' }}
