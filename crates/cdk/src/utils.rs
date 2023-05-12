@@ -9,6 +9,15 @@ pub mod build {
         pub(crate) extra_arguments: Vec<String>,
     }
 
+    impl BuildOpts {
+        pub fn with_release(release: &str) -> Self {
+            Self {
+                release: release.to_string(),
+                extra_arguments: Vec::default(),
+            }
+        }
+    }
+
     /// Builds a Connector given it's package info and Cargo Build options
     pub fn build_connector(package_info: &PackageInfo, opts: BuildOpts) -> Result<()> {
         let cargo = Cargo::build()

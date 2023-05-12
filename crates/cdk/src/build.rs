@@ -22,10 +22,10 @@ pub struct BuildCmd {
 impl BuildCmd {
     pub(crate) fn process(self) -> Result<()> {
         let opt = self.package.as_opt();
-        let p = PackageInfo::from_options(&opt)?;
+        let package_info = PackageInfo::from_options(&opt)?;
 
         build_connector(
-            &p,
+            &package_info,
             BuildOpts {
                 release: opt.release,
                 extra_arguments: self.extra_arguments,
