@@ -198,6 +198,9 @@ async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) -> R
         surf::http::StatusCode::Unauthorized => {
             Err(HubError::HubAccess("Unauthorized, please log in".into()))
         }
+        surf::http::StatusCode::Conflict => Err(HubError::PackageAlreadyPublished(
+            "Make sure version is up to date and name doesn't conflicts with other package.".into(),
+        )),
         _ => {
             debug!("push result: {} \n{res:?}", res.status());
             let bodymsg = res
