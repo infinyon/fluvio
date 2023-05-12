@@ -15,6 +15,7 @@ use fluvio_connector_package::metadata::ConnectorMetadata;
 use tracing::{debug, trace};
 
 use crate::cmd::PackageCmd;
+use crate::utils::build::{BuildOpts, build_connector};
 
 const CONNECTOR_METADATA_FILE_NAME: &str = "Connector.toml";
 
@@ -152,15 +153,26 @@ impl DeployLogCmd {
     }
 }
 
+fn make_package_info(package_cmd: &PackageCmd) -> Result<PackageInfo> {
+    let opt = package_cmd.as_opt();
+
+    PackageInfo::from_options(&opt)
+}
+
 fn deploy_local(
     package_cmd: PackageCmd,
     config: PathBuf,
     secrets: Option<PathBuf>,
     ipkg_file: Option<PathBuf>,
 ) -> Result<()> {
+    let opt = package_cmd.as_opt();
+    let package_info = make_package_info(&package_cmd)?;
+
+    build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
+
     let (executable, connector_metadata) = match ipkg_file {
         Some(ipkg_file) => from_ipkg_file(ipkg_file).context("Failed to deploy from ipkg file")?,
-        None => from_cargo_package(package_cmd)
+        None => from_cargo_package(&package_info)
             .context("Failed to deploy from within cargo package directory")?,
     };
 
@@ -181,14 +193,15 @@ fn deploy_local(
     local_index::store(result)
 }
 
-pub(crate) fn from_cargo_package(package_cmd: PackageCmd) -> Result<(PathBuf, ConnectorMetadata)> {
+pub(crate) fn from_cargo_package(
+    package_info: &PackageInfo,
+) -> Result<(PathBuf, ConnectorMetadata)> {
     debug!("reading connector metadata from cargo package");
 
-    let opt = package_cmd.as_opt();
-    let p = PackageInfo::from_options(&opt)?;
-    let connector_metadata =
-        ConnectorMetadata::from_toml_file(p.package_relative_path(CONNECTOR_METADATA_FILE_NAME))?;
-    let executable_path = p.target_bin_path()?;
+    let connector_metadata = ConnectorMetadata::from_toml_file(
+        package_info.package_relative_path(CONNECTOR_METADATA_FILE_NAME),
+    )?;
+    let executable_path = package_info.target_bin_path()?;
     Ok((executable_path, connector_metadata))
 }
 
