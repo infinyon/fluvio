@@ -12,6 +12,7 @@
 ### CI
 
 * `cdk build` uses a default target ([#3222](https://github.com/infinyon/fluvio/issues/3222))
+* `cdk test` and `cdk deploy` uses a default target ([#3247](https://github.com/infinyon/fluvio/issues/3247))
 * Remove existing `.hub` when packing connectors ([#3227](https://github.com/infinyon/fluvio/issues/3227))
 * Add materialize view rfc ([#3232](https://github.com/infinyon/fluvio/issues/3232))
 
