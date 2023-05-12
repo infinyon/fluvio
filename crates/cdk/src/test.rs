@@ -34,6 +34,7 @@ impl TestCmd {
 
         let cargo = Cargo::build()
             .profile(opt.release)
+            .target(opt.target)
             .lib(false)
             .package(p.package_name())
             .extra_arguments(self.extra_arguments)
