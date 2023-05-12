@@ -531,6 +531,8 @@ impl SharedMsg {
 mod tests {
 
     use std::time::Duration;
+    use std::io::ErrorKind;
+    use std::fmt::Debug;
 
     use async_trait::async_trait;
     use futures_util::future::{join, join3};
@@ -545,6 +547,7 @@ mod tests {
     use fluvio_protocol::api::RequestMessage;
 
     use super::MultiplexerSocket;
+    use super::SocketError;
     use crate::test_request::*;
     use crate::ExclusiveFlvSink;
     use crate::FluvioSocket;
@@ -578,7 +581,21 @@ mod tests {
         }
     }
 
-    async fn test_server<A: AcceptorHandler + 'static>(addr: &str, mut handler: A) {
+    fn get_error_kind<T: std::fmt::Debug>(
+        result: Result<T, SocketError>,
+    ) -> Option<std::io::ErrorKind> {
+        match result.unwrap_err() {
+            SocketError::Io { source, .. } => Some(source.kind()),
+            _ => None,
+        }
+    }
+
+    async fn test_server<A: AcceptorHandler + 'static>(
+        addr: &str,
+        mut handler: A,
+        nb_iter: usize,
+        timeout: u64,
+    ) {
         let listener = TcpListener::bind(addr).await.expect("binding");
         debug!("server is running");
         let mut incoming = listener.incoming();
@@ -593,7 +610,7 @@ mod tests {
 
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 
-        for i in 0..4u16 {
+        for i in 0..nb_iter {
             debug!("server: waiting for next msg: {}", i);
             let msg = api_stream.next().await.expect("msg").expect("unwrap");
             debug!("server: msg received: {:#?}", msg);
@@ -606,6 +623,7 @@ mod tests {
                         debug!("server: received slow msg");
                         spawn(async move {
                             sleep(Duration::from_millis(500)).await;
+                            sleep(Duration::from_secs(timeout)).await;
                             let resp =
                                 echo_request.new_response(EchoResponse::new("slow".to_owned()));
                             debug!("server send slow response");
@@ -755,6 +773,77 @@ mod tests {
         assert_eq!(response.msg, "hello");
     }
 
+    async fn test_client_closed_socket<C: ConnectorHandler + 'static>(addr: &str, mut handler: C) {
+        use std::time::SystemTime;
+
+        sleep(Duration::from_millis(20)).await;
+        debug!("client: trying to connect");
+        let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
+        let socket = handler.connect(tcp_stream).await;
+        debug!("client: connected to test server and waiting...");
+        sleep(Duration::from_millis(20)).await;
+        let multiplexer: std::sync::Arc<MultiplexerSocket> = MultiplexerSocket::shared(socket);
+
+        let multiplexor2 = multiplexer.clone();
+
+        let (slow, fast) = join(
+            async move {
+                debug!("trying to send slow");
+                // this message was send first but since there is delay of 500ms, it will return slower than fast
+                let request = RequestMessage::new_request(EchoRequest::new("slow".to_owned()));
+                let response = multiplexer.send_and_receive(request).await;
+                assert!(response.is_err());
+
+                let err_kind = get_error_kind(response);
+                let expected = ErrorKind::UnexpectedEof;
+                assert_eq!(expected, err_kind.unwrap());
+                debug!("client: socket was closed");
+
+                SystemTime::now()
+            },
+            async move {
+                // this message will be send later than slow but since there is no delay, it should get earlier than first
+                sleep(Duration::from_millis(20)).await;
+                debug!("trying to send fast");
+                let request = RequestMessage::new_request(EchoRequest::new("fast".to_owned()));
+                let response = multiplexor2
+                    .send_and_receive(request)
+                    .await
+                    .expect("send success");
+                debug!("received fast response");
+                assert_eq!(response.msg, "hello");
+                multiplexor2.terminate.notify(usize::MAX); //close multiplexor2
+                SystemTime::now()
+            },
+        )
+        .await;
+        assert!(slow > fast);
+    }
+
+    async fn test_client_time_out<C: ConnectorHandler + 'static>(addr: &str, mut handler: C) {
+        sleep(Duration::from_millis(20)).await;
+        debug!("client: trying to connect");
+        let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
+        let socket = handler.connect(tcp_stream).await;
+        debug!("client: connected to test server and waiting...");
+        sleep(Duration::from_millis(20)).await;
+        let multiplexer: std::sync::Arc<MultiplexerSocket> = MultiplexerSocket::shared(socket);
+
+        let fut = async move {
+            debug!("trying to send slow");
+
+            let request = RequestMessage::new_request(EchoRequest::new("slow".to_owned()));
+            let response = multiplexer.send_and_receive(request).await;
+            assert!(response.is_err());
+
+            let err_kind = get_error_kind(response);
+            let expected: ErrorKind = ErrorKind::TimedOut;
+            assert_eq!(expected, err_kind.unwrap());
+            debug!("client: socket was timeout");
+        };
+        fut.await;
+    }
+
     #[fluvio_future::test(ignore)]
     async fn test_multiplexing() {
         debug!("start testing");
@@ -762,11 +851,34 @@ mod tests {
 
         let _r = join(
             test_client(addr, TcpStreamHandler {}),
-            test_server(addr, TcpStreamHandler {}),
+            test_server(addr, TcpStreamHandler {}, 4, 0),
         )
         .await;
     }
 
+    #[fluvio_future::test(ignore)]
+    async fn test_multiplexing_close_socket() {
+        debug!("start test_multiplexing_close_socket");
+        let addr = "127.0.0.1:6000";
+
+        let _r = join(
+            test_client_closed_socket(addr, TcpStreamHandler {}),
+            test_server(addr, TcpStreamHandler {}, 2, 0),
+        )
+        .await;
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_multiplexing_time_out() {
+        debug!("start test_multiplexing_timeout");
+        let addr = "127.0.0.1:6000";
+
+        let _r = join(
+            test_client_time_out(addr, TcpStreamHandler {}),
+            test_server(addr, TcpStreamHandler {}, 1, 60),
+        )
+        .await;
+    }
     #[cfg(unix)]
     mod tls_test {
         use std::os::unix::io::AsRawFd;
@@ -856,7 +968,7 @@ mod tests {
 
             let _r = join(
                 test_client(addr, TlsConnectorHandler::new()),
-                test_server(addr, TlsAcceptorHandler::new()),
+                test_server(addr, TlsAcceptorHandler::new(), 4, 0),
             )
             .await;
         }
