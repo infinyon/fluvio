@@ -153,12 +153,6 @@ impl DeployLogCmd {
     }
 }
 
-fn make_package_info(package_cmd: &PackageCmd) -> Result<PackageInfo> {
-    let opt = package_cmd.as_opt();
-
-    PackageInfo::from_options(&opt)
-}
-
 fn deploy_local(
     package_cmd: PackageCmd,
     config: PathBuf,
@@ -166,7 +160,7 @@ fn deploy_local(
     ipkg_file: Option<PathBuf>,
 ) -> Result<()> {
     let opt = package_cmd.as_opt();
-    let package_info = make_package_info(&package_cmd)?;
+    let package_info = PackageInfo::from_options(&opt)?;
 
     build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
 
