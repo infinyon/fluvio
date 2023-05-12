@@ -11,6 +11,7 @@ use cargo_metadata::{CargoOpt, MetadataCommand, Package};
 pub struct PackageOption {
     pub release: String,
     pub package_name: Option<String>,
+    pub target: String,
 }
 
 #[derive(Debug)]
@@ -20,6 +21,8 @@ pub struct PackageInfo {
     package_path: PathBuf,
     /// The package/project target folder
     target_dir: PathBuf,
+    /// Target platform for the package
+    arch_target: String,
     /// Profile used in build, e.g. release, release-lto, etc.
     profile: String,
 }
@@ -77,6 +80,7 @@ impl PackageInfo {
         Ok(PackageInfo {
             package,
             package_path,
+            arch_target: options.target.clone(),
             target_dir: metadata.target_directory.into(),
             profile: options.release.clone(),
         })
@@ -94,17 +98,14 @@ impl PackageInfo {
         self.package_path().join(child)
     }
 
-    pub fn target_bin_path_for_arch(&self, arch: &str) -> anyhow::Result<PathBuf> {
-        let mut path = self.target_dir.clone();
-        path.push(arch);
-        path.push(&self.profile);
-        path.push(self.target_name()?);
-        Ok(path)
+    pub fn arch_target(&self) -> &str {
+        &self.arch_target
     }
 
     /// path to package's bin target
     pub fn target_bin_path(&self) -> anyhow::Result<PathBuf> {
         let mut path = self.target_dir.clone();
+        path.push(&self.arch_target);
         path.push(&self.profile);
         path.push(self.target_name()?);
         Ok(path)
@@ -155,6 +156,7 @@ mod tests {
         let opt = PackageOption {
             release: "release-lto".into(),
             package_name: None,
+            target: "x86_64-unknown-linux-gnu".into(),
         };
 
         //when
@@ -169,15 +171,10 @@ mod tests {
         assert!(package_info
             .target_bin_path()
             .unwrap()
-            .ends_with("release-lto/cargo-builder"));
+            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo-builder"));
         assert!(package_info
             .target_wasm32_path()
             .unwrap()
             .ends_with("wasm32-unknown-unknown/release-lto/cargo_builder.wasm"));
-
-        assert!(package_info
-            .target_bin_path_for_arch("x86_64-unknown-linux-gnu")
-            .unwrap()
-            .ends_with("x86_64-unknown-linux-gnu/release-lto/cargo-builder"));
     }
 }

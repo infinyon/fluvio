@@ -44,13 +44,6 @@ pub struct PublishCmd {
     #[arg(long, hide_short_help = true)]
     push: bool,
 
-    /// provide target platform for the package. Optional. By default the host's one is used.
-    #[arg(
-        long,
-        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
-    )]
-    target: String,
-
     #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 
@@ -77,7 +70,7 @@ impl PublishCmd {
             remove_dir_all(&hubdir)?;
         }
 
-        init_package_template(&package_info, &self.target, &self.readme)?;
+        init_package_template(&package_info, &self.readme)?;
         check_package_meta_visiblity(&package_info)?;
 
         match (self.pack, self.push) {
@@ -87,7 +80,7 @@ impl PublishCmd {
                     .as_ref()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                let pkgdata = package_assemble(pkgmetapath, &self.target, &access)?;
+                let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
                 package_push(self, &pkgdata, &access)?;
             }
 
@@ -98,7 +91,7 @@ impl PublishCmd {
                     .as_ref()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                package_assemble(pkgmetapath, &self.target, &access)?;
+                package_assemble(pkgmetapath, &opt.target, &access)?;
             }
 
             // --push only, needs ipkg file
@@ -140,7 +133,11 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
             verify_public_or_exit()?;
         }
     }
-    if let Err(e) = run_block_on(hubutil::push_package_conn(pkgpath, access, &opts.target)) {
+    if let Err(e) = run_block_on(hubutil::push_package_conn(
+        pkgpath,
+        access,
+        &opts.package.target,
+    )) {
         eprintln!("{e}");
         std::process::exit(1);
     }
@@ -156,11 +153,7 @@ fn make_full_path<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
     Ok(full_path)
 }
 
-pub fn init_package_template(
-    package_info: &PackageInfo,
-    binary_arch: &str,
-    readme_path: &PathBuf,
-) -> Result<()> {
+pub fn init_package_template(package_info: &PackageInfo, readme_path: &PathBuf) -> Result<()> {
     let connector_toml_path = find_connector_toml(package_info)?;
     let connector_metadata = ConnectorMetadata::from_toml_file(&connector_toml_path)?;
     let mut pm = PackageMeta {
@@ -187,7 +180,7 @@ pub fn init_package_template(
             .unwrap_or_else(|| connector_toml_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
     );
 
-    let binary_path = package_info.target_bin_path_for_arch(binary_arch)?;
+    let binary_path = package_info.target_bin_path()?;
     let binary_relative_path = package_meta_relative_path(&package_meta_path, &binary_path);
     pm.manifest.push(
         binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute

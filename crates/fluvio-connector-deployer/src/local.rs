@@ -20,8 +20,10 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
         (Stdio::inherit(), Stdio::inherit(), true)
     };
 
-    let executable = canonicalize(&deployment.executable)
-        .context("Executable file path is invalid or file does not exist")?;
+    let executable = canonicalize(&deployment.executable).context(format!(
+        "Executable file path ({}) is invalid or file does not exist",
+        deployment.executable.to_string_lossy()
+    ))?;
     debug!("running executable: {}", &executable.to_string_lossy());
     let mut cmd = Command::new(executable);
     cmd.stdin(Stdio::null());

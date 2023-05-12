@@ -16,14 +16,6 @@ pub struct BuildCmd {
     /// Extra arguments to be passed to cargo
     #[arg(raw = true)]
     extra_arguments: Vec<String>,
-
-    /// Provide target platform for the package. Optional.
-    /// By default the host's one is used.
-    #[arg(
-        long,
-        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
-    )]
-    target: String,
 }
 
 impl BuildCmd {
@@ -34,7 +26,7 @@ impl BuildCmd {
             .profile(opt.release)
             .lib(false)
             .package(p.package_name())
-            .target(&self.target)
+            .target(p.arch_target())
             .extra_arguments(self.extra_arguments)
             .build()?;
 

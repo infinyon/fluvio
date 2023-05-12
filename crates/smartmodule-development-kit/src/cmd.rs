@@ -2,7 +2,7 @@ use cargo_builder::package::PackageOption;
 use clap::Parser;
 use anyhow::Result;
 
-use crate::build::BuildCmd;
+use crate::build::{BuildCmd, BUILD_TARGET};
 use crate::generate::GenerateCmd;
 use crate::test::TestCmd;
 use crate::load::LoadCmd;
@@ -59,6 +59,7 @@ impl PackageCmd {
         PackageOption {
             release: self.release.clone(),
             package_name: self.package_name.clone(),
+            target: BUILD_TARGET.to_string(),
         }
     }
 }
