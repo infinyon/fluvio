@@ -1,6 +1,35 @@
 # Release Notes
 
-## Platform Version 0.10.9 - UNRELEASED
+## Platform Version 0.10.9 - 2023-05-11
+
+### Added
+
+* Simplified control plane api ([#3073](https://github.com/infinyon/fluvio/issues/3073))
+* Add helper method to get utf8 from data ([#3236](https://github.com/infinyon/fluvio/issues/3236))
+* Move x records outputed from smdk test to --verbose #3169 ([#3234](https://github.com/infinyon/fluvio/issues/3234))
+* Add message about record too large on produce cli ([#3242](https://github.com/infinyon/fluvio/issues/3242))
+
+### CI
+
+* `cdk build` uses a default target ([#3222](https://github.com/infinyon/fluvio/issues/3222))
+* `cdk test` and `cdk deploy` uses a default target ([#3247](https://github.com/infinyon/fluvio/issues/3247))
+* Remove existing `.hub` when packing connectors ([#3227](https://github.com/infinyon/fluvio/issues/3227))
+* Add materialize view rfc ([#3232](https://github.com/infinyon/fluvio/issues/3232))
+
+### Changed
+
+* Update third party dep ([#3220](https://github.com/infinyon/fluvio/issues/3220))
+
+### Other
+
+* Use current git rev for generated connector project ([#3225](https://github.com/infinyon/fluvio/issues/3225))
+* Use `.hub` and `.DS_Store` for gitignore ([#3239](https://github.com/infinyon/fluvio/issues/3239))
+* Ensure readme is included in manifest ([#3230](https://github.com/infinyon/fluvio/issues/3230))
+
+### Removed
+
+* Remove deprecated code related to clap ([#3228](https://github.com/infinyon/fluvio/issues/3228))
+* Update third party and remove circular dep ([#3241](https://github.com/infinyon/fluvio/issues/3241))
 
 ## Platform Version 0.10.8 - 2023-05-03
 
