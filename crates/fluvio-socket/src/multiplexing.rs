@@ -532,7 +532,7 @@ mod tests {
 
     use std::time::Duration;
     use std::io::ErrorKind;
-  
+
     use async_trait::async_trait;
     use futures_util::future::{join, join3};
     use futures_util::io::{AsyncRead, AsyncWrite};
@@ -563,7 +563,7 @@ mod tests {
     const X509_CLIENT_KEY: &str = "certs/certs/client.key";
 
     #[allow(unused)]
-    const SLEEP_MS: u64 =   10;
+    const SLEEP_MS: u64 = 10;
 
     #[async_trait]
     trait AcceptorHandler {
@@ -624,7 +624,7 @@ mod tests {
                     if echo_request.request().msg == "slow" {
                         debug!("server: received slow msg");
                         spawn(async move {
-                            sleep(Duration::from_millis(SLEEP_MS*50)).await;
+                            sleep(Duration::from_millis(SLEEP_MS * 50)).await;
                             sleep(Duration::from_secs(timeout)).await;
                             let resp =
                                 echo_request.new_response(EchoResponse::new("slow".to_owned()));
@@ -651,7 +651,7 @@ mod tests {
                     debug!("server: received async status msg");
                     let mut reply_sink = shared_sink.clone();
                     spawn(async move {
-                        sleep(Duration::from_millis(SLEEP_MS*3)).await;
+                        sleep(Duration::from_millis(SLEEP_MS * 3)).await;
                         let resp = status_request.new_response(AsyncStatusResponse {
                             status: status_request.request.count * 2,
                         });
@@ -660,7 +660,7 @@ mod tests {
                             .await
                             .expect("send succeed");
                         debug!("server: send back status first");
-                        sleep(Duration::from_millis(SLEEP_MS*10)).await;
+                        sleep(Duration::from_millis(SLEEP_MS * 10)).await;
                         let resp = status_request.new_response(AsyncStatusResponse {
                             status: status_request.request.count * 4,
                         });
@@ -696,12 +696,12 @@ mod tests {
     async fn test_client<C: ConnectorHandler + 'static>(addr: &str, mut handler: C) {
         use std::time::SystemTime;
 
-        sleep(Duration::from_millis(SLEEP_MS*2)).await;
+        sleep(Duration::from_millis(SLEEP_MS * 2)).await;
         debug!("client: trying to connect");
         let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
         let socket = handler.connect(tcp_stream).await;
         debug!("client: connected to test server and waiting...");
-        sleep(Duration::from_millis(SLEEP_MS*2)).await;
+        sleep(Duration::from_millis(SLEEP_MS * 2)).await;
         let multiplexer = MultiplexerSocket::shared(socket);
 
         // create async status
@@ -729,7 +729,7 @@ mod tests {
             },
             async move {
                 // this message will be send later than slow but since there is no delay, it should get earlier than first
-                sleep(Duration::from_millis(SLEEP_MS*2)).await;
+                sleep(Duration::from_millis(SLEEP_MS * 2)).await;
                 debug!("trying to send fast");
                 let request = RequestMessage::new_request(EchoRequest::new("fast".to_owned()));
                 let response = multiplexor2
@@ -741,7 +741,7 @@ mod tests {
                 SystemTime::now()
             },
             async move {
-                sleep(Duration::from_millis(SLEEP_MS*10)).await;
+                sleep(Duration::from_millis(SLEEP_MS * 10)).await;
                 let response = status_response
                     .next()
                     .await
@@ -778,12 +778,12 @@ mod tests {
     async fn test_client_closed_socket<C: ConnectorHandler + 'static>(addr: &str, mut handler: C) {
         use std::time::SystemTime;
 
-        sleep(Duration::from_millis(SLEEP_MS*2)).await;
+        sleep(Duration::from_millis(SLEEP_MS * 2)).await;
         debug!("client: trying to connect");
         let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
         let socket = handler.connect(tcp_stream).await;
         debug!("client: connected to test server and waiting...");
-        sleep(Duration::from_millis(SLEEP_MS*2)).await;
+        sleep(Duration::from_millis(SLEEP_MS * 2)).await;
         let multiplexer: std::sync::Arc<MultiplexerSocket> = MultiplexerSocket::shared(socket);
 
         let multiplexor2 = multiplexer.clone();
@@ -805,7 +805,7 @@ mod tests {
             },
             async move {
                 // this message will be send later than slow but since there is no delay, it should get earlier than first
-                sleep(Duration::from_millis(SLEEP_MS*2)).await;
+                sleep(Duration::from_millis(SLEEP_MS * 2)).await;
                 debug!("trying to send fast");
                 let request = RequestMessage::new_request(EchoRequest::new("fast".to_owned()));
                 let response = multiplexor2
@@ -823,12 +823,12 @@ mod tests {
     }
 
     async fn test_client_time_out<C: ConnectorHandler + 'static>(addr: &str, mut handler: C) {
-        sleep(Duration::from_millis(SLEEP_MS*2)).await;
+        sleep(Duration::from_millis(SLEEP_MS * 2)).await;
         debug!("client: trying to connect");
         let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
         let socket = handler.connect(tcp_stream).await;
         debug!("client: connected to test server and waiting...");
-        sleep(Duration::from_millis(SLEEP_MS*2)).await;
+        sleep(Duration::from_millis(SLEEP_MS * 2)).await;
         let multiplexer: std::sync::Arc<MultiplexerSocket> = MultiplexerSocket::shared(socket);
 
         let fut = async move {
@@ -877,7 +877,7 @@ mod tests {
 
         let _r = join(
             test_client_time_out(addr, TcpStreamHandler {}),
-            test_server(addr, TcpStreamHandler {}, 1, 60),//MAX_WAIT_TIME is 60 second
+            test_server(addr, TcpStreamHandler {}, 1, 60), //MAX_WAIT_TIME is 60 second
         )
         .await;
     }
