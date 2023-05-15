@@ -21,6 +21,7 @@ use hubutil::packagename_validate;
 use tracing::{debug, info};
 
 use crate::cmd::PackageCmd;
+use crate::utils::build::{BuildOpts, build_connector};
 
 pub const CONNECTOR_TOML: &str = "Connector.toml";
 
@@ -70,6 +71,7 @@ impl PublishCmd {
             remove_dir_all(&hubdir)?;
         }
 
+        build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
         init_package_template(&package_info, &self.readme)?;
         check_package_meta_visiblity(&package_info)?;
 

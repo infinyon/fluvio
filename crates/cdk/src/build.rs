@@ -3,9 +3,10 @@ use std::fmt::Debug;
 use anyhow::Result;
 use clap::Parser;
 
-use cargo_builder::{package::PackageInfo, cargo::Cargo};
+use cargo_builder::package::PackageInfo;
 
 use crate::cmd::PackageCmd;
+use crate::utils::build::{BuildOpts, build_connector};
 
 /// Build the Connector in the current working directory
 #[derive(Debug, Parser)]
@@ -21,15 +22,14 @@ pub struct BuildCmd {
 impl BuildCmd {
     pub(crate) fn process(self) -> Result<()> {
         let opt = self.package.as_opt();
-        let p = PackageInfo::from_options(&opt)?;
-        let cargo = Cargo::build()
-            .profile(opt.release)
-            .lib(false)
-            .package(p.package_name())
-            .target(p.arch_target())
-            .extra_arguments(self.extra_arguments)
-            .build()?;
+        let package_info = PackageInfo::from_options(&opt)?;
 
-        cargo.run()
+        build_connector(
+            &package_info,
+            BuildOpts {
+                release: opt.release,
+                extra_arguments: self.extra_arguments,
+            },
+        )
     }
 }
