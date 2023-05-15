@@ -84,6 +84,7 @@ impl PublishCmd {
                     .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
                 let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
                 package_push(self, &pkgdata, &access)?;
+                remove_dir_all(&hubdir)?;
             }
 
             // --pack only
@@ -103,6 +104,7 @@ impl PublishCmd {
                     .clone()
                     .ok_or_else(|| anyhow::anyhow!("package file required for push"))?;
                 package_push(self, pkgfile, &access)?;
+                remove_dir_all(&hubdir)?;
             }
         }
 
