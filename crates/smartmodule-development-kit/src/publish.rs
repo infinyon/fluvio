@@ -49,11 +49,7 @@ impl PublishCmd {
         let package_info = PackageInfo::from_options(&opt)?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
-        if hubdir.exists() {
-            // Delete the `.hub` directory if already exists
-            tracing::warn!("Removing directory at {:?}", hubdir);
-            remove_dir_all(&hubdir)?;
-        }
+        self.cleanup(&package_info)?;
 
         init_package_template(&package_info)?;
         check_package_meta_visiblity(&package_info)?;
@@ -83,6 +79,22 @@ impl PublishCmd {
                     .ok_or_else(|| anyhow::anyhow!("package file required for push"))?;
                 package_push(self, pkgfile, &access)?;
             }
+        }
+
+        if !self.pack {
+            self.cleanup(&package_info)?;
+        }
+
+        Ok(())
+    }
+
+    fn cleanup(&self, package_info: &PackageInfo) -> Result<()> {
+        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
+
+        if hubdir.exists() {
+            // Delete the `.hub` directory if already exists
+            tracing::warn!("Removing directory at {:?}", hubdir);
+            remove_dir_all(&hubdir)?;
         }
 
         Ok(())
