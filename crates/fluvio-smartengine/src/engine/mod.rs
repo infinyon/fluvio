@@ -88,7 +88,6 @@ impl SmartModuleChainInstance {
 }
 
 cfg_if::cfg_if! {
-    // TODO: turn on this check when ready
     if #[cfg(all(feature = "wasmedge-engine", feature = "wasmtime-engine"))] {
         compile_error!(
             "Only one WASM runtime is allowed, but both `wasmedge-engine` and `wasmtime-engine` features are enabled"
