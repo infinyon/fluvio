@@ -13,6 +13,7 @@ members = [
     "filter_regex",
     "filter_with_param_v1",
     "jolt",
+    "json-sql",
     "map",
     "map_double",
     "map_json",

@@ -1,0 +1,19 @@
+[package]
+name = "json-sql"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "JSON to SQL transformation SmartModule"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+crate-type = ['cdylib', 'rlib']
+
+[dependencies]
+once_cell = { version = "1.17", default-features = false }
+serde = { version = "1", default-features = false, features = ["derive"] }
+serde_json = { version = "1", default-features = false, features = ["std"] }
+eyre = { version = "0.6", default-features = false }
+
+fluvio-smartmodule = { workspace = true }
