@@ -586,8 +586,8 @@ mod tests {
     fn get_error_kind<T: std::fmt::Debug>(
         result: Result<T, SocketError>,
     ) -> Option<std::io::ErrorKind> {
-        match result.unwrap_err() {
-            SocketError::Io { source, .. } => Some(source.kind()),
+        match result {
+            Err(SocketError::Io { source, .. }) => Some(source.kind()),
             _ => None,
         }
     }
@@ -625,7 +625,7 @@ mod tests {
                         debug!("server: received slow msg");
                         spawn(async move {
                             sleep(Duration::from_millis(SLEEP_MS * 50)).await;
-                            sleep(Duration::from_secs(timeout)).await;
+                            sleep(Duration::from_secs(timeout)).await; //simulate more waiting time from server while receiving slow msg
                             let resp =
                                 echo_request.new_response(EchoResponse::new("slow".to_owned()));
                             debug!("server send slow response");
@@ -796,9 +796,9 @@ mod tests {
                 let response = multiplexer.send_and_receive(request).await;
                 assert!(response.is_err());
 
-                let err_kind = get_error_kind(response);
+                let err_kind = get_error_kind(response).expect("Get right Error Kind");
                 let expected = ErrorKind::UnexpectedEof;
-                assert_eq!(expected, err_kind.unwrap());
+                assert_eq!(expected, err_kind);
                 debug!("client: socket was closed");
 
                 SystemTime::now()
@@ -831,19 +831,18 @@ mod tests {
         sleep(Duration::from_millis(SLEEP_MS * 2)).await;
         let multiplexer: std::sync::Arc<MultiplexerSocket> = MultiplexerSocket::shared(socket);
 
-        let fut = async move {
-            debug!("trying to send slow");
+        let expected: ErrorKind = ErrorKind::TimedOut;
 
-            let request = RequestMessage::new_request(EchoRequest::new("slow".to_owned()));
-            let response = multiplexer.send_and_receive(request).await;
-            assert!(response.is_err());
+        debug!("trying to send slow");
 
-            let err_kind = get_error_kind(response);
-            let expected: ErrorKind = ErrorKind::TimedOut;
-            assert_eq!(expected, err_kind.unwrap());
-            debug!("client: socket was timeout");
-        };
-        fut.await;
+        let request = RequestMessage::new_request(EchoRequest::new("slow".to_owned()));
+        let response = multiplexer.send_and_receive(request).await;
+        assert!(response.is_err());
+
+        let err_kind = get_error_kind(response).expect("Get right Error Kind");
+
+        assert_eq!(expected, err_kind);
+        debug!("client: socket was timeout");
     }
 
     #[fluvio_future::test(ignore)]
