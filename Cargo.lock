@@ -928,6 +928,7 @@ dependencies = [
  "cargo-generate",
  "clap 4.2.7",
  "comfy-table",
+ "convert_case",
  "current_platform",
  "fluvio",
  "fluvio-connector-deployer",
@@ -3002,7 +3003,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.2"
+version = "0.14.3"
 dependencies = [
  "async-channel",
  "async-lock",

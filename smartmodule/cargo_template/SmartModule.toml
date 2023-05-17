@@ -1,6 +1,6 @@
 [package]
 name = "{{project-name}}"
-group = "{{project-group}}"
+group = "{{project-group | kebab_case}}"
 version = "0.1.0"
 apiVersion = "0.1.0"
 description = "{{project-description}}"
