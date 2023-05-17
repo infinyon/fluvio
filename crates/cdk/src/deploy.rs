@@ -207,7 +207,6 @@ fn deploy_local(
     local_index::store(result)
 }
 
-
 fn shutdown_local(
     package_cmd: PackageCmd,
     config: Option<PathBuf>,
@@ -237,7 +236,10 @@ fn print_local_log(
 }
 
 fn connector_name_from_config(package_cmd: PackageCmd, config: PathBuf) -> Result<String> {
-    let (_executable, metadata) = from_cargo_package(package_cmd)
+    let opt = package_cmd.as_opt();
+    let package_info = PackageInfo::from_options(&opt)?;
+
+    let (_executable, metadata) = from_cargo_package(&package_info)
         .context("Failed to extract metadata from Connector.toml")?;
 
     let config_file = match std::fs::File::open(&config) {
