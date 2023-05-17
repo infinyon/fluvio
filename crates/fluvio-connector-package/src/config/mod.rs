@@ -417,7 +417,7 @@ mod tests {
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`",
+            "unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`, `zstd`",
             format!("{connector_cfg}")
         );
 

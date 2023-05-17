@@ -2601,7 +2601,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.2.5"
+version = "0.3.0"
 dependencies = [
  "bytes 1.4.0",
  "flate2",
@@ -2609,6 +2609,7 @@ dependencies = [
  "serde",
  "snap",
  "thiserror",
+ "zstd 0.12.3+zstd.1.5.2",
 ]
 
 [[package]]
@@ -2687,7 +2688,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.22.1"
+version = "0.22.2"
 dependencies = [
  "async-trait",
  "base64 0.21.0",
@@ -7920,7 +7921,7 @@ dependencies = [
  "sha2 0.10.6",
  "toml 0.5.11",
  "windows-sys 0.45.0",
- "zstd",
+ "zstd 0.11.2+zstd.1.5.2",
 ]
 
 [[package]]
@@ -8616,7 +8617,16 @@ version = "0.11.2+zstd.1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20cc960326ece64f010d2d2107537f26dc589a6573a316bd5b1dba685fa5fde4"
 dependencies = [
- "zstd-safe",
+ "zstd-safe 5.0.2+zstd.1.5.2",
+]
+
+[[package]]
+name = "zstd"
+version = "0.12.3+zstd.1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76eea132fb024e0e13fd9c2f5d5d595d8a967aa72382ac2f9d39fcc95afd0806"
+dependencies = [
+ "zstd-safe 6.0.5+zstd.1.5.4",
 ]
 
 [[package]]
@@ -8624,6 +8634,16 @@ name = "zstd-safe"
 version = "5.0.2+zstd.1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d2a5585e04f9eea4b2a3d1eca508c4dee9592a89ef6f450c11719da0726f4db"
+dependencies = [
+ "libc",
+ "zstd-sys",
+]
+
+[[package]]
+name = "zstd-safe"
+version = "6.0.5+zstd.1.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d56d9e60b4b1758206c238a10165fbcae3ca37b01744e394c463463f6529d23b"
 dependencies = [
  "libc",
  "zstd-sys",

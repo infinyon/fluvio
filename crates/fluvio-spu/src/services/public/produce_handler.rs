@@ -259,6 +259,7 @@ fn validate_records<R: BatchRecords>(
             CompressionAlgorithm::Gzip => batch_compression == Compression::Gzip,
             CompressionAlgorithm::Snappy => batch_compression == Compression::Snappy,
             CompressionAlgorithm::Lz4 => batch_compression == Compression::Lz4,
+            CompressionAlgorithm::Zstd => batch_compression == Compression::Zstd,
         }
     }) {
         Ok(())

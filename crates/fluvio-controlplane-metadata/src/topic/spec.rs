@@ -619,6 +619,8 @@ pub enum CompressionAlgorithm {
     #[default]
     #[fluvio(tag = 4)]
     Any,
+    #[fluvio(tag = 5)]
+    Zstd,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -635,6 +637,7 @@ impl std::str::FromStr for CompressionAlgorithm {
             "snappy" => Ok(CompressionAlgorithm::Snappy),
             "lz4" => Ok(CompressionAlgorithm::Lz4),
             "any" => Ok(CompressionAlgorithm::Any),
+            "zstd" => Ok(CompressionAlgorithm::Zstd),
             _ => Err(InvalidCompressionAlgorithm),
         }
     }
@@ -647,6 +650,7 @@ impl std::fmt::Display for CompressionAlgorithm {
             Self::Snappy => write!(f, "snappy"),
             Self::Lz4 => write!(f, "lz4"),
             Self::Any => write!(f, "any"),
+            Self::Zstd => write!(f, "zstd"),
         }
     }
 }
