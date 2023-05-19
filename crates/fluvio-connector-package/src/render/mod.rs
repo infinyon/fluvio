@@ -52,7 +52,16 @@ impl ConfigRenderer {
             Ok(rendered) => Ok(rendered),
             Err(err) => {
                 error!(%err, %input, "failed to render");
-                Err(anyhow::anyhow!("failed to render: `{}`.", input))
+
+                let line_id = err.line().unwrap_or(1);
+                let line_id = std::cmp::max(1, line_id);
+                let line = input.lines().nth(line_id - 1).unwrap();
+                Err(anyhow::anyhow!(
+                    "Error: {} at line {}:`{}`",
+                    err.kind(),
+                    line_id,
+                    line,
+                ))
             }
         }
     }
@@ -167,7 +176,11 @@ mod test {
 
         let renderer = ConfigRenderer::new_with_context_stores(vec![store]).unwrap();
         let output = renderer.render_str("hello ${{ some_undefined }}");
-        assert!(output.is_err());
+        let err = output.unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "Error: undefined value at line 1:`hello ${{ some_undefined }}`".to_string()
+        );
     }
 
     #[test]
