@@ -105,7 +105,7 @@ serde_json = "1.0.60"
 serde_yaml = { version = "0.9.0", default-features = false }
 siphasher = "0.3.5"
 sysinfo = { version = "0.29.0", default-features = false }
-syn = "1.0"
+syn = "2.0"
 static_assertions = "1.1.0"
 tar = { version = "0.4.38", default-features = false }
 tempfile = "3.4.0"
