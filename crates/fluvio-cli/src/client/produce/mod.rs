@@ -427,7 +427,9 @@ mod cmd {
                     let produce_output = self.produce_line(&producer, &line).await?;
 
                     if let Some(produce_output) = produce_output {
-                        produce_outputs.push(produce_output);
+                        if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                            produce_outputs.push(produce_output);
+                        }
                     }
 
                     #[cfg(feature = "stats")]
@@ -477,13 +479,14 @@ mod cmd {
                 eprint!("> ");
             }
 
+            let mut produce_outputs = vec![];
+
             while let Some(Ok(line)) = lines.next() {
                 let produce_output = self.produce_line(producer, &line).await?;
 
                 if let Some(produce_output) = produce_output {
                     if self.delivery_semantic != DeliverySemantic::AtMostOnce {
-                        // ensure it was properly sent
-                        produce_output.wait().await?;
+                        produce_outputs.push(produce_output);
                     }
                 }
 
@@ -510,6 +513,17 @@ mod cmd {
                     print_cli_ok!();
                     eprint!("> ");
                 }
+            }
+            if self.delivery_semantic != DeliverySemantic::AtMostOnce {
+                // ensure all records were properly sent
+                join_all(
+                    produce_outputs
+                        .into_iter()
+                        .map(|produce_output| produce_output.wait()),
+                )
+                .await
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?;
             }
             Ok(())
         }
