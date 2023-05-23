@@ -44,7 +44,7 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"] }
-clap_complete = "4.0.2"
+clap_complete = "4.3.0"
 dirs = { workspace = true}
 indicatif = "0.17.0"
 eyre = "0.6.1"
