@@ -2,12 +2,12 @@ use std::io::Error;
 use std::mem::size_of;
 use std::fmt::Debug;
 use bytes::Bytes;
-use fluvio_compression::CompressionError;
 use fluvio_types::PartitionId;
 use tracing::trace;
 
-use fluvio_compression::Compression;
 use fluvio_types::Timestamp;
+use fluvio_compression::Compression;
+use fluvio_compression::CompressionError;
 
 use crate::bytes::Buf;
 use crate::bytes::BufMut;

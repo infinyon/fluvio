@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-compression"
-version = "0.3.1"
+version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -11,7 +11,7 @@ description = "Fluvio Compression library"
 
 [features]
 default = ["compress"]
-compress = ["dep:flate2", "dep:lz4_flex", "dep:zstd"]
+compress = ["flate2", "lz4_flex", "zstd"]
 
 [dependencies]
 bytes = { workspace = true }

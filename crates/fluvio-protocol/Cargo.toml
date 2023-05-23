@@ -32,12 +32,18 @@ derive = ["fluvio-protocol-derive"]
 api = [ ]
 codec = ["tokio-util"]
 store = ["fluvio-future"]
-record = ["crc32c","content_inspector","fluvio-compression","once_cell","fluvio-types"]
+record = [
+    "crc32c",
+    "content_inspector",
+    "fluvio-compression",
+    "once_cell",
+    "fluvio-types"
+]
 link = ["api","record","thiserror","flv-util","semver","eyre"]
 fixture = ["record","derive_builder"]
+compress = ["fluvio-compression/compress"]
 
 [dependencies]
-
 bytes = { workspace = true  }
 crc32c = { workspace = true,  optional = true}
 content_inspector = { version = "0.2.4", optional = true }
@@ -53,7 +59,7 @@ tracing = { workspace = true }
 fluvio-protocol-derive = { version = "0.5.0", path = "../fluvio-protocol-derive", optional = true }
 fluvio-future = { workspace = true, optional = true }
 flv-util = { workspace = true,  optional = true }
-fluvio-compression = { workspace = true, optional = true}
+fluvio-compression = { path = "../fluvio-compression", default-features = false, optional = true }
 fluvio-types = { workspace = true,  optional = true }
 
 [dev-dependencies]

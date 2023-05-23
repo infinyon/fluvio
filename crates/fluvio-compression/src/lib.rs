@@ -3,9 +3,16 @@ use bytes::Bytes;
 
 mod error;
 
+#[cfg(feature = "compress")]
 mod gzip;
+
+#[cfg(feature = "compress")]
 mod snappy;
+
+#[cfg(feature = "compress")]
 mod lz4;
+
+#[cfg(feature = "compress")]
 mod zstd;
 
 pub use error::CompressionError;
@@ -56,6 +63,19 @@ impl FromStr for Compression {
     }
 }
 
+impl std::fmt::Display for Compression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            Compression::None => write!(f, "none"),
+            Compression::Gzip => write!(f, "gzip"),
+            Compression::Snappy => write!(f, "snappy"),
+            Compression::Lz4 => write!(f, "lz4"),
+            Compression::Zstd => write!(f, "zstd"),
+        }
+    }
+}
+
+#[cfg(feature = "compress")]
 impl Compression {
     /// Compress the given data, returning the compressed data
     pub fn compress(&self, src: &[u8]) -> Result<Bytes, CompressionError> {
@@ -88,17 +108,6 @@ impl Compression {
                 let output = zstd::uncompress(src)?;
                 Ok(Some(output))
             }
-        }
-    }
-}
-impl std::fmt::Display for Compression {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            Compression::None => write!(f, "none"),
-            Compression::Gzip => write!(f, "gzip"),
-            Compression::Snappy => write!(f, "snappy"),
-            Compression::Lz4 => write!(f, "lz4"),
-            Compression::Zstd => write!(f, "zstd"),
         }
     }
 }
