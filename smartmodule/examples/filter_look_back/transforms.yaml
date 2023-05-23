@@ -1,0 +1,6 @@
+transforms:
+  - uses: infinyon/fluvio-smartmodule-filter-lookback@0.1.0
+    with:
+      lookback:
+        last: 10
+

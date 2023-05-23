@@ -21,6 +21,7 @@ impl SmartModuleConfig {
 #[derive(Debug)]
 pub enum SmartModuleKind {
     Init,
+    LookBack,
     Aggregate,
     Filter,
     Map,
@@ -33,7 +34,7 @@ impl SmartModuleKind {
     fn from_ast(args: &AttributeArgs) -> SynResult<Self> {
         let ss_type =
             args.iter()
-                .filter_map(|it| match it {
+                .find_map(|it| match it {
                     NestedMeta::Meta(Meta::Path(it)) => {
                         it.segments.iter().rev().next().and_then(|it| {
                             match &*it.ident.to_string() {
@@ -43,13 +44,13 @@ impl SmartModuleKind {
                                 "array_map" => Some(Self::ArrayMap),
                                 "filter_map" => Some(Self::FilterMap),
                                 "init" => Some(Self::Init),
+                                "look_back" => Some(Self::LookBack),
                                 _ => None,
                             }
                         })
                     }
                     _ => None,
                 })
-                .next()
                 .ok_or_else(|| SynError::new(args[0].span(), "Missing SmartModule type"))?;
 
         Ok(ss_type)

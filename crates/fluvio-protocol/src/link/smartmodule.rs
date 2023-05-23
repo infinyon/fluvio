@@ -146,3 +146,50 @@ impl fmt::Display for SmartModuleInitRuntimeError {
         )
     }
 }
+
+/// A type used to capture and serialize errors from within a SmartModule
+#[derive(thiserror::Error, Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
+pub struct SmartModuleLookbackRuntimeError {
+    /// Error hint: meant for users, not for code
+    pub hint: String,
+    /// The offset of the Record that had a runtime error
+    pub offset: Offset,
+    /// The Record key that caused this error
+    pub record_key: Option<RecordData>,
+    /// The Record value that caused this error
+    pub record_value: RecordData,
+}
+
+impl SmartModuleLookbackRuntimeError {
+    pub fn new(record: &Record, base_offset: Offset, error: eyre::Error) -> Self {
+        let hint = format!("{error:?}");
+        let offset = base_offset + record.preamble.offset_delta();
+        let record_key = record.key.clone();
+        let record_value = record.value.clone();
+        Self {
+            hint,
+            offset,
+            record_key,
+            record_value,
+        }
+    }
+}
+impl fmt::Display for SmartModuleLookbackRuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let key = self
+            .record_key
+            .as_ref()
+            .map(display_record_data)
+            .unwrap_or_else(|| "NULL".to_string());
+        let value = display_record_data(&self.record_value);
+        write!(
+            f,
+            "{}\n\n\
+            SmartModule Lookback Error: \n    \
+            Offset: {}\n    \
+            Key: {}\n    \
+            Value: {}",
+            self.hint, self.offset, key, value,
+        )
+    }
+}

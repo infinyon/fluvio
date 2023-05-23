@@ -1,7 +1,10 @@
 use fluvio_protocol::{
     Encoder, Decoder,
     record::Record,
-    link::smartmodule::{SmartModuleTransformRuntimeError, SmartModuleInitRuntimeError},
+    link::smartmodule::{
+        SmartModuleTransformRuntimeError, SmartModuleInitRuntimeError,
+        SmartModuleLookbackRuntimeError,
+    },
 };
 
 /// A type used to return processed records and/or an error from a SmartModule
@@ -49,4 +52,11 @@ impl SmartModuleAggregateOutput {
 pub struct SmartModuleInitOutput {
     /// Any runtime error if one was encountered
     pub error: SmartModuleInitRuntimeError,
+}
+
+/// A type used to return an error from a SmartModule Lookback
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct SmartModuleLookbackOutput {
+    /// Any runtime error if one was encountered
+    pub error: SmartModuleLookbackRuntimeError,
 }
