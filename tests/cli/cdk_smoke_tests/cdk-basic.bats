@@ -20,7 +20,7 @@ setup_file() {
     CONNECTOR_DIR="$(pwd)/connector/json-test-connector"
     export CONNECTOR_DIR
 
-    CONFIG_FILE_FLAG="--config config-example.yaml"
+    CONFIG_FILE_FLAG="--config sample-config.yaml"
     export CONFIG_FILE_FLAG
 }
 
