@@ -27,6 +27,8 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
     ))?;
     debug!("running executable: {}", &executable.to_string_lossy());
     let mut cmd = Command::new(executable);
+
+    cmd.env("RUST_LOG", "debug");
     cmd.stdin(Stdio::null());
     cmd.stdout(stdout);
     cmd.stderr(stderr);
