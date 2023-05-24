@@ -10,12 +10,16 @@ use std::str::Utf8Error;
 use bytes::Bytes;
 use bytes::BytesMut;
 use content_inspector::{inspect, ContentType};
-use fluvio_types::PartitionId;
 use tracing::{trace, warn};
 use once_cell::sync::Lazy;
 
 use bytes::Buf;
 use bytes::BufMut;
+
+use fluvio_types::{PartitionId, Timestamp};
+
+#[cfg(feature = "compress")]
+use fluvio_compression::CompressionError;
 
 use crate::{Encoder, Decoder};
 use crate::DecoderVarInt;
@@ -25,12 +29,11 @@ use crate::Version;
 use super::batch::BatchRecords;
 use super::batch::MemoryRecords;
 use super::batch::NO_TIMESTAMP;
-use super::batch::RawRecords;
 use super::batch::Batch;
 use super::Offset;
 
-use fluvio_compression::CompressionError;
-use fluvio_types::Timestamp;
+#[cfg(feature = "compress")]
+use super::batch::RawRecords;
 
 /// maximum text to display
 static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
@@ -230,6 +233,7 @@ pub struct RecordSet<R = MemoryRecords> {
     pub batches: Vec<Batch<R>>,
 }
 
+#[cfg(feature = "compress")]
 impl TryFrom<RecordSet> for RecordSet<RawRecords> {
     type Error = CompressionError;
     fn try_from(set: RecordSet) -> Result<Self, Self::Error> {
