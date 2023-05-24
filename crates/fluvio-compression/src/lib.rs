@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
+mod error;
+
 #[cfg(feature = "compress")]
 use bytes::Bytes;
-
-mod error;
 
 #[cfg(feature = "compress")]
 mod gzip;
