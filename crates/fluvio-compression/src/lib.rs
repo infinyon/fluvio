@@ -1,4 +1,6 @@
 use std::str::FromStr;
+
+#[cfg(feature = "compress")]
 use bytes::Bytes;
 
 mod error;
