@@ -64,7 +64,7 @@ enum DeployStartCmd {
         ipkg_file: Option<PathBuf>,
 
         /// Log level for the connector process
-        #[arg(long, value_name = "LOG_LEVEL", default_value = "info")]
+        #[arg(long, value_name = "LOG_LEVEL", default_value_t)]
         log_level: LogLevel,
     },
 }
