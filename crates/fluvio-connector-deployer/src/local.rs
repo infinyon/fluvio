@@ -1,12 +1,51 @@
-use std::{
-    process::{Command, Stdio},
-    path::Path,
-    fs::canonicalize,
-};
+use std::ffi::OsString;
+use std::fmt::{self, Display};
+use std::fs::canonicalize;
+use std::path::Path;
+use std::process::{Command, Stdio};
 
-use anyhow::{Result, Context};
-use tracing::debug;
+use anyhow::{Context, Result};
+use tracing::{debug, warn};
+
 use crate::Deployment;
+
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    #[default]
+    Info,
+    Debug,
+    Trace,
+}
+
+impl Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            LogLevel::Error => write!(f, "error"),
+            LogLevel::Warn => write!(f, "warn"),
+            LogLevel::Info => write!(f, "info"),
+            LogLevel::Debug => write!(f, "debug"),
+            LogLevel::Trace => write!(f, "trace"),
+        }
+    }
+}
+
+impl From<OsString> for LogLevel {
+    fn from(s: OsString) -> Self {
+        match s.to_str() {
+            Some("error") => LogLevel::Error,
+            Some("warn") => LogLevel::Warn,
+            Some("info") => LogLevel::Info,
+            Some("debug") => LogLevel::Debug,
+            Some("trace") => LogLevel::Trace,
+            _ => {
+                warn!(level = %s.to_string_lossy(), "Invalid log level. Falling back to `info`.");
+                LogLevel::Info
+            }
+        }
+    }
+}
 
 pub(crate) fn deploy_local<P: AsRef<Path>>(
     deployment: &Deployment,
@@ -28,7 +67,7 @@ pub(crate) fn deploy_local<P: AsRef<Path>>(
     debug!("running executable: {}", &executable.to_string_lossy());
     let mut cmd = Command::new(executable);
 
-    cmd.env("RUST_LOG", "debug");
+    cmd.env("RUST_LOG", deployment.log_level.to_string());
     cmd.stdin(Stdio::null());
     cmd.stdout(stdout);
     cmd.stderr(stderr);
