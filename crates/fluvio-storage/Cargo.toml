@@ -56,3 +56,5 @@ flv-util = { workspace = true, features = ["fixture"] }
 fluvio-socket = { workspace = true,  features = ["file"] }
 fluvio-protocol = { workspace = true,  features = ["fixture"] }
 
+[package.metadata.cargo-udeps.ignore]
+development = ["fluvio-socket"]

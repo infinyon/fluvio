@@ -123,7 +123,6 @@ dependencies = [
 name = "fluvio-compression"
 version = "0.3.0"
 dependencies = [
- "bytes",
  "serde",
  "thiserror",
 ]
@@ -177,7 +176,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.9.4"
+version = "0.10.0"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -231,7 +230,7 @@ name = "fluvio-smartmodule"
 version = "0.5.1"
 dependencies = [
  "eyre",
- "fluvio-protocol 0.9.4",
+ "fluvio-protocol 0.10.0",
  "fluvio-smartmodule-derive 0.4.0",
  "thiserror",
  "tracing",
