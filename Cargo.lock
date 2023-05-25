@@ -2682,6 +2682,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-data-schema"
+version = "0.1.0"
+dependencies = [
+ "fluvio",
+ "fluvio-types",
+]
+
+[[package]]
 name = "fluvio-extension-common"
 version = "0.12.2"
 dependencies = [

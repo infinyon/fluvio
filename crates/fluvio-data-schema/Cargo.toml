@@ -1,0 +1,15 @@
+[package]
+name = "fluvio-data-schema"
+version = "0.1.0"
+edition = "2021"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+categories = ["database"]
+keywords = ["streaming", "stream", "queue"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Schema enforcement for fluvio"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fluvio = { workspace = true, features = ["smartengine"]}
+fluvio-types = { workspace = true, features = ["events"] }
