@@ -2831,6 +2831,7 @@ dependencies = [
  "thiserror",
  "tokio-util",
  "tracing",
+ "tracing-subscriber",
  "trybuild 1.0.80",
 ]
 

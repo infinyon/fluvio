@@ -72,3 +72,4 @@ fluvio-future = { workspace = true, features = [
     "net",
 ] }
 futures = { workspace = true }
+tracing-subscriber = { workspace = true,  features = ["env-filter", "fmt"] }
