@@ -8,11 +8,11 @@ use std::{
 
 use anyhow::{Result, Context, anyhow};
 use clap::{Parser, Subcommand};
+use tracing::{debug, trace};
 
 use cargo_builder::package::PackageInfo;
-use fluvio_connector_deployer::{Deployment, DeploymentType};
+use fluvio_connector_deployer::{Deployment, DeploymentType, LogLevel};
 use fluvio_connector_package::metadata::ConnectorMetadata;
-use tracing::{debug, trace};
 
 use crate::cmd::PackageCmd;
 use crate::utils::build::{BuildOpts, build_connector};
@@ -62,6 +62,10 @@ enum DeployStartCmd {
         /// Deploy from local package file
         #[arg(long = "ipkg", value_name = "PATH")]
         ipkg_file: Option<PathBuf>,
+
+        /// Log level for the connector process
+        #[arg(long, value_name = "LOG_LEVEL", default_value_t)]
+        log_level: LogLevel,
     },
 }
 
@@ -144,7 +148,8 @@ impl DeployStartCmd {
                 config,
                 secrets,
                 ipkg_file,
-            } => deploy_local(package, config, secrets, ipkg_file),
+                log_level,
+            } => deploy_local(package, config, secrets, ipkg_file, log_level),
         }
     }
 }
@@ -178,6 +183,7 @@ fn deploy_local(
     config: PathBuf,
     secrets: Option<PathBuf>,
     ipkg_file: Option<PathBuf>,
+    log_level: LogLevel,
 ) -> Result<()> {
     let opt = package_cmd.as_opt();
     let package_info = PackageInfo::from_options(&opt)?;
@@ -200,6 +206,7 @@ fn deploy_local(
         .config(config)
         .secrets(secrets)
         .pkg(connector_metadata)
+        .log_level(log_level)
         .deployment_type(DeploymentType::Local {
             output_file: Some(log_path),
         });
