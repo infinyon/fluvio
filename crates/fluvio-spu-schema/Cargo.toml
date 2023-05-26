@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-spu-schema"
-version = "0.14.0"
+version = "0.14.1"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"
@@ -29,6 +29,7 @@ fluvio-future = { workspace = true, optional = true }
 fluvio-protocol = { workspace = true,  features = [
     "api",
     "record",
+    "link"
 ] }
 fluvio-smartmodule = { workspace = true }
 
