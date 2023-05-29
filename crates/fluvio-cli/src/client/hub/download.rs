@@ -2,10 +2,10 @@ use std::sync::Arc;
 use std::fmt::Debug;
 use std::path::Path;
 
+use anyhow::{Error, Result};
 use async_trait::async_trait;
 use clap::Parser;
 use tracing::info;
-use anyhow::Result;
 
 use fluvio::Fluvio;
 use fluvio::FluvioConfig;
@@ -20,17 +20,43 @@ use crate::CliError;
 use crate::client::cmd::ClientCmd;
 use crate::client::hub::get_hub_access;
 
-/// Download a SmartModule from the hub
+#[derive(Debug)]
+pub enum PackageName {
+    Connector(String),
+    SmartModule(String),
+}
+
+impl TryFrom<DownloadHubOpt> for PackageName {
+    type Error = Error;
+
+    fn try_from(opt: DownloadHubOpt) -> Result<Self> {
+        if let Some(connector) = opt.connector {
+            return Ok(Self::Connector(connector));
+        }
+
+        if let Some(smartmodule) = opt.smartmodule {
+            return Ok(Self::SmartModule(smartmodule));
+        }
+
+        Err(Error::msg("No package type specified"))
+    }
+}
+
+/// Download a Connector or a SmartModule from the Hub
 #[derive(Debug, Parser)]
 pub struct DownloadHubOpt {
-    /// SmartModule name: e.g. infinyon/jolt@v0.0.1
-    #[arg(value_name = "name", required = true)]
-    pkgname: String,
+    /// Specify a Connector to download into Cluster
+    #[arg(long = "conn", conflicts_with = &"smartmodule")]
+    connector: Option<String>,
+
+    /// Specify a SmartModule to download into Cluster
+    #[arg(long = "sm", conflicts_with = &"connector")]
+    smartmodule: Option<String>,
 
     #[clap(flatten)]
     target: ClusterTarget,
 
-    /// just download package to local filesystem
+    /// Download package to local filesystem
     #[arg(long)]
     local: bool,
 
@@ -49,21 +75,9 @@ impl ClientCmd for DownloadHubOpt {
         _out: Arc<O>,
         _fluvio: &Fluvio,
     ) -> Result<()> {
-        if self.ipkg {
-            // pkgname is a package file
-            let fluvio_config = self.target.load()?;
-            download_cluster(fluvio_config, &self.pkgname).await?;
-            return Ok(());
-        }
-        let access = get_hub_access(&self.remote)?;
+        let pkg = PackageName::try_from(self)?;
+        println!("{:?}", pkg);
 
-        let pkgfile = download_local(&self.pkgname, &access).await?;
-        if self.local {
-            return Ok(());
-        }
-
-        let fluvio_config = self.target.load()?;
-        download_cluster(fluvio_config, &pkgfile).await?;
         Ok(())
     }
 }
