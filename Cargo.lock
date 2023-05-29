@@ -2928,7 +2928,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.19.0"
+version = "0.19.1"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
@@ -2981,7 +2981,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "criterion",
  "eyre",
@@ -3075,7 +3075,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "bytes 1.4.0",
  "derive_builder",
@@ -4924,8 +4924,9 @@ dependencies = [
 
 [[package]]
 name = "minijinja"
-version = "0.32.1"
-source = "git+https://github.com/mitsuhiko/minijinja?rev=c4b48dc5be9de0143e06bef97618c7ed029fb155#c4b48dc5be9de0143e06bef97618c7ed029fb155"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "933dc6e6e1f909926a2f6bf72ba8b8d6e38ab4f92778c77ea898001e044a30eb"
 dependencies = [
  "aho-corasick 1.0.1",
  "serde",
