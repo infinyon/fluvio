@@ -2623,7 +2623,7 @@ version = "0.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.18",
 ]
 
 [[package]]
@@ -2840,7 +2840,7 @@ version = "0.5.1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.18",
  "tracing",
 ]
 
@@ -2972,7 +2972,7 @@ version = "0.4.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.18",
 ]
 
 [[package]]
@@ -3182,7 +3182,7 @@ version = "0.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.18",
  "trybuild 1.0.42",
 ]
 
@@ -3201,7 +3201,7 @@ dependencies = [
  "quote",
  "rand 0.8.5",
  "serde_json",
- "syn 1.0.109",
+ "syn 2.0.18",
  "tokio",
  "tracing",
  "trybuild 1.0.42",
@@ -3244,7 +3244,7 @@ dependencies = [
  "semver 1.0.17",
  "serde",
  "serde_json",
- "syn 1.0.109",
+ "syn 2.0.18",
  "tokio",
  "tracing",
  "uuid",

@@ -13,6 +13,6 @@ description = "Fluvio SmartModule WASM procedural macro"
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0", features = ["full"] }
+syn = { version = "2.0", features = ["full"] }
 quote = "1.0"
 proc-macro2 = "1.0"
