@@ -136,11 +136,8 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_12"
     assert_success
-
-    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" != "stable" && "$FLUVIO_CLUSTER_RELEASE_CHANNEL" != "stable" ]]; then
-        run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_13" --compression-type zstd
-        assert_success
-    fi
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_13" --compression-type zstd
+    assert_success
 }
 
 # Produce message 
@@ -157,12 +154,8 @@ teardown_file() {
     assert_success
     run bash -c 'echo -e "$LZ4_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_6" --compression lz4'
     assert_success
-
-    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" != "stable" && "$FLUVIO_CLUSTER_RELEASE_CHANNEL" != "stable" ]]; then
-        run bash -c 'echo -e "$ZSTD_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_13" --compression zstd'
-        assert_success
-    fi
-
+    run bash -c 'echo -e "$ZSTD_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_13" --compression zstd'
+    assert_success
     run bash -c 'echo -e "$LINGER_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_7" --linger 0s'
     assert_success
     run bash -c 'echo -e "$BATCH_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_8" --batch-size 100'
@@ -230,10 +223,6 @@ teardown_file() {
 }
 
 @test "Consume zstd message" {
-    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" || "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]]; then
-        skip "don't run on stable version"
-    fi
-
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_13" -B -d
 
     assert_output --partial "$ZSTD_MESSAGE"
