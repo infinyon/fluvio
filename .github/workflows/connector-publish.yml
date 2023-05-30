@@ -66,6 +66,12 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.9.1
+      - name: Install Rust ${{ matrix.rust-target }}
+        uses: actions-rs/toolchain@v1
+        with:
+           toolchain: ${{ matrix.rust }}
+           profile: minimal
+           override: true
       - name: install zigbuild
         run: cargo install cargo-zigbuild
       - name: Build
