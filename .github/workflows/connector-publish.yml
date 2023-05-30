@@ -67,6 +67,7 @@ jobs:
         run: cargo install cargo-zigbuild
       - name: Build
         run: |
+          rustup target add ${{ matrix.rust-target }}
           cargo zigbuild --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
