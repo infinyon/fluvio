@@ -63,11 +63,15 @@ jobs:
         with:
           cache-targets: "false"
           cache-on-failure: "true"
+      - name: Install Zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
       - name: Install Zigbuild
         run: cargo install cargo-zigbuild
-      - name: Build
+      - name: Install target
         run: |
           rustup target add ${{ matrix.rust-target }}
+      - name: Build
+        run: |
           cargo zigbuild --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
