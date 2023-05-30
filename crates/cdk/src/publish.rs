@@ -37,6 +37,9 @@ pub struct PublishCmd {
     #[arg(long, default_value = "false")]
     pub public_yes: bool,
 
+    #[arg(long, default_value = "false")]
+    pub no_build: bool,
+
     /// do only the pack portion
     #[arg(long, hide_short_help = true)]
     pack: bool,
@@ -67,7 +70,11 @@ impl PublishCmd {
         );
 
         self.cleanup(&package_info)?;
-        build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
+
+        if !self.no_build {
+            build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
+        }
+
         init_package_template(&package_info, &self.readme)?;
         check_package_meta_visiblity(&package_info)?;
 
