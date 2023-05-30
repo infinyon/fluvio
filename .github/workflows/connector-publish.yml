@@ -63,11 +63,14 @@ jobs:
         with:
           cache-targets: "false"
           cache-on-failure: "true"
-      - name: Install Cross
-        run: cargo install cross
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.9.1
+      - uses: install zigbuild
+        run: cargo install cargo-zigbuild
       - name: Build
         run: |
-          cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
+          cargo zigbuild --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
           cdk publish --no-build \
