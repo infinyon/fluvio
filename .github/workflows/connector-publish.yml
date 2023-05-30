@@ -66,7 +66,7 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.9.1
-      - uses: install zigbuild
+      - name: install zigbuild
         run: cargo install cargo-zigbuild
       - name: Build
         run: |
