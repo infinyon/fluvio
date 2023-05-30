@@ -63,11 +63,11 @@ jobs:
         with:
           cache-targets: "false"
           cache-on-failure: "true"
-      - name: Install Cross
-        run: cargo install cross
+      - name: Install Zigbuild
+        run: cargo install cargo-zigbuild
       - name: Build
         run: |
-          cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
+          cargo zigbuild --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
           cdk publish \
