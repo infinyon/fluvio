@@ -64,7 +64,7 @@ jobs:
           cache-targets: "false"
           cache-on-failure: "true"
       - name: Install Zig
-        run: ./actions/zig-install.sh ${{ matrix.os }}
+        run: ./actions/zig-install.sh ubuntu-latest
       - name: Install Zigbuild
         run: cargo install cargo-zigbuild
       - name: Install target
