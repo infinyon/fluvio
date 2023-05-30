@@ -69,7 +69,8 @@ jobs:
       - name: Install Rust ${{ matrix.rust-target }}
         uses: actions-rs/toolchain@v1
         with:
-           toolchain: ${{ matrix.rust }}
+           toolchain: stable
+           target: ${{ matrix.rust-target }}
            profile: minimal
            override: true
       - name: install zigbuild
