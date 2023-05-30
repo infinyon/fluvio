@@ -70,7 +70,7 @@ jobs:
           cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          cdk publish \
+          cdk publish --no-build \
             ${{ inputs.public && '--public-yes' || '' }} \
             --target ${{ matrix.rust-target }} \
             -p ${{ inputs.package-name }} \
