@@ -2,6 +2,7 @@
 mod test {
 
     use std::convert::TryFrom;
+
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
     use crate::engine::common::FILTER_FN_NAME;

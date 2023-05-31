@@ -6,8 +6,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOu
 use crate::metrics::SmartModuleChainMetrics;
 use crate::engine::SmartModuleChainBuilder;
 use crate::engine::common::create_transform;
-
-use super::instance::{WasmtimeFn, WasmtimeInstance, WasmtimeContext};
+use super::instance::{WasmtimeContext, WasmtimeFn, WasmtimeInstance};
 use super::state::WasmState;
 
 type SmartModuleInit = crate::engine::common::SmartModuleInit<WasmtimeFn>;
@@ -141,8 +140,8 @@ mod chaining_test {
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
     use crate::engine::{
-        SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
-        metrics::SmartModuleChainMetrics,
+        metrics::SmartModuleChainMetrics, SmartEngine, SmartModuleChainBuilder, SmartModuleConfig,
+        SmartModuleInitialData,
     };
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";

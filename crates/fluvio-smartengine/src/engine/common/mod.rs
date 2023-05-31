@@ -2,7 +2,6 @@ mod init;
 mod transforms;
 pub(crate) use init::*;
 pub(crate) use transforms::*;
-
 use anyhow::Result;
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_smartmodule::dataplane::smartmodule::{

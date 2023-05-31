@@ -2,10 +2,11 @@
 mod test {
 
     use std::convert::TryFrom;
+
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
     use crate::SmartModuleInitialData;
-    use crate::engine::common::{AGGREGATE_FN_NAME};
+    use crate::engine::common::AGGREGATE_FN_NAME;
     use crate::engine::metrics::SmartModuleChainMetrics;
     use crate::engine::{SmartEngine, SmartModuleChainBuilder};
     use crate::engine::config::SmartModuleConfig;

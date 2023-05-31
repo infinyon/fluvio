@@ -1,18 +1,16 @@
-use anyhow::Result;
-use fluvio_protocol::{Encoder, Decoder};
-use tracing::debug;
-
 use std::sync::Arc;
 
+use anyhow::Result;
+use fluvio_protocol::{Decoder, Encoder};
+use tracing::debug;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
-use wasmtime::{Instance, Module, Caller, AsContext, Extern};
+use wasmtime::{AsContext, Caller, Extern, Instance, Module};
 
 use crate::engine::{
     common::{WasmFn, WasmInstance},
     error::EngineError,
     wasmtime::memory::RecordsMemory,
 };
-
 use super::{memory::RecordsCallBack, state::WasmState};
 
 pub struct WasmtimeInstance {

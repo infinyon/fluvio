@@ -1,6 +1,4 @@
-use std::{
-    path::{PathBuf, Path},
-};
+use std::path::{Path, PathBuf};
 
 pub(crate) fn read_wasm_module(module_name: &str) -> Vec<u8> {
     let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");

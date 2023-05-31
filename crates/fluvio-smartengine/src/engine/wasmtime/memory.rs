@@ -1,8 +1,7 @@
 use std::sync::Mutex;
 
 use wasmtime::*;
-
-use anyhow::{Result, Error, anyhow};
+use anyhow::{anyhow, Error, Result};
 
 const ALLOC_FN: &str = "alloc";
 const MEMORY: &str = "memory";

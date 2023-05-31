@@ -1,8 +1,9 @@
-use super::{WasmFn, WasmInstance};
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInitInput, SmartModuleInitErrorStatus, SmartModuleInitOutput,
+    SmartModuleInitErrorStatus, SmartModuleInitInput, SmartModuleInitOutput,
 };
+
+use super::{WasmFn, WasmInstance};
 
 pub(crate) const INIT_FN_NAME: &str = "init";
 

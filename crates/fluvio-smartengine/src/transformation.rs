@@ -1,14 +1,15 @@
 use std::{
     collections::BTreeMap,
     fmt::{self, Display},
-    path::PathBuf,
     fs::File,
     io::Read,
     ops::Deref,
+    path::PathBuf,
 };
+
 use serde::{
-    Deserialize, Serialize, Deserializer,
-    de::{Visitor, self, SeqAccess, MapAccess},
+    de::{self, MapAccess, SeqAccess, Visitor},
+    Deserialize, Deserializer, Serialize,
 };
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]

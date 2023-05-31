@@ -1,14 +1,14 @@
 use std::any::Any;
+
 use anyhow::Result;
 use fluvio_smartmodule::dataplane::smartmodule::{
-    SmartModuleInput, SmartModuleOutput, SmartModuleTransformErrorStatus,
-    SmartModuleAggregateInput, SmartModuleAggregateOutput,
+    SmartModuleAggregateInput, SmartModuleAggregateOutput, SmartModuleInput, SmartModuleOutput,
+    SmartModuleTransformErrorStatus,
 };
 use tracing::debug;
 
-use crate::{SmartModuleInitialData, engine::error::EngineError};
-
-use super::{WasmInstance, WasmFn};
+use crate::{engine::error::EngineError, SmartModuleInitialData};
+use super::{WasmFn, WasmInstance};
 
 mod filter;
 mod map;
