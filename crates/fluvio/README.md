@@ -48,7 +48,7 @@ cargo add async-std --features attributes
 
 4. Copy and paste the following snippet into your  `src/main.rs`
 
-```rust
+```ignore
 use std::time::Duration;
 
 use fluvio::{Offset, RecordKey};
