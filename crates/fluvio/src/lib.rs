@@ -1,23 +1,22 @@
-#[doc = include_str!("../README.md")]
-
 #![cfg_attr(
     feature = "nightly",
     doc(include = "../../../website/kubernetes/INSTALL.md")
 )]
 
-mod error;
-mod admin;
-mod fluvio;
-pub mod consumer;
-mod producer;
-mod offset;
-mod sync;
-pub mod spu;
-pub mod metrics;
-pub mod config;
+#[doc = include_str!("../README.md")]
 
-use fluvio_types::PartitionId;
-use tracing::instrument;
+mod admin;
+mod error;
+mod fluvio;
+mod offset;
+mod producer;
+mod sync;
+
+pub mod config;
+pub mod consumer;
+pub mod metrics;
+pub mod spu;
+
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{
@@ -41,6 +40,9 @@ pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
 
 pub use fluvio_compression::Compression;
+
+use fluvio_types::PartitionId;
+use tracing::instrument;
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
