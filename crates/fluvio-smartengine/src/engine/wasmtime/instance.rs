@@ -35,7 +35,7 @@ impl WasmInstance for WasmtimeInstance {
                 // check type signature
                 func.typed(&mut ctx.state)
                     .or_else(|_| func.typed(&ctx.state))
-                    .map(|f| Some(f))
+                    .map(Some)
             }
             None => Ok(None),
         }
