@@ -1,5 +1,6 @@
 use wasmtime::*;
-use anyhow::{anyhow, Error, Result};
+
+use anyhow::{Result, Error, anyhow};
 
 const ALLOC_FN: &str = "alloc";
 const MEMORY: &str = "memory";

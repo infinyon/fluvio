@@ -125,13 +125,13 @@ impl WasmtimeInstance {
 
 #[derive(Clone)]
 pub struct RecordsMemory {
-    pub ptr: i32,
-    pub len: i32,
-    pub memory: Memory,
+    ptr: i32,
+    len: i32,
+    memory: Memory,
 }
 
 impl RecordsMemory {
-    pub fn copy_memory_from(&self, store: impl AsContext) -> Result<Vec<u8>> {
+    fn copy_memory_from(&self, store: impl AsContext) -> Result<Vec<u8>> {
         let mut bytes = vec![0u8; self.len as u32 as usize];
         self.memory.read(store, self.ptr as usize, &mut bytes)?;
         Ok(bytes)
