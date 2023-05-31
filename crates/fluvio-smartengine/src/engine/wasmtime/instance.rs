@@ -1,17 +1,16 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use fluvio_protocol::{Decoder, Encoder};
 use tracing::debug;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
-use wasmtime::{AsContext, Caller, Extern, Instance, Module};
+use wasmtime::{AsContext, Caller, Extern, Instance, Module, Memory};
 
 use crate::engine::{
     common::{WasmFn, WasmInstance},
     error::EngineError,
-    wasmtime::memory::RecordsMemory,
 };
-use super::{memory::RecordsCallBack, state::WasmState};
+use super::state::WasmState;
 
 pub struct WasmtimeInstance {
     instance: Instance,
@@ -121,5 +120,43 @@ impl WasmtimeInstance {
             params,
             version,
         })
+    }
+}
+
+#[derive(Clone)]
+pub struct RecordsMemory {
+    pub ptr: i32,
+    pub len: i32,
+    pub memory: Memory,
+}
+
+impl RecordsMemory {
+    pub fn copy_memory_from(&self, store: impl AsContext) -> Result<Vec<u8>> {
+        let mut bytes = vec![0u8; self.len as u32 as usize];
+        self.memory.read(store, self.ptr as usize, &mut bytes)?;
+        Ok(bytes)
+    }
+}
+
+pub struct RecordsCallBack(Mutex<Option<RecordsMemory>>);
+
+impl RecordsCallBack {
+    pub(crate) fn new() -> Self {
+        Self(Mutex::new(None))
+    }
+
+    pub(crate) fn set(&self, records: RecordsMemory) {
+        let mut write_inner = self.0.lock().unwrap();
+        write_inner.replace(records);
+    }
+
+    pub(crate) fn clear(&self) {
+        let mut write_inner = self.0.lock().unwrap();
+        write_inner.take();
+    }
+
+    pub(crate) fn get(&self) -> Option<RecordsMemory> {
+        let reader = self.0.lock().unwrap();
+        reader.clone()
     }
 }
