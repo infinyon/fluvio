@@ -75,8 +75,11 @@ impl ClientCmd for DownloadHubOpt {
         _out: Arc<O>,
         _fluvio: &Fluvio,
     ) -> Result<()> {
+        if self.ipkg {
+            
+        }
+
         let pkg = PackageName::try_from(self)?;
-        println!("{:?}", pkg);
 
         Ok(())
     }
