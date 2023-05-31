@@ -21,8 +21,6 @@ default = ["engine"]
 tracing ={ workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-# Use the Clone trait
-wasmedge-sdk = { git = "https://github.com/WasmEdge/WasmEdge", rev = "fe5fe2c", optional = true }
 # std is needed for ser/de AtomicU64
 serde = { workspace = true,  features = ['derive', 'std'] }
 serde_json = { workspace = true, optional = true }
