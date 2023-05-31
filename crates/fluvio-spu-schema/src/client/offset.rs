@@ -3,6 +3,8 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::Offset;
 
+use crate::COMMON_VERSION;
+
 use super::SpuClientApiKey;
 
 // -----------------------------------
@@ -29,7 +31,7 @@ pub struct ReplicaOffsetUpdate {
 
 impl Request for ReplicaOffsetUpdateRequest {
     const API_KEY: u16 = SpuClientApiKey::ReplicaOffsetUpdate as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ReplicaOffsetUpdateResponse;
 }
 

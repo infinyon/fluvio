@@ -1,9 +1,11 @@
 use std::default::Default;
 use std::fmt;
 use std::fmt::{Debug, Display};
+use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
+use fluvio_protocol::Version;
 use tracing::{debug, instrument, info};
 
 use fluvio_protocol::api::RequestMessage;
@@ -219,6 +221,14 @@ pub struct VersionedSerialSocket {
     versions: Versions,
 }
 
+impl Deref for VersionedSerialSocket {
+    type Target = SharedMultiplexerSocket;
+
+    fn deref(&self) -> &Self::Target {
+        &self.socket
+    }
+}
+
 impl fmt::Display for VersionedSerialSocket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "config: {}, {:?}", self.config, self.socket)
@@ -283,10 +293,18 @@ impl VersionedSerialSocket {
     {
         self.check_liveness()?;
 
-        let req_msg = self.new_request(request, self.versions.lookup_version::<R>());
+        let req_msg = self.new_request(request, self.lookup_version::<R>());
 
         // send request & get a Future that resolves to response
         self.socket.send_async(req_msg).await
+    }
+
+    /// look up version for the request
+    pub fn lookup_version<R>(&self) -> Option<Version>
+    where
+        R: Request,
+    {
+        self.versions.lookup_version::<R>()
     }
 
     /// send, wait for reply and retry if failed
@@ -315,7 +333,7 @@ impl VersionedSerialSocket {
 
     /// create new request based on version
     #[instrument(level = "trace", skip(self, request, version))]
-    fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
+    pub fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
     where
         R: Request + Send,
     {

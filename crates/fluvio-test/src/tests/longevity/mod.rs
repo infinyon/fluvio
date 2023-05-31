@@ -9,7 +9,7 @@ use fluvio_test_case_derive::MyTestCase;
 use fluvio_test_util::async_process;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio Longevity Test")]
+#[command(name = "Fluvio Longevity Test")]
 pub struct LongevityTestOption {
     // This should be mutually exclusive with runtime_seconds
     // num_records: u32
@@ -18,7 +18,7 @@ pub struct LongevityTestOption {
     //#[clap(long, default_value = "0")]
     //pub consumer_offset: u32,
     /// Opt-in to detailed output printed to stdout
-    #[clap(long, short)]
+    #[arg(long, short)]
     verbose: bool,
 }
 

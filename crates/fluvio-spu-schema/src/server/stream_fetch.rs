@@ -7,15 +7,16 @@ use std::fmt::{Debug};
 use std::marker::PhantomData;
 
 use educe::Educe;
+use derive_builder::Builder;
+
 use fluvio_protocol::record::RawRecords;
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::Request;
-
 use fluvio_protocol::record::RecordSet;
-
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, defaults::FLUVIO_CLIENT_MAX_FETCH_BYTES};
 
+use crate::COMMON_VERSION;
 use crate::fetch::FetchablePartitionResponse;
 use crate::isolation::Isolation;
 
@@ -48,29 +49,47 @@ pub const CHAIN_SMARTMODULE_API: i16 = 18;
 /// Fetch records continuously
 /// Output will be send back as stream
 #[allow(deprecated)]
-#[derive(Decoder, Encoder, Default, Educe)]
+#[derive(Decoder, Encoder, Builder, Default, Educe)]
+#[builder(setter(into))]
 #[educe(Debug)]
 pub struct StreamFetchRequest<R> {
     pub topic: String,
+    #[builder(default = "0")]
     pub partition: PartitionId,
+    #[builder(default = "0")]
     pub fetch_offset: i64,
+    #[builder(default = "FLUVIO_CLIENT_MAX_FETCH_BYTES")]
     pub max_bytes: i32,
+    #[builder(default = "Isolation::ReadUncommitted")]
     pub isolation: Isolation,
-    /// no longer used, but keep to avoid breaking compatibility, this will not be honored
-    // TODO: remove in 0.10
+    // these private fields will be removed
     #[educe(Debug(ignore))]
-    #[fluvio(min_version = 11)]
-    pub wasm_module: Vec<u8>,
-    // TODO: remove in 0.10
+    #[builder(setter(skip))]
+    #[fluvio(min_version = 11, max_version = 18)]
+    wasm_module: Vec<u8>,
+    #[builder(setter(skip))]
     #[fluvio(min_version = 12, max_version = 18)]
-    pub wasm_payload: Option<LegacySmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
+    #[builder(setter(skip))]
     #[fluvio(min_version = 16, max_version = 18)]
-    pub smartmodule: Option<SmartModuleInvocation>,
+    smartmodule: Option<SmartModuleInvocation>,
+    #[builder(setter(skip))]
     #[fluvio(min_version = 16, max_version = 18)]
-    pub derivedstream: Option<DerivedStreamInvocation>,
+    derivedstream: Option<DerivedStreamInvocation>,
+    #[builder(default)]
     #[fluvio(min_version = 18)]
     pub smartmodules: Vec<SmartModuleInvocation>,
-    pub data: PhantomData<R>,
+    #[builder(setter(skip))]
+    data: PhantomData<R>,
+}
+
+impl<R> StreamFetchRequest<R>
+where
+    R: Clone,
+{
+    pub fn builder() -> StreamFetchRequestBuilder<R> {
+        StreamFetchRequestBuilder::default()
+    }
 }
 
 impl<R> Request for StreamFetchRequest<R>
@@ -78,13 +97,13 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = CHAIN_SMARTMODULE_API;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = StreamFetchResponse<R>;
 }
 
 ///
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
-pub struct DerivedStreamInvocation {
+pub(crate) struct DerivedStreamInvocation {
     pub stream: String,
     pub params: SmartModuleExtraParams,
 }

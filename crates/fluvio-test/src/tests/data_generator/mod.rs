@@ -12,10 +12,10 @@ use fluvio::{Offset, RecordKey};
 use futures::StreamExt;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio Longevity Test")]
+#[command(name = "Fluvio Longevity Test")]
 pub struct GeneratorTestOption {
     /// Opt-in to detailed output printed to stdout
-    #[clap(long, short)]
+    #[arg(long, short)]
     verbose: bool,
 }
 
@@ -126,9 +126,9 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
             let mut is_ready = false;
             while let Some(Ok(record)) = sync_stream.next().await {
                 let _key = record
-                    .key()
-                    .map(|key| String::from_utf8_lossy(key).to_string());
-                let value = String::from_utf8_lossy(record.value()).to_string();
+                    .get_key()
+                    .map(|key| key.as_utf8_lossy_string());
+                let value = record.get_value().as_utf8_lossy_string();
 
                 if !is_ready {
                     if value.contains("ready") {

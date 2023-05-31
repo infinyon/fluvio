@@ -1,4 +1,4 @@
-// Run Cargo using the `cargo` command line tool.
+//! Run Cargo using the `cargo` command line tool.
 
 use std::{
     fmt::{Debug, Display, Formatter},
@@ -7,6 +7,11 @@ use std::{
 
 use anyhow::{Error, anyhow, Result};
 use derive_builder::Builder;
+
+/// Error returned from `CargoBuild` builder when both the `target` field and
+/// an extra argument with `--target` are both present.
+const AMBIGUOUS_TARGET_ERR_MSG: &str =
+    "Cannot use `--target` as extra argument if `target` is also provided";
 
 #[derive(Default)]
 pub enum Profile {
@@ -27,6 +32,7 @@ impl Display for Profile {
 /// Builder Argument
 #[derive(Builder, Debug, Default)]
 #[builder(setter(into))]
+#[builder(build_fn(validate = "Self::validate"))]
 pub struct Cargo {
     /// Basic cargo command
     pub cmd: String,
@@ -105,9 +111,24 @@ impl Cargo {
     }
 }
 
+impl CargoBuilder {
+    fn validate(&self) -> Result<(), String> {
+        if let (Some(ref _target), Some(ref extra_arguments)) =
+            (&self.target, &self.extra_arguments)
+        {
+            // We don't want to allow setting both `target` and also
+            // `extra_arguments` containing `--target` in it
+            if extra_arguments.contains(&"--target".to_string()) {
+                return Err(AMBIGUOUS_TARGET_ERR_MSG.to_string());
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
-
     use std::ffi::OsStr;
 
     use super::*;
@@ -137,5 +158,89 @@ mod test {
             args,
             &["build", "--profile", "release", "--lib", "-p", "foo"]
         );
+    }
+
+    #[test]
+    fn test_builder_target() {
+        let config = Cargo::build()
+            .package("foo")
+            .target("wasm32-unknown-unknown")
+            .build()
+            .expect("should build");
+
+        assert_eq!(config.profile, "release");
+        assert_eq!(config.package, Some("foo".to_string()));
+
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(
+            args,
+            &[
+                "build",
+                "--profile",
+                "release",
+                "--lib",
+                "-p",
+                "foo",
+                "--target",
+                "wasm32-unknown-unknown"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_builder_extra_args() {
+        let config = Cargo::build()
+            .package("foo")
+            .target("wasm32-unknown-unknown")
+            .extra_arguments(vec![
+                "--benches".to_string(),
+                "--no-default-features".to_string(),
+            ])
+            .build()
+            .expect("should build");
+
+        assert_eq!(config.profile, "release");
+        assert_eq!(config.package, Some("foo".to_string()));
+
+        let cargo = config.make_cargo_cmd().expect("cmd");
+        let args: Vec<&OsStr> = cargo.get_args().collect();
+        assert_eq!(
+            args,
+            &[
+                "build",
+                "--profile",
+                "release",
+                "--lib",
+                "-p",
+                "foo",
+                "--target",
+                "wasm32-unknown-unknown",
+                "--benches",
+                "--no-default-features"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_builder_complains_extra_args_target() {
+        let config = Cargo::build()
+            .package("foo")
+            .target("wasm32-unknown-unknown")
+            .extra_arguments(vec![
+                "--benches".to_string(),
+                "--no-default-features".to_string(),
+                "--target".to_string(),
+                "aarch64-apple-darwin".to_string(),
+            ])
+            .build();
+
+        assert!(config.is_err());
+
+        let Err(err) = config else {
+            panic!("Expected a `Err` for `test_builder_complains_extra_args_target`");
+        };
+
+        assert_eq!(err.to_string(), AMBIGUOUS_TARGET_ERR_MSG);
     }
 }

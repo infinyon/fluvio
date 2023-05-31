@@ -11,6 +11,11 @@ description = "Fluvio Connector Common SDK"
 default = []
 derive = ["fluvio-connector-derive"]
 
+[[test]]
+name = "derive-test"
+path = "ui-test/mod.rs"
+required-features = ["derive"]
+
 [dependencies]
 async-trait = { workspace = true }
 async-net = { workspace = true  }
@@ -28,3 +33,9 @@ fluvio-connector-package = { workspace = true  }
 fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true}
 fluvio-sc-schema = { workspace = true }
 fluvio-smartengine = { workspace = true , features = [ "transformation"] }
+
+
+[dev-dependencies]
+trybuild = { version = "1.0" }
+serde = { workspace = true, features = ["derive"]}
+fluvio = { workspace = true }

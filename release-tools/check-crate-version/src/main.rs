@@ -18,13 +18,13 @@ enum CrateStatus {
 
 #[derive(Parser, Debug)]
 pub struct Cli {
-    #[clap(short, long)]
+    #[arg(short, long)]
     verbose: bool,
-    #[clap(long, env, default_value = "./publish-list.toml")]
+    #[arg(long, env, default_value = "./publish-list.toml")]
     publish_list_path: String,
-    #[clap(long, env, default_value = "../../crates")]
+    #[arg(long, env, default_value = "../../crates")]
     crates_dir: String,
-    #[clap(long, env, default_value = "./crates_io")]
+    #[arg(long, env, default_value = "./crates_io")]
     crates_io_dir: String,
 }
 

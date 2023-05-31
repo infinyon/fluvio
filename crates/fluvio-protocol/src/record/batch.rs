@@ -2,12 +2,12 @@ use std::io::Error;
 use std::mem::size_of;
 use std::fmt::Debug;
 use bytes::Bytes;
-use fluvio_compression::CompressionError;
 use fluvio_types::PartitionId;
 use tracing::trace;
 
-use fluvio_compression::Compression;
 use fluvio_types::Timestamp;
+use fluvio_compression::Compression;
+use fluvio_compression::CompressionError;
 
 use crate::bytes::Buf;
 use crate::bytes::BufMut;
@@ -164,6 +164,7 @@ impl<R> Batch<R> {
     }
 }
 
+#[cfg(feature = "compress")]
 impl TryFrom<Batch<RawRecords>> for Batch {
     type Error = CompressionError;
     fn try_from(batch: Batch<RawRecords>) -> Result<Self, Self::Error> {
@@ -177,6 +178,7 @@ impl TryFrom<Batch<RawRecords>> for Batch {
     }
 }
 
+#[cfg(feature = "compress")]
 impl TryFrom<Batch> for Batch<RawRecords> {
     type Error = CompressionError;
     fn try_from(f: Batch) -> Result<Self, Self::Error> {
@@ -265,6 +267,8 @@ impl Batch {
             })
     }
 }
+
+#[cfg(feature = "compress")]
 impl Batch<RawRecords> {
     pub fn memory_records(&self) -> Result<MemoryRecords, CompressionError> {
         let compression = self.get_compression()?;

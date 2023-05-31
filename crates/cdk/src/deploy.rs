@@ -8,13 +8,14 @@ use std::{
 
 use anyhow::{Result, Context, anyhow};
 use clap::{Parser, Subcommand};
-
-use cargo_builder::package::PackageInfo;
-use fluvio_connector_deployer::{Deployment, DeploymentType};
-use fluvio_connector_package::metadata::ConnectorMetadata;
 use tracing::{debug, trace};
 
+use cargo_builder::package::PackageInfo;
+use fluvio_connector_deployer::{Deployment, DeploymentType, LogLevel};
+use fluvio_connector_package::metadata::ConnectorMetadata;
+
 use crate::cmd::PackageCmd;
+use crate::utils::build::{BuildOpts, build_connector};
 
 const CONNECTOR_METADATA_FILE_NAME: &str = "Connector.toml";
 
@@ -28,7 +29,7 @@ pub struct DeployCmd {
     operation: DeployOperationCmd,
 
     /// Extra arguments to be passed to cargo
-    #[clap(raw = true)]
+    #[arg(raw = true)]
     extra_arguments: Vec<String>,
 }
 
@@ -51,16 +52,20 @@ enum DeployStartCmd {
     #[command(name = "start")]
     Local {
         /// Path to configuration file in YAML format
-        #[clap(short, long, value_name = "PATH")]
+        #[arg(short, long, value_name = "PATH")]
         config: PathBuf,
 
         /// Path to file with secrets. Secrets are 'key=value' pairs separated by the new line character. Optional
-        #[clap(short, long, value_name = "PATH")]
+        #[arg(short, long, value_name = "PATH")]
         secrets: Option<PathBuf>,
 
         /// Deploy from local package file
-        #[clap(long = "ipkg", value_name = "PATH")]
+        #[arg(long = "ipkg", value_name = "PATH")]
         ipkg_file: Option<PathBuf>,
+
+        /// Log level for the connector process
+        #[arg(long, value_name = "LOG_LEVEL", default_value_t)]
+        log_level: LogLevel,
     },
 }
 
@@ -69,9 +74,19 @@ enum DeployShutdownCmd {
     /// Shutdown the Connector's deployment
     // As long as there is only one deployment type, we omit to specify its name
     #[command(name = "shutdown")]
+    #[clap(group(
+        clap::ArgGroup::new("name-source")
+            .required(true)
+            .args(&["config", "name"]),
+    ))]
     Local {
-        #[clap(value_name = "CONNECTOR_NAME")]
-        name: String,
+        /// Path to configuration file in YAML format
+        #[arg(short, long, conflicts_with = &"name", value_name = "PATH")]
+        config: Option<PathBuf>,
+
+        /// Name of the connector to shutdown
+        #[arg(short, long, conflicts_with = &"config", value_name = "CONNECTOR_NAME")]
+        name: Option<String>,
     },
 }
 
@@ -88,9 +103,19 @@ enum DeployLogCmd {
     /// Print the connector's logs
     // As long as there is only one deployment type, we omit to specify its name
     #[command(name = "log")]
+    #[clap(group(
+        clap::ArgGroup::new("name-source")
+            .required(true)
+            .args(&["config", "name"]),
+    ))]
     Local {
-        #[clap(value_name = "CONNECTOR_NAME")]
-        name: String,
+        /// Path to configuration file in YAML format
+        #[arg(short, long, conflicts_with = &"name", value_name = "PATH")]
+        config: Option<PathBuf>,
+
+        /// Name of the running connector
+        #[arg(short, long, conflicts_with = &"config", value_name = "CONNECTOR_NAME")]
+        name: Option<String>,
     },
 }
 
@@ -109,9 +134,9 @@ impl DeployOperationCmd {
     pub(crate) fn process(self, package: PackageCmd, _extra_arguments: Vec<String>) -> Result<()> {
         match self {
             Self::Start(deployment_type) => deployment_type.process(package),
-            Self::Shutdown(deployment_type) => deployment_type.process(),
+            Self::Shutdown(deployment_type) => deployment_type.process(package),
             Self::List(deployment_type) => deployment_type.process(),
-            Self::Log(deployment_type) => deployment_type.process(),
+            Self::Log(deployment_type) => deployment_type.process(package),
         }
     }
 }
@@ -123,7 +148,8 @@ impl DeployStartCmd {
                 config,
                 secrets,
                 ipkg_file,
-            } => deploy_local(package, config, secrets, ipkg_file),
+                log_level,
+            } => deploy_local(package, config, secrets, ipkg_file, log_level),
         }
     }
 }
@@ -137,17 +163,17 @@ impl DeployListCmd {
 }
 
 impl DeployShutdownCmd {
-    pub(crate) fn process(self) -> Result<()> {
+    pub(crate) fn process(self, package: PackageCmd) -> Result<()> {
         match self {
-            Self::Local { name } => local_index::delete_by_name(&name),
+            Self::Local { config, name } => shutdown_local(package, config, name),
         }
     }
 }
 
 impl DeployLogCmd {
-    pub(crate) fn process(self) -> Result<()> {
+    pub(crate) fn process(self, package: PackageCmd) -> Result<()> {
         match self {
-            Self::Local { name } => local_index::print_log(&name),
+            Self::Local { config, name } => print_local_log(package, config, name),
         }
     }
 }
@@ -157,10 +183,16 @@ fn deploy_local(
     config: PathBuf,
     secrets: Option<PathBuf>,
     ipkg_file: Option<PathBuf>,
+    log_level: LogLevel,
 ) -> Result<()> {
+    let opt = package_cmd.as_opt();
+    let package_info = PackageInfo::from_options(&opt)?;
+
+    build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
+
     let (executable, connector_metadata) = match ipkg_file {
         Some(ipkg_file) => from_ipkg_file(ipkg_file).context("Failed to deploy from ipkg file")?,
-        None => from_cargo_package(package_cmd)
+        None => from_cargo_package(&package_info)
             .context("Failed to deploy from within cargo package directory")?,
     };
 
@@ -174,6 +206,7 @@ fn deploy_local(
         .config(config)
         .secrets(secrets)
         .pkg(connector_metadata)
+        .log_level(log_level)
         .deployment_type(DeploymentType::Local {
             output_file: Some(log_path),
         });
@@ -181,13 +214,64 @@ fn deploy_local(
     local_index::store(result)
 }
 
-pub(crate) fn from_cargo_package(package_cmd: PackageCmd) -> Result<(PathBuf, ConnectorMetadata)> {
-    debug!("reading connector metadata from cargo package");
+fn shutdown_local(
+    package_cmd: PackageCmd,
+    config: Option<PathBuf>,
+    name: Option<String>,
+) -> Result<()> {
+    let name = match (config, name) {
+        (Some(config_path), None) => connector_name_from_config(package_cmd, config_path)?,
+        (None, Some(name)) => name,
+        _ => return Err(anyhow!("Either name or config must be specified")),
+    };
+
+    local_index::delete_by_name(&name)
+}
+
+fn print_local_log(
+    package_cmd: PackageCmd,
+    config: Option<PathBuf>,
+    name: Option<String>,
+) -> Result<()> {
+    let name = match (config, name) {
+        (Some(config_path), None) => connector_name_from_config(package_cmd, config_path)?,
+        (None, Some(name)) => name,
+        _ => return Err(anyhow!("Either name or config must be specified")),
+    };
+
+    local_index::print_log(&name)
+}
+
+fn connector_name_from_config(package_cmd: PackageCmd, config: PathBuf) -> Result<String> {
     let opt = package_cmd.as_opt();
-    let p = PackageInfo::from_options(&opt)?;
-    let connector_metadata =
-        ConnectorMetadata::from_toml_file(p.package_relative_path(CONNECTOR_METADATA_FILE_NAME))?;
-    let executable_path = p.target_bin_path()?;
+    let package_info = PackageInfo::from_options(&opt)?;
+
+    let (_executable, metadata) = from_cargo_package(&package_info)
+        .context("Failed to extract metadata from Connector.toml")?;
+
+    let config_file = match std::fs::File::open(&config) {
+        Ok(file) => file,
+        Err(err) => {
+            return Err(err).with_context(|| {
+                format!("Could not open connector config at: {}", config.display())
+            })
+        }
+    };
+
+    let config = metadata.validate_config(config_file)?;
+
+    Ok(config.meta().name.to_owned())
+}
+
+pub(crate) fn from_cargo_package(
+    package_info: &PackageInfo,
+) -> Result<(PathBuf, ConnectorMetadata)> {
+    debug!("reading connector metadata from cargo package");
+
+    let connector_metadata = ConnectorMetadata::from_toml_file(
+        package_info.package_relative_path(CONNECTOR_METADATA_FILE_NAME),
+    )?;
+    let executable_path = package_info.target_bin_path()?;
     Ok((executable_path, connector_metadata))
 }
 
@@ -451,9 +535,33 @@ mod local_index {
 
     pub(super) fn delete_by_name(connector_name: &str) -> Result<()> {
         let mut index = load()?;
-        if let Some((i, _)) = index.find_by_name(connector_name) {
-            index.remove(i)?;
+
+        match index.find_by_name(connector_name) {
+            Some((
+                i,
+                Entry::Local {
+                    process_id,
+                    name,
+                    log_file,
+                },
+            )) => {
+                let log_file = match log_file {
+                    Some(path) => format!("{}", path.display()),
+                    None => "Not found".to_string(),
+                };
+
+                println!(
+                    "Shutting down connector: {} \
+                    \npid: {} \
+                    \nLog File: {}",
+                    name, process_id, log_file
+                );
+
+                index.remove(i)?;
+            }
+            None => println!("Connector not found: {}", connector_name),
         }
+
         index.flush()
     }
 

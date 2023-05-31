@@ -11,6 +11,7 @@ use fluvio_protocol::record::ReplicaKey;
 
 use fluvio_types::PartitionId;
 
+use crate::COMMON_VERSION;
 use crate::errors::ErrorCode;
 use super::SpuServerApiKey;
 
@@ -27,7 +28,7 @@ pub struct FetchOffsetsRequest {
 
 impl Request for FetchOffsetsRequest {
     const API_KEY: u16 = SpuServerApiKey::FetchOffsets as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = FetchOffsetsResponse;
 }
 

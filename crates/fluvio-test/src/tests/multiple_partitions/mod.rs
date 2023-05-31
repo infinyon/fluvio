@@ -9,7 +9,7 @@ use fluvio_test_case_derive::MyTestCase;
 use fluvio_future::task::run_block_on;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio MultiplePartition Test")]
+#[command(name = "Fluvio MultiplePartition Test")]
 pub struct MultiplePartitionTestOption {}
 
 #[fluvio_test(topic = "test-multiple-partition")]

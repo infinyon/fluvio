@@ -264,6 +264,7 @@ impl LogValidator {
 /// if file is not valid then return error
 
 #[cfg(test)]
+#[cfg(feature = "fixture")]
 mod tests {
 
     use std::env::temp_dir;

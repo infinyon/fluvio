@@ -31,35 +31,35 @@ type Config = (ScConfig, Option<BasicRbacPolicy>);
 
 /// cli options
 #[derive(Debug, Parser, Default)]
-#[clap(name = "sc-server", about = "Streaming Controller")]
+#[command(name = "sc-server", about = "Streaming Controller")]
 pub struct ScOpt {
-    #[clap(long)]
+    #[arg(long)]
     /// running in local mode only
     local: bool,
 
-    #[clap(long)]
+    #[arg(long)]
     /// Address for external service
     bind_public: Option<String>,
 
-    #[clap(long)]
+    #[arg(long)]
     /// Address for internal service
     bind_private: Option<String>,
 
     // k8 namespace
-    #[clap(short = 'n', long = "namespace", value_name = "namespace")]
+    #[arg(short = 'n', long = "namespace", value_name = "namespace")]
     namespace: Option<String>,
 
     #[clap(flatten)]
     tls: TlsConfig,
 
-    #[clap(
+    #[arg(
         long = "authorization-scopes",
         value_name = "authorization scopes path",
         env
     )]
     x509_auth_scopes: Option<PathBuf>,
 
-    #[clap(
+    #[arg(
         long = "authorization-policy",
         value_name = "authorization policy path",
         env
@@ -67,7 +67,7 @@ pub struct ScOpt {
     auth_policy: Option<PathBuf>,
 
     /// only allow white list of controllers
-    #[clap(long)]
+    #[arg(long)]
     white_list: Vec<String>,
 }
 
@@ -165,30 +165,30 @@ impl ScOpt {
 #[derive(Debug, Parser, Clone, Default)]
 pub struct TlsConfig {
     /// enable tls
-    #[clap(long)]
+    #[arg(long)]
     tls: bool,
 
     /// TLS: path to server certificate
-    #[clap(long)]
+    #[arg(long)]
     pub server_cert: Option<String>,
 
-    #[clap(long)]
+    #[arg(long)]
     /// TLS: path to server private key
     pub server_key: Option<String>,
 
     /// TLS: enable client cert
-    #[clap(long)]
+    #[arg(long)]
     pub enable_client_cert: bool,
 
     /// TLS: path to ca cert, required when client cert is enabled
-    #[clap(long)]
+    #[arg(long)]
     pub ca_cert: Option<String>,
 
-    #[clap(long)]
+    #[arg(long)]
     /// TLS: address of non tls public service, required
     bind_non_tls_public: Option<String>,
 
-    #[clap(long)]
+    #[arg(long)]
     /// Secret name used while adding to kubernetes
     pub secret_name: Option<String>,
 }

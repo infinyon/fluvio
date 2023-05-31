@@ -30,6 +30,7 @@ impl dyn ContextStore {
 impl ContextStore for &dyn SecretStore {
     fn extract_context_values(&self, input: &str) -> anyhow::Result<Value> {
         let connector_config: ConnectorConfig = serde_yaml::from_reader(input.as_bytes())?;
+
         let mut values = HashMap::default();
 
         for secret in connector_config.secrets().iter() {

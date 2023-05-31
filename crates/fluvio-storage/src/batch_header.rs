@@ -18,6 +18,7 @@ impl BatchRecords for FileEmptyRecords {
 }
 
 #[cfg(test)]
+#[cfg(feature = "fixture")]
 mod tests {
 
     use std::env::temp_dir;

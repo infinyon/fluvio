@@ -60,6 +60,10 @@ setup_file() {
     export TOPIC_NAME_12
     debug_msg "Topic name: $TOPIC_NAME_12"
 
+    TOPIC_NAME_13=$(random_string)
+    export TOPIC_NAME_13
+    debug_msg "Topic name: $TOPIC_NAME_13"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -78,6 +82,9 @@ setup_file() {
 
     LZ4_MESSAGE="$MESSAGE-LZ4"
     export LZ4_MESSAGE
+
+    ZSTD_MESSAGE="$MESSAGE-ZSTD"
+    export ZSTD_MESSAGE
 
     LINGER_MESSAGE="$MESSAGE-LINGER"
     export LINGER_MESSAGE
@@ -129,6 +136,8 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_12"
     assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_13" --compression-type zstd
+    assert_success
 }
 
 # Produce message 
@@ -144,6 +153,8 @@ teardown_file() {
     run bash -c 'echo -e "$SNAPPY_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_5" --compression snappy'
     assert_success
     run bash -c 'echo -e "$LZ4_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_6" --compression lz4'
+    assert_success
+    run bash -c 'echo -e "$ZSTD_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_13" --compression zstd'
     assert_success
     run bash -c 'echo -e "$LINGER_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_7" --linger 0s'
     assert_success
@@ -208,6 +219,13 @@ teardown_file() {
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_6" -B -d
 
     assert_output --partial "$LZ4_MESSAGE"
+    assert_success
+}
+
+@test "Consume zstd message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_13" -B -d
+
+    assert_output --partial "$ZSTD_MESSAGE"
     assert_success
 }
 

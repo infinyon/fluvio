@@ -21,11 +21,11 @@ use crate::cli::ClusterCliError;
 #[derive(Debug, Parser)]
 pub struct UnregisterCustomSpuOpt {
     /// SPU id
-    #[clap(short = 'i', long = "id", required_unless_present = "name")]
+    #[arg(short = 'i', long = "id", required_unless_present = "name")]
     id: Option<i32>,
 
     /// SPU name
-    #[clap(
+    #[arg(
         short = 'n',
         long = "name",
         value_name = "string",

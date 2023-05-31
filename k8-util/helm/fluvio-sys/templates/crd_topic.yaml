@@ -80,6 +80,7 @@ spec:
                     - Gzip
                     - Snappy
                     - Lz4
+                    - Zstd
                 storage:
                   type: object
                   properties:

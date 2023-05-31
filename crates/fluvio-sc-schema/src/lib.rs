@@ -83,12 +83,15 @@ mod error {
 
 mod admin {
 
-    use std::fmt::Debug;
+    use std::{fmt::Debug};
 
-    use fluvio_protocol::{Encoder, Decoder};
+    use anyhow::{Result};
+
+    use fluvio_protocol::{Encoder, Decoder, Version};
     use fluvio_controlplane_metadata::{store::MetadataStoreObject};
 
     use crate::objects::Metadata;
+    use crate::objects::classic::ClassicCreatableAdminSpec;
 
     use super::core::{Spec};
 
@@ -112,11 +115,16 @@ mod admin {
     }
 
     /// Not every Admin Object can be created directly
-    pub trait CreatableAdminSpec: Spec + Encoder + Decoder {
-        const CREATE_TYPE: u8;
-    }
+    pub trait CreatableAdminSpec: ClassicCreatableAdminSpec + Spec + Encoder + Decoder {}
 
     pub trait DeletableAdminSpec: Spec + Encoder + Decoder {
         type DeleteKey: Encoder + Decoder + Debug + Default;
+    }
+
+    /// try to encode type object into dynamic type which can be downcast later
+    pub trait TryEncodableFrom<T>: Sized + Encoder + Decoder {
+        fn try_encode_from(value: T, version: Version) -> Result<Self>;
+
+        fn downcast(&self) -> Result<Option<T>>;
     }
 }

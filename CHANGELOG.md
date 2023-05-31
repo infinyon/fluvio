@@ -1,6 +1,113 @@
 # Release Notes
 
-## Platform Version 0.10.8 - UNRELEASED
+## Platform Version 0.10.11 - UNRELEASED
+
+## Platform Version 0.10.10 - 2023-05-26
+
+### Added
+
+* Add more multiplexing_test ([#3249](https://github.com/infinyon/fluvio/issues/3249))
+* Cdk deploy log level support ([#3278](https://github.com/infinyon/fluvio/issues/3278))
+* Introduce zstd compression ([#3185](https://github.com/infinyon/fluvio/issues/3185))
+
+### CI
+
+* Update connector-publish.yml ([#3255](https://github.com/infinyon/fluvio/issues/3255))
+* Prebuild artifacts for publish and deploy ([#3252](https://github.com/infinyon/fluvio/issues/3252))
+* Cleanup after publishing packages ([#3259](https://github.com/infinyon/fluvio/issues/3259))
+* Fix udeps issue ([#3280](https://github.com/infinyon/fluvio/issues/3280))
+
+### Fixed
+* Improve error logs while rendering interpolated strings ([#3266](https://github.com/infinyon/fluvio/issues/3266))
+
+### Other
+
+* Use kebab case for group names on hub packages ([#3264](https://github.com/infinyon/fluvio/issues/3264))
+* Improve Feedback on CDK ([#3243](https://github.com/infinyon/fluvio/issues/3243))
+* Set compression algorithm behind feature flag ([#3275](https://github.com/infinyon/fluvio/issues/3275))
+
+## Platform Version 0.10.9 - 2023-05-11
+
+### Added
+
+* Simplified control plane api ([#3073](https://github.com/infinyon/fluvio/issues/3073))
+* Add helper method to get utf8 from data ([#3236](https://github.com/infinyon/fluvio/issues/3236))
+* Move x records outputed from smdk test to --verbose #3169 ([#3234](https://github.com/infinyon/fluvio/issues/3234))
+* Add message about record too large on produce cli ([#3242](https://github.com/infinyon/fluvio/issues/3242))
+
+### CI
+
+* `cdk build` uses a default target ([#3222](https://github.com/infinyon/fluvio/issues/3222))
+* `cdk test` and `cdk deploy` uses a default target ([#3247](https://github.com/infinyon/fluvio/issues/3247))
+* Remove existing `.hub` when packing connectors ([#3227](https://github.com/infinyon/fluvio/issues/3227))
+* Add materialize view rfc ([#3232](https://github.com/infinyon/fluvio/issues/3232))
+
+### Changed
+
+* Update third party dep ([#3220](https://github.com/infinyon/fluvio/issues/3220))
+
+### Other
+
+* Use current git rev for generated connector project ([#3225](https://github.com/infinyon/fluvio/issues/3225))
+* Use `.hub` and `.DS_Store` for gitignore ([#3239](https://github.com/infinyon/fluvio/issues/3239))
+* Ensure readme is included in manifest ([#3230](https://github.com/infinyon/fluvio/issues/3230))
+
+### Removed
+
+* Remove deprecated code related to clap ([#3228](https://github.com/infinyon/fluvio/issues/3228))
+* Update third party and remove circular dep ([#3241](https://github.com/infinyon/fluvio/issues/3241))
+
+## Platform Version 0.10.8 - 2023-05-03
+
+### Added
+
+* Add toml-diff to workspace ([#3191](https://github.com/infinyon/fluvio/issues/3191))
+* Secrets in connector meta ([#3194](https://github.com/infinyon/fluvio/issues/3194))
+* Add support to string interpolation ([#3138](https://github.com/infinyon/fluvio/issues/3138))
+* Support k8 v1.26 ([#3196](https://github.com/infinyon/fluvio/issues/3196))
+* Added keymgmt roundtrip test ([#3199](https://github.com/infinyon/fluvio/issues/3199))
+* Add binary to manifest of connector meta ([#3203](https://github.com/infinyon/fluvio/issues/3203))
+* Add max_bytes to connector consumer option ([#3209](https://github.com/infinyon/fluvio/issues/3209))
+
+### CI
+
+* Use workspace deps for serde_yaml ([#3140](https://github.com/infinyon/fluvio/issues/3140))
+* Update cargo-generate to release version ([#3166](https://github.com/infinyon/fluvio/issues/3166))
+* Updates for rust 1.69 ([#3179](https://github.com/infinyon/fluvio/issues/3179))
+* Post release 0.10.7 notes ([#3176](https://github.com/infinyon/fluvio/issues/3176))
+
+### Changed
+
+* Update dep ([#3160](https://github.com/infinyon/fluvio/issues/3160))
+
+### Fixed
+
+* Enable test again on CI ([#3132](https://github.com/infinyon/fluvio/issues/3132))
+* Properly close multiplexer ([#3170](https://github.com/infinyon/fluvio/issues/3170))
+* Minor code changes for pem 2 dep update ([#3172](https://github.com/infinyon/fluvio/issues/3172))
+* Fix toolchain reference ([#3180](https://github.com/infinyon/fluvio/issues/3180))
+* Fix aggregate-initial description and organize Producer/Consumer options ([#3177](https://github.com/infinyon/fluvio/issues/3177))
+* Use `.hub` over `hub` and delete if exists ([#3193](https://github.com/infinyon/fluvio/issues/3193))
+* Fix fluvio hub utils ([#3198](https://github.com/infinyon/fluvio/issues/3198))
+* Add tests to `SecretName` struct ([#3200](https://github.com/infinyon/fluvio/issues/3200))
+
+### Other
+
+* Parse input as boolean ([#3157](https://github.com/infinyon/fluvio/issues/3157))
+* Improve modularity of smartengine ([#3152](https://github.com/infinyon/fluvio/issues/3152))
+* Explicit set of errors to retry ([#3137](https://github.com/infinyon/fluvio/issues/3137))
+* K8ClusterStateDispatcher start returns handle ([#3173](https://github.com/infinyon/fluvio/issues/3173))
+* Upgrade wasmtime to 0.8.0 and dep ([#3175](https://github.com/infinyon/fluvio/issues/3175))
+* Introduce utilily to check k8s resource names ([#3163](https://github.com/infinyon/fluvio/issues/3163))
+* Clean up dep ([#3189](https://github.com/infinyon/fluvio/issues/3189))
+* Move more dep to workspace ([#3190](https://github.com/infinyon/fluvio/issues/3190))
+* Introduce `apiVersion` to `ConnectorConfig` in order to allow backward c… ([#3206](https://github.com/infinyon/fluvio/issues/3206))
+
+### Removed
+
+* Remove manual enum encoding/decoding ([#3165](https://github.com/infinyon/fluvio/issues/3165))
+* Remove unused dep in storage and move dep to workspace ([#3181](https://github.com/infinyon/fluvio/issues/3181))
+* Remove package ([#3188](https://github.com/infinyon/fluvio/issues/3188))
 
 ## Platform Version 0.10.7 - 2023-04-17
 * Apply SmartModule Transformation For Producer ([#3014](https://github.com/infinyon/fluvio/issues/3014))

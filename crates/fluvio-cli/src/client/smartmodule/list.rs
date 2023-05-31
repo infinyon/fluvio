@@ -18,7 +18,7 @@ pub struct ListSmartModuleOpt {
     #[clap(flatten)]
     output: OutputFormat,
 
-    #[clap(long)]
+    #[arg(long)]
     filter: Option<String>,
 }
 

@@ -17,23 +17,23 @@ use crate::cli::ClusterCliError;
 #[derive(Debug, Parser)]
 pub struct RegisterCustomSpuOpt {
     /// SPU id
-    #[clap(short = 'i', long = "id")]
+    #[arg(short = 'i', long = "id")]
     id: i32,
 
     /// SPU name
-    #[clap(short = 'n', long = "name", value_name = "string")]
+    #[arg(short = 'n', long = "name", value_name = "string")]
     name: Option<String>,
 
     /// Rack name
-    #[clap(short = 'r', long = "rack", value_name = "string")]
+    #[arg(short = 'r', long = "rack", value_name = "string")]
     rack: Option<String>,
 
     /// Public server::port
-    #[clap(short = 'p', long = "public-server", value_name = "host:port")]
+    #[arg(short = 'p', long = "public-server", value_name = "host:port")]
     public_server: String,
 
     /// Private server::port
-    #[clap(short = 'v', long = "private-server", value_name = "host:port")]
+    #[arg(short = 'v', long = "private-server", value_name = "host:port")]
     private_server: String,
 }
 

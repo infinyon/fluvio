@@ -18,7 +18,7 @@ pub enum CdkCommand {
     Deploy(DeployCmd),
     Publish(PublishCmd),
 
-    #[clap(name = "set-public")]
+    #[command(name = "set-public")]
     SetPublic(SetPublicCmd),
 }
 
@@ -38,11 +38,19 @@ impl CdkCommand {
 #[derive(Debug, Parser)]
 pub struct PackageCmd {
     /// Release profile name
-    #[clap(long, default_value = "release")]
+    #[arg(long, default_value = "release")]
     pub release: String,
 
+    /// Provide target platform for the package. Optional.
+    /// By default the host's one is used.
+    #[arg(
+        long,
+        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
+    )]
+    pub target: String,
+
     /// Optional package/project name
-    #[clap(long, short)]
+    #[arg(long, short)]
     pub package_name: Option<String>,
 }
 
@@ -51,6 +59,7 @@ impl PackageCmd {
         PackageOption {
             release: self.release.clone(),
             package_name: self.package_name.clone(),
+            target: self.target.clone(),
         }
     }
 }

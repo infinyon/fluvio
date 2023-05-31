@@ -13,7 +13,7 @@ use crate::install_channel_fluvio_bin;
 #[derive(Debug, Clone, Parser, Eq, PartialEq)]
 pub struct CreateOpt {
     /// Path to alternate channel config
-    #[clap(long)]
+    #[arg(long)]
     config: Option<PathBuf>,
     /// Name of release channel
     channel: Option<String>,
@@ -22,12 +22,12 @@ pub struct CreateOpt {
     /// Path to fluvio extensions directory for channel
     extensions_path: Option<PathBuf>,
     /// Type of Docker image tag strategy (choices: Version, VersionGit, Git)
-    #[clap(value_enum)]
+    #[arg(value_enum)]
     image_tag_strategy: Option<ImageTagStrategy>,
     // Do I need this flag?
     //update: Option<bool>,
     /// Display this help message
-    #[clap(short, long)]
+    #[arg(short, long)]
     help: bool,
 }
 

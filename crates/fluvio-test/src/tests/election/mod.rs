@@ -14,7 +14,7 @@ use fluvio_test_case_derive::MyTestCase;
 const ACK_WAIT: u64 = 20;
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq, MyTestCase)]
-#[clap(name = "Fluvio ELECTION Test")]
+#[command(name = "Fluvio ELECTION Test")]
 pub struct ElectionTestOption {}
 
 #[fluvio_test(topic = "test", async)]

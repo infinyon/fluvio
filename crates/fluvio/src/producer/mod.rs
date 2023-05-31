@@ -14,12 +14,13 @@ use fluvio_types::event::StickyEvent;
 mod accumulator;
 mod config;
 mod error;
-pub mod event;
 mod output;
 mod record;
 mod partitioning;
 mod partition_producer;
 mod memory_batch;
+
+pub mod event;
 
 pub use fluvio_protocol::record::{RecordKey, RecordData};
 
@@ -341,6 +342,12 @@ impl TopicProducer {
                     Some(Compression::Lz4) | None => Compression::Lz4,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({compression_config}) does not match with topic level compression (lz4)"),
+                    )).into()),
+                },
+                CompressionAlgorithm::Zstd => match config.compression {
+                    Some(Compression::Zstd) | None => Compression::Zstd,
+                    Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        format!("Compression in the producer ({compression_config}) does not match with topic level compression (zstd)" ),
                     )).into()),
                 },
             CompressionAlgorithm::None => match config.compression {

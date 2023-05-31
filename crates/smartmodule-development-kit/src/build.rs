@@ -18,7 +18,7 @@ pub struct BuildCmd {
     package: PackageCmd,
 
     /// Extra arguments to be passed to cargo
-    #[clap(raw = true)]
+    #[arg(raw = true)]
     extra_arguments: Vec<String>,
 }
 

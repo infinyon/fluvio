@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.14.1"
+version = "0.14.3"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"

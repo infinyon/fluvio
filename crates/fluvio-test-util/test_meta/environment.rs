@@ -138,32 +138,32 @@ impl EnvDetail for EnvironmentSetup {
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
 pub struct EnvironmentSetup {
     /// Name of the test
-    #[clap(value_parser = PossibleValuesParser::new(FluvioTestMeta::all_test_names()))]
+    #[arg(value_parser = PossibleValuesParser::new(FluvioTestMeta::all_test_names()))]
     pub test_name: String,
 
     /// Ensure that test starts with a new cluster before test.
     /// Will delete existing cluster. Implies `--cluster-start`
-    #[clap(long)]
+    #[arg(long)]
     pub cluster_start_fresh: bool,
 
     /// attempt to start a new cluster before test
-    #[clap(short = 's', long)]
+    #[arg(short = 's', long)]
     pub cluster_start: bool,
 
     /// delete cluster after test
-    #[clap(short = 'd', long)]
+    #[arg(short = 'd', long)]
     pub cluster_delete: bool,
 
     /// topic name used
-    #[clap(long)]
+    #[arg(long)]
     pub topic_name: Option<String>,
 
     /// # topics - Appends id as "-#" (zero-based) to topic name if > 1
-    #[clap(long, default_value = "1")]
+    #[arg(long, default_value = "1")]
     pub topic: u16,
 
     /// Append random as "-<random>" to topic name (before id, if --num-topics > 1)
-    #[clap(long)]
+    #[arg(long)]
     pub topic_random: bool,
 
     // This is used to randomize topic names
@@ -171,117 +171,117 @@ pub struct EnvironmentSetup {
     pub topic_salt: Option<String>,
 
     /// Segment size (bytes) per topic
-    #[clap(long, default_value = "1000000000")]
+    #[arg(long, default_value = "1000000000")]
     pub topic_segment_size: u32,
 
     /// Max partition size (bytes) per topic
-    #[clap(long, default_value = "10000000000")]
+    #[arg(long, default_value = "10000000000")]
     pub topic_max_partition_size: u64,
 
     /// Retention time per topic
     /// ex. 30s, 15m, 2h, 1w
-    #[clap(long, default_value = "7d", value_parser=parse_duration)]
+    #[arg(long, default_value = "7d", value_parser=parse_duration)]
     pub topic_retention: Duration,
 
     /// Number of replicas per topic
-    #[clap(short, long, default_value = "1")]
+    #[arg(short, long, default_value = "1")]
     pub replication: u16,
 
     /// Number of partitions per topic
-    #[clap(short, long, default_value = "1")]
+    #[arg(short, long, default_value = "1")]
     pub partition: u16,
 
     /// Number of spu
-    #[clap(long, default_value = "1")]
+    #[arg(long, default_value = "1")]
     pub spu: u16,
 
     /// # Producers to use (if test uses them)
-    #[clap(long, default_value = "1")]
+    #[arg(long, default_value = "1")]
     pub producer: u32,
 
     /// Producer batch size (bytes)
-    #[clap(long)]
+    #[arg(long)]
     pub producer_batch_size: Option<usize>,
 
     /// Producer Linger (milliseconds)
-    #[clap(long)]
+    #[arg(long)]
     pub producer_linger: Option<u64>,
 
     /// producer record size (bytes)
-    #[clap(long, default_value = "1000")]
+    #[arg(long, default_value = "1000")]
     pub producer_record_size: usize,
 
     /// producer compression algorithm. (none, gzip, snappy or lz4)
-    #[clap(long)]
+    #[arg(long)]
     pub producer_compression: Option<Compression>,
 
     /// producer delivery semantic. (at-most-once, at-least-once)
-    #[clap(long, default_value = "at-least-once")]
+    #[arg(long, default_value = "at-least-once")]
     pub producer_delivery_semantic: DeliverySemantic,
 
     /// # Consumers to use (if test uses them)
-    #[clap(long, default_value = "1")]
+    #[arg(long, default_value = "1")]
     pub consumer: u32,
 
     // todo: add consumer config options
     /// enable tls
-    #[clap(long)]
+    #[arg(long)]
     pub tls: bool,
 
     /// tls user, only used if tls is used
-    #[clap(long, default_value = "root")]
+    #[arg(long, default_value = "root")]
     pub tls_user: String,
 
     /// run local environment
-    #[clap(long)]
+    #[arg(long)]
     pub local: bool,
 
     /// run develop image, this is for k8. (Run `make minikube_image` first.)
-    #[clap(long)]
+    #[arg(long)]
     pub develop: bool,
 
     // log apply to fluvio client
-    #[clap(long)]
+    #[arg(long)]
     pub client_log: Option<String>,
 
     // log apply to fluvio
-    #[clap(long)]
+    #[arg(long)]
     pub server_log: Option<String>,
 
     // log dir
-    #[clap(long)]
+    #[arg(long)]
     pub log_dir: Option<String>,
 
     /// authorization ConfigMap
-    #[clap(long)]
+    #[arg(long)]
     pub authorization_config_map: Option<String>,
 
     /// skip pre-install checks
-    #[clap(long)]
+    #[arg(long)]
     pub skip_checks: bool,
 
     /// Disable timeout - overrides use of `--timeout`
-    #[clap(long)]
+    #[arg(long)]
     pub disable_timeout: bool,
 
     /// Global timeout for a test. Will report as fail when reached (unless --expect-timeout)
     /// ex. 30s, 15m, 2h, 1w
-    #[clap(long, default_value = "1h", value_parser=parse_duration)]
+    #[arg(long, default_value = "1h", value_parser=parse_duration)]
     pub timeout: Duration,
 
     /// K8: use specific image version
-    #[clap(long)]
+    #[arg(long)]
     pub image_version: Option<String>,
 
     /// K8: use sc address
-    #[clap(long)]
+    #[arg(long)]
     pub proxy_addr: Option<String>,
 
     /// Will report fail unless test times out
-    #[clap(long, conflicts_with = "expect_fail")]
+    #[arg(long, conflicts_with = "expect_fail")]
     pub expect_timeout: bool,
 
     /// Expect a test to fail. (fail-> pass. pass or timeout -> fail)
-    #[clap(long, conflicts_with = "expect_timeout")]
+    #[arg(long, conflicts_with = "expect_timeout")]
     pub expect_fail: bool,
 }

@@ -9,7 +9,7 @@ use crate::charts::ChartConfig;
 #[derive(Debug, Parser)]
 pub struct CheckOpt {
     /// Attempt to fix recoverable errors
-    #[clap(long)]
+    #[arg(long)]
     fix: bool,
 }
 

@@ -131,3 +131,7 @@ In the event that the release automation fails, there is manual cleanup required
   - This should be a regular release tag (x.y.z), not a dev tag (x.y.z+gitcommit)
   - Confirm that the installation script works
     - `curl -fsS https://packages.fluvio.io/v1/install.sh | bash`
+
+### Post Release dep update
+
+* Update third party crates

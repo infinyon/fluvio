@@ -12,10 +12,8 @@ use anyhow::Result;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::{
-    Metadata, MetadataUpdate, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
-};
-use fluvio_sc_schema::AdminSpec;
+use fluvio_sc_schema::objects::{Metadata, MetadataUpdate, ObjectApiWatchRequest, WatchResponse};
+use fluvio_sc_schema::{AdminSpec, TryEncodableFrom};
 
 use super::StoreContext;
 use super::CacheMetadataStoreObject;
@@ -61,9 +59,7 @@ where
     S: Encoder + Decoder + Send + Sync,
     S::Status: Sync + Send + Encoder + Decoder,
     S::IndexKey: Display + Sync + Send,
-    <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
     CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
-    WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
     <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
 {
     pub fn start(
@@ -107,11 +103,15 @@ where
 
                     match item {
                         Some(Ok(watch_response)) => {
-                            let update_result: Result<WatchResponse<S>,_> = watch_response.try_into();
+                            let update_result = watch_response.downcast() as Result<Option<WatchResponse<S>>>;
                             match update_result {
-                                Ok(update) => {
-                                    if let Err(err) = self.sync_metadata(update.inner()).await {
-                                        error!("Processing updates: {}", err);
+                                Ok(update_opt) => {
+                                    if let Some(update) = update_opt {
+                                        if let Err(err) = self.sync_metadata(update.inner()).await {
+                                            error!("Processing updates: {}", err);
+                                        }
+                                    } else {
+                                        error!("invalid update type: {s}", s = S::LABEL);
                                     }
                                 },
                                 Err(err) => {

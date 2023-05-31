@@ -1,6 +1,8 @@
 //!
 //! Command for hub publishing
 
+use std::env::current_dir;
+use std::fs::remove_dir_all;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -19,6 +21,7 @@ use hubutil::packagename_validate;
 use tracing::{debug, info};
 
 use crate::cmd::PackageCmd;
+use crate::utils::build::{BuildOpts, build_connector};
 
 pub const CONNECTOR_TOML: &str = "Connector.toml";
 
@@ -31,34 +34,34 @@ pub struct PublishCmd {
     pub package_meta: Option<String>,
 
     /// don't ask for confirmation of public package publish
-    #[clap(long, default_value = "false")]
+    #[arg(long, default_value = "false")]
     pub public_yes: bool,
 
+    #[arg(long, default_value = "false")]
+    pub no_build: bool,
+
     /// do only the pack portion
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pack: bool,
 
     /// given a packed file do only the push
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     push: bool,
 
-    /// provide target platform for the package. Optional. By default the host's one is used.
-    #[clap(
-        long,
-        default_value_t = current_platform::CURRENT_PLATFORM.to_string()
-    )]
-    target: String,
-
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
+
+    /// Relative path to this connector package README
+    #[clap(long, default_value = "./README.md")]
+    readme: PathBuf,
 }
 
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
-
         let opt = self.package.as_opt();
         let package_info = PackageInfo::from_options(&opt)?;
+        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
         info!(
             "publishing package {} from {}",
@@ -66,12 +69,14 @@ impl PublishCmd {
             package_info.package_path().to_string_lossy()
         );
 
-        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
-        if !hubdir.exists() {
-            init_package_template(&package_info, &self.target)?;
-        } else if !self.public_yes {
-            check_package_meta_visiblity(&package_info)?;
+        self.cleanup(&package_info)?;
+
+        if !self.no_build {
+            build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
         }
+
+        init_package_template(&package_info, &self.readme)?;
+        check_package_meta_visiblity(&package_info)?;
 
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
@@ -80,7 +85,7 @@ impl PublishCmd {
                     .as_ref()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                let pkgdata = package_assemble(pkgmetapath, &self.target, &access)?;
+                let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
                 package_push(self, &pkgdata, &access)?;
             }
 
@@ -91,7 +96,7 @@ impl PublishCmd {
                     .as_ref()
                     .map(PathBuf::from)
                     .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                package_assemble(pkgmetapath, &self.target, &access)?;
+                package_assemble(pkgmetapath, &opt.target, &access)?;
             }
 
             // --push only, needs ipkg file
@@ -102,6 +107,22 @@ impl PublishCmd {
                     .ok_or_else(|| anyhow::anyhow!("package file required for push"))?;
                 package_push(self, pkgfile, &access)?;
             }
+        }
+
+        if !self.pack {
+            self.cleanup(&package_info)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn cleanup(&self, package_info: &PackageInfo) -> Result<()> {
+        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
+
+        if hubdir.exists() {
+            // Delete the `.hub` directory if already exists
+            tracing::warn!("Removing directory at {:?}", hubdir);
+            remove_dir_all(&hubdir)?;
         }
 
         Ok(())
@@ -133,17 +154,29 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
             verify_public_or_exit()?;
         }
     }
-    if let Err(e) = run_block_on(hubutil::push_package_conn(pkgpath, access, &opts.target)) {
+    if let Err(e) = run_block_on(hubutil::push_package_conn(
+        pkgpath,
+        access,
+        &opts.package.target,
+    )) {
         eprintln!("{e}");
         std::process::exit(1);
     }
     Ok(())
 }
 
-pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> Result<()> {
+/// Creates a full path from the provided relative path in the context
+/// of this command execution
+fn make_full_path<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+    let mut full_path = current_dir()?;
+
+    full_path.push(path);
+    Ok(full_path)
+}
+
+pub fn init_package_template(package_info: &PackageInfo, readme_path: &PathBuf) -> Result<()> {
     let connector_toml_path = find_connector_toml(package_info)?;
     let connector_metadata = ConnectorMetadata::from_toml_file(&connector_toml_path)?;
-
     let mut pm = PackageMeta {
         group: "no-hubid".into(),
         name: "not-found".into(),
@@ -151,7 +184,7 @@ pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> R
         manifest: Vec::new(),
         ..PackageMeta::default()
     };
-
+    let readme_path = make_full_path(readme_path)?;
     let package_hub_path = package_info.package_relative_path(hubutil::DEF_HUB_INIT_DIR);
     if package_hub_path.exists() {
         return Err(anyhow::anyhow!("package hub directory exists already"));
@@ -168,10 +201,15 @@ pub fn init_package_template(package_info: &PackageInfo, binary_arch: &str) -> R
             .unwrap_or_else(|| connector_toml_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
     );
 
-    let binary_path = package_info.target_bin_path_for_arch(binary_arch)?;
+    let binary_path = package_info.target_bin_path()?;
     let binary_relative_path = package_meta_relative_path(&package_meta_path, &binary_path);
     pm.manifest.push(
         binary_relative_path.unwrap_or_else(|| binary_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute
+    );
+
+    let readme_md_relative_path = package_meta_relative_path(&package_meta_path, &readme_path);
+    pm.manifest.push(
+        readme_md_relative_path.unwrap_or_else(|| readme_path.to_string_lossy().to_string()), // if failed to get relative path, use absolute)
     );
 
     println!("Creating package {}", pm.pkg_name());
@@ -213,10 +251,10 @@ fn from_connectorvis(cv: &ConnectorVisibility) -> PkgVisibility {
 }
 
 pub(crate) fn find_connector_toml(package_info: &PackageInfo) -> Result<PathBuf> {
-    let smartmodule_toml = package_info.package_relative_path(CONNECTOR_TOML);
+    let connector_toml = package_info.package_relative_path(CONNECTOR_TOML);
 
-    if smartmodule_toml.exists() {
-        return Ok(smartmodule_toml);
+    if connector_toml.exists() {
+        return Ok(connector_toml);
     }
 
     Err(anyhow::anyhow!("No \"{}\" file found", CONNECTOR_TOML))

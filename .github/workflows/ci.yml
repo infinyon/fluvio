@@ -20,6 +20,7 @@ on:
       - "**"
       - "!/*.md"
       - "!/**.md"
+      - "!/rfc/**"
   workflow_dispatch:
     inputs:
       verbose:
@@ -277,7 +278,7 @@ jobs:
         if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
 
       - name: Build fluvio
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'fluvio'
         run: make build-cli
 
@@ -288,47 +289,47 @@ jobs:
           sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64  
 
       - name: Build fluvio.exe
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'fluvio.exe'
         run: make build-cli-minimal
 
       - name: Build fluvio-run
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'fluvio-run'
         run: make build-cluster
 
       - name: Build fluvio-channel
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'fluvio-channel'
         run: make build-channel
 
       - name: Build fluvio-channel.exe
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'fluvio-channel.exe'
         run: make build-channel
 
       - name: Build smdk
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'smdk'
         run: make build-smdk
 
       - name: Build smdk.exe
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'smdk.exe'
         run: make build-smdk
       
       - name: Build cdk
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'cdk'
         run: make build-cdk
 
       - name: Build fbm
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'fbm'
         run: make build-fbm
 
       - name: Build fbm.exe
-        timeout-minutes: 30
+        timeout-minutes: 40
         if: matrix.binary == 'fbm.exe'
         run: make build-fbm
 
@@ -1031,7 +1032,6 @@ jobs:
           max_attempts: 3
           command: make cli-fluvio-smoke
 
-      
       # test smdk
       - name: Download artifact - smdk
         if: matrix.test == 'smdk'

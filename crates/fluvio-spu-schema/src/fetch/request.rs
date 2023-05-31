@@ -7,6 +7,7 @@ use fluvio_protocol::derive::FluvioDefault;
 use fluvio_protocol::record::RecordSet;
 use fluvio_types::PartitionId;
 
+use crate::COMMON_VERSION;
 use crate::isolation::Isolation;
 
 use super::FetchResponse;
@@ -51,8 +52,7 @@ where
     const API_KEY: u16 = 1;
 
     const MIN_API_VERSION: i16 = 0;
-    const MAX_API_VERSION: i16 = 10;
-    const DEFAULT_API_VERSION: i16 = 10;
+    const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
 
     type Response = FetchResponse<R>;
 }

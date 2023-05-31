@@ -1,3 +1,4 @@
+apiVersion: 0.1.0
 meta:
   version: 0.1.0
   name: my-test-mqtt
@@ -10,6 +11,7 @@ meta:
     compression: gzip
   consumer:
     partition: 10
+    max_bytes: "1 MB"
   secrets:
     - name: secret1
 transforms:

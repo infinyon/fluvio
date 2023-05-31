@@ -1,14 +1,14 @@
 use fluvio_smartmodule::{smartmodule, SmartOpt, Record, Result};
 
 #[derive(SmartOpt)]
-pub struct FilterOpt{
-    key: String
+pub struct FilterOpt {
+    key: String,
 }
 
-impl Default for FilterOpt{
-    fn default() -> Self{
-        Self{
-            key: "a".to_string()
+impl Default for FilterOpt {
+    fn default() -> Self {
+        Self {
+            key: "a".to_string(),
         }
     }
 }

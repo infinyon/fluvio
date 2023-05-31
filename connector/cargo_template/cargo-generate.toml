@@ -1,3 +1,7 @@
+[placeholders.fluvio-cargo-dependency-hash]
+type = "string"
+prompt = "Value of commit rev of `fluvio` dependency in Cargo.toml"
+
 [placeholders.project-group]
 type = "string"
 prompt = "Please set a group name"

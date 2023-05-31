@@ -36,7 +36,7 @@ impl TestCase {
 
 #[derive(Debug, Clone, Parser, Eq, PartialEq)]
 pub enum TestCli {
-    #[clap(external_subcommand)]
+    #[command(external_subcommand)]
     Args(Vec<String>),
 }
 
@@ -47,7 +47,7 @@ impl Default for TestCli {
 }
 
 #[derive(Debug, Clone, Parser, Default, Eq, PartialEq)]
-#[clap(
+#[command(
     name = "fluvio-test-runner",
     about = "Test fluvio platform",
     // AppSettings::ColoredHelp is on by default.

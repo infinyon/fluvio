@@ -27,31 +27,31 @@ mod cmd {
     use super::list::ListTopicsOpt;
 
     #[derive(Debug, Parser)]
-    #[clap(name = "topic", about = "Topic operations")]
+    #[command(name = "topic", about = "Topic operations")]
     pub enum TopicCmd {
         /// Create a Topic with the given name
-        #[clap(
+        #[command(
             name = "create",
             help_template = COMMAND_TEMPLATE,
         )]
         Create(CreateTopicOpt),
 
         /// Delete one or more Topics with the given name(s)
-        #[clap(
+        #[command(
             name = "delete",
             help_template = COMMAND_TEMPLATE,
         )]
         Delete(DeleteTopicOpt),
 
         /// Print detailed information about a Topic
-        #[clap(
+        #[command(
             name = "describe",
             help_template = COMMAND_TEMPLATE,
         )]
         Describe(DescribeTopicsOpt),
 
         /// List all of the Topics in the cluster
-        #[clap(
+        #[command(
             name = "list",
             help_template = COMMAND_TEMPLATE,
         )]

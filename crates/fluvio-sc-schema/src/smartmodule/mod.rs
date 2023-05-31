@@ -6,13 +6,7 @@ mod convert {
 
     use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmSummary, SmartModuleWasm};
 
-    use crate::{
-        AdminSpec, CreatableAdminSpec, DeletableAdminSpec,
-        objects::{
-            CreateFrom, DeleteRequest, ListRequest, ListResponse, ObjectFrom, ObjectTryFrom,
-            WatchRequest, WatchResponse,
-        },
-    };
+    use crate::{AdminSpec, CreatableAdminSpec, DeletableAdminSpec};
     use super::SmartModuleSpec;
 
     impl AdminSpec for SmartModuleSpec {
@@ -27,21 +21,9 @@ mod convert {
         }
     }
 
-    impl CreatableAdminSpec for SmartModuleSpec {
-        const CREATE_TYPE: u8 = 4;
-    }
+    impl CreatableAdminSpec for SmartModuleSpec {}
 
     impl DeletableAdminSpec for SmartModuleSpec {
         type DeleteKey = String;
     }
-
-    CreateFrom!(SmartModuleSpec, SmartModule);
-    ObjectFrom!(WatchRequest, SmartModule);
-    ObjectFrom!(WatchResponse, SmartModule);
-    ObjectFrom!(ListRequest, SmartModule);
-    ObjectFrom!(ListResponse, SmartModule);
-    ObjectFrom!(DeleteRequest, SmartModule);
-
-    ObjectTryFrom!(WatchResponse, SmartModule);
-    ObjectTryFrom!(ListResponse, SmartModule);
 }

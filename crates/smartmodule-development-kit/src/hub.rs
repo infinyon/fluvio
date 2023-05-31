@@ -24,10 +24,10 @@ pub enum HubCmd {
 pub struct IdOpt {
     hubid: Option<String>,
 
-    #[clap(long, short)]
+    #[arg(long, short)]
     verbose: bool,
 
-    #[clap(long, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     remote: Option<String>,
 }
 

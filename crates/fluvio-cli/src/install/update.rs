@@ -20,11 +20,11 @@ const FLUVIO_CHANNEL_PACKAGE_ID: &str = "fluvio/fluvio-channel";
 #[derive(Parser, Debug)]
 pub struct UpdateOpt {
     /// Update to the latest prerelease rather than the latest release
-    #[clap(long)]
+    #[arg(long)]
     pub develop: bool,
 
     /// Print output for update process but do not install updates
-    #[clap(long)]
+    #[arg(long)]
     pub dry_run: bool,
 
     // The fluvio-channel binary changes less frequently

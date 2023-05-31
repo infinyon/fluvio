@@ -411,7 +411,7 @@ mod tests {
 
     use openapiv3::ObjectType;
 
-    use crate::config::MetaConfig;
+    use crate::config::{MetaConfig, ConnectorConfigV1};
 
     use super::*;
 
@@ -420,20 +420,20 @@ mod tests {
         //given
         let source = Direction::source();
         let dest = Direction::dest();
-        let source_config = ConnectorConfig {
+        let source_config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 type_: "http-source".into(),
                 ..Default::default()
             },
             ..Default::default()
-        };
-        let sink_config = ConnectorConfig {
+        });
+        let sink_config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 type_: "http-sink".into(),
                 ..Default::default()
             },
             ..Default::default()
-        };
+        });
 
         //when
         validate_direction(&source, &source_config).unwrap();
@@ -455,14 +455,14 @@ mod tests {
     #[test]
     fn test_validate_deployment() {
         //given
-        let config = ConnectorConfig {
+        let config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
             meta: MetaConfig {
                 type_: "http_source".into(),
                 version: "latest".into(),
                 ..Default::default()
             },
             ..Default::default()
-        };
+        });
         let deployment1 = Deployment::from_image_name("infinyon/fluvio-connect-http_source:latest");
         let deployment2 = Deployment::from_image_name("infinyon/fluvio-connect-http_sink:latest");
         let deployment3 = Deployment::from_binary_name("http_sink_bin");

@@ -3,18 +3,18 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use fluvio_protocol::{Encoder, Decoder};
+use anyhow::Result;
+
+use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::api::{Request};
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 
-use crate::{AdminPublicApiKey, AdminSpec};
+use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};
 use crate::core::Spec;
 
-use super::{Metadata, ObjectApiEnum, COMMON_VERSION};
-
-ObjectApiEnum!(WatchRequest);
-ObjectApiEnum!(WatchResponse);
+use super::classic::{ClassicObjectApiEnum, ClassicDecoding};
+use super::{Metadata, COMMON_VERSION, TypeBuffer};
 
 /// Watch resources
 /// Argument epoch is not being used, it is always 0
@@ -38,10 +38,43 @@ where
     }
 }
 
+#[derive(Debug, Default, Encoder)]
+pub struct ObjectApiWatchRequest(TypeBuffer);
+
+impl<S> TryEncodableFrom<WatchRequest<S>> for ObjectApiWatchRequest
+where
+    S: AdminSpec,
+{
+    fn try_encode_from(input: WatchRequest<S>, version: Version) -> Result<Self> {
+        Ok(Self(TypeBuffer::encode::<S, _>(input, version)?))
+    }
+
+    fn downcast(&self) -> Result<Option<WatchRequest<S>>> {
+        self.0.downcast::<S, _>()
+    }
+}
+
 impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
     type Response = ObjectApiWatchResponse;
+}
+
+#[derive(Debug, Default, Encoder)]
+pub struct ObjectApiWatchResponse(TypeBuffer);
+
+impl<S> TryEncodableFrom<WatchResponse<S>> for ObjectApiWatchResponse
+where
+    S: AdminSpec,
+    S::Status: Encoder + Decoder,
+{
+    fn try_encode_from(input: WatchResponse<S>, version: Version) -> Result<Self> {
+        Ok(Self(TypeBuffer::encode::<S, _>(input, version)?))
+    }
+
+    fn downcast(&self) -> Result<Option<WatchResponse<S>>> {
+        self.0.downcast::<S, _>()
+    }
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
@@ -99,3 +132,9 @@ where
         }
     }
 }
+
+// for supporting classic, this should go away after we remove classic
+ClassicObjectApiEnum!(WatchRequest);
+ClassicObjectApiEnum!(WatchResponse);
+ClassicDecoding!(WatchRequest);
+ClassicDecoding!(WatchResponse);

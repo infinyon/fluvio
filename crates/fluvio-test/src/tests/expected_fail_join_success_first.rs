@@ -17,7 +17,7 @@ impl From<TestCase> for ExpectedFailJoinSuccessFirstTestCase {
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(name = "Fluvio Expected FailJoinSuccessFirst Test")]
+#[command(name = "Fluvio Expected FailJoinSuccessFirst Test")]
 pub struct ExpectedFailJoinSuccessFirstTestOption {}
 impl TestOption for ExpectedFailJoinSuccessFirstTestOption {
     fn as_any(&self) -> &dyn Any {

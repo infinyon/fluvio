@@ -2,7 +2,7 @@ use cargo_builder::package::PackageOption;
 use clap::Parser;
 use anyhow::Result;
 
-use crate::build::BuildCmd;
+use crate::build::{BuildCmd, BUILD_TARGET};
 use crate::generate::GenerateCmd;
 use crate::test::TestCmd;
 use crate::load::LoadCmd;
@@ -22,10 +22,10 @@ pub enum SmdkCommand {
     /// Publish SmartModule to Hub
     Publish(PublishCmd),
     /// Hub options
-    #[clap(subcommand, hide = true)]
+    #[command(subcommand, hide = true)]
     Hub(HubCmd),
     /// Set package as public
-    #[clap(name = "set-public")]
+    #[command(name = "set-public")]
     SetPublic(SetPublicOpt),
 }
 
@@ -46,11 +46,11 @@ impl SmdkCommand {
 #[derive(Debug, Parser)]
 pub(crate) struct PackageCmd {
     /// Release profile name
-    #[clap(long, default_value = "release-lto")]
+    #[arg(long, default_value = "release-lto")]
     pub release: String,
 
     /// Optional package/project name
-    #[clap(long, short)]
+    #[arg(long, short)]
     pub package_name: Option<String>,
 }
 
@@ -59,6 +59,7 @@ impl PackageCmd {
         PackageOption {
             release: self.release.clone(),
             package_name: self.package_name.clone(),
+            target: BUILD_TARGET.to_string(),
         }
     }
 }

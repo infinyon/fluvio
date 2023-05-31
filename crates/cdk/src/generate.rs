@@ -18,11 +18,11 @@ pub struct GenerateCmd {
 
     /// Local path to generate the SmartConnector project.
     /// Default to directory with project name, created in current directory
-    #[clap(long, env = "CDK_DESTINATION", value_name = "PATH")]
+    #[arg(long, env = "CDK_DESTINATION", value_name = "PATH")]
     destination: Option<PathBuf>,
 
     /// Disable interactive prompt. Take all values from CLI flags. Fail if a value is missing.
-    #[clap(long, action, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     silent: bool,
 }
 
@@ -42,12 +42,16 @@ impl GenerateCmd {
             ..Default::default()
         };
 
+        let fluvio_dependency_version_hash =
+            format!("fluvio-cargo-dependency-hash={}", env!("GIT_HASH"));
+
         let args = GenerateArgs {
             name: self.name,
             template_path,
             verbose: !self.silent,
             silent: self.silent,
             destination: self.destination,
+            define: vec![fluvio_dependency_version_hash],
             ..Default::default()
         };
 

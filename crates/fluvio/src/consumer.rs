@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use fluvio_types::PartitionId;
+use anyhow::Result;
 use tracing::{debug, error, trace, instrument, info, warn};
 use futures_util::stream::{Stream, select_all};
 use once_cell::sync::Lazy;
@@ -8,6 +8,7 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
+use fluvio_types::PartitionId;
 use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
 use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
@@ -86,24 +87,26 @@ where
     /// stream using an [`Offset`] and periodically receive events, either individually
     /// or in batches.
     ///
+    /// Note this uses ConsumerRecord instead of batches
+    ///
     /// If you want more fine-grained control over how records are streamed,
     /// check out the [`stream_with_config`] method.
     ///
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{PartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value()).to_string();
-    ///     println!("Got event: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got event: key={:?}, value={value_str}", key_str);
     /// }
     /// # Ok(())
     /// # }
@@ -116,7 +119,7 @@ where
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -138,12 +141,12 @@ where
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{PartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::builder()
@@ -151,9 +154,9 @@ where
     ///     .build()?;
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key: Option<String> = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value());
-    ///     println!("Got record: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got record: key={:?}, value={}", key_str, value_str);
     /// }
     /// # Ok(())
     /// # }
@@ -166,7 +169,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let (stream, start_offset) = self
             .inner_stream_batches_with_config(offset, config)
             .await?;
@@ -194,12 +197,12 @@ where
     /// Continuously streams batches of messages, starting an offset in the consumer's partition
     ///
     /// ```
-    /// # use fluvio::{PartitionConsumer, FluvioError};
+    /// # use fluvio::{PartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &PartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::builder()
@@ -208,9 +211,9 @@ where
     /// let mut stream = consumer.stream_batches_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(batch)) = stream.next().await {
     ///     for record in batch.records() {
-    ///         let key = record.key.as_ref().map(|key| String::from_utf8_lossy(key.as_ref()).to_string());
-    ///         let value = String::from_utf8_lossy(record.value.as_ref()).to_string();
-    ///         println!("Got record: key={:?}, value={}", key, value);
+    ///         let key_str = record.key().map(|key| key.as_utf8_lossy_string());
+    ///         let value_str = record.value().as_utf8_lossy_string();
+    ///         println!("Got record: key={:?}, value={}", key_str, value_str);
     ///     }
     /// }
     /// # Ok(())
@@ -221,7 +224,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>> {
         let (stream, _start_offset) = self
             .inner_stream_batches_with_config(offset, config)
             .await?;
@@ -235,13 +238,10 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<
-        (
-            impl Stream<Item = Result<Batch, ErrorCode>>,
-            fluvio_protocol::record::Offset,
-        ),
-        FluvioError,
-    > {
+    ) -> Result<(
+        impl Stream<Item = Result<Batch, ErrorCode>>,
+        fluvio_protocol::record::Offset,
+    )> {
         let (stream, start_offset) = self.request_stream(offset, config).await?;
         let metrics = self.metrics.clone();
         let flattened =
@@ -301,13 +301,10 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<
-        (
-            impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
-            fluvio_protocol::record::Offset,
-        ),
-        FluvioError,
-    > {
+    ) -> Result<(
+        impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
+        fluvio_protocol::record::Offset,
+    )> {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
 
@@ -321,15 +318,14 @@ where
 
         debug!(start_absolute_offset, end_absolute_offset, record_count);
 
-        let mut stream_request = DefaultStreamFetchRequest {
-            topic: self.topic.to_owned(),
-            partition: self.partition,
-            fetch_offset: start_absolute_offset,
-            isolation: config.isolation,
-            max_bytes: config.max_bytes,
-            smartmodules: config.smartmodule,
-            ..Default::default()
-        };
+        let stream_request = DefaultStreamFetchRequest::builder()
+            .topic(self.topic.to_owned())
+            .partition(self.partition)
+            .fetch_offset(start_absolute_offset)
+            .isolation(config.isolation)
+            .max_bytes(config.max_bytes)
+            .smartmodules(config.smartmodule)
+            .build()?;
 
         let stream_fetch_version = serial_socket
             .versions()
@@ -339,8 +335,6 @@ where
         if stream_fetch_version < CHAIN_SMARTMODULE_API {
             warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
         }
-
-        stream_request.derivedstream = config.derivedstream;
 
         let mut stream = self
             .pool
@@ -575,9 +569,6 @@ pub struct ConsumerConfig {
     pub(crate) isolation: Isolation,
     #[builder(default)]
     pub(crate) smartmodule: Vec<SmartModuleInvocation>,
-    #[builder(default)]
-    pub(crate) derivedstream:
-        Option<fluvio_spu_schema::server::stream_fetch::DerivedStreamInvocation>,
 }
 
 impl ConsumerConfig {
@@ -587,7 +578,7 @@ impl ConsumerConfig {
 }
 
 impl ConsumerConfigBuilder {
-    pub fn build(&self) -> Result<ConsumerConfig, FluvioError> {
+    pub fn build(&self) -> Result<ConsumerConfig> {
         let config = self.build_impl().map_err(|e| {
             FluvioError::ConsumerConfig(format!("Missing required config option: {e}"))
         })?;
@@ -604,10 +595,7 @@ pub enum PartitionSelectionStrategy {
 }
 
 impl PartitionSelectionStrategy {
-    async fn selection(
-        &self,
-        spu_pool: Arc<SpuPool>,
-    ) -> Result<Vec<(String, PartitionId)>, FluvioError> {
+    async fn selection(&self, spu_pool: Arc<SpuPool>) -> Result<Vec<(String, PartitionId)>> {
         let pairs = match self {
             PartitionSelectionStrategy::All(topic) => {
                 let topics = spu_pool.metadata.topics();
@@ -659,18 +647,18 @@ impl MultiplePartitionConsumer {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{MultiplePartitionConsumer, FluvioError};
+    /// # use fluvio::{MultiplePartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &MultiplePartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &MultiplePartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// let mut stream = consumer.stream(Offset::beginning()).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value()).to_string();
-    ///     println!("Got event: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got event: key={:?}, value={}", key_str, value_str);
     /// }
     /// # Ok(())
     /// # }
@@ -683,7 +671,7 @@ impl MultiplePartitionConsumer {
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -705,12 +693,12 @@ impl MultiplePartitionConsumer {
     /// # Example
     ///
     /// ```
-    /// # use fluvio::{MultiplePartitionConsumer, FluvioError};
+    /// # use fluvio::{MultiplePartitionConsumer};
     /// # use fluvio::{Offset, ConsumerConfig};
     /// # mod futures {
     /// #     pub use futures_util::stream::StreamExt;
     /// # }
-    /// # async fn example(consumer: &MultiplePartitionConsumer) -> Result<(), FluvioError> {
+    /// # async fn example(consumer: &MultiplePartitionConsumer) -> anyhow::Result<()> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
     /// let fetch_config = ConsumerConfig::builder()
@@ -718,9 +706,9 @@ impl MultiplePartitionConsumer {
     ///     .build()?;
     /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
     /// while let Some(Ok(record)) = stream.next().await {
-    ///     let key: Option<String> = record.key().map(|key| String::from_utf8_lossy(key).to_string());
-    ///     let value = String::from_utf8_lossy(record.value());
-    ///     println!("Got record: key={:?}, value={}", key, value);
+    ///     let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
+    ///     let value_str = record.get_value().as_utf8_lossy_string();
+    ///     println!("Got record: key={:?}, value={}", key_str, value_str);
     /// }
     /// # Ok(())
     /// # }
@@ -733,7 +721,7 @@ impl MultiplePartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>> {
         let consumers = self
             .strategy
             .selection(self.pool.clone())

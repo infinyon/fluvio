@@ -40,6 +40,18 @@ teardown_file() {
     assert_failure
 }
 
+# This should fail due to batch too big
+@test "Produce message with internal error Record too large" {
+    run bash -c "yes a | tr -d "\n" |head -c 40000000 > $TOPIC_NAME.txt"
+    run bash -c 'timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --raw --file $TOPIC_NAME.txt'
+    assert_failure
+    if [[ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]]; then
+        skip "don't check output on stable version"
+    fi
+
+    assert_output --partial "Try increasing the producer batch size"
+}
+
 # This should fail due to wrong compression algorithm
 @test "Produce message with wrong compression algorithm" {
     run bash -c 'echo abcdefgh | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_2" --compression lz4'

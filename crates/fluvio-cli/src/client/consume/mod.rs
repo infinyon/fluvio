@@ -72,27 +72,27 @@ mod cmd {
     #[derive(Debug, Parser)]
     pub struct ConsumeOpt {
         /// Topic name
-        #[clap(value_name = "topic")]
+        #[arg(value_name = "topic")]
         pub topic: String,
 
         /// Partition id
-        #[clap(short = 'p', long, default_value = "0", value_name = "integer")]
+        #[arg(short = 'p', long, default_value = "0", value_name = "integer")]
         pub partition: PartitionId,
 
         /// Consume records from all partitions
-        #[clap(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
+        #[arg(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
         pub all_partitions: bool,
 
         /// Disable continuous processing of messages
-        #[clap(short = 'd', long)]
+        #[arg(short = 'd', long)]
         pub disable_continuous: bool,
 
         /// Disable the progress bar and wait spinner
-        #[clap(long)]
+        #[arg(long)]
         pub disable_progressbar: bool,
 
         /// Print records in "[key] value" format, with "[null]" for no key
-        #[clap(short, long)]
+        #[arg(short, long)]
         pub key_value: bool,
 
         /// Provide a template string to print records with a custom format.
@@ -109,49 +109,49 @@ mod cmd {
         /// Would produce a printout where records might look like this:
         ///
         /// Offset 0 has key A and value Apple
-        #[clap(short = 'F', long, conflicts_with_all = &["output"])]
+        #[arg(short = 'F', long, conflicts_with_all = &["output"])]
         pub format: Option<String>,
 
         /// Consume records using the formatting rules defined by TableFormat name
-        #[clap(long)]
+        #[arg(long)]
         pub table_format: Option<String>,
 
         /// Consume records from the beginning of the log
-        #[clap(short = 'B', long,  conflicts_with_all = &["head","start", "tail"])]
+        #[arg(short = 'B', long,  conflicts_with_all = &["head","start", "tail"])]
         pub beginning: bool,
 
         /// Consume records starting <integer> from the beginning of the log
-        #[clap(short = 'H', long, value_name = "integer", conflicts_with_all = &["beginning", "start", "tail"])]
+        #[arg(short = 'H', long, value_name = "integer", conflicts_with_all = &["beginning", "start", "tail"])]
         pub head: Option<u32>,
 
         /// Consume records starting <integer> from the end of the log
-        #[clap(short = 'T', long,  value_name = "integer", conflicts_with_all = &["beginning","head", "start"])]
+        #[arg(short = 'T', long,  value_name = "integer", conflicts_with_all = &["beginning","head", "start"])]
         pub tail: Option<u32>,
 
         /// The absolute offset of the first record to begin consuming from
-        #[clap(long, value_name = "integer", conflicts_with_all = &["beginning", "head", "tail"])]
+        #[arg(long, value_name = "integer", conflicts_with_all = &["beginning", "head", "tail"])]
         pub start: Option<u32>,
 
         /// Consume records until end offset (inclusive)
-        #[clap(long, value_name = "integer")]
+        #[arg(long, value_name = "integer")]
         pub end: Option<u32>,
 
         /// Maximum number of bytes to be retrieved
-        #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
+        #[arg(short = 'b', long = "maxbytes", value_name = "integer")]
         pub max_bytes: Option<i32>,
 
         /// Isolation level that consumer must respect.
         /// Supported values: read_committed (ReadCommitted) - consume only committed records,
         /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
-        #[clap(long, value_parser=parse_isolation)]
+        #[arg(long, value_parser=parse_isolation)]
         pub isolation: Option<Isolation>,
 
         /// Suppress items items that have an unknown output type
-        #[clap(long = "suppress-unknown")]
+        #[arg(long = "suppress-unknown")]
         pub suppress_unknown: bool,
 
         /// Output
-        #[clap(
+        #[arg(
             short = 'O',
             long = "output",
             value_name = "type",
@@ -161,7 +161,7 @@ mod cmd {
         pub output: Option<ConsumeOutputType>,
 
         /// Name of the smartmodule
-        #[clap(
+        #[arg(
             long,
             group("smartmodule_group"),
             group("aggregate_group"),
@@ -170,7 +170,7 @@ mod cmd {
         pub smartmodule: Option<String>,
 
         /// Path to the smart module
-        #[clap(
+        #[arg(
             long,
             group("smartmodule_group"),
             group("aggregate_group"),
@@ -179,30 +179,30 @@ mod cmd {
         pub smartmodule_path: Option<PathBuf>,
 
         /// (Optional) Value to use as an initial accumulator for aggregate SmartModules
-        #[clap(long, requires = "aggregate_group", alias = "a-init")]
+        #[arg(long, requires = "aggregate_group", alias = "a-init")]
         pub aggregate_initial: Option<String>,
 
         /// (Optional) Extra input parameters passed to the smartmodule.
         /// They should be passed using key=value format
         /// Eg. fluvio consume topic-name --smartmodule my_filter -e foo=bar -e key=value -e one=1
-        #[clap(
+        #[arg(
             short = 'e',
             requires = "smartmodule_group",
             long="params",
             value_parser=parse_key_val,
             // value_parser,
             // action,
-            number_of_values = 1
+            num_args = 1
         )]
         pub params: Option<Vec<(String, String)>>,
 
         /// (Optional) Path to a file with transformation specification.
-        #[clap(long, conflicts_with = "smartmodule_group")]
+        #[arg(long, conflicts_with = "smartmodule_group")]
         pub transforms_file: Option<PathBuf>,
 
         /// (Optional) Transformation specification as JSON formatted string.
         /// E.g. fluvio consume topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
-        #[clap(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
+        #[arg(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
         pub transform: Vec<String>,
     }
 
@@ -564,17 +564,18 @@ mod cmd {
             pb: &ProgressRenderer,
         ) {
             let formatted_key = record
-                .key()
-                .map(|key| String::from_utf8_lossy(key).to_string())
-                .unwrap_or_else(|| "null".to_string());
+                .get_key()
+                .map(|key| key.as_utf8_lossy_string())
+                .unwrap_or_else(|| "null".into());
 
             let formatted_value = match (&self.output, templates) {
                 (Some(ConsumeOutputType::json), None) => {
                     format_json(record.value(), self.suppress_unknown)
                 }
-                (Some(ConsumeOutputType::text), None) => {
-                    Some(format_text_record(record.value(), self.suppress_unknown))
-                }
+                (Some(ConsumeOutputType::text), None) => Some(format_text_record(
+                    record.get_value(),
+                    self.suppress_unknown,
+                )),
                 (Some(ConsumeOutputType::binary), None) => {
                     Some(format_binary_record(record.value()))
                 }
@@ -600,7 +601,7 @@ mod cmd {
                     }
                 }
                 (_, Some(templates)) => {
-                    let value = String::from_utf8_lossy(record.value()).to_string();
+                    let value = record.get_value().as_utf8_lossy_string();
                     let timestamp_rfc3339 = if record.timestamp() == NO_TIMESTAMP {
                         "NA".to_string()
                     } else {

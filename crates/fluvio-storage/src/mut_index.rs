@@ -286,6 +286,7 @@ impl DerefMut for MutLogIndex {
 }
 
 #[cfg(test)]
+#[cfg(feature = "fixture")]
 mod tests {
 
     use std::fs::File;

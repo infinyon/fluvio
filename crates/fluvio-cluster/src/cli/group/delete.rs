@@ -16,7 +16,7 @@ use fluvio::metadata::spg::SpuGroupSpec;
 #[derive(Debug, Parser)]
 pub struct DeleteManagedSpuGroupOpt {
     /// The name of the SPU Group to delete
-    #[clap(value_name = "name")]
+    #[arg(value_name = "name")]
     name: String,
 }
 

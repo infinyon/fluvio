@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.18.2"
+version = "0.19.1"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -56,8 +56,8 @@ fluvio-future = { workspace = true, features = [
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-sc-schema = { workspace = true  }
 fluvio-socket = { workspace = true  }
-fluvio-protocol = { workspace = true,  features = [ "record","api"] }
-fluvio-compression = { workspace = true }
+fluvio-protocol = { workspace = true,  features = ["compress", "record","api"] }
+fluvio-compression = { workspace = true, features = ["compress"] }
 fluvio-smartmodule = { workspace = true  }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

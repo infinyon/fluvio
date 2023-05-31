@@ -9,11 +9,11 @@ use fluvio_channel::FluvioChannelConfig;
 #[derive(Debug, Clone, Parser, Eq, PartialEq)]
 pub struct ListOpt {
     /// Path to alternate channel config
-    #[clap(long)]
+    #[arg(long)]
     config: Option<PathBuf>,
 
     /// Display this help message
-    #[clap(short, long)]
+    #[arg(short, long)]
     help: bool,
 }
 

@@ -11,20 +11,20 @@ use fluvio_extension_common::FluvioExtensionMetadata;
 const VERSION: &str = include_str!("../../../VERSION");
 
 #[derive(Debug, Parser)]
-#[clap(version = crate::VERSION)]
+#[command(version = crate::VERSION)]
 pub enum RunCmd {
     /// Run a new Streaming Processing Unit (SPU)
-    #[clap(name = "spu")]
+    #[command(name = "spu")]
     SPU(SpuOpt),
     /// Run a new Streaming Controller (SC)
-    #[clap(name = "sc")]
+    #[command(name = "sc")]
     SC(ScOpt),
     /// Return plugin metadata as JSON
-    #[clap(name = "metadata")]
+    #[command(name = "metadata")]
     Metadata(MetadataOpt),
 
     /// Print version information
-    #[clap(name = "version")]
+    #[command(name = "version")]
     Version(VersionOpt),
 }
 

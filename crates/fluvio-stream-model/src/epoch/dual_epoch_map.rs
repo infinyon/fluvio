@@ -398,6 +398,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "fixtures")]
 mod test {
 
     use crate::fixture::{DefaultTest, TestEpochMap};

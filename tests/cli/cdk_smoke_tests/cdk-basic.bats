@@ -20,14 +20,14 @@ setup_file() {
     CONNECTOR_DIR="$(pwd)/connector/json-test-connector"
     export CONNECTOR_DIR
 
-    CONFIG_FILE_FLAG="--config config-example.yaml"
+    CONFIG_FILE_FLAG="--config sample-config.yaml"
     export CONFIG_FILE_FLAG
 }
 
 @test "Build and test connector" {
     # Test
     cd $CONNECTOR_DIR
-    run $CDK_BIN test \
+    run $CDK_BIN test --target x86_64-unknown-linux-gnu \
         $CONFIG_FILE_FLAG 
     assert_success
 
@@ -39,12 +39,12 @@ setup_file() {
 @test "Build and deploy connector" {
     # Build
     cd $CONNECTOR_DIR
-    run $CDK_BIN build -- --target x86_64-unknown-linux-gnu
+    run $CDK_BIN build --target x86_64-unknown-linux-gnu
     assert_success
 
     # Deploy
     cd $CONNECTOR_DIR
-    run $CDK_BIN deploy start \
+    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start \
         $CONFIG_FILE_FLAG 
     assert_success
 
@@ -67,5 +67,19 @@ setup_file() {
     cd $CONNECTOR_DIR
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
+}
 
+@test "Packs connector with specific README.md" {
+    # Creates a directory to store the dummy readme
+    cd $CONNECTOR_DIR
+
+    mkdir ../testing
+    echo "# Testing Connector Readme" > ../testing/README.md
+
+    run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu --readme ../testing/README.md
+    assert_success
+
+    # Ensure the correct path is added
+    cat ./.hub/package-meta.yaml | grep '../../testing/README.md'
+    assert_success
 }

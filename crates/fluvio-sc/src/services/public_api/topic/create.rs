@@ -9,12 +9,12 @@
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
 //!
 
+use fluvio_sc_schema::objects::CreateRequest;
 use tracing::{info, debug, trace, instrument};
 use anyhow::{anyhow, Result};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
-use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::shared::validate_resource_name;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::topic::TopicSpec;
@@ -29,12 +29,12 @@ use crate::controllers::topics::validate_assigned_topic_parameters;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
-#[instrument(skip(create, auth_ctx))]
-pub async fn handle_create_topics_request<AC: AuthContext>(
-    create: CommonCreateRequest,
-    topic: TopicSpec,
+#[instrument(skip(req, auth_ctx))]
+pub(crate) async fn handle_create_topics_request<AC: AuthContext>(
+    req: CreateRequest<TopicSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status> {
+    let (create, topic) = req.parts();
     let name = create.name;
 
     info!( topic = %name,"creating topic");

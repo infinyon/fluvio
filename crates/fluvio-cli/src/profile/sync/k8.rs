@@ -17,11 +17,11 @@ use crate::common::tls::TlsClientOpt;
 #[derive(Debug, Parser, Default)]
 pub struct K8Opt {
     /// kubernetes namespace,
-    #[clap(long, short, value_name = "namespace")]
+    #[arg(long, short, value_name = "namespace")]
     pub namespace: Option<String>,
 
     /// profile name
-    #[clap(value_name = "name")]
+    #[arg(value_name = "name")]
     pub name: Option<String>,
 
     #[clap(flatten)]

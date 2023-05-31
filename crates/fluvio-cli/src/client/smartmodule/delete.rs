@@ -18,10 +18,10 @@ use crate::error::CliError;
 #[derive(Debug, Parser)]
 pub struct DeleteSmartModuleOpt {
     /// Continue deleting in case of an error
-    #[clap(short, long, action, required = false)]
+    #[arg(short, long, required = false)]
     continue_on_error: bool,
     /// One or more name(s) of the smartmodule(s) to be deleted
-    #[clap(value_name = "name", required = true)]
+    #[arg(value_name = "name", required = true)]
     names: Vec<String>,
 }
 

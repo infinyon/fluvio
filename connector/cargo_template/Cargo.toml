@@ -5,6 +5,6 @@ authors = ["{{authors}}"]
 edition = "2021"
 
 [dependencies]
-fluvio = { git = "https://github.com/infinyon/fluvio", rev = "fece619111485a7e3ed91be429bb7ab6864a79a6"}
-fluvio-connector-common = { git = "https://github.com/infinyon/fluvio", rev = "fece619111485a7e3ed91be429bb7ab6864a79a6", features = ["derive"]}
+fluvio = { git = "https://github.com/infinyon/fluvio", rev = "{{fluvio-cargo-dependency-hash}}" }
+fluvio-connector-common = { git = "https://github.com/infinyon/fluvio", rev = "{{fluvio-cargo-dependency-hash}}", features = ["derive"]}
 serde = { version = "1.0", default-features = false, features = ["derive"]}

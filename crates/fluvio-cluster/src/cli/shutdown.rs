@@ -14,7 +14,7 @@ use crate::ClusterError;
 #[derive(Debug, Parser)]
 pub struct ShutdownOpt {
     /// shutdown local spu/sc
-    #[clap(long)]
+    #[arg(long)]
     local: bool,
 }
 

@@ -19,6 +19,12 @@ on:
       fail-fast:
         type: boolean
         default: true
+      readme:
+        type: string
+        default: "./README.md"
+      public:
+        type: boolean
+        default: true
     secrets:
       CLOUD_USER_EMAIL:
         required: true
@@ -64,7 +70,11 @@ jobs:
           cross build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
+          cdk publish --no-build \
+            ${{ inputs.public && '--public-yes' || '' }} \
+            --target ${{ matrix.rust-target }} \
+            -p ${{ inputs.package-name }} \
+            --readme ${{ inputs.readme }}
 
   macos:
     name: macos
@@ -97,4 +107,7 @@ jobs:
           cargo build --profile ${{ inputs.rust-profile }}  --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          cdk publish --public-yes --target ${{ matrix.rust-target }} -p ${{ inputs.package-name }}
+          cdk publish ${{ inputs.public && '--public-yes' || '' }} \
+            --target ${{ matrix.rust-target }} \
+            -p ${{ inputs.package-name }} \
+            --readme ${{ inputs.readme }}

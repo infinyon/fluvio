@@ -1,9 +1,15 @@
-use tracing::{instrument, debug};
-use anyhow::Result;
+use fluvio_protocol::link::ErrorCode;
+use tracing::{instrument, debug, error};
+use anyhow::{Result};
 
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
+use fluvio_controlplane_metadata::spg::SpuGroupSpec;
+use fluvio_controlplane_metadata::spu::{CustomSpuSpec};
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::{Status};
-use fluvio_sc_schema::objects::{ObjectApiCreateRequest, ObjectCreateRequest};
+use fluvio_sc_schema::{Status, TryEncodableFrom};
+use fluvio_sc_schema::objects::{ObjectApiCreateRequest, CreateRequest};
 use fluvio_auth::AuthContext;
 
 use crate::services::auth::AuthServiceContext;
@@ -14,33 +20,27 @@ pub async fn handle_create_request<AC: AuthContext>(
     request: Box<RequestMessage<ObjectApiCreateRequest>>,
     auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>> {
-    let (header, obj_req) = request.get_header_request();
+    let (header, req) = request.get_header_request();
 
-    debug!(?obj_req, "create request");
-    let ObjectApiCreateRequest { common, request } = obj_req;
-    let status = match request {
-        ObjectCreateRequest::Topic(create) => {
-            super::topic::handle_create_topics_request(common, create, auth_context).await?
-        }
-        ObjectCreateRequest::SpuGroup(create) => {
-            super::spg::handle_create_spu_group_request(common, create, auth_context).await?
-        }
-        ObjectCreateRequest::CustomSpu(create) => {
-            super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
-                common,
-                create,
-                auth_context,
-            )
+    debug!(?req, "create request");
+    let status = if let Some(create) = req.downcast()? as Option<CreateRequest<TopicSpec>> {
+        super::topic::handle_create_topics_request(create, auth_context).await?
+    } else if let Some(create) = req.downcast()? as Option<CreateRequest<SpuGroupSpec>> {
+        super::spg::handle_create_spu_group_request(create, auth_context).await?
+    } else if let Some(create) = req.downcast()? as Option<CreateRequest<CustomSpuSpec>> {
+        super::spu::RegisterCustomSpu::handle_register_custom_spu_request(create, auth_context)
             .await
-        }
-        ObjectCreateRequest::SmartModule(create) => {
-            super::smartmodule::handle_create_smartmodule_request(common, create, auth_context)
-                .await?
-        }
-        ObjectCreateRequest::TableFormat(create) => {
-            super::tableformat::handle_create_tableformat_request(common, create, auth_context)
-                .await?
-        }
+    } else if let Some(create) = req.downcast()? as Option<CreateRequest<SmartModuleSpec>> {
+        super::smartmodule::handle_create_smartmodule_request(create, auth_context).await?
+    } else if let Some(create) = req.downcast()? as Option<CreateRequest<TableFormatSpec>> {
+        super::tableformat::handle_create_tableformat_request(create, auth_context).await?
+    } else {
+        error!("unknown create request: {:#?}", req);
+        Status::new(
+            "create error".to_owned(),
+            ErrorCode::Other("unknown admin object type".to_owned()),
+            None,
+        )
     };
 
     Ok(ResponseMessage::from_header(&header, status))

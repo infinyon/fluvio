@@ -15,3 +15,6 @@ pub mod errors {
 
 pub use fluvio_protocol::link::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 pub use isolation::*;
+
+/// Default API version for all API
+pub(crate) const COMMON_VERSION: i16 = 19;
