@@ -87,7 +87,6 @@ impl SmartModuleChainInstance {
     }
 }
 
-
 pub(crate) mod wasmtime;
 use self::wasmtime::{SmartEngineImp, initialize_imp, SmartModuleChainInstanceImp};
 #[cfg(test)]
