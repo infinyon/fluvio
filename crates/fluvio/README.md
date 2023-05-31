@@ -14,7 +14,19 @@
   [![Fluvio Discord](https://img.shields.io/discord/695712741381636168.svg?logo=discord&style=flat)](https://discordapp.com/invite/bBG2dTz)
 </div>
 
-# Getting Started
+## What's Fluvio?
+
+Fluvio is a programmable data streaming platform written in Rust. With Fluvio
+you can create performant real time applications that scale.
+
+Read more about Fluvio in the [official website][Fluvio.io].
+
+## Getting Started
+
+Let's write a very simple solution with Fluvio, in the following demostration
+we will create a topic using the Fluvio CLI and then we wisll produce some
+records on this topic. Finally these records will be consumed from the topic
+and printed to the stdout.
 
 1. Install [Fluvio CLI][Install Fluvio CLI] if you havent already
 
@@ -108,4 +120,17 @@ fluvio topic delete echo-test
 topic "echo-test" deleted
 ```
 
+## Learn More
+
+- [Read on tutorials][Tutorials] to get the most from Fluvio and InfinyOn Cloud
+to scale your streaming solution.
+
+- You can use Fluvio to send or receive records from different sources using [Connectors][Connectors].
+
+- If you want to filter or transform records on the fly read more about [SmartModules][SmartModules].
+
+[Fluvio.io]: https://www.fluvio.io
 [Install Fluvio CLI]: https://www.fluvio.io/cli/
+[Connectors]: https://www.fluvio.io/connectors/
+[SmartModules]: https://www.fluvio.io/smartmodules/
+[Tutorials]: https://www.fluvio.io/docs/tutorials/cloud-setup/
