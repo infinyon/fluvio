@@ -1,5 +1,7 @@
 transforms:
   - uses: infinyon/jolt@0.1.0
+    lookback:
+      last: 1
     with:
       spec:
         - operation: shift
@@ -11,6 +13,8 @@ transforms:
             device:
               type: "mobile"
   - uses: infinyon/json-sql@0.1.0
+    lookback:
+      last: 10
     with:
       mapping:
         table: "topic_message_demo"

@@ -49,8 +49,16 @@ impl<T: Deref<Target = str>> TryFrom<Vec<T>> for TransformationConfig {
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct TransformationStep {
     pub uses: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lookback: Option<Lookback>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub with: BTreeMap<String, JsonString>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct Lookback {
+    pub last: usize,
 }
 
 impl Display for TransformationStep {
@@ -79,6 +87,12 @@ impl From<JsonString> for String {
 impl From<&str> for JsonString {
     fn from(str: &str) -> Self {
         Self(str.into())
+    }
+}
+
+impl AsRef<str> for JsonString {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
     }
 }
 
@@ -165,6 +179,7 @@ mod tests {
                 transforms: vec![
                     TransformationStep {
                         uses: "infinyon/jolt@0.1.0".to_string(),
+                        lookback: Some(Lookback{ last: 1 }),
                         with: BTreeMap::from([(
                             "spec".to_string(),
                             JsonString("[{\"operation\":\"shift\",\"spec\":{\"payload\":{\"device\":\"device\"}}},{\"operation\":\"default\",\"spec\":{\"device\":{\"type\":\"mobile\"}}}]".to_string())
@@ -172,6 +187,7 @@ mod tests {
                     },
                     TransformationStep {
                         uses: "infinyon/json-sql@0.1.0".to_string(),
+                        lookback: Some(Lookback{ last: 10 }),
                         with: BTreeMap::from([(
                             "mapping".to_string(),
                             JsonString("{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":\"0\",\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message_demo\"}".to_string())

@@ -359,6 +359,7 @@ mod tests {
             transforms: Some(
                 TransformationStep {
                     uses: "infinyon/json-sql".to_string(),
+                    lookback: None,
                     with: BTreeMap::from([
                         (
                             "mapping".to_string(),

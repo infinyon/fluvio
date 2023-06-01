@@ -33,6 +33,13 @@ pub struct SmartModuleConfig {
     // this will be deprecated in the future
     #[builder(default, setter(into, strip_option))]
     pub(crate) version: Option<i16>,
+    #[builder(default)]
+    pub(crate) lookback: Option<Lookback>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Lookback {
+    Last(usize),
 }
 
 impl SmartModuleConfigBuilder {
@@ -68,6 +75,14 @@ impl From<crate::transformation::TransformationStep> for SmartModuleConfig {
                 .collect::<std::collections::BTreeMap<String, String>>()
                 .into(),
             version: None,
+            lookback: step.lookback.map(|l| l.into()),
         }
+    }
+}
+
+#[cfg(feature = "transformation")]
+impl From<crate::transformation::Lookback> for Lookback {
+    fn from(value: crate::transformation::Lookback) -> Self {
+        Self::Last(value.last)
     }
 }

@@ -1,16 +1,20 @@
 use std::fmt::{self, Debug};
+use std::future::Future;
 
 use anyhow::Result;
+use fluvio_smartmodule::Record;
 use tracing::debug;
 use wasmtime::{Engine, Module};
 
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 
 use crate::SmartModuleConfig;
+use crate::engine::config::Lookback;
 
 use super::init::SmartModuleInit;
 use super::instance::{SmartModuleInstance, SmartModuleInstanceContext};
 
+use super::look_back::SmartModuleLookBack;
 use super::metrics::SmartModuleChainMetrics;
 use super::state::WasmState;
 use super::transforms::create_transform;
@@ -61,11 +65,13 @@ impl SmartModuleChainBuilder {
                 module,
                 config.params,
                 version,
+                config.lookback,
             )?;
             let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
+            let look_back = SmartModuleLookBack::try_instantiate(&ctx, &mut state)?;
             let transform = create_transform(&ctx, config.initial_data, &mut state)?;
-            let mut instance = SmartModuleInstance::new(ctx, init, transform);
-            instance.init(&mut state)?;
+            let mut instance = SmartModuleInstance::new(ctx, init, look_back, transform);
+            instance.call_init(&mut state)?;
             instances.push(instance);
         }
         Ok(SmartModuleChainInstance {
@@ -150,6 +156,21 @@ impl SmartModuleChainInstance {
             Ok(SmartModuleOutput::new(input.try_into()?))
         }
     }
+
+    pub async fn look_back<F, R>(&mut self, read_fn: F) -> Result<()>
+    where
+        R: Future<Output = Result<Vec<Record>>>,
+        F: Fn(Lookback) -> R,
+    {
+        for instance in self.instances.iter_mut() {
+            if let Some(lookback) = instance.lookback() {
+                let records: Vec<Record> = read_fn(lookback).await?;
+                let input: SmartModuleInput = SmartModuleInput::try_from(records)?;
+                instance.call_look_back(input, &mut self.store)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -173,7 +194,10 @@ mod chaining_test {
 
     use std::convert::TryFrom;
 
+    use fluvio_protocol::link::smartmodule::SmartModuleLookbackRuntimeError;
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
+
+    use crate::engine::config::Lookback;
 
     use super::super::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
@@ -182,6 +206,7 @@ mod chaining_test {
 
     const SM_FILTER_INIT: &str = "fluvio_smartmodule_filter_init";
     const SM_MAP: &str = "fluvio_smartmodule_map";
+    const SM_FILTER_LOOK_BACK: &str = "fluvio_smartmodule_filter_lookback";
 
     use super::super::fixture::read_wasm_module;
 
@@ -290,6 +315,82 @@ mod chaining_test {
         assert_eq!(
             output.successes[0].value().to_string(),
             "zeroapplebananaelephant"
+        );
+    }
+
+    #[ignore]
+    #[test]
+    fn test_chain_filter_look_back() {
+        //given
+        let engine = SmartEngine::new();
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        let metrics = SmartModuleChainMetrics::default();
+
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .lookback(Some(Lookback::Last(1)))
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_LOOK_BACK),
+        );
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
+
+        // when
+        fluvio_future::task::run_block_on(chain.look_back(|lookback| {
+            assert_eq!(lookback, Lookback::Last(1));
+            async { Ok(vec![Record::new("2")]) }
+        }))
+        .expect("chain look_back");
+
+        // then
+        let input = vec![Record::new("1"), Record::new("2"), Record::new("3")];
+        let output = chain
+            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .expect("process");
+        assert_eq!(output.successes.len(), 1); // one record passed
+        assert_eq!(output.successes[0].value().to_string(), "3");
+    }
+
+    #[ignore]
+    #[test]
+    fn test_chain_filter_look_back_error_propagated() {
+        //given
+        let engine = SmartEngine::new();
+        let mut chain_builder = SmartModuleChainBuilder::default();
+
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .lookback(Some(Lookback::Last(1)))
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_LOOK_BACK),
+        );
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
+
+        // when
+        let res = fluvio_future::task::run_block_on(chain.look_back(|lookback| {
+            assert_eq!(lookback, Lookback::Last(1));
+            async { Ok(vec![Record::new("wrong str")]) }
+        }));
+
+        // then
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err()
+                .downcast::<SmartModuleLookbackRuntimeError>()
+                .expect("downcasted"),
+            SmartModuleLookbackRuntimeError {
+                hint: "invalid digit found in string".to_string(),
+                offset: 0,
+                record_key: None,
+                record_value: "wrong str".to_string().into()
+            }
         );
     }
 
