@@ -1,0 +1,11 @@
+[package]
+name = "fluvio-smartmodule-filter-lookback"
+group = "infinyon"
+version = "0.1.0"
+apiVersion = "0.1.0"
+description = ""
+license = "Apache-2.0"
+visibility = "private"
+
+[[params]]
+name = "param"

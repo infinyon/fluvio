@@ -52,3 +52,21 @@ pub enum SmartModuleInitError {
     #[error("Missing param {0}")]
     MissingParam(String),
 }
+
+#[repr(i32)]
+#[derive(thiserror::Error, Debug, Clone, Eq, PartialEq, Encoder, Default, Decoder)]
+#[non_exhaustive]
+#[fluvio(encode_discriminant)]
+pub enum SmartModuleLookbackErrorStatus {
+    #[error("encountered unknown error during SmartModule processing")]
+    #[default]
+    UnknownError = -1,
+    #[error("failed to decode SmartModule look_back input")]
+    DecodingBaseInput = -66,
+    #[error("failed to decode SmartModule look_back record input")]
+    DecodingRecords = -77,
+    #[error("failed to encode SmartModule look_back output")]
+    EncodingOutput = -88,
+    #[error("Error returned from user look_back function call")]
+    PropagatedError = -99,
+}

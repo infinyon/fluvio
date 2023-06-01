@@ -7,6 +7,7 @@ members = [
     "aggregate-init",
     "filter",
     "filter_init",
+    "filter_look_back",
     "filter_with_param",
     "filter_odd",
     "filter_json",
