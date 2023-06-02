@@ -423,7 +423,7 @@ mod cmd {
             if let Some(path) = &self.file {
                 let reader = BufReader::new(File::open(path)?);
                 let mut produce_outputs = vec![];
-                for line in reader.lines().filter_map(|it| it.ok()) {
+                for line in reader.lines().map_while(|it| it.ok()) {
                     let produce_output = self.produce_line(&producer, &line).await?;
 
                     if let Some(produce_output) = produce_output {

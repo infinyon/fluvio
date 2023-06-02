@@ -358,6 +358,7 @@ mod tests {
         let version = DefaultProduceRequest::DEFAULT_API_VERSION;
 
         //when
+        #[allow(clippy::redundant_clone)]
         let cloned = request.clone();
         let bytes = request.as_bytes(version).expect("encoded request");
         let cloned_bytes = cloned.as_bytes(version).expect("encoded cloned request");
