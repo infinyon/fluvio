@@ -162,8 +162,10 @@ impl SmartModuleChainInstance {
         R: Future<Output = Result<Vec<Record>>>,
         F: Fn(Lookback) -> R,
     {
+        debug!("look_back on chain with {} instances", self.instances.len());
         for instance in self.instances.iter_mut() {
             if let Some(lookback) = instance.lookback() {
+                debug!("look_back on instance");
                 let records: Vec<Record> = read_fn(lookback).await?;
                 let input: SmartModuleInput = SmartModuleInput::try_from(records)?;
                 instance.call_look_back(input, &mut self.store)?;

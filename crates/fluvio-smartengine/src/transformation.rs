@@ -58,7 +58,7 @@ pub struct TransformationStep {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct Lookback {
-    pub last: usize,
+    pub last: u64,
 }
 
 impl Display for TransformationStep {
@@ -72,6 +72,12 @@ impl TryFrom<&str> for TransformationStep {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         serde_json::from_str(value)
+    }
+}
+
+impl From<Lookback> for fluvio_smartmodule::dataplane::smartmodule::Lookback {
+    fn from(value: Lookback) -> Self {
+        Self { last: value.last }
     }
 }
 

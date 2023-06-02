@@ -150,6 +150,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 6006)]
     #[error("SmartModule init error {0}")]
     SmartModuleInitError(super::smartmodule::SmartModuleInitRuntimeError),
+    #[fluvio(tag = 6007)]
+    #[error("SmartModule look_back error: {0}")]
+    SmartModuleLookBackError(String),
 
     // TableFormat Errors
     #[fluvio(tag = 7000)]

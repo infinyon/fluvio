@@ -4,7 +4,6 @@ use std::time::Instant;
 use tracing::{debug, error, instrument, trace, warn};
 use tokio::select;
 
-use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
@@ -136,19 +135,26 @@ impl StreamFetchHandler {
         debug!("request: {:#?}", msg);
         let version = header.api_version();
 
-        let derivedstream_ctx =
-            match SmartModuleContext::try_from(msg.smartmodules, version, &ctx).await {
-                Ok(ctx) => ctx,
-                Err(error_code) => {
-                    warn!("smartmodule context init failed: {:?}", error_code);
+        let sm_ctx = match SmartModuleContext::try_from(msg.smartmodules, version, &ctx).await {
+            Ok(Some(mut ctx)) => {
+                if let Err(error_code) = ctx.look_back(&leader_state).await {
+                    warn!("smartmodule look_back failed: {:?}", error_code);
                     send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                     return Ok(());
                 }
-            };
+                Some(ctx)
+            }
+            Ok(None) => None,
+            Err(error_code) => {
+                warn!("smartmodule context init failed: {:?}", error_code);
+                send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                return Ok(());
+            }
+        };
 
         let max_bytes = msg.max_bytes as u32;
         // compute max fetch bytes depends on smart stream
-        let max_fetch_bytes = if derivedstream_ctx.is_some() {
+        let max_fetch_bytes = if sm_ctx.is_some() {
             u32::MAX
         } else {
             max_bytes
@@ -180,7 +186,7 @@ impl StreamFetchHandler {
             metrics: ctx.metrics(),
         };
 
-        if let Err(err) = handler.process(starting_offset, derivedstream_ctx).await {
+        if let Err(err) = handler.process(starting_offset, sm_ctx).await {
             match err {
                 StreamFetchError::Fetch(error_code) => {
                     send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
@@ -208,17 +214,10 @@ impl StreamFetchHandler {
     async fn process(
         mut self,
         starting_offset: Offset,
-        sm_ctx: Option<SmartModuleContext>,
+        mut sm_ctx: Option<SmartModuleContext>,
     ) -> Result<(), StreamFetchError> {
-        let mut smartmodule_instance = if let Some(ctx) = sm_ctx {
-            let SmartModuleContext { chain: st } = ctx;
-            Some(st)
-        } else {
-            None
-        };
-
         let (mut last_partition_offset, consumer_wait) = self
-            .send_back_records(starting_offset, smartmodule_instance.as_mut())
+            .send_back_records(starting_offset, sm_ctx.as_mut())
             .await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
@@ -267,7 +266,7 @@ impl StreamFetchHandler {
                         last_partition_offset,
                         "Consumer offset updated and is behind, need to send records",
                     );
-                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartmodule_instance.as_mut()).await?;
+                    let (offset, wait) = self.send_back_records(consumer_offset_update, sm_ctx.as_mut()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -308,7 +307,7 @@ impl StreamFetchHandler {
 
                     // We need to send the consumer all records since the last consumer offset
                     debug!(partition_offset_update, last_consumer_offset, "reading offset event");
-                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartmodule_instance.as_mut()).await?;
+                    let (offset, wait) = self.send_back_records(last_consumer_offset, sm_ctx.as_mut()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -335,13 +334,13 @@ impl StreamFetchHandler {
     /// return (next offset, consumer wait)
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
-        skip(self, sm_chain),
+        skip(self, sm_ctx),
         fields(stream_id = self.stream_id)
     )]
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
-        sm_chain: Option<&mut SmartModuleChainInstance>,
+        sm_ctx: Option<&mut SmartModuleContext>,
     ) -> Result<(Offset, bool), StreamFetchError> {
         let now = Instant::now();
 
@@ -391,8 +390,8 @@ impl StreamFetchHandler {
             return Ok((starting_offset, false));
         }
 
-        let (offset, wait, metrics_update) = match sm_chain {
-            Some(chain) => {
+        let (offset, wait, metrics_update) = match sm_ctx {
+            Some(sm_ctx) => {
                 // If a SmartModule is provided, we need to read records from file to memory
                 // In-memory records are then processed by SmartModule and returned to consumer
 
@@ -401,7 +400,7 @@ impl StreamFetchHandler {
                     FileBatchIterator::from_raw_slice(records.raw_slice());
 
                 let (batch, smartmodule_error) = process_batch(
-                    chain,
+                    sm_ctx.chain_mut(),
                     &mut file_batch_iterator,
                     self.max_bytes as usize,
                     self.metrics.chain_metrics(),

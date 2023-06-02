@@ -3,7 +3,7 @@ pub mod metrics;
 mod config;
 pub use config::{
     SmartModuleConfig, SmartModuleConfigBuilder, SmartModuleConfigBuilderError,
-    SmartModuleInitialData,
+    SmartModuleInitialData, Lookback,
 };
 mod error;
 

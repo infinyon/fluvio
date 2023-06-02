@@ -1,10 +1,14 @@
 use std::{env::temp_dir, time::Duration};
 
+use fluvio::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind};
+use fluvio_smartmodule::{Record, dataplane::smartmodule::Lookback};
+use fluvio_storage::FileReplica;
 use tracing::debug;
 
 use fluvio_protocol::{
     api::{RequestMessage, RequestKind},
     link::ErrorCode,
+    Decoder,
 };
 use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
 use fluvio_future::timer::sleep;
@@ -20,8 +24,12 @@ use flv_util::fixture::ensure_clean_dir;
 use crate::{
     config::SpuConfig,
     core::GlobalContext,
-    services::public::{create_public_server, tests::create_filter_records},
+    services::public::{
+        create_public_server,
+        tests::{create_filter_records, vec_to_batch, load_wasm_module},
+    },
     replication::leader::LeaderReplicaState,
+    smartengine::file_batch::FileBatchIterator,
 };
 
 #[fluvio_future::test(ignore)]
@@ -491,4 +499,269 @@ async fn test_produce_metrics() {
     }
     server_end_event.notify();
     debug!("terminated controller");
+}
+
+const FLUVIO_WASM_FILTER_WITH_LOOKBACK: &str = "fluvio_smartmodule_filter_lookback";
+
+#[fluvio_future::test(ignore)]
+async fn test_produce_basic_with_smartmodule_with_lookback() {
+    let test_path = temp_dir().join("test_produce_basic_with_smartmodule_with_lookback");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{port}");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    load_wasm_module(&ctx, FLUVIO_WASM_FILTER_WITH_LOOKBACK);
+    let mut smartmodule = SmartModuleInvocation {
+        wasm: SmartModuleInvocationWasm::Predefined(FLUVIO_WASM_FILTER_WITH_LOOKBACK.to_owned()),
+        kind: SmartModuleKind::Filter,
+        params: Default::default(),
+    };
+    smartmodule.params.set_lookback(Some(Lookback { last: 1 }));
+    let mut smartmodules = vec![smartmodule];
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let topic = "test_produce_basic_with_smartmodule_with_lookback";
+    let test = Replica::new((topic, 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    ctx.replica_localstore().sync_all(vec![test.clone()]);
+
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
+
+    {
+        // no records before, smartmodule allows all
+        let records = vec_to_batch(&["1", "2", "3"]);
+
+        let mut produce_request = DefaultProduceRequest {
+            smartmodules: smartmodules.clone(),
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records: records.try_into().expect("records converted"),
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(read_records(&replica).await, vec!["1", "2", "3"]);
+    }
+    {
+        // the last record is 3, smartmodule allows only ones that greater than 3
+        let records = vec_to_batch(&["1", "2", "3", "4", "5"]);
+
+        let mut produce_request = DefaultProduceRequest {
+            smartmodules: smartmodules.clone(),
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records: records.try_into().expect("records converted"),
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(read_records(&replica).await, vec!["1", "2", "3", "4", "5"]);
+    }
+    {
+        // if last = 0, no records should be read on look_back, sm allows all
+        for sm in smartmodules.iter_mut() {
+            sm.params.set_lookback(Some(Lookback { last: 0 }));
+        }
+
+        let records = vec_to_batch(&["1", "2"]);
+
+        let mut produce_request = DefaultProduceRequest {
+            smartmodules: smartmodules.clone(),
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records: records.try_into().expect("records converted"),
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            read_records(&replica).await,
+            vec!["1", "2", "3", "4", "5", "1", "2"]
+        );
+    }
+
+    {
+        // if lookback parameter is not present, sm allows all
+        for sm in smartmodules.iter_mut() {
+            sm.params = Default::default();
+        }
+
+        let records = vec_to_batch(&["1", "2"]);
+
+        let mut produce_request = DefaultProduceRequest {
+            smartmodules: smartmodules.clone(),
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records: records.try_into().expect("records converted"),
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            read_records(&replica).await,
+            vec!["1", "2", "3", "4", "5", "1", "2", "1", "2"]
+        );
+    }
+
+    {
+        // error from look_back call is propagated
+        for sm in smartmodules.iter_mut() {
+            sm.params.set_lookback(Some(Lookback { last: 2 }));
+        }
+
+        // insert wrong last record without sm
+        let produce_request1 = DefaultProduceRequest {
+            topics: vec![TopicProduceData {
+                name: topic.to_owned(),
+                partitions: vec![DefaultPartitionRequest {
+                    partition_index: 0,
+                    records: vec_to_batch(&["wrong last record"])
+                        .try_into()
+                        .expect("records converted"),
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        let _ = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request1))
+            .await
+            .expect("send offset");
+
+        let produce_request2 = DefaultProduceRequest {
+            smartmodules: smartmodules.clone(),
+            topics: vec![TopicProduceData {
+                name: topic.to_owned(),
+                partitions: vec![DefaultPartitionRequest {
+                    partition_index: 0,
+                    records: vec_to_batch(&["4"]).try_into().expect("records converted"),
+                }],
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request2))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            produce_response.responses[0].partitions[0].error_code,
+            ErrorCode::SmartModuleLookBackError("error in look_back chain: invalid digit found in string\n\nSmartModule Lookback Error: \n    Offset: 0\n    Key: NULL\n    Value: wrong last record".to_string())
+        );
+    }
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+async fn read_records(replica: &LeaderReplicaState<FileReplica>) -> Vec<String> {
+    let slice = replica
+        .read_records(0i64, u32::MAX, Isolation::ReadUncommitted)
+        .await
+        .expect("read records");
+    if let Some(file_slice) = slice.file_slice {
+        let file_batch_iterator = FileBatchIterator::from_raw_slice(file_slice);
+
+        let mut result = Vec::new();
+        for batch_result in file_batch_iterator {
+            let input_batch = batch_result.expect("batch");
+
+            let mut records: Vec<Record> = vec![];
+            Decoder::decode(
+                &mut records,
+                &mut std::io::Cursor::new(input_batch.records),
+                0,
+            )
+            .expect("decoded");
+            result.append(&mut records);
+        }
+        result
+            .into_iter()
+            .map(|r| r.into_value().as_utf8_lossy_string().to_string())
+            .collect()
+    } else {
+        Vec::new()
+    }
 }

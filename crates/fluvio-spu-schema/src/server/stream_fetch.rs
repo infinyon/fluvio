@@ -46,6 +46,8 @@ pub const SMART_MODULE_API: i16 = 16;
 pub const GENERIC_SMARTMODULE_API: i16 = 17;
 pub const CHAIN_SMARTMODULE_API: i16 = 18;
 
+pub const SMARTMODULE_LOOKBACK: i16 = 20;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[allow(deprecated)]
@@ -155,6 +157,8 @@ mod file {
 #[cfg(test)]
 mod tests {
 
+    use fluvio_smartmodule::dataplane::smartmodule::Lookback;
+
     use crate::server::smartmodule::{SmartModuleInvocationWasm, SmartModuleKind};
 
     use super::*;
@@ -181,7 +185,36 @@ mod tests {
             0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef,
-            0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        assert_eq!(dest, expected);
+    }
+
+    #[test]
+    fn test_encode_stream_fetch_request_last_version() {
+        let mut dest = Vec::new();
+        let mut params = SmartModuleExtraParams::default();
+        params.set_lookback(Some(Lookback { last: 1 }));
+        let value = DefaultStreamFetchRequest {
+            topic: "one".to_string(),
+            partition: 3,
+            smartmodules: vec![
+                (SmartModuleInvocation {
+                    wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
+                    kind: SmartModuleKind::Filter,
+                    params,
+                }),
+            ],
+            ..Default::default()
+        };
+        value
+            .encode(&mut dest, DefaultStreamFetchRequest::MAX_API_VERSION)
+            .expect("should encode");
+        let expected = vec![
+            0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00,
+            0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x01,
         ];
         assert_eq!(dest, expected);
     }
@@ -192,7 +225,7 @@ mod tests {
             0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef,
-            0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
         ];
         let mut value = DefaultStreamFetchRequest::default();
         value
@@ -204,6 +237,37 @@ mod tests {
             Some(wasm) => wasm,
             _ => panic!("should have smartstreeam payload"),
         };
+        let wasm = match &sm.wasm {
+            SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
+            #[allow(unreachable_patterns)]
+            _ => panic!("should be SmartModuleInvocationWasm::AdHoc"),
+        };
+        assert_eq!(wasm, vec![0xde, 0xad, 0xbe, 0xef]);
+        assert!(matches!(sm.kind, SmartModuleKind::Filter));
+    }
+
+    #[test]
+    fn test_decode_stream_fetch_request_last_version() {
+        let bytes = vec![
+            0x00, 0x03, 0x6f, 0x6e, 0x65, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00,
+            0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x01,
+        ];
+        let mut value = DefaultStreamFetchRequest::default();
+        value
+            .decode(
+                &mut std::io::Cursor::new(bytes),
+                DefaultStreamFetchRequest::MAX_API_VERSION,
+            )
+            .unwrap();
+        assert_eq!(value.topic, "one");
+        assert_eq!(value.partition, 3);
+        let sm = match value.smartmodules.first() {
+            Some(wasm) => wasm,
+            _ => panic!("should have smartstreeam payload"),
+        };
+        assert!(matches!(sm.params.lookback(), Some(&Lookback { last: 1 })));
         let wasm = match &sm.wasm {
             SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
             #[allow(unreachable_patterns)]

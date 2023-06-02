@@ -39,3 +39,6 @@ futures-util = { workspace = true }
 fluvio-socket = { workspace = true, features = ["file"] }
 fluvio-future = { workspace = true, features = ["fixture", "fs"] }
 flv-util = { workspace = true, features = ["fixture"] }
+fluvio-protocol = { workspace = true,  features = [
+    "compress"
+] }
