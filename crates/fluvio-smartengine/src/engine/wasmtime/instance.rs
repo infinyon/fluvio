@@ -2,7 +2,7 @@ use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::fmt::{self, Debug};
 
-use tracing::{debug};
+use tracing::debug;
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Module, Caller, Extern, Instance, Func, AsContextMut, AsContext};
 
@@ -12,14 +12,18 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
 };
 
+use crate::engine::config::Lookback;
+
 use super::error::EngineError;
 use super::init::SmartModuleInit;
+use super::look_back::SmartModuleLookBack;
 use super::{WasmSlice, memory};
 use super::state::WasmState;
 
 pub(crate) struct SmartModuleInstance {
     ctx: SmartModuleInstanceContext,
     init: Option<SmartModuleInit>,
+    look_back: Option<SmartModuleLookBack>,
     transform: Box<dyn DowncastableTransform>,
 }
 
@@ -38,11 +42,13 @@ impl SmartModuleInstance {
     pub(crate) fn new(
         ctx: SmartModuleInstanceContext,
         init: Option<SmartModuleInit>,
+        look_back: Option<SmartModuleLookBack>,
         transform: Box<dyn DowncastableTransform>,
     ) -> Self {
         Self {
             ctx,
             init,
+            look_back,
             transform,
         }
     }
@@ -57,7 +63,7 @@ impl SmartModuleInstance {
 
     // TODO: Move this to SPU
 
-    pub fn init(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
+    pub(crate) fn call_init(&mut self, store: &mut impl AsContextMut) -> Result<(), Error> {
         if let Some(init) = &mut self.init {
             let input = SmartModuleInitInput {
                 params: self.ctx.params.clone(),
@@ -67,6 +73,22 @@ impl SmartModuleInstance {
             Ok(())
         }
     }
+
+    pub(crate) fn call_look_back(
+        &mut self,
+        input: SmartModuleInput,
+        store: &mut WasmState,
+    ) -> Result<()> {
+        if let Some(ref mut lookback) = self.look_back {
+            lookback.call(input, &mut self.ctx, store)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn lookback(&self) -> Option<Lookback> {
+        self.ctx.lookback
+    }
 }
 
 pub(crate) struct SmartModuleInstanceContext {
@@ -74,6 +96,7 @@ pub(crate) struct SmartModuleInstanceContext {
     records_cb: Arc<RecordsCallBack>,
     params: SmartModuleExtraParams,
     version: i16,
+    lookback: Option<Lookback>,
 }
 
 impl Debug for SmartModuleInstanceContext {
@@ -90,6 +113,7 @@ impl SmartModuleInstanceContext {
         module: Module,
         params: SmartModuleExtraParams,
         version: i16,
+        lookback: Option<Lookback>,
     ) -> Result<Self, EngineError> {
         debug!("creating WasmModuleInstance");
         let cb = Arc::new(RecordsCallBack::new());
@@ -116,6 +140,7 @@ impl SmartModuleInstanceContext {
             records_cb,
             params,
             version,
+            lookback,
         })
     }
 

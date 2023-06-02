@@ -64,7 +64,7 @@ pub(crate) struct EnumProp {
 impl EnumProp {
     pub fn from_ast(variant: Variant) -> syn::Result<Self> {
         let mut prop = EnumProp::default();
-        let variant_ident = variant.ident.clone();
+        let variant_ident = &variant.ident;
         prop.variant_name = variant_ident.to_string();
         // Find all supported field level attributes in one go.
         for attribute in &variant.attrs {

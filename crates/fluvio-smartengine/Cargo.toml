@@ -38,3 +38,4 @@ fluvio-smartmodule = { workspace = true, default-features = false }
 
 [dev-dependencies]
 fluvio-types = { workspace = true }
+fluvio-future = { workspace = true, default-features = false, features = ["task"] }
