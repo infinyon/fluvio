@@ -1,103 +1,22 @@
-//! The Rust client library for writing streaming applications with Fluvio
-//!
-//! Fluvio is a high performance, low latency data streaming platform built for developers.
-//!
-//! When writing streaming applications, two of your core behaviors are producing messages
-//! and consuming messages. When you produce a message, you send it to a Fluvio cluster
-//! where it is recorded and saved for later usage. When you consume a message, you are
-//! reading a previously-stored message from that same Fluvio cluster. Let's get started
-//! with a quick example where we produce and consume some messages.
-//!
-//! # Examples
-//!
-//! Fluvio's documentation provide a set of examples for Rust.
-//! You can visit the examples page [following this link](https://www.fluvio.io/api/official/rust/examples/).
-//!
-//! # Fluvio Echo
-//!
-//! The easiest way to see Fluvio in action is to produce some messages and to consume
-//! them right away. In this sense, we can use Fluvio to make an "echo service".
-//!
-//! All messages in Fluvio are sent in a sort of category called a `Topic`. You can think
-//! of a Topic as a named folder where you want to store some files, which would be your
-//! messages. If you're familiar with relational databases, you can think of a Topic as
-//! being similar to a database table, but for streaming.
-//!
-//! As the application developer, you get to decide what Topics you create and which
-//! messages you send to them. We need to set up a Topic before running our code. For the
-//! echo example, we'll call our topic `echo`.
-//!
-//! # Example
-//!
-//! The easiest way to create a Fluvio Topic is by using the [Fluvio CLI].
-//!
-//! ```bash
-//! $ fluvio topic create echo
-//! topic "echo" created
-//! ```
-//!
-//! There are convenience methods that let you get up-and-started quickly using default
-//! configurations. Later if you want to customize your setup, you can directly use the
-//! [`Fluvio`] client object.
-//!
-//! ```no_run
-//! # mod futures {
-//! #     pub use futures_util::stream::StreamExt;
-//! # }
-//! use std::time::Duration;
-//! use fluvio::{Offset, FluvioError, RecordKey};
-//! use futures::StreamExt;
-//!
-//! async_std::task::spawn(produce_records());
-//! if let Err(e) = async_std::task::block_on(consume_records()) {
-//!     println!("Error: {}", e);
-//! }
-//!
-//! async fn produce_records() -> anyhow::Result<()> {
-//!     let producer = fluvio::producer("echo").await?;
-//!     for i in 0..10u8 {
-//!         producer.send(RecordKey::NULL, format!("Hello, Fluvio {}!", i)).await?;
-//!         async_std::task::sleep(Duration::from_secs(1)).await;
-//!     }
-//!     // fluvio batches records by default, so call flush() when done producing to ensure all
-//!     // records are sent
-//!     producer.flush().await?;
-//!     Ok(())
-//! }
-//!
-//! async fn consume_records() -> anyhow::Result<()> {
-//!     let consumer = fluvio::consumer("echo", 0).await?;
-//!     let mut stream = consumer.stream(Offset::beginning()).await?;
-//!
-//!     while let Some(Ok(record)) = stream.next().await {
-//!         let key_str = record.get_key().map(|key| key.as_utf8_lossy_string());
-//!         let value_str = record.get_value().as_utf8_lossy_string();
-//!         println!("Got record: key={:?}, value={}", key_str, value_str);
-//!     }
-//!     Ok(())
-//! }
-//! ```
-//!
-//! [Fluvio CLI]: https://nightly.fluvio.io/docs/cli/
-//! [`Fluvio`]: ./struct.Fluvio.html
 #![cfg_attr(
     feature = "nightly",
     doc(include = "../../../website/kubernetes/INSTALL.md")
 )]
 
-mod error;
-mod admin;
-mod fluvio;
-pub mod consumer;
-mod producer;
-mod offset;
-mod sync;
-pub mod spu;
-pub mod metrics;
-pub mod config;
+#[doc = include_str!("../README.md")]
 
-use fluvio_types::PartitionId;
-use tracing::instrument;
+mod admin;
+mod error;
+mod fluvio;
+mod offset;
+mod producer;
+mod sync;
+
+pub mod config;
+pub mod consumer;
+pub mod metrics;
+pub mod spu;
+
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{
@@ -121,6 +40,9 @@ pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
 
 pub use fluvio_compression::Compression;
+
+use fluvio_types::PartitionId;
+use tracing::instrument;
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";

@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.19.1"
+version = "0.19.2"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -8,6 +8,7 @@ categories = ["database"]
 keywords = ["streaming", "stream", "queue"]
 repository = "https://github.com/infinyon/fluvio"
 description = "The official Fluvio driver for Rust"
+readme = "README.md"
 
 [lib]
 name = "fluvio"
