@@ -5,18 +5,32 @@ use std::io::Cursor;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::{Encoder, Decoder, record::Record};
 
+pub const SMARTMODULE_LOOKBACK: i16 = 20;
+
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleExtraParams {
     inner: BTreeMap<String, String>,
+    #[fluvio(min_version = 20)]
+    lookback: Option<Lookback>,
 }
 
 impl From<BTreeMap<String, String>> for SmartModuleExtraParams {
     fn from(inner: BTreeMap<String, String>) -> SmartModuleExtraParams {
-        SmartModuleExtraParams { inner }
+        SmartModuleExtraParams {
+            inner,
+            ..Default::default()
+        }
     }
 }
 
 impl SmartModuleExtraParams {
+    pub fn new(params: BTreeMap<String, String>, lookback: Option<Lookback>) -> Self {
+        Self {
+            inner: params,
+            lookback,
+        }
+    }
+
     pub fn get(&self, key: &str) -> Option<&String> {
         self.inner.get(key)
     }
@@ -24,6 +38,19 @@ impl SmartModuleExtraParams {
     pub fn insert(&mut self, key: String, value: String) {
         self.inner.insert(key, value);
     }
+
+    pub fn lookback(&self) -> Option<&Lookback> {
+        self.lookback.as_ref()
+    }
+
+    pub fn set_lookback(&mut self, lookback: Option<Lookback>) {
+        self.lookback = lookback;
+    }
+}
+
+#[derive(Debug, Default, Clone, Encoder, Decoder)]
+pub struct Lookback {
+    pub last: u64,
 }
 
 /// A single SmartModule input record
@@ -74,7 +101,7 @@ impl TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
         let mut raw_bytes = Vec::new();
-        records.encode(&mut raw_bytes, 0)?;
+        records.encode(&mut raw_bytes, SMARTMODULE_LOOKBACK)?;
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
@@ -86,7 +113,7 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
 
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
+        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), SMARTMODULE_LOOKBACK)
     }
 }
 

@@ -35,11 +35,14 @@ pub(crate) fn build_chain(
             _ => SmartModuleInitialData::default(),
         };
 
+        let lookback = invocation.params.lookback().map(Into::into);
+
         debug!("param: {:#?}", invocation.params);
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
                 .params(invocation.params)
                 .version(version)
+                .lookback(lookback)
                 .initial_data(initial_data)
                 .build()
                 .map_err(|err| ErrorCode::SmartModuleInvalid {

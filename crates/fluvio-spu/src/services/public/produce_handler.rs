@@ -8,7 +8,7 @@ use tracing::instrument;
 use anyhow::{anyhow, Result};
 
 use fluvio_smartengine::SmartModuleChainInstance;
-use fluvio_protocol::api::RequestKind;
+use fluvio_protocol::api::{RequestKind, RequestHeader};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset, Batch, RawRecords};
 use fluvio::Compression;
@@ -27,6 +27,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::replication::leader::SharedFileLeaderState;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::produce_batch::ProduceBatchIterator;
 use crate::smartengine::batch::process_batch;
@@ -59,18 +60,12 @@ pub async fn handle_produce_request(
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
-    let mut sm_chain_instance =
-        smartmodule_chain(produce_request.smartmodules, header.api_version(), &ctx).await?;
+    let smartmodules = produce_request.smartmodules;
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
-        let topic_result = handle_produce_topic(
-            &ctx,
-            topic_request,
-            header.is_connector(),
-            sm_chain_instance.as_mut(),
-        )
-        .await?;
+        let topic_result =
+            handle_produce_topic(&ctx, topic_request, &smartmodules, &header).await?;
         topic_results.push(topic_result);
     }
     wait_for_acks(
@@ -86,14 +81,14 @@ pub async fn handle_produce_request(
 }
 
 #[instrument(
-    skip(ctx, topic_request, sm_chain_instance),
+    skip(ctx, topic_request, smartmodules, header),
     fields(topic = %topic_request.name),
 )]
 async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
     topic_request: DefaultTopicRequest,
-    is_connector: bool,
-    mut sm_chain_instance: Option<&mut SmartModuleChainInstance>,
+    smartmodules: &[SmartModuleInvocation],
+    header: &RequestHeader,
 ) -> Result<TopicWriteResult> {
     let topic = &topic_request.name;
 
@@ -105,20 +100,48 @@ async fn handle_produce_topic(
     };
 
     for mut partition_request in topic_request.partitions.into_iter() {
-        if let Some(sm_chain_instance) = &mut sm_chain_instance {
+        let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
+        let leader_state = match ctx.leaders_state().get(&replica_id).await {
+            Some(leader_state) => leader_state,
+            None => {
+                debug!(%replica_id, "Replica not found");
+                topic_result.partitions.push(PartitionWriteResult::error(
+                    replica_id,
+                    ErrorCode::NotLeaderForPartition,
+                ));
+
+                continue;
+            }
+        };
+
+        if let Some(mut sm_ctx) =
+            smartmodule_ctx(smartmodules.to_vec(), header.api_version(), ctx).await?
+        {
+            if let Err(err) = sm_ctx.look_back(&leader_state).await {
+                topic_result
+                    .partitions
+                    .push(PartitionWriteResult::error(replica_id, err));
+                continue;
+            };
+
             apply_smartmodules_for_partition_request(
                 &mut partition_request,
-                sm_chain_instance,
+                sm_ctx.chain_mut(),
                 ctx,
             )?;
         }
 
-        let replica_id = ReplicaKey::new(topic.clone(), partition_request.partition_index);
-
         let partition_response = if partition_request.records.total_records() == 0 {
             PartitionWriteResult::filtered(replica_id)
         } else {
-            handle_produce_partition(ctx, replica_id, partition_request, is_connector).await
+            handle_produce_partition(
+                ctx,
+                replica_id,
+                leader_state,
+                partition_request,
+                header.is_connector(),
+            )
+            .await
         };
 
         topic_result.partitions.push(partition_response);
@@ -133,18 +156,11 @@ async fn handle_produce_topic(
 async fn handle_produce_partition<R: BatchRecords>(
     ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
+    leader_state: SharedFileLeaderState,
     partition_request: PartitionProduceData<RecordSet<R>>,
     is_connector: bool,
 ) -> PartitionWriteResult {
     trace!("Handling produce request for partition:");
-
-    let leader_state = match ctx.leaders_state().get(&replica_id).await {
-        Some(leader_state) => leader_state,
-        None => {
-            debug!(%replica_id, "Replica not found");
-            return PartitionWriteResult::error(replica_id, ErrorCode::NotLeaderForPartition);
-        }
-    };
 
     let replica_metadata = match ctx.replica_localstore().spec(&replica_id) {
         Some(replica_metadata) => replica_metadata,
@@ -187,24 +203,17 @@ async fn handle_produce_partition<R: BatchRecords>(
     }
 }
 
-async fn smartmodule_chain(
+async fn smartmodule_ctx(
     sm_invocations: Vec<SmartModuleInvocation>,
     api_version: i16,
     ctx: &DefaultSharedGlobalContext,
-) -> Result<Option<SmartModuleChainInstance>> {
-    let sm_ctx = match SmartModuleContext::try_from(sm_invocations, api_version, ctx).await {
-        Ok(ctx) => ctx,
-        Err(error_code) => {
+) -> Result<Option<SmartModuleContext>> {
+    SmartModuleContext::try_from(sm_invocations, api_version, ctx)
+        .await
+        .map_err(|error_code| {
             warn!("smartmodule context init failed: {:?}", error_code);
-            return Err(anyhow!("smartmodule context init failed: {}", error_code));
-        }
-    };
-
-    if let Some(ctx) = sm_ctx {
-        Ok(Some(ctx.chain))
-    } else {
-        Ok(None)
-    }
+            anyhow!("smartmodule context init failed: {}", error_code)
+        })
 }
 
 fn apply_smartmodules_for_partition_request(

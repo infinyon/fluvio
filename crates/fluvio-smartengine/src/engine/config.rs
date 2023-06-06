@@ -39,7 +39,7 @@ pub struct SmartModuleConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Lookback {
-    Last(usize),
+    Last(u64),
 }
 
 impl SmartModuleConfigBuilder {
@@ -83,6 +83,18 @@ impl From<crate::transformation::TransformationStep> for SmartModuleConfig {
 #[cfg(feature = "transformation")]
 impl From<crate::transformation::Lookback> for Lookback {
     fn from(value: crate::transformation::Lookback) -> Self {
+        Self::Last(value.last)
+    }
+}
+
+impl From<fluvio_smartmodule::dataplane::smartmodule::Lookback> for Lookback {
+    fn from(value: fluvio_smartmodule::dataplane::smartmodule::Lookback) -> Self {
+        Self::Last(value.last)
+    }
+}
+
+impl From<&fluvio_smartmodule::dataplane::smartmodule::Lookback> for Lookback {
+    fn from(value: &fluvio_smartmodule::dataplane::smartmodule::Lookback) -> Self {
         Self::Last(value.last)
     }
 }

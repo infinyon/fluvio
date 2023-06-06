@@ -4,6 +4,7 @@ use std::io::Read;
 
 use fluvio::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartModuleContextData,
+    SmartModuleExtraParams,
 };
 use fluvio_smartengine::transformation::TransformationConfig;
 
@@ -54,12 +55,13 @@ pub(crate) fn create_smartmodule_list(
         .map(|t| SmartModuleInvocation {
             wasm: SmartModuleInvocationWasm::Predefined(t.uses),
             kind: SmartModuleKind::Generic(Default::default()),
-            params: t
-                .with
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect::<std::collections::BTreeMap<String, String>>()
-                .into(),
+            params: SmartModuleExtraParams::new(
+                t.with
+                    .into_iter()
+                    .map(|(k, v)| (k, v.into()))
+                    .collect::<std::collections::BTreeMap<String, String>>(),
+                t.lookback.map(Into::into),
+            ),
         })
         .collect())
 }

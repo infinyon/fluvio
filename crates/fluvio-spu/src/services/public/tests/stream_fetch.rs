@@ -1,93 +1,48 @@
-use std::{
-    env::temp_dir,
-    path::{PathBuf, Path},
-    time::Duration,
-};
+use std::{env::temp_dir, path::PathBuf, time::Duration};
 use std::sync::Arc;
 
-use tracing::{debug};
-use flate2::{Compression, bufread::GzEncoder};
+use fluvio_smartmodule::dataplane::smartmodule::Lookback;
+use tracing::debug;
 
 use fluvio_controlplane_metadata::{
     partition::Replica,
     smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec},
 };
-use fluvio_storage::{FileReplica, ReplicaStorage};
+use fluvio_storage::FileReplica;
 use flv_util::fixture::ensure_clean_dir;
 use futures_util::{Future, StreamExt};
 
 use fluvio_future::timer::sleep;
-use fluvio_socket::{FluvioSocket, MultiplexerSocket};
-use fluvio_spu_schema::{
-    server::smartmodule::{
+use fluvio_socket::{FluvioSocket, MultiplexerSocket, AsyncResponse};
+use fluvio_spu_schema::server::{
+    smartmodule::{
         SmartModuleKind, SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleContextData,
     },
+    stream_fetch::StreamFetchRequest,
 };
 use fluvio_protocol::{
     fixture::BatchProducer,
-    record::{RecordData, Record, Batch},
+    record::{RecordData, Record, Batch, RawRecords},
     link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
     ByteBuf,
 };
 use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
 use fluvio_spu_schema::{
-    server::{
-        update_offset::{UpdateOffsetsRequest, OffsetUpdate},
-    },
+    server::update_offset::{UpdateOffsetsRequest, OffsetUpdate},
     fetch::DefaultFetchRequest,
 };
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
-use crate::{core::GlobalContext, services::public::tests::create_filter_records};
+use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
+use crate::{
+    core::GlobalContext,
+    services::public::tests::{create_filter_records, vec_to_batch},
+};
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
 use crate::services::public::create_public_server;
 
-use fluvio_protocol::{
-    api::{RequestMessage},
-    record::RecordSet,
-};
+use fluvio_protocol::{api::RequestMessage, record::RecordSet};
 
-fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
-    let path = filter_path.as_ref();
-    std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()))
-}
-
-fn zip(raw_buffer: Vec<u8>) -> Vec<u8> {
-    use std::io::Read;
-    let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
-    let mut buffer = Vec::with_capacity(raw_buffer.len());
-    encoder
-        .read_to_end(&mut buffer)
-        .unwrap_or_else(|_| panic!("Unable to gzip file"));
-    buffer
-}
-
-fn read_wasm_module(module_name: &str) -> Vec<u8> {
-    let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
-    let wasm_path = PathBuf::from(spu_dir)
-        .parent()
-        .expect("parent")
-        .parent()
-        .expect("fluvio")
-        .join(format!(
-            "smartmodule/examples/target/wasm32-unknown-unknown/release/{module_name}.wasm"
-        ));
-    read_filter_from_path(wasm_path)
-}
-
-fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str) {
-    let wasm = zip(read_wasm_module(module_name));
-    ctx.smartmodule_localstore().insert(SmartModule {
-        name: module_name.to_owned(),
-        spec: SmartModuleSpec {
-            wasm: SmartModuleWasm {
-                format: SmartModuleWasmFormat::Binary,
-                payload: ByteBuf::from(wasm),
-            },
-            ..Default::default()
-        },
-    });
-}
+use super::{zip, read_wasm_module, load_wasm_module};
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_basic() {
@@ -2407,4 +2362,194 @@ async fn test_stream_metrics() {
 
     server_end_event.notify();
     debug!("terminated controller");
+}
+
+const FLUVIO_WASM_FILTER_WITH_LOOKBACK: &str = "fluvio_smartmodule_filter_lookback";
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_lookback() {
+    predefined_test(
+        "test_stream_fetch_filter_lookback",
+        FLUVIO_WASM_FILTER_WITH_LOOKBACK,
+        SmartModuleKind::Filter,
+        stream_fetch_filter_lookback,
+    )
+    .await;
+}
+
+async fn stream_fetch_filter_lookback(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    mut smartmodules: Vec<SmartModuleInvocation>,
+) {
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{port}");
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    for sm in smartmodules.iter_mut() {
+        sm.params.set_lookback(Some(Lookback { last: 1 }));
+    }
+
+    let topic = "testfilter_lookback";
+
+    let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
+
+    {
+        // it will read all records that greater than the last one (3)
+        replica
+            .write_record_set(
+                &mut vec_to_batch(&["1", "10", "2", "11", "3"]),
+                ctx.follower_notifier(),
+            )
+            .await
+            .expect("write");
+
+        let stream = client_socket
+            .create_stream(
+                RequestMessage::new_request(
+                    DefaultStreamFetchRequest::builder()
+                        .topic(topic.to_owned())
+                        .max_bytes(10000)
+                        .smartmodules(smartmodules.clone())
+                        .build()
+                        .expect("build"),
+                ),
+                11,
+            )
+            .await
+            .expect("create stream");
+        assert_eq!(
+            read_records(stream, 2).await.expect("read records"),
+            vec!["10", "11"]
+        );
+    }
+
+    {
+        // it will read all records that greater than the last one (13)
+        replica
+            .write_record_set(
+                &mut vec_to_batch(&["10", "14", "13"]),
+                ctx.follower_notifier(),
+            )
+            .await
+            .expect("write");
+
+        let stream = client_socket
+            .create_stream(
+                RequestMessage::new_request(
+                    DefaultStreamFetchRequest::builder()
+                        .topic(topic.to_owned())
+                        .max_bytes(10000)
+                        .smartmodules(smartmodules.clone())
+                        .build()
+                        .expect("build"),
+                ),
+                11,
+            )
+            .await
+            .expect("create stream");
+        assert_eq!(
+            read_records(stream, 1).await.expect("read records"),
+            vec!["14"]
+        );
+    }
+    {
+        // last 0 should mean no records should be read
+        for sm in smartmodules.iter_mut() {
+            sm.params.set_lookback(Some(Lookback { last: 0 }));
+        }
+
+        let stream = client_socket
+            .create_stream(
+                RequestMessage::new_request(
+                    DefaultStreamFetchRequest::builder()
+                        .topic(topic.to_owned())
+                        .max_bytes(10000)
+                        .smartmodules(smartmodules.clone())
+                        .build()
+                        .expect("build"),
+                ),
+                11,
+            )
+            .await
+            .expect("create stream");
+        assert_eq!(
+            read_records(stream, 4).await.expect("read records"),
+            vec!["1", "10", "11", "14"]
+        );
+    }
+
+    {
+        // last could not be parsed by look_back from SM, error should be propagated
+        replica
+            .write_record_set(
+                &mut vec_to_batch(&["wrong record"]),
+                ctx.follower_notifier(),
+            )
+            .await
+            .expect("write");
+
+        for sm in smartmodules.iter_mut() {
+            sm.params.set_lookback(Some(Lookback { last: 1 }));
+        }
+
+        let mut stream = client_socket
+            .create_stream(
+                RequestMessage::new_request(
+                    DefaultStreamFetchRequest::builder()
+                        .topic(topic.to_owned())
+                        .max_bytes(10000)
+                        .smartmodules(smartmodules.clone())
+                        .build()
+                        .expect("build"),
+                ),
+                11,
+            )
+            .await
+            .expect("create stream");
+        let response = stream.next().await.expect("next").expect("ok");
+        let partition = &response.partition;
+        assert_eq!(partition.records.batches.len(), 0);
+        assert_eq!(
+            partition.error_code,
+            ErrorCode::SmartModuleLookBackError("error in look_back chain: invalid digit found in string\n\nSmartModule Lookback Error: \n    Offset: 0\n    Key: NULL\n    Value: wrong record".to_string())
+        );
+    }
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+async fn read_records(
+    mut stream: AsyncResponse<StreamFetchRequest<RecordSet<RawRecords>>>,
+    count: usize,
+) -> anyhow::Result<Vec<String>> {
+    let mut res = Vec::with_capacity(count);
+    while res.len() < count {
+        let response = stream
+            .next()
+            .await
+            .ok_or(anyhow::anyhow!("expected item"))??;
+        let partition = &response.partition;
+        assert_eq!(partition.records.batches.len(), 1);
+        let batch = &partition.records.batches[0];
+        for record in batch.memory_records()? {
+            res.push(String::from_utf8_lossy(record.value().as_ref()).to_string());
+        }
+    }
+    Ok(res)
 }
