@@ -532,16 +532,6 @@ mod test {
     use super::BatchHeader;
     use super::BATCH_HEADER_SIZE;
 
-    fn rust_log_init() {
-        let trs = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO);
-        if std::env::var("RUST_LOG").is_ok() {
-            trs.with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-                .init();
-        } else {
-            trs.init();
-        }
-    }
-
     #[test]
     fn test_batch_convert_compression_size() {}
 
@@ -602,11 +592,6 @@ mod test {
 
     #[test]
     fn test_encode_and_decode_batch_w_schemaid() -> Result<(), IoError> {
-        const USE_RUST_LOG: bool = false;
-        if USE_RUST_LOG {
-            rust_log_init();
-        }
-
         let value = vec![0x74, 0x65, 0x73, 0x74];
         let record = Record {
             value: RecordData::from(value),
