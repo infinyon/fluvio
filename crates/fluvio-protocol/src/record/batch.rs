@@ -23,6 +23,8 @@ const ATTR_SCHEMA_PRESENT: i16 = 0x10;
 const ATTR_COMPRESSION_CODEC_MASK: i16 = 0x07;
 pub const NO_TIMESTAMP: i64 = -1;
 
+const SCHEMA_ID_NULL: SchemaId = SchemaId(0u32);
+
 pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
     /// how many bytes does record wants to process
     #[deprecated]
@@ -85,7 +87,8 @@ pub struct Batch<R = MemoryRecords> {
     pub base_offset: Offset,
     pub batch_len: i32, // only for decoding
     pub header: BatchHeader,
-    pub schema_id: Option<SchemaId>,
+    // only encoded if schema_id is indicated in the header attr
+    pub schema_id: SchemaId,
     records: R,
 }
 
@@ -177,13 +180,13 @@ impl<R> Batch<R> {
         self.batch_len
     }
 
-    pub fn schema_id(&self) -> Option<SchemaId> {
-        self.schema_id.as_ref().cloned()
+    pub fn schema_id(&self) -> SchemaId {
+        self.schema_id.clone()
     }
 
     pub fn set_schema_id(&mut self, sid: SchemaId) {
         self.header.set_schema_id();
-        self.schema_id = Some(sid);
+        self.schema_id = sid;
     }
 }
 
@@ -196,7 +199,7 @@ impl TryFrom<Batch<RawRecords>> for Batch {
             base_offset: batch.base_offset,
             batch_len: (BATCH_HEADER_SIZE + records.write_size(0)) as i32,
             header: batch.header,
-            schema_id: None,
+            schema_id: SCHEMA_ID_NULL,
             records,
         })
     }
@@ -356,7 +359,7 @@ where
         let rec_len = if self.header.has_schema() {
             let mut sid = SchemaId(0);
             sid.decode(src, version)?;
-            self.schema_id = Some(sid);
+            self.schema_id = sid;
             trace!(schema_id=?self.schema_id);
             self.batch_len as usize - BATCH_HEADER_SIZE - size_of::<SchemaId>()
         } else {
@@ -410,9 +413,8 @@ where
         self.header.producer_id.encode(buf, version)?;
         self.header.producer_epoch.encode(buf, version)?;
         self.header.first_sequence.encode(buf, version)?;
-        if let Some(ref schema_id) = self.schema_id {
-            // encode schema id
-            schema_id.encode(buf, version)?;
+        if self.header.has_schema() {
+            self.schema_id.encode(buf, version)?;
         }
         self.records.encode(buf, version)?;
 
@@ -625,7 +627,7 @@ mod test {
 
         assert!(batch.header.has_schema());
         let got_sid = batch.schema_id();
-        assert_eq!(Some(SchemaId(TEST_SCHEMA_ID)), got_sid);
+        assert_eq!(SchemaId(TEST_SCHEMA_ID), got_sid);
 
         Ok(())
     }
