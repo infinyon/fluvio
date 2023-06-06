@@ -14,7 +14,7 @@ default = ["toml"]
 anyhow = { workspace = true }
 bytesize = { workspace = true}
 humantime-serde = "1.1.1"
-minijinja = { version = "0.33.0", default-features = false, features = ["custom_syntax", "fuel"] }
+minijinja = { version = "0.34.0", default-features = false, features = ["custom_syntax", "fuel"] }
 openapiv3 = { git = "https://github.com/galibey/openapiv3", rev = "bdd22f046d2bc19ede257504645d31f835545222", default-features = false }
 once_cell = { workspace = true }
 serde = { workspace = true, features = ["derive"], default-features = false }
