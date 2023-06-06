@@ -10,7 +10,7 @@ pub const SMARTMODULE_LOOKBACK: i16 = 20;
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleExtraParams {
     inner: BTreeMap<String, String>,
-    #[fluvio(min_version = SMARTMODULE_LOOKBACK)]
+    #[fluvio(min_version = 20)]
     lookback: Option<Lookback>,
 }
 
@@ -101,7 +101,7 @@ impl TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
         let mut raw_bytes = Vec::new();
-        records.encode(&mut raw_bytes, 0)?;
+        records.encode(&mut raw_bytes, SMARTMODULE_LOOKBACK)?;
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
@@ -113,7 +113,7 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
 
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
+        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), SMARTMODULE_LOOKBACK)
     }
 }
 
