@@ -101,7 +101,7 @@ impl TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
         let mut raw_bytes = Vec::new();
-        records.encode(&mut raw_bytes, SMARTMODULE_LOOKBACK)?;
+        records.encode(&mut raw_bytes, 0)?;
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
@@ -113,7 +113,7 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
 
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), SMARTMODULE_LOOKBACK)
+        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), 0)
     }
 }
 
