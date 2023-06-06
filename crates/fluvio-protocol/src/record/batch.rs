@@ -357,7 +357,7 @@ where
             let mut sid = SchemaId(0);
             sid.decode(src, version)?;
             self.schema_id = Some(sid);
-            trace!("schema_id: {:?}", self.schema_id());
+            trace!(schema_id=?self.schema_id);
             self.batch_len as usize - BATCH_HEADER_SIZE - size_of::<SchemaId>()
         } else {
             self.batch_len as usize - BATCH_HEADER_SIZE
