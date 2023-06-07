@@ -229,54 +229,55 @@ cfg_if::cfg_if! {
 
         impl TopicProducer {
             /// Adds a chain of SmartModules to this TopicProducer
-            pub fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self> {
-                let chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
+            pub async fn with_chain(mut self, chain_builder: SmartModuleChainBuilder) -> Result<Self> {
+                let mut chain_instance = chain_builder.initialize(&SM_ENGINE).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
+                chain_instance.look_back(|_| async { anyhow::bail!("lookback is not supported on engine running on Producer") }, &Default::default()).await?;
                 self.sm_chain = Some(Arc::new(RwLock::new(chain_instance)));
                 Ok(self)
             }
 
             /// Adds a SmartModule filter to this TopicProducer
-            pub fn with_filter<T: Into<Vec<u8>>>(
+            pub async fn with_filter<T: Into<Vec<u8>>>(
                 self,
                 filter: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
-                self.with_chain(SmartModuleChainBuilder::from((config, filter)))
+                self.with_chain(SmartModuleChainBuilder::from((config, filter))).await
             }
 
             /// Adds a SmartModule FilterMap to this TopicProducer
-            pub fn with_filter_map<T: Into<Vec<u8>>>(
+            pub async fn with_filter_map<T: Into<Vec<u8>>>(
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
-                self.with_chain(SmartModuleChainBuilder::from((config, map)))
+                self.with_chain(SmartModuleChainBuilder::from((config, map))).await
             }
 
             /// Adds a SmartModule map to this TopicProducer
-            pub fn with_map<T: Into<Vec<u8>>>(
+            pub async fn with_map<T: Into<Vec<u8>>>(
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
-                self.with_chain(SmartModuleChainBuilder::from((config, map)))
+                self.with_chain(SmartModuleChainBuilder::from((config, map))).await
             }
 
             /// Adds a SmartModule array_map to this TopicProducer
-            pub fn with_array_map<T: Into<Vec<u8>>>(
+            pub async fn with_array_map<T: Into<Vec<u8>>>(
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
-                self.with_chain(SmartModuleChainBuilder::from((config, map)))
+                self.with_chain(SmartModuleChainBuilder::from((config, map))).await
             }
 
             /// Adds a SmartModule aggregate to this TopicProducer
-            pub fn with_aggregate<T: Into<Vec<u8>>>(
+            pub async fn with_aggregate<T: Into<Vec<u8>>>(
                 self,
                 map: T,
                 params: BTreeMap<String, String>,
@@ -285,11 +286,11 @@ cfg_if::cfg_if! {
                 let config = SmartModuleConfig::builder()
                     .initial_data(SmartModuleInitialData::Aggregate{accumulator})
                     .params(params.into()).build()?;
-                self.with_chain(SmartModuleChainBuilder::from((config, map)))
+                self.with_chain(SmartModuleChainBuilder::from((config, map))).await
             }
 
             /// Use generic smartmodule (the type is detected in smartengine)
-            pub fn with_smartmodule<T: Into<Vec<u8>>>(
+            pub async fn with_smartmodule<T: Into<Vec<u8>>>(
                 self,
                 smartmodule: T,
                 params: BTreeMap<String, String>,
@@ -300,7 +301,7 @@ cfg_if::cfg_if! {
                 if let SmartModuleContextData::Aggregate{accumulator} = context {
                     config_builder.initial_data(SmartModuleInitialData::Aggregate{accumulator});
                 };
-                self.with_chain(SmartModuleChainBuilder::from((config_builder.build()?, smartmodule)))
+                self.with_chain(SmartModuleChainBuilder::from((config_builder.build()?, smartmodule))).await
             }
 
         }

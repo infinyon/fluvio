@@ -34,7 +34,7 @@ pub async fn producer_from_config(config: &ConnectorConfig) -> Result<(Fluvio, T
         .await?;
 
     if let Some(chain) = smartmodule_chain_from_config(config).await? {
-        Ok((fluvio, producer.with_chain(chain)?))
+        Ok((fluvio, producer.with_chain(chain).await?))
     } else {
         Ok((fluvio, producer))
     }
