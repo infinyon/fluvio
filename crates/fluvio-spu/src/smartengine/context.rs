@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use fluvio_smartengine::{SmartModuleChainInstance, Version, Lookback};
 use fluvio_protocol::{link::ErrorCode, Decoder};
 use fluvio_smartmodule::Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
 use tracing::{debug, trace};
 
+use crate::core::metrics::SpuMetrics;
 use crate::{
     core::DefaultSharedGlobalContext, replication::leader::SharedFileLeaderState,
     smartengine::file_batch::FileBatchIterator,
@@ -13,6 +16,7 @@ use crate::smartengine::chain;
 pub struct SmartModuleContext {
     chain: SmartModuleChainInstance,
     version: Version,
+    spu_metrics: Arc<SpuMetrics>,
 }
 
 impl SmartModuleContext {
@@ -30,7 +34,10 @@ impl SmartModuleContext {
 
     pub async fn look_back(&mut self, replica: &SharedFileLeaderState) -> Result<(), ErrorCode> {
         self.chain
-            .look_back(|lookback| read_records(replica, lookback, self.version))
+            .look_back(
+                |lookback| read_records(replica, lookback, self.version),
+                self.spu_metrics.chain_metrics(),
+            )
             .await
             .map_err(|err| {
                 ErrorCode::SmartModuleLookBackError(format!("error in look_back chain: {err}"))
@@ -55,6 +62,7 @@ impl SmartModuleContext {
         Ok(Some(Self {
             chain: chain::build_chain(fetched_invocations, version, ctx.smartengine_owned())?,
             version,
+            spu_metrics: ctx.metrics(),
         }))
     }
 }

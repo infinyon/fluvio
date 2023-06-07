@@ -157,7 +157,11 @@ impl SmartModuleChainInstance {
         }
     }
 
-    pub async fn look_back<F, R>(&mut self, read_fn: F) -> Result<()>
+    pub async fn look_back<F, R>(
+        &mut self,
+        read_fn: F,
+        metrics: &SmartModuleChainMetrics,
+    ) -> Result<()>
     where
         R: Future<Output = Result<Vec<Record>>>,
         F: Fn(Lookback) -> R,
@@ -168,7 +172,13 @@ impl SmartModuleChainInstance {
                 debug!("look_back on instance");
                 let records: Vec<Record> = read_fn(lookback).await?;
                 let input: SmartModuleInput = SmartModuleInput::try_from(records)?;
-                instance.call_look_back(input, &mut self.store)?;
+                metrics.add_bytes_in(input.raw_bytes().len() as u64);
+                self.store.top_up_fuel();
+                let result = instance.call_look_back(input, &mut self.store);
+                let fuel_used = self.store.get_used_fuel();
+                debug!(fuel_used, "fuel used");
+                metrics.add_fuel_used(fuel_used);
+                result?;
             }
         }
         Ok(())
@@ -341,10 +351,13 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        fluvio_future::task::run_block_on(chain.look_back(|lookback| {
-            assert_eq!(lookback, Lookback::Last(1));
-            async { Ok(vec![Record::new("2")]) }
-        }))
+        fluvio_future::task::run_block_on(chain.look_back(
+            |lookback| {
+                assert_eq!(lookback, Lookback::Last(1));
+                async { Ok(vec![Record::new("2")]) }
+            },
+            &metrics,
+        ))
         .expect("chain look_back");
 
         // then
@@ -354,6 +367,8 @@ mod chaining_test {
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "3");
+        assert!(metrics.fuel_used() > 0);
+        assert_eq!(metrics.invocation_count(), 2);
     }
 
     #[ignore]
@@ -362,6 +377,7 @@ mod chaining_test {
         //given
         let engine = SmartEngine::new();
         let mut chain_builder = SmartModuleChainBuilder::default();
+        let metrics = SmartModuleChainMetrics::default();
 
         chain_builder.add_smart_module(
             SmartModuleConfig::builder()
@@ -376,10 +392,13 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        let res = fluvio_future::task::run_block_on(chain.look_back(|lookback| {
-            assert_eq!(lookback, Lookback::Last(1));
-            async { Ok(vec![Record::new("wrong str")]) }
-        }));
+        let res = fluvio_future::task::run_block_on(chain.look_back(
+            |lookback| {
+                assert_eq!(lookback, Lookback::Last(1));
+                async { Ok(vec![Record::new("wrong str")]) }
+            },
+            &metrics,
+        ));
 
         // then
         assert!(res.is_err());
@@ -394,6 +413,8 @@ mod chaining_test {
                 record_value: "wrong str".to_string().into()
             }
         );
+        assert!(metrics.fuel_used() > 0);
+        assert_eq!(metrics.invocation_count(), 1);
     }
 
     #[test]
