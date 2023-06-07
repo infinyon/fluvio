@@ -87,6 +87,7 @@ impl SmartModuleInstance {
     }
 
     pub(crate) fn lookback(&self) -> Option<Lookback> {
+        self.look_back.as_ref()?; // return None if there is no function
         self.ctx.lookback
     }
 }
