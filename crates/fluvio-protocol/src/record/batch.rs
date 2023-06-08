@@ -357,7 +357,7 @@ where
         trace!("decoding batch");
         self.decode_from_file_buf(src, version)?;
         let rec_len = if self.header.has_schema() {
-            let mut sid = SchemaId(0);
+            let mut sid = SCHEMA_ID_NULL;
             sid.decode(src, version)?;
             self.schema_id = sid;
             trace!(schema_id=?self.schema_id);
