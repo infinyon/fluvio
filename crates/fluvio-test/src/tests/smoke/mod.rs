@@ -123,7 +123,6 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             );
 
             Some(table_format_process)
-            // Create a managed connector
         } else {
             None
         };

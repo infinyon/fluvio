@@ -30,7 +30,6 @@ pub async fn process_k8(opt: StartOpt, platform_version: Version, upgrade: bool)
         .hide_spinner(false)
         .upgrade(upgrade)
         .spu_config(opt.spu_config.as_spu_config())
-        .connector_prefixes(opt.connector_prefix)
         .with_if(opt.skip_checks, |b| b.skip_checks(true))
         .use_k8_port_forwarding(opt.k8_config.use_k8_port_forwarding);
 
