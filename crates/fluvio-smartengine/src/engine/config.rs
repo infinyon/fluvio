@@ -61,6 +61,10 @@ impl SmartModuleConfig {
     pub(crate) fn version(&self) -> i16 {
         self.version.unwrap_or(DEFAULT_SMARTENGINE_VERSION)
     }
+
+    pub fn set_lookback(&mut self, lookback: Option<Lookback>) {
+        self.lookback = lookback;
+    }
 }
 
 #[cfg(feature = "transformation")]
