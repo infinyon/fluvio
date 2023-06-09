@@ -1,6 +1,27 @@
 # Release Notes
 
-## Platform Version 0.10.11 - UNRELEASED
+## Platform Version 0.10.11 - 2023-06-09
+
+### Added
+
+* Report error if lookback is used on producer ([#3310](https://github.com/infinyon/fluvio/issues/3310))
+* Support `lookback` in test ([#3317](https://github.com/infinyon/fluvio/issues/3317))
+* Added `look_back` to smartmodule proc macro ([#3276](https://github.com/infinyon/fluvio/issues/3276))
+* Support `look_back` on SmartEngine ([#3304](https://github.com/infinyon/fluvio/issues/3304))
+* Support `look_back` on SPU ([#3306](https://github.com/infinyon/fluvio/issues/3306))
+* Fluvio-schema, batch id ([#3283](https://github.com/infinyon/fluvio/issues/3283))
+
+* Add option to run publish without build again ([#3296](https://github.com/infinyon/fluvio/issues/3296))
+
+### Fixed
+
+* Use dynamic value for `LogLevel` on deployment ([#3312](https://github.com/infinyon/fluvio/issues/3312))
+
+### Other
+
+* Provide a rich readme for fluvio crate ([#3303](https://github.com/infinyon/fluvio/issues/3303))
+* Measure metrics on `look_back` calls ([#3311](https://github.com/infinyon/fluvio/issues/3311))
+
 
 ## Platform Version 0.10.10 - 2023-05-26
 
