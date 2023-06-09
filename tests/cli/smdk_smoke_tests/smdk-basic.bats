@@ -867,3 +867,22 @@ setup_file() {
     assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
     assert_success
 }
+
+@test "Test Lookback" {
+  # Test with smartmodule example with Lookback
+  cd "$(pwd)/smartmodule/examples/filter_look_back/"
+
+  # Build
+  run $SMDK_BIN build
+  refute_output --partial "could not compile"
+
+  # Test
+  run $SMDK_BIN test --text '111' --lookback-last '1' --record '222' --record '333'
+  refute_output --partial "111"
+  assert_success
+
+  run $SMDK_BIN test --text '444' --lookback-last '1' --record '222' --record '333'
+  assert_output --partial "444"
+  assert_success
+
+}

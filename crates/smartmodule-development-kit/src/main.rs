@@ -7,7 +7,7 @@ mod publish;
 mod hub;
 mod set_public;
 
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 use clap::Parser;
 use anyhow::Result;

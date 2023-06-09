@@ -14,7 +14,9 @@ use fluvio_future::task::run_block_on;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_smartengine::transformation::TransformationConfig;
-use fluvio_smartengine::{SmartEngine, SmartModuleChainBuilder, SmartModuleConfig};
+use fluvio_smartengine::{
+    SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleChainInstance, Lookback,
+};
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use fluvio_protocol::record::Record;
 use fluvio_cli_common::user_input::{UserInputRecords, UserInputType};
@@ -70,6 +72,15 @@ pub struct TestCmd {
     /// verbose output
     #[arg(short = 'v', long = "verbose")]
     verbose: bool,
+
+    /// Records which act as existing in the topic before the SmartModule starts processing. Useful
+    /// for testing `lookback`. Multiple values are allowed.
+    #[arg(long, short)]
+    record: Vec<String>,
+
+    /// Sets the lookback parameter to the last N records.
+    #[arg(long, short)]
+    lookback_last: Option<u64>,
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String)> {
@@ -81,28 +92,43 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
 
 impl TestCmd {
     pub(crate) fn process(self) -> Result<()> {
+        run_block_on(self.process_async())
+    }
+
+    async fn process_async(self) -> Result<()> {
         debug!("starting smartmodule test");
+
+        let lookback: Option<Lookback> = self.lookback_last.map(Lookback::Last);
 
         let chain_builder = if let Some(transforms_file) = self.transforms_file {
             let config = TransformationConfig::from_file(transforms_file)
                 .context("unable to read transformation config")?;
-            run_block_on(build_chain(config))?
+            build_chain(config, lookback).await?
         } else if !self.transform.is_empty() {
             let config = TransformationConfig::try_from(self.transform)
                 .context("unable to parse transform")?;
-            run_block_on(build_chain(config))?
+            build_chain(config, lookback).await?
         } else if let Some(wasm_file) = self.wasm_file {
-            build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, self.params)?
+            build_chain_ad_hoc(
+                crate::read_bytes_from_path(&wasm_file)?,
+                self.params,
+                lookback,
+            )?
         } else {
             let package_info = PackageInfo::from_options(&self.package.as_opt())?;
             let wasm_file = package_info.target_wasm32_path()?;
-            build_chain_ad_hoc(crate::read_bytes_from_path(&wasm_file)?, self.params)?
+            build_chain_ad_hoc(
+                crate::read_bytes_from_path(&wasm_file)?,
+                self.params,
+                lookback,
+            )?
         };
 
         let engine = SmartEngine::new();
         debug!("SmartModule chain created");
 
         let mut chain = chain_builder.initialize(&engine)?;
+        look_back(&mut chain, self.record).await?;
 
         let key = self.key.map(Bytes::from);
 
@@ -141,7 +167,34 @@ impl TestCmd {
     }
 }
 
-async fn build_chain(config: TransformationConfig) -> Result<SmartModuleChainBuilder> {
+async fn look_back(chain: &mut SmartModuleChainInstance, records: Vec<String>) -> Result<()> {
+    let records: Vec<Record> = records
+        .into_iter()
+        .map(|r| Record::new(r.as_str()))
+        .collect();
+    chain
+        .look_back(
+            |lookback| {
+                let res = match lookback {
+                    fluvio_smartengine::Lookback::Last(n) => Ok(records
+                        .clone()
+                        .into_iter()
+                        .rev()
+                        .take(n as usize)
+                        .rev()
+                        .collect()),
+                };
+                async { res }
+            },
+            &Default::default(),
+        )
+        .await
+}
+
+async fn build_chain(
+    config: TransformationConfig,
+    lookback: Option<Lookback>,
+) -> Result<SmartModuleChainBuilder> {
     let client_config = FluvioConfig::load()?.try_into()?;
     let api_client = SmartModuleApiClient::connect_with_config(client_config).await?;
     let mut chain_builder = SmartModuleChainBuilder::default();
@@ -153,7 +206,8 @@ async fn build_chain(config: TransformationConfig) -> Result<SmartModuleChainBui
             .ok_or_else(|| anyhow!("smartmodule {} not found", &transform.uses))?
             .wasm
             .as_raw_wasm()?;
-        let config = SmartModuleConfig::from(transform);
+        let mut config = SmartModuleConfig::from(transform);
+        config.set_lookback(lookback);
         chain_builder.add_smart_module(config, wasm);
     }
     Ok(chain_builder)
@@ -162,10 +216,14 @@ async fn build_chain(config: TransformationConfig) -> Result<SmartModuleChainBui
 fn build_chain_ad_hoc(
     wasm: Vec<u8>,
     params: Vec<(String, String)>,
+    lookback: Option<Lookback>,
 ) -> Result<SmartModuleChainBuilder> {
     let params: BTreeMap<String, String> = params.into_iter().collect();
     Ok(SmartModuleChainBuilder::from((
-        SmartModuleConfig::builder().params(params.into()).build()?,
+        SmartModuleConfig::builder()
+            .params(params.into())
+            .lookback(lookback)
+            .build()?,
         wasm,
     )))
 }
