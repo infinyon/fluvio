@@ -60,7 +60,10 @@ pub async fn handle_produce_request(
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
-    let smartmodules = produce_request.smartmodules;
+    // prepend schema smardmodule here, if defined
+    // then append the rest of the sm chain
+    let mut smartmodules = ctx.smartengine_schema();
+    smartmodules.append(&mut produce_request.smartmodules.clone());
 
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {

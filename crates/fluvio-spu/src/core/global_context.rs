@@ -6,6 +6,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
+use fluvio::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind};
 use fluvio_smartengine::SmartEngine;
 use tracing::{debug, error, instrument};
 
@@ -153,6 +154,17 @@ where
 
     pub(crate) fn metrics(&self) -> Arc<SpuMetrics> {
         self.metrics.clone()
+    }
+
+    pub(crate) fn smartengine_schema(&self) -> Vec<SmartModuleInvocation> {
+        // prototoype placeholder
+        let mut pconfig = std::collections::BTreeMap::new();
+        pconfig.insert("config".to_string(), "schema config here".to_string());
+        vec![SmartModuleInvocation {
+            kind: SmartModuleKind::Filter,
+            params: pconfig.into(),
+            wasm: SmartModuleInvocationWasm::Predefined("schema-provider".into()),
+        }]
     }
 }
 
