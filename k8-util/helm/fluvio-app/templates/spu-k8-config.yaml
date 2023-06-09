@@ -8,4 +8,3 @@ data:
   spuPodConfig: {{ .Values.spuPod | toJson | quote }}
   lbServiceAnnotations: {{ .Values.loadBalancer.serviceAnnotations | toJson | quote }}
   service: {{ .Values.service | toJson | quote }}
-  connectorPrefixes: {{ .Values.connectorPrefixes }}

@@ -169,10 +169,6 @@ pub struct StartOpt {
     /// Service Type
     #[arg(long)]
     pub service_type: Option<String>,
-
-    /// Connector Prefix
-    #[arg(long, value_name = "connector_prefix")]
-    pub connector_prefix: Vec<String>,
 }
 
 impl StartOpt {

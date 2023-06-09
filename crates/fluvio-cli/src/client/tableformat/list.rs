@@ -21,7 +21,7 @@ pub struct ListTableFormatsOpt {
 }
 
 impl ListTableFormatsOpt {
-    /// Process list connectors cli request
+    /// Process list table format cli request
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
         let lists = admin.all::<TableFormatSpec>().await?;

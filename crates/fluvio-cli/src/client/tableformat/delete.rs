@@ -15,7 +15,7 @@ use fluvio::metadata::tableformat::TableFormatSpec;
 
 #[derive(Debug, Parser)]
 pub struct DeleteTableFormatOpt {
-    /// The name of the connector to delete
+    /// The name of the table format to delete
     name: String,
 }
 

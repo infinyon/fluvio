@@ -311,9 +311,6 @@ pub struct ClusterConfig {
     #[builder(setter(into), default)]
     spu_config: SpuConfig,
 
-    #[builder(setter(into), default)]
-    connector_prefixes: Vec<String>,
-
     #[builder(setter(into), default = "TLS_SERVER_SECRET_NAME.to_string()")]
     tls_server_secret_name: String,
 
@@ -742,13 +739,6 @@ impl ClusterInstaller {
 
         if let Some(tag) = &self.config.image_tag {
             install_settings.push(("image.tag", Cow::Borrowed(tag)));
-        }
-
-        if !self.config.connector_prefixes.is_empty() {
-            install_settings.push((
-                "connectorPrefixes",
-                Cow::Owned(self.config.connector_prefixes.join(" ")),
-            ));
         }
 
         // If configured with TLS, copy certs to server
