@@ -1,5 +1,6 @@
 # Release Notes
 
+## Platform Version 0.10.12 - UNRELEASED
 ## Platform Version 0.10.11 - 2023-06-09
 
 ### Added
