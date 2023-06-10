@@ -300,11 +300,12 @@ setup_file() {
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_success
 
-
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME"
+    INITIAL_VALUE="123"
+    export INITIAL_VALUE
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --smartmodule "$SMARTMODULE_NAME" --aggregate-initial $INITIAL_VALUE
     echo "cmd: $BATS_RUN_COMMAND" >&2
-    assert_line --index 0 "$TEST_MESSAGE_1"
-    assert_line --index 1 "$TEST_MESSAGE_1$TEST_MESSAGE_2"
+    assert_line --index 0 "$INITIAL_VALUE$TEST_MESSAGE_1"
+    assert_line --index 1 "$INITIAL_VALUE$TEST_MESSAGE_1$TEST_MESSAGE_2"
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
