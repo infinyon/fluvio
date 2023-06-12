@@ -63,7 +63,7 @@ fluvio-compression = { path = "../fluvio-compression", version = "0.3.0", defaul
 fluvio-types = { workspace = true,  optional = true }
 
 [dev-dependencies]
-criterion = "0.4.0"
+criterion = "0.5.1"
 trybuild = "1.0.64"
 fluvio-future = { workspace = true, features = [
     "fixture",

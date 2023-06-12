@@ -32,5 +32,5 @@ fluvio-smartmodule-derive = { version = "0.5.0", path = "../fluvio-smartmodule-d
 fluvio-protocol = { workspace = true, features = [ "link"] }
 
 [dev-dependencies]
-criterion = "0.4.0"
+criterion = "0.5.1"
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
