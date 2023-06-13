@@ -95,7 +95,14 @@ impl FluvioSocket {
     ) -> Result<Self, SocketError> {
         debug!("connecting to addr at: {}", addr);
 
-        let (write, read, fd) = connector.connect(addr).await?;
+        let (write, read, fd) = connector.connect(addr).await.map_err(|e| {
+            let emsg = e.to_string();
+            SocketError::Io {
+                source: e,
+                msg: format!("{emsg}, can't connect to {addr}"),
+            }
+        })?;
+
         Ok(Self::from_stream(write, read, fd))
     }
 }
