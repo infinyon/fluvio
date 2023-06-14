@@ -52,7 +52,7 @@ sha2 = "0.10.0"
 hex = "0.4.2"
 home = "0.5.3"
 current_platform = "0.2"
-comfy-table = "6.0.0"
+comfy-table = "7.0.0"
 atty = { version = "0.2.14", optional = true }
 ctrlc = { version = "3.1.3", optional = true }
 colored = "2"
