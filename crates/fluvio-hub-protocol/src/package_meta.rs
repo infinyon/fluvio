@@ -168,6 +168,33 @@ impl PackageMeta {
             Ok(())
         }
     }
+
+    pub fn tag_add(&mut self, tagname: &str, tagval: &str) {
+        let pkgtag = PkgTag::new(tagname, tagval);
+        if let Some(ref mut tagvec) = self.tags {
+            tagvec.push(pkgtag)
+        } else {
+            self.tags = Some(vec![pkgtag]);
+        }
+    }
+
+    pub fn tag_get(&self, tagname: &str) -> Option<Vec<PkgTag>> {
+        if let Some(ref tags) = self.tags {
+            let out = tags
+                .iter()
+                .filter_map(|tv| {
+                    if tv.tag == tagname {
+                        Some(tv.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            Some(out)
+        } else {
+            None
+        }
+    }
 }
 
 impl PkgTag {
@@ -371,4 +398,30 @@ fn hub_packagemeta_naming_check() {
         let res = pm.naming_check();
         assert!(res.is_err(), "Denied an valid package meta config {pm:?}");
     }
+}
+
+#[test]
+fn hub_packagemeta_tags() {
+    let mut pm = PackageMeta {
+        group: "infinyon".into(),
+        name: "example".into(),
+        version: "0.0.1".into(),
+        manifest: ["module.wasm".into()].to_vec(),
+        ..PackageMeta::default()
+    };
+
+    assert_eq!(pm.tag_get("atag"), None);
+    pm.tag_add("atag", "present");
+
+    let atag = pm.tag_get("atag");
+    assert!(atag.is_some());
+    let atag = atag.unwrap();
+    assert_eq!(atag.len(), 1);
+
+    // pkgmeta tags are not unique
+    pm.tag_add("atag", "value2");
+    let atag = pm.tag_get("atag");
+    assert!(atag.is_some());
+    let atag = atag.unwrap();
+    assert_eq!(atag.len(), 2);
 }
