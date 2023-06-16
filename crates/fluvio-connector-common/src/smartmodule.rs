@@ -1,4 +1,4 @@
-use fluvio::{FluvioConfig, SmartModuleInvocation, SmartModuleKind};
+use fluvio::{FluvioConfig, SmartModuleInvocation, SmartModuleKind, SmartModuleExtraParams};
 use crate::{config::ConnectorConfig, Result};
 use fluvio_smartengine::transformation::TransformationConfig;
 
@@ -40,13 +40,54 @@ pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<Smart
             .map(|s| SmartModuleInvocation {
                 wasm: fluvio::SmartModuleInvocationWasm::Predefined(s.uses.clone()),
                 kind: SmartModuleKind::Generic(Default::default()),
-                params: s
-                    .with
-                    .iter()
-                    .map(|(k, v)| (k.clone(), v.clone().into()))
-                    .collect::<std::collections::BTreeMap<String, String>>()
-                    .into(),
+                params: SmartModuleExtraParams::new(
+                    s.with
+                        .iter()
+                        .map(|(k, v)| (k.clone(), v.clone().into()))
+                        .collect::<std::collections::BTreeMap<String, String>>(),
+                    s.lookback.map(Into::into),
+                ),
             })
             .collect(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use fluvio::SmartModuleInvocationWasm;
+    use fluvio_connector_package::config::ConnectorConfigV1;
+    use fluvio_smartengine::transformation::{TransformationStep, Lookback};
+
+    use super::*;
+
+    #[test]
+    fn test_config_to_vec() {
+        //given
+        let config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
+            meta: Default::default(),
+            transforms: Some(TransformationConfig {
+                transforms: vec![TransformationStep {
+                    uses: "local/sm@0.0.0".to_string(),
+                    lookback: Some(Lookback { last: 2 }),
+                    ..Default::default()
+                }],
+            }),
+        });
+
+        //when
+        let res = smartmodule_vec_from_config(&config);
+
+        //then
+        assert!(res.is_some());
+        let inv = res.unwrap().remove(0);
+
+        assert!(
+            matches!(inv.wasm, SmartModuleInvocationWasm::Predefined(s) if s.eq("local/sm@0.0.0"))
+        );
+
+        assert!(matches!(inv.kind, SmartModuleKind::Generic(_)));
+
+        assert!(inv.params.lookback().is_some());
+        assert_eq!(inv.params.lookback().unwrap().last, 2);
+    }
 }

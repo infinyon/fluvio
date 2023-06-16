@@ -6,6 +6,9 @@ meta:
   create_topic: false
 transforms:
   - uses: infinyon/sql
+    lookback:
+      last:
+        1
     with:
       mapping:
         table: "topic_message"
