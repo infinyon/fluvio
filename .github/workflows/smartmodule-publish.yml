@@ -1,0 +1,60 @@
+name: SmartModule Publish workflow
+
+permissions: read-all
+
+on:
+  workflow_call:
+    inputs:
+      package-name:
+        required: true
+        type: string
+      branch:
+        type: string
+        default: "main"
+      rust-profile:
+        type: string
+        default: "release-lto"
+      cloud-url:
+        type: string
+      fail-fast:
+        type: boolean
+        default: true
+      public:
+        type: boolean
+        default: true
+    secrets:
+      CLOUD_USER_EMAIL:
+        required: true
+      CLOUD_USER_PASSWORD:
+        required: true
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: ${{ inputs.fail-fast }}
+    env:
+      CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+    steps:
+      - name: Install Fluvio
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Install Fluvio SMDK
+        run: fluvio install smdk
+      - name: Fluvio Login
+        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: "false"
+          cache-on-failure: "true"
+      - name: Build smartmodule
+        run: smdk build
+      - name: Publish
+        run: |
+          smdk ${{ inputs.public && '--public-yes' || '' }} \
+            -p ${{ inputs.package-name }}
