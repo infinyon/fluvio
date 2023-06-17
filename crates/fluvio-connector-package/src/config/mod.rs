@@ -331,7 +331,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use fluvio_smartengine::transformation::TransformationStep;
+    use fluvio_smartengine::transformation::{TransformationStep, Lookback};
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -588,6 +588,11 @@ mod tests {
                 .as_str(),
             "infinyon/sql"
         );
+        assert_eq!(
+            connector_spec.transforms().unwrap().transforms[0].lookback,
+            Some(Lookback { last: 1 })
+        );
+
         assert_eq!(connector_spec.transforms().unwrap().transforms[0].with,
                        BTreeMap::from([("mapping".to_string(), "{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":0,\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message\"}".into())]));
     }
