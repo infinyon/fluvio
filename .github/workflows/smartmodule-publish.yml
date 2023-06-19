@@ -14,18 +14,23 @@ on:
       rust-profile:
         type: string
         default: "release-lto"
-      cloud-url:
-        type: string
       fail-fast:
         type: boolean
         default: true
       public:
         type: boolean
         default: true
+      target_prod:
+        type: boolean
+        default: false
     secrets:
-      CLOUD_USER_EMAIL:
+      HUB_USER_EMAIL:
         required: true
-      CLOUD_USER_PASSWORD:
+      DEV_HUB_USER_EMAIL:
+        required: true
+      HUB_USER_PASSWORD:
+        required: true
+      DEV_HUB_USER_PASSWORD:
         required: true
 
 jobs:
@@ -44,7 +49,10 @@ jobs:
       - name: Install Fluvio SMDK
         run: fluvio install smdk
       - name: Fluvio Login
-        run: fluvio cloud login --email ${{ secrets.CLOUD_USER_EMAIL }} --password ${{ secrets.CLOUD_USER_PASSWORD }} ${{ inputs.cloud-url != '' && '--remote' || '' }} ${{ inputs.cloud-url }}
+        run: |
+          fluvio cloud login --email ${{ inputs.target_prod && secrets.HUB_USER_EMAIL || secrets.DEV_HUB_USER_EMAIL }} \
+          --password ${{ inputs.target_prod && secrets.HUB_USER_PASSWORD || secrets.DEV_HUB_USER_PASSWORD }} \
+          ${{ !inputs.target_prod && ('--remote ' + vars.DEV_CLOUD_URL) || '' }}
       - uses: actions/checkout@v3
         with:
           ref: ${{ inputs.branch }}
