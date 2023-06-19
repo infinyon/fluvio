@@ -23,6 +23,15 @@ on:
       target_prod:
         type: boolean
         default: false
+    secrets:
+      HUB_USER_EMAIL:
+        required: true
+      DEV_HUB_USER_EMAIL:
+        required: true
+      HUB_USER_PASSWORD:
+        required: true
+      DEV_HUB_USER_PASSWORD:
+        required: true
 
 jobs:
   publish:
