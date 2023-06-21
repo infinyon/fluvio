@@ -83,3 +83,20 @@ setup_file() {
     cat ./.hub/package-meta.yaml | grep '../../testing/README.md'
     assert_success
 }
+
+@test "Run connector with --ipkg" {
+    # create package meta doesn't exist
+    cd $CONNECTOR_DIR
+    run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
+    assert_success
+
+    mkdir $TEST_DIR/ipkg
+    cp .hub/json-test-connector-0.1.0.ipkg $TEST_DIR/ipkg
+    cp sample-config.yaml $TEST_DIR/ipkg 
+
+    cd $TEST_DIR/ipkg
+
+    run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config.yaml
+    assert_success
+    assert_output --partial "Connector runs with process id"
+}

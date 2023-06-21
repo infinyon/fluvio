@@ -186,14 +186,15 @@ fn deploy_local(
     log_level: LogLevel,
 ) -> Result<()> {
     let opt = package_cmd.as_opt();
-    let package_info = PackageInfo::from_options(&opt)?;
-
-    build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
 
     let (executable, connector_metadata) = match ipkg_file {
         Some(ipkg_file) => from_ipkg_file(ipkg_file).context("Failed to deploy from ipkg file")?,
-        None => from_cargo_package(&package_info)
-            .context("Failed to deploy from within cargo package directory")?,
+        None => {
+            let package_info = PackageInfo::from_options(&opt)?;
+            build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
+            from_cargo_package(&package_info)
+                .context("Failed to deploy from within cargo package directory")?
+        }
     };
 
     let mut log_path = std::env::current_dir()?;
