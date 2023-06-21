@@ -12,8 +12,7 @@ license = "Apache-2.0"
 source = true
 
 [deployment]
-image = "infinyon/fluvio-connect-json-test-source:0.1.0"
-
+binary = "json-test-connector"
 
 [custom]
 name = "json"
