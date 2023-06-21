@@ -28,7 +28,7 @@ serde_json = { workspace = true}
 serde_yaml = { workspace = true }
 inventory = "0.3"
 tokio = { workspace = true,  features = ["macros"] }
-comfy-table = "7.0.1"
+comfy-table = { workspace = true }
 hdrhistogram = "7.3.0"
 crc = "3.0"
 fork = "0.1"
