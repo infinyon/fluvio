@@ -78,7 +78,7 @@ clap = { version = "4.0.10", default-features = false }
 color-eyre = { version = "0.6.0", default-features = false }
 colored = "2.0.0"
 crc32c = { version = "0.6"}
-comfy-table = { version = "6.1.0", default-features = false }
+comfy-table = { version = "7.0.1", default-features = false }
 convert_case = "0.6.0"
 derive_builder = "0.12.0"
 directories = "5.0.0"
