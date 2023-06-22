@@ -12,6 +12,27 @@ setup_file() {
     TOPIC_NAME=$(random_string)
     export TOPIC_NAME
     debug_msg "Topic name: $TOPIC_NAME"
+    TEST_DIR="$(mktemp -d -t topic-basic-test.XXXXX)"
+
+    TOPIC_CONFIG_PATH="$TEST_DIR/$TOPIC_NAME.yaml"
+    export TOPIC_CONFIG_PATH
+
+    cat <<EOF >$TOPIC_CONFIG_PATH
+version: 0.1.0
+meta:
+  name: $TOPIC_NAME
+partition:
+  count: 1
+  max_size: 10 KB
+  replication: 1
+  ignore_rack_assignment: true
+retention:
+  time: 2m
+  segment_size: 2.0 KB
+compression:
+  type: Lz4
+EOF
+
 }
 
 # Create topic
@@ -95,3 +116,41 @@ setup_file() {
     assert_failure
     assert_output --partial "max_partition_size 2048 is less than segment size 3072"
 }
+
+# Create topic with empty name - Negative test
+@test "Attempt to create topic with empty name" {
+    run timeout 15s "$FLUVIO_BIN" topic create " " --dry-run
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_failure
+    assert_output --partial "Topic name is required"
+}
+
+
+# Create topic with name and config file - Negative test
+@test "Attempt to create topic with name and config file" {
+    run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)" --config /tmp/config.yaml --dry-run
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_failure
+    assert_output --partial "error: the argument '--config <PATH>' cannot be used with"
+}
+
+# Create topic with partition size and config file - Negative test
+@test "Attempt to create topic with partition size and config file" {
+    run timeout 15s "$FLUVIO_BIN" topic create --max-partition-size "2 Ki"  --config /tmp/config.yaml --dry-run
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_failure
+    assert_output --partial "error: the argument '--config <PATH>' cannot be used with"
+}
+
+# Create topic from config file
+@test "Create a topic from config file" {
+    debug_msg "Topic config file: $TOPIC_CONFIG_PATH"
+    run timeout 15s "$FLUVIO_BIN" topic create --config "$TOPIC_CONFIG_PATH" 
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_success
+}
+

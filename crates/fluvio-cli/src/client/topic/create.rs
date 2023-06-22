@@ -9,6 +9,7 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
@@ -26,13 +27,13 @@ use fluvio_sc_schema::shared::validate_resource_name;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::{CliError};
+use crate::CliError;
 
 #[derive(Debug, Parser)]
 pub struct CreateTopicOpt {
     /// The name of the Topic to create
-    #[arg(value_name = "name")]
-    topic: String,
+    #[arg(value_name = "name", group = "config-arg")]
+    topic: Option<String>,
 
     /// The number of Partitions to give the Topic
     ///
@@ -45,7 +46,8 @@ pub struct CreateTopicOpt {
         short = 'p',
         long = "partitions",
         value_name = "partitions",
-        default_value = "1"
+        default_value = "1",
+        group = "config-arg"
     )]
     partitions: PartitionCount,
 
@@ -63,7 +65,8 @@ pub struct CreateTopicOpt {
         short = 'r',
         long = "replication",
         value_name = "integer",
-        default_value = "1"
+        default_value = "1",
+        group = "config-arg"
     )]
     replication: i16,
 
@@ -71,7 +74,8 @@ pub struct CreateTopicOpt {
     #[arg(
         short = 'i',
         long = "ignore-rack-assignment",
-        conflicts_with = "replica_assignment"
+        conflicts_with = "replica_assignment",
+        group = "config-arg"
     )]
     ignore_rack_assignment: bool,
 
@@ -81,7 +85,8 @@ pub struct CreateTopicOpt {
         long = "replica-assignment",
         value_name = "file.json",
         conflicts_with = "partitions",
-        conflicts_with = "replication"
+        conflicts_with = "replication",
+        group = "config-arg"
     )]
     replica_assignment: Option<PathBuf>,
 
@@ -91,12 +96,20 @@ pub struct CreateTopicOpt {
 
     #[clap(flatten)]
     setting: TopicConfigOpt,
+
+    /// Path to topic configuration file
+    ///
+    /// All configuration parameters can be specified either as command-line arguments
+    /// or inside the topic configuration file in YAML format.
+    #[arg(short, long, value_name = "PATH", conflicts_with = "config-arg")]
+    config: Option<PathBuf>,
 }
 
 impl CreateTopicOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let dry_run = self.dry_run;
-        let (name, topic_spec) = self.validate()?;
+        let (name, topic_spec) = self.construct()?;
+        validate(&name, &topic_spec)?;
 
         debug!("creating topic: {} spec: {:#?}", name, topic_spec);
         let admin = fluvio.admin().await;
@@ -106,10 +119,18 @@ impl CreateTopicOpt {
         Ok(())
     }
 
-    /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(String, TopicSpec)> {
-        use fluvio::metadata::topic::PartitionMaps;
-        use fluvio::metadata::topic::TopicReplicaParam;
+    fn construct(self) -> Result<(String, TopicSpec)> {
+        if let Some(config_path) = self.config {
+            let config = TopicConfig::from_file(&config_path).map_err(|err| {
+                IoError::new(
+                    ErrorKind::InvalidInput,
+                    format!("cannot read topic config file {config_path:?}: {err}"),
+                )
+            })?;
+            return Ok((config.meta.name.clone(), config.into()));
+        }
+
+        use fluvio::metadata::topic::{PartitionMaps, TopicReplicaParam};
         use load::PartitionLoad;
 
         let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
@@ -130,12 +151,6 @@ impl CreateTopicOpt {
                 ignore_rack_assignment: self.ignore_rack_assignment,
             })
         };
-
-        if let Err(err) = validate_resource_name(&self.topic) {
-            return Err(
-                CliError::InvalidArg(format!("Invalid Topic name {}. {err}", self.topic,)).into(),
-            );
-        }
 
         let mut topic_spec: TopicSpec = replica_spec.into();
         if let Some(retention) = self.setting.retention_time {
@@ -162,12 +177,21 @@ impl CreateTopicOpt {
             topic_spec.set_storage(storage);
         }
 
-        // return server separately from config
-        Ok((self.topic, topic_spec))
+        Ok((self.topic.unwrap_or_default(), topic_spec))
     }
 }
 
+fn validate(name: &str, _spec: &TopicSpec) -> Result<()> {
+    if name.trim().is_empty() {
+        return Err(CliError::InvalidArg("Topic name is required".to_string()).into());
+    }
+    validate_resource_name(name)
+        .map_err(|err| CliError::InvalidArg(format!("Invalid Topic name {}. {err}", name)))?;
+    Ok(())
+}
+
 #[derive(Debug, Parser)]
+#[group(id = "config-arg")]
 pub struct TopicConfigOpt {
     /// Retention time (round to seconds)
     /// Ex: '1h', '2d 10s', '7 days' (default)
