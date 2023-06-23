@@ -52,8 +52,8 @@ jobs:
           cache-targets: "false"
           cache-on-failure: "true"
       - name: Build smartmodule
-        run: smdk build
+        run: smdk build -p ${{ inputs.package-name }}
       - name: Publish
         run: |
-          smdk ${{ inputs.public && '--public-yes' || '' }} \
+          smdk publish ${{ inputs.public && '--public-yes' || '' }} \
             -p ${{ inputs.package-name }}
