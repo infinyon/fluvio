@@ -24,13 +24,11 @@ on:
         type: boolean
         default: false
     secrets:
-      HUB_USER_EMAIL:
+      ORG_HUB_SA_NAME:
         required: true
-      DEV_HUB_USER_EMAIL:
+      ORG_HUB_SA_PASSWD_DEV:
         required: true
-      HUB_USER_PASSWORD:
-        required: true
-      DEV_HUB_USER_PASSWORD:
+      ORG_HUB_SA_PASSWD_PROD:
         required: true
 
 jobs:
@@ -50,8 +48,8 @@ jobs:
         run: fluvio install smdk
       - name: Fluvio Login
         run: |
-          fluvio cloud login --email ${{ inputs.target_prod && secrets.HUB_USER_EMAIL || secrets.DEV_HUB_USER_EMAIL }} \
-          --password ${{ inputs.target_prod && secrets.HUB_USER_PASSWORD || secrets.DEV_HUB_USER_PASSWORD }} \
+          fluvio cloud login --email ${{ secrets.ORG_HUB_SA_NAME }} \
+          --password ${{ !inputs.target_prod && secrets.ORG_HUB_SA_PASSWD_DEV || secrets.ORG_HUB_SA_PASSWD_PROD }} \
           ${{ !inputs.target_prod && '--remote' || '' }} ${{ !inputs.target_prod && vars.DEV_CLOUD_URL || '' }}
       - uses: actions/checkout@v3
         with:
