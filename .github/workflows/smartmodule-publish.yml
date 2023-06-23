@@ -30,6 +30,8 @@ on:
         required: true
       ORG_HUB_SA_PASSWD_PROD:
         required: true
+      ORG_CLOUD_URL_DEV:
+        required: true
 
 jobs:
   publish:
@@ -50,7 +52,7 @@ jobs:
         run: |
           fluvio cloud login --email ${{ secrets.ORG_HUB_SA_NAME }} \
           --password ${{ !inputs.target_prod && secrets.ORG_HUB_SA_PASSWD_DEV || secrets.ORG_HUB_SA_PASSWD_PROD }} \
-          ${{ !inputs.target_prod && '--remote' || '' }} ${{ !inputs.target_prod && vars.DEV_CLOUD_URL || '' }}
+          ${{ !inputs.target_prod && '--remote' || '' }} ${{ !inputs.target_prod && secrets.ORG_CLOUD_URL_DEV || '' }}
       - uses: actions/checkout@v3
         with:
           ref: ${{ inputs.branch }}
