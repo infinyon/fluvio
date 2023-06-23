@@ -23,15 +23,6 @@ on:
       target_prod:
         type: boolean
         default: false
-    secrets:
-      ORG_HUB_SA_NAME:
-        required: true
-      ORG_HUB_SA_PASSWD_DEV:
-        required: true
-      ORG_HUB_SA_PASSWD_PROD:
-        required: true
-      ORG_CLOUD_URL_DEV:
-        required: true
 
 jobs:
   publish:
