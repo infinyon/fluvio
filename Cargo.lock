@@ -2667,17 +2667,21 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.22.2"
+version = "0.22.3"
 dependencies = [
+ "anyhow",
  "async-trait",
  "base64 0.21.2",
  "bytes 1.4.0",
+ "bytesize",
+ "derive_builder",
  "flate2",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
+ "humantime-serde",
  "lenient_semver",
  "semver 1.0.17",
  "serde",
