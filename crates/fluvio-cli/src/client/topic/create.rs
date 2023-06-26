@@ -9,7 +9,6 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
@@ -23,6 +22,7 @@ use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
 use fluvio::metadata::topic::CompressionAlgorithm;
 
+use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use fluvio_sc_schema::shared::validate_resource_name;
 
 use fluvio::Fluvio;

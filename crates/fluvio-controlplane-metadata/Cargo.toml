@@ -32,6 +32,7 @@ bytesize = { workspace = true }
 humantime-serde = { version = "1.1.1", default-features = false, optional = true  }
 anyhow = { workspace = true, optional = true }
 serde_yaml = { workspace = true, optional = true }
+derive_builder = { workspace = true }
 
 # External Fluvio dependencies
 fluvio-future = { workspace = true }

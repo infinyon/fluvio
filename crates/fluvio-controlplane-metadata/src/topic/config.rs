@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use derive_builder::Builder;
 use fluvio_types::{ReplicationFactor, TopicName, PartitionCount, IgnoreRackAssignment};
 
 use crate::topic::{
@@ -11,37 +12,47 @@ use super::{TopicSpec, PartitionMap, CompressionAlgorithm};
 const DEFAULT_PARTITION_COUNT: PartitionCount = 1;
 const DEFAULT_REPLICATION_FACTOR: ReplicationFactor = 1;
 const DEFAULT_IGNORE_RACK_ASSIGMENT: IgnoreRackAssignment = false;
+const DEFAULT_VERSION: &str = "0.1.0";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Builder, Clone, PartialEq, Eq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "kebab-case")
 )]
 pub struct TopicConfig {
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
-    pub version: Option<String>,
+    #[cfg_attr(feature = "use_serde", serde(default = "default_version"))]
+    #[builder(default = "default_version()")]
+    pub version: String,
 
     pub meta: MetaConfig,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
-    pub partition: Option<PartitionConfig>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub partition: PartitionConfig,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
-    pub retention: Option<RetentionConfig>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub retention: RetentionConfig,
 
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
-    pub compression: Option<CompressionConfig>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub compression: CompressionConfig,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Builder, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "kebab-case")
+)]
 pub struct MetaConfig {
     pub name: TopicName,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Builder, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "kebab-case")
+)]
 pub struct PartitionConfig {
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub count: Option<PartitionCount>,
@@ -59,8 +70,12 @@ pub struct PartitionConfig {
     pub maps: Option<Vec<PartitionMap>>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Builder, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "kebab-case")
+)]
 pub struct RetentionConfig {
     #[cfg_attr(
         feature = "use_serde",
@@ -72,8 +87,12 @@ pub struct RetentionConfig {
     pub segment_size: Option<bytesize::ByteSize>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Builder, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "kebab-case")
+)]
 pub struct CompressionConfig {
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: CompressionAlgorithm,
@@ -95,61 +114,45 @@ impl std::str::FromStr for TopicConfig {
     }
 }
 
-impl Default for TopicConfig {
+impl Default for PartitionConfig {
     fn default() -> Self {
         Self {
-            partition: Some(PartitionConfig {
-                count: Some(DEFAULT_PARTITION_COUNT),
-                replication: Some(DEFAULT_REPLICATION_FACTOR),
-                ..Default::default()
-            }),
-            version: Default::default(),
-            meta: Default::default(),
-            retention: Default::default(),
-            compression: Default::default(),
+            count: Some(DEFAULT_PARTITION_COUNT),
+            replication: Some(DEFAULT_REPLICATION_FACTOR),
+            ignore_rack_assignment: Some(DEFAULT_IGNORE_RACK_ASSIGMENT),
+            max_size: Default::default(),
+            maps: Default::default(),
         }
     }
 }
 
 impl From<TopicConfig> for TopicSpec {
     fn from(config: TopicConfig) -> Self {
-        let segment_size = config
-            .retention
-            .as_ref()
-            .and_then(|r| r.segment_size)
-            .map(|s| s.as_u64() as u32);
-        let max_partition_size = config
-            .partition
-            .as_ref()
-            .and_then(|r| r.max_size)
-            .map(|s| s.as_u64());
+        let segment_size = config.retention.segment_size.map(|s| s.as_u64() as u32);
+        let max_partition_size = config.partition.max_size.map(|s| s.as_u64());
 
-        let replica_spec = match config.partition {
-            Some(partition) => match partition.maps {
-                Some(maps) => ReplicaSpec::Assigned(maps.into()),
-                None => ReplicaSpec::Computed(TopicReplicaParam {
-                    partitions: partition.count.unwrap_or(DEFAULT_PARTITION_COUNT),
-                    replication_factor: partition.replication.unwrap_or(DEFAULT_REPLICATION_FACTOR),
-                    ignore_rack_assignment: partition
-                        .ignore_rack_assignment
-                        .unwrap_or(DEFAULT_IGNORE_RACK_ASSIGMENT),
-                }),
-            },
+        let replica_spec = match config.partition.maps {
+            Some(maps) => ReplicaSpec::Assigned(maps.into()),
             None => ReplicaSpec::Computed(TopicReplicaParam {
-                partitions: DEFAULT_PARTITION_COUNT,
-                replication_factor: DEFAULT_REPLICATION_FACTOR,
-                ignore_rack_assignment: DEFAULT_IGNORE_RACK_ASSIGMENT,
+                partitions: config.partition.count.unwrap_or(DEFAULT_PARTITION_COUNT),
+                replication_factor: config
+                    .partition
+                    .replication
+                    .unwrap_or(DEFAULT_REPLICATION_FACTOR),
+                ignore_rack_assignment: config
+                    .partition
+                    .ignore_rack_assignment
+                    .unwrap_or(DEFAULT_IGNORE_RACK_ASSIGMENT),
             }),
         };
         let mut topic_spec: TopicSpec = replica_spec.into();
-        if let Some(retention_time) = config.retention.and_then(|r| r.time) {
+        if let Some(retention_time) = config.retention.time {
             topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
                 time_in_seconds: retention_time.as_secs() as u32,
             }));
         };
-        if let Some(compression) = config.compression {
-            topic_spec.set_compression_type(compression.type_);
-        }
+
+        topic_spec.set_compression_type(config.compression.type_);
 
         if segment_size.is_some() || max_partition_size.is_some() {
             topic_spec.set_storage(TopicStorageConfig {
@@ -162,6 +165,10 @@ impl From<TopicConfig> for TopicSpec {
     }
 }
 
+fn default_version() -> String {
+    DEFAULT_VERSION.to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -170,14 +177,14 @@ mod tests {
     #[test]
     fn test_topic_config_ser_de() {
         //given
-        let input = r#"version: 0.1.0
+        let input = r#"version: 0.1.1
 meta:
   name: test_topic
 partition:
   count: 3
-  max_size: 1.0 KB
+  max-size: 1.0 KB
   replication: 2
-  ignore_rack_assignment: true
+  ignore-rack-assignment: true
   maps:
   - id: 1
     replicas:
@@ -185,7 +192,7 @@ partition:
     - 2
 retention:
   time: 2m
-  segment_size: 2.0 KB
+  segment-size: 2.0 KB
 compression:
   type: Lz4
 "#;
@@ -199,6 +206,47 @@ compression:
         //then
         assert_eq!(input, ser);
         assert_eq!(deser, test_config());
+    }
+
+    #[cfg(feature = "use_serde")]
+    #[test]
+    fn test_minimal_topic_config_ser_de() {
+        //given
+        let input = r#"meta:
+  name: test_topic
+"#;
+
+        //when
+        use std::str::FromStr;
+
+        let deser = TopicConfig::from_str(input).expect("deserialized");
+        let ser = serde_yaml::to_string(&deser).expect("serialized");
+
+        //then
+        assert_eq!(deser.version, DEFAULT_VERSION);
+        assert_eq!(deser.partition.count, Some(DEFAULT_PARTITION_COUNT));
+        assert_eq!(
+            deser.partition.replication,
+            Some(DEFAULT_REPLICATION_FACTOR)
+        );
+        assert_eq!(
+            deser.partition.ignore_rack_assignment,
+            Some(DEFAULT_IGNORE_RACK_ASSIGMENT)
+        );
+        assert_eq!(
+            ser,
+            r#"version: 0.1.0
+meta:
+  name: test_topic
+partition:
+  count: 1
+  replication: 1
+  ignore-rack-assignment: false
+retention: {}
+compression:
+  type: Any
+"#
+        );
     }
 
     #[test]
@@ -247,11 +295,11 @@ compression:
 
     fn test_config() -> TopicConfig {
         TopicConfig {
-            version: Some("0.1.0".to_string()),
+            version: "0.1.1".to_string(),
             meta: MetaConfig {
                 name: "test_topic".to_string(),
             },
-            partition: Some(PartitionConfig {
+            partition: PartitionConfig {
                 count: Some(3),
                 max_size: Some(bytesize::ByteSize(1000)),
                 replication: Some(2),
@@ -260,14 +308,14 @@ compression:
                     id: 1,
                     replicas: vec![1, 2],
                 }]),
-            }),
-            retention: Some(RetentionConfig {
+            },
+            retention: RetentionConfig {
                 time: Some(Duration::from_secs(120)),
                 segment_size: Some(bytesize::ByteSize(2000)),
-            }),
-            compression: Some(CompressionConfig {
+            },
+            compression: CompressionConfig {
                 type_: CompressionAlgorithm::Lz4,
-            }),
+            },
         }
     }
 }
