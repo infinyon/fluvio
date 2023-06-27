@@ -1,6 +1,24 @@
 # Release Notes
 
-## Platform Version 0.10.12 - UNRELEASED
+## Platform Version 0.10.12 - 2023-06-26
+
+### Added
+
+* Fluvio-hub-protocol, tag util methods ([#3314](https://github.com/infinyon/fluvio/issues/3314))
+* Added topic config ([#3345](https://github.com/infinyon/fluvio/issues/3345))
+
+### Changed
+
+* Update dependencies ([#3305](https://github.com/infinyon/fluvio/issues/3305))
+* Update wasmtime to 10.0.1 ([#3344](https://github.com/infinyon/fluvio/issues/3344))
+
+### Fixed
+
+* Fluvio-socket, improve connect error message ([#3324](https://github.com/infinyon/fluvio/issues/3324))
+* Lookback is not passed from connectors ([#3332](https://github.com/infinyon/fluvio/issues/3332))
+* Don't require Cargo project to start connector from ipkg ([#3340](https://github.com/infinyon/fluvio/issues/3340))
+
+
 ## Platform Version 0.10.11 - 2023-06-09
 
 ### Added
@@ -11,7 +29,6 @@
 * Support `look_back` on SmartEngine ([#3304](https://github.com/infinyon/fluvio/issues/3304))
 * Support `look_back` on SPU ([#3306](https://github.com/infinyon/fluvio/issues/3306))
 * Fluvio-schema, batch id ([#3283](https://github.com/infinyon/fluvio/issues/3283))
-
 * Add option to run publish without build again ([#3296](https://github.com/infinyon/fluvio/issues/3296))
 
 ### Fixed
