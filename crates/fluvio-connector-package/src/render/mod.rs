@@ -92,14 +92,11 @@ pub fn render_config_str(input: &str) -> anyhow::Result<String> {
 
 #[cfg(test)]
 mod test {
-    use std::{io::Write};
+    use std::io::Write;
 
     use minijinja::value::Value;
 
-    use crate::{
-        secret::{FileSecretStore},
-        config::{ConnectorConfig},
-    };
+    use crate::{secret::FileSecretStore, config::ConnectorConfig};
 
     use super::{ConfigRenderer, context::ContextStore};
 
@@ -214,11 +211,16 @@ mod test {
         let connector_config: ConnectorConfig =
             serde_yaml::from_str(&value_str).expect("should be yaml");
         let value: serde_yaml::Value = serde_yaml::from_str(&value_str).expect("should be yaml");
+        let connector_config = match connector_config {
+            ConnectorConfig::V0_0_0(inner) => inner,
+            ConnectorConfig::V0_1_0(inner) => inner,
+            _ => unreachable!("version must be 0.1.0"),
+        };
 
-        assert_eq!(connector_config.meta().name, "test");
-        assert_eq!(connector_config.meta().version, "0.1.0");
-        assert_eq!(connector_config.meta().topic, "test");
-        assert_eq!(connector_config.meta().type_, "http-source");
+        assert_eq!(connector_config.meta.name, "test");
+        assert_eq!(connector_config.meta.version, "0.1.0");
+        assert_eq!(connector_config.meta.topic, "test");
+        assert_eq!(connector_config.meta.type_, "http-source");
         assert_eq!(
             value["my_service"]["api_key"]
                 .as_str()

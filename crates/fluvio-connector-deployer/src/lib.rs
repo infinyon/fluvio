@@ -65,7 +65,7 @@ impl DeploymentBuilder {
 
         match &deployment.deployment_type {
             DeploymentType::Local { output_file } => {
-                let name = config.meta().name.to_owned();
+                let name = config.meta().name().to_owned();
                 let process_id = local::deploy_local(&deployment, output_file.as_ref(), &name)?;
                 let log_file = output_file.clone();
 
