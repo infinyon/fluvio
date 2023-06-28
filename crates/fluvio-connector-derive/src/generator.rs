@@ -125,7 +125,7 @@ fn init_and_parse_config(config_type_path: &Path) -> TokenStream {
 
         let user_config: #config_type_path = ::fluvio_connector_common::config::from_value(config_value, Some(#config_type_path::__config_name()))?;
 
-        ::fluvio_connector_common::tracing::info!("starting processing");
+        ::fluvio_connector_common::tracing::info!(conn_type=common_config.r#type(), conn_name=common_config.name(), conn_version=common_config.version(), "Starting Processing");
     }
 }
 
