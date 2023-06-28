@@ -16,33 +16,33 @@ use crate::common::target::TargetError;
 pub enum CliError {
     #[error(transparent)]
     OutputError(#[from] OutputError),
-    #[error("Failed to parse format string")]
+    #[error("Failed to parse format string: {0}")]
     TemplateError(#[from] TemplateError),
 
     #[cfg(feature = "k8s")]
-    #[error("Fluvio cluster error")]
+    #[error("Fluvio cluster error: {0}")]
     ClusterCliError(#[from] ClusterCliError),
 
-    #[error("Target Error")]
+    #[error("Target Error: {0}")]
     TargetError(#[from] TargetError),
-    #[error("Fluvio client error")]
+    #[error("Fluvio client error: {0}")]
     ClientError(#[from] FluvioError),
 
     #[cfg(feature = "k8s")]
-    #[error("Kubernetes config error")]
+    #[error("Kubernetes config error: {0}")]
     K8ConfigError(#[from] k8_config::ConfigError),
 
     #[cfg(feature = "k8s")]
-    #[error("Kubernetes client error")]
+    #[error("Kubernetes client error: {0}")]
     K8ClientError(#[from] k8_client::ClientError),
 
     /// An error occurred while processing the connector yaml
-    #[error("Fluvio connector config")]
+    #[error("Fluvio connector config: {0}")]
     ConnectorConfig(#[from] serde_yaml::Error),
 
-    #[error("Package index error")]
+    #[error("Package index error: {0}")]
     IndexError(#[from] fluvio_index::Error),
-    #[error("Error finding executable")]
+    #[error("Error finding executable: {0}")]
     WhichError(#[from] which::Error),
     #[error("Http Error: {0}")]
     HttpError(#[from] fluvio_cli_common::error::HttpError),
@@ -71,7 +71,7 @@ pub enum CliError {
     ProfileNotFoundInConfig(String),
     #[error("Cluster not found in config: {0}")]
     ClusterNotFoundInConfig(String),
-    #[error("Progress Error")]
+    #[error("Progress Error: {0}")]
     ProgressError(#[from] ProgressTemplateError),
     #[cfg(feature = "smartengine")]
     #[error("SmartModuleEngine config: {0}")]
