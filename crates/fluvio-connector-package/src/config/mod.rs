@@ -332,6 +332,10 @@ impl ConnectorConfig {
     pub fn version(&self) -> String {
         self.meta().version.clone()
     }
+
+    pub fn r#type(&self) -> String {
+        self.meta().type_.clone()
+    }
 }
 
 #[cfg(test)]
@@ -723,5 +727,6 @@ mod tests {
 
         assert_eq!(have.name(), "my-test-mqtt");
         assert_eq!(have.version(), "0.1.0");
+        assert_eq!(have.r#type(), "mqtt-source");
     }
 }
