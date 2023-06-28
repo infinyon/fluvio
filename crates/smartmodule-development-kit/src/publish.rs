@@ -73,10 +73,9 @@ impl PublishCmd {
 
             // --push only, needs ipkg file
             (false, true) => {
-                let pkgfile = &self
-                    .package_meta
-                    .clone()
-                    .ok_or_else(|| anyhow::anyhow!("package file required for push"))?;
+                let pkgfile = package_meta_path
+                    .to_str()
+                    .ok_or_else(|| anyhow::anyhow!("invalid package metadata path"))?;
                 package_push(self, pkgfile, &access)?;
             }
         }
