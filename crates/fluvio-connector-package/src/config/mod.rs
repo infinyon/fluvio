@@ -324,6 +324,14 @@ impl ConnectorConfig {
     pub fn image(&self) -> String {
         self.meta().image()
     }
+
+    pub fn name(&self) -> String {
+        self.meta().name.clone()
+    }
+
+    pub fn version(&self) -> String {
+        self.meta().version.clone()
+    }
 }
 
 #[cfg(test)]
@@ -689,5 +697,31 @@ mod tests {
             let connector_cfg = res.unwrap();
             println!("{tfile}: {connector_cfg:?}");
         }
+    }
+
+    #[test]
+    fn retrieves_name_and_version() {
+        let have = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
+            meta: MetaConfig {
+                name: "my-test-mqtt".to_string(),
+                type_: "mqtt-source".to_string(),
+                topic: "my-mqtt".to_string(),
+                version: "0.1.0".to_string(),
+                producer: Some(ProducerParameters {
+                    linger: None,
+                    compression: None,
+                    batch_size: Some(ByteSize::b(1600)),
+                }),
+                consumer: Some(ConsumerParameters {
+                    max_bytes: Some(ByteSize::b(1400)),
+                    partition: None,
+                }),
+                secrets: None,
+            },
+            transforms: None,
+        });
+
+        assert_eq!(have.name(), "my-test-mqtt");
+        assert_eq!(have.version(), "0.1.0");
     }
 }
