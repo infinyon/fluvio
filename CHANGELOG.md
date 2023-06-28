@@ -1,5 +1,7 @@
 # Release Notes
 
+## Platform Version 0.10.13 - UNRELEASED
+
 ## Platform Version 0.10.12 - 2023-06-26
 
 ### Added
@@ -248,7 +250,7 @@
 * Add additional test for encoding/decoding version ([#2761](https://github.com/infinyon/fluvio/pull/2761))
 * Update dev version ([#2817](https://github.com/infinyon/fluvio/pull/2817))
 
-## Platform Version 0.10.0 - 2022-10-24 
+## Platform Version 0.10.0 - 2022-10-24
 * Add throughput control to fluvio producer ([#2512](https://github.com/infinyon/fluvio/pull/2512))
 * Added blocking on Producer if the batch queue is full ([#2562](https://github.com/infinyon/fluvio/pull/2562))
 * Initial support for SmartEngine v2 ([#2610](https://github.com/infinyon/fluvio/pull/2610))
