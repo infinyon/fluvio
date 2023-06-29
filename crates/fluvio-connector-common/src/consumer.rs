@@ -20,17 +20,16 @@ pub async fn consumer_stream_from_config(
     config: &ConnectorConfig,
 ) -> Result<(Fluvio, impl ConsumerStream)> {
     let mut cluster_config = FluvioConfig::load()?;
-    cluster_config.client_id = Some(format!("fluvio_connector_{}", &config.meta().name));
+    cluster_config.client_id = Some(format!("fluvio_connector_{}", &config.meta().name()));
 
     let fluvio = Fluvio::connect_with_config(&cluster_config).await?;
     ensure_topic_exists(config).await?;
     let consumer = fluvio
         .partition_consumer(
-            &config.meta().topic,
+            config.meta().topic(),
             config
                 .meta()
-                .consumer
-                .as_ref()
+                .consumer()
                 .and_then(|c| c.partition)
                 .unwrap_or_default(),
         )
@@ -38,7 +37,7 @@ pub async fn consumer_stream_from_config(
 
     let mut builder = fluvio::ConsumerConfig::builder();
 
-    if let Some(max_bytes) = config.meta().consumer.as_ref().and_then(|c| c.max_bytes) {
+    if let Some(max_bytes) = config.meta().consumer().and_then(|c| c.max_bytes) {
         builder.max_bytes(max_bytes.as_u64() as i32);
     }
 

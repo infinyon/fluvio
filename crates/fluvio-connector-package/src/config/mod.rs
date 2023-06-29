@@ -6,6 +6,7 @@ use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::time::Duration;
 
+use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use fluvio_types::PartitionId;
 use tracing::debug;
 use anyhow::Result;
@@ -15,6 +16,11 @@ use bytesize::ByteSize;
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_compression::Compression;
 use crate::metadata::Direction;
+
+pub use self::v1::ConnectorConfigV1;
+pub use self::v1::MetaConfigV1;
+pub use self::v2::ConnectorConfigV2;
+pub use self::v2::MetaConfigV2;
 
 mod bytesize_serde;
 
@@ -32,6 +38,8 @@ pub enum ConnectorConfig {
     V0_0_0(ConnectorConfigV1),
     #[serde(rename = "0.1.0")]
     V0_1_0(ConnectorConfigV1),
+    #[serde(rename = "0.2.0")]
+    V0_2_0(ConnectorConfigV2),
 }
 
 impl Default for ConnectorConfig {
@@ -41,9 +49,9 @@ impl Default for ConnectorConfig {
 }
 
 mod serde_impl {
-    use serde::{Deserialize};
+    use serde::Deserialize;
 
-    use crate::config::ConnectorConfigV1;
+    use crate::config::{ConnectorConfigV1, ConnectorConfigV2};
 
     use super::ConnectorConfig;
 
@@ -58,6 +66,8 @@ mod serde_impl {
                 V0,
                 #[serde(rename = "0.1.0")]
                 V1,
+                #[serde(rename = "0.2.0")]
+                V2,
             }
             #[derive(Deserialize)]
             #[serde(rename_all = "camelCase")]
@@ -76,55 +86,187 @@ mod serde_impl {
                 Version::V1 => ConnectorConfigV1::deserialize(versioned_config.config)
                     .map(ConnectorConfig::V0_1_0)
                     .map_err(serde::de::Error::custom),
+
+                Version::V2 => ConnectorConfigV2::deserialize(versioned_config.config)
+                    .map(ConnectorConfig::V0_2_0)
+                    .map_err(serde::de::Error::custom),
             }
         }
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
-pub struct ConnectorConfigV1 {
-    pub meta: MetaConfig,
+mod v1 {
+    use super::*;
 
-    #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
-    pub transforms: Option<TransformationConfig>,
-}
+    #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+    pub struct ConnectorConfigV1 {
+        pub meta: MetaConfigV1,
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
-pub struct MetaConfig {
-    pub name: String,
-
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    pub topic: String,
-
-    pub version: String,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub producer: Option<ProducerParameters>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub consumer: Option<ConsumerParameters>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub secrets: Option<Vec<SecretConfig>>,
-}
-
-impl MetaConfig {
-    fn secrets(&self) -> HashSet<SecretConfig> {
-        HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
+        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
+        pub transforms: Option<TransformationConfig>,
     }
 
+    #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+    pub struct MetaConfigV1 {
+        pub name: String,
+
+        #[serde(rename = "type")]
+        pub type_: String,
+
+        pub topic: String,
+
+        pub version: String,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub producer: Option<ProducerParameters>,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub consumer: Option<ConsumerParameters>,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub secrets: Option<Vec<SecretConfig>>,
+    }
+
+    impl MetaConfigV1 {
+        pub fn secrets(&self) -> HashSet<SecretConfig> {
+            HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
+        }
+
+        pub fn direction(&self) -> Direction {
+            if self.type_.ends_with(SOURCE_SUFFIX) {
+                Direction::source()
+            } else {
+                Direction::dest()
+            }
+        }
+
+        pub fn image(&self) -> String {
+            format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
+        }
+    }
+}
+
+mod v2 {
+    use fluvio_controlplane_metadata::topic::config::TopicConfig;
+
+    use super::*;
+
+    #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+    pub struct ConnectorConfigV2 {
+        pub meta: MetaConfigV2,
+
+        #[serde(default, flatten, skip_serializing_if = "Option::is_none")]
+        pub transforms: Option<TransformationConfig>,
+    }
+
+    #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+    pub struct MetaConfigV2 {
+        pub name: String,
+
+        #[serde(rename = "type")]
+        pub type_: String,
+
+        pub topic: TopicConfig,
+
+        pub version: String,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub producer: Option<ProducerParameters>,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub consumer: Option<ConsumerParameters>,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub secrets: Option<Vec<SecretConfig>>,
+    }
+
+    impl MetaConfigV2 {
+        pub fn secrets(&self) -> HashSet<SecretConfig> {
+            HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
+        }
+
+        pub fn direction(&self) -> Direction {
+            if self.type_.ends_with(SOURCE_SUFFIX) {
+                Direction::source()
+            } else {
+                Direction::dest()
+            }
+        }
+
+        pub fn image(&self) -> String {
+            format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MetaConfig<'a> {
+    V0_1_0(&'a MetaConfigV1),
+    V0_2_0(&'a MetaConfigV2),
+}
+
+impl MetaConfig<'_> {
     fn direction(&self) -> Direction {
-        if self.type_.ends_with(SOURCE_SUFFIX) {
-            Direction::source()
-        } else {
-            Direction::dest()
+        match self {
+            MetaConfig::V0_1_0(inner) => inner.direction(),
+            MetaConfig::V0_2_0(inner) => inner.direction(),
         }
     }
 
     pub fn image(&self) -> String {
-        format!("{}-{}:{}", IMAGE_PREFFIX, self.type_, self.version)
+        match self {
+            MetaConfig::V0_1_0(inner) => inner.image(),
+            MetaConfig::V0_2_0(inner) => inner.image(),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            MetaConfig::V0_1_0(inner) => &inner.name,
+            MetaConfig::V0_2_0(inner) => &inner.name,
+        }
+    }
+
+    pub fn type_(&self) -> &str {
+        match self {
+            MetaConfig::V0_1_0(inner) => &inner.type_,
+            MetaConfig::V0_2_0(inner) => &inner.type_,
+        }
+    }
+
+    pub fn topic(&self) -> &str {
+        match self {
+            MetaConfig::V0_1_0(inner) => &inner.topic,
+            MetaConfig::V0_2_0(inner) => &inner.topic.meta.name,
+        }
+    }
+
+    pub fn version(&self) -> &str {
+        match self {
+            MetaConfig::V0_1_0(inner) => &inner.version,
+            MetaConfig::V0_2_0(inner) => &inner.version,
+        }
+    }
+
+    pub fn consumer(&self) -> Option<&ConsumerParameters> {
+        match self {
+            MetaConfig::V0_1_0(inner) => inner.consumer.as_ref(),
+            MetaConfig::V0_2_0(inner) => inner.consumer.as_ref(),
+        }
+    }
+
+    pub fn producer(&self) -> Option<&ProducerParameters> {
+        match self {
+            MetaConfig::V0_1_0(inner) => inner.producer.as_ref(),
+            MetaConfig::V0_2_0(inner) => inner.producer.as_ref(),
+        }
+    }
+
+    pub fn topic_config(&self) -> Option<&TopicConfig> {
+        match self {
+            MetaConfig::V0_1_0(_) => None,
+            MetaConfig::V0_2_0(inner) => Some(&inner.topic),
+        }
     }
 }
 
@@ -244,16 +386,6 @@ impl Serialize for SecretName {
     }
 }
 
-impl ConnectorConfigV1 {
-    fn meta(&self) -> &MetaConfig {
-        &self.meta
-    }
-
-    fn mut_meta(&mut self) -> &mut MetaConfig {
-        &mut self.meta
-    }
-}
-
 impl ConnectorConfig {
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
         let mut file = File::open(path.into())?;
@@ -277,10 +409,12 @@ impl ConnectorConfig {
         }
         Ok(())
     }
-    pub fn meta(&self) -> &MetaConfig {
+
+    pub fn meta(&self) -> MetaConfig {
         match self {
-            Self::V0_1_0(config) => config.meta(),
-            Self::V0_0_0(config) => config.meta(),
+            Self::V0_0_0(inner) => MetaConfig::V0_1_0(&inner.meta),
+            Self::V0_1_0(inner) => MetaConfig::V0_1_0(&inner.meta),
+            Self::V0_2_0(inner) => MetaConfig::V0_2_0(&inner.meta),
         }
     }
 
@@ -296,24 +430,20 @@ impl ConnectorConfig {
         std::fs::write(path, serde_yaml::to_string(self)?)?;
         Ok(())
     }
-    pub fn mut_meta(&mut self) -> &mut MetaConfig {
-        match self {
-            Self::V0_1_0(config) => config.mut_meta(),
-            Self::V0_0_0(config) => config.mut_meta(),
-        }
-    }
 
     pub fn secrets(&self) -> HashSet<SecretConfig> {
         match self {
-            Self::V0_1_0(config) => config.meta.secrets(),
             Self::V0_0_0(_) => Default::default(),
+            Self::V0_1_0(config) => config.meta.secrets(),
+            Self::V0_2_0(config) => config.meta.secrets(),
         }
     }
 
     pub fn transforms(&self) -> Option<&TransformationConfig> {
         match self {
-            Self::V0_1_0(config) => config.transforms.as_ref(),
             Self::V0_0_0(config) => config.transforms.as_ref(),
+            Self::V0_1_0(config) => config.transforms.as_ref(),
+            Self::V0_2_0(config) => config.transforms.as_ref(),
         }
     }
 
@@ -326,15 +456,15 @@ impl ConnectorConfig {
     }
 
     pub fn name(&self) -> String {
-        self.meta().name.clone()
+        self.meta().name().to_string()
     }
 
     pub fn version(&self) -> String {
-        self.meta().version.clone()
+        self.meta().version().to_string()
     }
 
     pub fn r#type(&self) -> String {
-        self.meta().type_.clone()
+        self.meta().type_().to_string()
     }
 }
 
@@ -343,6 +473,13 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
+    use fluvio_controlplane_metadata::topic::{
+        config::{
+            TopicConfigBuilder, MetaConfigBuilder, MetaConfig, PartitionConfig, RetentionConfig,
+            CompressionConfig,
+        },
+        CompressionAlgorithm,
+    };
     use fluvio_smartengine::transformation::{TransformationStep, Lookback};
     use pretty_assertions::assert_eq;
 
@@ -350,7 +487,7 @@ mod tests {
     fn full_yaml_test() {
         //given
         let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
                 topic: "my-mqtt".to_string(),
@@ -390,13 +527,79 @@ mod tests {
 
         //then
         assert_eq!(connector_cfg, expected);
+        assert!(connector_cfg.meta().topic_config().is_none());
+    }
+
+    #[test]
+    fn deserialize_full_config_v2() {
+        //given
+        let expected = ConnectorConfig::V0_2_0(ConnectorConfigV2 {
+            meta: MetaConfigV2 {
+                name: "my-test-mqtt".to_string(),
+                type_: "mqtt".to_string(),
+                topic: TopicConfig {
+                    version: "0.1.0".to_string(),
+                    meta: MetaConfig {
+                        name: "test-topic".to_string(),
+                    },
+                    partition: PartitionConfig {
+                        count: Some(3),
+                        max_size: Some(bytesize::ByteSize(1000)),
+                        replication: Some(2),
+                        ignore_rack_assignment: Some(true),
+                        maps: None,
+                    },
+                    retention: RetentionConfig {
+                        time: Some(Duration::from_secs(120)),
+                        segment_size: Some(bytesize::ByteSize(2000)),
+                    },
+                    compression: CompressionConfig {
+                        type_: CompressionAlgorithm::Lz4,
+                    },
+                },
+                version: "0.1.0".to_string(),
+                producer: Some(ProducerParameters {
+                    linger: Some(Duration::from_millis(1)),
+                    compression: Some(Compression::Gzip),
+                    batch_size: Some(ByteSize::mb(44)),
+                }),
+                consumer: Some(ConsumerParameters {
+                    partition: Some(10),
+                    max_bytes: Some(ByteSize::mb(1)),
+                }),
+                secrets: Some(vec![SecretConfig {
+                    name: "secret1".parse().unwrap(),
+                }]),
+            },
+            transforms: Some(
+                TransformationStep {
+                    uses: "infinyon/json-sql".to_string(),
+                    lookback: None,
+                    with: BTreeMap::from([
+                        (
+                            "mapping".to_string(),
+                            "{\"table\":\"topic_message\"}".into(),
+                        ),
+                        ("param".to_string(), "param_value".into()),
+                    ]),
+                }
+                .into(),
+            ),
+        });
+
+        //when
+        let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config-v2.yaml")
+            .expect("Failed to load test config");
+
+        //then
+        assert_eq!(connector_cfg, expected);
     }
 
     #[test]
     fn simple_yaml_test() {
         //given
         let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt".to_string(),
                 topic: "my-mqtt".to_string(),
@@ -469,7 +672,7 @@ mod tests {
                 .expect_err("This yaml should error");
         #[cfg(unix)]
         assert_eq!(
-            "apiVersion: unknown variant `v1`, expected `0.0.0` or `0.1.0` at line 1 column 13",
+            "apiVersion: unknown variant `v1`, expected one of `0.0.0`, `0.1.0`, `0.2.0` at line 1 column 13",
             format!("{connector_cfg:?}")
         );
     }
@@ -487,7 +690,7 @@ mod tests {
             "#;
 
         let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 name: "kafka-out".to_string(),
                 type_: "kafka-sink".to_string(),
                 topic: "poc1".to_string(),
@@ -519,7 +722,7 @@ mod tests {
             "#;
 
         let expected = ConnectorConfig::V0_0_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 name: "kafka-out".to_string(),
                 type_: "kafka-sink".to_string(),
                 topic: "poc1".to_string(),
@@ -556,7 +759,7 @@ mod tests {
         "#;
 
         let expected = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt-source".to_string(),
                 topic: "my-mqtt".to_string(),
@@ -581,6 +784,57 @@ mod tests {
 
         //then
         assert_eq!(connector_spec, expected);
+    }
+
+    #[test]
+    fn deserialize_with_topic_config() {
+        //given
+        let yaml = r#"
+        apiVersion: 0.2.0
+        meta:
+          version: 0.1.0
+          name: my-test-mqtt
+          type: mqtt-source
+          topic: 
+            meta:
+              name: my-mqtt
+        "#;
+
+        let expected = ConnectorConfig::V0_2_0(ConnectorConfigV2 {
+            meta: MetaConfigV2 {
+                name: "my-test-mqtt".to_string(),
+                type_: "mqtt-source".to_string(),
+                topic: TopicConfigBuilder::default()
+                    .meta(
+                        MetaConfigBuilder::default()
+                            .name("my-mqtt".to_string())
+                            .build()
+                            .unwrap(),
+                    )
+                    .build()
+                    .unwrap(),
+                version: "0.1.0".to_string(),
+                producer: None,
+                consumer: None,
+                secrets: None,
+            },
+            transforms: None,
+        });
+
+        //when
+        let connector_spec: ConnectorConfig =
+            serde_yaml::from_str(yaml).expect("Failed to deserialize");
+
+        //then
+        assert_eq!(connector_spec, expected);
+        assert_eq!(connector_spec.meta().topic(), "my-mqtt");
+        assert_eq!(
+            connector_spec
+                .meta()
+                .topic_config()
+                .map(|c| c.meta.name.as_str()),
+            Some("my-mqtt")
+        );
     }
 
     #[test]
@@ -711,7 +965,7 @@ mod tests {
     #[test]
     fn retrieves_name_and_version() {
         let have = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt-source".to_string(),
                 topic: "my-mqtt".to_string(),

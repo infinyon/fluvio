@@ -30,7 +30,7 @@ pub fn get_value(value: Value, root: Option<&str>) -> Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use fluvio_connector_package::config::MetaConfig;
+    use fluvio_connector_package::config::MetaConfigV1;
 
     #[test]
     fn test_from_value() {
@@ -49,7 +49,7 @@ mod tests {
         "#,
         )
         .unwrap();
-        let config: MetaConfig = from_value(value, Some("meta")).unwrap();
+        let config: MetaConfigV1 = from_value(value, Some("meta")).unwrap();
         assert_eq!(config.name, "test");
         assert_eq!(config.topic, "test");
         assert_eq!(

@@ -27,12 +27,15 @@ pub struct TopicConfig {
 
     pub meta: MetaConfig,
 
+    #[builder(default)]
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub partition: PartitionConfig,
 
+    #[builder(default)]
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub retention: RetentionConfig,
 
+    #[builder(default)]
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub compression: CompressionConfig,
 }

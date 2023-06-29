@@ -119,9 +119,6 @@ EOF
 
 # Create topic with empty name - Negative test
 @test "Attempt to create topic with empty name" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on stable version"
-    fi
     run timeout 15s "$FLUVIO_BIN" topic create " " --dry-run
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
@@ -132,9 +129,6 @@ EOF
 
 # Create topic with name and config file - Negative test
 @test "Attempt to create topic with name and config file" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on stable version"
-    fi
     run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)" --config /tmp/config.yaml --dry-run
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
@@ -144,9 +138,6 @@ EOF
 
 # Create topic with partition size and config file - Negative test
 @test "Attempt to create topic with partition size and config file" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on stable version"
-    fi
     run timeout 15s "$FLUVIO_BIN" topic create --max-partition-size "2 Ki"  --config /tmp/config.yaml --dry-run
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
@@ -156,9 +147,6 @@ EOF
 
 # Create topic from config file
 @test "Create a topic from config file" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on stable version"
-    fi
     debug_msg "Topic config file: $TOPIC_CONFIG_PATH"
     run timeout 15s "$FLUVIO_BIN" topic create --config "$TOPIC_CONFIG_PATH" 
     debug_msg "status: $status"

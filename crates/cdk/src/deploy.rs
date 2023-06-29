@@ -261,7 +261,7 @@ fn connector_name_from_config(package_cmd: PackageCmd, config: PathBuf) -> Resul
 
     let config = metadata.validate_config(config_file)?;
 
-    Ok(config.meta().name.to_owned())
+    Ok(config.meta().name().to_owned())
 }
 
 pub(crate) fn from_cargo_package(

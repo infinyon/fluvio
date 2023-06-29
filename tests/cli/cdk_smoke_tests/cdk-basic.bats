@@ -22,6 +22,8 @@ setup_file() {
 
     CONFIG_FILE_FLAG="--config sample-config.yaml"
     export CONFIG_FILE_FLAG
+    CONFIG_FILE_FLAG_V2="--config sample-config-v2.yaml"
+    export CONFIG_FILE_FLAG_V2
 }
 
 @test "Build and test connector" {
@@ -29,6 +31,18 @@ setup_file() {
     cd $CONNECTOR_DIR
     run $CDK_BIN test --target x86_64-unknown-linux-gnu \
         $CONFIG_FILE_FLAG 
+    assert_success
+
+    assert_output --partial "Connector runs with process id"
+    assert_output --partial "producing a value"
+    assert_success
+}
+
+@test "Build and test connector V2" {
+    # Test
+    cd $CONNECTOR_DIR
+    run $CDK_BIN test --target x86_64-unknown-linux-gnu \
+        $CONFIG_FILE_FLAG_V2 
     assert_success
 
     assert_output --partial "Connector runs with process id"
@@ -46,6 +60,27 @@ setup_file() {
     cd $CONNECTOR_DIR
     run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start \
         $CONFIG_FILE_FLAG 
+    assert_success
+
+    assert_output --partial "Connector runs with process id"
+
+    sleep 10
+
+    run cat json-test-connector.log
+    assert_output --partial "producing a value"
+    assert_success
+}
+
+@test "Build and deploy connector V2" {
+    # Build
+    cd $CONNECTOR_DIR
+    run $CDK_BIN build --target x86_64-unknown-linux-gnu
+    assert_success
+
+    # Deploy
+    cd $CONNECTOR_DIR
+    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start \
+        $CONFIG_FILE_FLAG_V2 
     assert_success
 
     assert_output --partial "Connector runs with process id"
@@ -90,13 +125,35 @@ setup_file() {
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
 
-    mkdir $TEST_DIR/ipkg
-    cp .hub/json-test-connector-0.1.0.ipkg $TEST_DIR/ipkg
-    cp sample-config.yaml $TEST_DIR/ipkg 
+    IPKG_DIR=$TEST_DIR/ipkg
 
-    cd $TEST_DIR/ipkg
+    mkdir $IPKG_DIR
+    cp .hub/json-test-connector-0.1.0.ipkg $IPKG_DIR
+    cp sample-config.yaml $IPKG_DIR 
+
+    cd $IPKG_DIR
 
     run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config.yaml
     assert_success
     assert_output --partial "Connector runs with process id"
 }
+
+@test "Run connector with --ipkg V2" {
+    # create package meta doesn't exist
+    cd $CONNECTOR_DIR
+    run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
+    assert_success
+
+    IPKG_DIR=$TEST_DIR/ipkg_v2
+
+    mkdir $IPKG_DIR
+    cp .hub/json-test-connector-0.1.0.ipkg $IPKG_DIR
+    cp sample-config-v2.yaml $IPKG_DIR 
+
+    cd $IPKG_DIR
+
+    run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config-v2.yaml
+    assert_success
+    assert_output --partial "Connector runs with process id"
+}
+

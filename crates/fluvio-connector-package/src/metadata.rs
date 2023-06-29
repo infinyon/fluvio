@@ -411,7 +411,7 @@ mod tests {
 
     use openapiv3::ObjectType;
 
-    use crate::config::{MetaConfig, ConnectorConfigV1};
+    use crate::config::{ConnectorConfigV1, MetaConfigV1};
 
     use super::*;
 
@@ -421,14 +421,14 @@ mod tests {
         let source = Direction::source();
         let dest = Direction::dest();
         let source_config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 type_: "http-source".into(),
                 ..Default::default()
             },
             ..Default::default()
         });
         let sink_config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 type_: "http-sink".into(),
                 ..Default::default()
             },
@@ -456,7 +456,7 @@ mod tests {
     fn test_validate_deployment() {
         //given
         let config = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 type_: "http_source".into(),
                 version: "latest".into(),
                 ..Default::default()
