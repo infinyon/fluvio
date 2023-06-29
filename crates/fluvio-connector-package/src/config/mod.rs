@@ -227,6 +227,13 @@ impl MetaConfig<'_> {
         }
     }
 
+    pub fn type_(&self) -> &str {
+        match self {
+            MetaConfig::V0_1_0(inner) => &inner.type_,
+            MetaConfig::V0_2_0(inner) => &inner.type_,
+        }
+    }
+
     pub fn topic(&self) -> &str {
         match self {
             MetaConfig::V0_1_0(inner) => &inner.topic,
@@ -449,15 +456,15 @@ impl ConnectorConfig {
     }
 
     pub fn name(&self) -> String {
-        self.meta().name.clone()
+        self.meta().name().to_string()
     }
 
     pub fn version(&self) -> String {
-        self.meta().version.clone()
+        self.meta().version().to_string()
     }
 
     pub fn r#type(&self) -> String {
-        self.meta().type_.clone()
+        self.meta().type_().to_string()
     }
 }
 
@@ -958,7 +965,7 @@ mod tests {
     #[test]
     fn retrieves_name_and_version() {
         let have = ConnectorConfig::V0_1_0(ConnectorConfigV1 {
-            meta: MetaConfig {
+            meta: MetaConfigV1 {
                 name: "my-test-mqtt".to_string(),
                 type_: "mqtt-source".to_string(),
                 topic: "my-mqtt".to_string(),
