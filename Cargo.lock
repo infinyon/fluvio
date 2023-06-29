@@ -2666,7 +2666,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.22.3"
+version = "0.22.4"
 dependencies = [
  "anyhow",
  "async-trait",
