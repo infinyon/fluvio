@@ -125,11 +125,13 @@ setup_file() {
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
 
-    mkdir $TEST_DIR/ipkg
-    cp .hub/json-test-connector-0.1.0.ipkg $TEST_DIR/ipkg
-    cp sample-config.yaml $TEST_DIR/ipkg 
+    IPKG_DIR=$TEST_DIR/ipkg
 
-    cd $TEST_DIR/ipkg
+    mkdir $IPKG_DIR
+    cp .hub/json-test-connector-0.1.0.ipkg $IPKG_DIR
+    cp sample-config.yaml $IPKG_DIR 
+
+    cd $IPKG_DIR
 
     run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config.yaml
     assert_success
@@ -142,11 +144,13 @@ setup_file() {
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu
     assert_success
 
-    mkdir $TEST_DIR/ipkg
-    cp .hub/json-test-connector-0.1.0.ipkg $TEST_DIR/ipkg
-    cp sample-config-v2.yaml $TEST_DIR/ipkg 
+    IPKG_DIR=$TEST_DIR/ipkg_v2
 
-    cd $TEST_DIR/ipkg
+    mkdir $IPKG_DIR
+    cp .hub/json-test-connector-0.1.0.ipkg $IPKG_DIR
+    cp sample-config-v2.yaml $IPKG_DIR 
+
+    cd $IPKG_DIR
 
     run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config-v2.yaml
     assert_success
