@@ -5,7 +5,7 @@ mod test {
 
     use fluvio_smartmodule::{
         dataplane::smartmodule::{SmartModuleInput},
-        Record,
+        FluvioRecord,
     };
 
     use crate::engine::{
@@ -37,7 +37,7 @@ mod test {
         );
 
         let metrics = SmartModuleChainMetrics::default();
-        let input = vec![Record::new("apple"), Record::new("fruit")];
+        let input = vec![FluvioRecord::new("apple"), FluvioRecord::new("fruit")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");

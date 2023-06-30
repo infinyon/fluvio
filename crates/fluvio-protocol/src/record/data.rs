@@ -481,6 +481,10 @@ impl Record {
     pub fn timestamp_delta(&self) -> Timestamp {
         self.preamble.timestamp_delta
     }
+
+    pub fn offset_delta(&self) -> Offset {
+        self.preamble.offset_delta
+    }
 }
 
 impl<K, V> From<(K, V)> for Record

@@ -108,7 +108,7 @@ mod test {
 
     use fluvio_smartmodule::{
         dataplane::smartmodule::{SmartModuleInput},
-        Record,
+        FluvioRecord,
     };
 
     use crate::engine::{
@@ -142,7 +142,7 @@ mod test {
 
         let metrics = SmartModuleChainMetrics::default();
 
-        let input = vec![Record::new("a")];
+        let input = vec![FluvioRecord::new("a")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
@@ -161,7 +161,7 @@ mod test {
         assert_eq!(aggregate.accumulator(), b"a");
 
         // new record should accumulate
-        let input = vec![Record::new("b")];
+        let input = vec![FluvioRecord::new("b")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
@@ -197,7 +197,7 @@ mod test {
 
         assert_eq!(aggregate.accumulator(), b"ab");
 
-        let input = vec![Record::new("c")];
+        let input = vec![FluvioRecord::new("c")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
@@ -227,7 +227,7 @@ mod test {
 
         let metrics = SmartModuleChainMetrics::default();
         // new record should accumulate
-        let input = vec![Record::new("b")];
+        let input = vec![FluvioRecord::new("b")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");

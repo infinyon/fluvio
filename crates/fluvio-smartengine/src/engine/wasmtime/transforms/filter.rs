@@ -5,7 +5,7 @@ mod test {
 
     use fluvio_smartmodule::{
         dataplane::smartmodule::{SmartModuleInput},
-        Record,
+        FluvioRecord,
     };
 
     use crate::engine::{
@@ -39,13 +39,13 @@ mod test {
         );
 
         let metrics = SmartModuleChainMetrics::default();
-        let input = vec![Record::new("hello world")];
+        let input = vec![FluvioRecord::new("hello world")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
-        let input = vec![Record::new("apple"), Record::new("fruit")];
+        let input = vec![FluvioRecord::new("apple"), FluvioRecord::new("fruit")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
@@ -99,16 +99,16 @@ mod test {
 
         let metrics = SmartModuleChainMetrics::default();
 
-        let input = vec![Record::new("hello world")];
+        let input = vec![FluvioRecord::new("hello world")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
         let input = vec![
-            Record::new("apple"),
-            Record::new("fruit"),
-            Record::new("banana"),
+            FluvioRecord::new("apple"),
+            FluvioRecord::new("fruit"),
+            FluvioRecord::new("banana"),
         ];
 
         let output = chain
@@ -133,9 +133,9 @@ mod test {
             .expect("failed to build chain");
 
         let input = vec![
-            Record::new("apple"),
-            Record::new("fruit"),
-            Record::new("banana"),
+            FluvioRecord::new("apple"),
+            FluvioRecord::new("fruit"),
+            FluvioRecord::new("banana"),
         ];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)

@@ -2,7 +2,7 @@ use std::fmt::{self, Debug};
 use std::future::Future;
 
 use anyhow::Result;
-use fluvio_smartmodule::Record;
+use fluvio_smartmodule::FluvioRecord;
 use tracing::debug;
 use wasmtime::{Engine, Module};
 
@@ -163,14 +163,14 @@ impl SmartModuleChainInstance {
         metrics: &SmartModuleChainMetrics,
     ) -> Result<()>
     where
-        R: Future<Output = Result<Vec<Record>>>,
+        R: Future<Output = Result<Vec<FluvioRecord>>>,
         F: Fn(Lookback) -> R,
     {
         debug!("look_back on chain with {} instances", self.instances.len());
         for instance in self.instances.iter_mut() {
             if let Some(lookback) = instance.lookback() {
                 debug!("look_back on instance");
-                let records: Vec<Record> = read_fn(lookback).await?;
+                let records: Vec<FluvioRecord> = read_fn(lookback).await?;
                 let input: SmartModuleInput = SmartModuleInput::try_from(records)?;
                 metrics.add_bytes_in(input.raw_bytes().len() as u64);
                 self.store.top_up_fuel();
@@ -207,7 +207,8 @@ mod chaining_test {
     use std::convert::TryFrom;
 
     use fluvio_protocol::link::smartmodule::SmartModuleLookbackRuntimeError;
-    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
+    use fluvio_smartmodule::FluvioRecord;
+    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput};
 
     use crate::engine::config::Lookback;
 
@@ -247,16 +248,16 @@ mod chaining_test {
             .expect("failed to build chain");
         assert_eq!(chain.instances().len(), 2);
 
-        let input = vec![Record::new("hello world")];
+        let input = vec![FluvioRecord::new("hello world")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
         let input = vec![
-            Record::new("apple"),
-            Record::new("fruit"),
-            Record::new("banana"),
+            FluvioRecord::new("apple"),
+            FluvioRecord::new("fruit"),
+            FluvioRecord::new("banana"),
         ];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
@@ -302,9 +303,9 @@ mod chaining_test {
         assert_eq!(chain.instances().len(), 2);
 
         let input = vec![
-            Record::new("apple"),
-            Record::new("fruit"),
-            Record::new("banana"),
+            FluvioRecord::new("apple"),
+            FluvioRecord::new("fruit"),
+            FluvioRecord::new("banana"),
         ];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
@@ -313,13 +314,13 @@ mod chaining_test {
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
         assert_eq!(output.successes[1].value().to_string(), "zeroapplebanana");
 
-        let input = vec![Record::new("nothing")];
+        let input = vec![FluvioRecord::new("nothing")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
         assert_eq!(output.successes.len(), 0); // one record passed
 
-        let input = vec![Record::new("elephant")];
+        let input = vec![FluvioRecord::new("elephant")];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
@@ -354,14 +355,18 @@ mod chaining_test {
         fluvio_future::task::run_block_on(chain.look_back(
             |lookback| {
                 assert_eq!(lookback, Lookback::Last(1));
-                async { Ok(vec![Record::new("2")]) }
+                async { Ok(vec![FluvioRecord::new("2")]) }
             },
             &metrics,
         ))
         .expect("chain look_back");
 
         // then
-        let input = vec![Record::new("1"), Record::new("2"), Record::new("3")];
+        let input = vec![
+            FluvioRecord::new("1"),
+            FluvioRecord::new("2"),
+            FluvioRecord::new("3"),
+        ];
         let output = chain
             .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
             .expect("process");
@@ -395,7 +400,7 @@ mod chaining_test {
         let res = fluvio_future::task::run_block_on(chain.look_back(
             |lookback| {
                 assert_eq!(lookback, Lookback::Last(1));
-                async { Ok(vec![Record::new("wrong str")]) }
+                async { Ok(vec![FluvioRecord::new("wrong str")]) }
             },
             &metrics,
         ));
@@ -428,7 +433,7 @@ mod chaining_test {
 
         assert_eq!(chain.store.get_used_fuel(), 0);
 
-        let record = vec![Record::new("input")];
+        let record = vec![FluvioRecord::new("input")];
         let input = SmartModuleInput::try_from(record).expect("valid input record");
         let metrics = SmartModuleChainMetrics::default();
         //when

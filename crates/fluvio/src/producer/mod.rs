@@ -441,6 +441,7 @@ impl TopicProducer {
 
                 use std::convert::TryFrom;
                 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
+                use chrono::Utc;
 
                 let metrics = self.metrics.chain_metrics();
 
@@ -449,7 +450,10 @@ impl TopicProducer {
                 ) = &self.sm_chain {
                     let mut sm_chain = smart_chain_ref.write().await;
 
-                    let output = sm_chain.process(SmartModuleInput::try_from(entries)?,metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
+                    let mut input = SmartModuleInput::try_from(entries)?;
+                    input.set_base_timestamp(Utc::now().timestamp_millis());
+
+                    let output = sm_chain.process(input,metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
                     entries = output.successes;
                 }
             } else {

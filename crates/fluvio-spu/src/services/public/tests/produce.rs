@@ -1,7 +1,7 @@
 use std::{env::temp_dir, time::Duration};
 
 use fluvio::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind};
-use fluvio_smartmodule::{Record, dataplane::smartmodule::Lookback};
+use fluvio_smartmodule::{FluvioRecord as Record, dataplane::smartmodule::Lookback};
 use fluvio_storage::FileReplica;
 use tracing::debug;
 

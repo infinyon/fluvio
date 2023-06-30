@@ -15,6 +15,7 @@ members = [
     "filter_with_param_v1",
     "map",
     "map_double",
+    "map_with_timestamp",
     "map_json",
     "map_regex",
     "array_map_json_array",

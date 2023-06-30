@@ -22,6 +22,8 @@ pub(crate) trait SmartModuleInputBatch {
     fn offset_delta(&self) -> i32;
 
     fn get_compression(&self) -> Result<Compression, CompressionError>;
+
+    fn base_timestamp(&self) -> i64;
 }
 
 #[instrument(skip(sm_chain_instance, input_batches, max_bytes, metric))]
@@ -51,7 +53,11 @@ pub(crate) fn process_batch<R: SmartModuleInputBatch>(
 
         let now = Instant::now();
 
-        let input = SmartModuleInput::new(input_batch.records().clone(), input_batch.base_offset());
+        let input = SmartModuleInput::new(
+            input_batch.records().clone(),
+            input_batch.base_offset(),
+            input_batch.base_timestamp(),
+        );
 
         let output = sm_chain_instance.process(input, metric)?;
 

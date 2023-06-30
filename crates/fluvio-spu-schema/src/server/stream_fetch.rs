@@ -48,6 +48,8 @@ pub const CHAIN_SMARTMODULE_API: i16 = 18;
 
 pub const SMARTMODULE_LOOKBACK: i16 = 20;
 
+pub const SMARTMODULE_BASE_TIMESTMAP: i16 = 21;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[allow(deprecated)]

@@ -36,6 +36,7 @@ pub fn generate_look_back_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 }
 
                 let base_offset = smartmodule_input.base_offset();
+                let base_timestamp = smartmodule_input.base_timestamp();
                 let records_input = smartmodule_input.into_raw_bytes();
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
@@ -44,7 +45,10 @@ pub fn generate_look_back_smartmodule(func: &SmartModuleFn) -> TokenStream {
 
                 // PROCESSING
                 for record in records.into_iter() {
+                    let record = fluvio_smartmodule::Record::new(record, base_offset, base_timestamp);
                     let result = super:: #user_fn(&record);
+                    let record = record.into_inner();
+
                     if let Err(err) = result {
                         let error = SmartModuleLookbackRuntimeError::new(
                             &record,

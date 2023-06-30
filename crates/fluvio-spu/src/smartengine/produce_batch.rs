@@ -32,6 +32,10 @@ impl<'a> SmartModuleInputBatch for ProduceBatch<'a> {
     fn get_compression(&self) -> Result<Compression, CompressionError> {
         self.batch.get_compression()
     }
+
+    fn base_timestamp(&self) -> i64 {
+        self.batch.get_base_timestamp()
+    }
 }
 
 impl<'a> ProduceBatchIterator<'a> {

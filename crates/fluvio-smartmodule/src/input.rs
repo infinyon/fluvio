@@ -6,7 +6,7 @@ use std::io::Cursor;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::{Encoder, Decoder, record::Record};
 
-pub const SMARTMODULE_LOOKBACK_WITH_AGE: i16 = 21;
+pub const SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP: i16 = 21;
 
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleExtraParams {
@@ -81,16 +81,20 @@ pub struct SmartModuleInput {
     raw_bytes: Vec<u8>,
     /// This is deprecrated, extra parameters should not be passed, they will be removed in the future
     #[deprecated]
+    #[fluvio(max_version = SMARTMODULE_BASE_TIMESTMAP)]
     params: SmartModuleExtraParams,
-    #[fluvio(min_version = 16)]
+    #[fluvio(min_version = 16, max_version = SMARTMODULE_BASE_TIMESTMAP)]
     join_record: Vec<u8>,
+    #[fluvio(min_version = SMARTMODULE_BASE_TIMESTMAP)]
+    base_timestamp: i64,
 }
 
 impl SmartModuleInput {
-    pub fn new(raw_bytes: Vec<u8>, base_offset: Offset) -> Self {
+    pub fn new(raw_bytes: Vec<u8>, base_offset: Offset, base_timestamp: i64) -> Self {
         Self {
             base_offset,
             raw_bytes,
+            base_timestamp,
             ..Default::default()
         }
     }
@@ -101,6 +105,14 @@ impl SmartModuleInput {
 
     pub fn set_base_offset(&mut self, base_offset: Offset) {
         self.base_offset = base_offset;
+    }
+
+    pub fn base_timestamp(&self) -> i64 {
+        self.base_timestamp
+    }
+
+    pub fn set_base_timestamp(&mut self, base_timestamp: i64) {
+        self.base_timestamp = base_timestamp;
     }
 
     pub fn raw_bytes(&self) -> &[u8] {
@@ -120,7 +132,10 @@ impl TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
         let mut raw_bytes = Vec::new();
-        records.encode(&mut raw_bytes, SMARTMODULE_LOOKBACK_WITH_AGE)?;
+        records.encode(
+            &mut raw_bytes,
+            SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP,
+        )?;
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
@@ -134,7 +149,7 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
         Decoder::decode_from(
             &mut Cursor::new(&mut self.raw_bytes),
-            SMARTMODULE_LOOKBACK_WITH_AGE,
+            SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP,
         )
     }
 }

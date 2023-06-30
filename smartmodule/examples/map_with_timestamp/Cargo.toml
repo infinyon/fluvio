@@ -1,0 +1,13 @@
+[package]
+name = "fluvio-smartmodule-map-with-timestamp"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+chrono = { version = "0.4.26", features = ["clock"], default-features = false }
+fluvio-smartmodule = { workspace = true }

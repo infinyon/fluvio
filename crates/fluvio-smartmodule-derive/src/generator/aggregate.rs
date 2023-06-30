@@ -24,8 +24,9 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     SmartModuleAggregateInput, SmartModuleTransformErrorStatus,
                     SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput,SmartModuleAggregateOutput
                 };
+                use fluvio_smartmodule::Record as SmartModuleRecord;
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
-                use fluvio_smartmodule::dataplane::record::{Record, RecordData};
+                use fluvio_smartmodule::dataplane::record::{Record as FluvioRecord, RecordData};
 
                 extern "C" {
                     fn copy_records(putr: i32, len: i32);
@@ -41,8 +42,9 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 let mut accumulator = smartmodule_input.accumulator;
 
                 let base_offset = smartmodule_input.base.base_offset();
+                let base_timestamp = smartmodule_input.base.base_timestamp();
                 let records_input = smartmodule_input.base.into_raw_bytes();
-                let mut records: Vec<Record> = vec![];
+                let mut records: Vec<FluvioRecord> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
                     return SmartModuleTransformErrorStatus::DecodingRecords as i32;
                 };
@@ -56,9 +58,12 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     accumulator: accumulator.clone(),
                 };
 
-                for mut record in records.into_iter() {
+                for record in records.into_iter() {
                     let acc_data = RecordData::from(accumulator);
+                    let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                     let result = #function_call;
+
+                    let mut record = record.into_inner();
 
                     match result {
                         Ok(value) => {

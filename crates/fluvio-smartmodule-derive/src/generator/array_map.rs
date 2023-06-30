@@ -20,12 +20,13 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
         quote! {
 
             for record in records.into_iter() {
-
-                use fluvio_smartmodule::dataplane::record::RecordKey;
-
+                let record = fluvio_smartmodule::Record::new(record, base_offset, base_timestamp);
                 let result = #function_call;
+                let  record = record.into_inner();
+
                 match result {
                     Ok(output_records) => {
+                        use fluvio_smartmodule::dataplane::record::RecordKey;
                         for (output_key, output_value) in output_records {
                             let key = RecordKey::from_option(output_key);
                             let new_record = Record::new_key_value(key, output_value);

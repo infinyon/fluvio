@@ -11,7 +11,7 @@ fn bench_encode_smartmodule_encode(c: &mut Criterion) {
     let wasm_bytes: Vec<u8> = read(EXAMPLE_WASM_FILE).unwrap();
 
     c.bench_function("encode wasm file", |b| {
-        let smartmodule = SmartModuleInput::new(wasm_bytes.clone(), 0);
+        let smartmodule = SmartModuleInput::new(wasm_bytes.clone(), 0, 0);
         let mut dest = vec![];
 
         b.iter(|| {

@@ -4,7 +4,7 @@ use std::time::Duration;
 use chrono::Utc;
 use fluvio_smartengine::{SmartModuleChainInstance, Version, Lookback};
 use fluvio_protocol::link::ErrorCode;
-use fluvio_smartmodule::Record;
+use fluvio_smartmodule::FluvioRecord as Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
 use fluvio_types::Timestamp;
 use tracing::{debug, trace};

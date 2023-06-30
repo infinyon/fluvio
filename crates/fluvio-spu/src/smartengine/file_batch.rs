@@ -3,7 +3,7 @@ use std::os::unix::io::RawFd;
 use std::io::{Error as IoError, ErrorKind, Cursor};
 
 use fluvio_protocol::{Decoder, Version};
-use fluvio_smartmodule::Record;
+use fluvio_smartmodule::FluvioRecord as Record;
 use fluvio_types::Timestamp;
 use tracing::{warn, debug};
 use nix::sys::uio::pread;
@@ -35,6 +35,10 @@ impl SmartModuleInputBatch for FileBatch {
 
     fn get_compression(&self) -> Result<Compression, CompressionError> {
         self.batch.get_compression()
+    }
+
+    fn base_timestamp(&self) -> i64 {
+        self.batch.get_base_timestamp()
     }
 }
 
