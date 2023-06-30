@@ -1,12 +1,12 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
-use syn::{AttributeArgs, Ident, ItemFn, parse_macro_input};
+use syn::{Ident, ItemFn, parse_macro_input};
 use quote::quote;
 use inflections::Inflect;
 use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
+
+use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 
 /// This macro will allow a test writer to override
 /// minimum Fluvio cluster requirements for a test
@@ -37,11 +37,9 @@ use rand::distributions::Alphanumeric;
 /// }
 #[proc_macro_attribute]
 pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
-    let fn_test_reqs: TestRequirements =
-        match TestRequirements::from_ast(parse_macro_input!(args as AttributeArgs)) {
-            Ok(attr) => attr,
-            Err(_err) => panic!("Parse failed"),
-        };
+    let mut fn_test_reqs = TestRequirements::default();
+    let parser = syn::meta::parser(|meta| fn_test_reqs.parse(meta));
+    parse_macro_input!(args with parser);
 
     // Serializing to string to pass into quote! block
     let fn_test_reqs_str =

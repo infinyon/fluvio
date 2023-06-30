@@ -1,8 +1,12 @@
-use serde::{Serialize, Deserialize};
-use syn::{AttributeArgs, Error as SynError, Lit, Meta, NestedMeta, Path, Result as SynResult};
-use syn::spanned::Spanned;
-use crate::setup::environment::EnvironmentType;
 use std::time::Duration;
+
+use serde::{Serialize, Deserialize};
+use syn::{Error as SynError, Result as SynResult, LitBool};
+use syn::meta::ParseNestedMeta;
+
+use syn::spanned::Spanned;
+
+use crate::setup::environment::EnvironmentType;
 
 #[derive(Debug)]
 pub enum TestRequirementAttribute {
@@ -15,122 +19,109 @@ pub enum TestRequirementAttribute {
 }
 
 impl TestRequirementAttribute {
-    fn from_ast(meta: Meta) -> SynResult<Self> {
-        match meta {
-            Meta::NameValue(name_value) => match Self::get_key(&name_value.path).as_str() {
-                "min_spu" => Self::min_spu(&name_value),
-                "topic" => Self::topic(&name_value),
-                "timeout" => Self::timeout(&name_value),
-                "cluster_type" => Self::cluster_type(&name_value),
-                "name" => Self::name(&name_value),
-                "async" => Self::async_nv(&name_value),
-                _ => Err(SynError::new(name_value.span(), "Unsupported key")),
-            },
-            Meta::Path(path) => match Self::get_key(&path).as_str() {
-                "async" => Self::async_path(&path),
-                _ => Err(SynError::new(path.span(), "Unsupported key")),
-            },
-            _ => Err(SynError::new(meta.span(), "Unsupported attribute:")),
-        }
-    }
-
-    fn get_key(p: &Path) -> String {
-        let mut key: Vec<String> = p
-            .segments
-            .iter()
-            .map(|args| args.ident.to_string())
-            .collect();
-
-        key.pop().expect("Key expected")
-    }
-
-    fn name(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Str(str) = &name_value.lit {
-            Ok(Self::TestName(str.value()))
-        } else {
-            Err(SynError::new(
-                name_value.span(),
-                "TestName must be a LitStr",
-            ))
-        }
-    }
-
-    fn cluster_type(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Str(str) = &name_value.lit {
-            if str.value().to_lowercase() == "k8" {
-                Ok(Self::ClusterType(EnvironmentType::K8))
-            } else if str.value().to_lowercase() == "local" {
-                Ok(Self::ClusterType(EnvironmentType::Local))
-            } else {
-                Err(SynError::new(
-                name_value.span(),
-                "ClusterType values must be \"k8\" or \"local\". Don't define cluster_type if both.",
-            ))
+    fn from_ast(meta: ParseNestedMeta) -> SynResult<Self> {
+        if meta.path.is_ident("min_spu") {
+            Self::min_spu(meta.value()?)
+        } else if meta.path.is_ident("topic") {
+            Self::topic(meta.value()?)
+        } else if meta.path.is_ident("timeout") {
+            Self::timeout(meta.value()?)
+        } else if meta.path.is_ident("cluster_type") {
+            Self::cluster_type(meta.value()?)
+        } else if meta.path.is_ident("name") {
+            Self::name(meta.value()?)
+        } else if meta.path.is_ident("async") {
+            match meta.value() {
+                Ok(buffer) => Self::async_nv(buffer),
+                Err(_) => Ok(Self::Async(true)),
             }
         } else {
-            Err(SynError::new(
-                name_value.span(),
-                "ClusterType must be a LitStr",
-            ))
+            Err(SynError::new(meta.path.span(), "Unsupported attribute:"))
         }
     }
 
-    fn timeout(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Bool(boot_lit) = &name_value.lit {
-            if boot_lit.value() {
-                Err(SynError::new(
-                    boot_lit.span(),
+    fn name(name_value: &syn::parse::ParseBuffer) -> Result<TestRequirementAttribute, SynError> {
+        if let Ok(lit_str) = name_value.parse::<syn::LitStr>() {
+            return Ok(Self::TestName(lit_str.value()));
+        }
+
+        Err(SynError::new(
+            name_value.span(),
+            "TestName must be a LitStr",
+        ))
+    }
+
+    fn cluster_type(
+        name_value: &syn::parse::ParseBuffer,
+    ) -> Result<TestRequirementAttribute, SynError> {
+        if let Ok(lit_str) = name_value.parse::<syn::LitStr>() {
+            if lit_str.value().to_lowercase() == "k8" {
+                return Ok(Self::ClusterType(EnvironmentType::K8));
+            } else if lit_str.value().to_lowercase() == "local" {
+                return Ok(Self::ClusterType(EnvironmentType::Local));
+            } else {
+                return  Err(SynError::new(
+                    name_value.span(),
+                    "ClusterType values must be \"k8\" or \"local\". Don't define cluster_type if both.",
+                ));
+            }
+        }
+        Err(SynError::new(
+            name_value.span(),
+            "ClusterType must be a LitStr",
+        ))
+    }
+
+    fn timeout(name_value: &syn::parse::ParseBuffer) -> Result<TestRequirementAttribute, SynError> {
+        if let Ok(lit_bool) = name_value.parse::<syn::LitBool>() {
+            if lit_bool.value() {
+                return Err(SynError::new(
+                    lit_bool.span(),
                     "timeout must be u64 or false",
-                ))
+                ));
             } else {
-                Ok(Self::Timeout(Duration::MAX))
+                return Ok(Self::Timeout(Duration::MAX));
             }
-        } else if let Lit::Int(timeout) = &name_value.lit {
+        } else if let Ok(timeout) = &name_value.parse::<syn::LitInt>() {
             let parsed = timeout
                 .base10_digits()
                 .parse::<u64>()
                 .expect("Parse failed");
-            Ok(Self::Timeout(Duration::from_secs(parsed)))
-        } else {
-            Err(SynError::new(name_value.span(), "Timeout must be LitInt"))
+            return Ok(Self::Timeout(Duration::from_secs(parsed)));
         }
+
+        Err(SynError::new(name_value.span(), "Timeout must be LitInt"))
     }
 
-    fn topic(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Str(str) = &name_value.lit {
-            Ok(Self::Topic(str.value()))
-        } else {
-            Err(SynError::new(name_value.span(), "Topic must be a LitStr"))
+    fn topic(name_value: &syn::parse::ParseBuffer) -> Result<TestRequirementAttribute, SynError> {
+        if let Ok(lit_str) = name_value.parse::<syn::LitStr>() {
+            return Ok(Self::Topic(lit_str.value()));
         }
+        Err(SynError::new(name_value.span(), "Topic must be a LitStr"))
     }
 
-    fn min_spu(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Int(min_spu) = &name_value.lit {
-            Ok(Self::MinSpu(
-                min_spu
+    fn min_spu(name_value: &syn::parse::ParseBuffer) -> Result<TestRequirementAttribute, SynError> {
+        if let Ok(lit_int) = name_value.parse::<syn::LitInt>() {
+            return Ok(Self::MinSpu(
+                lit_int
                     .base10_digits()
                     .parse::<u16>()
                     .expect("Parse failed"),
-            ))
-        } else {
-            Err(SynError::new(name_value.span(), "Min spu must be LitInt"))
+            ));
         }
+        Err(SynError::new(name_value.span(), "Min spu must be LitInt"))
     }
 
-    // Support #[fluvio_test(async)] and #[fluvio_test(async = true)] + #[fluvio_test(async = false)]
-    fn async_path(_path: &syn::Path) -> Result<TestRequirementAttribute, SynError> {
-        Ok(Self::Async(true))
-    }
-
-    fn async_nv(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Bool(bool_lit) = &name_value.lit {
-            Ok(Self::Async(bool_lit.value()))
-        } else {
-            Err(SynError::new(
-                name_value.span(),
-                "Async must be LitBool or have no key",
-            ))
+    fn async_nv(
+        name_value: &syn::parse::ParseBuffer,
+    ) -> Result<TestRequirementAttribute, SynError> {
+        if let Ok(Some(lit_bool)) = name_value.parse::<Option<LitBool>>() {
+            return Ok(Self::Async(lit_bool.value()));
         }
+        Err(SynError::new(
+            name_value.span(),
+            "Async must be LitBool or have no key",
+        ))
     }
 }
 
@@ -146,47 +137,29 @@ pub struct TestRequirements {
 }
 
 impl TestRequirements {
-    pub fn from_ast(args: AttributeArgs) -> SynResult<Self> {
-        let mut attrs: Vec<TestRequirementAttribute> = Vec::new();
+    pub fn parse(&mut self, meta: ParseNestedMeta) -> SynResult<()> {
+        let attr = TestRequirementAttribute::from_ast(meta)?;
+        self.set_attr(attr);
 
-        for attr in args {
-            match attr {
-                NestedMeta::Meta(meta) => {
-                    attrs.push(TestRequirementAttribute::from_ast(meta)?);
-                }
-                _ => return Err(SynError::new(attr.span(), "invalid syntax")),
-            }
-        }
-
-        Ok(Self::from(attrs))
+        Ok(())
     }
 
-    fn from(attrs: Vec<TestRequirementAttribute>) -> Self {
-        let mut test_requirements = TestRequirements::default();
-
-        for attr in attrs {
-            match attr {
-                TestRequirementAttribute::MinSpu(min_spu) => {
-                    test_requirements.min_spu = Some(min_spu)
+    fn set_attr(&mut self, attr: TestRequirementAttribute) {
+        match attr {
+            TestRequirementAttribute::MinSpu(min_spu) => self.min_spu = Some(min_spu),
+            TestRequirementAttribute::Topic(topic) => self.topic = Some(topic),
+            TestRequirementAttribute::Timeout(timeout) => {
+                if timeout.is_zero() {
+                    self.timeout = None
+                } else {
+                    self.timeout = Some(timeout)
                 }
-                TestRequirementAttribute::Topic(topic) => test_requirements.topic = Some(topic),
-                TestRequirementAttribute::Timeout(timeout) => {
-                    if timeout.is_zero() {
-                        test_requirements.timeout = None
-                    } else {
-                        test_requirements.timeout = Some(timeout)
-                    }
-                }
-                TestRequirementAttribute::ClusterType(cluster_type) => {
-                    test_requirements.cluster_type = Some(cluster_type)
-                }
-                TestRequirementAttribute::TestName(name) => {
-                    test_requirements.test_name = Some(name)
-                }
-                TestRequirementAttribute::Async(is_async) => test_requirements.r#async = is_async,
             }
+            TestRequirementAttribute::ClusterType(cluster_type) => {
+                self.cluster_type = Some(cluster_type)
+            }
+            TestRequirementAttribute::TestName(name) => self.test_name = Some(name),
+            TestRequirementAttribute::Async(is_async) => self.r#async = is_async,
         }
-
-        test_requirements
     }
 }
