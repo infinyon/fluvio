@@ -231,7 +231,7 @@ version = "0.7.0"
 dependencies = [
  "eyre",
  "fluvio-protocol 0.10.2",
- "fluvio-smartmodule-derive 0.5.0",
+ "fluvio-smartmodule-derive 0.5.1",
  "thiserror",
  "tracing",
 ]
@@ -272,11 +272,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.15",
 ]
 
 [[package]]

@@ -15,7 +15,9 @@ impl SmartModuleConfig {
     pub fn parse(&mut self, meta: ParseNestedMeta) -> SynResult<()> {
         let kind = SmartModuleKind::parse(meta)?;
 
-        self.kind = Some(kind);
+        if let Some(kind) = kind {
+            self.kind = Some(kind);
+        }
         Ok(())
     }
 }
@@ -32,7 +34,7 @@ pub enum SmartModuleKind {
 }
 
 impl SmartModuleKind {
-    fn parse(meta: ParseNestedMeta) -> SynResult<Self> {
+    fn parse(meta: ParseNestedMeta) -> SynResult<Option<Self>> {
         let maybee_ss_type = match &*meta
             .path
             .get_ident()
@@ -46,13 +48,15 @@ impl SmartModuleKind {
             "filter_map" => Some(Self::FilterMap),
             "init" => Some(Self::Init),
             "look_back" => Some(Self::LookBack),
+            // Params is ignored for backward compatibility
+            "params" => return Ok(None),
             _ => None,
         };
 
         let ss_type = maybee_ss_type
             .ok_or_else(|| SynError::new(meta.path.span(), "Invalid SmartModule type"))?;
 
-        Ok(ss_type)
+        Ok(Some(ss_type))
     }
 }
 
