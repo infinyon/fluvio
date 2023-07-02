@@ -15,6 +15,7 @@ pub mod memory;
 
 pub use fluvio_protocol::record::{RecordData, Record as FluvioRecord};
 
+#[derive(Debug, Clone)]
 pub struct Record {
     inner_record: FluvioRecord,
     base_offset: i64,
