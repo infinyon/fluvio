@@ -2835,7 +2835,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.2"
+version = "0.11.0"
 dependencies = [
  "bytes 1.4.0",
  "content_inspector",
@@ -2859,11 +2859,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.18",
+ "syn 2.0.22",
  "tracing",
 ]
 
@@ -2995,7 +2995,7 @@ version = "0.5.1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.18",
+ "syn 2.0.22",
 ]
 
 [[package]]
@@ -3205,7 +3205,7 @@ version = "0.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.18",
+ "syn 2.0.22",
  "trybuild 1.0.42",
 ]
 
@@ -3224,7 +3224,7 @@ dependencies = [
  "quote",
  "rand 0.8.5",
  "serde_json",
- "syn 2.0.18",
+ "syn 2.0.22",
  "tokio",
  "tracing",
  "trybuild 1.0.42",
@@ -3267,7 +3267,7 @@ dependencies = [
  "semver 1.0.17",
  "serde",
  "serde_json",
- "syn 2.0.18",
+ "syn 2.0.22",
  "tokio",
  "tracing",
  "uuid",
