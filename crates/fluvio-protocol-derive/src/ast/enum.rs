@@ -1,10 +1,11 @@
 use crate::ast::prop::{NamedProp, UnnamedProp};
 use proc_macro2::TokenStream;
 use quote::quote;
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
     Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum,
-    Lit, Meta, NestedMeta, Variant,
+    Lit, Meta, Token, Variant,
 };
 
 use super::container::ContainerAttributes;
@@ -68,13 +69,15 @@ impl EnumProp {
         prop.variant_name = variant_ident.to_string();
         // Find all supported field level attributes in one go.
         for attribute in &variant.attrs {
-            if attribute.path.is_ident("fluvio") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for kf_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
-                            if name_value.path.is_ident("tag") {
-                                if let Lit::Int(lit_int) = name_value.lit {
-                                    prop.tag = Some(lit_int.base10_digits().to_owned());
+            if attribute.path().is_ident("fluvio") {
+                let nested =
+                    attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+                for kf_attr in nested {
+                    if let Meta::NameValue(name_value) = kf_attr {
+                        if name_value.path.is_ident("tag") {
+                            if let Expr::Lit(expr_lit) = name_value.value {
+                                if let Lit::Int(lit_int) = expr_lit.lit {
+                                    prop.tag = Some(lit_int.base10_parse::<i16>()?.to_string());
                                 }
                             }
                         }
