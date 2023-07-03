@@ -446,7 +446,7 @@ mod tests {
         //given
         let mut dest = Vec::new();
         let mut params = SmartModuleExtraParams::default();
-        params.set_lookback(Some(Lookback { last: 1 }));
+        params.set_lookback(Some(Lookback::last(1)));
         let value = DefaultProduceRequest {
             transactional_id: Some("t_id".into()),
             isolation: Isolation::ReadCommitted,
@@ -469,6 +469,39 @@ mod tests {
             0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
             0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x00,
+        ];
+        assert_eq!(dest, expected);
+    }
+
+    #[test]
+    fn test_encode_produce_request_prev_version() {
+        //given
+        let mut dest = Vec::new();
+        let mut params = SmartModuleExtraParams::default();
+        params.set_lookback(Some(Lookback::age(Duration::from_secs(20), Some(1))));
+        let value = DefaultProduceRequest {
+            transactional_id: Some("t_id".into()),
+            isolation: Isolation::ReadCommitted,
+            timeout: Duration::from_secs(1),
+            topics: vec![],
+            smartmodules: vec![SmartModuleInvocation {
+                wasm: SmartModuleInvocationWasm::AdHoc(vec![0xde, 0xad, 0xbe, 0xef]),
+                kind: SmartModuleKind::Filter,
+                params,
+            }],
+            data: std::marker::PhantomData,
+        };
+        //when
+        value
+            .encode(&mut dest, DefaultProduceRequest::MAX_API_VERSION - 1)
+            .expect("should encode");
+
+        //then
+        let expected = vec![
+            0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
+            0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
         ];
         assert_eq!(dest, expected);
     }
@@ -480,6 +513,7 @@ mod tests {
             0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
             0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x00,
         ];
         let mut value = DefaultProduceRequest::default();
 
@@ -500,7 +534,44 @@ mod tests {
             Some(wasm) => wasm,
             _ => panic!("should have smartstreeam payload"),
         };
-        assert!(matches!(sm.params.lookback(), Some(&Lookback { last: 1 })));
+        assert_eq!(sm.params.lookback(), Some(&Lookback::last(1)));
+        let wasm = match &sm.wasm {
+            SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
+            #[allow(unreachable_patterns)]
+            _ => panic!("should be SmartModuleInvocationWasm::AdHoc"),
+        };
+        assert_eq!(wasm, vec![0xde, 0xad, 0xbe, 0xef]);
+        assert!(matches!(sm.kind, SmartModuleKind::Filter));
+    }
+
+    #[test]
+    fn test_decode_produce_request_prev_version() {
+        //given
+        let bytes = vec![
+            0x01, 0x00, 0x04, 0x74, 0x5f, 0x69, 0x64, 0xff, 0xff, 0x00, 0x00, 0x03, 0xe8, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad,
+            0xbe, 0xef, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        ];
+        let mut value = DefaultProduceRequest::default();
+
+        //when
+        value
+            .decode(
+                &mut std::io::Cursor::new(bytes),
+                DefaultProduceRequest::MAX_API_VERSION - 1,
+            )
+            .unwrap();
+
+        //then
+        assert_eq!(value.transactional_id, Some("t_id".into()));
+        assert_eq!(value.isolation, Isolation::ReadCommitted);
+        assert_eq!(value.timeout, Duration::from_secs(1));
+        assert!(value.topics.is_empty());
+        let sm = match value.smartmodules.first() {
+            Some(wasm) => wasm,
+            _ => panic!("should have smartstreeam payload"),
+        };
+        assert_eq!(sm.params.lookback(), Some(&Lookback::last(1)));
         let wasm = match &sm.wasm {
             SmartModuleInvocationWasm::AdHoc(wasm) => wasm.as_slice(),
             #[allow(unreachable_patterns)]

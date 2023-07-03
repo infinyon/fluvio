@@ -1,8 +1,9 @@
 use std::{env::temp_dir, path::PathBuf, time::Duration};
 use std::sync::Arc;
 
+use chrono::{Utc, Days};
 use fluvio_smartmodule::dataplane::smartmodule::Lookback;
-use tracing::debug;
+use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::{
     partition::Replica,
@@ -2377,6 +2378,17 @@ async fn test_stream_fetch_filter_lookback() {
     .await;
 }
 
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_lookback_age() {
+    predefined_test(
+        "test_stream_fetch_filter_lookback",
+        FLUVIO_WASM_FILTER_WITH_LOOKBACK,
+        SmartModuleKind::Filter,
+        stream_fetch_filter_lookback_age,
+    )
+    .await;
+}
+
 async fn stream_fetch_filter_lookback(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
@@ -2395,11 +2407,11 @@ async fn stream_fetch_filter_lookback(
     let client_socket =
         MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
-    for sm in smartmodules.iter_mut() {
-        sm.params.set_lookback(Some(Lookback { last: 1 }));
-    }
-
     let topic = "testfilter_lookback";
+
+    for sm in smartmodules.iter_mut() {
+        sm.params.set_lookback(Some(Lookback::last(1)));
+    }
 
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
     let test_id = test.id.clone();
@@ -2470,7 +2482,7 @@ async fn stream_fetch_filter_lookback(
     {
         // last 0 should mean no records should be read
         for sm in smartmodules.iter_mut() {
-            sm.params.set_lookback(Some(Lookback { last: 0 }));
+            sm.params.set_lookback(Some(Lookback::last(0)));
         }
 
         let stream = client_socket
@@ -2504,7 +2516,7 @@ async fn stream_fetch_filter_lookback(
             .expect("write");
 
         for sm in smartmodules.iter_mut() {
-            sm.params.set_lookback(Some(Lookback { last: 1 }));
+            sm.params.set_lookback(Some(Lookback::last(1)));
         }
 
         let mut stream = client_socket
@@ -2530,6 +2542,342 @@ async fn stream_fetch_filter_lookback(
         );
     }
 
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+async fn stream_fetch_filter_lookback_age(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    mut smartmodules: Vec<SmartModuleInvocation>,
+) {
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{port}");
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    // tests for lookback records with age
+    {
+        for sm in smartmodules.iter_mut() {
+            sm.params.set_lookback(Some(Lookback::last(1)));
+        }
+
+        // tests for lookback by age
+        {
+            let topic = "testfilter_lookback_age_1";
+            info!(topic, "running test");
+
+            // read last record with matched age
+            for sm in smartmodules.iter_mut() {
+                sm.params
+                    .set_lookback(Some(Lookback::age(Duration::from_secs(3600), Some(1))));
+            }
+
+            let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+            let test_id = test.id.clone();
+            let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+                .await
+                .expect("replica");
+            ctx.leaders_state().insert(test_id, replica.clone()).await;
+            {
+                // it will read all records that greater than the last one (3)
+                replica
+                    .write_record_set(
+                        &mut vec_to_batch(&["1", "10", "2", "11", "3"]),
+                        ctx.follower_notifier(),
+                    )
+                    .await
+                    .expect("write");
+
+                let stream = client_socket
+                    .create_stream(
+                        RequestMessage::new_request(
+                            DefaultStreamFetchRequest::builder()
+                                .topic(topic.to_owned())
+                                .max_bytes(10000)
+                                .smartmodules(smartmodules.clone())
+                                .build()
+                                .expect("build"),
+                        ),
+                        11,
+                    )
+                    .await
+                    .expect("create stream");
+                assert_eq!(
+                    read_records(stream, 2).await.expect("read records"),
+                    vec!["10", "11"]
+                );
+            }
+        }
+
+        // it will read all records because lookback found nothing
+        {
+            let topic = "testfilter_lookback_age_2";
+            info!(topic, "running test");
+
+            // no matched age
+            for sm in smartmodules.iter_mut() {
+                sm.params
+                    .set_lookback(Some(Lookback::age(Duration::from_secs(3600), Some(1))));
+            }
+
+            let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+            let test_id = test.id.clone();
+            let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+                .await
+                .expect("replica");
+            ctx.leaders_state().insert(test_id, replica.clone()).await;
+            {
+                let mut batch = vec_to_batch(&["1", "2", "3", "4", "5"]);
+                batch.batches[0].header.first_timestamp = Utc::now()
+                    .checked_sub_days(Days::new(1))
+                    .expect("valid date")
+                    .timestamp_millis();
+                batch.batches[0].header.max_time_stamp = batch.batches[0].header.first_timestamp;
+
+                replica
+                    .write_record_set(&mut batch, ctx.follower_notifier())
+                    .await
+                    .expect("write");
+
+                let stream = client_socket
+                    .create_stream(
+                        RequestMessage::new_request(
+                            DefaultStreamFetchRequest::builder()
+                                .topic(topic.to_owned())
+                                .max_bytes(10000)
+                                .smartmodules(smartmodules.clone())
+                                .build()
+                                .expect("build"),
+                        ),
+                        11,
+                    )
+                    .await
+                    .expect("create stream");
+                assert_eq!(
+                    read_records(stream, 5).await.expect("read records"),
+                    vec!["1", "2", "3", "4", "5"]
+                );
+            }
+        }
+
+        // no last, one batch, all record matched age
+        {
+            let topic = "testfilter_lookback_age_3";
+            info!(topic, "running test");
+
+            // no matched age
+            for sm in smartmodules.iter_mut() {
+                sm.params
+                    .set_lookback(Some(Lookback::age(Duration::from_secs(3600), None)));
+            }
+
+            let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+            let test_id = test.id.clone();
+            let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+                .await
+                .expect("replica");
+            ctx.leaders_state().insert(test_id, replica.clone()).await;
+            {
+                let mut batch = vec_to_batch(&["1", "10", "2", "11", "3"]);
+
+                replica
+                    .write_record_set(&mut batch, ctx.follower_notifier())
+                    .await
+                    .expect("write");
+
+                let stream = client_socket
+                    .create_stream(
+                        RequestMessage::new_request(
+                            DefaultStreamFetchRequest::builder()
+                                .topic(topic.to_owned())
+                                .max_bytes(10000)
+                                .smartmodules(smartmodules.clone())
+                                .build()
+                                .expect("build"),
+                        ),
+                        11,
+                    )
+                    .await
+                    .expect("create stream");
+                assert_eq!(
+                    read_records(stream, 2).await.expect("read records"),
+                    vec!["10", "11"]
+                );
+            }
+        }
+
+        // no last, one batch, some records have matched age
+        {
+            let topic = "testfilter_lookback_age_4";
+            info!(topic, "running test");
+
+            // no matched age
+            for sm in smartmodules.iter_mut() {
+                sm.params
+                    .set_lookback(Some(Lookback::age(Duration::from_secs(60 * 60 * 13), None)));
+            }
+
+            let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+            let test_id = test.id.clone();
+            let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+                .await
+                .expect("replica");
+            ctx.leaders_state().insert(test_id, replica.clone()).await;
+            {
+                let mut batch = vec_to_batch(&["1", "10", "2", "11", "3"]);
+                batch.batches[0].header.first_timestamp = Utc::now()
+                    .checked_sub_days(Days::new(1))
+                    .expect("valid date")
+                    .timestamp_millis();
+                batch.batches[0].mut_records()[4]
+                    .preamble
+                    .set_timestamp_delta(Duration::from_secs(60 * 60 * 12).as_millis() as i64);
+
+                replica
+                    .write_record_set(&mut batch, ctx.follower_notifier())
+                    .await
+                    .expect("write");
+
+                let stream = client_socket
+                    .create_stream(
+                        RequestMessage::new_request(
+                            DefaultStreamFetchRequest::builder()
+                                .topic(topic.to_owned())
+                                .max_bytes(10000)
+                                .smartmodules(smartmodules.clone())
+                                .build()
+                                .expect("build"),
+                        ),
+                        11,
+                    )
+                    .await
+                    .expect("create stream");
+                assert_eq!(
+                    read_records(stream, 2).await.expect("read records"),
+                    vec!["10", "11"]
+                );
+            }
+        }
+
+        // no last, two batches, all record matched age
+        {
+            let topic = "testfilter_lookback_age_5";
+            info!(topic, "running test");
+
+            // no matched age
+            for sm in smartmodules.iter_mut() {
+                sm.params
+                    .set_lookback(Some(Lookback::age(Duration::from_secs(3600), None)));
+            }
+
+            let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+            let test_id = test.id.clone();
+            let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+                .await
+                .expect("replica");
+            ctx.leaders_state().insert(test_id, replica.clone()).await;
+            {
+                let mut batch1 = vec_to_batch(&["1", "10", "2"]);
+                let mut batch2 = vec_to_batch(&["11", "3"]);
+
+                replica
+                    .write_record_set(&mut batch1, ctx.follower_notifier())
+                    .await
+                    .expect("write");
+                replica
+                    .write_record_set(&mut batch2, ctx.follower_notifier())
+                    .await
+                    .expect("write");
+
+                let stream = client_socket
+                    .create_stream(
+                        RequestMessage::new_request(
+                            DefaultStreamFetchRequest::builder()
+                                .topic(topic.to_owned())
+                                .max_bytes(10000)
+                                .smartmodules(smartmodules.clone())
+                                .build()
+                                .expect("build"),
+                        ),
+                        11,
+                    )
+                    .await
+                    .expect("create stream");
+                assert_eq!(
+                    read_records(stream, 2).await.expect("read records"),
+                    vec!["10", "11"]
+                );
+            }
+        }
+
+        // no last, two batches, some records have matched age
+        {
+            let topic = "testfilter_lookback_age_6";
+            info!(topic, "running test");
+
+            // no matched age
+            for sm in smartmodules.iter_mut() {
+                sm.params
+                    .set_lookback(Some(Lookback::age(Duration::from_secs(60 * 60 * 13), None)));
+            }
+
+            let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+            let test_id = test.id.clone();
+            let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+                .await
+                .expect("replica");
+            ctx.leaders_state().insert(test_id, replica.clone()).await;
+            {
+                let mut batch1 = vec_to_batch(&["1", "10", "2"]);
+                batch1.batches[0].header.first_timestamp = Utc::now()
+                    .checked_sub_days(Days::new(1))
+                    .expect("valid date")
+                    .timestamp_millis();
+                batch1.batches[0].mut_records()[2]
+                    .preamble
+                    .set_timestamp_delta(Duration::from_secs(60 * 60 * 12).as_millis() as i64);
+
+                let mut batch2 = vec_to_batch(&["11", "3"]);
+
+                replica
+                    .write_record_set(&mut batch1, ctx.follower_notifier())
+                    .await
+                    .expect("write");
+                replica
+                    .write_record_set(&mut batch2, ctx.follower_notifier())
+                    .await
+                    .expect("write");
+
+                let stream = client_socket
+                    .create_stream(
+                        RequestMessage::new_request(
+                            DefaultStreamFetchRequest::builder()
+                                .topic(topic.to_owned())
+                                .max_bytes(10000)
+                                .smartmodules(smartmodules.clone())
+                                .build()
+                                .expect("build"),
+                        ),
+                        11,
+                    )
+                    .await
+                    .expect("create stream");
+                assert_eq!(
+                    read_records(stream, 2).await.expect("read records"),
+                    vec!["10", "11"]
+                );
+            }
+        }
+    }
     server_end_event.notify();
     debug!("terminated controller");
 }

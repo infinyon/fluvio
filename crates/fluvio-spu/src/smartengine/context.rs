@@ -1,17 +1,23 @@
 use std::sync::Arc;
+use std::time::Duration;
 
+use chrono::Utc;
 use fluvio_smartengine::{SmartModuleChainInstance, Version, Lookback};
-use fluvio_protocol::{link::ErrorCode, Decoder};
+use fluvio_protocol::link::ErrorCode;
 use fluvio_smartmodule::Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
+use fluvio_types::Timestamp;
 use tracing::{debug, trace};
 
 use crate::core::metrics::SpuMetrics;
+use crate::smartengine::file_batch::FileRecordIterator;
 use crate::{
     core::DefaultSharedGlobalContext, replication::leader::SharedFileLeaderState,
     smartengine::file_batch::FileBatchIterator,
 };
 use crate::smartengine::chain;
+
+use super::file_batch::{FileBatch, RecordItem};
 
 pub struct SmartModuleContext {
     chain: SmartModuleChainInstance,
@@ -94,16 +100,38 @@ async fn read_records(
     lookback: Lookback,
     version: Version,
 ) -> anyhow::Result<Vec<Record>> {
+    let iter = lookback_iterator(replica, lookback, version).await?;
+
+    let result: Vec<Record> = iter.collect::<Result<Vec<Record>, std::io::Error>>()?;
+    debug!("read {} records", result.len());
+    trace!(?result);
+    Ok(result)
+}
+
+async fn lookback_iterator(
+    replica: &SharedFileLeaderState,
+    lookback: Lookback,
+    version: Version,
+) -> anyhow::Result<Box<dyn Iterator<Item = Result<Record, std::io::Error>>>> {
+    let iter = match lookback {
+        Lookback::Last(last) => lookback_last_iterator(replica, last, version).await,
+        Lookback::Age { age, last } => lookback_age_iterator(replica, age, last, version).await,
+    }?;
+    let iter = iter.map(|it| it.map(|res| res.record));
+    Ok(Box::new(iter))
+}
+
+async fn lookback_last_iterator(
+    replica: &SharedFileLeaderState,
+    last: u64,
+    version: Version,
+) -> anyhow::Result<Box<dyn Iterator<Item = Result<RecordItem, std::io::Error>>>> {
     let (start_offset, hw) = replica.start_offset_info().await;
 
-    let (offset, count) = match lookback {
-        Lookback::Last(last) => (
-            (hw - (TryInto::<i64>::try_into(last)?)).max(0),
-            last.try_into()?,
-        ),
-    };
+    let offset = (hw - (TryInto::<i64>::try_into(last)?)).max(0);
+
     let offset = offset.clamp(start_offset, hw);
-    debug!(offset, ?lookback, "reading records for look_back");
+    debug!(offset, "reading last {last} records for look_back");
 
     let slice = replica
         .read_records(offset, u32::MAX, fluvio::Isolation::ReadCommitted)
@@ -111,26 +139,82 @@ async fn read_records(
 
     let Some(file_slice) = slice.file_slice else {
         trace!(?slice);
-        debug!("read 0 records");
-        return Ok(Default::default())
+        return Ok(Box::new(std::iter::empty()))
     };
 
-    let file_batch_iterator = FileBatchIterator::from_raw_slice(file_slice);
+    let batch_iter = FileBatchIterator::from_raw_slice(file_slice);
+    let records_iter = FileRecordIterator::new(batch_iter, version);
 
-    let mut result = Vec::with_capacity(count);
-    for batch_result in file_batch_iterator {
-        let input_batch = batch_result?;
+    Ok(Box::new(records_iter.filter(move |r| match r {
+        Ok(item) => item.offset >= offset,
+        Err(_) => true,
+    })))
+}
 
-        let mut records: Vec<Record> = vec![];
-        Decoder::decode(
-            &mut records,
-            &mut std::io::Cursor::new(input_batch.records),
+async fn lookback_age_iterator(
+    replica: &SharedFileLeaderState,
+    age: Duration,
+    last: u64,
+    version: Version,
+) -> anyhow::Result<Box<dyn Iterator<Item = Result<RecordItem, std::io::Error>>>> {
+    let min_timestamp: Timestamp = Utc::now()
+        .timestamp_millis()
+        .checked_sub(i64::try_from(age.as_millis())?)
+        .ok_or_else(|| anyhow::anyhow!("timestamp overflow"))?;
+
+    debug!(?age, last, min_timestamp, "iterating for lookback");
+
+    let records_iter = if last > 0 {
+        lookback_last_iterator(replica, last, version).await?
+    } else {
+        let batches = read_batches_by_age(replica, min_timestamp).await?;
+        Box::new(FileRecordIterator::new(
+            batches.into_iter().map(Ok),
             version,
-        )?;
-        result.append(&mut records);
+        ))
+    };
+    Ok(Box::new(records_iter.filter(move |i| match i {
+        Ok(item) => item.timestamp >= min_timestamp,
+        Err(_) => true,
+    })))
+}
+
+async fn read_batches_by_age(
+    replica: &SharedFileLeaderState,
+    min_timestamp: Timestamp,
+) -> anyhow::Result<Vec<FileBatch>> {
+    let mut result = Vec::new();
+    let mut offset = replica.hw() - 1;
+    loop {
+        if offset.is_negative() {
+            break;
+        }
+        trace!(offset, "reading next batch");
+        let slice = replica
+            .read_records(offset - 1, u32::MAX, fluvio::Isolation::ReadCommitted)
+            .await?;
+        let Some(file_slice) = slice.file_slice else {
+            trace!(?slice);
+            break;
+        };
+        let mut batch_iter = FileBatchIterator::from_raw_slice(file_slice);
+        let Some(batch) = batch_iter.next() else { break };
+        let batch = batch?;
+        trace!(?batch.batch, "next file batch");
+
+        if batch.batch.header.max_time_stamp < min_timestamp {
+            break;
+        } else {
+            trace!(offset, "added batch");
+            offset = batch.batch.base_offset - 1;
+            result.push(batch);
+        }
     }
-    let result: Vec<Record> = result.into_iter().rev().take(count).rev().collect();
-    debug!("read {} records", result.len());
-    trace!(?result);
+    result.reverse();
+    debug!(
+        min_timestamp,
+        "read {} batches older than min_timestamp",
+        result.len()
+    );
     Ok(result)
 }

@@ -175,15 +175,17 @@ async fn look_back(chain: &mut SmartModuleChainInstance, records: Vec<String>) -
     chain
         .look_back(
             |lookback| {
-                let res = match lookback {
-                    fluvio_smartengine::Lookback::Last(n) => Ok(records
-                        .clone()
-                        .into_iter()
-                        .rev()
-                        .take(n as usize)
-                        .rev()
-                        .collect()),
+                let n = match lookback {
+                    fluvio_smartengine::Lookback::Last(n) => n,
+                    fluvio_smartengine::Lookback::Age { age: _, last } => last,
                 };
+                let res = Ok(records
+                    .clone()
+                    .into_iter()
+                    .rev()
+                    .take(n as usize)
+                    .rev()
+                    .collect());
                 async { res }
             },
             &Default::default(),

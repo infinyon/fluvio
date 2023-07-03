@@ -856,7 +856,10 @@ mod tests {
         );
         assert_eq!(
             connector_spec.transforms().unwrap().transforms[0].lookback,
-            Some(Lookback { last: 1 })
+            Some(Lookback {
+                last: 100,
+                age: Some(Duration::from_secs(3600))
+            })
         );
 
         assert_eq!(connector_spec.transforms().unwrap().transforms[0].with,

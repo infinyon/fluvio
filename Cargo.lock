@@ -2821,7 +2821,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "bytes 1.4.0",
  "content_inspector",
@@ -2944,7 +2944,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.7.5"
+version = "0.7.6"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -2953,6 +2953,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-types",
+ "humantime-serde",
  "serde",
  "serde_json",
  "serde_yaml 0.9.21",
@@ -2964,7 +2965,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "criterion",
  "eyre",
@@ -3023,6 +3024,7 @@ dependencies = [
  "async-trait",
  "bytes 1.4.0",
  "cfg-if",
+ "chrono",
  "clap 4.2.7",
  "derive_builder",
  "event-listener",
@@ -3058,7 +3060,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.14.2"
+version = "0.14.3"
 dependencies = [
  "bytes 1.4.0",
  "derive_builder",
