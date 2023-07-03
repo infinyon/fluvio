@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod test {
 
-    use std::{convert::TryFrom};
-
     use fluvio_smartmodule::{
         dataplane::smartmodule::{SmartModuleInput},
         FluvioRecord,
@@ -11,6 +9,7 @@ mod test {
     use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
         wasmtime::transforms::simple_transform::FILTER_FN_NAME,
+        config::DEFAULT_SMARTENGINE_VERSION,
     };
 
     const SM_FILTER: &str = "fluvio_smartmodule_filter";
@@ -41,13 +40,21 @@ mod test {
         let metrics = SmartModuleChainMetrics::default();
         let input = vec![FluvioRecord::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
         let input = vec![FluvioRecord::new("apple"), FluvioRecord::new("fruit")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"apple");
@@ -101,7 +108,11 @@ mod test {
 
         let input = vec![FluvioRecord::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
@@ -112,7 +123,11 @@ mod test {
         ];
 
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"apple");
@@ -138,7 +153,11 @@ mod test {
             FluvioRecord::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // only banana
         assert_eq!(output.successes[0].value.as_ref(), b"banana");

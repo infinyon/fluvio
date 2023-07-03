@@ -5,7 +5,7 @@ use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP,
 };
 
-const DEFAULT_SMARTENGINE_VERSION: i16 = SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP;
+pub const DEFAULT_SMARTENGINE_VERSION: i16 = SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP;
 
 /// Initial seed data to passed, this will be send back as part of the output
 #[derive(Debug, Clone)]

@@ -81,11 +81,11 @@ pub struct SmartModuleInput {
     raw_bytes: Vec<u8>,
     /// This is deprecrated, extra parameters should not be passed, they will be removed in the future
     #[deprecated]
-    #[fluvio(max_version = SMARTMODULE_BASE_TIMESTMAP)]
+    #[fluvio(max_version = 21)]
     params: SmartModuleExtraParams,
-    #[fluvio(min_version = 16, max_version = SMARTMODULE_BASE_TIMESTMAP)]
+    #[fluvio(min_version = 16, max_version = 21)]
     join_record: Vec<u8>,
-    #[fluvio(min_version = SMARTMODULE_BASE_TIMESTMAP)]
+    #[fluvio(min_version = 21)]
     base_timestamp: i64,
 }
 
@@ -126,31 +126,18 @@ impl SmartModuleInput {
     pub fn parts(self) -> (Vec<u8>, Vec<u8>) {
         (self.raw_bytes, self.join_record)
     }
-}
 
-impl TryFrom<Vec<Record>> for SmartModuleInput {
-    type Error = std::io::Error;
-    fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
+    pub fn try_into_records(mut self, version: i16) -> Result<Vec<Record>, std::io::Error> {
+        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), version)
+    }
+
+    pub fn try_from_records(records: Vec<Record>, version: i16) -> Result<Self, std::io::Error> {
         let mut raw_bytes = Vec::new();
-        records.encode(
-            &mut raw_bytes,
-            SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP,
-        )?;
+        records.encode(&mut raw_bytes, version)?;
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
         })
-    }
-}
-
-impl TryInto<Vec<Record>> for SmartModuleInput {
-    type Error = std::io::Error;
-
-    fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        Decoder::decode_from(
-            &mut Cursor::new(&mut self.raw_bytes),
-            SMARTMODULE_LOOKBACK_WITH_AGE_AND_BASE_TIMESTAMP,
-        )
     }
 }
 
@@ -195,12 +182,12 @@ mod tests {
         ];
 
         //when
-        let sm_input: SmartModuleInput = records
-            .try_into()
-            .expect("records to input conversion failed");
+        let sm_input: SmartModuleInput =
+            SmartModuleInput::try_from_records(records, SMARTMODULE_BASE_TIMESTAMP)
+                .expect("records to input conversion failed");
 
         let records_decoded: Vec<Record> = sm_input
-            .try_into()
+            .try_into_records(SMARTMODULE_BASE_TIMESTAMP)
             .expect("input to records conversion failed");
 
         //then

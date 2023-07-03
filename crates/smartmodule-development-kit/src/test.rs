@@ -16,6 +16,7 @@ use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_smartengine::{
     SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleChainInstance, Lookback,
+    DEFAULT_SMARTENGINE_VERSION,
 };
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 use fluvio_protocol::record::Record;
@@ -153,7 +154,10 @@ impl TestCmd {
 
         let test_records: Vec<Record> = test_data.into();
 
-        let output = chain.process(SmartModuleInput::try_from(test_records)?, &metrics)?;
+        let output = chain.process(
+            SmartModuleInput::try_from_records(test_records, DEFAULT_SMARTENGINE_VERSION)?,
+            &metrics,
+        )?;
 
         if self.verbose {
             println!("{:?} records outputed", output.successes.len());

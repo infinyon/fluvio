@@ -9,7 +9,7 @@ use wasmtime::{Engine, Module};
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 
 use crate::SmartModuleConfig;
-use crate::engine::config::Lookback;
+use crate::engine::config::{Lookback, DEFAULT_SMARTENGINE_VERSION};
 
 use super::init::SmartModuleInit;
 use super::instance::{SmartModuleInstance, SmartModuleInstanceContext};
@@ -138,7 +138,10 @@ impl SmartModuleChainInstance {
                     // encountered error, we stop processing and return partial output
                     return Ok(output);
                 } else {
-                    next_input = output.successes.try_into()?;
+                    next_input = SmartModuleInput::try_from_records(
+                        output.successes,
+                        DEFAULT_SMARTENGINE_VERSION,
+                    )?;
                     next_input.set_base_offset(base_offset);
                 }
             }
@@ -153,7 +156,9 @@ impl SmartModuleChainInstance {
             debug!(records_out, "sm records out");
             Ok(output)
         } else {
-            Ok(SmartModuleOutput::new(input.try_into()?))
+            Ok(SmartModuleOutput::new(
+                input.try_into_records(DEFAULT_SMARTENGINE_VERSION)?,
+            ))
         }
     }
 
@@ -171,7 +176,8 @@ impl SmartModuleChainInstance {
             if let Some(lookback) = instance.lookback() {
                 debug!("look_back on instance");
                 let records: Vec<FluvioRecord> = read_fn(lookback).await?;
-                let input: SmartModuleInput = SmartModuleInput::try_from(records)?;
+                let input: SmartModuleInput =
+                    SmartModuleInput::try_from_records(records, DEFAULT_SMARTENGINE_VERSION)?;
                 metrics.add_bytes_in(input.raw_bytes().len() as u64);
                 self.store.top_up_fuel();
                 let result = instance.call_look_back(input, &mut self.store);
@@ -204,13 +210,11 @@ mod test {
 #[cfg(test)]
 mod chaining_test {
 
-    use std::convert::TryFrom;
-
     use fluvio_protocol::link::smartmodule::SmartModuleLookbackRuntimeError;
     use fluvio_smartmodule::FluvioRecord;
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput};
 
-    use crate::engine::config::Lookback;
+    use crate::engine::config::{Lookback, DEFAULT_SMARTENGINE_VERSION};
 
     use super::super::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
@@ -250,7 +254,11 @@ mod chaining_test {
 
         let input = vec![FluvioRecord::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
@@ -260,7 +268,11 @@ mod chaining_test {
             FluvioRecord::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
@@ -308,7 +320,11 @@ mod chaining_test {
             FluvioRecord::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
@@ -316,13 +332,21 @@ mod chaining_test {
 
         let input = vec![FluvioRecord::new("nothing")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![FluvioRecord::new("elephant")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
@@ -368,7 +392,11 @@ mod chaining_test {
             FluvioRecord::new("3"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "3");
@@ -434,7 +462,8 @@ mod chaining_test {
         assert_eq!(chain.store.get_used_fuel(), 0);
 
         let record = vec![FluvioRecord::new("input")];
-        let input = SmartModuleInput::try_from(record).expect("valid input record");
+        let input = SmartModuleInput::try_from_records(record, DEFAULT_SMARTENGINE_VERSION)
+            .expect("valid input record");
         let metrics = SmartModuleChainMetrics::default();
         //when
         let output = chain.process(input, &metrics).expect("process failed");

@@ -439,8 +439,9 @@ impl TopicProducer {
             if #[cfg(feature = "smartengine")] {
                 let mut entries = vec![record];
 
-                use std::convert::TryFrom;
                 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
+                use fluvio_smartengine::DEFAULT_SMARTENGINE_VERSION;
+
                 use chrono::Utc;
 
                 let metrics = self.metrics.chain_metrics();
@@ -450,7 +451,7 @@ impl TopicProducer {
                 ) = &self.sm_chain {
                     let mut sm_chain = smart_chain_ref.write().await;
 
-                    let mut input = SmartModuleInput::try_from(entries)?;
+                    let mut input = SmartModuleInput::try_from_records(entries, DEFAULT_SMARTENGINE_VERSION)?;
                     input.set_base_timestamp(Utc::now().timestamp_millis());
 
                     let output = sm_chain.process(input,metrics).map_err(|e| FluvioError::Other(format!("SmartEngine - {e:?}")))?;
