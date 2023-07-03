@@ -1,11 +1,11 @@
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 
 use fluvio_smartmodule::{
     smartmodule, Record, Result, eyre,
     dataplane::smartmodule::{SmartModuleExtraParams, SmartModuleInitError},
 };
 
-static CRITERIA: OnceCell<String> = OnceCell::new();
+static CRITERIA: OnceLock<String> = OnceLock::new();
 
 #[smartmodule(init)]
 fn init(params: SmartModuleExtraParams) -> Result<()> {

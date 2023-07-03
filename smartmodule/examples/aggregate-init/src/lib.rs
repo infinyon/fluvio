@@ -1,12 +1,13 @@
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 
 use fluvio_smartmodule::{
     dataplane::smartmodule::SmartModuleExtraParams, smartmodule, Record, RecordData, Result,
 };
 
-use once_cell::sync::OnceCell;
 
-static INITIAL_VALUE: OnceCell<UseOnce<RecordData>> = OnceCell::new();
+
+static INITIAL_VALUE: OnceLock<UseOnce<RecordData>> = OnceLock::new();
 
 const PARAM_NAME: &str = "initial_value";
 
