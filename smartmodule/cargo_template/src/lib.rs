@@ -1,7 +1,7 @@
 {% if smartmodule-params %}
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleExtraParams{% if smartmodule-type == "filter" %}, SmartModuleInitError{% endif %}};
 {% if smartmodule-type == "filter" %}
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 use fluvio_smartmodule::eyre;
 {% endif %}
 {% endif %}
@@ -85,7 +85,7 @@ pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData
 
 {% if smartmodule-params %}
 {% if smartmodule-type == "filter" %}
-static CRITERIA: OnceCell<String> = OnceCell::new();
+static CRITERIA: OnceLock<String> = OnceLock::new();
 
 #[smartmodule(init)]
 fn init(params: SmartModuleExtraParams) -> Result<()> {

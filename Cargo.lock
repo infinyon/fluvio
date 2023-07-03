@@ -2659,7 +2659,6 @@ dependencies = [
  "fluvio-types",
  "humantime-serde",
  "minijinja",
- "once_cell",
  "openapiv3",
  "pretty_assertions",
  "serde",

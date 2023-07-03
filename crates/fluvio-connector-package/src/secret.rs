@@ -3,12 +3,12 @@ use std::{
     path::{PathBuf, Path},
     fs::File,
 };
+use std::sync::OnceLock;
 
-use once_cell::sync::OnceCell;
 use serde::{Serialize, Deserialize, de::Visitor, Deserializer};
 use anyhow::{Result, anyhow};
 
-static SECRET_STORE: OnceCell<Box<dyn SecretStore>> = OnceCell::new();
+static SECRET_STORE: OnceLock<Box<dyn SecretStore>> = OnceLock::new();
 
 #[derive(Clone, Default, PartialEq, Eq)]
 pub struct SecretString {

@@ -10,5 +10,4 @@ crate-type = ['cdylib']
 
 [dependencies]
 fluvio-smartmodule = { workspace = true }
-once_cell = { version = "1.17" }
 
