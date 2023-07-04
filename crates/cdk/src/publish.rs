@@ -72,7 +72,7 @@ impl PublishCmd {
                 let pkgmetapath = self.package_meta_path(&hubdir);
                 let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
                 package_push(self, &pkgdata, &access)?;
-                self.cleanup(&hubdir)?;
+                Self::cleanup(&hubdir)?;
             }
 
             // --pack only
@@ -81,7 +81,7 @@ impl PublishCmd {
                 let hubdir = self.run_in_cargo_project(&opt)?;
                 let pkgmetapath = self.package_meta_path(&hubdir);
                 package_assemble(pkgmetapath, &opt.target, &access)?;
-                self.cleanup(&hubdir)?;
+                Self::cleanup(&hubdir)?;
             }
 
             // --push only, needs ipkg file
@@ -117,7 +117,7 @@ impl PublishCmd {
             package_info.package_path().to_string_lossy()
         );
 
-        self.cleanup(&hubdir)?;
+        Self::cleanup(&hubdir)?;
 
         if !self.no_build {
             build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
@@ -129,7 +129,7 @@ impl PublishCmd {
         Ok(hubdir)
     }
 
-    fn cleanup(&self, hubdir: &Path) -> Result<()> {
+    fn cleanup(hubdir: &Path) -> Result<()> {
         if hubdir.exists() {
             // Delete the `.hub` directory if already exists
             tracing::warn!("Removing directory at {:?}", hubdir);
