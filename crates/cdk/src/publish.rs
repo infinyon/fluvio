@@ -33,6 +33,10 @@ pub struct PublishCmd {
 
     pub package_meta: Option<String>,
 
+    /// path to the ipkg file, used when --push is specified
+    #[arg(long)]
+    ipkg_file: Option<String>,
+
     /// don't ask for confirmation of public package publish
     #[arg(long, default_value = "false")]
     pub public_yes: bool,
@@ -59,6 +63,16 @@ pub struct PublishCmd {
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
+
+        if !self.pack && self.push {
+            let pkgfile = self
+                .ipkg_file
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("need to specify --ipkg-file when using --push"))?;
+            package_push(self, pkgfile, &access)?;
+            return Ok(());
+        }
+
         let opt = self.package.as_opt();
         let package_info = PackageInfo::from_options(&opt)?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
@@ -101,11 +115,7 @@ impl PublishCmd {
 
             // --push only, needs ipkg file
             (false, true) => {
-                let pkgfile = &self
-                    .package_meta
-                    .clone()
-                    .ok_or_else(|| anyhow::anyhow!("package file required for push"))?;
-                package_push(self, pkgfile, &access)?;
+                unreachable!() // should be catched by `if !self.pack && self.push`
             }
         }
 
