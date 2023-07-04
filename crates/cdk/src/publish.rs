@@ -36,7 +36,7 @@ pub struct PublishCmd {
 
     /// path to the ipkg file, used when --push is specified
     #[arg(long)]
-    ipkg_file: Option<String>,
+    ipkg: Option<String>,
 
     /// don't ask for confirmation of public package publish
     #[arg(long, default_value = "false")]
@@ -86,8 +86,8 @@ impl PublishCmd {
 
             // --push only, needs ipkg file
             (false, true) => {
-                let pkgfile = self.ipkg_file.as_ref().ok_or_else(|| {
-                    anyhow::anyhow!("need to specify --ipkg-file when using --push")
+                let pkgfile = self.ipkg.as_ref().ok_or_else(|| {
+                    anyhow::anyhow!("need to specify --ipkg when using --push")
                 })?;
                 package_push(self, pkgfile, &access)?;
             }
