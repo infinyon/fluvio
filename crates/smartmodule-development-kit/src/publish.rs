@@ -63,7 +63,6 @@ impl PublishCmd {
                 let hubdir = self.run_in_cargo_project()?;
                 let package_meta_path = self.package_meta_path(&hubdir);
                 package_assemble(package_meta_path, &access)?;
-                Self::cleanup(&hubdir)?;
             }
 
             // --push only, needs ipkg file
