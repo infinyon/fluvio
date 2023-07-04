@@ -86,9 +86,10 @@ impl PublishCmd {
 
             // --push only, needs ipkg file
             (false, true) => {
-                let pkgfile = self.ipkg.as_ref().ok_or_else(|| {
-                    anyhow::anyhow!("need to specify --ipkg when using --push")
-                })?;
+                let pkgfile = self
+                    .ipkg
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("need to specify --ipkg when using --push"))?;
                 package_push(self, pkgfile, &access)?;
             }
         }
