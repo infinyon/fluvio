@@ -62,7 +62,7 @@ function validate_cluster_stable() {
     echo "Install (current stable) CLI"
     unset VERSION
 
-    curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.output 
+    curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.output 
     STABLE_VERSION=$(cat /tmp/installer.output | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio

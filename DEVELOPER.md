@@ -512,7 +512,7 @@ kubectl patch partition  <partition_name> -p '{"metadata":{"finalizers":null}}' 
 Instead of building Fluvio, you may want to prefer just to download it and get to work.  You can use our one-line installation script.  You can use it to install the latest release or prerelease, or install a specific version:
 
 ```
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | bash                 # Install latest release
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash  # Install latest pre-release
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=x.y.z bash   # Install specific version
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | bash                 # Install latest release
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash  # Install latest pre-release
+$ curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=x.y.z bash   # Install specific version
 ```

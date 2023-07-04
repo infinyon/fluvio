@@ -61,7 +61,7 @@ jobs:
           kind create cluster --config k8-util/cluster/kind.yaml
       - name: Install Fluvio CLI
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest FLV_VERSION=latest bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest FLV_VERSION=latest bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Install Local Fluvio cluster
         timeout-minutes: 3
@@ -186,7 +186,7 @@ jobs:
 
         # Utilizes the env var set in the previous step 
       - name: Curl Install
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.version
+        run: curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
@@ -228,7 +228,7 @@ jobs:
       - name: Install stable CLI and start Fluvio cluster
         timeout-minutes: 10
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cluster_version }} bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=${{ matrix.cluster_version }} bash
           fluvio cluster start
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |
