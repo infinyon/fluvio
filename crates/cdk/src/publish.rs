@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use cargo_builder::package::PackageInfo;
+use cargo_builder::package::PackageOption;
 use clap::Parser;
 
 use fluvio_connector_package::metadata::ConnectorMetadata;
@@ -64,17 +65,50 @@ impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
 
-        if !self.pack && self.push {
-            let pkgfile = self
-                .ipkg_file
-                .as_ref()
-                .ok_or_else(|| anyhow::anyhow!("need to specify --ipkg-file when using --push"))?;
-            package_push(self, pkgfile, &access)?;
-            return Ok(());
+        match (self.pack, self.push) {
+            (false, false) | (true, true) => {
+                let opt = self.package.as_opt();
+                let hubdir = self.run_in_cargo_project(&opt)?;
+                let pkgmetapath = self.package_meta_path(&hubdir);
+                let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
+                package_push(self, &pkgdata, &access)?;
+                self.cleanup(&hubdir)?;
+            }
+
+            // --pack only
+            (true, false) => {
+                let opt = self.package.as_opt();
+                let hubdir = self.run_in_cargo_project(&opt)?;
+                let pkgmetapath = self.package_meta_path(&hubdir);
+                package_assemble(pkgmetapath, &opt.target, &access)?;
+                self.cleanup(&hubdir)?;
+            }
+
+            // --push only, needs ipkg file
+            (false, true) => {
+                let pkgfile = self.ipkg_file.as_ref().ok_or_else(|| {
+                    anyhow::anyhow!("need to specify --ipkg-file when using --push")
+                })?;
+                package_push(self, pkgfile, &access)?;
+            }
         }
 
-        let opt = self.package.as_opt();
-        let package_info = PackageInfo::from_options(&opt)?;
+        Ok(())
+    }
+
+    fn package_meta_path(&self, hubdir: &Path) -> PathBuf {
+        self.package_meta
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META))
+    }
+
+    // This gets run only if the command should be run in the cargo project folder
+    // of the connector
+    //
+    // returns hubdir
+    fn run_in_cargo_project(&self, opt: &PackageOption) -> Result<PathBuf> {
+        let package_info = PackageInfo::from_options(opt)?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
         info!(
@@ -83,7 +117,7 @@ impl PublishCmd {
             package_info.package_path().to_string_lossy()
         );
 
-        self.cleanup(&package_info)?;
+        self.cleanup(&hubdir)?;
 
         if !self.no_build {
             build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
@@ -92,47 +126,14 @@ impl PublishCmd {
         init_package_template(&package_info, &self.readme)?;
         check_package_meta_visiblity(&package_info)?;
 
-        match (self.pack, self.push) {
-            (false, false) | (true, true) => {
-                let pkgmetapath = self
-                    .package_meta
-                    .as_ref()
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
-                package_push(self, &pkgdata, &access)?;
-            }
-
-            // --pack only
-            (true, false) => {
-                let pkgmetapath = self
-                    .package_meta
-                    .as_ref()
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                package_assemble(pkgmetapath, &opt.target, &access)?;
-            }
-
-            // --push only, needs ipkg file
-            (false, true) => {
-                unreachable!() // should be catched by `if !self.pack && self.push`
-            }
-        }
-
-        if !self.pack {
-            self.cleanup(&package_info)?;
-        }
-
-        Ok(())
+        Ok(hubdir)
     }
 
-    pub fn cleanup(&self, package_info: &PackageInfo) -> Result<()> {
-        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
-
+    fn cleanup(&self, hubdir: &Path) -> Result<()> {
         if hubdir.exists() {
             // Delete the `.hub` directory if already exists
             tracing::warn!("Removing directory at {:?}", hubdir);
-            remove_dir_all(&hubdir)?;
+            remove_dir_all(hubdir)?;
         }
 
         Ok(())

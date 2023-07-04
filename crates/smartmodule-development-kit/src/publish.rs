@@ -1,7 +1,5 @@
 use std::path::{Path, PathBuf};
 use std::fs::remove_dir_all;
-use std::unreachable;
-
 use anyhow::{Result, anyhow};
 use cargo_builder::package::PackageInfo;
 use clap::Parser;
@@ -51,61 +49,65 @@ impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
 
-        if !self.pack && self.push {
-            let pkgfile = self
-                .ipkg_file
-                .as_ref()
-                .ok_or_else(|| anyhow!("need to specify --ipkg-file when using --push"))?;
-            package_push(self, pkgfile, &access)?;
-            return Ok(());
-        }
-
-        let opt = self.package.as_opt();
-        let package_info = PackageInfo::from_options(&opt)?;
-        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
-
-        self.cleanup(&package_info)?;
-
-        init_package_template(&package_info)?;
-        check_package_meta_visiblity(&package_info)?;
-
-        let package_meta_path = self
-            .package_meta
-            .as_ref()
-            .map(PathBuf::from)
-            .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
-                let pkgdata = package_assemble(&package_meta_path, &access)?;
+                let hubdir = self.run_in_cargo_project()?;
+                let package_meta_path = self.package_meta_path(&hubdir);
+                let pkgdata = package_assemble(package_meta_path, &access)?;
                 package_push(self, &pkgdata, &access)?;
+                self.cleanup(&hubdir)?;
             }
 
             // --pack only
             (true, false) => {
-                package_assemble(&package_meta_path, &access)?;
+                let hubdir = self.run_in_cargo_project()?;
+                let package_meta_path = self.package_meta_path(&hubdir);
+                package_assemble(package_meta_path, &access)?;
+                self.cleanup(&hubdir)?;
             }
 
             // --push only, needs ipkg file
             (false, true) => {
-                unreachable!() // should be catched by `if !self.pack && self.push`
+                let pkgfile = self
+                    .ipkg_file
+                    .as_ref()
+                    .ok_or_else(|| anyhow!("need to specify --ipkg-file when using only --push"))?;
+                package_push(self, pkgfile, &access)?;
             }
-        }
-
-        if !self.pack {
-            self.cleanup(&package_info)?;
         }
 
         Ok(())
     }
 
-    fn cleanup(&self, package_info: &PackageInfo) -> Result<()> {
+    fn package_meta_path(&self, hubdir: &Path) -> PathBuf {
+        self.package_meta
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META))
+    }
+
+    // This gets run only if the command should be run in the cargo project folder
+    // of the smart module
+    //
+    // returns hubdir
+    fn run_in_cargo_project(&self) -> Result<PathBuf> {
+        let opt = self.package.as_opt();
+        let package_info = PackageInfo::from_options(&opt)?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
+        self.cleanup(&hubdir)?;
+
+        init_package_template(&package_info)?;
+        check_package_meta_visiblity(&package_info)?;
+
+        Ok(hubdir)
+    }
+
+    fn cleanup(&self, hubdir: &Path) -> Result<()> {
         if hubdir.exists() {
             // Delete the `.hub` directory if already exists
             tracing::warn!("Removing directory at {:?}", hubdir);
-            remove_dir_all(&hubdir)?;
+            remove_dir_all(hubdir)?;
         }
 
         Ok(())
