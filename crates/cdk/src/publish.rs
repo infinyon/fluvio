@@ -103,10 +103,10 @@ impl PublishCmd {
             .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META))
     }
 
-    // This gets run only if the command should be run in the cargo project folder
-    // of the connector
-    //
-    // returns hubdir
+    /// This gets run only if the command should be run in the cargo project folder
+    /// of the connector
+    ///
+    /// returns hubdir
     fn run_in_cargo_project(&self, opt: &PackageOption) -> Result<PathBuf> {
         let package_info = PackageInfo::from_options(opt)?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);

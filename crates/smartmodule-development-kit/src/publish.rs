@@ -86,10 +86,10 @@ impl PublishCmd {
             .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META))
     }
 
-    // This gets run only if the command should be run in the cargo project folder
-    // of the smart module
-    //
-    // returns hubdir
+    /// This gets run only if the command should be run in the cargo project folder
+    /// of the smart module
+    ///
+    /// returns hubdir
     fn run_in_cargo_project(&self) -> Result<PathBuf> {
         let opt = self.package.as_opt();
         let package_info = PackageInfo::from_options(&opt)?;
