@@ -48,7 +48,7 @@ fn vec_to_batch<T: AsRef<[u8]>>(records: &[T]) -> RecordSet {
     header.producer_epoch = -1;
     header.first_timestamp = Utc::now().timestamp_millis();
 
-    for (i, record_bytes) in records.into_iter().enumerate() {
+    for (i, record_bytes) in records.iter().enumerate() {
         let mut record = Record::default();
         record.preamble.set_timestamp_delta(i as i64);
         let bytes: Vec<u8> = record_bytes.as_ref().to_owned();

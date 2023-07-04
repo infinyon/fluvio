@@ -291,7 +291,7 @@ impl Decoder for Duration {
         let secs = src.get_u64();
         trace!("u64: {:#x} => {}", &secs, &secs);
         let nanos = src.get_u32();
-        trace!("u64: {:#x} => {}", &nanos, &nanos);
+        trace!("u32: {:#x} => {}", &nanos, &nanos);
 
         *self = Self::new(secs, nanos);
         Ok(())
