@@ -2329,7 +2329,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.19.2"
+version = "0.19.3"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -3224,7 +3224,7 @@ dependencies = [
  "quote",
  "rand 0.8.5",
  "serde_json",
- "syn 2.0.18",
+ "syn 2.0.22",
  "tokio",
  "tracing",
  "trybuild 1.0.42",
@@ -3267,7 +3267,7 @@ dependencies = [
  "semver 1.0.17",
  "serde",
  "serde_json",
- "syn 2.0.18",
+ "syn 2.0.22",
  "tokio",
  "tracing",
  "uuid",

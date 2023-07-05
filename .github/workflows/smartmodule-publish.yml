@@ -42,7 +42,7 @@ jobs:
     steps:
       - name: Install Fluvio
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Install Fluvio SMDK
         run: fluvio install smdk

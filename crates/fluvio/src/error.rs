@@ -38,7 +38,7 @@ pub enum FluvioError {
     NegativeOffset(i64),
     #[error("Cluster (with platform version {cluster_version}) is older than the minimum required version {client_minimum_version}
 To interact with this cluster, please install the matching CLI version using the following command:
-    curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION={cluster_version} bash
+    curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION={cluster_version} bash
     ")]
     MinimumPlatformVersion {
         cluster_version: Version,
@@ -46,7 +46,7 @@ To interact with this cluster, please install the matching CLI version using the
     },
     #[error("Cluster (with platform version {cluster_version}) is newer than this CLI major version {client_maximum_version}
 To interact with this cluster, please install the matching CLI version using the following command:
-    curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION={cluster_version} bash
+    curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION={cluster_version} bash
     ")]
     MaximumPlatformVersion {
         cluster_version: Version,

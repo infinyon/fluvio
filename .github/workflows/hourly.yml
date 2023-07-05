@@ -151,7 +151,7 @@ jobs:
           ./k8-util/cluster/reset-k3d.sh
       - name: Install Fluvio CLI and start cluster
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Start Fluvio Cluster
         run: |

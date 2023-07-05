@@ -74,7 +74,7 @@ jobs:
 
         # Utilizes the env var set in the previous step
       - name: Curl Install
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.version
+        run: curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
@@ -117,7 +117,7 @@ jobs:
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install Fluvio
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Pre-Start - local cluster
         if: matrix.cluster_type == 'local'
@@ -170,7 +170,7 @@ jobs:
 
       - name: Install last stable Fluvio CLI and start cluster
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=$PREV_STABLE_VERSION bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=$PREV_STABLE_VERSION bash
           ~/.fluvio/bin/fluvio cluster start
           ~/.fluvio/bin/fluvio version
 
@@ -186,7 +186,7 @@ jobs:
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install current stable Fluvio CLI and upgrade cluster
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
           ~/.fluvio/bin/fluvio cluster upgrade 
           ~/.fluvio/bin/fluvio version
 
