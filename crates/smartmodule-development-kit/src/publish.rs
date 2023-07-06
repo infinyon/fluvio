@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::fs::remove_dir_all;
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, Context};
 use cargo_builder::package::PackageInfo;
 use clap::Parser;
 
@@ -65,13 +65,14 @@ impl PublishCmd {
                 package_assemble(package_meta_path, &access)?;
             }
 
-            // --push only, needs ipkg file
+            // --push only, needs ipkg file or expects to be run in project folder
             (false, true) => {
-                let pkgfile = self
-                    .ipkg
-                    .as_ref()
-                    .ok_or_else(|| anyhow!("need to specify --ipkg when using only --push"))?;
-                package_push(self, pkgfile, &access)?;
+                let ipkg_path = match self.ipkg.as_ref() {
+                    Some(ipkg_path) => ipkg_path.into(),
+                    None => self.default_ipkg_file_path()?,
+                };
+
+                package_push(self, &ipkg_path, &access)?;
             }
         }
 
@@ -110,6 +111,30 @@ impl PublishCmd {
         }
 
         Ok(())
+    }
+
+    fn default_ipkg_file_path(&self) -> Result<String> {
+        let opt = self.package.as_opt();
+        let package_info = PackageInfo::from_options(&opt)
+            .context("Failed to read package info. Should either specify --ipkg or run in the smartmodule project folder")?;
+        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
+
+        let package_meta_path = self.package_meta_path(&hubdir);
+        let package_meta = PackageMeta::read_from_file(package_meta_path)?;
+
+        let tar_name = package_meta.packagefile_name_unsigned();
+        let ipkg_name = Path::new(&tar_name)
+            .with_extension("ipkg")
+            .display()
+            .to_string();
+
+        let ipkg_path = hubdir
+            .join(ipkg_name)
+            .to_str()
+            .context("Invalid ipkg path generated")?
+            .to_owned();
+
+        Ok(ipkg_path)
     }
 }
 
