@@ -22,3 +22,4 @@ pub const HUB_API_SM: &str = concatcp!(HUB_API_V, "/pkg/pub");
 pub const HUB_API_ACT: &str = concatcp!(HUB_API_V, "/action");
 pub const HUB_API_HUBID: &str = concatcp!(HUB_API_V, "/hubid");
 pub const HUB_API_LIST: &str = concatcp!(HUB_API_V, "/list");
+pub const HUB_API_BPKG_AUTH: &str = concatcp!(HUB_API_V, "/bpkg-auth");

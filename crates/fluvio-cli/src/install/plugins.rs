@@ -12,8 +12,8 @@ use fluvio_cli_common::install::{
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_hub_util as hubutil;
-use hubutil::{http, HubAccess, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
-use hubutil::http::StatusCode;
+use hubutil::{HubAccess, HUB_API_BPKG_AUTH, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
+use hubutil::http::{self, StatusCode};
 
 use crate::error::CliError;
 use crate::install::update::{
@@ -21,7 +21,6 @@ use crate::install::update::{
 };
 
 use super::update::should_always_print_available_update;
-pub const HUB_API_BPKG_AUTH: &str = "hub/v0/bpkg-auth"; // copied from hub-tool
 
 #[derive(Parser, Debug)]
 pub struct InstallOpt {
