@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::fs::remove_dir_all;
-
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, Context};
 use cargo_builder::package::PackageInfo;
 use clap::Parser;
 
@@ -26,6 +25,10 @@ pub struct PublishCmd {
 
     package_meta: Option<String>,
 
+    /// path to the ipkg file, used when --push is specified
+    #[arg(long)]
+    ipkg: Option<String>,
+
     /// don't ask for confirmation of public package publish
     #[arg(long, default_value = "false")]
     public_yes: bool,
@@ -45,58 +48,93 @@ pub struct PublishCmd {
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
-        let opt = self.package.as_opt();
-        let package_info = PackageInfo::from_options(&opt)?;
-        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
-
-        self.cleanup(&package_info)?;
-
-        init_package_template(&package_info)?;
-        check_package_meta_visiblity(&package_info)?;
-
-        let package_meta_path = self
-            .package_meta
-            .as_ref()
-            .map(PathBuf::from)
-            .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
 
         match (self.pack, self.push) {
             (false, false) | (true, true) => {
-                let pkgdata = package_assemble(&package_meta_path, &access)?;
+                let hubdir = self.run_in_cargo_project()?;
+                let package_meta_path = self.package_meta_path(&hubdir);
+                let pkgdata = package_assemble(package_meta_path, &access)?;
                 package_push(self, &pkgdata, &access)?;
+                Self::cleanup(&hubdir)?;
             }
 
             // --pack only
             (true, false) => {
-                package_assemble(&package_meta_path, &access)?;
+                let hubdir = self.run_in_cargo_project()?;
+                let package_meta_path = self.package_meta_path(&hubdir);
+                package_assemble(package_meta_path, &access)?;
             }
 
-            // --push only, needs ipkg file
+            // --push only, needs ipkg file or expects to be run in project folder
             (false, true) => {
-                let pkgfile = package_meta_path
-                    .to_str()
-                    .ok_or_else(|| anyhow::anyhow!("invalid package metadata path"))?;
-                package_push(self, pkgfile, &access)?;
-            }
-        }
+                let ipkg_path = match self.ipkg.as_ref() {
+                    Some(ipkg_path) => ipkg_path.into(),
+                    None => self.default_ipkg_file_path()?,
+                };
 
-        if !self.pack {
-            self.cleanup(&package_info)?;
+                package_push(self, &ipkg_path, &access)?;
+            }
         }
 
         Ok(())
     }
 
-    fn cleanup(&self, package_info: &PackageInfo) -> Result<()> {
+    fn package_meta_path(&self, hubdir: &Path) -> PathBuf {
+        self.package_meta
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META))
+    }
+
+    /// This gets run only if the command should be run in the cargo project folder
+    /// of the smart module
+    ///
+    /// returns hubdir
+    fn run_in_cargo_project(&self) -> Result<PathBuf> {
+        let opt = self.package.as_opt();
+        let package_info = PackageInfo::from_options(&opt)?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
+        Self::cleanup(&hubdir)?;
+
+        init_package_template(&package_info)?;
+        check_package_meta_visiblity(&package_info)?;
+
+        Ok(hubdir)
+    }
+
+    fn cleanup(hubdir: &Path) -> Result<()> {
         if hubdir.exists() {
             // Delete the `.hub` directory if already exists
             tracing::warn!("Removing directory at {:?}", hubdir);
-            remove_dir_all(&hubdir)?;
+            remove_dir_all(hubdir)?;
         }
 
         Ok(())
+    }
+
+    fn default_ipkg_file_path(&self) -> Result<String> {
+        let opt = self.package.as_opt();
+        let package_info = PackageInfo::from_options(&opt)
+            .context("Failed to read package info. Should either specify --ipkg or run in the smartmodule project folder")?;
+        let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
+
+        let package_meta_path = self.package_meta_path(&hubdir);
+        let package_meta = PackageMeta::read_from_file(package_meta_path)?;
+
+        let tar_name = package_meta.packagefile_name_unsigned();
+        let ipkg_name = Path::new(&tar_name)
+            .with_extension("ipkg")
+            .display()
+            .to_string();
+
+        let ipkg_path = hubdir
+            .join(ipkg_name)
+            .to_str()
+            .context("Invalid ipkg path generated")?
+            .to_owned();
+
+        Ok(ipkg_path)
     }
 }
 

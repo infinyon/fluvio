@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use cargo_builder::package::PackageInfo;
+use cargo_builder::package::PackageOption;
 use clap::Parser;
 
 use fluvio_connector_package::metadata::ConnectorMetadata;
@@ -32,6 +33,10 @@ pub struct PublishCmd {
     package: PackageCmd,
 
     pub package_meta: Option<String>,
+
+    /// path to the ipkg file, used when --push is specified
+    #[arg(long)]
+    ipkg: Option<String>,
 
     /// don't ask for confirmation of public package publish
     #[arg(long, default_value = "false")]
@@ -59,8 +64,52 @@ pub struct PublishCmd {
 impl PublishCmd {
     pub(crate) fn process(&self) -> Result<()> {
         let access = HubAccess::default_load(&self.remote)?;
-        let opt = self.package.as_opt();
-        let package_info = PackageInfo::from_options(&opt)?;
+
+        match (self.pack, self.push) {
+            (false, false) | (true, true) => {
+                let opt = self.package.as_opt();
+                let hubdir = self.run_in_cargo_project(&opt)?;
+                let pkgmetapath = self.package_meta_path(&hubdir);
+                let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
+                package_push(self, &pkgdata, &access)?;
+                Self::cleanup(&hubdir)?;
+            }
+
+            // --pack only
+            (true, false) => {
+                let opt = self.package.as_opt();
+                let hubdir = self.run_in_cargo_project(&opt)?;
+                let pkgmetapath = self.package_meta_path(&hubdir);
+                package_assemble(pkgmetapath, &opt.target, &access)?;
+            }
+
+            // --push only, needs ipkg file or expects to be run in project folder
+            (false, true) => {
+                let ipkg_path = match self.ipkg.as_ref() {
+                    Some(ipkg_path) => ipkg_path.into(),
+                    None => self.default_ipkg_file_path()?,
+                };
+
+                package_push(self, &ipkg_path, &access)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn package_meta_path(&self, hubdir: &Path) -> PathBuf {
+        self.package_meta
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META))
+    }
+
+    /// This gets run only if the command should be run in the cargo project folder
+    /// of the connector
+    ///
+    /// returns hubdir
+    fn run_in_cargo_project(&self, opt: &PackageOption) -> Result<PathBuf> {
+        let package_info = PackageInfo::from_options(opt)?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
         info!(
@@ -69,7 +118,7 @@ impl PublishCmd {
             package_info.package_path().to_string_lossy()
         );
 
-        self.cleanup(&package_info)?;
+        Self::cleanup(&hubdir)?;
 
         if !self.no_build {
             build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
@@ -78,54 +127,41 @@ impl PublishCmd {
         init_package_template(&package_info, &self.readme)?;
         check_package_meta_visiblity(&package_info)?;
 
-        match (self.pack, self.push) {
-            (false, false) | (true, true) => {
-                let pkgmetapath = self
-                    .package_meta
-                    .as_ref()
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                let pkgdata = package_assemble(pkgmetapath, &opt.target, &access)?;
-                package_push(self, &pkgdata, &access)?;
-            }
+        Ok(hubdir)
+    }
 
-            // --pack only
-            (true, false) => {
-                let pkgmetapath = self
-                    .package_meta
-                    .as_ref()
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| hubdir.join(hubutil::HUB_PACKAGE_META));
-                package_assemble(pkgmetapath, &opt.target, &access)?;
-            }
-
-            // --push only, needs ipkg file
-            (false, true) => {
-                let pkgfile = &self
-                    .package_meta
-                    .clone()
-                    .ok_or_else(|| anyhow::anyhow!("package file required for push"))?;
-                package_push(self, pkgfile, &access)?;
-            }
-        }
-
-        if !self.pack {
-            self.cleanup(&package_info)?;
+    fn cleanup(hubdir: &Path) -> Result<()> {
+        if hubdir.exists() {
+            // Delete the `.hub` directory if already exists
+            tracing::warn!("Removing directory at {:?}", hubdir);
+            remove_dir_all(hubdir)?;
         }
 
         Ok(())
     }
 
-    pub fn cleanup(&self, package_info: &PackageInfo) -> Result<()> {
+    fn default_ipkg_file_path(&self) -> Result<String> {
+        let opt = self.package.as_opt();
+        let package_info = PackageInfo::from_options(&opt)
+            .context("Failed to read package info. Should either specify --ipkg or run in the connector project folder")?;
         let hubdir = package_info.package_relative_path(DEF_HUB_INIT_DIR);
 
-        if hubdir.exists() {
-            // Delete the `.hub` directory if already exists
-            tracing::warn!("Removing directory at {:?}", hubdir);
-            remove_dir_all(&hubdir)?;
-        }
+        let package_meta_path = self.package_meta_path(&hubdir);
+        let package_meta = PackageMeta::read_from_file(package_meta_path)?;
 
-        Ok(())
+        let tar_name = package_meta.packagefile_name_unsigned();
+        let ipkg_name = Path::new(&tar_name)
+            .with_extension("ipkg")
+            .display()
+            .to_string();
+
+        let ipkg_path = hubdir
+            .join(ipkg_name)
+            .to_str()
+            .context("Invalid ipkg path generated")?
+            .to_owned();
+
+        Ok(ipkg_path)
     }
 }
 
