@@ -1,0 +1,5 @@
+transforms:
+  - uses: infinyon/fluvio-smartmodule-filter-hashset@0.1.0
+    lookback:
+      last: 10
+

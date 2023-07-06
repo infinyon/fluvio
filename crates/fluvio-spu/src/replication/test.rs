@@ -13,7 +13,7 @@ use flv_util::fixture::ensure_clean_dir;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
-use fluvio_protocol::fixture::{create_recordset};
+use fluvio_protocol::fixture::{create_raw_recordset};
 
 use crate::core::{DefaultSharedGlobalContext, GlobalContext};
 use crate::config::SpuConfig;
@@ -230,7 +230,10 @@ async fn test_just_leader() {
 
     // write records
     leader_replica
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
         .await
         .expect("write");
 
@@ -259,7 +262,10 @@ async fn test_replication2_existing() {
 
     // write records
     leader_replica
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
         .await
         .expect("write");
 
@@ -344,7 +350,10 @@ async fn test_replication2_new_records() {
 
     // write records
     leader_replica
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
         .await
         .expect("write");
 
@@ -393,7 +402,10 @@ async fn test_replication3_existing() {
 
     // write records
     leader_replica
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
         .await
         .expect("write");
 
@@ -482,7 +494,10 @@ async fn test_replication3_new_records() {
 
     // write records
     leader_replica
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
         .await
         .expect("write");
 
@@ -606,7 +621,10 @@ async fn test_replication_dispatch_in_sequence() {
     assert_eq!(leader.hw(), 0);
 
     leader
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
         .await
         .expect("write");
 
@@ -697,7 +715,10 @@ async fn test_replication_dispatch_out_of_sequence() {
     assert_eq!(leader.hw(), 0);
 
     leader
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .write_record_set(
+            &mut create_raw_recordset(2),
+            leader_gctx.follower_notifier(),
+        )
         .await
         .expect("write");
 

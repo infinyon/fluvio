@@ -3,16 +3,19 @@ use std::io::Error as IoError;
 
 use anyhow::Error;
 use fluvio_compression::{Compression, CompressionError};
+use fluvio_protocol::record::{RecordSet, RawRecords};
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::{instrument, debug, trace};
 
-use fluvio_protocol::{Encoder};
+use fluvio_protocol::Encoder;
 use fluvio_protocol::{
     record::{Batch, MemoryRecords, Offset},
     link::smartmodule::SmartModuleTransformRuntimeError,
 };
 use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
+
+use crate::smartengine::produce_batch::ProduceBatchIterator;
 
 pub(crate) trait SmartModuleInputBatch {
     fn records(&self) -> &Vec<u8>;
@@ -22,6 +25,15 @@ pub(crate) trait SmartModuleInputBatch {
     fn offset_delta(&self) -> i32;
 
     fn get_compression(&self) -> Result<Compression, CompressionError>;
+}
+
+pub(crate) fn process_record_set(
+    sm_chain: &mut SmartModuleChainInstance,
+    records: &mut RecordSet<RawRecords>,
+) -> Result<(Batch, Option<SmartModuleTransformRuntimeError>), Error> {
+    let mut batches = ProduceBatchIterator::new(&records.batches);
+
+    process_batch(sm_chain, &mut batches, usize::MAX, &Default::default())
 }
 
 #[instrument(skip(sm_chain_instance, input_batches, max_bytes, metric))]

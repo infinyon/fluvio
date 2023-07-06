@@ -67,6 +67,16 @@ pub fn create_recordset(num_records: u16) -> RecordSet {
     records.add(create_batch_with_producer(12, num_records))
 }
 
+#[cfg(feature = "compress")]
+pub fn create_raw_recordset(num_records: u16) -> RecordSet<crate::record::RawRecords> {
+    let records = RecordSet::default();
+    records.add(
+        create_batch_with_producer(12, num_records)
+            .try_into()
+            .expect("converted from memory records to raw"),
+    )
+}
+
 pub const TEST_RECORD: &[u8] = &[10, 20];
 
 /// create batches with produce and records count

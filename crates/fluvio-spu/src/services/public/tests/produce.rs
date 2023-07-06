@@ -10,7 +10,10 @@ use fluvio_protocol::{
     link::ErrorCode,
     Decoder,
 };
-use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
+use fluvio_controlplane_metadata::{
+    partition::Replica,
+    topic::{CompressionAlgorithm, Deduplication, Bounds, Filter, Transform},
+};
 use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};
 use fluvio_spu_schema::{
@@ -26,7 +29,7 @@ use crate::{
     core::GlobalContext,
     services::public::{
         create_public_server,
-        tests::{create_filter_records, vec_to_batch, load_wasm_module},
+        tests::{create_filter_records, vec_to_raw_batch, load_wasm_module},
     },
     replication::leader::LeaderReplicaState,
     smartengine::file_batch::FileBatchIterator,
@@ -57,7 +60,10 @@ async fn test_produce_basic() {
 
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Make three produce requests with <records_per_request> records and check that returned offset is correct
@@ -168,7 +174,11 @@ async fn test_produce_invalid_compression() {
 
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Make three produce requests with <records_per_request> records and check that returned offset is correct
@@ -428,7 +438,11 @@ async fn test_produce_metrics() {
 
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     assert_eq!(ctx.metrics().inbound().client_bytes(), 0);
@@ -536,12 +550,16 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     {
         // no records before, smartmodule allows all
-        let records = vec_to_batch(&["1", "2", "3"]);
+        let records = vec_to_raw_batch(&["1", "2", "3"]);
 
         let mut produce_request = DefaultProduceRequest {
             smartmodules: smartmodules.clone(),
@@ -550,7 +568,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
         let partition_produce = DefaultPartitionRequest {
             partition_index: 0,
-            records: records.try_into().expect("records converted"),
+            records,
         };
         let topic_produce_request = TopicProduceData {
             name: topic.to_owned(),
@@ -572,7 +590,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
     }
     {
         // the last record is 3, smartmodule allows only ones that greater than 3
-        let records = vec_to_batch(&["1", "2", "3", "4", "5"]);
+        let records = vec_to_raw_batch(&["1", "2", "3", "4", "5"]);
 
         let mut produce_request = DefaultProduceRequest {
             smartmodules: smartmodules.clone(),
@@ -581,7 +599,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
         let partition_produce = DefaultPartitionRequest {
             partition_index: 0,
-            records: records.try_into().expect("records converted"),
+            records,
         };
         let topic_produce_request = TopicProduceData {
             name: topic.to_owned(),
@@ -607,7 +625,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
             sm.params.set_lookback(Some(Lookback::last(0)));
         }
 
-        let records = vec_to_batch(&["1", "2"]);
+        let records = vec_to_raw_batch(&["1", "2"]);
 
         let mut produce_request = DefaultProduceRequest {
             smartmodules: smartmodules.clone(),
@@ -616,7 +634,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
         let partition_produce = DefaultPartitionRequest {
             partition_index: 0,
-            records: records.try_into().expect("records converted"),
+            records,
         };
         let topic_produce_request = TopicProduceData {
             name: topic.to_owned(),
@@ -646,7 +664,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
             sm.params = Default::default();
         }
 
-        let records = vec_to_batch(&["1", "2"]);
+        let records = vec_to_raw_batch(&["1", "2"]);
 
         let mut produce_request = DefaultProduceRequest {
             smartmodules: smartmodules.clone(),
@@ -655,7 +673,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
         let partition_produce = DefaultPartitionRequest {
             partition_index: 0,
-            records: records.try_into().expect("records converted"),
+            records,
         };
         let topic_produce_request = TopicProduceData {
             name: topic.to_owned(),
@@ -686,7 +704,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
                 .set_lookback(Some(Lookback::age(Duration::from_secs(60 * 60), None)));
         }
 
-        let records = vec_to_batch(&["3", "4"]);
+        let records = vec_to_raw_batch(&["3", "4"]);
 
         let mut produce_request = DefaultProduceRequest {
             smartmodules: smartmodules.clone(),
@@ -695,7 +713,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
         let partition_produce = DefaultPartitionRequest {
             partition_index: 0,
-            records: records.try_into().expect("records converted"),
+            records,
         };
         let topic_produce_request = TopicProduceData {
             name: topic.to_owned(),
@@ -726,7 +744,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
                 .set_lookback(Some(Lookback::age(Duration::from_millis(1), None)));
         }
 
-        let records = vec_to_batch(&["1", "2"]);
+        let records = vec_to_raw_batch(&["1", "2"]);
         std::thread::sleep(Duration::from_millis(50));
 
         let mut produce_request = DefaultProduceRequest {
@@ -736,7 +754,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
         let partition_produce = DefaultPartitionRequest {
             partition_index: 0,
-            records: records.try_into().expect("records converted"),
+            records,
         };
         let topic_produce_request = TopicProduceData {
             name: topic.to_owned(),
@@ -772,9 +790,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
                 name: topic.to_owned(),
                 partitions: vec![DefaultPartitionRequest {
                     partition_index: 0,
-                    records: vec_to_batch(&["wrong last record"])
-                        .try_into()
-                        .expect("records converted"),
+                    records: vec_to_raw_batch(&["wrong last record"]),
                 }],
                 ..Default::default()
             }],
@@ -792,7 +808,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
                 name: topic.to_owned(),
                 partitions: vec![DefaultPartitionRequest {
                     partition_index: 0,
-                    records: vec_to_batch(&["4"]).try_into().expect("records converted"),
+                    records: vec_to_raw_batch(&["4"]),
                 }],
                 ..Default::default()
             }],
@@ -810,6 +826,196 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
         assert_eq!(
             produce_response.responses[0].partitions[0].error_code,
             ErrorCode::SmartModuleLookBackError("error in look_back chain: invalid digit found in string\n\nSmartModule Lookback Error: \n    Offset: 0\n    Key: NULL\n    Value: wrong last record".to_string())
+        );
+    }
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+const FLUVIO_WASM_DEDUPLICATION_FILTER: &str = "fluvio_smartmodule_filter_hashset";
+
+#[fluvio_future::test(ignore)]
+async fn test_produce_with_deduplication() {
+    let test_path = temp_dir().join("test_produce_with_deduplication");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{port}");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    let deduplication = Deduplication {
+        bounds: Bounds {
+            count: 6,
+            age: None,
+        },
+        filter: Filter {
+            transform: Transform {
+                uses: FLUVIO_WASM_DEDUPLICATION_FILTER.to_owned(),
+                with: Default::default(),
+            },
+        },
+    };
+    let topic = "test_produce_with_deduplication";
+    let mut test = Replica::new((topic, 0), 5001, vec![5001]);
+    test.deduplication = Some(deduplication);
+    let test_id = test.id.clone();
+    ctx.replica_localstore().sync_all(vec![test.clone()]);
+
+    let replica = LeaderReplicaState::create(test.clone(), ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
+    ctx.leaders_state()
+        .insert(test_id.clone(), replica.clone())
+        .await;
+
+    {
+        // dedup declines repeated record within one batch
+        let records = vec_to_raw_batch(&["1", "2", "3", "1"]);
+
+        let mut produce_request: DefaultProduceRequest = Default::default();
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records,
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(read_records(&replica).await, vec!["1", "2", "3"]);
+    }
+
+    {
+        // dedup declines repeated record from other batches as well
+        let records = vec_to_raw_batch(&["1", "2", "4", "5", "6"]);
+
+        let mut produce_request: DefaultProduceRequest = Default::default();
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records,
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            read_records(&replica).await,
+            vec!["1", "2", "3", "4", "5", "6"]
+        );
+    }
+
+    {
+        // if window closed, duplicate allowed
+        let records = vec_to_raw_batch(&["7", "1", "2"]);
+
+        let mut produce_request: DefaultProduceRequest = Default::default();
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records,
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            read_records(&replica).await,
+            vec!["1", "2", "3", "4", "5", "6", "7", "1", "2"]
+        );
+    }
+
+    {
+        drop(replica);
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica")
+            .init(&ctx)
+            .await
+            .expect("init succeeded");
+
+        ctx.leaders_state().insert(test_id, replica.clone()).await;
+
+        // if replica re-created, lookback should read the previous state
+        let records = vec_to_raw_batch(&["7", "8"]);
+
+        let mut produce_request: DefaultProduceRequest = Default::default();
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records,
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            read_records(&replica).await,
+            vec!["1", "2", "3", "4", "5", "6", "7", "1", "2", "8"]
         );
     }
 

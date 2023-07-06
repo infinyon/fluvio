@@ -10,7 +10,7 @@ use fluvio_controlplane_metadata::smartmodule::{
 };
 use fluvio_protocol::{
     fixture::BatchProducer,
-    record::{RecordData, Record, RecordSet, Batch},
+    record::{RecordData, Record, RecordSet, Batch, RawRecords},
     ByteBuf,
 };
 use fluvio_storage::ReplicaStorage;
@@ -30,13 +30,16 @@ fn create_filter_records(records: u16) -> RecordSet {
         .records()
 }
 
+fn create_filter_raw_records(records: u16) -> RecordSet<RawRecords> {
+    create_filter_records(records).try_into().expect("raw")
+}
+
 fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
     let msg = match record_index {
         0 => "b".repeat(100),
         1 => "a".repeat(100),
         _ => "z".repeat(100),
     };
-
     Record::new(RecordData::from(msg))
 }
 
@@ -58,6 +61,10 @@ fn vec_to_batch<T: AsRef<[u8]>>(records: &[T]) -> RecordSet {
     batch.get_mut_header().max_time_stamp = Utc::now().timestamp_millis();
 
     RecordSet::default().add(batch)
+}
+
+fn vec_to_raw_batch<T: AsRef<[u8]>>(records: &[T]) -> RecordSet<RawRecords> {
+    vec_to_batch(records).try_into().expect("raw")
 }
 
 fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {

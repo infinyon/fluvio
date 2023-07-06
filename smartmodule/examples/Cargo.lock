@@ -287,6 +287,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-filter-hashset"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.7.1",
+]
+
+[[package]]
 name = "fluvio-smartmodule-filter-init"
 version = "0.0.0"
 dependencies = [

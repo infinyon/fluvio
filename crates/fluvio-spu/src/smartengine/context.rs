@@ -1,35 +1,40 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use async_rwlock::RwLock;
 use chrono::Utc;
 use fluvio_smartengine::{SmartModuleChainInstance, Version, Lookback};
 use fluvio_protocol::link::ErrorCode;
 use fluvio_smartmodule::Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
+use fluvio_storage::ReplicaStorage;
 use fluvio_types::Timestamp;
 use tracing::{debug, trace};
 
+use crate::core::GlobalContext;
 use crate::core::metrics::SpuMetrics;
-use crate::smartengine::file_batch::FileRecordIterator;
-use crate::{
-    core::DefaultSharedGlobalContext, replication::leader::SharedFileLeaderState,
-    smartengine::file_batch::FileBatchIterator,
+use crate::replication::leader::LeaderReplicaState;
+use crate::smartengine::{
+    file_batch::{FileRecordIterator, FileBatchIterator},
+    chain,
 };
-use crate::smartengine::chain;
 
 use super::file_batch::{FileBatch, RecordItem};
 
+#[derive(Debug)]
 pub struct SmartModuleContext {
     chain: SmartModuleChainInstance,
     version: Version,
     spu_metrics: Arc<SpuMetrics>,
 }
 
+pub type SharedSmartModuleContext = Arc<RwLock<SmartModuleContext>>;
+
 impl SmartModuleContext {
-    pub async fn try_from(
+    pub async fn try_from<R: ReplicaStorage>(
         smartmodule: Vec<SmartModuleInvocation>,
         version: i16,
-        ctx: &DefaultSharedGlobalContext,
+        ctx: &GlobalContext<R>,
     ) -> Result<Option<Self>, ErrorCode> {
         Self::build_smartmodule_context(smartmodule, version, ctx).await
     }
@@ -38,7 +43,10 @@ impl SmartModuleContext {
         &mut self.chain
     }
 
-    pub async fn look_back(&mut self, replica: &SharedFileLeaderState) -> Result<(), ErrorCode> {
+    pub async fn look_back<R: ReplicaStorage>(
+        &mut self,
+        replica: &LeaderReplicaState<R>,
+    ) -> Result<(), ErrorCode> {
         self.chain
             .look_back(
                 |lookback| read_records(replica, lookback, self.version),
@@ -51,10 +59,10 @@ impl SmartModuleContext {
     }
 
     /// given SmartModule invocation and context, generate execution context
-    async fn build_smartmodule_context(
+    async fn build_smartmodule_context<R: ReplicaStorage>(
         invocations: Vec<SmartModuleInvocation>,
         version: Version,
-        ctx: &DefaultSharedGlobalContext,
+        ctx: &GlobalContext<R>,
     ) -> Result<Option<Self>, ErrorCode> {
         if invocations.is_empty() {
             return Ok(None);
@@ -73,9 +81,9 @@ impl SmartModuleContext {
     }
 }
 
-fn resolve_invocation(
+fn resolve_invocation<R: ReplicaStorage>(
     invocation: SmartModuleInvocation,
-    ctx: &DefaultSharedGlobalContext,
+    ctx: &GlobalContext<R>,
 ) -> Result<SmartModuleInvocation, ErrorCode> {
     if let SmartModuleInvocationWasm::Predefined(name) = invocation.wasm {
         if let Some(smartmodule) = ctx
@@ -95,8 +103,8 @@ fn resolve_invocation(
     }
 }
 
-async fn read_records(
-    replica: &SharedFileLeaderState,
+async fn read_records<R: ReplicaStorage>(
+    replica: &LeaderReplicaState<R>,
     lookback: Lookback,
     version: Version,
 ) -> anyhow::Result<Vec<Record>> {
@@ -108,8 +116,8 @@ async fn read_records(
     Ok(result)
 }
 
-async fn lookback_iterator(
-    replica: &SharedFileLeaderState,
+async fn lookback_iterator<R: ReplicaStorage>(
+    replica: &LeaderReplicaState<R>,
     lookback: Lookback,
     version: Version,
 ) -> anyhow::Result<Box<dyn Iterator<Item = Result<Record, std::io::Error>>>> {
@@ -121,8 +129,8 @@ async fn lookback_iterator(
     Ok(Box::new(iter))
 }
 
-async fn lookback_last_iterator(
-    replica: &SharedFileLeaderState,
+async fn lookback_last_iterator<R: ReplicaStorage>(
+    replica: &LeaderReplicaState<R>,
     last: u64,
     version: Version,
 ) -> anyhow::Result<Box<dyn Iterator<Item = Result<RecordItem, std::io::Error>>>> {
@@ -151,8 +159,8 @@ async fn lookback_last_iterator(
     })))
 }
 
-async fn lookback_age_iterator(
-    replica: &SharedFileLeaderState,
+async fn lookback_age_iterator<R: ReplicaStorage>(
+    replica: &LeaderReplicaState<R>,
     age: Duration,
     last: u64,
     version: Version,
@@ -179,8 +187,8 @@ async fn lookback_age_iterator(
     })))
 }
 
-async fn read_batches_by_age(
-    replica: &SharedFileLeaderState,
+async fn read_batches_by_age<R: ReplicaStorage>(
+    replica: &LeaderReplicaState<R>,
     min_timestamp: Timestamp,
 ) -> anyhow::Result<Vec<FileBatch>> {
     let mut result = Vec::new();
