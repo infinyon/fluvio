@@ -48,8 +48,6 @@ impl SmartModuleKind {
             "filter_map" => Some(Self::FilterMap),
             "init" => Some(Self::Init),
             "look_back" => Some(Self::LookBack),
-            // Params is ignored for backward compatibility
-            "params" => return Ok(None),
             _ => None,
         };
 
