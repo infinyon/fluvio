@@ -28,7 +28,7 @@ thiserror = { workspace = true }
 eyre = { version = ">=0.6.8", default-features = false, features = [
     "auto-install",
 ] }
-fluvio-smartmodule-derive = { version = "0.5.0", path = "../fluvio-smartmodule-derive" }
+fluvio-smartmodule-derive = { version = "0.6.0", path = "../fluvio-smartmodule-derive" }
 fluvio-protocol = { workspace = true, features = [ "link"] }
 
 [dev-dependencies]

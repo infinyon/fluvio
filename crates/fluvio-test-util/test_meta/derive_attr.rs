@@ -19,7 +19,7 @@ pub enum TestRequirementAttribute {
 }
 
 impl TestRequirementAttribute {
-    fn from_ast(meta: ParseNestedMeta) -> SynResult<Self> {
+    fn parse(meta: ParseNestedMeta) -> SynResult<Self> {
         if meta.path.is_ident("min_spu") {
             Self::min_spu(meta.value()?)
         } else if meta.path.is_ident("topic") {
@@ -138,7 +138,7 @@ pub struct TestRequirements {
 
 impl TestRequirements {
     pub fn parse(&mut self, meta: ParseNestedMeta) -> SynResult<()> {
-        let attr = TestRequirementAttribute::from_ast(meta)?;
+        let attr = TestRequirementAttribute::parse(meta)?;
         self.set_attr(attr);
 
         Ok(())
