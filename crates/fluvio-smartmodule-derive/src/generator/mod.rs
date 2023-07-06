@@ -12,7 +12,7 @@ mod look_back;
 pub mod opt;
 
 pub fn generate_smartmodule(config: &SmartModuleConfig, func: &SmartModuleFn) -> TokenStream {
-    match config.kind {
+    match config.kind.as_ref().expect("Smartmodule type not set") {
         SmartModuleKind::Filter => self::filter::generate_filter_smartmodule(func),
         SmartModuleKind::Map => self::map::generate_map_smartmodule(func),
         SmartModuleKind::FilterMap => self::filter_map::generate_filter_map_smartmodule(func),

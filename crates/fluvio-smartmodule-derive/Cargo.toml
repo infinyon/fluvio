@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartmodule-derive"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -13,6 +13,6 @@ description = "Fluvio SmartModule WASM procedural macro"
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0", features = ["full"] }
+syn = { workspace = true, features = ["full"] }
 quote = "1.0"
 proc-macro2 = "1.0"
