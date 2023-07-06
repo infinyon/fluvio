@@ -1,3 +1,4 @@
+use std::time::Duration;
 use std::{collections::BTreeMap, fmt::Display};
 use std::fmt;
 use std::io::Cursor;
@@ -5,7 +6,7 @@ use std::io::Cursor;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::{Encoder, Decoder, record::Record};
 
-pub const SMARTMODULE_LOOKBACK: i16 = 20;
+pub const SMARTMODULE_LOOKBACK_WITH_AGE: i16 = 21;
 
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleExtraParams {
@@ -48,9 +49,27 @@ impl SmartModuleExtraParams {
     }
 }
 
-#[derive(Debug, Default, Clone, Encoder, Decoder)]
+#[derive(Debug, Default, Clone, Encoder, Decoder, PartialEq, Eq)]
 pub struct Lookback {
     pub last: u64,
+    #[fluvio(min_version = 21)]
+    pub age: Option<Duration>,
+}
+
+impl Lookback {
+    pub fn last(last: u64) -> Self {
+        Self {
+            last,
+            ..Default::default()
+        }
+    }
+
+    pub fn age(age: Duration, last: Option<u64>) -> Self {
+        Self {
+            last: last.unwrap_or_default(),
+            age: Some(age),
+        }
+    }
 }
 
 /// A single SmartModule input record
@@ -101,7 +120,7 @@ impl TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
         let mut raw_bytes = Vec::new();
-        records.encode(&mut raw_bytes, SMARTMODULE_LOOKBACK)?;
+        records.encode(&mut raw_bytes, SMARTMODULE_LOOKBACK_WITH_AGE)?;
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
@@ -113,7 +132,10 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
 
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), SMARTMODULE_LOOKBACK)
+        Decoder::decode_from(
+            &mut Cursor::new(&mut self.raw_bytes),
+            SMARTMODULE_LOOKBACK_WITH_AGE,
+        )
     }
 }
 

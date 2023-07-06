@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use chrono::Utc;
 use flate2::{bufread::GzEncoder, Compression};
 use fluvio_controlplane_metadata::smartmodule::{
     SmartModuleSpec, SmartModule, SmartModuleWasm, SmartModuleWasmFormat,
@@ -45,13 +46,16 @@ fn vec_to_batch<T: AsRef<[u8]>>(records: &[T]) -> RecordSet {
     header.magic = 2;
     header.producer_id = 1;
     header.producer_epoch = -1;
+    header.first_timestamp = Utc::now().timestamp_millis();
 
-    for record_bytes in records {
+    for (i, record_bytes) in records.iter().enumerate() {
         let mut record = Record::default();
+        record.preamble.set_timestamp_delta(i as i64);
         let bytes: Vec<u8> = record_bytes.as_ref().to_owned();
         record.value = bytes.into();
         batch.add_record(record);
     }
+    batch.get_mut_header().max_time_stamp = Utc::now().timestamp_millis();
 
     RecordSet::default().add(batch)
 }

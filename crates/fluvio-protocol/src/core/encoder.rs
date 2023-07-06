@@ -4,6 +4,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Write;
 use std::marker::PhantomData;
+use std::time::Duration;
 
 use bytes::BufMut;
 use bytes::Bytes;
@@ -345,6 +346,27 @@ impl EncoderVarInt for i64 {
         T: BufMut,
     {
         variant_encode(dest, *self)?;
+        Ok(())
+    }
+}
+
+impl Encoder for Duration {
+    fn write_size(&self, _version: Version) -> usize {
+        12
+    }
+
+    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        if dest.remaining_mut() < 12 {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                "not enough capacity for u64+u32",
+            ));
+        }
+        dest.put_u64(self.as_secs());
+        dest.put_u32(self.subsec_nanos());
         Ok(())
     }
 }

@@ -41,6 +41,7 @@ async-net = { workspace = true }
 adaptive_backoff = { workspace = true }
 once_cell = { workspace = true }
 sysinfo = { workspace = true }
+chrono = { workspace = true }
 
 
 # Fluvio dependencies

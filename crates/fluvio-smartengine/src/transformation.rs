@@ -5,6 +5,7 @@ use std::{
     fs::File,
     io::Read,
     ops::Deref,
+    time::Duration,
 };
 use serde::{
     Deserialize, Serialize, Deserializer,
@@ -58,7 +59,10 @@ pub struct TransformationStep {
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct Lookback {
+    #[serde(default)]
     pub last: u64,
+    #[serde(default, with = "humantime_serde")]
+    pub age: Option<Duration>,
 }
 
 impl Display for TransformationStep {
@@ -77,7 +81,16 @@ impl TryFrom<&str> for TransformationStep {
 
 impl From<Lookback> for fluvio_smartmodule::dataplane::smartmodule::Lookback {
     fn from(value: Lookback) -> Self {
-        Self { last: value.last }
+        match value.age {
+            Some(age) => Self {
+                age: Some(age),
+                last: value.last,
+            },
+            None => Self {
+                age: None,
+                last: value.last,
+            },
+        }
     }
 }
 
@@ -178,14 +191,22 @@ mod tests {
             .expect("config file");
 
         //then
-        assert_eq!(config.transforms.len(), 2);
+        assert_eq!(config.transforms.len(), 3);
         assert_eq!(
             config,
             TransformationConfig {
                 transforms: vec![
                     TransformationStep {
                         uses: "infinyon/jolt@0.1.0".to_string(),
-                        lookback: Some(Lookback{ last: 1 }),
+                        lookback: Some(Lookback{ last: 0, age: Some(Duration::from_secs(3600 * 24 * 7)) }),
+                        with: BTreeMap::from([(
+                            "spec".to_string(),
+                            JsonString("[{\"operation\":\"shift\",\"spec\":{\"payload\":{\"device\":\"device\"}}},{\"operation\":\"default\",\"spec\":{\"device\":{\"type\":\"mobile\"}}}]".to_string())
+                        )])
+                    },
+                    TransformationStep {
+                        uses: "infinyon/jolt@0.1.0".to_string(),
+                        lookback: Some(Lookback{ last: 1, age: None }),
                         with: BTreeMap::from([(
                             "spec".to_string(),
                             JsonString("[{\"operation\":\"shift\",\"spec\":{\"payload\":{\"device\":\"device\"}}},{\"operation\":\"default\",\"spec\":{\"device\":{\"type\":\"mobile\"}}}]".to_string())
@@ -193,7 +214,7 @@ mod tests {
                     },
                     TransformationStep {
                         uses: "infinyon/json-sql@0.1.0".to_string(),
-                        lookback: Some(Lookback{ last: 10 }),
+                        lookback: Some(Lookback{ last: 10, age: Some(Duration::from_secs(12)) }),
                         with: BTreeMap::from([(
                             "mapping".to_string(),
                             JsonString("{\"map-columns\":{\"device_id\":{\"json-key\":\"device.device_id\",\"value\":{\"default\":\"0\",\"required\":true,\"type\":\"int\"}},\"record\":{\"json-key\":\"$\",\"value\":{\"required\":true,\"type\":\"jsonb\"}}},\"table\":\"topic_message_demo\"}".to_string())

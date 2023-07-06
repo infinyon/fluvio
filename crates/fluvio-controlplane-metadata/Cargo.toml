@@ -29,7 +29,7 @@ serde = { workspace = true, features = ['derive'], optional = true }
 toml = { workspace = true,  default-features = true, optional = true, features = ["parse"] }
 tracing = { workspace = true }
 bytesize = { workspace = true }
-humantime-serde = { version = "1.1.1", default-features = false, optional = true  }
+humantime-serde = { workspace = true, optional = true }
 anyhow = { workspace = true, optional = true }
 serde_yaml = { workspace = true, optional = true }
 derive_builder = { workspace = true }

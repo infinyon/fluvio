@@ -4,6 +4,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Read;
 use std::marker::PhantomData;
+use std::time::Duration;
 
 use bytes::Buf;
 use bytes::BufMut;
@@ -272,6 +273,27 @@ impl Decoder for i64 {
         let value = src.get_i64();
         trace!("i64: {:#x} => {}", &value, &value);
         *self = value;
+        Ok(())
+    }
+}
+
+impl Decoder for Duration {
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    where
+        T: Buf,
+    {
+        if src.remaining() < 12 {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                "can't read u64+u32 as parts of Duration",
+            ));
+        }
+        let secs = src.get_u64();
+        trace!("u64: {:#x} => {}", &secs, &secs);
+        let nanos = src.get_u32();
+        trace!("u32: {:#x} => {}", &nanos, &nanos);
+
+        *self = Self::new(secs, nanos);
         Ok(())
     }
 }

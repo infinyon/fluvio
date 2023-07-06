@@ -519,7 +519,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
         kind: SmartModuleKind::Filter,
         params: Default::default(),
     };
-    smartmodule.params.set_lookback(Some(Lookback { last: 1 }));
+    smartmodule.params.set_lookback(Some(Lookback::last(1)));
     let mut smartmodules = vec![smartmodule];
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
@@ -604,7 +604,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
     {
         // if last = 0, no records should be read on look_back, sm allows all
         for sm in smartmodules.iter_mut() {
-            sm.params.set_lookback(Some(Lookback { last: 0 }));
+            sm.params.set_lookback(Some(Lookback::last(0)));
         }
 
         let records = vec_to_batch(&["1", "2"]);
@@ -680,9 +680,90 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
     }
 
     {
+        // age lookback returns all records, so, only the one that greater than 2 will be recorded
+        for sm in smartmodules.iter_mut() {
+            sm.params
+                .set_lookback(Some(Lookback::age(Duration::from_secs(60 * 60), None)));
+        }
+
+        let records = vec_to_batch(&["3", "4"]);
+
+        let mut produce_request = DefaultProduceRequest {
+            smartmodules: smartmodules.clone(),
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records: records.try_into().expect("records converted"),
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            read_records(&replica).await,
+            vec!["1", "2", "3", "4", "5", "1", "2", "1", "2", "3", "4"]
+        );
+    }
+
+    {
+        // age lookback returns none records, so, all records allowed
+        for sm in smartmodules.iter_mut() {
+            sm.params
+                .set_lookback(Some(Lookback::age(Duration::from_millis(1), None)));
+        }
+
+        let records = vec_to_batch(&["1", "2"]);
+        std::thread::sleep(Duration::from_millis(50));
+
+        let mut produce_request = DefaultProduceRequest {
+            smartmodules: smartmodules.clone(),
+            ..Default::default()
+        };
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records: records.try_into().expect("records converted"),
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert_eq!(
+            read_records(&replica).await,
+            vec!["1", "2", "3", "4", "5", "1", "2", "1", "2", "3", "4", "1", "2"]
+        );
+    }
+
+    {
         // error from look_back call is propagated
         for sm in smartmodules.iter_mut() {
-            sm.params.set_lookback(Some(Lookback { last: 2 }));
+            sm.params.set_lookback(Some(Lookback::last(2)));
         }
 
         // insert wrong last record without sm

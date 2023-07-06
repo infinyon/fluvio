@@ -403,6 +403,10 @@ impl RecordHeader {
     pub fn add_base_offset(&mut self, relative_base_offset: Offset) {
         self.offset_delta += relative_base_offset;
     }
+
+    pub fn get_timestamp_delta(&self) -> Timestamp {
+        self.timestamp_delta
+    }
 }
 
 #[derive(Default, Clone)]

@@ -54,6 +54,8 @@ pub fn smartmodule_vec_from_config(config: &ConnectorConfig) -> Option<Vec<Smart
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use fluvio::SmartModuleInvocationWasm;
     use fluvio_connector_package::config::ConnectorConfigV1;
     use fluvio_smartengine::transformation::{TransformationStep, Lookback};
@@ -68,7 +70,10 @@ mod tests {
             transforms: Some(TransformationConfig {
                 transforms: vec![TransformationStep {
                     uses: "local/sm@0.0.0".to_string(),
-                    lookback: Some(Lookback { last: 2 }),
+                    lookback: Some(Lookback {
+                        last: 2,
+                        age: Some(Duration::from_secs(10)),
+                    }),
                     ..Default::default()
                 }],
             }),
@@ -89,5 +94,9 @@ mod tests {
 
         assert!(inv.params.lookback().is_some());
         assert_eq!(inv.params.lookback().unwrap().last, 2);
+        assert_eq!(
+            inv.params.lookback().unwrap().age,
+            Some(Duration::from_secs(10))
+        );
     }
 }

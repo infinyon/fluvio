@@ -8,7 +8,8 @@ transforms:
   - uses: infinyon/sql
     lookback:
       last:
-        1
+        100
+      age: 1h  
     with:
       mapping:
         table: "topic_message"

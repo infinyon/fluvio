@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use derive_builder::Builder;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
@@ -40,6 +42,7 @@ pub struct SmartModuleConfig {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Lookback {
     Last(u64),
+    Age { age: Duration, last: u64 },
 }
 
 impl SmartModuleConfigBuilder {
@@ -87,18 +90,24 @@ impl From<crate::transformation::TransformationStep> for SmartModuleConfig {
 #[cfg(feature = "transformation")]
 impl From<crate::transformation::Lookback> for Lookback {
     fn from(value: crate::transformation::Lookback) -> Self {
-        Self::Last(value.last)
-    }
-}
-
-impl From<fluvio_smartmodule::dataplane::smartmodule::Lookback> for Lookback {
-    fn from(value: fluvio_smartmodule::dataplane::smartmodule::Lookback) -> Self {
-        Self::Last(value.last)
+        match value.age {
+            Some(age) => Self::Age {
+                age,
+                last: value.last,
+            },
+            None => Self::Last(value.last),
+        }
     }
 }
 
 impl From<&fluvio_smartmodule::dataplane::smartmodule::Lookback> for Lookback {
     fn from(value: &fluvio_smartmodule::dataplane::smartmodule::Lookback) -> Self {
-        Self::Last(value.last)
+        match value.age {
+            Some(age) => Self::Age {
+                age,
+                last: value.last,
+            },
+            None => Self::Last(value.last),
+        }
     }
 }
