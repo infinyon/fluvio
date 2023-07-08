@@ -73,7 +73,7 @@ bytesize = "1.1.0"
 cargo-generate = { version = "0.18.2", default-features = false }
 cargo_toml = "0.15"
 cfg-if = "1.0.0"
-chrono = { version = "0.4.23", default-feature = false }
+chrono = { version = "0.4.23", default-features = false }
 clap = { version = "4.0.10", default-features = false }
 color-eyre = { version = "0.6.0", default-features = false }
 colored = "2.0.0"
