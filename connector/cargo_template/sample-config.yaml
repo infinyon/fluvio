@@ -1,3 +1,4 @@
+apiVersion: 0.1.0
 meta:
   version: 0.1.0
   name: my-{{project-name}}-test-connector
