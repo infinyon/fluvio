@@ -5,15 +5,6 @@ permissions: read-all
 on:
   workflow_call:
     inputs:
-      package-name:
-        required: true
-        type: string
-      branch:
-        type: string
-        default: "main"
-      rust-profile:
-        type: string
-        default: "release-lto"
       fail-fast:
         type: boolean
         default: true
@@ -23,12 +14,11 @@ on:
       target_prod:
         type: boolean
         default: false
-    secrets:
-      ORG_HUB_SA_NAME:
+      artifact-name:
+        type: string
         required: true
-      ORG_HUB_SA_PASSWD_DEV:
-        required: true
-      ORG_HUB_SA_PASSWD_PROD:
+      ipkg-file-name:
+        type: string
         required: true
 
 jobs:
@@ -50,17 +40,12 @@ jobs:
         run: |
           fluvio cloud login --email ${{ secrets.ORG_HUB_SA_NAME }} \
           --password ${{ !inputs.target_prod && secrets.ORG_HUB_SA_PASSWD_DEV || secrets.ORG_HUB_SA_PASSWD_PROD }} \
-          ${{ !inputs.target_prod && '--remote' || '' }} ${{ !inputs.target_prod && vars.DEV_CLOUD_URL || '' }}
-      - uses: actions/checkout@v3
+          ${{ !inputs.target_prod && '--remote' || '' }} ${{ !inputs.target_prod && secrets.ORG_CLOUD_URL_DEV || '' }}
+      - uses: actions/download-artifact@v3
+        id: download-file
         with:
-          ref: ${{ inputs.branch }}
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-targets: "false"
-          cache-on-failure: "true"
-      - name: Build smartmodule
-        run: smdk build
+          name: ${{ inputs.artifact-name }}
       - name: Publish
         run: |
-          smdk ${{ inputs.public && '--public-yes' || '' }} \
-            -p ${{ inputs.package-name }}
+          smdk publish ${{ inputs.public && '--public-yes' || '' }} \
+          --push --ipkg ${{steps.download-file.outputs.download-path}}/${{inputs.ipkg-file-name}}
