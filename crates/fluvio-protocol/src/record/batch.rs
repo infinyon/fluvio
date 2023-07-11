@@ -162,6 +162,10 @@ impl<R> Batch<R> {
         self.get_header().get_compression()
     }
 
+    pub fn get_base_timestamp(&self) -> i64 {
+        self.header.first_timestamp
+    }
+
     /// decode from buf stored in the file
     /// read all excluding records
     pub fn decode_from_file_buf<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>

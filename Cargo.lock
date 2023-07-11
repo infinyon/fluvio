@@ -2835,7 +2835,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.3"
+version = "0.11.0"
 dependencies = [
  "bytes 1.4.0",
  "content_inspector",
