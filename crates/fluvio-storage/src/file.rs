@@ -111,6 +111,18 @@ fn pread(fd: RawFd, offset: i64, len: usize) -> NixResult<ReadOutput> {
     let mut total_read = 0;
     while buf_len > 0 {
         trace!(buf_len, buf_offset, total_read, "pread start");
+
+        #[cfg(target_pointer_width = "32")]
+        let res = unsafe {
+            libc::pread64(
+                fd,
+                buf.as_mut_ptr().offset(buf_offset) as *mut c_void,
+                buf_len,
+                offset + total_read as i64,
+            )
+        };
+
+        #[cfg(not(target_pointer_width = "32"))]
         let res = unsafe {
             libc::pread(
                 fd,
