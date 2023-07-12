@@ -4,15 +4,15 @@ default:
 
 # arm7 spu build (doesnt link)
 build-spu:
-	cargo build --target=armv7-unknown-linux-gnueabi -p fluvio-spu
+	cargo build --target=armv7-unknown-linux-gnueabi -p fluvio-spu --no-default-features
 
 # build cross armv7
 build-spu-cross:
-	cross build --target=armv7-unknown-linux-gnueabi -p fluvio-spu
+	cross build --target=armv7-unknown-linux-gnueabi -p fluvio-spu --no-default-features
 
-# build w/ and w/o smartengine feature enabled
+# build native default config
 build-spu-se: clean-spu
-	cargo build -p fluvio-spu -F smartengine --no-default-features
+	cargo build -p fluvio-spu
 
 # build w/ and w/o smartengine feature enabled
 build-spu-feat: clean-spu
