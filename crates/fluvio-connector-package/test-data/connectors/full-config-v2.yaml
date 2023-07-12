@@ -17,6 +17,13 @@ meta:
       segment-size: 2.0 KB
     compression:
       type: Lz4
+    deduplication:
+      bounds:
+        count: 100
+        age: 1m
+      filter:
+        transform:
+          uses: infinyon/fluvio-smartmodule-filter-lookback@0.1.0
   producer:
     linger: 1ms
     batch-size: "44.0 MB"

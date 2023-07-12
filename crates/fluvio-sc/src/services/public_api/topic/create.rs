@@ -9,6 +9,7 @@
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
 //!
 
+use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_sc_schema::objects::CreateRequest;
 use tracing::{info, debug, trace, instrument};
 use anyhow::{anyhow, Result};
@@ -101,6 +102,31 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
             ErrorCode::TopicInvalidConfiguration,
             Some(error),
         );
+    }
+
+    // check if deduplication filter is present
+    if let Some(deduplication) = topic_spec.get_deduplication() {
+        let sm_name = deduplication.filter.transform.uses.as_str();
+        let sm_fqdn = match SmartModulePackageKey::from_qualified_name(sm_name) {
+            Ok(fqdn) => fqdn.store_id(),
+            Err(err) => {
+                return Status::new(
+                    sm_name.to_string(),
+                    ErrorCode::DeduplicationSmartModuleNameInvalid(err.to_string()),
+                    Some(err.to_string()),
+                )
+            }
+        };
+        if !metadata.smartmodules().store().contains_key(&sm_fqdn).await {
+            return Status::new(
+                sm_name.to_string(),
+                ErrorCode::DeduplicationSmartModuleNotLoaded,
+                Some(format!(
+                    "{}\nHint: try `fluvio hub download {sm_name}` and repeat this operation",
+                    ErrorCode::DeduplicationSmartModuleNotLoaded
+                )),
+            );
+        }
     }
 
     match topic_spec.replicas() {

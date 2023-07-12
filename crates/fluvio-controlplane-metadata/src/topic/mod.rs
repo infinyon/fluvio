@@ -1,10 +1,12 @@
 mod spec;
 mod status;
+mod deduplication;
 pub mod store;
 pub mod config;
 
 pub use self::spec::*;
 pub use self::status::*;
+pub use self::deduplication::*;
 
 pub const PENDING_REASON: &str = "waiting for live spus";
 

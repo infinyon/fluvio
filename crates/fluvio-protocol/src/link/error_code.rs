@@ -182,6 +182,14 @@ pub enum ErrorCode {
     #[fluvio(tag = 9000)]
     #[error("a compression error occurred in the SPU")]
     CompressionError,
+
+    // Deduplication
+    #[fluvio(tag = 10000)]
+    #[error("Deduplication SmartModule is not loaded into the cluster")]
+    DeduplicationSmartModuleNotLoaded,
+    #[fluvio(tag = 10001)]
+    #[error("Deduplication SmartModule name is invalid: {0}")]
+    DeduplicationSmartModuleNameInvalid(String),
 }
 
 impl ErrorCode {

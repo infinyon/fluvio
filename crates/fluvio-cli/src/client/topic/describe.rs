@@ -48,6 +48,7 @@ mod display {
 
     use fluvio::metadata::topic::ReplicaSpec;
     use comfy_table::Row;
+    use humantime::format_duration;
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
@@ -144,6 +145,24 @@ mod display {
                     */
                 }
             }
+
+            if let Some(dedup) = spec.get_deduplication() {
+                key_values.push((
+                    "Deduplication Filter".to_owned(),
+                    Some(dedup.filter.transform.uses.clone()),
+                ));
+                key_values.push((
+                    "Deduplication Count Bound".to_owned(),
+                    Some(dedup.bounds.count)
+                        .filter(|c| *c != 0)
+                        .as_ref()
+                        .map(ToString::to_string),
+                ));
+                key_values.push((
+                    "Deduplication Age Bound".to_owned(),
+                    dedup.bounds.age.map(|a| format_duration(a).to_string()),
+                ));
+            };
 
             key_values.push((
                 "Status".to_owned(),

@@ -7,7 +7,7 @@
 use fluvio_types::SpuId;
 use fluvio_protocol::{Encoder, Decoder};
 
-use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec, CompressionAlgorithm};
+use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec, CompressionAlgorithm, Deduplication};
 
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
@@ -28,6 +28,8 @@ pub struct PartitionSpec {
     #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 6)]
     pub compression_type: CompressionAlgorithm,
+    #[fluvio(min_version = 12)]
+    pub deduplication: Option<Deduplication>,
 }
 
 impl PartitionSpec {
@@ -49,6 +51,7 @@ impl PartitionSpec {
             cleanup_policy: topic.get_clean_policy().cloned(),
             storage: topic.get_storage().cloned(),
             compression_type: topic.get_compression_type().clone(),
+            deduplication: topic.get_deduplication().cloned(),
         }
     }
 

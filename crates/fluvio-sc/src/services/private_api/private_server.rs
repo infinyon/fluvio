@@ -122,8 +122,8 @@ async fn dispatch_loop(
         use futures_util::stream::StreamExt;
 
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
-        send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
         send_smartmodule_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
+        send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
         trace!(spu_id, "waiting for SPU channel");
 
