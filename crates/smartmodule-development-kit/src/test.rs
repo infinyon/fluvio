@@ -41,6 +41,10 @@ pub struct TestCmd {
     /// Key to use with the test record(s)
     key: Option<String>,
 
+    /// Print records in "[key] value" format, with "[null]" for no key
+    #[arg(short, long)]
+    key_value: bool,
+
     #[clap(flatten)]
     package: PackageCmd,
 
@@ -159,7 +163,20 @@ impl TestCmd {
             println!("{:?} records outputed", output.successes.len());
         }
         for output_record in output.successes {
-            let output_value = output_record.value.as_str()?;
+            let output_value = if self.key_value {
+                format!(
+                    "[{formatted_key}] {value}",
+                    formatted_key = if let Some(key) = output_record.key() {
+                        key.to_string()
+                    } else {
+                        "null".to_string()
+                    },
+                    value = output_record.value.as_str()?
+                )
+            } else {
+                output_record.value.as_str()?.to_string()
+            };
+
             println!("{output_value}");
         }
 
