@@ -1,5 +1,3 @@
-use std::sync::atomic::{AtomicU64, Ordering};
-
 use serde::{Serialize, Deserialize};
 
 #[derive(Default, Debug, Deserialize, Serialize)]
@@ -58,7 +56,7 @@ cfg_if::cfg_if! {
         }
 
     } else {
-
+        use std::sync::atomic::{AtomicU64, Ordering};
 
         #[derive(Default, Debug, Serialize, Deserialize)]
         pub struct RecordCounter {
