@@ -18,7 +18,7 @@ quote = "1.0.0"
 tracing = "0.1"
 
 [dependencies.syn]
-version = "1.0.0"
+version = "2.0.22"
 features = ["full"]
 
 
