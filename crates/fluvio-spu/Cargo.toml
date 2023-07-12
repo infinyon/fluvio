@@ -17,6 +17,10 @@ name = "fluvio-spu"
 path = "src/main.rs"
 doc = false
 
+[features]
+default = ["smartengine"]
+smartengine = ["dep:fluvio-smartengine", "fluvio/smartengine"]
+
 [dependencies]
 cfg-if = { workspace = true }
 anyhow = { workspace = true }
@@ -45,7 +49,7 @@ chrono = { workspace = true }
 
 
 # Fluvio dependencies
-fluvio = { workspace = true, features = ["smartengine"]}
+fluvio = { workspace = true }
 fluvio-types = { workspace = true, features = ["events"] }
 fluvio-storage = { workspace = true }
 fluvio-compression = { workspace = true }
@@ -62,7 +66,7 @@ fluvio-future = { workspace = true,features = [
     "openssl_tls",
     "zero_copy",
 ] }
-fluvio-smartengine = { workspace = true }
+fluvio-smartengine = { workspace = true, optional = true }
 fluvio-smartmodule = { workspace = true}
 
 [dev-dependencies]
@@ -76,3 +80,6 @@ flv-util = { workspace = true, features = ["fixture"] }
 fluvio-future = { workspace = true,features = ["fixture", "subscriber"] }
 fluvio-protocol = { workspace = true,  features = ["fixture"] }
 
+# not used?
+# [target.armv7-unknown-linux-gnueabi]
+# linker="armv7-unknown-linux-gnueabi-gcc"

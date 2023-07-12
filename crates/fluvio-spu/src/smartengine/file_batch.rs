@@ -78,8 +78,15 @@ impl Iterator for FileBatchIterator {
             return None;
         }
 
+        let offset = self.offset;
+
+        // ugly hack for armv7 pread offset = i32
+        // needed for gnu but not zig musl
+        #[cfg(all(target_pointer_width = "32", target_env = "gnu"))]
+        let offset: i32 = offset.try_into().unwrap();
+
         let mut header = vec![0u8; BATCH_FILE_HEADER_SIZE];
-        let bytes_read = match pread(self.fd, &mut header, self.offset)
+        let bytes_read = match pread(self.fd, &mut header, offset)
             .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
         {
             Ok(bytes) => bytes,
@@ -118,7 +125,14 @@ impl Iterator for FileBatchIterator {
 
         self.offset += BATCH_FILE_HEADER_SIZE as i64;
 
-        let bytes_read = match pread(self.fd, &mut raw_records, self.offset)
+        let offset = self.offset;
+
+        // ugly hack for armv7 pread offset = i32
+        // needed for gnu but not zig musl
+        #[cfg(all(target_pointer_width = "32", target_env = "gnu"))]
+        let offset: i32 = offset.try_into().unwrap();
+
+        let bytes_read = match pread(self.fd, &mut raw_records, offset)
             .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
         {
             Ok(bytes) => bytes,

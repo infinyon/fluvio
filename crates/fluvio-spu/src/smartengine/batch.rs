@@ -11,11 +11,10 @@ use fluvio_protocol::{
     record::{Batch, MemoryRecords, Offset},
     link::smartmodule::SmartModuleTransformRuntimeError,
 };
-use fluvio_smartengine::metrics::SmartModuleChainMetrics;
-use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
 use crate::smartengine::produce_batch::ProduceBatchIterator;
+use crate::smartengine::{SmartModuleChainInstance, SmartModuleChainMetrics};
 
 pub(crate) trait SmartModuleInputBatch {
     fn records(&self) -> &Vec<u8>;
