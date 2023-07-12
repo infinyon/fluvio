@@ -54,6 +54,33 @@ spec:
                     - Snappy
                     - Lz4
                     - Zstd
+                deduplication:
+                  type: object
+                  nullable: true  
+                  properties:
+                    filter: 
+                      type: object
+                      nullable: false   
+                      properties:
+                        transform:
+                          type: object
+                          properties:
+                            uses:
+                              type: string
+                              nullable: false  
+                            with:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                    bounds: 
+                      type: object
+                      nullable: false   
+                      properties:
+                        count:
+                          type: integer
+                          minimum: 0
+                        age:
+                          type: string
+                          nullable: true
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
@@ -100,4 +127,7 @@ spec:
         type: string
         description: Size
         jsonPath: .status.size
-    
+      - name: Deduplication Filter
+        type: string
+        description: Deduplication
+        jsonPath: .spec.deduplication.filter.transform.uses

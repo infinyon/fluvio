@@ -176,7 +176,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.2"
+version = "0.10.4"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -227,11 +227,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "eyre",
- "fluvio-protocol 0.10.2",
- "fluvio-smartmodule-derive 0.5.1",
+ "fluvio-protocol 0.10.4",
+ "fluvio-smartmodule-derive 0.6.0",
  "thiserror",
  "tracing",
 ]
@@ -240,14 +240,14 @@ dependencies = [
 name = "fluvio-smartmodule-aggregate"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-array-map-array"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "serde_json",
 ]
 
@@ -255,7 +255,7 @@ dependencies = [
 name = "fluvio-smartmodule-array-map-object"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "serde_json",
 ]
 
@@ -272,7 +272,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -283,44 +283,42 @@ dependencies = [
 name = "fluvio-smartmodule-filter"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-init"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
- "once_cell",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-lookback"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-map"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-param"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
- "once_cell",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-map"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
@@ -345,7 +343,7 @@ dependencies = [
 name = "fluvio-wasm-aggregate-average"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "serde",
  "serde_json",
 ]
@@ -354,7 +352,7 @@ dependencies = [
 name = "fluvio-wasm-aggregate-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "serde",
  "serde_json",
 ]
@@ -363,14 +361,14 @@ dependencies = [
 name = "fluvio-wasm-aggregate-sum"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-wasm-array-map-reddit"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "serde",
  "serde_json",
 ]
@@ -379,7 +377,7 @@ dependencies = [
 name = "fluvio-wasm-filter-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "serde",
  "serde_json",
 ]
@@ -388,7 +386,7 @@ dependencies = [
 name = "fluvio-wasm-filter-odd"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "thiserror",
 ]
 
@@ -396,7 +394,7 @@ dependencies = [
 name = "fluvio-wasm-filter-regex"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "regex",
 ]
 
@@ -411,14 +409,14 @@ dependencies = [
 name = "fluvio-wasm-map-double"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]
 name = "fluvio-wasm-map-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -428,7 +426,7 @@ dependencies = [
 name = "fluvio-wasm-map-regex"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
+ "fluvio-smartmodule 0.7.1",
  "once_cell",
  "regex",
 ]
@@ -832,8 +830,7 @@ dependencies = [
 name = "sm-integer-sum-aggegrate"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.0",
- "once_cell",
+ "fluvio-smartmodule 0.7.1",
 ]
 
 [[package]]

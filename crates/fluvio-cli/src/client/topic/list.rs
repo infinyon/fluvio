@@ -87,6 +87,7 @@ mod display {
                 "REPLICAS",
                 "RETENTION TIME",
                 "COMPRESSION",
+                "DEDUPLICATION",
                 "STATUS",
                 "REASON",
             ])
@@ -113,6 +114,12 @@ mod display {
                             topic.retention_secs() as u64
                         ))),
                         Cell::new(topic.get_compression_type()),
+                        Cell::new(
+                            topic
+                                .get_deduplication()
+                                .map(|d| d.filter.transform.uses.as_str())
+                                .unwrap_or("none"),
+                        ),
                         Cell::new(metadata.status.resolution.to_string()),
                         Cell::new(metadata.status.reason.to_string()),
                     ])

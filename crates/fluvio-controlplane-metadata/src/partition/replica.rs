@@ -6,10 +6,10 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_types::SpuId;
 
 use crate::partition::ReplicaKey;
-use crate::core::{MetadataItem};
+use crate::core::MetadataItem;
 use crate::store::MetadataStoreObject;
 use crate::partition::PartitionSpec;
-use crate::topic::{CleanupPolicy, TopicStorageConfig, CompressionAlgorithm};
+use crate::topic::{CleanupPolicy, TopicStorageConfig, CompressionAlgorithm, Deduplication};
 use super::store::*;
 
 /// Metadata about Replica send from SC
@@ -22,6 +22,7 @@ pub struct Replica {
     pub cleanup_policy: Option<CleanupPolicy>,
     pub storage: Option<TopicStorageConfig>,
     pub compression_type: CompressionAlgorithm,
+    pub deduplication: Option<Deduplication>,
 }
 
 impl Replica {
@@ -64,6 +65,7 @@ where
             cleanup_policy: spec.cleanup_policy,
             storage: spec.storage,
             compression_type: spec.compression_type,
+            deduplication: spec.deduplication,
         }
     }
 }

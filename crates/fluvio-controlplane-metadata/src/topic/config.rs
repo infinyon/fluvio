@@ -7,7 +7,7 @@ use crate::topic::{
     ReplicaSpec, TopicReplicaParam, SegmentBasedPolicy, CleanupPolicy, TopicStorageConfig,
 };
 
-use super::{TopicSpec, PartitionMap, CompressionAlgorithm};
+use super::{TopicSpec, PartitionMap, CompressionAlgorithm, deduplication::Deduplication};
 
 const DEFAULT_PARTITION_COUNT: PartitionCount = 1;
 const DEFAULT_REPLICATION_FACTOR: ReplicationFactor = 1;
@@ -38,6 +38,13 @@ pub struct TopicConfig {
     #[builder(default)]
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub compression: CompressionConfig,
+
+    #[builder(default)]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub deduplication: Option<Deduplication>,
 }
 
 #[derive(Debug, Default, Builder, Clone, PartialEq, Eq)]
@@ -156,6 +163,7 @@ impl From<TopicConfig> for TopicSpec {
         };
 
         topic_spec.set_compression_type(config.compression.type_);
+        topic_spec.set_deduplication(config.deduplication);
 
         if segment_size.is_some() || max_partition_size.is_some() {
             topic_spec.set_storage(TopicStorageConfig {
@@ -174,6 +182,8 @@ fn default_version() -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::topic::deduplication::{Bounds, Filter, Transform};
+
     use super::*;
 
     #[cfg(feature = "use_serde")]
@@ -198,6 +208,13 @@ retention:
   segment-size: 2.0 KB
 compression:
   type: Lz4
+deduplication:
+  bounds:
+    count: 100
+    age: 1m
+  filter:
+    transform:
+      uses: infinyon/dedup-filter@0.1.0
 "#;
 
         //when
@@ -292,6 +309,7 @@ compression:
             segment_size: Some(2000),
             max_partition_size: Some(1000),
         });
+        test_spec.set_deduplication(Some(test_deduplication()));
 
         assert_eq!(spec, test_spec);
     }
@@ -318,6 +336,22 @@ compression:
             },
             compression: CompressionConfig {
                 type_: CompressionAlgorithm::Lz4,
+            },
+            deduplication: Some(test_deduplication()),
+        }
+    }
+
+    fn test_deduplication() -> Deduplication {
+        Deduplication {
+            bounds: Bounds {
+                count: 100,
+                age: Some(Duration::from_secs(60)),
+            },
+            filter: Filter {
+                transform: Transform {
+                    uses: "infinyon/dedup-filter@0.1.0".to_string(),
+                    with: Default::default(),
+                },
             },
         }
     }

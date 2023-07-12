@@ -478,7 +478,7 @@ mod tests {
             TopicConfigBuilder, MetaConfigBuilder, MetaConfig, PartitionConfig, RetentionConfig,
             CompressionConfig,
         },
-        CompressionAlgorithm,
+        CompressionAlgorithm, Deduplication, Bounds, Filter, Transform,
     };
     use fluvio_smartengine::transformation::{TransformationStep, Lookback};
     use pretty_assertions::assert_eq;
@@ -556,6 +556,19 @@ mod tests {
                     compression: CompressionConfig {
                         type_: CompressionAlgorithm::Lz4,
                     },
+                    deduplication: Some(Deduplication {
+                        bounds: Bounds {
+                            count: 100,
+                            age: Some(Duration::from_secs(60)),
+                        },
+                        filter: Filter {
+                            transform: Transform {
+                                uses: "infinyon/fluvio-smartmodule-filter-lookback@0.1.0"
+                                    .to_string(),
+                                with: Default::default(),
+                            },
+                        },
+                    }),
                 },
                 version: "0.1.0".to_string(),
                 producer: Some(ProducerParameters {

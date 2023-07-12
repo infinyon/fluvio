@@ -90,6 +90,33 @@ spec:
                     maxPartitionSize:
                       type: integer
                       minimum: 2048
+                deduplication:
+                  type: object
+                  nullable: true  
+                  properties:
+                    filter: 
+                      type: object
+                      nullable: false   
+                      properties:
+                        transform:
+                          type: object
+                          properties:
+                            uses:
+                              type: string
+                              nullable: false  
+                            with:
+                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
+                    bounds: 
+                      type: object
+                      nullable: false   
+                      properties:
+                        count:
+                          type: integer
+                          minimum: 0
+                        age:
+                          type: string
+                          nullable: true  
       subresources:
           status: {}
       additionalPrinterColumns:
@@ -117,6 +144,10 @@ spec:
             type: integer
             description: Max Partition Size
             jsonPath: .spec.storage.maxPartitionSize
+          - name: Deduplication Filter
+            type: string
+            description: Deduplication
+            jsonPath: .spec.deduplication.filter.transform.uses
   conversion:
     # None conversion assumes the same schema for all versions and only sets the apiVersion
     # field of custom resources to the proper value

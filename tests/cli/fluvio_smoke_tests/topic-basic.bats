@@ -17,6 +17,9 @@ setup_file() {
     TOPIC_CONFIG_PATH="$TEST_DIR/$TOPIC_NAME.yaml"
     export TOPIC_CONFIG_PATH
 
+    DEDUP_FILTER_NAME="dedup-filter"
+    export DEDUP_FILTER_NAME
+
     cat <<EOF >$TOPIC_CONFIG_PATH
 version: 0.1.0
 meta:
@@ -31,8 +34,17 @@ retention:
   segment_size: 2.0 KB
 compression:
   type: Lz4
+deduplication:
+  bounds:
+    count: 100
+    age: 1m
+  filter:
+    transform:
+      uses: $DEDUP_FILTER_NAME  
 EOF
 
+    run timeout 15s "$FLUVIO_BIN" sm create --wasm-file smartmodule/examples/target/wasm32-unknown-unknown/release/fluvio_smartmodule_filter.wasm "$DEDUP_FILTER_NAME"
+    assert_success
 }
 
 # Create topic
@@ -154,3 +166,20 @@ EOF
     assert_success
 }
 
+# Describe topic contains Deduplication info
+@test "Describe a topic with deduplication info" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+    debug_msg "Topic name: $TOPIC_NAME"
+    run timeout 15s "$FLUVIO_BIN" topic describe "$TOPIC_NAME" 
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_success
+    assert_output --partial "Deduplication Filter:$DEDUP_FILTER_NAME"
+    assert_output --partial "Deduplication Count Bound:10"
+    assert_output --partial "Deduplication Age Bound:1"
+}

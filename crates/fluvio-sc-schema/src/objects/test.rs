@@ -9,7 +9,7 @@ use crate::TryEncodableFrom;
 
 use crate::objects::{
     Metadata, MetadataUpdate, ListResponse, ObjectApiWatchRequest, ObjectApiListResponse,
-    ClassicObjectApiListRequest,
+    ClassicObjectApiListRequest, DYN_OBJ,
 };
 
 use crate::topic::TopicSpec;
@@ -22,17 +22,17 @@ fn test_encoding_compatibility() {
     let raw_req: ListRequest<TopicSpec> = ListRequest::new("test", false);
     // upcast
     let list_request =
-        ObjectApiListRequest::try_encode_from(raw_req, COMMON_VERSION - 1).expect("encoded");
+        ObjectApiListRequest::try_encode_from(raw_req, DYN_OBJ - 1).expect("encoded");
     let mut new_dest = vec![];
     list_request
-        .encode(&mut new_dest, COMMON_VERSION - 1)
+        .encode(&mut new_dest, DYN_OBJ - 1)
         .expect("encoding");
 
     let raw_req2: ListRequest<TopicSpec> = ListRequest::new("test", false);
     let old_topic_request = ClassicObjectApiListRequest::Topic(raw_req2);
     let mut old_dest: Vec<u8> = vec![];
     old_topic_request
-        .encode(&mut old_dest, COMMON_VERSION - 1)
+        .encode(&mut old_dest, DYN_OBJ - 1)
         .expect("encoding");
 
     //  assert_eq!(new_dest.len(),20);
@@ -66,12 +66,11 @@ fn test_req_old_to_new() {
     let old_topic_request = ClassicObjectApiListRequest::Topic(raw_req);
     let mut dest = vec![];
     old_topic_request
-        .encode(&mut dest, COMMON_VERSION - 1)
+        .encode(&mut dest, DYN_OBJ - 1)
         .expect("encoding");
 
     let new_topic_request =
-        ObjectApiListRequest::decode_from(&mut Cursor::new(dest), COMMON_VERSION - 1)
-            .expect("decode");
+        ObjectApiListRequest::decode_from(&mut Cursor::new(dest), DYN_OBJ - 1).expect("decode");
 
     let downcast =
         new_topic_request.downcast().expect("downcast") as Option<ListRequest<TopicSpec>>;

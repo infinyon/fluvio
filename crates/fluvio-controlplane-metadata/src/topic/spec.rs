@@ -19,6 +19,8 @@ use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 use fluvio_protocol::{Encoder, Decoder};
 
+use super::deduplication::Deduplication;
+
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
@@ -34,6 +36,9 @@ pub struct TopicSpec {
     #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 6)]
     compression_type: CompressionAlgorithm,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    #[fluvio(min_version = 12)]
+    deduplication: Option<Deduplication>,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -106,6 +111,14 @@ impl TopicSpec {
 
     pub fn set_storage(&mut self, storage: TopicStorageConfig) {
         self.storage = Some(storage);
+    }
+
+    pub fn get_deduplication(&self) -> Option<&Deduplication> {
+        self.deduplication.as_ref()
+    }
+
+    pub fn set_deduplication(&mut self, deduplication: Option<Deduplication>) {
+        self.deduplication = deduplication;
     }
 
     /// get retention secs that can be displayed
@@ -660,6 +673,8 @@ pub mod test {
 
     use std::io::Cursor;
 
+    use crate::topic::{Bounds, Filter, Transform};
+
     use super::*;
 
     #[test]
@@ -887,6 +902,36 @@ pub mod test {
             }
             _ => panic!("expect computed topic spec, found {topic_spec_decoded:?}"),
         }
+    }
+
+    #[test]
+    fn test_topic_with_dedup_prev_version_compatibility() {
+        //given
+        let prev_version = 11;
+        let mut topic_spec: TopicSpec = ReplicaSpec::Computed((2, 3, true).into()).into();
+        topic_spec.set_deduplication(Some(Deduplication {
+            bounds: Bounds {
+                count: 1,
+                age: None,
+            },
+            filter: Filter {
+                transform: Transform {
+                    uses: "filter".to_string(),
+                    ..Default::default()
+                },
+            },
+        }));
+
+        //when
+        let mut dest = vec![];
+        topic_spec.encode(&mut dest, prev_version).expect("encoded");
+        let mut topic_spec_decoded = TopicSpec::default();
+        topic_spec_decoded
+            .decode(&mut Cursor::new(&dest), prev_version)
+            .expect("decoded");
+
+        //then
+        assert!(topic_spec_decoded.deduplication.is_none());
     }
 
     #[test]
