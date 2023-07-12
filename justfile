@@ -14,6 +14,10 @@ build-spu-cross:
 build-spu-se: clean-spu
 	cargo build -p fluvio-spu
 
+# build native, no smartengine
+build-spu2:
+	cargo build -p fluvio-spu --no-default-features
+
 # build w/ and w/o smartengine feature enabled
 build-spu-feat: clean-spu
 	just build-spu-se
@@ -24,6 +28,6 @@ clean-spu:
 	cargo clean -p fluvio-spu
 
 # not running in arm7 for quick dev, in
-run:
+run: build-spu2
 	cargo run -p fluvio-spu -- \
 		--id 1
