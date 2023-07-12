@@ -3,7 +3,7 @@ use std::io::Error as IoError;
 
 use anyhow::Error;
 use fluvio_compression::{Compression, CompressionError};
-use fluvio_smartengine::metrics::SmartModuleChainMetrics;
+
 use tracing::{instrument, debug, trace};
 
 use fluvio_protocol::{Encoder};
@@ -11,8 +11,14 @@ use fluvio_protocol::{
     record::{Batch, MemoryRecords, Offset},
     link::smartmodule::SmartModuleTransformRuntimeError,
 };
-use fluvio_smartengine::SmartModuleChainInstance;
+
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
+
+use crate::smartengine::{SmartModuleChainInstance, SmartModuleChainMetrics};
+// use fluvio_smartengine::{
+//     metrics::SmartModuleChainMetrics,
+//     SmartModuleChainInstance,
+// };
 
 pub(crate) trait SmartModuleInputBatch {
     fn records(&self) -> &Vec<u8>;

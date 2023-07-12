@@ -7,7 +7,6 @@ use tracing::{debug, trace, error};
 use tracing::instrument;
 use anyhow::{anyhow, Result};
 
-use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_protocol::api::{RequestKind, RequestHeader};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset, Batch, RawRecords};
@@ -28,9 +27,10 @@ use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
+use crate::smartengine::batch::process_batch;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::produce_batch::ProduceBatchIterator;
-use crate::smartengine::batch::process_batch;
+use crate::smartengine::SmartModuleChainInstance;
 use crate::traffic::TrafficType;
 
 struct TopicWriteResult {
@@ -216,6 +216,7 @@ async fn smartmodule_ctx(
         })
 }
 
+// #[cfg(feature = "smartengine")]
 fn apply_smartmodules_for_partition_request(
     partition_request: &mut PartitionProduceData<RecordSet<RawRecords>>,
     sm_chain_instance: &mut SmartModuleChainInstance,

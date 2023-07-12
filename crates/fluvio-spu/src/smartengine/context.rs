@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use fluvio_smartengine::{SmartModuleChainInstance, Version, Lookback};
 use fluvio_protocol::{link::ErrorCode, Decoder};
 use fluvio_smartmodule::Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
@@ -12,6 +11,9 @@ use crate::{
     smartengine::file_batch::FileBatchIterator,
 };
 use crate::smartengine::chain;
+use crate::smartengine::Lookback;
+use crate::smartengine::SmartModuleChainInstance;
+use crate::smartengine::Version;
 
 pub struct SmartModuleContext {
     chain: SmartModuleChainInstance,

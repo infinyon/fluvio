@@ -1,13 +1,29 @@
+#[cfg(feature = "smartengine")]
 use tracing::{debug, error};
 use fluvio_protocol::link::ErrorCode;
-use fluvio_smartengine::{
-    SmartEngine, SmartModuleChainBuilder, SmartModuleChainInstance, SmartModuleConfig,
-    SmartModuleInitialData,
-};
-use fluvio_spu_schema::server::smartmodule::{
-    SmartModuleContextData, SmartModuleInvocation, SmartModuleKind,
-};
 
+#[cfg(feature = "smartengine")]
+use fluvio_smartengine::{SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData};
+
+#[cfg(feature = "smartengine")]
+use fluvio_spu_schema::server::smartmodule::{SmartModuleContextData, SmartModuleKind};
+
+use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
+
+use crate::smartengine::SmartEngine;
+use crate::smartengine::SmartModuleChainInstance;
+
+#[cfg(not(feature = "smartengine"))]
+pub(crate) fn build_chain(
+    _invocations: Vec<SmartModuleInvocation>,
+    _version: i16,
+    _engine: SmartEngine,
+) -> Result<SmartModuleChainInstance, ErrorCode> {
+    let smci = SmartModuleChainInstance {};
+    Ok(smci)
+}
+
+#[cfg(feature = "smartengine")]
 pub(crate) fn build_chain(
     invocations: Vec<SmartModuleInvocation>,
     version: i16,

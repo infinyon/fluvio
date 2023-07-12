@@ -4,9 +4,10 @@ use std::{
 };
 
 use fluvio_protocol::record::Batch;
-use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_spu_schema::fetch::FilePartitionResponse;
 use serde::Serialize;
+
+use crate::smartengine::SmartModuleChainMetrics;
 
 #[derive(Default, Debug, Serialize)]
 pub(crate) struct SpuMetrics {

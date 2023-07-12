@@ -6,7 +6,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use fluvio_smartengine::SmartEngine;
+use crate::smartengine::SmartEngine;
 use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::Replica;
