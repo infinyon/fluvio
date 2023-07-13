@@ -32,7 +32,7 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
 
             quote! {
                 impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
-                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
+                    fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) ->  ::std::result::Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
                         #trace_encode
                         #encoded_field_tokens
                         Ok(())
