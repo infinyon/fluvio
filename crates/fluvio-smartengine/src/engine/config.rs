@@ -48,7 +48,7 @@ pub enum Lookback {
 impl SmartModuleConfigBuilder {
     /// add initial parameters
     pub fn param(&mut self, key: impl Into<String>, value: impl Into<String>) -> &mut Self {
-        let mut new = self;
+        let new = self;
         let mut params = new.params.take().unwrap_or_default();
         params.insert(key.into(), value.into());
         new.params = Some(params);
