@@ -471,7 +471,7 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
             let tmpfile = tempdir.path().join(file_name);
             let buf = std::fs::read(tmpfile)?;
 
-            let mut iv = vers
+            let iv = vers
                 .get_mut(&fnamestr)
                 .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} verify error")))?;
             iv.seen = true;

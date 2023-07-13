@@ -11,7 +11,7 @@ mod metadata;
 mod render;
 pub(crate) mod monitoring;
 
-pub(crate) use error::{CliError};
+pub(crate) use error::CliError;
 use fluvio_extension_common as common;
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
 
@@ -22,6 +22,40 @@ use install::update::{
 // list of public export
 pub use root::{Root, HelpOpt};
 pub use client::TableFormatConfig;
+
+// Checks for an update if channel is latest or ALWAYS_CHECK is set
+async fn check_for_channel_update() {
+    if should_always_print_available_update() {
+        println!("🔍 Checking for new version");
+        let agent = HttpAgent::default();
+        let update_result = check_update_available(&agent, false).await;
+        if let Ok(Some(latest_version)) = update_result {
+            prompt_available_update(&latest_version);
+        } else {
+            println!("✅ fluvio-cli is up to date");
+        }
+    }
+}
+
+mod util {
+    use fluvio_spu_schema::Isolation;
+    use crate::CliError;
+
+    pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
+        match s {
+            "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
+            "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
+            _ => Err(format!("unrecognized isolation: {s}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)")),
+        }
+    }
+
+    pub(crate) fn parse_key_val(s: &str) -> anyhow::Result<(String, String)> {
+        let pos = s.find('=').ok_or_else(|| {
+            CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{s}`"))
+        })?;
+        Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+    }
+}
 
 mod root {
     use crate::check_for_channel_update;
@@ -394,39 +428,5 @@ mod root {
         fn parse(command: &str) -> Result<Root, clap::error::Error> {
             Root::try_parse_from(command.split_whitespace())
         }
-    }
-}
-
-// Checks for an update if channel is latest or ALWAYS_CHECK is set
-async fn check_for_channel_update() {
-    if should_always_print_available_update() {
-        println!("🔍 Checking for new version");
-        let agent = HttpAgent::default();
-        let update_result = check_update_available(&agent, false).await;
-        if let Ok(Some(latest_version)) = update_result {
-            prompt_available_update(&latest_version);
-        } else {
-            println!("✅ fluvio-cli is up to date");
-        }
-    }
-}
-
-mod util {
-    use fluvio_spu_schema::Isolation;
-    use crate::{CliError};
-
-    pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
-        match s {
-            "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
-            "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
-            _ => Err(format!("unrecognized isolation: {s}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)")),
-        }
-    }
-
-    pub(crate) fn parse_key_val(s: &str) -> anyhow::Result<(String, String)> {
-        let pos = s.find('=').ok_or_else(|| {
-            CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{s}`"))
-        })?;
-        Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
     }
 }
