@@ -27,15 +27,16 @@ use fluvio_protocol::{
     link::{smartmodule::SmartModuleKind as SmartModuleKindError, ErrorCode},
     ByteBuf,
 };
-use fluvio_protocol::fixture::{create_batch, TEST_RECORD};
+use fluvio_protocol::fixture::{TEST_RECORD, create_raw_recordset};
 use fluvio_spu_schema::{
     server::update_offset::{UpdateOffsetsRequest, OffsetUpdate},
     fetch::DefaultFetchRequest,
 };
 use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
+use crate::services::public::tests::{vec_to_batch, create_filter_raw_records};
 use crate::{
     core::GlobalContext,
-    services::public::tests::{create_filter_records, vec_to_batch},
+    services::public::tests::{create_filter_records, vec_to_raw_batch},
 };
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
@@ -71,7 +72,11 @@ async fn test_stream_fetch_basic() {
         let test_id = test.id.clone();
         let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
             .await
-            .expect("replica");
+            .expect("replica")
+            .init(&ctx)
+            .await
+            .expect("init succeeded");
+
         ctx.leaders_state().insert(test_id, replica.clone()).await;
 
         let stream_request = DefaultStreamFetchRequest::builder()
@@ -85,10 +90,10 @@ async fn test_stream_fetch_basic() {
             .await
             .expect("create stream");
 
-        let mut records = RecordSet::default().add(create_batch());
+        let mut records = create_raw_recordset(2);
         // write records, base offset = 0 since we are starting from 0
         replica
-            .write_record_set(&mut records, ctx.follower_notifier())
+            .write_record_set(&mut create_raw_recordset(2), ctx.follower_notifier())
             .await
             .expect("write");
 
@@ -404,7 +409,10 @@ async fn test_stream_fetch_filter(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -415,7 +423,9 @@ async fn test_stream_fetch_filter(
         .expect("build");
 
     // 1 out of 2 are filtered
-    let mut records = create_filter_records(2);
+    let mut records = create_filter_records(2)
+        .try_into()
+        .expect("converted to raw");
     //debug!("records: {:#?}", records);
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
@@ -465,21 +475,21 @@ async fn test_stream_fetch_filter(
     drop(response);
 
     // first write 2 non filterable records
-    let mut records = RecordSet::default().add(create_batch());
+    let mut records = create_raw_recordset(2);
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
         .await
         .expect("write");
 
     // another 1 of 3, here base offset should be = 4
-    let mut records = create_filter_records(3);
+    let mut records = create_filter_raw_records(3);
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
         .await
         .expect("write");
 
     // create another 4, base should be 4 + 3 = 7 and total 10 records
-    let mut records = create_filter_records(3);
+    let mut records = create_filter_raw_records(3);
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
         .await
@@ -587,7 +597,11 @@ async fn test_stream_fetch_filter_individual(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -608,7 +622,9 @@ async fn test_stream_fetch_filter_individual(
         .record_generator(Arc::new(|_, _| Record::new("1")))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
         .await
@@ -624,7 +640,10 @@ async fn test_stream_fetch_filter_individual(
         .record_generator(Arc::new(|_, _| Record::new("2")))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
+
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
         .await
@@ -707,7 +726,11 @@ async fn test_stream_filter_error_fetch(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -732,7 +755,9 @@ async fn test_stream_filter_error_fetch(
         .record_generator(Arc::new(generate_record))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
 
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
@@ -836,21 +861,25 @@ async fn test_stream_filter_max(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // write 2 batches each with 10 records
     //debug!("records: {:#?}", records);
     replica
-        .write_record_set(&mut create_filter_records(10), ctx.follower_notifier())
+        .write_record_set(&mut create_filter_raw_records(10), ctx.follower_notifier())
         .await
         .expect("write"); // 1000 bytes
     replica
-        .write_record_set(&mut create_filter_records(10), ctx.follower_notifier())
+        .write_record_set(&mut create_filter_raw_records(10), ctx.follower_notifier())
         .await
         .expect("write"); // 2000 bytes totals
     replica
-        .write_record_set(&mut create_filter_records(10), ctx.follower_notifier())
+        .write_record_set(&mut create_filter_raw_records(10), ctx.follower_notifier())
         .await
         .expect("write"); // 3000 bytes total
                           // now total of 300 filter records bytes (min), but last filter record is greater than max
@@ -977,7 +1006,11 @@ async fn test_stream_fetch_map(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -998,7 +1031,9 @@ async fn test_stream_fetch_map(
             .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
             .build()
             .expect("batch")
-            .records();
+            .records()
+            .try_into()
+            .expect("raw");
 
         replica
             .write_record_set(&mut records, ctx.follower_notifier())
@@ -1126,7 +1161,11 @@ async fn test_stream_fetch_map_chain(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -1147,7 +1186,9 @@ async fn test_stream_fetch_map_chain(
             .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
             .build()
             .expect("batch")
-            .records();
+            .records()
+            .try_into()
+            .expect("raw");
 
         replica
             .write_record_set(&mut records, ctx.follower_notifier())
@@ -1280,7 +1321,11 @@ async fn test_stream_fetch_map_error(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -1306,7 +1351,9 @@ async fn test_stream_fetch_map_error(
         }))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
 
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
@@ -1410,7 +1457,11 @@ async fn test_stream_aggregate_fetch_single_batch(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -1433,7 +1484,10 @@ async fn test_stream_aggregate_fetch_single_batch(
         .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
+
     debug!("records: {:#?}", records);
 
     let mut stream = client_socket
@@ -1549,7 +1603,11 @@ async fn test_stream_aggregate_fetch_multiple_batch(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Aggregate 6 records in 2 batches
@@ -1562,7 +1620,10 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
+
     debug!("first batch: {:#?}", records);
 
     replica
@@ -1579,7 +1640,9 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         .record_generator(Arc::new(|i, _| Record::new((i + 3).to_string())))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
 
     debug!("2nd batch: {:#?}", records2);
 
@@ -1679,7 +1742,11 @@ async fn test_stream_fetch_and_new_request(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -1764,7 +1831,11 @@ async fn test_stream_fetch_array_map(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Input: One JSON record with 10 ints: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -1776,7 +1847,9 @@ async fn test_stream_fetch_array_map(
         }))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
 
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
@@ -1880,7 +1953,11 @@ async fn test_stream_fetch_filter_map(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Input: the following records:
@@ -1895,7 +1972,9 @@ async fn test_stream_fetch_filter_map(
         .record_generator(Arc::new(|i, _| Record::new(((i + 1) * 11).to_string())))
         .build()
         .expect("batch")
-        .records();
+        .records()
+        .try_into()
+        .expect("raw");
 
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
@@ -2000,7 +2079,11 @@ async fn test_stream_fetch_filter_with_params(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let mut params = BTreeMap::new();
@@ -2023,7 +2106,7 @@ async fn test_stream_fetch_filter_with_params(
         .expect("stream request");
 
     // 1 out of 2 are filtered
-    let mut records = create_filter_records(2);
+    let mut records = create_filter_raw_records(2);
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
         .await
@@ -2187,7 +2270,11 @@ async fn test_stream_fetch_invalid_smartmodule(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest::builder()
@@ -2241,7 +2328,11 @@ async fn test_stream_metrics() {
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     assert_eq!(ctx.metrics().outbound().client_bytes(), 0);
@@ -2257,10 +2348,13 @@ async fn test_stream_metrics() {
         Record::new(RecordData::from("foo")),
         Record::new(RecordData::from("bar")),
     ]);
-    let mut records = RecordSet::default().add(batch);
+    let records = RecordSet::default().add(batch);
     // write records, base offset = 0 since we are starting from 0
     replica
-        .write_record_set(&mut records, ctx.follower_notifier())
+        .write_record_set(
+            &mut records.try_into().expect("raw"),
+            ctx.follower_notifier(),
+        )
         .await
         .expect("write");
 
@@ -2417,14 +2511,18 @@ async fn stream_fetch_filter_lookback(
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
-        .expect("replica");
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
     ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     {
         // it will read all records that greater than the last one (3)
         replica
             .write_record_set(
-                &mut vec_to_batch(&["1", "10", "2", "11", "3"]),
+                &mut vec_to_raw_batch(&["1", "10", "2", "11", "3"]),
                 ctx.follower_notifier(),
             )
             .await
@@ -2454,7 +2552,7 @@ async fn stream_fetch_filter_lookback(
         // it will read all records that greater than the last one (13)
         replica
             .write_record_set(
-                &mut vec_to_batch(&["10", "14", "13"]),
+                &mut vec_to_raw_batch(&["10", "14", "13"]),
                 ctx.follower_notifier(),
             )
             .await
@@ -2509,7 +2607,7 @@ async fn stream_fetch_filter_lookback(
         // last could not be parsed by look_back from SM, error should be propagated
         replica
             .write_record_set(
-                &mut vec_to_batch(&["wrong record"]),
+                &mut vec_to_raw_batch(&["wrong record"]),
                 ctx.follower_notifier(),
             )
             .await
@@ -2585,13 +2683,17 @@ async fn stream_fetch_filter_lookback_age(
             let test_id = test.id.clone();
             let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
                 .await
-                .expect("replica");
+                .expect("replica")
+                .init(&ctx)
+                .await
+                .expect("init succeeded");
+
             ctx.leaders_state().insert(test_id, replica.clone()).await;
             {
                 // it will read all records that greater than the last one (3)
                 replica
                     .write_record_set(
-                        &mut vec_to_batch(&["1", "10", "2", "11", "3"]),
+                        &mut vec_to_raw_batch(&["1", "10", "2", "11", "3"]),
                         ctx.follower_notifier(),
                     )
                     .await
@@ -2633,10 +2735,14 @@ async fn stream_fetch_filter_lookback_age(
             let test_id = test.id.clone();
             let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
                 .await
-                .expect("replica");
+                .expect("replica")
+                .init(&ctx)
+                .await
+                .expect("init succeeded");
+
             ctx.leaders_state().insert(test_id, replica.clone()).await;
             {
-                let mut batch = vec_to_batch(&["1", "2", "3", "4", "5"]);
+                let mut batch = vec_to_raw_batch(&["1", "2", "3", "4", "5"]);
                 batch.batches[0].header.first_timestamp = Utc::now()
                     .checked_sub_days(Days::new(1))
                     .expect("valid date")
@@ -2684,10 +2790,14 @@ async fn stream_fetch_filter_lookback_age(
             let test_id = test.id.clone();
             let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
                 .await
-                .expect("replica");
+                .expect("replica")
+                .init(&ctx)
+                .await
+                .expect("init succeeded");
+
             ctx.leaders_state().insert(test_id, replica.clone()).await;
             {
-                let mut batch = vec_to_batch(&["1", "10", "2", "11", "3"]);
+                let mut batch = vec_to_raw_batch(&["1", "10", "2", "11", "3"]);
 
                 replica
                     .write_record_set(&mut batch, ctx.follower_notifier())
@@ -2730,7 +2840,11 @@ async fn stream_fetch_filter_lookback_age(
             let test_id = test.id.clone();
             let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
                 .await
-                .expect("replica");
+                .expect("replica")
+                .init(&ctx)
+                .await
+                .expect("init succeeded");
+
             ctx.leaders_state().insert(test_id, replica.clone()).await;
             {
                 let mut batch = vec_to_batch(&["1", "10", "2", "11", "3"]);
@@ -2743,7 +2857,7 @@ async fn stream_fetch_filter_lookback_age(
                     .set_timestamp_delta(Duration::from_secs(60 * 60 * 12).as_millis() as i64);
 
                 replica
-                    .write_record_set(&mut batch, ctx.follower_notifier())
+                    .write_record_set(&mut batch.try_into().expect("raw"), ctx.follower_notifier())
                     .await
                     .expect("write");
 
@@ -2783,11 +2897,14 @@ async fn stream_fetch_filter_lookback_age(
             let test_id = test.id.clone();
             let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
                 .await
-                .expect("replica");
+                .expect("replica")
+                .init(&ctx)
+                .await
+                .expect("init succeeded");
             ctx.leaders_state().insert(test_id, replica.clone()).await;
             {
-                let mut batch1 = vec_to_batch(&["1", "10", "2"]);
-                let mut batch2 = vec_to_batch(&["11", "3"]);
+                let mut batch1 = vec_to_raw_batch(&["1", "10", "2"]);
+                let mut batch2 = vec_to_raw_batch(&["11", "3"]);
 
                 replica
                     .write_record_set(&mut batch1, ctx.follower_notifier())
@@ -2834,7 +2951,10 @@ async fn stream_fetch_filter_lookback_age(
             let test_id = test.id.clone();
             let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
                 .await
-                .expect("replica");
+                .expect("replica")
+                .init(&ctx)
+                .await
+                .expect("init succeeded");
             ctx.leaders_state().insert(test_id, replica.clone()).await;
             {
                 let mut batch1 = vec_to_batch(&["1", "10", "2"]);
@@ -2846,10 +2966,13 @@ async fn stream_fetch_filter_lookback_age(
                     .preamble
                     .set_timestamp_delta(Duration::from_secs(60 * 60 * 12).as_millis() as i64);
 
-                let mut batch2 = vec_to_batch(&["11", "3"]);
+                let mut batch2 = vec_to_raw_batch(&["11", "3"]);
 
                 replica
-                    .write_record_set(&mut batch1, ctx.follower_notifier())
+                    .write_record_set(
+                        &mut batch1.try_into().expect("raw"),
+                        ctx.follower_notifier(),
+                    )
                     .await
                     .expect("write");
                 replica

@@ -150,14 +150,14 @@ async fn handle_produce_topic(
 }
 
 #[instrument(
-    skip(ctx, replica_id, partition_request),
+    skip(ctx, replica_id, partition_request, leader_state),
     fields(%replica_id),
 )]
-async fn handle_produce_partition<R: BatchRecords>(
+async fn handle_produce_partition(
     ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
     leader_state: SharedFileLeaderState,
-    partition_request: PartitionProduceData<RecordSet<R>>,
+    partition_request: PartitionProduceData<RecordSet<RawRecords>>,
     is_connector: bool,
 ) -> PartitionWriteResult {
     trace!("Handling produce request for partition:");

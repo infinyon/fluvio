@@ -1,6 +1,4 @@
-use std::{
-    ops::{Deref},
-};
+use std::ops::Deref;
 use async_lock::RwLock;
 use std::collections::HashMap;
 
@@ -8,12 +6,9 @@ use tracing::{error, instrument};
 use anyhow::Result;
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
-use fluvio_storage::{FileReplica};
+use fluvio_storage::FileReplica;
 
-use crate::{
-    control_plane::SharedStatusUpdate,
-    core::{GlobalContext},
-};
+use crate::{control_plane::SharedStatusUpdate, core::GlobalContext};
 use crate::config::ReplicationConfig;
 use crate::replication::follower::FollowerReplicaState;
 
@@ -83,6 +78,7 @@ impl ReplicaLeadersState<FileReplica> {
 
         let leader_replica =
             LeaderReplicaState::create(replica, ctx.config(), status_update).await?;
+        let leader_replica = leader_replica.init(ctx).await?;
         self.insert_leader(replica_id, leader_replica.clone()).await;
         Ok(leader_replica)
     }
@@ -107,7 +103,7 @@ impl ReplicaLeadersState<FileReplica> {
 
     /// promote follower
     #[instrument(
-        skip(self,follower,replica,status_update),
+        skip(self,follower,replica,status_update,ctx),
         fields(replica = %replica.id)
     )]
     pub async fn promote_follower(
@@ -116,11 +112,13 @@ impl ReplicaLeadersState<FileReplica> {
         follower: FollowerReplicaState<FileReplica>,
         replica: Replica,
         status_update: SharedStatusUpdate,
-    ) -> LeaderReplicaState<FileReplica> {
+        ctx: &GlobalContext<FileReplica>,
+    ) -> Result<LeaderReplicaState<FileReplica>> {
         let replica_id = replica.id.clone();
         let replica_storage = follower.inner_owned();
         let leader = LeaderReplicaState::new(replica, config, status_update, replica_storage);
+        let leader = leader.init(ctx).await?;
         self.insert_leader(replica_id, leader.clone()).await;
-        leader
+        Ok(leader)
     }
 }

@@ -11,7 +11,7 @@ use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
-use fluvio_storage::{ReplicaStorage};
+use fluvio_storage::ReplicaStorage;
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
@@ -159,7 +159,7 @@ where
 mod file_replica {
 
     use fluvio_controlplane::{ReplicaRemovedRequest, UpdateReplicaRequest};
-    use fluvio_storage::{FileReplica};
+    use fluvio_storage::FileReplica;
     use flv_util::actions::Actions;
     use tracing::{trace, warn};
 
@@ -186,7 +186,12 @@ mod file_replica {
                 old_leader = old_replica.leader
             )
         )]
-        pub async fn promote(&self, new_replica: &Replica, old_replica: &Replica) {
+        pub async fn promote(
+            &self,
+            new_replica: &Replica,
+            old_replica: &Replica,
+        ) -> Vec<ReplicaChange> {
+            let mut outputs = Vec::new();
             if let Some(follower_replica) = self
                 .followers_state()
                 .remove_replica(old_replica.leader, &old_replica.id)
@@ -197,17 +202,24 @@ mod file_replica {
                     "old follower replica exists, promoting to leader"
                 );
 
-                self.leaders_state()
+                if let Err(err) = self
+                    .leaders_state()
                     .promote_follower(
                         self.config().into(),
                         follower_replica,
                         new_replica.clone(),
                         self.status_update_owned(),
+                        self,
                     )
-                    .await;
+                    .await
+                {
+                    error!("follower promotion failed: {err}");
+                    outputs.push(ReplicaChange::StorageError(err));
+                };
             } else {
                 error!("follower replica {} didn't exists!", old_replica.id);
             }
+            outputs
         }
 
         pub async fn apply_replica_update(
@@ -294,7 +306,8 @@ mod file_replica {
                             // check for leader change
                             if new_replica.leader != old_replica.leader {
                                 if new_replica.leader == local_id {
-                                    self.promote(&new_replica, &old_replica).await
+                                    outputs
+                                        .append(&mut self.promote(&new_replica, &old_replica).await)
                                 } else {
                                     // we are follower
                                     // if we were leader before, we demote out self

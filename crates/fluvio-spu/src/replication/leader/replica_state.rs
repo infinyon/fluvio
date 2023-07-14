@@ -9,24 +9,30 @@ use std::fmt;
 
 use tracing::{debug, error, warn};
 use tracing::instrument;
-use async_rwlock::{RwLock};
-use anyhow::Result;
+use async_rwlock::RwLock;
+use anyhow::{Result, Context};
 
-use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, BatchRecords};
+use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
-use fluvio_types::{SpuId};
-use fluvio_spu_schema::Isolation;
+use fluvio_types::SpuId;
+use fluvio_spu_schema::{Isolation, COMMON_VERSION};
 
 use crate::{
-    config::{ReplicationConfig},
+    config::ReplicationConfig,
     control_plane::SharedStatusUpdate,
+    smartengine::{
+        context::{SharedSmartModuleContext, SmartModuleContext},
+        dedup_to_invocation,
+        batch::process_record_set,
+    },
+    core::GlobalContext,
 };
 use crate::replication::follower::sync::{PeerFileTopicResponse, PeerFilePartitionResponse};
 use crate::storage::SharableReplicaStorage;
 
-use super::{FollowerNotifier};
+use super::FollowerNotifier;
 
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
@@ -39,6 +45,7 @@ pub struct LeaderReplicaState<S> {
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
     status_update: SharedStatusUpdate,
+    sm_ctx: Option<SharedSmartModuleContext>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -50,6 +57,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             followers: self.followers.clone(),
             in_sync_replica: self.in_sync_replica,
             status_update: self.status_update.clone(),
+            sm_ctx: self.sm_ctx.clone(),
         }
     }
 }
@@ -97,7 +105,7 @@ where
         config: ReplicationConfig,
         status_update: SharedStatusUpdate,
         inner: SharableReplicaStorage<S>,
-    ) -> Self {
+    ) -> Uninit<Self> {
         debug!(?replica, "replica storage");
         let in_sync_replica = replica.replicas.len() as u16;
         let follower_ids = HashSet::from_iter(replica.replicas.clone());
@@ -111,14 +119,15 @@ where
             "creating leader"
         );
 
-        Self {
+        Uninit(Self {
             replica,
             storage: inner,
             config,
             followers: Arc::new(RwLock::new(followers)),
             in_sync_replica,
             status_update,
-        }
+            sm_ctx: None,
+        })
     }
 
     /// create new complete state and spawn controller
@@ -126,7 +135,7 @@ where
         replica: Replica,
         config: &'a C,
         status_update: SharedStatusUpdate,
-    ) -> Result<LeaderReplicaState<S>>
+    ) -> Result<Uninit<LeaderReplicaState<S>>>
     where
         ReplicationConfig: From<&'a C>,
         S::ReplicaConfig: From<&'a C>,
@@ -135,7 +144,7 @@ where
         replica_config.update_from_replica(&replica);
         let inner = SharableReplicaStorage::create(replica.id.clone(), replica_config).await?;
         let leader_replica = Self::new(replica, config.into(), status_update, inner);
-        leader_replica.update_status().await;
+        leader_replica.0.update_status().await;
         Ok(leader_replica)
     }
 
@@ -311,11 +320,16 @@ where
     /// write records to storage
     /// then update our follower's leo
     #[instrument(skip(self, records, notifiers))]
-    pub async fn write_record_set<R: BatchRecords>(
+    pub async fn write_record_set(
         &self,
-        records: &mut RecordSet<R>,
+        records: &mut RecordSet<RawRecords>,
         notifiers: &FollowerNotifier,
     ) -> Result<(Offset, Offset, usize)> {
+        self.transform(records).await?;
+        if records.total_records() == 0 {
+            return Ok((self.hw(), self.leo(), 0));
+        }
+
         let offsets = self
             .storage
             .write_record_set(records, self.in_sync_replica == 1)
@@ -325,6 +339,22 @@ where
         self.update_status().await;
 
         Ok(offsets)
+    }
+
+    async fn transform(&self, records: &mut RecordSet<RawRecords>) -> Result<()> {
+        if let Some(ref sm_ctx) = self.sm_ctx {
+            let (sm_result, sm_error) =
+                process_record_set(sm_ctx.write().await.chain_mut(), records)?;
+            if let Some(error) = sm_error {
+                return Err(error.into());
+            }
+            records.batches.clear();
+            if !sm_result.records().is_empty() {
+                let transformed_batch = Batch::<RawRecords>::try_from(sm_result)?;
+                records.batches.push(transformed_batch);
+            }
+        };
+        Ok(())
     }
 
     async fn notify_followers(&self, notifier: &FollowerNotifier) {
@@ -353,6 +383,27 @@ where
     #[allow(unused)]
     pub async fn followers_info(&self) -> BTreeMap<SpuId, OffsetInfo> {
         self.followers.read().await.clone()
+    }
+}
+
+pub struct Uninit<S>(S);
+
+impl<S: ReplicaStorage> Uninit<LeaderReplicaState<S>> {
+    pub async fn init(self, ctx: &GlobalContext<FileReplica>) -> Result<LeaderReplicaState<S>> {
+        let mut state = self.0;
+        if let Some(dedup) = &state.replica.deduplication {
+            debug!(?state.replica.deduplication, "init leader smartmodule context");
+            let dedup_filter = dedup_to_invocation(dedup);
+            let mut sm_ctx = SmartModuleContext::try_from(vec![dedup_filter], COMMON_VERSION, ctx)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("SmartModule context is required here"))?;
+            sm_ctx
+                .look_back(&state)
+                .await
+                .context("leader smartmodule context lookback failed")?;
+            state.sm_ctx = Some(Arc::new(RwLock::new(sm_ctx)));
+        };
+        Ok(state)
     }
 }
 
@@ -674,14 +725,12 @@ mod test_leader {
 
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
     use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo, ReplicaSlice};
-    use fluvio_protocol::record::{Offset};
+    use fluvio_protocol::record::Offset;
     use fluvio_protocol::link::ErrorCode;
     use fluvio_protocol::record::BatchRecords;
-    use fluvio_protocol::fixture::{create_recordset};
+    use fluvio_protocol::fixture::create_raw_recordset;
 
-    use crate::{
-        config::{SpuConfig},
-    };
+    use crate::config::SpuConfig;
     use crate::control_plane::StatusMessageSink;
 
     use super::*;
@@ -790,7 +839,8 @@ mod test_leader {
             StatusMessageSink::shared(),
         )
         .await
-        .expect("state");
+        .expect("state")
+        .0;
 
         assert_eq!(state.in_sync_replica, 1);
     }
@@ -812,11 +862,12 @@ mod test_leader {
             StatusMessageSink::shared(),
         )
         .await
-        .expect("state");
+        .expect("state")
+        .0;
 
         // write fake recordset to ensure leo = 10
         state
-            .write_record_set(&mut create_recordset(10), &notifier)
+            .write_record_set(&mut create_raw_recordset(10), &notifier)
             .await
             .expect("write");
         state.update_hw(2).await.expect("hw");
@@ -877,8 +928,8 @@ mod test_leader {
 
     #[fluvio_future::test]
     async fn test_update_leader_from_followers() {
-        use crate::core::{GlobalContext};
-        use fluvio_controlplane_metadata::spu::{SpuSpec};
+        use crate::core::GlobalContext;
+        use fluvio_controlplane_metadata::spu::SpuSpec;
 
         let leader_config = SpuConfig {
             id: 5000,
@@ -907,7 +958,8 @@ mod test_leader {
             StatusMessageSink::shared(),
         )
         .await
-        .expect("state");
+        .expect("state")
+        .0;
 
         // follower's offset should be init
         let follower_info = leader.followers_info().await;
@@ -919,7 +971,7 @@ mod test_leader {
 
         // write fake recordset to ensure leo = 10
         leader
-            .write_record_set(&mut create_recordset(10), notifier)
+            .write_record_set(&mut create_raw_recordset(10), notifier)
             .await
             .expect("write");
 
