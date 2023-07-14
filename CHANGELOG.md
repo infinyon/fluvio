@@ -1,6 +1,38 @@
 # Release Notes
 
-## Platform Version 0.10.13 - UNRELEASED
+## Platform Version 0.10.13 - 2023-07-13
+
+### Added
+
+* Log connector name and version on startup ([#3356](https://github.com/infinyon/fluvio/issues/3356))
+* Added topic config ([#3350](https://github.com/infinyon/fluvio/issues/3350))
+* Update syn to 2.0 on test crates ([#3366](https://github.com/infinyon/fluvio/issues/3366))
+* Support time bound in lookback engine ([#3369](https://github.com/infinyon/fluvio/issues/3369))
+* Added topic deduplication mechanism 1/2 ([#3392](https://github.com/infinyon/fluvio/issues/3392))
+
+### Changed
+
+* Update dep ([#3360](https://github.com/infinyon/fluvio/issues/3360))
+* Update fluvio install URL to use Hub ([#3373](https://github.com/infinyon/fluvio/issues/3373))
+* Update toolchain to new rust version ([#3394](https://github.com/infinyon/fluvio/issues/3394))
+
+### Fixed
+
+* Fix smdk publish with --push flag ([#3352](https://github.com/infinyon/fluvio/issues/3352))
+* Fix --push flag on smdk and cdk publish ([#3370](https://github.com/infinyon/fluvio/issues/3370))
+* Typo in chrono dep ([#3380](https://github.com/infinyon/fluvio/issues/3380))
+* Fix re-usable workflow for publishing smartmodules ([#3347](https://github.com/infinyon/fluvio/issues/3347))
+* Add `apiVersion` to connector template ([#3382](https://github.com/infinyon/fluvio/issues/3382))
+* Use explicit `Result` type from std on generated code ([#3393](https://github.com/infinyon/fluvio/issues/3393))
+* Ci, fix fluvio-run aarch-unknown-linux-musl release ([#3395](https://github.com/infinyon/fluvio/issues/3395))
+
+### Other
+
+* Migrate to OnceLock ([#3364](https://github.com/infinyon/fluvio/issues/3364))
+* `HUB_API_BPKG_AUTH` as part of the `fluvio-hub-util` ([#3363](https://github.com/infinyon/fluvio/issues/3363))
+* `Record` instance getters for timestamps ([#3387](https://github.com/infinyon/fluvio/issues/3387))
+* Copy keys-value output behavior from `fluvio consume` to `smdk test` ([#3391](https://github.com/infinyon/fluvio/issues/3391))
+
 
 ## Platform Version 0.10.12 - 2023-06-26
 
