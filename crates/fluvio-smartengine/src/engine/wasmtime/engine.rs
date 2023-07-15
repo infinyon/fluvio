@@ -79,9 +79,11 @@ impl SmartModuleChainBuilder {
             let look_back = SmartModuleLookBack::try_instantiate(&ctx, &mut state)?;
             let transform = create_transform(&ctx, config.initial_data, &mut state)?;
             let mut instance = SmartModuleInstance::new(ctx, init, look_back, transform);
+
             instance.call_init(&mut state)?;
             instances.push(instance);
         }
+
         Ok(SmartModuleChainInstance {
             store: state,
             instances,
@@ -186,20 +188,25 @@ impl SmartModuleChainInstance {
         F: Fn(Lookback) -> R,
     {
         debug!("look_back on chain with {} instances", self.instances.len());
+
         for instance in self.instances.iter_mut() {
             if let Some(lookback) = instance.lookback() {
                 debug!("look_back on instance");
                 let records: Vec<Record> = read_fn(lookback).await?;
                 let input: SmartModuleInput = SmartModuleInput::try_from(records)?;
+
                 metrics.add_bytes_in(input.raw_bytes().len() as u64);
                 self.store.top_up_fuel();
+
                 let result = instance.call_look_back(input, &mut self.store);
                 let fuel_used = self.store.get_used_fuel();
+
                 debug!(fuel_used, "fuel used");
                 metrics.add_fuel_used(fuel_used);
                 result?;
             }
         }
+
         Ok(())
     }
 }
@@ -225,8 +232,9 @@ mod chaining_test {
 
     use std::convert::TryFrom;
 
+    use fluvio_protocol::record::Record;
     use fluvio_protocol::link::smartmodule::SmartModuleLookbackRuntimeError;
-    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
+    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput};
 
     use crate::engine::config::Lookback;
     use crate::engine::error::EngineError;

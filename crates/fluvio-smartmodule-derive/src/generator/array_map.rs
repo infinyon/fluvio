@@ -18,12 +18,14 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
         ident("array_map"),
         user_code,
         quote! {
-
             for record in records.into_iter() {
-
+                use fluvio_smartmodule::SmartModuleRecord;
                 use fluvio_smartmodule::dataplane::record::RecordKey;
 
+                let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                 let result = #function_call;
+                let record = record.into_inner();
+
                 match result {
                     Ok(output_records) => {
                         for (output_key, output_value) in output_records {
@@ -44,7 +46,6 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     }
                 }
             }
-
         },
     )
 }

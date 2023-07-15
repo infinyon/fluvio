@@ -3,12 +3,13 @@ use std::{collections::BTreeMap, path::PathBuf};
 
 use std::fmt::Debug;
 
-use bytes::Bytes;
-use clap::Parser;
 use anyhow::{Result, Context, anyhow};
+use bytes::Bytes;
+use cargo_builder::package::PackageInfo;
+use clap::Parser;
+use chrono::Utc;
 use tracing::debug;
 
-use cargo_builder::package::PackageInfo;
 use fluvio::FluvioConfig;
 use fluvio_future::task::run_block_on;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
@@ -156,8 +157,12 @@ impl TestCmd {
         let metrics = SmartModuleChainMetrics::default();
 
         let test_records: Vec<Record> = test_data.into();
+        let mut sm_input =
+            SmartModuleInput::try_from_records(test_records, DEFAULT_SMARTENGINE_VERSION)?;
 
-        let output = chain.process(SmartModuleInput::try_from(test_records)?, &metrics)?;
+        sm_input.set_base_timestamp(Utc::now().timestamp_millis());
+
+        let output = chain.process(sm_input, &metrics)?;
 
         if self.verbose {
             println!("{:?} records outputed", output.successes.len());

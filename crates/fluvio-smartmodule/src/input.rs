@@ -3,10 +3,13 @@ use std::{collections::BTreeMap, fmt::Display};
 use std::fmt;
 use std::io::Cursor;
 
-use fluvio_protocol::record::Offset;
-use fluvio_protocol::{Encoder, Decoder, record::Record};
+use fluvio_protocol::record::{Offset, Record};
+use fluvio_protocol::{Decoder, Encoder, Version};
 
-pub const SMARTMODULE_LOOKBACK_WITH_AGE: i16 = 21;
+/// SmartModule Version with support for Lookback with Age and Timestamps,
+/// LTA is the acronym for Lookback, Timestamps, and Age.
+/// This version is used for encoding and decoding [`SmartModuleInput`]
+pub const SMARTMODULE_LTA_VERSION: Version = 21;
 
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleExtraParams {
@@ -82,7 +85,7 @@ pub struct SmartModuleInput {
     /// This is deprecrated, extra parameters should not be passed, they will be removed in the future
     #[deprecated]
     params: SmartModuleExtraParams,
-    #[fluvio(min_version = 16)]
+    #[fluvio(min_version = 16, max_version = 21)]
     join_record: Vec<u8>,
     /// The base timestamp of this batch of records
     #[fluvio(min_version = 21)]
@@ -107,7 +110,7 @@ impl SmartModuleInput {
         self.base_offset = base_offset;
     }
 
-    pub fn base_timestamp(&self) -> Offset {
+    pub fn base_timestamp(&self) -> i64 {
         self.base_timestamp
     }
 
@@ -130,9 +133,11 @@ impl SmartModuleInput {
 
 impl TryFrom<Vec<Record>> for SmartModuleInput {
     type Error = std::io::Error;
+
     fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
         let mut raw_bytes = Vec::new();
-        records.encode(&mut raw_bytes, SMARTMODULE_LOOKBACK_WITH_AGE)?;
+
+        records.encode(&mut raw_bytes, SMARTMODULE_LTA_VERSION)?;
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
@@ -146,7 +151,7 @@ impl TryInto<Vec<Record>> for SmartModuleInput {
     fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
         Decoder::decode_from(
             &mut Cursor::new(&mut self.raw_bytes),
-            SMARTMODULE_LOOKBACK_WITH_AGE,
+            SMARTMODULE_LTA_VERSION,
         )
     }
 }
@@ -155,8 +160,9 @@ impl Display for SmartModuleInput {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "SmartModuleInput {{ base_offset: {:?}, record_data: {:?}, join_data: {:#?} }}",
+            "SmartModuleInput {{ base_offset: {:?}, base_timestamp: {:?}, record_data: {:?}, join_data: {:#?} }}",
             self.base_offset,
+            self.base_timestamp,
             self.raw_bytes.len(),
             self.join_record.len()
         )

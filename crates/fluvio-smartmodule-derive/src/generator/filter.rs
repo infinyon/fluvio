@@ -19,8 +19,12 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn) -> TokenStream {
         user_code,
         quote! {
             for mut record in records.into_iter() {
+                use fluvio_smartmodule::SmartModuleRecord;
 
+                let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                 let result = #function_call;
+                let record = record.into_inner();
+
                 match result {
                     Ok(value) => {
                         if value {

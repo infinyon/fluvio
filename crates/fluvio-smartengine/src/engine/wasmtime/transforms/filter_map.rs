@@ -1,11 +1,10 @@
 #[cfg(test)]
 mod test {
-
     use std::{convert::TryFrom};
 
+    use fluvio_protocol::record::Record;
     use fluvio_smartmodule::{
         dataplane::smartmodule::{SmartModuleInput},
-        Record,
     };
 
     use crate::engine::{

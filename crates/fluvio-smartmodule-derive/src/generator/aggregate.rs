@@ -1,17 +1,16 @@
 use quote::quote;
 use proc_macro2::TokenStream;
+
 use crate::SmartModuleFn;
 
 pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
-
     let function_call = quote!(
         super:: #user_fn(acc_data, &record)
     );
 
     quote! {
-
         #[allow(dead_code)]
         #user_code
 
@@ -22,8 +21,9 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
             pub unsafe fn aggregate(ptr: &mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
                     SmartModuleAggregateInput, SmartModuleTransformErrorStatus,
-                    SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput,SmartModuleAggregateOutput
+                    SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput, SmartModuleAggregateOutput
                 };
+                use fluvio_smartmodule::SmartModuleRecord;
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
 
@@ -39,10 +39,11 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 }
 
                 let mut accumulator = smartmodule_input.accumulator;
-
                 let base_offset = smartmodule_input.base.base_offset();
+                let base_timestamp = smartmodule_input.base.base_timestamp();
                 let records_input = smartmodule_input.base.into_raw_bytes();
                 let mut records: Vec<Record> = vec![];
+
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
                     return SmartModuleTransformErrorStatus::DecodingRecords as i32;
                 };
@@ -56,9 +57,11 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     accumulator: accumulator.clone(),
                 };
 
-                for mut record in records.into_iter() {
+                for record in records.into_iter() {
                     let acc_data = RecordData::from(accumulator);
+                    let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                     let result = #function_call;
+                    let mut record = record.into_inner();
 
                     match result {
                         Ok(value) => {

@@ -36,12 +36,13 @@ pub(crate) fn generate_transform(
                 }
 
                 let base_offset = smartmodule_input.base_offset();
+                let base_timestamp = smartmodule_input.base_timestamp();
                 let records_input = smartmodule_input.into_raw_bytes();
                 let mut records: Vec<Record> = vec![];
+
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
                     return SmartModuleTransformErrorStatus::DecodingRecords as i32;
                 };
-
 
                 // PROCESSING
                 let mut output = SmartModuleOutput {

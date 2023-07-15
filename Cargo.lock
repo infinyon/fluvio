@@ -2951,7 +2951,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6673,6 +6673,7 @@ dependencies = [
  "bytes 1.4.0",
  "cargo-builder",
  "cargo-generate",
+ "chrono",
  "clap",
  "dirs 5.0.1",
  "enum-display",

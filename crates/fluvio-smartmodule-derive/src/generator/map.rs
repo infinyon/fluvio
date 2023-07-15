@@ -9,7 +9,6 @@ use super::transform::generate_transform;
 pub fn generate_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
-
     let function_call = quote!(
         super:: #user_fn(&record)
     );
@@ -19,7 +18,12 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
         user_code,
         quote! {
             for mut record in records.into_iter() {
+                use fluvio_smartmodule::SmartModuleRecord;
+
+                let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                 let result = #function_call;
+                let mut record = record.into_inner();
+
                 match result {
                     Ok((maybe_key, value)) => {
                         record.key = maybe_key;

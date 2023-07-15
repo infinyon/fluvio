@@ -3,10 +3,8 @@ mod test {
 
     use std::{convert::TryFrom};
 
-    use fluvio_smartmodule::{
-        dataplane::smartmodule::{SmartModuleInput},
-        Record,
-    };
+    use fluvio_protocol::record::Record;
+    use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
     use crate::engine::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
