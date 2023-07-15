@@ -836,7 +836,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7b2f627381dc7523340c606559dddf6083cb2e6134368381da5778638f906d8"
 dependencies = [
  "anyhow",
- "clap 4.2.7",
+ "clap",
  "console",
  "dialoguer",
  "env_logger",
@@ -945,7 +945,7 @@ dependencies = [
  "anyhow",
  "cargo-builder",
  "cargo-generate",
- "clap 4.2.7",
+ "clap",
  "comfy-table",
  "current_platform",
  "fluvio",
@@ -972,7 +972,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "check-crate-version"
 version = "0.0.0"
 dependencies = [
- "clap 4.2.7",
+ "clap",
  "flate2",
  "reqwest",
  "semver 1.0.17",
@@ -1048,18 +1048,6 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
-dependencies = [
- "bitflags 1.3.2",
- "clap_lex 0.2.4",
- "indexmap 1.9.3",
- "textwrap",
-]
-
-[[package]]
-name = "clap"
 version = "4.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34d21f9bf1b425d2968943631ec91202fe5e837264063503708b83013f8fc938"
@@ -1077,7 +1065,7 @@ checksum = "914c8c79fb560f238ef6429439a30023c862f7a28e688c58f7203f12b29970bd"
 dependencies = [
  "anstyle",
  "bitflags 1.3.2",
- "clap_lex 0.4.1",
+ "clap_lex",
  "strsim",
  "terminal_size",
 ]
@@ -1088,7 +1076,7 @@ version = "4.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fc443334c81a804575546c5a8a79b4913b50e28d69232903604cada1de817ce"
 dependencies = [
- "clap 4.2.7",
+ "clap",
 ]
 
 [[package]]
@@ -1101,15 +1089,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.25",
-]
-
-[[package]]
-name = "clap_lex"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
-dependencies = [
- "os_str_bytes",
 ]
 
 [[package]]
@@ -1496,19 +1475,19 @@ dependencies = [
 
 [[package]]
 name = "criterion"
-version = "0.4.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7c76e09c1aae2bc52b3d2f29e13c6572553b30c4aa1b8a49fd70de6412654cb"
+checksum = "f2b12d017a929603d80db1831cd3a24082f8137ce19c69e6447f54f5fc8d692f"
 dependencies = [
  "anes",
- "atty",
  "cast",
  "ciborium",
- "clap 3.2.25",
+ "clap",
  "criterion-plot",
+ "is-terminal",
  "itertools",
- "lazy_static",
  "num-traits",
+ "once_cell",
  "oorandom",
  "plotters",
  "rayon",
@@ -2375,7 +2354,7 @@ dependencies = [
  "async-channel",
  "bincode",
  "chrono",
- "clap 4.2.7",
+ "clap",
  "derive_builder",
  "fluvio",
  "fluvio-cli-common",
@@ -2397,7 +2376,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "cfg-if",
- "clap 4.2.7",
+ "clap",
  "dirs 5.0.1",
  "fluvio-types",
  "semver 1.0.17",
@@ -2414,7 +2393,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "cfg-if",
- "clap 4.2.7",
+ "clap",
  "colored",
  "dirs 5.0.1",
  "fluvio-channel",
@@ -2436,7 +2415,7 @@ dependencies = [
  "async-trait",
  "atty",
  "bytesize",
- "clap 4.2.7",
+ "clap",
  "clap_complete",
  "colored",
  "comfy-table",
@@ -2519,7 +2498,7 @@ dependencies = [
  "async-trait",
  "bytesize",
  "chrono",
- "clap 4.2.7",
+ "clap",
  "color-eyre",
  "colored",
  "comfy-table",
@@ -2690,7 +2669,7 @@ version = "0.12.2"
 dependencies = [
  "anyhow",
  "async-trait",
- "clap 4.2.7",
+ "clap",
  "comfy-table",
  "fluvio",
  "fluvio-package-index",
@@ -2851,7 +2830,7 @@ dependencies = [
 name = "fluvio-run"
 version = "0.0.0"
 dependencies = [
- "clap 4.2.7",
+ "clap",
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-sc",
@@ -2873,7 +2852,7 @@ dependencies = [
  "async-trait",
  "base64 0.21.2",
  "cfg-if",
- "clap 4.2.7",
+ "clap",
  "event-listener",
  "fluvio-auth",
  "fluvio-controlplane",
@@ -3019,7 +2998,7 @@ dependencies = [
  "bytes 1.4.0",
  "cfg-if",
  "chrono",
- "clap 4.2.7",
+ "clap",
  "derive_builder",
  "event-listener",
  "flate2",
@@ -3082,7 +3061,7 @@ dependencies = [
  "async-trait",
  "blocking",
  "bytes 1.4.0",
- "clap 4.2.7",
+ "clap",
  "derive_builder",
  "fluvio-controlplane-metadata",
  "fluvio-future",
@@ -3146,7 +3125,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "bytes 1.4.0",
- "clap 4.2.7",
+ "clap",
  "comfy-table",
  "crc",
  "crossbeam-channel",
@@ -3195,7 +3174,7 @@ dependencies = [
 name = "fluvio-test-derive"
 version = "0.0.0"
 dependencies = [
- "clap 4.2.7",
+ "clap",
  "crossbeam-channel",
  "fluvio",
  "fluvio-future",
@@ -3230,7 +3209,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bytes 1.4.0",
- "clap 4.2.7",
+ "clap",
  "comfy-table",
  "dyn-clone",
  "fluvio",
@@ -5294,12 +5273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "os_str_bytes"
-version = "6.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d5d9eb14b174ee9aa2ef96dc2b94637a2d4b6e7cb873c7e171f0c20c6cf3eac"
-
-[[package]]
 name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6700,7 +6673,7 @@ dependencies = [
  "bytes 1.4.0",
  "cargo-builder",
  "cargo-generate",
- "clap 4.2.7",
+ "clap",
  "dirs 5.0.1",
  "enum-display",
  "fluvio",
@@ -7054,12 +7027,6 @@ name = "termtree"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
-
-[[package]]
-name = "textwrap"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d"
 
 [[package]]
 name = "thiserror"

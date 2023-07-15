@@ -23,7 +23,7 @@ rand = { workspace = true }
 
 
 [dev-dependencies]
-trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
+trybuild = { workspace = true }
 fluvio = { workspace = true  }
 tokio = { workspace = true,  features = ["macros"] }
 fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }

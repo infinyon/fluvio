@@ -75,6 +75,7 @@ cargo_toml = "0.15"
 cfg-if = "1.0.0"
 chrono = { version = "0.4.23", default-features = false }
 clap = { version = "4.0.10", default-features = false }
+criterion = "0.5.0"
 color-eyre = { version = "0.6.0", default-features = false }
 colored = "2.0.0"
 crc32c = { version = "0.6"}
@@ -133,6 +134,7 @@ fluvio-helm = { version = "0.4.1" }
 fluvio-command = { version = "0.2.0" }
 flv-tls-proxy = { version = "0.7" }
 fluvio_ws_stream_wasm = "0.7.0"
+trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
 
 # internal fluvio dep
 fluvio = { version = "0.19.0", path = "crates/fluvio" }
