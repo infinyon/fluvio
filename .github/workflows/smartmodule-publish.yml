@@ -38,8 +38,8 @@ jobs:
         run: fluvio install smdk
       - name: Fluvio Login
         run: |
-          fluvio cloud login --email ${{ secrets.ORG_HUB_SA_NAME }} \
-          --password ${{ !inputs.target_prod && secrets.ORG_HUB_SA_PASSWD_DEV || secrets.ORG_HUB_SA_PASSWD_PROD }} \
+          fluvio cloud login --email "${{ secrets.ORG_HUB_SA_NAME }}" \
+          --password "${{ !inputs.target_prod && secrets.ORG_HUB_SA_PASSWD_DEV || secrets.ORG_HUB_SA_PASSWD_PROD }}" \
           ${{ !inputs.target_prod && '--remote' || '' }} ${{ !inputs.target_prod && secrets.ORG_CLOUD_URL_DEV || '' }}
       - uses: actions/download-artifact@v3
         id: download-file
