@@ -29,6 +29,10 @@ impl SmartModuleInputBatch for FileBatch {
         self.batch.base_offset
     }
 
+    fn base_timestamp(&self) -> i64 {
+        self.batch.get_base_timestamp()
+    }
+
     fn offset_delta(&self) -> i32 {
         self.batch.header.last_offset_delta
     }

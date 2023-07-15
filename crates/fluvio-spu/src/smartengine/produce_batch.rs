@@ -1,8 +1,9 @@
 use std::io::{Error as IoError, ErrorKind};
+
 use fluvio_protocol::record::{Batch, RawRecords, Offset};
+use fluvio_compression::{Compression, CompressionError};
 
 use super::batch::SmartModuleInputBatch;
-use fluvio_compression::{Compression, CompressionError};
 
 #[derive(Debug)]
 pub struct ProduceBatch<'a> {
@@ -23,6 +24,10 @@ impl<'a> SmartModuleInputBatch for ProduceBatch<'a> {
 
     fn base_offset(&self) -> Offset {
         self.batch.base_offset
+    }
+
+    fn base_timestamp(&self) -> i64 {
+        self.batch.get_base_timestamp()
     }
 
     fn offset_delta(&self) -> i32 {

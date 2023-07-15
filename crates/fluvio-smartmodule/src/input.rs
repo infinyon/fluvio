@@ -84,13 +84,17 @@ pub struct SmartModuleInput {
     params: SmartModuleExtraParams,
     #[fluvio(min_version = 16)]
     join_record: Vec<u8>,
+    /// The base timestamp of this batch of records
+    #[fluvio(min_version = 21)]
+    base_timestamp: i64,
 }
 
 impl SmartModuleInput {
-    pub fn new(raw_bytes: Vec<u8>, base_offset: Offset) -> Self {
+    pub fn new(raw_bytes: Vec<u8>, base_offset: Offset, base_timestamp: i64) -> Self {
         Self {
             base_offset,
             raw_bytes,
+            base_timestamp,
             ..Default::default()
         }
     }
@@ -101,6 +105,14 @@ impl SmartModuleInput {
 
     pub fn set_base_offset(&mut self, base_offset: Offset) {
         self.base_offset = base_offset;
+    }
+
+    pub fn base_timestamp(&self) -> Offset {
+        self.base_timestamp
+    }
+
+    pub fn set_base_timestamp(&mut self, base_timestamp: i64) {
+        self.base_timestamp = base_timestamp;
     }
 
     pub fn raw_bytes(&self) -> &[u8] {
@@ -192,5 +204,18 @@ mod tests {
         assert_eq!(records_decoded[0].value.as_ref(), b"apple");
         assert_eq!(records_decoded[1].value.as_ref(), b"fruit");
         assert_eq!(records_decoded[2].value.as_ref(), b"banana");
+    }
+
+    #[test]
+    fn sets_the_provided_value_as_timestamp() {
+        let mut sm_input = SmartModuleInput::new(vec![0, 1, 2, 3], 0, 0);
+
+        assert_eq!(sm_input.base_timestamp, 0);
+        assert_eq!(sm_input.base_timestamp(), 0);
+
+        sm_input.set_base_timestamp(1234);
+
+        assert_eq!(sm_input.base_timestamp, 1234);
+        assert_eq!(sm_input.base_timestamp(), 1234);
     }
 }
