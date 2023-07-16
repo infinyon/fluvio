@@ -2938,7 +2938,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "criterion",
  "eyre",
