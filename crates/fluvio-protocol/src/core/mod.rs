@@ -4,6 +4,8 @@ mod encoder;
 mod varint;
 mod zerocopy;
 
+pub use fluvio_types::Timestamp;
+
 pub use self::bytebuf::ByteBuf;
 pub use self::decoder::Decoder;
 pub use self::decoder::DecoderVarInt;

@@ -13,6 +13,7 @@ use tracing::debug;
 use fluvio::FluvioConfig;
 use fluvio_future::task::run_block_on;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
+use fluvio_smartengine::DEFAULT_SMARTENGINE_VERSION;
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_smartengine::transformation::TransformationConfig;
 use fluvio_smartengine::{

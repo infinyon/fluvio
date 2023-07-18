@@ -7,7 +7,6 @@ use crate::util::ident;
 use super::transform::generate_transform;
 
 pub fn generate_filter_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
-    let user_code = &func.func;
     let user_fn = &func.name;
 
     let function_call = quote!(
@@ -16,25 +15,23 @@ pub fn generate_filter_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
 
     generate_transform(
         ident("filter_map"),
-        user_code,
+        func,
         quote! {
-                for record in records.into_iter() {
+                for mut record in records.into_iter() {
                     use fluvio_smartmodule::SmartModuleRecord;
 
-                    let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                     let result = #function_call;
-                    let mut record = record.into_inner();
 
                     match result {
                         Ok(Some((maybe_key, value))) => {
                             record.key = maybe_key;
                             record.value = value;
-                            output.successes.push(record);
+                            output.successes.push(record.into());
                         }
                         Ok(None) => {},
                         Err(err) => {
                             let error = SmartModuleTransformRuntimeError::new(
-                                &record,
+                                &record.into(),
                                 base_offset,
                                 SmartModuleKind::FilterMap,
                                 err,

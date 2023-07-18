@@ -1,11 +1,30 @@
 use quote::quote;
 use proc_macro2::TokenStream;
 
-use crate::SmartModuleFn;
+use crate::ast::{SmartModuleFn, RecordKind};
 
-pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
-    let user_code = &func.func;
-    let user_fn = &func.name;
+pub fn generate_aggregate_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
+    let user_code = &sm_func.func;
+    let records_code = match sm_func.record_kind {
+        RecordKind::LegacyRecord => quote! {
+            let records: Vec<Record> = match smartmodule_input.base.try_into_records(version) {
+                Ok(records) => records,
+                Err(_) => {
+                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
+                }
+            };
+        },
+        RecordKind::SmartModuleRecord => quote! {
+            let records: Vec<SmartModuleRecord> = match smartmodule_input.base.try_into_smartmodule_records(version) {
+                Ok(records) => records,
+                Err(_) => {
+                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
+                }
+            };
+        },
+    };
+
+    let user_fn = &sm_func.name;
     let function_call = quote!(
         super:: #user_fn(acc_data, &record)
     );
@@ -41,12 +60,8 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 let mut accumulator = smartmodule_input.accumulator;
                 let base_offset = smartmodule_input.base.base_offset();
                 let base_timestamp = smartmodule_input.base.base_timestamp();
-                let records_input = smartmodule_input.base.into_raw_bytes();
-                let mut records: Vec<Record> = vec![];
 
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
-                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
-                };
+                #records_code
 
                 // PROCESSING
                 let mut output = SmartModuleAggregateOutput {
@@ -57,22 +72,20 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                     accumulator: accumulator.clone(),
                 };
 
-                for record in records.into_iter() {
+                for mut record in records.into_iter() {
                     let acc_data = RecordData::from(accumulator);
-                    let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                     let result = #function_call;
-                    let mut record = record.into_inner();
 
                     match result {
                         Ok(value) => {
                             accumulator = Vec::from(value.as_ref());
                             output.accumulator = accumulator.clone();
                             record.value = RecordData::from(output.accumulator.clone());
-                            output.base.successes.push(record);
+                            output.base.successes.push(record.into());
                         }
                         Err(err) => {
                             let error = SmartModuleTransformRuntimeError::new(
-                                &record,
+                                &record.into(),
                                 base_offset,
                                 SmartModuleKind::Aggregate,
                                 err,

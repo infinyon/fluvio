@@ -57,6 +57,7 @@ pub(crate) fn process_batch<R: SmartModuleInputBatch>(
         debug!(
             current_batch_offset = input_batch.base_offset(),
             current_batch_offset_delta = input_batch.offset_delta(),
+            smartmodule_base_timestamp = input_batch.base_timestamp(),
             smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
             smartmodule_base_offset = smartmodule_batch.base_offset,
             smartmodule_records = smartmodule_batch.records().len(),

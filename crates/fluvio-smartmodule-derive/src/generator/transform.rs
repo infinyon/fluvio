@@ -1,12 +1,34 @@
 use quote::quote;
 use proc_macro2::TokenStream;
-use syn::{ItemFn, Ident};
+use syn::Ident;
+
+use crate::ast::{SmartModuleFn, RecordKind};
 
 pub(crate) fn generate_transform(
     name: Ident,
-    user_code: &ItemFn,
+    sm_func: &SmartModuleFn,
     transform: TokenStream,
 ) -> TokenStream {
+    let user_code = &sm_func.func;
+    let records_code = match sm_func.record_kind {
+        RecordKind::LegacyRecord => quote! {
+            let records: Vec<Record> = match smartmodule_input.try_into_records(version) {
+                Ok(records) => records,
+                Err(_) => {
+                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
+                }
+            };
+        },
+        RecordKind::SmartModuleRecord => quote! {
+            let records: Vec<SmartModuleRecord> = match smartmodule_input.try_into_smartmodule_records(version) {
+                Ok(records) => records,
+                Err(_) => {
+                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
+                }
+            };
+        },
+    };
+
     quote! {
 
         #[allow(dead_code)]
@@ -19,7 +41,7 @@ pub(crate) fn generate_transform(
             pub unsafe fn #name(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
                     SmartModuleInput, SmartModuleTransformErrorStatus,
-                    SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput,
+                    SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput, SmartModuleRecord
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
@@ -37,12 +59,8 @@ pub(crate) fn generate_transform(
 
                 let base_offset = smartmodule_input.base_offset();
                 let base_timestamp = smartmodule_input.base_timestamp();
-                let records_input = smartmodule_input.into_raw_bytes();
-                let mut records: Vec<Record> = vec![];
 
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
-                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
-                };
+                #records_code
 
                 // PROCESSING
                 let mut output = SmartModuleOutput {

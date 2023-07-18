@@ -8,7 +8,6 @@ use super::transform::generate_transform;
 
 pub fn generate_filter_smartmodule(func: &SmartModuleFn) -> TokenStream {
     let user_fn = &func.name;
-    let user_code = func.func;
 
     let function_call = quote!(
         super:: #user_fn(&record)
@@ -16,24 +15,22 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn) -> TokenStream {
 
     generate_transform(
         ident("filter"),
-        user_code,
+        func,
         quote! {
             for mut record in records.into_iter() {
                 use fluvio_smartmodule::SmartModuleRecord;
 
-                let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                 let result = #function_call;
-                let record = record.into_inner();
 
                 match result {
                     Ok(value) => {
                         if value {
-                            output.successes.push(record);
+                            output.successes.push(record.into());
                         }
                     }
                     Err(err) => {
                         let error = SmartModuleTransformRuntimeError::new(
-                            &record,
+                            &record.into(),
                             base_offset,
                             SmartModuleKind::Filter,
                             err,

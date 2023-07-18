@@ -7,7 +7,6 @@ use crate::util::ident;
 use super::transform::generate_transform;
 
 pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
-    let user_code = &func.func;
     let user_fn = &func.name;
 
     let function_call = quote!(
@@ -16,27 +15,26 @@ pub fn generate_array_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
 
     generate_transform(
         ident("array_map"),
-        user_code,
+        func,
         quote! {
-            for record in records.into_iter() {
+            for mut record in records.into_iter() {
                 use fluvio_smartmodule::SmartModuleRecord;
-                use fluvio_smartmodule::dataplane::record::RecordKey;
 
-                let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                 let result = #function_call;
-                let record = record.into_inner();
 
                 match result {
                     Ok(output_records) => {
+                        use fluvio_smartmodule::dataplane::record::RecordKey;
+
                         for (output_key, output_value) in output_records {
                             let key = RecordKey::from_option(output_key);
                             let new_record = Record::new_key_value(key, output_value);
-                            output.successes.push(new_record);
+                            output.successes.push(new_record.into());
                         }
                     }
                     Err(err) => {
                         let error = SmartModuleTransformRuntimeError::new(
-                            &record,
+                            &record.into(),
                             base_offset,
                             SmartModuleKind::ArrayMap,
                             err,

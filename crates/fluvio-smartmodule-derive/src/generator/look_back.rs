@@ -48,9 +48,7 @@ pub fn generate_look_back_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 for record in records.into_iter() {
                     use fluvio_smartmodule::SmartModuleRecord;
 
-                    let record = SmartModuleRecord::new(record, base_offset, base_timestamp);
                     let result = super:: #user_fn(&record);
-                    let record = record.into_inner();
 
                     if let Err(err) = result {
                         let error = SmartModuleLookbackRuntimeError::new(

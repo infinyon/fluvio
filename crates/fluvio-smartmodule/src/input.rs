@@ -1,15 +1,16 @@
+use std::io::Cursor;
 use std::time::Duration;
 use std::{collections::BTreeMap, fmt::Display};
 use std::fmt;
-use std::io::Cursor;
-
 use fluvio_protocol::record::{Offset, Record};
 use fluvio_protocol::{Decoder, Encoder, Version};
+
+use crate::{SmartModuleRecord, Timestamp};
 
 /// SmartModule Version with support for Lookback with Age and Timestamps,
 /// LTA is the acronym for Lookback, Timestamps, and Age.
 /// This version is used for encoding and decoding [`SmartModuleInput`]
-pub const SMARTMODULE_LTA_VERSION: Version = 21;
+pub const SMARTMODULE_TIMESTAMPS_VERSION: Version = 22;
 
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleExtraParams {
@@ -84,16 +85,17 @@ pub struct SmartModuleInput {
     raw_bytes: Vec<u8>,
     /// This is deprecrated, extra parameters should not be passed, they will be removed in the future
     #[deprecated]
+    #[fluvio(max_version = 22)]
     params: SmartModuleExtraParams,
-    #[fluvio(min_version = 16, max_version = 21)]
+    #[fluvio(min_version = 16, max_version = 22)]
     join_record: Vec<u8>,
     /// The base timestamp of this batch of records
-    #[fluvio(min_version = 21)]
-    base_timestamp: i64,
+    #[fluvio(min_version = 22)]
+    base_timestamp: Timestamp,
 }
 
 impl SmartModuleInput {
-    pub fn new(raw_bytes: Vec<u8>, base_offset: Offset, base_timestamp: i64) -> Self {
+    pub fn new(raw_bytes: Vec<u8>, base_offset: Offset, base_timestamp: Timestamp) -> Self {
         Self {
             base_offset,
             raw_bytes,
@@ -110,11 +112,11 @@ impl SmartModuleInput {
         self.base_offset = base_offset;
     }
 
-    pub fn base_timestamp(&self) -> i64 {
+    pub fn base_timestamp(&self) -> Timestamp {
         self.base_timestamp
     }
 
-    pub fn set_base_timestamp(&mut self, base_timestamp: i64) {
+    pub fn set_base_timestamp(&mut self, base_timestamp: Timestamp) {
         self.base_timestamp = base_timestamp;
     }
 
@@ -129,30 +131,59 @@ impl SmartModuleInput {
     pub fn parts(self) -> (Vec<u8>, Vec<u8>) {
         (self.raw_bytes, self.join_record)
     }
-}
 
-impl TryFrom<Vec<Record>> for SmartModuleInput {
-    type Error = std::io::Error;
+    /// Creates an instance of [`Record`] from the raw bytes and ignoring the
+    /// base offset and timestamp. This method is used to keep backwards
+    /// compatibility with SmartModule engines previous to Version `21`.
+    #[deprecated = "use SmartModuleRecord instead"]
+    pub fn try_into_records(mut self, version: Version) -> Result<Vec<Record>, std::io::Error> {
+        Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), version)
+    }
 
-    fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
+    /// Attempts to map the internally encoded records into a vector of
+    /// [`SmartModuleRecord`] by decoding the raw bytes and filling up the base
+    /// offset and timestamp fields.
+    pub fn try_into_smartmodule_records(
+        self,
+        version: Version,
+    ) -> Result<Vec<SmartModuleRecord>, std::io::Error> {
+        let base_offset = self.base_offset();
+        let base_timestamp = self.base_timestamp();
+        let records_input = self.into_raw_bytes();
+        let mut records: Vec<Record> = vec![];
+
+        Decoder::decode(
+            &mut records,
+            &mut Cursor::new(records_input.clone()),
+            version,
+        )?;
+
+        let records = records
+            .into_iter()
+            .map(|inner_record| SmartModuleRecord {
+                inner_record,
+                base_offset,
+                base_timestamp,
+            })
+            .collect();
+
+        Ok(records)
+    }
+
+    /// Attempts to map the [`Record`] vector and build a `SmartModuleInput`
+    /// instance from it.
+    pub fn try_from_records(
+        records: Vec<Record>,
+        version: Version,
+    ) -> Result<Self, std::io::Error> {
         let mut raw_bytes = Vec::new();
 
-        records.encode(&mut raw_bytes, SMARTMODULE_LTA_VERSION)?;
+        records.encode(&mut raw_bytes, version)?;
+
         Ok(SmartModuleInput {
             raw_bytes,
             ..Default::default()
         })
-    }
-}
-
-impl TryInto<Vec<Record>> for SmartModuleInput {
-    type Error = std::io::Error;
-
-    fn try_into(mut self) -> Result<Vec<Record>, Self::Error> {
-        Decoder::decode_from(
-            &mut Cursor::new(&mut self.raw_bytes),
-            SMARTMODULE_LTA_VERSION,
-        )
     }
 }
 
@@ -198,12 +229,14 @@ mod tests {
         ];
 
         //when
-        let sm_input: SmartModuleInput = records
-            .try_into()
-            .expect("records to input conversion failed");
+        #[allow(deprecated)]
+        let sm_input: SmartModuleInput =
+            SmartModuleInput::try_from_records(records, SMARTMODULE_TIMESTAMPS_VERSION)
+                .expect("records to input conversion failed");
 
+        #[allow(deprecated)]
         let records_decoded: Vec<Record> = sm_input
-            .try_into()
+            .try_into_records(SMARTMODULE_TIMESTAMPS_VERSION)
             .expect("input to records conversion failed");
 
         //then

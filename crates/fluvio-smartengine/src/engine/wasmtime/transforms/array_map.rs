@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod test {
 
-    use std::{convert::TryFrom};
-
     use fluvio_protocol::record::Record;
     use fluvio_smartmodule::{
         dataplane::smartmodule::{SmartModuleInput},
@@ -12,6 +10,7 @@ mod test {
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, metrics::SmartModuleChainMetrics,
         wasmtime::transforms::simple_transform::ARRAY_MAP_FN_NAME,
     };
+    use crate::engine::config::DEFAULT_SMARTENGINE_VERSION;
 
     const SM_ARRAY_MAP: &str = "fluvio_smartmodule_array_map_array";
 
@@ -41,7 +40,11 @@ mod test {
 
         let input = vec![Record::new("[\"Apple\",\"Banana\",\"Cranberry\"]")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 3); // generate 3 records
         assert_eq!(output.successes[0].value.as_ref(), b"\"Apple\"");

@@ -2,7 +2,6 @@
 
 mod config;
 mod error;
-pub use error::EngineError;
 mod wasmtime;
 
 #[cfg(test)]
@@ -10,6 +9,7 @@ mod fixture;
 
 pub mod metrics;
 
+pub use error::EngineError;
 pub use config::{
     SmartModuleConfig, SmartModuleConfigBuilder, SmartModuleConfigBuilderError,
     SmartModuleInitialData, Lookback, DEFAULT_SMARTENGINE_VERSION,

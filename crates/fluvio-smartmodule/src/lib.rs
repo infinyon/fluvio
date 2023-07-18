@@ -4,9 +4,12 @@ mod input;
 mod output;
 mod error;
 
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
+
+use fluvio_protocol::core::Timestamp;
 
 pub use fluvio_smartmodule_derive::{smartmodule, SmartOpt};
+
 pub const ENCODING_ERROR: i32 = -1;
 
 pub use eyre::Error;
@@ -18,9 +21,9 @@ pub type Result<T> = eyre::Result<T>;
 #[cfg(feature = "smartmodule")]
 pub mod memory;
 
-pub use fluvio_protocol::record::{Record, RecordData};
+pub use fluvio_protocol::record::{Offset, Record, RecordData};
 
-pub use crate::input::SMARTMODULE_LTA_VERSION;
+pub use crate::input::SMARTMODULE_TIMESTAMPS_VERSION;
 
 /// remap to old data plane
 pub mod dataplane {
@@ -43,14 +46,15 @@ pub mod dataplane {
 }
 
 /// Wrapper on `Record` that provides access to the base offset and timestamp
+#[derive(Debug, Default, Clone)]
 pub struct SmartModuleRecord {
     inner_record: Record,
-    base_offset: i64,
-    base_timestamp: i64,
+    base_offset: Offset,
+    base_timestamp: Timestamp,
 }
 
 impl SmartModuleRecord {
-    pub fn new(inner_record: Record, base_offset: i64, base_timestamp: i64) -> Self {
+    pub fn new(inner_record: Record, base_offset: Offset, base_timestamp: Timestamp) -> Self {
         Self {
             inner_record,
             base_offset,
@@ -62,11 +66,11 @@ impl SmartModuleRecord {
         self.inner_record
     }
 
-    pub fn timestamp(&self) -> i64 {
+    pub fn timestamp(&self) -> Timestamp {
         self.base_timestamp + self.inner_record.timestamp_delta()
     }
 
-    pub fn offset(&self) -> i64 {
+    pub fn offset(&self) -> Offset {
         self.base_offset + self.inner_record.preamble.offset_delta()
     }
 
@@ -84,6 +88,12 @@ impl Deref for SmartModuleRecord {
 
     fn deref(&self) -> &Self::Target {
         &self.inner_record
+    }
+}
+
+impl DerefMut for SmartModuleRecord {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner_record
     }
 }
 

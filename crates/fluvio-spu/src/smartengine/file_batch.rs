@@ -29,7 +29,7 @@ impl SmartModuleInputBatch for FileBatch {
         self.batch.base_offset
     }
 
-    fn base_timestamp(&self) -> i64 {
+    fn base_timestamp(&self) -> Timestamp {
         self.batch.get_base_timestamp()
     }
 
@@ -45,13 +45,13 @@ impl SmartModuleInputBatch for FileBatch {
 /// Iterator that returns batch from file
 pub struct FileBatchIterator {
     fd: RawFd,
-    offset: i64,
+    offset: Offset,
     end: i64,
 }
 
 impl FileBatchIterator {
     #[allow(unused)]
-    pub fn new(fd: RawFd, offset: i64, len: i64) -> Self {
+    pub fn new(fd: RawFd, offset: Offset, len: i64) -> Self {
         Self {
             fd,
             offset,
