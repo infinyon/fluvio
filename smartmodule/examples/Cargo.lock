@@ -223,7 +223,7 @@ dependencies = [
  "eyre",
  "fluvio-compression 0.3.0",
  "fluvio-protocol-derive 0.5.3",
- "fluvio-types 0.4.2",
+ "fluvio-types 0.4.3",
  "flv-util",
  "once_cell",
  "semver",
@@ -283,9 +283,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-aggregate-with-timestamp"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "fluvio-smartmodule 0.7.2",
+]
+
+[[package]]
 name = "fluvio-smartmodule-array-map-array"
 version = "0.0.0"
 dependencies = [
+ "fluvio-smartmodule 0.7.2",
+ "serde_json",
+]
+
+[[package]]
+name = "fluvio-smartmodule-array-map-array-with-timestamp"
+version = "0.0.0"
+dependencies = [
+ "chrono",
  "fluvio-smartmodule 0.7.2",
  "serde_json",
 ]
@@ -347,6 +364,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartmodule-filter-lookback-with-timestamps"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.7.2",
+]
+
+[[package]]
 name = "fluvio-smartmodule-filter-map"
 version = "0.0.0"
 dependencies = [
@@ -387,7 +411,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "thiserror",
  "tracing",
