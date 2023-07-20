@@ -1,8 +1,7 @@
 pub use cmd::HubCmd;
 
 mod connector;
-mod download;
-mod list;
+mod smartmodule;
 
 mod cmd {
     use std::sync::Arc;
@@ -19,14 +18,15 @@ mod cmd {
     use crate::common::output::Terminal;
 
     use super::connector::ConnectorHubSubCmd;
-    use super::download::DownloadHubOpt;
-    use super::list::ListHubOpt;
+    use super::smartmodule::SmartModuleHubSubCmd;
 
     #[derive(Debug, Parser)]
     pub enum HubCmd {
-        Download(DownloadHubOpt),
-        List(ListHubOpt),
+        #[clap(name = "smartmodule", visible_alias = "sm")]
+        #[command(subcommand)]
+        SmartModule(SmartModuleHubSubCmd),
 
+        #[clap(visible_alias = "conn")]
         #[command(subcommand)]
         Connector(ConnectorHubSubCmd),
     }
@@ -36,16 +36,14 @@ mod cmd {
         async fn process<O: Terminal + Send + Sync + Debug>(
             self,
             out: Arc<O>,
-            target: ClusterTarget,
+            _target: ClusterTarget,
         ) -> Result<()> {
             match self {
-                Self::Download(opt) => {
-                    opt.process(out, target).await?;
-                }
-                Self::List(opt) => {
-                    opt.process(out).await?;
-                }
                 Self::Connector(subcmd) => {
+                    subcmd.process(out).await?;
+                }
+
+                Self::SmartModule(subcmd) => {
                     subcmd.process(out).await?;
                 }
             }

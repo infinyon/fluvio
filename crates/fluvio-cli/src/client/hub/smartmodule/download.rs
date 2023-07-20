@@ -22,7 +22,7 @@ use crate::client::hub::get_hub_access;
 
 /// Download a SmartModule from the hub
 #[derive(Debug, Parser)]
-pub struct DownloadHubOpt {
+pub struct SmartModuleDownloadHubOpts {
     /// SmartModule name: e.g. infinyon/jolt@v0.0.1
     #[arg(value_name = "name", required = true)]
     pkgname: String,
@@ -43,7 +43,7 @@ pub struct DownloadHubOpt {
 }
 
 #[async_trait]
-impl ClientCmd for DownloadHubOpt {
+impl ClientCmd for SmartModuleDownloadHubOpts {
     async fn process_client<O: Terminal + Debug + Send + Sync>(
         self,
         _out: Arc<O>,
