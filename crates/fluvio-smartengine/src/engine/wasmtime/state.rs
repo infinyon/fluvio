@@ -6,29 +6,31 @@ use wasmtime::{
     StoreContextMut,
 };
 
+use super::limiter::StoreResourceLimiter;
+
 // DO NOT INCREASE THIS VALUE HIGHER THAN i64::MAX / 2.
 // WASMTIME keeps fuel as i64 and has some strange behavior with `add_fuel` if trying to top fuel
 // up to a values close to i64:MAX
 const DEFAULT_FUEL: u64 = i64::MAX as u64 / 2;
 
-#[cfg(not(feature = "wasi"))]
-pub type WasmState = WasmStore<()>;
-
-#[cfg(feature = "wasi")]
-pub type WasmState = WasmStore<wasmtime_wasi::WasiCtx>;
-
 #[derive(Debug)]
-pub struct WasmStore<T>(Store<T>);
+pub struct WasmState(Store<Context>);
 
-impl<T> AsContext for WasmStore<T> {
-    type Data = T;
+pub struct Context {
+    limiter: StoreResourceLimiter,
+    #[cfg(feature = "wasi")]
+    wasi_ctx: wasmtime_wasi::WasiCtx,
+}
+
+impl AsContext for WasmState {
+    type Data = Context;
 
     fn as_context(&self) -> StoreContext<'_, Self::Data> {
         self.0.as_context()
     }
 }
 
-impl<T> AsContextMut for WasmStore<T> {
+impl AsContextMut for WasmState {
     fn as_context_mut(&mut self) -> StoreContextMut<'_, Self::Data> {
         self.0.as_context_mut()
     }
@@ -54,9 +56,10 @@ impl WasmState {
 }
 
 #[cfg(not(feature = "wasi"))]
-impl WasmStore<()> {
-    pub(crate) fn new(engine: &Engine) -> Self {
-        let mut s = Self(Store::new(engine, ()));
+impl WasmState {
+    pub(crate) fn new(engine: &Engine, limiter: StoreResourceLimiter) -> Self {
+        let mut s = Self(Store::new(engine, Context { limiter }));
+        s.0.limiter(|inner| &mut inner.limiter);
         s.top_up_fuel();
         s
     }
@@ -74,13 +77,14 @@ impl WasmStore<()> {
 }
 
 #[cfg(feature = "wasi")]
-impl WasmStore<wasmtime_wasi::WasiCtx> {
-    pub(crate) fn new(engine: &Engine) -> Self {
-        let wasi = wasmtime_wasi::WasiCtxBuilder::new()
+impl WasmState {
+    pub(crate) fn new(engine: &Engine, limiter: StoreResourceLimiter) -> Self {
+        let wasi_ctx = wasmtime_wasi::WasiCtxBuilder::new()
             .inherit_stderr()
             .inherit_stdout()
             .build();
-        let mut s = Self(Store::new(engine, wasi));
+        let mut s = Self(Store::new(engine, Context { limiter, wasi_ctx }));
+        s.0.limiter(|inner| &mut inner.limiter);
         s.top_up_fuel();
         s
     }
@@ -91,7 +95,7 @@ impl WasmStore<wasmtime_wasi::WasiCtx> {
         host_fn: impl IntoFunc<<Self as AsContext>::Data, Params, Args>,
     ) -> Result<Instance, Error> {
         let mut linker = wasmtime::Linker::new(module.engine());
-        wasmtime_wasi::add_to_linker(&mut linker, |c| c)?;
+        wasmtime_wasi::add_to_linker(&mut linker, |c: &mut Context| &mut c.wasi_ctx)?;
         let copy_records_fn_import = module
             .imports()
             .find(|import| import.name().eq("copy_records"))
@@ -102,5 +106,13 @@ impl WasmStore<wasmtime_wasi::WasiCtx> {
             host_fn,
         )?;
         linker.instantiate(self, module)
+    }
+}
+
+impl std::fmt::Debug for Context {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Context")
+            .field("limiter", &self.limiter)
+            .finish()
     }
 }

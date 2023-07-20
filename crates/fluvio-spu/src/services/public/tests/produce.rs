@@ -29,7 +29,9 @@ use crate::{
     core::GlobalContext,
     services::public::{
         create_public_server,
-        tests::{create_filter_records, vec_to_raw_batch, load_wasm_module},
+        tests::{
+            create_filter_records, vec_to_raw_batch, load_wasm_module, create_filter_raw_records,
+        },
     },
     replication::leader::LeaderReplicaState,
     smartengine::file_batch::FileBatchIterator,
@@ -825,7 +827,7 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
         assert_eq!(produce_response.responses[0].partitions.len(), 1);
         assert_eq!(
             produce_response.responses[0].partitions[0].error_code,
-            ErrorCode::SmartModuleLookBackError("error in look_back chain: invalid digit found in string\n\nSmartModule Lookback Error: \n    Offset: 0\n    Key: NULL\n    Value: wrong last record".to_string())
+            ErrorCode::SmartModuleLookBackError("invalid digit found in string\n\nSmartModule Lookback Error: \n    Offset: 0\n    Key: NULL\n    Value: wrong last record".to_string())
         );
     }
 
@@ -1018,6 +1020,144 @@ async fn test_produce_with_deduplication() {
             vec!["1", "2", "3", "4", "5", "6", "7", "1", "2", "8"]
         );
     }
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_produce_smart_engine_memory_overfow() {
+    let test_path = temp_dir().join("test_produce_smart_engine_memory_overfow");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{port}");
+    let mut spu_config = SpuConfig::default();
+    let max_memory_size = 1179648;
+    spu_config.smart_engine.store_max_memory = max_memory_size;
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    let deduplication = Deduplication {
+        bounds: Bounds {
+            count: 6,
+            age: None,
+        },
+        filter: Filter {
+            transform: Transform {
+                uses: FLUVIO_WASM_DEDUPLICATION_FILTER.to_owned(),
+                with: Default::default(),
+            },
+        },
+    };
+    let topic = "test_produce_with_deduplication";
+    let mut test = Replica::new((topic, 0), 5001, vec![5001]);
+    test.deduplication = Some(deduplication);
+    let test_id = test.id.clone();
+    ctx.replica_localstore().sync_all(vec![test.clone()]);
+
+    let replica = LeaderReplicaState::create(test.clone(), ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica")
+        .init(&ctx)
+        .await
+        .expect("init succeeded");
+
+    ctx.leaders_state()
+        .insert(test_id.clone(), replica.clone())
+        .await;
+
+    {
+        // dedup declines repeated record within one batch
+        let records = create_filter_raw_records(1000);
+
+        let mut produce_request: DefaultProduceRequest = Default::default();
+
+        let partition_produce = DefaultPartitionRequest {
+            partition_index: 0,
+            records,
+        };
+        let topic_produce_request = TopicProduceData {
+            name: topic.to_owned(),
+            partitions: vec![partition_produce],
+            ..Default::default()
+        };
+
+        produce_request.topics.push(topic_produce_request);
+
+        let produce_response = client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("send offset");
+
+        // Check base offset
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(produce_response.responses[0].partitions.len(), 1);
+        assert!(
+            matches!(produce_response.responses[0].partitions[0].error_code, ErrorCode::SmartModuleMemoryLimitExceeded { requested: _, max } if max == max_memory_size as u64)
+        );
+    }
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_dedup_init_smart_engine_memory_overfow() {
+    let test_path = temp_dir().join("test_dedup_init_smart_engine_memory_overfow");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{port}");
+    let mut spu_config = SpuConfig::default();
+    let max_memory_size = 1024;
+    spu_config.smart_engine.store_max_memory = max_memory_size;
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    load_wasm_module(&ctx, FLUVIO_WASM_DEDUPLICATION_FILTER);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let deduplication = Deduplication {
+        bounds: Bounds {
+            count: 6,
+            age: None,
+        },
+        filter: Filter {
+            transform: Transform {
+                uses: FLUVIO_WASM_DEDUPLICATION_FILTER.to_owned(),
+                with: Default::default(),
+            },
+        },
+    };
+    let topic = "test_produce_with_deduplication";
+    let mut test = Replica::new((topic, 0), 5001, vec![5001]);
+    test.deduplication = Some(deduplication);
+    ctx.replica_localstore().sync_all(vec![test.clone()]);
+
+    let init_res: Result<LeaderReplicaState<FileReplica>, anyhow::Error> =
+        LeaderReplicaState::create(test.clone(), ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica")
+            .init(&ctx)
+            .await;
+
+    assert!(init_res.is_err());
+    assert!(
+        matches!(init_res.unwrap_err().downcast::<ErrorCode>(), Ok(ErrorCode::SmartModuleMemoryLimitExceeded { requested: _, max }) if max == max_memory_size as u64)
+    );
 
     server_end_event.notify();
     debug!("terminated controller");

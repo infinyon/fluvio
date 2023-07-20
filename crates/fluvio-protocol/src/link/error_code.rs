@@ -153,6 +153,11 @@ pub enum ErrorCode {
     #[fluvio(tag = 6007)]
     #[error("SmartModule look_back error: {0}")]
     SmartModuleLookBackError(String),
+    #[fluvio(tag = 6008)]
+    #[error(
+        "SmartModule memory limit exceeded: requested {requested} bytes, max allowed {max} bytes"
+    )]
+    SmartModuleMemoryLimitExceeded { requested: u64, max: u64 },
 
     // TableFormat Errors
     #[fluvio(tag = 7000)]
