@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 use std::path::Path;
+use std::path::PathBuf;
 
 use async_trait::async_trait;
 use clap::Parser;
@@ -30,9 +31,9 @@ pub struct SmartModuleDownloadHubOpts {
     #[clap(flatten)]
     target: ClusterTarget,
 
-    /// just download package to local filesystem
-    #[arg(long)]
-    local: bool,
+    /// Download package to local filesystem
+    #[arg(short, long, value_name = "PATH")]
+    output: Option<PathBuf>,
 
     /// given local package file, download to cluster
     #[arg(long)]
@@ -57,8 +58,8 @@ impl ClientCmd for SmartModuleDownloadHubOpts {
         }
         let access = get_hub_access(&self.remote)?;
 
-        let pkgfile = download_local(&self.pkgname, &access).await?;
-        if self.local {
+        let pkgfile = download_local(&self.pkgname, &access, self.output.clone()).await?;
+        if self.output.is_some() {
             return Ok(());
         }
 
@@ -70,24 +71,37 @@ impl ClientCmd for SmartModuleDownloadHubOpts {
 
 /// download smartmodule from hub to local fs
 /// returns path of downloaded of package
-async fn download_local(pkgname: &str, access: &HubAccess) -> Result<String> {
-    let fname = hubutil::cli_pkgname_to_filename(pkgname).map_err(|_| {
+async fn download_local(
+    pkgname: &str,
+    access: &HubAccess,
+    output: Option<PathBuf>,
+) -> Result<String> {
+    let file_name = hubutil::cli_pkgname_to_filename(pkgname).map_err(|_| {
         CliError::HubError(format!(
             "invalid package name format {pkgname}, is it the form infinyon/json-sql@0.1.0"
         ))
     })?;
 
+    let file_path = if let Some(mut output) = output {
+        if output.is_dir() {
+            output.push(file_name);
+        }
+        output
+    } else {
+        PathBuf::from(file_name)
+    };
+
     let url = hubutil::cli_pkgname_to_url(pkgname, &access.remote)
         .map_err(|_| CliError::HubError(format!("invalid pkgname {pkgname}")))?;
-    println!("downloading {pkgname} to {fname}");
+    println!("downloading {pkgname} to {}", file_path.display());
 
     let data = hubutil::get_package(&url, access)
         .await
         .map_err(|err| CliError::HubError(format!("downloading {pkgname}\nServer: {err}")))?;
 
-    std::fs::write(&fname, data)?;
+    std::fs::write(&file_path, data)?;
     println!("... downloading complete");
-    Ok(fname)
+    Ok(file_path.display().to_string())
 }
 
 // download smartmodule from pkg to cluster
