@@ -197,20 +197,20 @@ cli-platform-cross-version-test:
 	bats -t ./tests/cli/cli-platform-cross-version.bats
 
 cli-fluvio-smoke:
-	bats $(shell ls -1 ./tests/cli/fluvio_smoke_tests/*.bats | sort -R)
-	bats ./tests/cli/fluvio_smoke_tests/non-concurrent/cluster-delete.bats
+	bats -T $(shell ls -1 ./tests/cli/fluvio_smoke_tests/*.bats | sort -R)
+	bats -T ./tests/cli/fluvio_smoke_tests/non-concurrent/cluster-delete.bats
 
 cli-smdk-smoke:
-	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
+	bats -T $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
 
 cli-cdk-smoke:
-	bats $(shell ls -1 ./tests/cli/cdk_smoke_tests/*.bats | sort -R)
+	bats -T $(shell ls -1 ./tests/cli/cdk_smoke_tests/*.bats | sort -R)
 
 cli-basic-test:
-	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
+	bats -T ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 
 cli-smartmodule-all-test:
-	bats ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
+	bats -T ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
 
 cli-smartmodule-aggregate-test:
 	bats -f aggregate ./tests/cli/fluvio_smoke_tests/e2e-smartmodule-basic.bats
