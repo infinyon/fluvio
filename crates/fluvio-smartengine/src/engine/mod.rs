@@ -6,6 +6,7 @@ pub use config::{
     SmartModuleInitialData, Lookback,
 };
 mod error;
+pub use error::EngineError;
 
 #[cfg(test)]
 mod fixture;

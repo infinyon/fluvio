@@ -51,6 +51,8 @@ pub const STORAGE_FLUSH_WRITE_COUNT: u32 = 1;
 pub const STORAGE_FLUSH_IDLE_MSEC: u32 = 0;
 pub const STORAGE_MAX_BATCH_SIZE: u32 = 33_554_432;
 
+pub const SPU_SMARTENGINE_STORE_MAX_BYTES: usize = 1_073_741_824; //1Gb
+
 // CLI config
 pub const CLI_PROFILES_DIR: &str = "profiles";
 pub const CLI_DEFAULT_PROFILE: &str = "default";

@@ -4,6 +4,8 @@ use fluvio::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartModuleExtraParams,
 };
 use fluvio_controlplane_metadata::topic::Deduplication;
+use fluvio_protocol::link::ErrorCode;
+use fluvio_smartengine::EngineError;
 use fluvio_smartmodule::dataplane::smartmodule::Lookback;
 
 pub(crate) mod batch;
@@ -29,6 +31,21 @@ pub(crate) fn dedup_to_invocation(dedup: &Deduplication) -> SmartModuleInvocatio
         wasm: SmartModuleInvocationWasm::Predefined(dedup.filter.transform.uses.clone()),
         kind: SmartModuleKind::Filter,
         params: SmartModuleExtraParams::new(params, Some(lookback)),
+    }
+}
+
+pub(crate) fn map_engine_error(err: &EngineError) -> ErrorCode {
+    match err {
+        EngineError::UnknownSmartModule => ErrorCode::Other("Unknown SmartModule type".to_string()),
+        EngineError::Instantiate(err) => ErrorCode::Other(err.to_string()),
+        EngineError::StoreMemoryExceeded {
+            current: _,
+            requested,
+            max,
+        } => ErrorCode::SmartModuleMemoryLimitExceeded {
+            requested: *requested as u64,
+            max: *max as u64,
+        },
     }
 }
 

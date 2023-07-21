@@ -59,6 +59,13 @@ pub struct SpuOpt {
     )]
     pub peer_max_bytes: u32,
 
+    #[arg(
+        long,
+        value_name = "integer",
+        env = "FLV_SMART_ENGINE_MAX_MEMORY_BYTES"
+    )]
+    pub smart_engine_max_memory: Option<usize>,
+
     #[clap(flatten)]
     tls: TlsConfig,
 }
@@ -137,6 +144,14 @@ impl SpuOpt {
         }
 
         config.peer_max_bytes = self.peer_max_bytes;
+
+        if let Some(smart_engine_max_memory) = self.smart_engine_max_memory {
+            info!(
+                "overriding smart engine max memory: {}",
+                smart_engine_max_memory
+            );
+            config.smart_engine.store_max_memory = smart_engine_max_memory;
+        }
 
         Ok((config, tls_port))
     }

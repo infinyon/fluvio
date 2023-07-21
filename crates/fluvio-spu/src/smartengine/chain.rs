@@ -2,18 +2,18 @@ use tracing::{debug, error};
 use fluvio_protocol::link::ErrorCode;
 use fluvio_smartengine::{
     SmartEngine, SmartModuleChainBuilder, SmartModuleChainInstance, SmartModuleConfig,
-    SmartModuleInitialData,
+    SmartModuleInitialData, EngineError,
 };
 use fluvio_spu_schema::server::smartmodule::{
     SmartModuleContextData, SmartModuleInvocation, SmartModuleKind,
 };
 
 pub(crate) fn build_chain(
+    mut chain_builder: SmartModuleChainBuilder,
     invocations: Vec<SmartModuleInvocation>,
     version: i16,
     engine: SmartEngine,
 ) -> Result<SmartModuleChainInstance, ErrorCode> {
-    let mut chain_builder = SmartModuleChainBuilder::default();
     for invocation in invocations {
         let raw = invocation
             .wasm
@@ -54,11 +54,18 @@ pub(crate) fn build_chain(
     }
 
     let chain = chain_builder.initialize(&engine).map_err(|err| {
-        error!(
-            error = err.to_string().as_str(),
-            "Error Initializing SmartModule"
-        );
-        ErrorCode::SmartModuleChainInitError(err.to_string())
+        error!("Error Initializing SmartModule chain: {err:#?}");
+        match err.downcast_ref() {
+            Some(EngineError::StoreMemoryExceeded {
+                current: _,
+                requested,
+                max,
+            }) => ErrorCode::SmartModuleMemoryLimitExceeded {
+                requested: *requested as u64,
+                max: *max as u64,
+            },
+            _ => ErrorCode::SmartModuleChainInitError(err.to_string()),
+        }
     })?;
     Ok(chain)
 }

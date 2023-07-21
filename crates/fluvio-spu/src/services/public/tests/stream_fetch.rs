@@ -2636,7 +2636,7 @@ async fn stream_fetch_filter_lookback(
         assert_eq!(partition.records.batches.len(), 0);
         assert_eq!(
             partition.error_code,
-            ErrorCode::SmartModuleLookBackError("error in look_back chain: invalid digit found in string\n\nSmartModule Lookback Error: \n    Offset: 0\n    Key: NULL\n    Value: wrong record".to_string())
+            ErrorCode::SmartModuleLookBackError("invalid digit found in string\n\nSmartModule Lookback Error: \n    Offset: 0\n    Key: NULL\n    Value: wrong record".to_string())
         );
     }
 

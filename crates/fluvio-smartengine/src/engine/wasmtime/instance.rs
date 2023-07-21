@@ -135,7 +135,10 @@ impl SmartModuleInstanceContext {
         debug!("instantiating WASMtime");
         let instance = state
             .instantiate(&module, copy_records_fn)
-            .map_err(EngineError::Instantiate)?;
+            .map_err(|e| match e.downcast::<EngineError>() {
+                Ok(e) => e,
+                Err(e) => EngineError::Instantiate(e),
+            })?;
         Ok(Self {
             instance,
             records_cb,

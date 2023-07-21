@@ -7,7 +7,7 @@ use tracing::{debug, trace, error};
 use tracing::instrument;
 use anyhow::{anyhow, Result};
 
-use fluvio_smartengine::SmartModuleChainInstance;
+use fluvio_smartengine::{SmartModuleChainInstance, EngineError};
 use fluvio_protocol::api::{RequestKind, RequestHeader};
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::record::{BatchRecords, Offset, Batch, RawRecords};
@@ -29,6 +29,7 @@ use fluvio_future::timer::sleep;
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use crate::smartengine::context::SmartModuleContext;
+use crate::smartengine::map_engine_error;
 use crate::smartengine::produce_batch::ProduceBatchIterator;
 use crate::smartengine::batch::process_batch;
 use crate::traffic::TrafficType;
@@ -190,16 +191,22 @@ async fn handle_produce_partition(
 
             PartitionWriteResult::ok(replica_id, base_offset, leo)
         }
-        Err(err) => match err.downcast_ref::<StorageError>() {
-            Some(StorageError::BatchTooBig(_)) => {
-                error!(%replica_id, "Batch is too big: {:#?}", err);
-                PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
+        Err(err) => {
+            if let Some(engine_err) = err.downcast_ref::<EngineError>() {
+                error!(%replica_id, "Replica SmartEngine error: {:#?}", engine_err);
+                return PartitionWriteResult::error(replica_id, map_engine_error(engine_err));
+            };
+            match err.downcast_ref::<StorageError>() {
+                Some(StorageError::BatchTooBig(_)) => {
+                    error!(%replica_id, "Batch is too big: {:#?}", err);
+                    PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
+                }
+                _ => {
+                    error!(%replica_id, "Error writing to replica: {:#?}", err);
+                    PartitionWriteResult::error(replica_id, ErrorCode::StorageError)
+                }
             }
-            _ => {
-                error!(%replica_id, "Error writing to replica: {:#?}", err);
-                PartitionWriteResult::error(replica_id, ErrorCode::StorageError)
-            }
-        },
+        }
     }
 }
 

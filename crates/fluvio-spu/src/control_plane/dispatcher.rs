@@ -285,11 +285,11 @@ impl ScDispatcher<FileReplica> {
                 ReplicaChange::Remove(remove) => {
                     let message = RequestMessage::new_request(remove);
                     if let Err(err) = sc_sink.send_request(&message).await {
-                        error!("error sending back to sc {}", err);
+                        error!("error sending back to sc {err:#?}");
                     }
                 }
                 ReplicaChange::StorageError(err) => {
-                    error!("error storage {}", err);
+                    error!("error storage {err:#?}");
                 }
             }
         }

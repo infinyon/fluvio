@@ -3,13 +3,14 @@ use std::time::Duration;
 
 use async_rwlock::RwLock;
 use chrono::Utc;
+use fluvio::SmartModuleChainBuilder;
 use fluvio_smartengine::{SmartModuleChainInstance, Version, Lookback};
 use fluvio_protocol::link::ErrorCode;
 use fluvio_smartmodule::Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
 use fluvio_storage::ReplicaStorage;
 use fluvio_types::Timestamp;
-use tracing::{debug, trace};
+use tracing::{debug, trace, error};
 
 use crate::core::GlobalContext;
 use crate::core::metrics::SpuMetrics;
@@ -54,7 +55,8 @@ impl SmartModuleContext {
             )
             .await
             .map_err(|err| {
-                ErrorCode::SmartModuleLookBackError(format!("error in look_back chain: {err}"))
+                error!("look_back chain error: {err:#}");
+                ErrorCode::SmartModuleLookBackError(err.root_cause().to_string())
             })
     }
 
@@ -72,9 +74,18 @@ impl SmartModuleContext {
         for invocation in invocations {
             fetched_invocations.push(resolve_invocation(invocation, ctx)?)
         }
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        chain_builder.set_store_memory_limit(ctx.config().smart_engine.store_max_memory);
+
+        let chain = chain::build_chain(
+            chain_builder,
+            fetched_invocations,
+            version,
+            ctx.smartengine_owned(),
+        )?;
 
         Ok(Some(Self {
-            chain: chain::build_chain(fetched_invocations, version, ctx.smartengine_owned())?,
+            chain,
             version,
             spu_metrics: ctx.metrics(),
         }))

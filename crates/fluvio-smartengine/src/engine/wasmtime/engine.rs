@@ -14,10 +14,14 @@ use crate::engine::config::Lookback;
 use super::init::SmartModuleInit;
 use super::instance::{SmartModuleInstance, SmartModuleInstanceContext};
 
+use super::limiter::StoreResourceLimiter;
 use super::look_back::SmartModuleLookBack;
 use super::metrics::SmartModuleChainMetrics;
 use super::state::WasmState;
 use super::transforms::create_transform;
+
+// 1 GB
+const DEFAULT_STORE_MEMORY_LIMIT: usize = 1_000_000_000;
 
 #[derive(Clone)]
 pub struct SmartEngine(Engine);
@@ -30,8 +34,8 @@ impl SmartEngine {
         Self(Engine::new(&config).expect("Config is static"))
     }
 
-    pub(crate) fn new_state(&self) -> WasmState {
-        WasmState::new(&self.0)
+    pub(crate) fn new_state(&self, store_limiter: StoreResourceLimiter) -> WasmState {
+        WasmState::new(&self.0, store_limiter)
     }
 }
 
@@ -42,9 +46,9 @@ impl Debug for SmartEngine {
 }
 
 /// Building SmartModule
-#[derive(Default)]
 pub struct SmartModuleChainBuilder {
     smart_modules: Vec<(SmartModuleConfig, Vec<u8>)>,
+    store_limiter: StoreResourceLimiter,
 }
 
 impl SmartModuleChainBuilder {
@@ -53,10 +57,14 @@ impl SmartModuleChainBuilder {
         self.smart_modules.push((config, bytes))
     }
 
+    pub fn set_store_memory_limit(&mut self, max_memory_bytes: usize) {
+        self.store_limiter.set_memory_size(max_memory_bytes);
+    }
+
     /// stop adding smartmodule and return SmartModuleChain that can be executed
     pub fn initialize(self, engine: &SmartEngine) -> Result<SmartModuleChainInstance> {
         let mut instances = Vec::with_capacity(self.smart_modules.len());
-        let mut state = engine.new_state();
+        let mut state = engine.new_state(self.store_limiter);
         for (config, bytes) in self.smart_modules {
             let module = Module::new(&engine.0, bytes)?;
             let version = config.version();
@@ -78,6 +86,17 @@ impl SmartModuleChainBuilder {
             store: state,
             instances,
         })
+    }
+}
+
+impl Default for SmartModuleChainBuilder {
+    fn default() -> Self {
+        let mut store_limiter = StoreResourceLimiter::default();
+        store_limiter.set_memory_size(DEFAULT_STORE_MEMORY_LIMIT);
+        Self {
+            smart_modules: Default::default(),
+            store_limiter,
+        }
     }
 }
 
@@ -210,6 +229,7 @@ mod chaining_test {
     use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
 
     use crate::engine::config::Lookback;
+    use crate::engine::error::EngineError;
 
     use super::super::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
@@ -437,5 +457,130 @@ mod chaining_test {
         //then
         assert_eq!(output.successes.len(), 1);
         assert_eq!(output.successes[0].value().to_string(), "input");
+    }
+
+    #[ignore]
+    #[test]
+    fn test_unsufficient_memory_to_instantiate() {
+        //given
+        let engine = SmartEngine::new();
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        let max_memory = 1_000; // 1 kb
+
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .lookback(Some(Lookback::Last(1)))
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_LOOK_BACK),
+        );
+        chain_builder.set_store_memory_limit(max_memory);
+
+        // when
+        let res = chain_builder.initialize(&engine);
+
+        // then
+        assert!(res.is_err());
+        let err = res
+            .unwrap_err()
+            .downcast::<EngineError>()
+            .expect("EngineError expected");
+        assert!(matches!(
+            err,
+            EngineError::StoreMemoryExceeded {
+                current: _,
+                requested: _,
+                max
+            }
+            if max == max_memory
+        ))
+    }
+
+    #[ignore]
+    #[test]
+    fn test_look_back_unsufficient_memory() {
+        //given
+        let engine = SmartEngine::new();
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        let metrics = SmartModuleChainMetrics::default();
+        let max_memory = 1_000_000 * 2; // 2mb
+
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder()
+                .lookback(Some(Lookback::Last(1000)))
+                .build()
+                .unwrap(),
+            read_wasm_module(SM_FILTER_LOOK_BACK),
+        );
+        chain_builder.set_store_memory_limit(max_memory);
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
+
+        // when
+        let res = fluvio_future::task::run_block_on(chain.look_back(
+            |_| {
+                let res = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
+                async { Ok(res) }
+            },
+            &metrics,
+        ));
+
+        // then
+        assert!(res.is_err());
+        let err = res
+            .unwrap_err()
+            .downcast::<EngineError>()
+            .expect("EngineError expected");
+        assert!(matches!(
+            err,
+            EngineError::StoreMemoryExceeded {
+                current: _,
+                requested: _,
+                max
+            }
+            if max == max_memory
+        ))
+    }
+
+    #[ignore]
+    #[test]
+    fn test_process_unsufficient_memory() {
+        //given
+        let engine = SmartEngine::new();
+        let mut chain_builder = SmartModuleChainBuilder::default();
+        let metrics = SmartModuleChainMetrics::default();
+        let max_memory = 1_000_000 * 2; // 2mb
+
+        chain_builder.add_smart_module(
+            SmartModuleConfig::builder().build().unwrap(),
+            read_wasm_module(SM_FILTER_LOOK_BACK),
+        );
+        chain_builder.set_store_memory_limit(max_memory);
+
+        let mut chain = chain_builder
+            .initialize(&engine)
+            .expect("failed to build chain");
+
+        // when
+        let input: Vec<Record> = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
+        let res = chain.process(SmartModuleInput::try_from(input).expect("input"), &metrics);
+
+        // then
+        assert!(res.is_err());
+        let err = res
+            .unwrap_err()
+            .downcast::<EngineError>()
+            .expect("EngineError expected");
+        assert!(matches!(
+            err,
+            EngineError::StoreMemoryExceeded {
+                current: _,
+                requested: _,
+                max
+            }
+            if max == max_memory
+        ))
     }
 }
