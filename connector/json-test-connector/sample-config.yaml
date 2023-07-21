@@ -4,6 +4,6 @@ meta:
   type: json-test-source
   topic: test-topic
 json:
-  interval: 5  
-  timeout: 15
+  interval: 1  
+  timeout: 5
   template: '{"template":"test"}'  

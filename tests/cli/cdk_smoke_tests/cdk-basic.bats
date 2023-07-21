@@ -64,7 +64,7 @@ setup_file() {
 
     assert_output --partial "Connector runs with process id"
 
-    sleep 10
+    timeout 15s tail -f json-test-connector.log | sed '/producing a value/ q'
 
     run cat json-test-connector.log
     assert_output --partial "producing a value"
@@ -85,7 +85,7 @@ setup_file() {
 
     assert_output --partial "Connector runs with process id"
 
-    sleep 10
+    timeout 15s tail -f json-test-connector.log | sed '/producing a value/ q'
 
     run cat json-test-connector.log
     assert_output --partial "producing a value"
@@ -108,7 +108,7 @@ setup_file() {
     # Creates a directory to store the dummy readme
     cd $CONNECTOR_DIR
 
-    mkdir ../testing
+    mkdir ../testing || true
     echo "# Testing Connector Readme" > ../testing/README.md
 
     run $CDK_BIN publish --pack --target x86_64-unknown-linux-gnu --readme ../testing/README.md
