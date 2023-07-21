@@ -9,11 +9,11 @@ use fluvio_extension_common::Terminal;
 
 use crate::error::CliError;
 
-use super::{get_hub_access};
+use super::get_hub_access;
 
 #[derive(Debug, Parser)]
 pub struct ConnectorHubDownloadOpts {
-    /// SmartConnector name: e.g. infinyon/salesforce-sink@v0.0.1
+    /// SmartConnector name: e.g. infinyon/http-sink@vX.Y.Z
     #[arg(value_name = "name", required = true)]
     package_name: String,
 
