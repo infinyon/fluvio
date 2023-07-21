@@ -26,18 +26,18 @@ nix = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true}
 serde_yaml = { workspace = true }
-inventory = "0.3"
-tokio = { workspace = true,  features = ["macros"] }
+inventory = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
 comfy-table = { workspace = true }
-hdrhistogram = "7.3.0"
+hdrhistogram = { workspace = true }
 crc = "3.0"
 fork = "0.1"
 crossbeam-channel = "0.5"
 sysinfo = { workspace = true }
 signal-hook = "0.3.13"
-indicatif = "0.17.0"
-async-std = { workspace = true,  features = ["attributes",] }
-uuid = { version = "1.1", features = ["serde", "v4"] }
+indicatif = { workspace = true }
+async-std = { workspace = true,  features = ["attributes"] }
+uuid = { workspace = true }
 
 tracing = { workspace = true }
 

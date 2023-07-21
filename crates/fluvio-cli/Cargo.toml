@@ -46,8 +46,8 @@ bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"] }
 clap_complete = "4.0.2"
 dirs = { workspace = true}
-indicatif = "0.17.0"
-eyre = "0.6.1"
+indicatif = { workspace = true }
+eyre = { workspace = true}
 sha2 = "0.10.0"
 hex = "0.4.2"
 home = "0.5.3"
@@ -55,7 +55,7 @@ current_platform = "0.2"
 comfy-table = { workspace = true }
 atty = { version = "0.2.14", optional = true }
 ctrlc = { version = "3.1.3", optional = true }
-colored = "2"
+colored = { workspace = true }
 handlebars = "4"
 content_inspector = { version = "0.2.4", optional = true }
 flate2 = { workspace = true }
@@ -63,7 +63,7 @@ crossterm = { version = "0.26.0", features = ['event-stream']}
 tui = { version = "0.19.0", default-features = false, features = ['crossterm'] }
 futures = { workspace = true}
 futures-util = { workspace = true, features = ["sink"] }
-humantime = "2.1.0"
+humantime = { workspace = true }
 static_assertions = { workspace = true }
 sysinfo = { workspace = true }
 serde_yaml = { workspace = true }

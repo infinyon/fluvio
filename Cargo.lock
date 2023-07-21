@@ -2819,7 +2819,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2952,7 +2952,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2961,7 +2961,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.4"
+version = "0.14.5"
 dependencies = [
  "async-channel",
  "async-lock",

@@ -25,9 +25,8 @@ smartmodule = []
 [dependencies]
 tracing = { workspace = true }
 thiserror = { workspace = true }
-eyre = { version = ">=0.6.8", default-features = false, features = [
-    "auto-install",
-] }
+
+eyre = { default-features = false, features = ["auto-install"], workspace = true }
 fluvio-smartmodule-derive = { version = "0.6.1", path = "../fluvio-smartmodule-derive" }
 fluvio-protocol = { workspace = true, features = ["link", "types"] }
 

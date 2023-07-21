@@ -33,7 +33,7 @@ serde_json = { workspace = true }
 regex = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 async-channel = { workspace = true }
-async-rwlock = "1.1.0"
+async-rwlock = { workspace = true }
 async-lock = { workspace = true }
 event-listener = { workspace = true }
 async-io = { workspace = true }
