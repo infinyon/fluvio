@@ -280,11 +280,6 @@ impl PartitionProducer {
                 let mut futures = Vec::with_capacity(partition_count);
                 for topic in produce_response.responses.into_iter() {
                     for partition in topic.partitions {
-                        if partition.error_code.is_error() {
-                            return Err(FluvioError::from(ProducerError::from(
-                                partition.error_code,
-                            )));
-                        }
                         futures.push(ProducePartitionResponseFuture::ready(
                             partition.base_offset,
                             partition.error_code,
