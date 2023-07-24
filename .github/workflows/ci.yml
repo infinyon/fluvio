@@ -95,11 +95,6 @@ jobs:
           version: "14.0"
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - uses: Swatinem/rust-cache@v2
-        timeout-minutes: 10
-        with:
-          key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
-
       - name: Build fluvio
         if: matrix.binary == 'fluvio'
         run: make build-cli
@@ -271,10 +266,6 @@ jobs:
           override: true
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - uses: Swatinem/rust-cache@v2
-        timeout-minutes: 10
-        with:
-          key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
       - name: Install Helm for Mac
         run: brew install helm
         if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
@@ -380,9 +371,10 @@ jobs:
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
-        timeout-minutes: 10
+        if: matrix.check == 'test'
+        timeout-minutes: 20
         with:
-          key: ${{ matrix.rust-target }}-${{ matrix.check }}
+          key: ${{ matrix.rust-target }}-test
       - name: Fmt
         if: matrix.check == 'fmt'
         run: make check-fmt
@@ -412,6 +404,7 @@ jobs:
   # Run integration test. This always run on release mode
   check_integration:
     name: Rust integration test (${{ matrix.rust-target }})
+    needs: check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -433,9 +426,9 @@ jobs:
           profile: minimal
           override: true
       - uses: Swatinem/rust-cache@v2
-        timeout-minutes: 10
+        timeout-minutes: 20
         with:
-          key: ${{ matrix.rust-target }}-check-integration
+          key: ${{ matrix.rust-target }}-test
       - name: Integration test
         run: make run-integration-test
 
@@ -555,11 +548,6 @@ jobs:
           profile: minimal
       - name: Rust version 
         run: rustc --version
-      - uses: Swatinem/rust-cache@v2
-        timeout-minutes: 10
-        with:
-          key: ${{ matrix.os }}-${{ matrix.crate }}-check-windows
-
       - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
         run: cargo build -p ${{ matrix.crate }}
 
@@ -928,7 +916,7 @@ jobs:
   # Smoke test across different version of fluvio
   cli_smoke:
     name: CLI smoke test (${{ matrix.test }}) CLI (${{ matrix.cli_version }}) on cluster (${{ matrix.cluster_version }})
-    needs: build_image
+    needs: [build_image, check_integration]
     runs-on: ${{ matrix.os }}
     strategy:
  #     fail-fast: false
@@ -951,7 +939,9 @@ jobs:
           profile: minimal
           override: true
       - uses: Swatinem/rust-cache@v2
-        timeout-minutes: 10
+        timeout-minutes: 20
+        with:
+          key: x86_64-unknown-linux-gnu-test
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
