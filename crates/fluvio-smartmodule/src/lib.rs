@@ -6,7 +6,7 @@ mod error;
 
 use std::ops::{Deref, DerefMut};
 
-use fluvio_protocol::core::Timestamp;
+use fluvio_protocol::types::Timestamp;
 
 pub use fluvio_smartmodule_derive::{smartmodule, SmartOpt};
 

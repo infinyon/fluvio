@@ -2,10 +2,11 @@ use std::io::Cursor;
 use std::time::Duration;
 use std::{collections::BTreeMap, fmt::Display};
 use std::fmt;
-use fluvio_protocol::record::{Offset, Record};
 use fluvio_protocol::{Decoder, Encoder, Version};
+use fluvio_protocol::record::{Offset, Record};
+use fluvio_protocol::types::Timestamp;
 
-use crate::{SmartModuleRecord, Timestamp};
+use crate::SmartModuleRecord;
 
 /// SmartModule Version with support for Lookback with Age and Timestamps,
 /// LTA is the acronym for Lookback, Timestamps, and Age.

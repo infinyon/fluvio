@@ -39,6 +39,7 @@ record = [
     "once_cell",
     "fluvio-types"
 ]
+types = ["fluvio-types"]
 link = ["api","record","thiserror","flv-util","semver","eyre"]
 fixture = ["record","derive_builder"]
 compress = ["fluvio-compression/compress"]
