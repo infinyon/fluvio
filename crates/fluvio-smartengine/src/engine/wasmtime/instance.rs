@@ -6,7 +6,7 @@ use tracing::debug;
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Module, Caller, Extern, Instance, Func, AsContextMut, AsContext};
 
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 
 use fluvio_smartmodule::dataplane::smartmodule::{
     SmartModuleExtraParams, SmartModuleInput, SmartModuleOutput, SmartModuleInitInput,
@@ -25,6 +25,7 @@ pub(crate) struct SmartModuleInstance {
     init: Option<SmartModuleInit>,
     look_back: Option<SmartModuleLookBack>,
     transform: Box<dyn DowncastableTransform>,
+    version: Version,
 }
 
 impl SmartModuleInstance {
@@ -44,12 +45,14 @@ impl SmartModuleInstance {
         init: Option<SmartModuleInit>,
         look_back: Option<SmartModuleLookBack>,
         transform: Box<dyn DowncastableTransform>,
+        version: Version,
     ) -> Self {
         Self {
             ctx,
             init,
             look_back,
             transform,
+            version,
         }
     }
 
@@ -90,13 +93,18 @@ impl SmartModuleInstance {
         self.look_back.as_ref()?; // return None if there is no function
         self.ctx.lookback
     }
+
+    /// Retrieves SmartModule Version
+    pub fn version(&self) -> Version {
+        self.version
+    }
 }
 
 pub(crate) struct SmartModuleInstanceContext {
     instance: Instance,
     records_cb: Arc<RecordsCallBack>,
     params: SmartModuleExtraParams,
-    version: i16,
+    version: Version,
     lookback: Option<Lookback>,
 }
 
@@ -113,7 +121,7 @@ impl SmartModuleInstanceContext {
         state: &mut WasmState,
         module: Module,
         params: SmartModuleExtraParams,
-        version: i16,
+        version: Version,
         lookback: Option<Lookback>,
     ) -> Result<Self, EngineError> {
         debug!("creating WasmModuleInstance");

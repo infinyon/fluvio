@@ -78,7 +78,7 @@ impl SmartModuleChainBuilder {
             let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
             let look_back = SmartModuleLookBack::try_instantiate(&ctx, &mut state)?;
             let transform = create_transform(&ctx, config.initial_data, &mut state)?;
-            let mut instance = SmartModuleInstance::new(ctx, init, look_back, transform);
+            let mut instance = SmartModuleInstance::new(ctx, init, look_back, transform, version);
 
             instance.call_init(&mut state)?;
             instances.push(instance);
@@ -160,10 +160,8 @@ impl SmartModuleChainInstance {
                     // encountered error, we stop processing and return partial output
                     return Ok(output);
                 } else {
-                    next_input = SmartModuleInput::try_from_records(
-                        output.successes,
-                        DEFAULT_SMARTENGINE_VERSION,
-                    )?;
+                    next_input =
+                        SmartModuleInput::try_from_records(output.successes, instance.version())?;
                     next_input.set_base_offset(base_offset);
                     next_input.set_base_timestamp(base_timestamp);
                 }
@@ -202,7 +200,7 @@ impl SmartModuleChainInstance {
                 debug!("look_back on instance");
                 let records: Vec<Record> = read_fn(lookback).await?;
                 let input: SmartModuleInput =
-                    SmartModuleInput::try_from_records(records, DEFAULT_SMARTENGINE_VERSION)?;
+                    SmartModuleInput::try_from_records(records, instance.version())?;
 
                 metrics.add_bytes_in(input.raw_bytes().len() as u64);
                 self.store.top_up_fuel();
