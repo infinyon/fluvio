@@ -1,8 +1,7 @@
 use quote::quote;
 use proc_macro2::TokenStream;
 
-use crate::SmartModuleFn;
-use crate::util::ident;
+use crate::{SmartModuleFn, SmartModuleKind};
 
 use super::transform::generate_transform;
 
@@ -14,12 +13,10 @@ pub fn generate_filter_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
     );
 
     generate_transform(
-        ident("filter_map"),
+        SmartModuleKind::FilterMap,
         func,
         quote! {
                 for mut record in records.into_iter() {
-                    use fluvio_smartmodule::SmartModuleRecord;
-
                     let result = #function_call;
 
                     match result {

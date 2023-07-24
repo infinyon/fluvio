@@ -1,8 +1,7 @@
 use quote::quote;
 use proc_macro2::TokenStream;
 
-use crate::SmartModuleFn;
-use crate::util::ident;
+use crate::{SmartModuleFn, SmartModuleKind};
 
 use super::transform::generate_transform;
 
@@ -13,7 +12,7 @@ pub fn generate_map_smartmodule(func: &SmartModuleFn) -> TokenStream {
     );
 
     generate_transform(
-        ident("map"),
+        SmartModuleKind::Map,
         func,
         quote! {
             for mut record in records.into_iter() {

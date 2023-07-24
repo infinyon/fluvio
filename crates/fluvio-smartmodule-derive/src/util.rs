@@ -1,5 +1,7 @@
 use proc_macro2::Span;
 
-pub(crate) fn ident(ident: &str) -> syn::Ident {
-    syn::Ident::new(ident, Span::call_site())
+use crate::SmartModuleKind;
+
+pub(crate) fn generate_ident(kind: &SmartModuleKind) -> syn::Ident {
+    syn::Ident::new(&kind.to_string(), Span::call_site())
 }

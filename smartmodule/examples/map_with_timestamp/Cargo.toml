@@ -9,5 +9,5 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-chrono = { version = "0.4.26", features = ["clock"], default-features = false }
+chrono = { version = "0.4.26", default-features = false }
 fluvio-smartmodule = { workspace = true }

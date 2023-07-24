@@ -904,7 +904,7 @@ setup_file() {
     assert_success
 }
 
-@test "Test using `SmartModuleRecord` on fluvio-smartmodule-map-with-timestamp" {
+@test "Test using SmartModuleRecord on fluvio-smartmodule-map-with-timestamp" {
     # Test with smartmodule example with timestamp
     cd "$(pwd)/smartmodule/examples/map_with_timestamp/"
 
@@ -923,7 +923,7 @@ setup_file() {
     assert_success
 }
 
-@test "Test using `SmartModuleRecord` on fluvio-smartmodule-aggregate-with-timestamp" {
+@test "Test using SmartModuleRecord on fluvio-smartmodule-aggregate-with-timestamp" {
     # Test with smartmodule example with timestamp
     cd "$(pwd)/smartmodule/examples/aggregate_with_timestamp/"
 

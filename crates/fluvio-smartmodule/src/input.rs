@@ -152,11 +152,7 @@ impl SmartModuleInput {
         let records_input = self.into_raw_bytes();
         let mut records: Vec<Record> = vec![];
 
-        Decoder::decode(
-            &mut records,
-            &mut Cursor::new(records_input.clone()),
-            version,
-        )?;
+        Decoder::decode(&mut records, &mut Cursor::new(records_input), version)?;
 
         let records = records
             .into_iter()

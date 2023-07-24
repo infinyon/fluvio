@@ -59,7 +59,6 @@ pub fn generate_aggregate_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
 
                 let mut accumulator = smartmodule_input.accumulator;
                 let base_offset = smartmodule_input.base.base_offset();
-                let base_timestamp = smartmodule_input.base.base_timestamp();
 
                 #records_code
 

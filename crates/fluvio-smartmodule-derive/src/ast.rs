@@ -33,6 +33,22 @@ pub enum SmartModuleKind {
     FilterMap,
 }
 
+impl ToString for SmartModuleKind {
+    fn to_string(&self) -> String {
+        let string = match self {
+            SmartModuleKind::Init => "init",
+            SmartModuleKind::LookBack => "look_back",
+            SmartModuleKind::Aggregate => "aggregate",
+            SmartModuleKind::Filter => "filter",
+            SmartModuleKind::Map => "map",
+            SmartModuleKind::ArrayMap => "array_map",
+            SmartModuleKind::FilterMap => "filter_map",
+        };
+
+        string.to_string()
+    }
+}
+
 impl SmartModuleKind {
     fn parse(meta: ParseNestedMeta) -> SynResult<Option<Self>> {
         let maybee_ss_type = match &*meta

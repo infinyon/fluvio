@@ -27,9 +27,6 @@ pub fn generate_init_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 };
                 use fluvio_smartmodule::dataplane::core::{Decoder,Encoder};
 
-
-
-
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut input = SmartModuleInitInput::default();
                 if let Err(_err) =
