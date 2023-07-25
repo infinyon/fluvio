@@ -156,12 +156,11 @@ impl ScDispatcher<FileReplica> {
                                 break;
                             }
                         },
-
-                        Some(_) => {
-                            debug!("no more sc msg content, end");
+                        Some(Err(err)) => {
+                            error!(%err, "Api error");
                             break;
                         },
-                        _ => {
+                        None => {
                             debug!("sc connection terminated");
                             break;
                         }
