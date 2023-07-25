@@ -1,4 +1,4 @@
-use std::{time::Duration};
+use std::time::Duration;
 use std::io::Error as IoError;
 
 use tracing::{info, trace, error, debug, warn, instrument};
@@ -20,7 +20,7 @@ use fluvio_storage::FileReplica;
 use crate::core::SharedGlobalContext;
 use crate::InternalServerError;
 
-use super::message_sink::{SharedStatusUpdate};
+use super::message_sink::SharedStatusUpdate;
 
 // keep track of various internal state of dispatcher
 #[derive(Default)]
@@ -59,12 +59,12 @@ impl ScDispatcher<FileReplica> {
         const WAIT_RECONNECT_INTERVAL: u64 = 3000;
 
         loop {
-            debug!("entering SC dispatch loop: {}", counter);
+            debug!(%counter, "entering SC dispatch loop", );
 
             let mut socket = self.create_socket_to_sc().await;
             info!(
-                "established connection to sc for spu: {}",
-                self.ctx.local_spu_id()
+                local_spu_id=%self.ctx.local_spu_id(),
+                "established connection to sc for spu",
             );
 
             // register and exit on error
@@ -86,18 +86,15 @@ impl ScDispatcher<FileReplica> {
                 match self.request_loop(socket).await {
                     Ok(_) => {
                         debug!(
-                            "sc connection terminated: {}, waiting before reconnecting",
-                            counter
+                            %counter,
+                            "sc connection terminated, waiting before reconnecting",
                         );
                         // give little bit time before trying to reconnect
                         sleep(Duration::from_millis(10)).await;
                         counter += 1;
                     }
                     Err(err) => {
-                        warn!(
-                            "error connecting to sc: {:#?}, waiting before reconnecting",
-                            err
-                        );
+                        warn!(?err, "error connecting to sc, waiting before reconnecting",);
                         // We are  connection to sc.  Retry again
                         // Currently we use 3 seconds to retry but this should be using backoff algorithm
                         sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
@@ -145,23 +142,22 @@ impl ScDispatcher<FileReplica> {
                         Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
                             self.counter.spu_changes += 1;
                             if let Err(err) = self.handle_update_spu_request(request).await {
-                                error!("error handling update spu request: {}", err);
+                                error!(%err, "error handling update spu request");
                                 break;
                             }
                         },
                         Some(Ok(InternalSpuRequest::UpdateSmartModuleRequest(request))) => {
                             self.counter.smartmodule += 1;
                             if let Err(err) = self.handle_update_smartmodule_request(request).await {
-                                error!("error handling update SmartModule request: {}", err);
+                                error!(%err, "error handling update SmartModule request", );
                                 break;
                             }
                         },
-
-                        Some(_) => {
-                            debug!("no more sc msg content, end");
+                        Some(Err(err)) => {
+                            error!(%err, "Api error");
                             break;
                         },
-                        _ => {
+                        None => {
                             debug!("sc connection terminated");
                             break;
                         }
@@ -192,7 +188,7 @@ impl ScDispatcher<FileReplica> {
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
         sc_sink.send_request(&message).await.map_err(|err| {
-            error!("error sending status back: {:#?}", err);
+            error!(?err, "error sending status back");
             err
         })
     }
@@ -208,7 +204,7 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<bool, InternalServerError> {
         let local_spu_id = self.ctx.local_spu_id();
 
-        debug!("sending spu '{}' registration request", local_spu_id);
+        debug!(%local_spu_id, "sending spu registration request",);
 
         let register_req = RegisterSpuRequest::new(local_spu_id);
         let mut message = RequestMessage::new_request(register_req);
@@ -218,19 +214,19 @@ impl ScDispatcher<FileReplica> {
 
         let response = socket.send(&message).await?;
 
-        trace!("register response: {:#?}", response);
+        trace!(?response, "register response",);
 
         let register_resp = &response.response;
         if register_resp.is_error() {
             warn!(
-                "spu '{}' registration failed: {}",
-                local_spu_id,
-                register_resp.error_message()
+                err = register_resp.error_message(),
+                %local_spu_id,
+                "spu registration failed",
             );
 
             Ok(false)
         } else {
-            info!("spu '{}' registration successful", local_spu_id);
+            info!(local_spu_id, "spu registration successful");
 
             Ok(true)
         }
