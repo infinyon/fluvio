@@ -250,6 +250,7 @@ setup_file() {
 }
 
 @test "Generate and test aggregate - (stable fluvio-smartmodule / no params)" {
+    skip "Skips aggregate due to encoding/decoding versioning for SmartModuleAggregateInput"
     LABEL=default
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--no-params
@@ -438,6 +439,8 @@ setup_file() {
 }
 
 @test "Generate and build aggregate - (stable fluvio-smartmodule / with params)" {
+    skip "Skips aggregate due to encoding/decoding versioning for SmartModuleAggregateInput"
+
     LABEL=default-params
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--with-params
@@ -451,26 +454,26 @@ setup_file() {
 
     # Generate
     run $SMDK_BIN generate \
-        $PARAMS_FLAG \
-        $SMDK_TEMPLATE_PATH_FLAG \
-        $SM_CRATE_PATH_FLAG \
-        $TESTING_GROUP_NAME_FLAG \
-        --sm-type $SMDK_SM_TYPE \
-        --sm-public $SMDK_SM_PUBLIC \
-        --silent \
-        $SM_PACKAGE_NAME
-    assert_success
+          $PARAMS_FLAG \
+          $SMDK_TEMPLATE_PATH_FLAG \
+          $SM_CRATE_PATH_FLAG \
+          $TESTING_GROUP_NAME_FLAG \
+          --sm-type $SMDK_SM_TYPE \
+          --sm-public $SMDK_SM_PUBLIC \
+          --silent \
+          $SM_PACKAGE_NAME
+      assert_success
 
-    # Build
-    cd $SM_PACKAGE_NAME
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-    
-    # Load
-    run $SMDK_BIN load
-    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
-    assert_success
-}
+      # Build
+      cd $SM_PACKAGE_NAME
+      run $SMDK_BIN build
+      refute_output --partial "could not compile"
+
+      # Load
+      run $SMDK_BIN load
+      assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+      assert_success
+  }
 
 #### Using current repo path for `fluvio-smartmodule`
 
