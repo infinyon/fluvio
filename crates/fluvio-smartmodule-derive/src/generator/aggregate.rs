@@ -1,17 +1,35 @@
 use quote::quote;
 use proc_macro2::TokenStream;
-use crate::SmartModuleFn;
 
-pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
-    let user_code = &func.func;
-    let user_fn = &func.name;
+use crate::ast::{SmartModuleFn, RecordKind};
 
+pub fn generate_aggregate_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
+    let user_code = &sm_func.func;
+    let records_code = match sm_func.record_kind {
+        RecordKind::LegacyRecord => quote! {
+            let records: Vec<Record> = match smartmodule_input.base.try_into_records(version) {
+                Ok(records) => records,
+                Err(_) => {
+                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
+                }
+            };
+        },
+        RecordKind::SmartModuleRecord => quote! {
+            let records: Vec<SmartModuleRecord> = match smartmodule_input.base.try_into_smartmodule_records(version) {
+                Ok(records) => records,
+                Err(_) => {
+                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
+                }
+            };
+        },
+    };
+
+    let user_fn = &sm_func.name;
     let function_call = quote!(
         super:: #user_fn(acc_data, &record)
     );
 
     quote! {
-
         #[allow(dead_code)]
         #user_code
 
@@ -22,8 +40,9 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
             pub unsafe fn aggregate(ptr: &mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
                     SmartModuleAggregateInput, SmartModuleTransformErrorStatus,
-                    SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput,SmartModuleAggregateOutput
+                    SmartModuleTransformRuntimeError, SmartModuleKind, SmartModuleOutput, SmartModuleAggregateOutput
                 };
+                use fluvio_smartmodule::SmartModuleRecord;
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
 
@@ -39,13 +58,9 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 }
 
                 let mut accumulator = smartmodule_input.accumulator;
-
                 let base_offset = smartmodule_input.base.base_offset();
-                let records_input = smartmodule_input.base.into_raw_bytes();
-                let mut records: Vec<Record> = vec![];
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
-                    return SmartModuleTransformErrorStatus::DecodingRecords as i32;
-                };
+
+                #records_code
 
                 // PROCESSING
                 let mut output = SmartModuleAggregateOutput {
@@ -65,11 +80,11 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn) -> TokenStream {
                             accumulator = Vec::from(value.as_ref());
                             output.accumulator = accumulator.clone();
                             record.value = RecordData::from(output.accumulator.clone());
-                            output.base.successes.push(record);
+                            output.base.successes.push(record.into());
                         }
                         Err(err) => {
                             let error = SmartModuleTransformRuntimeError::new(
-                                &record,
+                                &record.into(),
                                 base_offset,
                                 SmartModuleKind::Aggregate,
                                 err,

@@ -1,9 +1,11 @@
-use proc_macro::TokenStream;
-use syn::{DeriveInput, ItemFn, parse_macro_input};
-use crate::ast::{SmartModuleConfig, SmartModuleFn, SmartModuleKind};
 mod ast;
 mod util;
 mod generator;
+
+use proc_macro::TokenStream;
+use syn::{DeriveInput, ItemFn, parse_macro_input};
+
+use crate::ast::{SmartModuleConfig, SmartModuleFn, SmartModuleKind};
 
 #[proc_macro_attribute]
 pub fn smartmodule(args: TokenStream, input: TokenStream) -> TokenStream {

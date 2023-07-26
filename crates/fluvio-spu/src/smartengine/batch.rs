@@ -2,16 +2,16 @@ use std::time::Instant;
 use std::io::Error as IoError;
 
 use anyhow::Error;
-use fluvio_compression::{Compression, CompressionError};
-use fluvio_protocol::record::{RecordSet, RawRecords};
-use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use tracing::{instrument, debug, trace};
 
+use fluvio_compression::{Compression, CompressionError};
+use fluvio_protocol::record::{RecordSet, RawRecords};
 use fluvio_protocol::Encoder;
 use fluvio_protocol::{
     record::{Batch, MemoryRecords, Offset},
     link::smartmodule::SmartModuleTransformRuntimeError,
 };
+use fluvio_smartengine::metrics::SmartModuleChainMetrics;
 use fluvio_smartengine::SmartModuleChainInstance;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
@@ -21,6 +21,8 @@ pub(crate) trait SmartModuleInputBatch {
     fn records(&self) -> &Vec<u8>;
 
     fn base_offset(&self) -> Offset;
+
+    fn base_timestamp(&self) -> i64;
 
     fn offset_delta(&self) -> i32;
 
@@ -55,6 +57,7 @@ pub(crate) fn process_batch<R: SmartModuleInputBatch>(
         debug!(
             current_batch_offset = input_batch.base_offset(),
             current_batch_offset_delta = input_batch.offset_delta(),
+            smartmodule_base_timestamp = input_batch.base_timestamp(),
             smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
             smartmodule_base_offset = smartmodule_batch.base_offset,
             smartmodule_records = smartmodule_batch.records().len(),
@@ -62,9 +65,11 @@ pub(crate) fn process_batch<R: SmartModuleInputBatch>(
         );
 
         let now = Instant::now();
-
-        let input = SmartModuleInput::new(input_batch.records().clone(), input_batch.base_offset());
-
+        let input = SmartModuleInput::new(
+            input_batch.records().clone(),
+            input_batch.base_offset(),
+            input_batch.base_timestamp(),
+        );
         let output = sm_chain_instance.process(input, metric)?;
 
         debug!(smartmodule_execution_time = %now.elapsed().as_millis());

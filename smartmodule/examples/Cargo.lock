@@ -18,6 +18,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "android-tzdata"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e999941b234f3131b00bc13c22d06e8c5ff726d1b6318ac7eb276997bbb4fef0"
+
+[[package]]
 name = "async_io_stream"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -57,6 +63,16 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "chrono"
+version = "0.4.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec837a71355b28f6556dbd569b37b3f363091c0bd4b2e735674521b4c5fd9bc5"
+dependencies = [
+ "android-tzdata",
+ "num-traits",
+]
 
 [[package]]
 name = "content_inspector"
@@ -176,15 +192,15 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.4"
+version = "0.10.5"
 dependencies = [
  "bytes",
  "content_inspector",
  "crc32c",
  "eyre",
  "fluvio-compression 0.3.0",
- "fluvio-protocol-derive 0.5.2",
- "fluvio-types 0.4.2",
+ "fluvio-protocol-derive 0.5.3",
+ "fluvio-types 0.4.3",
  "flv-util",
  "once_cell",
  "semver",
@@ -206,7 +222,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -227,11 +243,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "eyre",
- "fluvio-protocol 0.10.4",
- "fluvio-smartmodule-derive 0.6.0",
+ "fluvio-protocol 0.10.5",
+ "fluvio-smartmodule-derive 0.6.1",
  "thiserror",
  "tracing",
 ]
@@ -240,14 +256,31 @@ dependencies = [
 name = "fluvio-smartmodule-aggregate"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
+]
+
+[[package]]
+name = "fluvio-smartmodule-aggregate-with-timestamp"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-array-map-array"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
+ "serde_json",
+]
+
+[[package]]
+name = "fluvio-smartmodule-array-map-array-with-timestamp"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "fluvio-smartmodule 0.7.2",
  "serde_json",
 ]
 
@@ -255,7 +288,7 @@ dependencies = [
 name = "fluvio-smartmodule-array-map-object"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "serde_json",
 ]
 
@@ -272,7 +305,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -283,49 +316,64 @@ dependencies = [
 name = "fluvio-smartmodule-filter"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-hashset"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-init"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-lookback"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
+]
+
+[[package]]
+name = "fluvio-smartmodule-filter-lookback-with-timestamps"
+version = "0.0.0"
+dependencies = [
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-map"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-param"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-map"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
+]
+
+[[package]]
+name = "fluvio-smartmodule-map-with-timestamp"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
@@ -340,7 +388,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "thiserror",
  "tracing",
@@ -350,7 +398,7 @@ dependencies = [
 name = "fluvio-wasm-aggregate-average"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "serde",
  "serde_json",
 ]
@@ -359,7 +407,7 @@ dependencies = [
 name = "fluvio-wasm-aggregate-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "serde",
  "serde_json",
 ]
@@ -368,14 +416,14 @@ dependencies = [
 name = "fluvio-wasm-aggregate-sum"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-wasm-array-map-reddit"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "serde",
  "serde_json",
 ]
@@ -384,7 +432,7 @@ dependencies = [
 name = "fluvio-wasm-filter-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "serde",
  "serde_json",
 ]
@@ -393,7 +441,7 @@ dependencies = [
 name = "fluvio-wasm-filter-odd"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "thiserror",
 ]
 
@@ -401,7 +449,7 @@ dependencies = [
 name = "fluvio-wasm-filter-regex"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "regex",
 ]
 
@@ -416,14 +464,14 @@ dependencies = [
 name = "fluvio-wasm-map-double"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]
 name = "fluvio-wasm-map-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -433,7 +481,7 @@ dependencies = [
 name = "fluvio-wasm-map-regex"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
  "once_cell",
  "regex",
 ]
@@ -651,6 +699,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-traits"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -837,7 +894,7 @@ dependencies = [
 name = "sm-integer-sum-aggegrate"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.1",
+ "fluvio-smartmodule 0.7.2",
 ]
 
 [[package]]

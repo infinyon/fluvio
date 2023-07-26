@@ -1,9 +1,12 @@
 use std::time::Duration;
 
 use derive_builder::Builder;
+
+use fluvio_protocol::Version;
+use fluvio_smartmodule::SMARTMODULE_TIMESTAMPS_VERSION;
 use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 
-const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
+pub const DEFAULT_SMARTENGINE_VERSION: Version = SMARTMODULE_TIMESTAMPS_VERSION;
 
 /// Initial seed data to passed, this will be send back as part of the output
 #[derive(Debug, Clone)]

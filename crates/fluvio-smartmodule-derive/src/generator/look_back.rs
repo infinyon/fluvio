@@ -1,13 +1,15 @@
-use quote::quote;
 use proc_macro2::TokenStream;
-use crate::SmartModuleFn;
+use quote::quote;
+
+use crate::generator::{SmartModuleFn, SmartModuleKind, generate_records_code};
 
 // generate look_back
-pub fn generate_look_back_smartmodule(func: &SmartModuleFn) -> TokenStream {
-    let user_fn = func.name;
-    let user_code = func.func;
-    quote! {
+pub fn generate_look_back_smartmodule(sm_func: &SmartModuleFn) -> TokenStream {
+    let user_fn = sm_func.name;
+    let user_code = sm_func.func;
+    let records_code = generate_records_code(sm_func, &SmartModuleKind::LookBack);
 
+    quote! {
         #[allow(dead_code)]
         #user_code
 
@@ -18,11 +20,9 @@ pub fn generate_look_back_smartmodule(func: &SmartModuleFn) -> TokenStream {
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn look_back(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
-                    SmartModuleInput, SmartModuleLookbackErrorStatus,
-                    SmartModuleLookbackRuntimeError, SmartModuleKind, SmartModuleLookbackOutput,
+                    SmartModuleLookbackErrorStatus,
+                    SmartModuleLookbackRuntimeError, SmartModuleKind, SmartModuleLookbackOutput
                 };
-                use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
-                use fluvio_smartmodule::dataplane::record::{Record, RecordData};
 
                 // DECODING
                 extern "C" {
@@ -30,21 +30,15 @@ pub fn generate_look_back_smartmodule(func: &SmartModuleFn) -> TokenStream {
                 }
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
-                let mut smartmodule_input = SmartModuleInput::default();
-                if let Err(_err) = Decoder::decode(&mut smartmodule_input, &mut std::io::Cursor::new(input_data), version) {
-                    return SmartModuleLookbackErrorStatus::DecodingBaseInput as i32;
-                }
+
+                #records_code
 
                 let base_offset = smartmodule_input.base_offset();
-                let records_input = smartmodule_input.into_raw_bytes();
-                let mut records: Vec<Record> = vec![];
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
-                    return SmartModuleLookbackErrorStatus::DecodingRecords as i32;
-                };
 
                 // PROCESSING
                 for record in records.into_iter() {
                     let result = super:: #user_fn(&record);
+
                     if let Err(err) = result {
                         let error = SmartModuleLookbackRuntimeError::new(
                             &record,

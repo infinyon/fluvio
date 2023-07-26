@@ -9,7 +9,7 @@ use wasmtime::{Engine, Module};
 use fluvio_smartmodule::dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput};
 
 use crate::SmartModuleConfig;
-use crate::engine::config::Lookback;
+use crate::engine::config::{Lookback, DEFAULT_SMARTENGINE_VERSION};
 
 use super::init::SmartModuleInit;
 use super::instance::{SmartModuleInstance, SmartModuleInstanceContext};
@@ -78,10 +78,12 @@ impl SmartModuleChainBuilder {
             let init = SmartModuleInit::try_instantiate(&ctx, &mut state)?;
             let look_back = SmartModuleLookBack::try_instantiate(&ctx, &mut state)?;
             let transform = create_transform(&ctx, config.initial_data, &mut state)?;
-            let mut instance = SmartModuleInstance::new(ctx, init, look_back, transform);
+            let mut instance = SmartModuleInstance::new(ctx, init, look_back, transform, version);
+
             instance.call_init(&mut state)?;
             instances.push(instance);
         }
+
         Ok(SmartModuleChainInstance {
             store: state,
             instances,
@@ -140,6 +142,7 @@ impl SmartModuleChainInstance {
         metric.add_bytes_in(raw_len as u64);
 
         let base_offset = input.base_offset();
+        let base_timestamp = input.base_timestamp();
 
         if let Some((last, instances)) = self.instances.split_last_mut() {
             let mut next_input = input;
@@ -157,8 +160,10 @@ impl SmartModuleChainInstance {
                     // encountered error, we stop processing and return partial output
                     return Ok(output);
                 } else {
-                    next_input = output.successes.try_into()?;
+                    next_input =
+                        SmartModuleInput::try_from_records(output.successes, instance.version())?;
                     next_input.set_base_offset(base_offset);
+                    next_input.set_base_timestamp(base_timestamp);
                 }
             }
 
@@ -172,7 +177,10 @@ impl SmartModuleChainInstance {
             debug!(records_out, "sm records out");
             Ok(output)
         } else {
-            Ok(SmartModuleOutput::new(input.try_into()?))
+            #[allow(deprecated)]
+            let records = input.try_into_records(DEFAULT_SMARTENGINE_VERSION)?;
+
+            Ok(SmartModuleOutput::new(records))
         }
     }
 
@@ -186,20 +194,26 @@ impl SmartModuleChainInstance {
         F: Fn(Lookback) -> R,
     {
         debug!("look_back on chain with {} instances", self.instances.len());
+
         for instance in self.instances.iter_mut() {
             if let Some(lookback) = instance.lookback() {
                 debug!("look_back on instance");
                 let records: Vec<Record> = read_fn(lookback).await?;
-                let input: SmartModuleInput = SmartModuleInput::try_from(records)?;
+                let input: SmartModuleInput =
+                    SmartModuleInput::try_from_records(records, instance.version())?;
+
                 metrics.add_bytes_in(input.raw_bytes().len() as u64);
                 self.store.top_up_fuel();
+
                 let result = instance.call_look_back(input, &mut self.store);
                 let fuel_used = self.store.get_used_fuel();
+
                 debug!(fuel_used, "fuel used");
                 metrics.add_fuel_used(fuel_used);
                 result?;
             }
         }
+
         Ok(())
     }
 }
@@ -223,13 +237,12 @@ mod test {
 #[cfg(test)]
 mod chaining_test {
 
-    use std::convert::TryFrom;
-
+    use fluvio_protocol::record::Record;
     use fluvio_protocol::link::smartmodule::SmartModuleLookbackRuntimeError;
-    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput, Record};
+    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput};
 
-    use crate::engine::config::Lookback;
     use crate::engine::error::EngineError;
+    use crate::engine::config::{Lookback, DEFAULT_SMARTENGINE_VERSION};
 
     use super::super::{
         SmartEngine, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
@@ -269,7 +282,11 @@ mod chaining_test {
 
         let input = vec![Record::new("hello world")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // no records passed
 
@@ -279,7 +296,11 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value.as_ref(), b"APPLE");
@@ -327,7 +348,11 @@ mod chaining_test {
             Record::new("banana"),
         ];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 2); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "zeroapple");
@@ -335,13 +360,21 @@ mod chaining_test {
 
         let input = vec![Record::new("nothing")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 0); // one record passed
 
         let input = vec![Record::new("elephant")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(
@@ -383,7 +416,11 @@ mod chaining_test {
         // then
         let input = vec![Record::new("1"), Record::new("2"), Record::new("3")];
         let output = chain
-            .process(SmartModuleInput::try_from(input).expect("input"), &metrics)
+            .process(
+                SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION)
+                    .expect("input"),
+                &metrics,
+            )
             .expect("process");
         assert_eq!(output.successes.len(), 1); // one record passed
         assert_eq!(output.successes[0].value().to_string(), "3");
@@ -449,7 +486,8 @@ mod chaining_test {
         assert_eq!(chain.store.get_used_fuel(), 0);
 
         let record = vec![Record::new("input")];
-        let input = SmartModuleInput::try_from(record).expect("valid input record");
+        let input = SmartModuleInput::try_from_records(record, DEFAULT_SMARTENGINE_VERSION)
+            .expect("valid input record");
         let metrics = SmartModuleChainMetrics::default();
         //when
         let output = chain.process(input, &metrics).expect("process failed");
@@ -565,7 +603,10 @@ mod chaining_test {
 
         // when
         let input: Vec<Record> = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
-        let res = chain.process(SmartModuleInput::try_from(input).expect("input"), &metrics);
+        let res = chain.process(
+            SmartModuleInput::try_from_records(input, DEFAULT_SMARTENGINE_VERSION).expect("input"),
+            &metrics,
+        );
 
         // then
         assert!(res.is_err());

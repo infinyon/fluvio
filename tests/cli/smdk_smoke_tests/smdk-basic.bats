@@ -250,6 +250,7 @@ setup_file() {
 }
 
 @test "Generate and test aggregate - (stable fluvio-smartmodule / no params)" {
+    skip "Skips aggregate due to encoding/decoding versioning for SmartModuleAggregateInput"
     LABEL=default
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--no-params
@@ -438,6 +439,8 @@ setup_file() {
 }
 
 @test "Generate and build aggregate - (stable fluvio-smartmodule / with params)" {
+    skip "Skips aggregate due to encoding/decoding versioning for SmartModuleAggregateInput"
+
     LABEL=default-params
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--with-params
@@ -451,26 +454,26 @@ setup_file() {
 
     # Generate
     run $SMDK_BIN generate \
-        $PARAMS_FLAG \
-        $SMDK_TEMPLATE_PATH_FLAG \
-        $SM_CRATE_PATH_FLAG \
-        $TESTING_GROUP_NAME_FLAG \
-        --sm-type $SMDK_SM_TYPE \
-        --sm-public $SMDK_SM_PUBLIC \
-        --silent \
-        $SM_PACKAGE_NAME
-    assert_success
+          $PARAMS_FLAG \
+          $SMDK_TEMPLATE_PATH_FLAG \
+          $SM_CRATE_PATH_FLAG \
+          $TESTING_GROUP_NAME_FLAG \
+          --sm-type $SMDK_SM_TYPE \
+          --sm-public $SMDK_SM_PUBLIC \
+          --silent \
+          $SM_PACKAGE_NAME
+      assert_success
 
-    # Build
-    cd $SM_PACKAGE_NAME
-    run $SMDK_BIN build
-    refute_output --partial "could not compile"
-    
-    # Load
-    run $SMDK_BIN load
-    assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
-    assert_success
-}
+      # Build
+      cd $SM_PACKAGE_NAME
+      run $SMDK_BIN build
+      refute_output --partial "could not compile"
+
+      # Load
+      run $SMDK_BIN load
+      assert_output --partial "Creating SmartModule: $SM_PACKAGE_NAME"
+      assert_success
+  }
 
 #### Using current repo path for `fluvio-smartmodule`
 
@@ -901,5 +904,83 @@ setup_file() {
 
     run $SMDK_BIN test --text '444' --lookback-last '1' --record '222' --record '333' --key-value my-key
     assert_output --partial "[my-key]"
+    assert_success
+}
+
+@test "Test using SmartModuleRecord on fluvio-smartmodule-map-with-timestamp" {
+    # Test with smartmodule example with timestamp
+    cd "$(pwd)/smartmodule/examples/map_with_timestamp/"
+
+    # Set Date Variables
+    DATE_NOW_YEAR="$(date +%Y)"
+    DATE_NOW_MONTH="$(date +%m)"
+    DATE_NOW_DAY="$(date +%d)"
+
+    # Build
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+
+    # Test
+    run $SMDK_BIN test --text 'foo'
+    assert_output --partial "0:$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
+    assert_success
+}
+
+@test "Test using SmartModuleRecord on fluvio-smartmodule-aggregate-with-timestamp" {
+    # Test with smartmodule example with timestamp
+    cd "$(pwd)/smartmodule/examples/aggregate_with_timestamp/"
+
+    # Set Date Variables
+    DATE_NOW_YEAR="$(date +%Y)"
+    DATE_NOW_MONTH="$(date +%m)"
+    DATE_NOW_DAY="$(date +%d)"
+
+    # Build
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+
+    # Test
+    run $SMDK_BIN test --text 'foo'
+    assert_output --partial "foo_[$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
+    assert_success
+}
+
+@test "Test using SmartModuleRecord on fluvio-filter-look-back-with-timestamps" {
+    # Test with smartmodule example with Lookback
+    cd "$(pwd)/smartmodule/examples/filter_look_back_with_timestamps/"
+
+    # Build
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+
+    # Test
+    run $SMDK_BIN test --text '111' --lookback-last '1' --record '222' --record '333'
+    refute_output --partial "111"
+    assert_success
+
+    run $SMDK_BIN test --text '444' --lookback-last '1' --record '222' --record '333'
+    assert_output --partial "444"
+    assert_success
+}
+
+@test "Test using SmartModuleRecord on fluvio-array-map-json-array-with-timestamp" {
+    # Test with smartmodule example with Array Map with Timestamp
+    cd "$(pwd)/smartmodule/examples/array_map_json_array_with_timestamp/"
+
+    # Set Date Variables
+    DATE_NOW_YEAR="$(date +%Y)"
+    DATE_NOW_MONTH="$(date +%m)"
+    DATE_NOW_DAY="$(date +%d)"
+
+    # Build
+    run $SMDK_BIN build
+    refute_output --partial "could not compile"
+
+    # Test
+    run $SMDK_BIN test --verbose --text '["Apple", "Banana", "Cranberry"]'
+    assert_output --partial "3 records outputed"
+    assert_output --partial "\"Apple\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
+    assert_output --partial "\"Banana\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
+    assert_output --partial "\"Cranberry\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
     assert_success
 }

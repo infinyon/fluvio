@@ -5,8 +5,6 @@ use fluvio_smartmodule::{
     dataplane::smartmodule::SmartModuleExtraParams, smartmodule, Record, RecordData, Result,
 };
 
-
-
 static INITIAL_VALUE: OnceLock<UseOnce<RecordData>> = OnceLock::new();
 
 const PARAM_NAME: &str = "initial_value";

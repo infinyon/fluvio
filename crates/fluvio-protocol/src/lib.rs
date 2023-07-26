@@ -19,6 +19,11 @@ pub mod codec;
 #[cfg(feature = "record")]
 pub mod record;
 
+#[cfg(feature = "types")]
+pub mod types {
+    pub use fluvio_types::*;
+}
+
 #[cfg(feature = "link")]
 pub mod link;
 
