@@ -119,7 +119,7 @@ tracing = "0.1.19"
 tracing-subscriber = { version = "0.3", default-features = false }
 url = "2.1.1"
 wasm-bindgen-test = "0.3.24"
-wasmparser = "0.108.0"
+wasmparser = "0.110.0"
 which = "4.1.0"
 x509-parser = "0.15.0"
 
