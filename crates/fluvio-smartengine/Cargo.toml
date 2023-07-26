@@ -27,8 +27,8 @@ serde_json = { workspace = true, optional = true }
 serde_yaml = { workspace = true, default-features = false, optional = true }
 cfg-if = { workspace = true }
 derive_builder = { workspace = true }
-wasmtime = { version = "10.0.1", optional = true }
-wasmtime-wasi = { version = "10.0.1", optional = true }
+wasmtime = { version = "11.0.1", optional = true }
+wasmtime-wasi = { version = "11.0.1", optional = true }
 humantime-serde = { workspace = true, optional = true }
 
 fluvio-future = { workspace = true, default-features = false }
