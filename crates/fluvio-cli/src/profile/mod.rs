@@ -4,6 +4,7 @@
 //! CLI command for Profile operation
 //!
 
+mod add;
 mod sync;
 mod current;
 mod switch;
@@ -19,6 +20,7 @@ use clap::Parser;
 use anyhow::Result;
 
 use crate::common::output::Terminal;
+use crate::profile::add::ManualAddOpt;
 use crate::profile::current::CurrentOpt;
 use crate::profile::delete_cluster::DeleteClusterOpt;
 use crate::profile::delete_profile::DeleteProfileOpt;
@@ -79,6 +81,10 @@ pub enum ProfileCmd {
     /// Export a profile for use in other applications
     #[command(name = "export")]
     Export(ExportOpt),
+
+    /// Manually add a profile (advanced)
+    #[command(name = "add")]
+    ManualAdd(ManualAddOpt),
 }
 
 impl ProfileCmd {
@@ -107,6 +113,9 @@ impl ProfileCmd {
             }
             Self::Export(export) => {
                 export.process(out)?;
+            }
+            Self::ManualAdd(add) => {
+                add.process()?;
             }
         }
 
