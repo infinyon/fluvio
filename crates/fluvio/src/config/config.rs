@@ -27,7 +27,7 @@ fn home_dir() -> Option<PathBuf> {
 use serde::Deserialize;
 use serde::Serialize;
 
-use fluvio_types::defaults::{CLI_CONFIG_PATH};
+use fluvio_types::defaults::CLI_CONFIG_PATH;
 use crate::{FluvioConfig, FluvioError};
 
 use super::TlsPolicy;
