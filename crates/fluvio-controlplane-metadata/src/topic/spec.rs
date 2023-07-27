@@ -365,13 +365,11 @@ impl std::fmt::Display for TopicReplicaParam {
 /// Hack: field instead of new type to get around encode and decode limitations
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct PartitionMaps {
-    maps: Vec<PartitionMap>,
-}
+pub struct PartitionMaps(Vec<PartitionMap>);
 
 impl From<Vec<PartitionMap>> for PartitionMaps {
     fn from(maps: Vec<PartitionMap>) -> Self {
-        Self { maps }
+        Self(maps)
     }
 }
 
@@ -387,26 +385,26 @@ impl From<Vec<(PartitionId, Vec<SpuId>)>> for PartitionMaps {
 
 impl std::fmt::Display for PartitionMaps {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "partition map:{})", self.maps.len())
+        write!(f, "partition map:{})", self.0.len())
     }
 }
 
 impl PartitionMaps {
     pub fn maps(&self) -> &Vec<PartitionMap> {
-        &self.maps
+        &self.0
     }
 
     pub fn maps_owned(self) -> Vec<PartitionMap> {
-        self.maps
+        self.0
     }
 
     fn partition_count(&self) -> PartitionCount {
-        self.maps.len() as PartitionCount
+        self.0.len() as PartitionCount
     }
 
     fn replication_factor(&self) -> Option<ReplicationFactor> {
         // compute replication form replica map
-        self.maps
+        self.0
             .first()
             .map(|partition| partition.replicas.len() as ReplicationFactor)
     }
@@ -415,7 +413,7 @@ impl PartitionMaps {
         use std::fmt::Write;
 
         let mut res = String::new();
-        for partition in &self.maps {
+        for partition in &self.0 {
             write!(res, "{}:{:?}, ", partition.id, partition.replicas).unwrap();
             // ok to unwrap since this will not fail
         }
@@ -433,7 +431,7 @@ impl PartitionMaps {
     pub fn unique_spus_in_partition_map(&self) -> Vec<SpuId> {
         let mut spu_ids: Vec<SpuId> = vec![];
 
-        for partition in &self.maps {
+        for partition in &self.0 {
             for spu in &partition.replicas {
                 if !spu_ids.contains(spu) {
                     spu_ids.push(*spu);
@@ -448,7 +446,7 @@ impl PartitionMaps {
     pub fn partition_map_to_replica_map(&self) -> ReplicaMap {
         let mut replica_map: ReplicaMap = BTreeMap::new();
 
-        for partition in &self.maps {
+        for partition in &self.0 {
             replica_map.insert(partition.id as PartitionId, partition.replicas.clone());
         }
 
@@ -459,7 +457,7 @@ impl PartitionMaps {
     #[allow(clippy::explicit_counter_loop)]
     pub fn valid_partition_map(&self) -> Result<(), Error> {
         // there must be at least one partition in the partition map
-        if self.maps.is_empty() {
+        if self.0.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
                 "no assigned partitions found",
@@ -477,7 +475,7 @@ impl PartitionMaps {
         //      - all elements must be positive integers
         let mut id = 0;
         let mut replica_len = 0;
-        for partition in &self.maps {
+        for partition in &self.0 {
             if id == 0 {
                 // id must be 0
                 if partition.id != id {
@@ -568,6 +566,7 @@ pub struct PartitionMap {
     pub id: PartitionId,
     pub replicas: Vec<SpuId>,
 }
+
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]

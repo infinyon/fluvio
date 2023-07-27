@@ -23,3 +23,28 @@ impl Spec for TopicSpec {
         &TOPIC_V2_API
     }
 }
+
+
+
+
+
+#[cfg(test)]
+mod test_spec {
+
+    use std::{io::BufReader, fs::File};
+
+    use fluvio_stream_model::k8_types::K8Obj;
+
+    use super::TopicSpec;
+
+    type K8TopicSpec = K8Obj<TopicSpec>;
+
+    #[test]
+    fn read_k8_topic_partition_assignment() {
+        let reader = BufReader::new(File::open("tests/topic_assignment.yaml").expect("spec"));
+        let topic: K8TopicSpec =
+            serde_yaml::from_reader(reader).expect("failed to parse topic");
+        assert_eq!( topic.metadata.name, "test3");
+
+    }
+}

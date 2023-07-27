@@ -45,22 +45,17 @@ spec:
                       items:
                         type: object
                         required:
-                        - partition
+                          - id
+                          - replicas
                         properties:
-                          partition:
-                            type: object
-                            required:
-                            - id
-                            - replicas
-                            properties:
-                              id:
-                                type: integer
-                                minimum: 0
-                              replicas:
-                                type: array
-                                items:
-                                  type: integer
-                                  minimum: 0
+                          id:
+                            type: integer
+                            minimum: 0
+                          replicas:
+                            type: array
+                            items:
+                              type: integer
+                              minimum: 0
                   oneOf:
                     - required: ["computed"]
                     - required: ["assigned"]
