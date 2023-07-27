@@ -2775,7 +2775,7 @@ dependencies = [
  "toml 0.7.6",
  "tracing",
  "tracing-subscriber",
- "wasmparser 0.108.0",
+ "wasmparser 0.110.0",
 ]
 
 [[package]]
@@ -7785,16 +7785,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29e3ac9b780c7dda0cac7a52a5d6d2d6707cc6e3451c9db209b6c758f40d7acb"
 dependencies = [
  "indexmap 1.9.3",
- "semver 1.0.18",
-]
-
-[[package]]
-name = "wasmparser"
-version = "0.108.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76c956109dcb41436a39391139d9b6e2d0a5e0b158e1293ef352ec977e5e36c5"
-dependencies = [
- "indexmap 2.0.0",
  "semver 1.0.18",
 ]
 
