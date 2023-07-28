@@ -364,7 +364,11 @@ impl std::fmt::Display for TopicReplicaParam {
 
 /// Hack: field instead of new type to get around encode and decode limitations
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize),serde(transparent))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 pub struct PartitionMaps(Vec<PartitionMap>);
 
 impl From<Vec<PartitionMap>> for PartitionMaps {
@@ -566,7 +570,6 @@ pub struct PartitionMap {
     pub id: PartitionId,
     pub replicas: Vec<SpuId>,
 }
-
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
