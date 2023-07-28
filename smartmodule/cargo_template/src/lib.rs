@@ -6,18 +6,18 @@ use fluvio_smartmodule::eyre;
 {% endif %}
 {% endif %}
 {% if smartmodule-type == "filter" %}
-use fluvio_smartmodule::{smartmodule, Result, Record};
+use fluvio_smartmodule::{smartmodule, Result, SmartModuleRecord};
 
 #[smartmodule(filter)]
-pub fn filter(record: &Record) -> Result<bool> {
+pub fn filter(record: &SmartModuleRecord) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     Ok(string.contains('a'))
 }
 {% elsif smartmodule-type == "map" %}
-use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, SmartModuleRecord, RecordData};
 
 #[smartmodule(map)]
-pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
+pub fn map(record: &SmartModuleRecord) -> Result<(Option<RecordData>, RecordData)> {
     let key = record.key.clone();
 
     let string = std::str::from_utf8(record.value.as_ref())?;
@@ -27,10 +27,10 @@ pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
     Ok((key, value.into()))
 }
 {% elsif smartmodule-type == "filter-map" %}
-use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, SmartModuleRecord, RecordData, Result};
 
 #[smartmodule(filter_map)]
-pub fn filter_map(record: &Record) -> Result<Option<(Option<RecordData>, RecordData)>> {
+pub fn filter_map(record: &SmartModuleRecord) -> Result<Option<(Option<RecordData>, RecordData)>> {
     let key = record.key.clone();
     let string = String::from_utf8_lossy(record.value.as_ref()).to_string();
     let int: i32 = string.parse()?;
@@ -44,10 +44,10 @@ pub fn filter_map(record: &Record) -> Result<Option<(Option<RecordData>, RecordD
 }
 
 {% elsif smartmodule-type == "array-map" %}
-use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, SmartModuleRecord, RecordData};
 
 #[smartmodule(array_map)]
-pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
+pub fn array_map(record: &SmartModuleRecord) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Deserialize a JSON array with any kind of values inside
     let array = serde_json::from_slice::<Vec<serde_json::Value>>(record.value.as_ref())?;
 
@@ -65,10 +65,10 @@ pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)
     Ok(kvs)
 }
 {% elsif smartmodule-type == "aggregate" %}
-use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, SmartModuleRecord, RecordData};
 
 #[smartmodule(aggregate)]
-pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
+pub fn aggregate(accumulator: RecordData, current: &SmartModuleRecord) -> Result<RecordData> {
     // Parse the accumulator and current record as strings
     let accumulator_string = std::str::from_utf8(accumulator.as_ref())?;
     let current_string = std::str::from_utf8(current.value.as_ref())?;
