@@ -2657,6 +2657,7 @@ dependencies = [
  "lenient_semver",
  "semver 1.0.18",
  "serde",
+ "serde_json",
  "serde_yaml 0.9.25",
  "thiserror",
  "toml 0.7.6",

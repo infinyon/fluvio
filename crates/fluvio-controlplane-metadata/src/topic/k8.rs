@@ -40,11 +40,23 @@ mod test_spec {
     type K8TopicSpec = K8Obj<TopicSpec>;
 
     #[test]
-    fn read_k8_topic_partition_assignment() {
+    fn read_k8_topic_partition_assignment_yaml() {
         let reader = BufReader::new(File::open("tests/topic_assignment.yaml").expect("spec"));
         let topic: K8TopicSpec =
             serde_yaml::from_reader(reader).expect("failed to parse topic");
         assert_eq!( topic.metadata.name, "test3");
+
+    }
+
+
+    #[test]
+    fn read_k8_topic_partition_assignment_json() {
+        let reader = BufReader::new(File::open("tests/topic_assign.json").expect("spec"));
+        let topic: K8TopicSpec =
+            serde_json::from_reader(reader).expect("failed to parse topic");
+        assert_eq!( topic.metadata.name, "test3");
+        let yaml = serde_yaml::to_string(&topic).expect("to yaml");
+        println!("yaml: {:#}",yaml);
 
     }
 }

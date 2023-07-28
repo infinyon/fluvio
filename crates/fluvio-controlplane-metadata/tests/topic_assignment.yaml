@@ -6,8 +6,7 @@ metadata:
 spec:
   compressionType: Any
   replicas:
-    assigned:
-      - id: 0
-        replicas: 
-          - 5001
-          - 5002
+    computed:
+      ignoreRackAssignment: false
+      partitions: 1
+      replicationFactor: 1

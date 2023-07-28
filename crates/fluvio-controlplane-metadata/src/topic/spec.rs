@@ -28,6 +28,7 @@ use super::deduplication::Deduplication;
     serde(rename_all = "camelCase")
 )]
 pub struct TopicSpec {
+    #[cfg_attr(feature = "use_serde", serde(default))]
     replicas: ReplicaSpec,
     #[fluvio(min_version = 3)]
     cleanup_policy: Option<CleanupPolicy>,
@@ -189,7 +190,7 @@ impl std::fmt::Display for ReplicaSpec {
 
 impl Default for ReplicaSpec {
     fn default() -> Self {
-        Self::Assigned(PartitionMaps::default())
+        Self::Computed(TopicReplicaParam::default())
     }
 }
 
@@ -364,7 +365,7 @@ impl std::fmt::Display for TopicReplicaParam {
 
 /// Hack: field instead of new type to get around encode and decode limitations
 #[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize),serde(transparent))]
 pub struct PartitionMaps(Vec<PartitionMap>);
 
 impl From<Vec<PartitionMap>> for PartitionMaps {
@@ -564,6 +565,7 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMap {
     pub id: PartitionId,
+    #[cfg_attr(feature = "use_serde", serde(rename = "spus"))]
     pub replicas: Vec<SpuId>,
 }
 
