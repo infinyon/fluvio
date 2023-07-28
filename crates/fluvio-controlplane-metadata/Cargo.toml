@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-controlplane-metadata"
 edition = "2021"
-version = "0.22.4"
+version = "0.23.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Metadata definition for Fluvio control plane"
 repository = "https://github.com/infinyon/fluvio"
@@ -44,6 +44,6 @@ fluvio-protocol = { workspace = true, features = [ "record",] }
 
 
 [dev-dependencies]
-serde_yaml = { workspace = true }
 fluvio-future = { workspace = true, features = ["fixture"] }
+serde_json = { workspace = true }
 

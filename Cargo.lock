@@ -2288,7 +2288,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.19.4"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2639,7 +2639,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.22.4"
+version = "0.23.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2657,6 +2657,7 @@ dependencies = [
  "lenient_semver",
  "semver 1.0.18",
  "serde",
+ "serde_json",
  "serde_yaml 0.9.25",
  "thiserror",
  "toml 0.7.6",
@@ -2884,7 +2885,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.19.2"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",

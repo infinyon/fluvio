@@ -137,20 +137,20 @@ fluvio_ws_stream_wasm = "0.7.0"
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
 
 # internal fluvio dep
-fluvio = { version = "0.19.0", path = "crates/fluvio" }
+fluvio = { version = "0.20.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-channel = { path = "crates/fluvio-channel" }
 fluvio-cli-common = { path = "crates/fluvio-cli-common"}
 fluvio-compression = { version = "0.3", path = "crates/fluvio-compression" }
 fluvio-connector-package = { path = "crates/fluvio-connector-package/" }
 fluvio-controlplane = { path = "crates/fluvio-controlplane" }
-fluvio-controlplane-metadata = { version = "0.22.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-controlplane-metadata = { version = "0.23.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-package-index = { version = "0.7.0", path = "crates/fluvio-package-index", default-features = false }
 fluvio-protocol = { version = "0.10.4", path = "crates/fluvio-protocol" }
 fluvio-spu-schema = { version = "0.14.0", path = "crates/fluvio-spu-schema", default-features  = false }
-fluvio-sc-schema = { version = "0.19.0", path = "crates/fluvio-sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.20.0", path = "crates/fluvio-sc-schema", default-features = false }
 fluvio-service = { path = "crates/fluvio-service" }
 fluvio-socket = { version = "0.14.3", path = "crates/fluvio-socket", default-features = false }
 fluvio-smartengine = {  version = "0.7.0", path = "crates/fluvio-smartengine", default-features = false }

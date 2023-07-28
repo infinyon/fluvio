@@ -235,4 +235,21 @@ mod load {
                 .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{err}")))
         }
     }
+
+    #[cfg(test)]
+    mod test {
+
+        use fluvio_controlplane_metadata::topic::PartitionMaps;
+
+        use super::PartitionLoad;
+
+        #[test]
+        fn test_replica_map_file() {
+            let p_map = PartitionMaps::file_decode("test-data/topics/replica_assignment.json")
+                .expect("v1 not found");
+            assert_eq!(p_map.maps().len(), 3);
+            assert_eq!(p_map.maps()[0].id, 0);
+            assert_eq!(p_map.maps()[0].replicas, vec![5001, 5002, 5003]);
+        }
+    }
 }
