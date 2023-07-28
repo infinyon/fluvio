@@ -11,7 +11,7 @@
             "assigned": [
                 {
                     "id": 0,
-                    "spus": [
+                    "replicas": [
                         5001,
                         5002
                     ]
