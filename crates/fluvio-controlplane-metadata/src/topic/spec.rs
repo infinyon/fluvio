@@ -564,7 +564,6 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMap {
     pub id: PartitionId,
-    #[cfg_attr(feature = "use_serde", serde(rename = "spus"))]
     pub replicas: Vec<SpuId>,
 }
 
