@@ -45,7 +45,14 @@ mod test_spec {
         let topic: K8TopicSpec =
             serde_yaml::from_reader(reader).expect("failed to parse topic");
         assert_eq!( topic.metadata.name, "test3");
+    }
 
+    #[test]
+    fn read_k8_topic_computed_yaml() {
+        let reader = BufReader::new(File::open("tests/topic_computed.yaml").expect("spec"));
+        let topic: K8TopicSpec =
+            serde_yaml::from_reader(reader).expect("failed to parse topic");
+        assert_eq!( topic.metadata.name, "test3");
     }
 
 
