@@ -44,7 +44,6 @@ fluvio-protocol = { workspace = true, features = [ "record",] }
 
 
 [dev-dependencies]
-serde_yaml = { workspace = true }
 fluvio-future = { workspace = true, features = ["fixture"] }
 serde_json = { workspace = true }
 

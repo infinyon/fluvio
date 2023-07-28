@@ -28,7 +28,6 @@ use super::deduplication::Deduplication;
     serde(rename_all = "camelCase")
 )]
 pub struct TopicSpec {
-    #[cfg_attr(feature = "use_serde", serde(default))]
     replicas: ReplicaSpec,
     #[fluvio(min_version = 3)]
     cleanup_policy: Option<CleanupPolicy>,

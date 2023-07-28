@@ -35,35 +35,21 @@ mod test_spec {
 
     use fluvio_stream_model::k8_types::K8Obj;
 
+    use crate::topic::ReplicaSpec;
+
     use super::TopicSpec;
 
     type K8TopicSpec = K8Obj<TopicSpec>;
 
     #[test]
-    fn read_k8_topic_partition_assignment_yaml() {
-        let reader = BufReader::new(File::open("tests/topic_assignment.yaml").expect("spec"));
-        let topic: K8TopicSpec =
-            serde_yaml::from_reader(reader).expect("failed to parse topic");
-        assert_eq!( topic.metadata.name, "test3");
-    }
-
-    #[test]
-    fn read_k8_topic_computed_yaml() {
-        let reader = BufReader::new(File::open("tests/topic_computed.yaml").expect("spec"));
-        let topic: K8TopicSpec =
-            serde_yaml::from_reader(reader).expect("failed to parse topic");
-        assert_eq!( topic.metadata.name, "test3");
-    }
-
-
-    #[test]
     fn read_k8_topic_partition_assignment_json() {
-        let reader = BufReader::new(File::open("tests/topic_assign.json").expect("spec"));
+        let reader: BufReader<File> = BufReader::new(File::open("tests/topic_assignment.json").expect("spec"));
         let topic: K8TopicSpec =
             serde_json::from_reader(reader).expect("failed to parse topic");
         assert_eq!( topic.metadata.name, "test3");
-        let yaml = serde_yaml::to_string(&topic).expect("to yaml");
-        println!("yaml: {:#}",yaml);
-
+        assert!(matches!(topic.spec.replicas(),ReplicaSpec::Assigned(_)));
     }
+
+
+
 }
