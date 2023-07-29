@@ -1,6 +1,29 @@
 # Release Notes
 
-## Platform Version 0.10.14 - UNRELEASED
+## Platform Version 0.10.14 - 2023-07-28
+
+### Added
+
+* Added smart engine memory limit ([#3407](https://github.com/infinyon/fluvio/issues/3407))
+* Improve log message and add explicit matching on spu dispatcher loop ([#3413](https://github.com/infinyon/fluvio/issues/3413))
+* "fluvio profile add" cmd ([#3419](https://github.com/infinyon/fluvio/issues/3419))
+
+### CI
+
+* Added topic-level deduplication mechanism ([#3385](https://github.com/infinyon/fluvio/issues/3385))
+* Inject timestamp to record in SmartModule context ([#3389](https://github.com/infinyon/fluvio/issues/3389))
+
+### Changed
+
+* Update dep ([#3400](https://github.com/infinyon/fluvio/issues/3400))
+* Update dep ([#3415](https://github.com/infinyon/fluvio/issues/3415))
+
+### Fixed
+
+* Replica assignment ([#3422](https://github.com/infinyon/fluvio/issues/3422))
+* Put bash argument inside quotes in smartmodule publish ([#3401](https://github.com/infinyon/fluvio/issues/3401))
+* Properly handle produce operation failure ([#3405](https://github.com/infinyon/fluvio/issues/3405))
+
 
 ## Platform Version 0.10.13 - 2023-07-13
 
