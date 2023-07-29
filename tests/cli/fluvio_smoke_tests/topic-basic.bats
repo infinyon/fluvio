@@ -65,13 +65,6 @@ EOF
 
 # Create topic with replic assigmment
 @test "Create a topic with replica assignment" {
-    # skip stable since it format changes
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on fluvio cli stable version"
-    fi
-    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on cluster stable version"
-    fi
     debug_msg "Topic name: $TOPIC_NAME_REPLICA"
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_REPLICA" --replica-assignment "$REPLICA_CONFIG_PATH"
     #debug_msg "command $BATS_RUN_COMMAND" # This doesn't do anything.
