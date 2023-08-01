@@ -250,7 +250,6 @@ setup_file() {
 }
 
 @test "Generate and test aggregate - (stable fluvio-smartmodule / no params)" {
-    skip "Skips aggregate due to encoding/decoding versioning for SmartModuleAggregateInput"
     LABEL=default
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--no-params
@@ -439,8 +438,6 @@ setup_file() {
 }
 
 @test "Generate and build aggregate - (stable fluvio-smartmodule / with params)" {
-    skip "Skips aggregate due to encoding/decoding versioning for SmartModuleAggregateInput"
-
     LABEL=default-params
     SMDK_SM_TYPE=aggregate
     PARAMS_FLAG=--with-params
