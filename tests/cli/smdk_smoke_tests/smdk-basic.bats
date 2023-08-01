@@ -981,3 +981,23 @@ setup_file() {
     assert_output --partial "\"Cranberry\"_$DATE_NOW_YEAR-$DATE_NOW_MONTH-$DATE_NOW_DAY"
     assert_success
 }
+
+@test "`smdk test` redirects SmartModule error to stdout" {
+    cd "$(pwd)/smartmodule/examples/filter_error/"
+
+    # Build
+    run $SMDK_BIN build
+
+    # Test
+    run $SMDK_BIN test --text foo
+    assert_output "Failed to process 1 record(s) with errors:
+
+1. invalid digit found in string
+
+SmartModule Info: 
+    Type: Filter
+    Offset: 0
+    Key: NULL
+    Value: foo"
+    assert_success
+}

@@ -158,12 +158,18 @@ impl TestCmd {
         let metrics = SmartModuleChainMetrics::default();
 
         let test_records: Vec<Record> = test_data.into();
+        let test_records_len = test_records.len();
         let mut sm_input =
             SmartModuleInput::try_from_records(test_records, DEFAULT_SMARTENGINE_VERSION)?;
 
         sm_input.set_base_timestamp(Utc::now().timestamp_millis());
 
         let output = chain.process(sm_input, &metrics)?;
+
+        if let Some(error) = output.error {
+            print!("Failed to process {test_records_len} record(s) with errors:\n\n1. {error}");
+            return Ok(());
+        }
 
         if self.verbose {
             println!("{:?} records outputed", output.successes.len());

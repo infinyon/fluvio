@@ -7,6 +7,7 @@ members = [
     "aggregate-init",
     "aggregate_with_timestamp",
     "filter",
+    "filter_error",
     "filter_init",
     "filter_look_back",
     "filter_look_back_with_timestamps",
