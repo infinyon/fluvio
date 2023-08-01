@@ -14,8 +14,8 @@ proc-macro = true
 
 [dependencies]
 syn = { workspace = true, features = ["full"]}
-quote = "1.0"
-proc-macro2 = "1.0"
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
 serde_json = { workspace = true }
 inflections = "1.1"
 fluvio-test-util = { path = "../fluvio-test-util" }
@@ -28,6 +28,6 @@ fluvio = { workspace = true  }
 tokio = { workspace = true,  features = ["macros"] }
 fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
 clap = { workspace = true,  features = ["std", "derive", "help", "usage", "error-context"] }
-inventory = "0.3"
+inventory = { workspace = true }
 tracing = { workspace = true }
 crossbeam-channel = "0.5"

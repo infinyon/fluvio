@@ -16,7 +16,7 @@ chrono = { workspace = true, features = ['serde']}
 clap = { workspace = true, features = ["std","derive"] }
 derive_builder = { workspace = true}
 futures-util = { workspace = true }
-hdrhistogram = "7.5.2"
+hdrhistogram = { workspace = true }
 madato = "0.5.3"
 rand = { workspace = true }
 serde = { workspace = true , features = ['derive'] }

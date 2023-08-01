@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.14.4"
+version = "0.14.5"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -20,12 +20,12 @@ tracing = { workspace = true }
 cfg-if = { workspace = true }
 bytes = { workspace = true }
 once_cell = { workspace = true }
-futures-util = { version = "0.3.5", features = ["sink", "io"] }
+futures-util = { features = ["sink", "io"], workspace = true }
 async-lock = { workspace = true }
 event-listener = { workspace = true }
 async-channel = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
-tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
+tokio-util = { features = ["codec", "compat"], workspace = true }
 async-trait = { workspace = true }
 pin-project = { workspace = true }
 thiserror = { workspace = true }

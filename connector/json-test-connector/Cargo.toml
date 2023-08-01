@@ -9,12 +9,12 @@ publish = false
 
 
 [dependencies]
-async-trait = { version = "0.1", default-features = false}
+async-trait = { workspace = true }
 futures = { version = "0.3", default-features = false }
-anyhow = { workspace = true}
-async-std = { version = "1.12",  default-features = false, features = ["attributes", "tokio1"]}
-tokio = { version = "1.23", default-features = false, features = ["time"]}
-serde = { version = "1.0", default-features = false, features = ["derive"]}
+anyhow = { workspace = true }
+async-std = { features = ["attributes", "tokio1"], workspace = true }
+tokio = { default-features = false, features = ["time"], workspace = true }
+serde = { default-features = false, features = ["derive"], workspace = true }
 
 fluvio = { path = "../../crates/fluvio/", features = ["smartengine"]}
 fluvio-connector-common = { path = "../../crates/fluvio-connector-common/", features = ["derive"] }

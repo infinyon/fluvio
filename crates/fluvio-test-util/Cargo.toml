@@ -19,16 +19,16 @@ tokio = { workspace = true, features = ["macros"] }
 syn = { workspace = true }
 serde = { workspace = true}
 serde_json = { workspace = true}
-humantime = "2.1"
-quote = "1.0"
-proc-macro2 = "1.0"
-inventory = "0.3"
+humantime = { workspace = true}
+quote =  { workspace = true }
+proc-macro2 = { workspace = true }
+inventory = { workspace = true }
 comfy-table = { workspace = true }
 once_cell = { workspace = true }
 dyn-clone = "1.0"
 semver = { workspace = true }
-hdrhistogram = "7.3.0"
-uuid = { version = "1.1", features = ["serde", "v4"] }
+hdrhistogram = { workspace = true }
+uuid = { workspace = true }
 anyhow = { workspace = true }
 
 fluvio = { workspace = true  }

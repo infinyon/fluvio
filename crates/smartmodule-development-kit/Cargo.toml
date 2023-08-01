@@ -23,7 +23,7 @@ clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-
 dirs = { workspace = true}
 toml = { workspace = true }
 cargo-generate = { workspace = true }
-include_dir = "0.7.2"
+include_dir = { workspace = true }
 tempfile = { workspace = true }
 enum-display = "0.1.3"
 lib-cargo-crate = "0.2.1"

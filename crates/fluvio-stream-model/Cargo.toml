@@ -27,6 +27,6 @@ tracing = { workspace = true }
 k8-types = { workspace = true, optional = true }
 
 [dev-dependencies]
-async-std = { workspace = true,  features = [ "attributes",] }
-tokio = { workspace = true,  features = ["macros"] }
+async-std = { workspace = true, features = ["attributes"] }
+tokio = { workspace = true, features = ["macros"] }
 fluvio-future = { workspace = true, features = ["fixture"] }
