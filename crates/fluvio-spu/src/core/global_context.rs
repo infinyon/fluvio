@@ -22,6 +22,8 @@ use crate::core::metrics::SpuMetrics;
 use crate::smartengine::SmartEngine;
 
 use super::leader_client::LeaderConnections;
+use super::remote_cluster::RemoteClusterLocalStore;
+use super::remote_cluster::SharedRemoteClusterLocalStore;
 use super::smartmodule::SmartModuleLocalStore;
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
@@ -29,6 +31,8 @@ use super::smartmodule::SharedSmartModuleLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
 use super::SharedSpuConfig;
+use super::upstream_cluster::SharedUpstreamClusterLocalStore;
+use super::upstream_cluster::UpstreamClusterLocalStore;
 
 pub use file_replica::ReplicaChange;
 
@@ -44,6 +48,8 @@ pub struct GlobalContext<S> {
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
+    remote_cluster_localstore: SharedRemoteClusterLocalStore,
+    upstream_cluster_localstore: SharedUpstreamClusterLocalStore,
     metrics: Arc<SpuMetrics>,
 }
 
@@ -75,6 +81,8 @@ where
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
+            remote_cluster_localstore: RemoteClusterLocalStore::new_shared(),
+            upstream_cluster_localstore: UpstreamClusterLocalStore::new_shared(),
             metrics,
         }
     }
@@ -98,6 +106,22 @@ where
 
     pub fn smartmodule_localstore(&self) -> &SmartModuleLocalStore {
         &self.smartmodule_localstore
+    }
+
+    pub fn remote_cluster_localstore(&self) -> &RemoteClusterLocalStore {
+        &self.remote_cluster_localstore
+    }
+
+    pub fn remote_cluster_localstore_owned(&self) -> SharedRemoteClusterLocalStore {
+        self.remote_cluster_localstore.clone()
+    }
+
+    pub fn upstream_cluster_localstore(&self) -> &UpstreamClusterLocalStore {
+        &self.upstream_cluster_localstore
+    }
+
+    pub fn upstream_cluster_localstore_owned(&self) -> SharedUpstreamClusterLocalStore {
+        self.upstream_cluster_localstore.clone()
     }
 
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {

@@ -33,7 +33,8 @@ impl ListTopicsOpt {
         debug!("list topics {:#?} ", output_type);
         let admin = fluvio.admin().await;
 
-        let topics = admin.all::<TopicSpec>().await?;
+        let topics: Vec<fluvio_sc_schema::objects::Metadata<TopicSpec>> =
+            admin.all::<TopicSpec>().await?;
         display::format_response_output(out, topics, output_type)?;
         Ok(())
     }
@@ -43,7 +44,7 @@ mod display {
 
     use std::time::Duration;
 
-    use humantime::{format_duration};
+    use humantime::format_duration;
     use comfy_table::{Row, Cell, CellAlignment};
     use serde::Serialize;
 

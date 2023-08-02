@@ -5,6 +5,7 @@
 //!
 //!
 //! mod record_format;
+
 mod table_format;
 mod record_format;
 
@@ -20,7 +21,8 @@ mod cmd {
     use std::fmt::Debug;
     use std::sync::Arc;
 
-    use tracing::{debug, trace, instrument};
+    use anyhow::anyhow;
+    use tracing::{info, debug, trace, instrument};
     use clap::{Parser, ValueEnum};
     use futures::{select, FutureExt};
     use async_trait::async_trait;
@@ -35,10 +37,13 @@ mod cmd {
     use handlebars::{self, Handlebars};
     use anyhow::Result;
 
+    use fluvio::metadata::partition::*;
     use fluvio_types::PartitionId;
+    use fluvio_protocol::record::PartitionError;
     use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
     use fluvio_protocol::record::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::TableFormatSpec;
+    use fluvio::metadata::partition::PartitionMirrorConfig;
     use fluvio_future::io::StreamExt;
     use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset, FluvioError};
     use fluvio::consumer::{PartitionSelectionStrategy, Record};
@@ -82,6 +87,10 @@ mod cmd {
         /// Consume records from all partitions
         #[arg(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
         pub all_partitions: bool,
+
+        /// Consume mirror partition
+        #[arg(long, conflicts_with_all = &["partition", "all_partitions"])]
+        pub mirror: Option<String>,
 
         /// Disable continuous processing of messages
         #[arg(short = 'd', long)]
@@ -266,17 +275,80 @@ mod cmd {
                     .await?;
                 self.consume_records(consumer, maybe_tableformat).await?;
             } else {
-                let consumer = fluvio
-                    .consumer(PartitionSelectionStrategy::Multiple(
-                        self.partition
-                            .iter()
-                            .map(|p| (self.topic.clone(), *p))
-                            .collect(),
-                    ))
-                    .await?;
-                self.consume_records(consumer, maybe_tableformat).await?;
-            };
+                match &self.mirror {
+                    None => {
+                        let consumer = fluvio
+                            .consumer(PartitionSelectionStrategy::Multiple(
+                                self.partition
+                                    .iter()
+                                    .map(|p| (self.topic.clone(), *p))
+                                    .collect(),
+                            ))
+                            .await?;
+                        self.consume_records(consumer, maybe_tableformat).await?;
+                    }
 
+                    Some(mirror_pname) => {
+                        // select partition id from mirror partition label
+                        let find_remote_cluster = mirror_pname.clone();
+                        let admin = fluvio.admin().await;
+                        let partitions = admin.all::<PartitionSpec>().await?;
+                        let rec = partitions
+                            .iter()
+                            .filter_map(|metadata| {
+                                let spec = &metadata.spec;
+                                let (topic, partition) = {
+                                    let parse_key: Result<ReplicaKey, PartitionError> =
+                                        metadata.name.clone().try_into();
+                                    match parse_key {
+                                        Ok(key) => {
+                                            let (topic, partition) = key.split();
+                                            (topic, partition.to_string())
+                                        }
+                                        Err(err) => (err.to_string(), "-1".to_owned()),
+                                    }
+                                };
+                                match &spec.mirror {
+                                    Some(PartitionMirrorConfig::Target(cfg)) => {
+                                        let remote_cluster = cfg.remote_cluster.clone();
+                                        Some((topic, partition, remote_cluster))
+                                    }
+                                    _ => None,
+                                }
+                            })
+                            .filter_map(|(topic, partition, remote_cluster)| {
+                                match partition.parse::<PartitionId>() {
+                                    Ok(partition_id) => Some((topic, partition_id, remote_cluster)),
+                                    _ => None,
+                                }
+                            })
+                            .find(|(topic, _partition_id, remote_cluster)| {
+                                topic == &self.topic && remote_cluster == &find_remote_cluster
+                            });
+
+                        if let Some((_topic, partition_id, _remote_cluster)) = rec {
+                            info!(
+                                "Selected partiion id {} for mirror partition {:?}",
+                                partition_id, &self.mirror
+                            );
+                            let consumer = fluvio
+                                .consumer(PartitionSelectionStrategy::Multiple(vec![(
+                                    self.topic.clone(),
+                                    partition_id,
+                                )]))
+                                .await?;
+                            self.consume_records(consumer, maybe_tableformat).await?;
+                        } else {
+                            let mirror = self.mirror.unwrap_or_default();
+                            return Err(anyhow!(
+                                "couldn't find topic/mirror {}/{}",
+                                self.topic,
+                                mirror
+                            ));
+                        };
+                    } // match self.mirror
+                }
+            }
             Ok(())
         }
     }
@@ -761,6 +833,7 @@ mod cmd {
                 topic: "TOPIC_NAME".to_string(),
                 partition: Default::default(),
                 all_partitions: Default::default(),
+                mirror: Default::default(),
                 disable_continuous: Default::default(),
                 disable_progressbar: Default::default(),
                 key_value: Default::default(),

@@ -6,6 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
+use fluvio_controlplane::upstream_cluster::UpstreamClusterSpec;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 
@@ -18,6 +19,8 @@ use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 pub struct EdgeMetadata {
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8Obj<TopicSpec>>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub upstream_clusters: Vec<K8Obj<UpstreamClusterSpec>>,
 }
 
 /// Configuration used to inihilize a Cluster locally. This data is copied to
@@ -31,12 +34,18 @@ pub struct EdgeMetadata {
 pub struct EdgeMetadataExport {
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8ObjExport<TopicSpec>>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub upstream_clusters: Vec<K8ObjExport<UpstreamClusterSpec>>,
 }
 
 impl EdgeMetadataExport {
-    pub fn new(topics: Vec<K8Obj<TopicSpec>>) -> Self {
+    pub fn new(
+        topics: Vec<K8Obj<TopicSpec>>,
+        upstream_clusters: Vec<K8Obj<UpstreamClusterSpec>>,
+    ) -> Self {
         Self {
             topics: topics.into_iter().map(|t| t.into()).collect(),
+            upstream_clusters: upstream_clusters.into_iter().map(|u| u.into()).collect(),
         }
     }
 }
@@ -121,11 +130,8 @@ impl<S: Spec> From<K8Obj<S>> for K8ObjExport<S> {
 
 #[cfg(test)]
 mod tests {
-    use super::EdgeMetadata;
-    #[cfg(feature = "json")]
-    use super::EdgeMetadataFile;
+    use super::{EdgeMetadata, EdgeMetadataFile};
 
-    #[cfg(feature = "json")]
     #[test]
     fn validates_json_config() {
         let config = r#"{

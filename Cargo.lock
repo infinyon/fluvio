@@ -1087,6 +1087,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 
 [[package]]
+name = "cloud-sc-extra"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "fluvio-auth",
+ "fluvio-controlplane",
+ "fluvio-controlplane-metadata",
+ "fluvio-protocol",
+ "fluvio-socket",
+ "fluvio-stream-model",
+ "serde",
+ "tracing",
+]
+
+[[package]]
 name = "color-eyre"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2250,6 +2265,7 @@ dependencies = [
  "dirs 5.0.1",
  "event-listener 3.1.0",
  "fluvio-compression",
+ "fluvio-controlplane",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
@@ -2455,6 +2471,7 @@ dependencies = [
  "bytesize",
  "chrono",
  "clap",
+ "cloud-sc-extra",
  "color-eyre",
  "colored",
  "comfy-table",
@@ -2466,10 +2483,12 @@ dependencies = [
  "fluvio-channel",
  "fluvio-cli-common",
  "fluvio-command",
+ "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
+ "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-types",
  "flv-util",
@@ -2589,7 +2608,10 @@ version = "0.0.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-protocol",
+ "fluvio-stream-model",
  "fluvio-types",
+ "serde",
+ "serde_json",
  "tracing",
 ]
 
@@ -2829,6 +2851,7 @@ dependencies = [
  "base64 0.21.5",
  "cfg-if",
  "clap",
+ "cloud-sc-extra",
  "event-listener 3.1.0",
  "fluvio-auth",
  "fluvio-controlplane",
@@ -2863,6 +2886,8 @@ name = "fluvio-sc-schema"
 version = "0.21.1"
 dependencies = [
  "anyhow",
+ "cloud-sc-extra",
+ "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-future",
  "fluvio-protocol",
@@ -3221,7 +3246,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "event-listener 3.1.0",
  "fluvio-future",

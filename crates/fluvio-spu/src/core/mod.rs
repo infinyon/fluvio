@@ -6,6 +6,8 @@ pub mod spus;
 pub mod replica;
 pub mod smartmodule;
 pub mod metrics;
+pub mod remote_cluster;
+pub mod upstream_cluster;
 
 pub use self::global_context::{GlobalContext, ReplicaChange};
 pub use self::store::Spec;

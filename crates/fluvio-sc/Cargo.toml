@@ -56,8 +56,9 @@ fluvio-types = { workspace = true,  features = [
     "events",
 ] }
 fluvio-sc-schema = { workspace = true, features = ["use_serde", "json"] }
+cloud-sc-extra = { path = "../../cloud/sc-extra" }
 fluvio-stream-model = { workspace = true, features = ["k8", "use_serde"]  }
-fluvio-controlplane = { workspace = true }
+fluvio-controlplane = { workspace = true, features = ["k8", "serde"]  }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8","serde"] }
 fluvio-stream-dispatcher = { workspace = true, features = ["k8", "local"]}
 k8-client = { workspace = true, features = ["memory_client"] }

@@ -12,6 +12,8 @@ use fluvio_protocol::Decoder;
 use super::update_spu::UpdateSpuRequest;
 use super::update_replica::UpdateReplicaRequest;
 use super::update_smartmodule::UpdateSmartModuleRequest;
+use super::update_remote_cluster::UpdateRemoteClusterRequest;
+use super::update_upstream_cluster::UpdateUpstreamClusterRequest;
 
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
@@ -20,7 +22,8 @@ pub enum InternalSpuApi {
     UpdateSpu = 1001,
     UpdateReplica = 1002,
     UpdateSmartModule = 1003,
-    // UpdateDerivedStream = 1004,
+    UpdateRemoteCluster = 1004,
+    UpdateUpstreamCluster = 1005,
 }
 
 impl Default for InternalSpuApi {
@@ -37,6 +40,10 @@ pub enum InternalSpuRequest {
     UpdateReplicaRequest(RequestMessage<UpdateReplicaRequest>),
     #[fluvio(tag = 2)]
     UpdateSmartModuleRequest(RequestMessage<UpdateSmartModuleRequest>),
+    #[fluvio(tag = 3)]
+    UpdateRemoteClusterRequest(RequestMessage<UpdateRemoteClusterRequest>),
+    #[fluvio(tag = 4)]
+    UpdateUpstreamClusterRequest(RequestMessage<UpdateUpstreamClusterRequest>),
 }
 
 // Added to satisfy Encoder/Decoder traits
@@ -66,6 +73,12 @@ impl ApiMessage for InternalSpuRequest {
             InternalSpuApi::UpdateReplica => api_decode!(Self, UpdateReplicaRequest, src, header),
             InternalSpuApi::UpdateSmartModule => {
                 api_decode!(Self, UpdateSmartModuleRequest, src, header)
+            }
+            InternalSpuApi::UpdateRemoteCluster => {
+                api_decode!(Self, UpdateRemoteClusterRequest, src, header)
+            }
+            InternalSpuApi::UpdateUpstreamCluster => {
+                api_decode!(Self, UpdateUpstreamClusterRequest, src, header)
             }
         }
     }

@@ -20,6 +20,7 @@ pub const SC_PUBLIC_PORT: u16 = 9003;
 pub const SC_PRIVATE_PORT: u16 = 9004;
 pub const SC_HOSTNAME: &str = "localhost";
 pub const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60; // 5 min
+pub const SC_MONITORING_UNIX_SOCKET: &str = "/tmp/fluvio-sc.sock";
 
 // SPU defaults
 

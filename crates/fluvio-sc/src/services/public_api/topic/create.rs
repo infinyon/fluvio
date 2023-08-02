@@ -25,7 +25,7 @@ use fluvio_stream_model::core::MetadataItem;
 
 use crate::controllers::topics::policy::{
     validate_computed_topic_parameters, validate_assigned_topic_parameters,
-    update_replica_map_for_assigned_topic,
+    update_replica_map_for_assigned_topic, validate_mirror_topic_parameter,
 };
 use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
@@ -67,7 +67,7 @@ pub(crate) async fn handle_create_topics_request<AC: AuthContext, C: MetadataIte
         status = process_topic_request(auth_ctx, name, topic).await;
     }
 
-    trace!("create topics request response {:#?}", status);
+    trace!(?status, "create topics request response");
 
     Ok(status)
 }
@@ -170,6 +170,19 @@ async fn validate_topic_request<C: MetadataItem>(
                 } else {
                     Status::new_ok(name.to_owned())
                 }
+            }
+        }
+        ReplicaSpec::Mirror(ref mirror) => {
+            let next_state = validate_mirror_topic_parameter::<C>(mirror);
+            trace!("validating, mirror topic: {:#?}", next_state);
+            if next_state.resolution.is_invalid() {
+                Status::new(
+                    name.to_string(),
+                    ErrorCode::TopicError,
+                    Some(next_state.reason),
+                )
+            } else {
+                Status::new_ok(name.to_owned())
             }
         }
     }

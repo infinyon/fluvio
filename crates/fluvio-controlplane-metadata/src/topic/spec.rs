@@ -2,6 +2,7 @@ use std::ops::Deref;
 
 use anyhow::{anyhow, Result};
 
+use fluvio_protocol::record::ReplicaKey;
 use fluvio_types::defaults::{
     STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
     SPU_PARTITION_MAX_BYTES_MIN, SPU_LOG_SEGMENT_MAX_BYTES,
@@ -9,6 +10,8 @@ use fluvio_types::defaults::{
 use fluvio_types::SpuId;
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 use fluvio_protocol::{Encoder, Decoder};
+
+use crate::partition::{PartitionMirrorConfig, TargetPartitionConfig, SourcePartitionConfig};
 
 use super::deduplication::Deduplication;
 
@@ -21,13 +24,16 @@ use super::deduplication::Deduplication;
 pub struct TopicSpec {
     replicas: ReplicaSpec,
     #[fluvio(min_version = 3)]
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     cleanup_policy: Option<CleanupPolicy>,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     #[fluvio(min_version = 4)]
     storage: Option<TopicStorageConfig>,
     #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 6)]
     compression_type: CompressionAlgorithm,
     #[cfg_attr(feature = "use_serde", serde(default))]
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     #[fluvio(min_version = 12)]
     deduplication: Option<Deduplication>,
 }
@@ -164,6 +170,10 @@ pub enum ReplicaSpec {
     #[cfg_attr(feature = "use_serde", serde(rename = "computed"))]
     #[fluvio(tag = 1)]
     Computed(TopicReplicaParam),
+    #[cfg_attr(feature = "use_serde", serde(rename = "mirror"))]
+    #[fluvio(tag = 2)]
+    #[fluvio(min_version = 13)]
+    Mirror(MirrorConfig),
 }
 
 impl std::fmt::Display for ReplicaSpec {
@@ -171,6 +181,7 @@ impl std::fmt::Display for ReplicaSpec {
         match self {
             Self::Assigned(partition_map) => write!(f, "assigned::{partition_map}"),
             Self::Computed(param) => write!(f, "computed::({param})"),
+            Self::Mirror(param) => write!(f, "mirror::({param})"),
         }
     }
 }
@@ -198,16 +209,14 @@ impl ReplicaSpec {
     }
 
     pub fn is_computed(&self) -> bool {
-        match self {
-            Self::Computed(_) => true,
-            Self::Assigned(_) => false,
-        }
+        matches!(self, Self::Computed(_))
     }
 
     pub fn partitions(&self) -> PartitionCount {
         match &self {
             Self::Computed(param) => param.partitions,
             Self::Assigned(partition_map) => partition_map.partition_count(),
+            Self::Mirror(partition_map) => partition_map.partition_count(),
         }
     }
 
@@ -215,6 +224,7 @@ impl ReplicaSpec {
         match self {
             Self::Computed(param) => Some(param.replication_factor),
             Self::Assigned(partition_map) => partition_map.replication_factor(),
+            Self::Mirror(partition_map) => partition_map.replication_factor(),
         }
     }
 
@@ -222,6 +232,7 @@ impl ReplicaSpec {
         match self {
             Self::Computed(param) => param.ignore_rack_assignment,
             Self::Assigned(_) => false,
+            Self::Mirror(_) => false,
         }
     }
 
@@ -229,6 +240,7 @@ impl ReplicaSpec {
         match self {
             Self::Computed(_) => "computed",
             Self::Assigned(_) => "assigned",
+            Self::Mirror(_) => "mirror",
         }
     }
 
@@ -236,6 +248,7 @@ impl ReplicaSpec {
         match self {
             Self::Computed(param) => param.partitions.to_string(),
             Self::Assigned(_) => "".to_owned(),
+            Self::Mirror(_) => "".to_owned(),
         }
     }
 
@@ -243,6 +256,7 @@ impl ReplicaSpec {
         match self {
             Self::Computed(param) => param.replication_factor.to_string(),
             Self::Assigned(_) => "".to_owned(),
+            Self::Mirror(_) => "".to_owned(),
         }
     }
 
@@ -256,6 +270,7 @@ impl ReplicaSpec {
                 }
             }
             Self::Assigned(_) => "",
+            Self::Mirror(_) => "",
         }
     }
 
@@ -263,6 +278,7 @@ impl ReplicaSpec {
         match self {
             Self::Computed(_) => None,
             Self::Assigned(partition_map) => Some(partition_map.partition_map_string()),
+            Self::Mirror(mirror) => Some(mirror.as_partition_maps().partition_map_string()),
         }
     }
 
@@ -363,7 +379,11 @@ impl From<Vec<(PartitionId, Vec<SpuId>)>> for PartitionMaps {
     fn from(partition_vec: Vec<(PartitionId, Vec<SpuId>)>) -> Self {
         let maps: Vec<PartitionMap> = partition_vec
             .into_iter()
-            .map(|(id, replicas)| PartitionMap { id, replicas })
+            .map(|(id, replicas)| PartitionMap {
+                id,
+                replicas,
+                mirror: None,
+            })
             .collect();
         maps.into()
     }
@@ -524,7 +544,183 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMap {
     pub id: PartitionId,
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub mirror: Option<PartitionMirrorConfig>,
     pub replicas: Vec<SpuId>,
+}
+
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub enum MirrorConfig {
+    #[fluvio(tag = 0)]
+    Source(SourceMirrorConfig),
+    #[fluvio(tag = 1)]
+    Target(TargetMirrorConfig),
+}
+
+impl Default for MirrorConfig {
+    fn default() -> Self {
+        Self::Source(SourceMirrorConfig::default())
+    }
+}
+
+impl std::fmt::Display for MirrorConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            MirrorConfig::Source(src) => {
+                write!(f, "Mirror Source {:?} ", src)
+            }
+            MirrorConfig::Target(target) => {
+                write!(f, "Mirror Target {:?} ", target)
+            }
+        }
+    }
+}
+
+impl MirrorConfig {
+    pub fn partition_count(&self) -> PartitionCount {
+        match self {
+            MirrorConfig::Source(src) => src.partition_count(),
+            MirrorConfig::Target(tg) => tg.partition_count(),
+        }
+    }
+
+    pub fn replication_factor(&self) -> Option<ReplicationFactor> {
+        None
+    }
+
+    pub fn as_partition_maps(&self) -> PartitionMaps {
+        match self {
+            MirrorConfig::Source(src) => src.as_partition_maps(),
+            MirrorConfig::Target(tg) => tg.as_partition_maps(),
+        }
+    }
+
+    /// Validate partition map for assigned topics
+    pub fn validate(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct TargetMirrorConfig(Vec<TargetPartitionConfig>);
+
+impl From<Vec<TargetPartitionConfig>> for TargetMirrorConfig {
+    fn from(partitions: Vec<TargetPartitionConfig>) -> Self {
+        Self(partitions)
+    }
+}
+
+impl TargetMirrorConfig {
+    /// generate target config from simple remote cluster list
+    /// this uses target topic to generate source replicas
+    pub fn from_simple(topic: &str, remote_clusters: Vec<String>) -> Self {
+        Self(
+            remote_clusters
+                .into_iter()
+                .map(|remote_cluster| TargetPartitionConfig {
+                    remote_cluster,
+                    source_replica: { ReplicaKey::new(topic, 0_u32).to_string() },
+                })
+                .collect(),
+        )
+    }
+
+    pub fn partition_count(&self) -> PartitionCount {
+        self.0.len() as PartitionCount
+    }
+
+    pub fn replication_factor(&self) -> Option<ReplicationFactor> {
+        None
+    }
+
+    pub fn partitions(&self) -> &Vec<TargetPartitionConfig> {
+        &self.0
+    }
+
+    pub fn as_partition_maps(&self) -> PartitionMaps {
+        let mut maps = vec![];
+        for (partition_id, target_partition) in self.0.iter().enumerate() {
+            maps.push(PartitionMap {
+                id: partition_id as u32,
+                mirror: Some(PartitionMirrorConfig::Target(target_partition.clone())),
+                ..Default::default()
+            });
+        }
+        maps.into()
+    }
+
+    /// Validate partition map for assigned topics
+    pub fn validate(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct TargetMirrorPartition {
+    pub remote_clusters: Vec<String>,
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct SourceMirrorConfig {
+    pub upstream_cluster: String,
+    pub target_spus: Vec<SpuId>,
+}
+
+impl SourceMirrorConfig {
+    pub fn partition_count(&self) -> PartitionCount {
+        self.target_spus.len() as PartitionCount
+    }
+
+    pub fn replication_factor(&self) -> Option<ReplicationFactor> {
+        None
+    }
+
+    pub fn spus(&self) -> &Vec<SpuId> {
+        &self.target_spus
+    }
+
+    pub fn as_partition_maps(&self) -> PartitionMaps {
+        let mut maps = vec![];
+        for (partition_id, target_spu) in self.target_spus.iter().enumerate() {
+            maps.push(PartitionMap {
+                id: partition_id as u32,
+                mirror: Some(PartitionMirrorConfig::Source(SourcePartitionConfig {
+                    target_spu: *target_spu,
+                    upstream_cluster: self.upstream_cluster.clone(),
+                })),
+                ..Default::default()
+            });
+        }
+        maps.into()
+    }
+
+    /// Validate partition map for assigned topics
+    pub fn validate(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
@@ -861,5 +1057,42 @@ mod test {
         let p2 = PartitionMaps::default();
         let spec2 = ReplicaSpec::new_assigned(p2);
         assert_eq!(spec2.partition_map_str(), Some("".to_string()));
+    }
+}
+
+#[cfg(test)]
+mod mirror_test {
+    use crate::{
+        topic::{PartitionMap, TargetMirrorConfig},
+        partition::{PartitionMirrorConfig, TargetPartitionConfig},
+    };
+
+    /// test generating target mirror config from simple array of remote cluster strings
+    #[test]
+    fn test_target_mirror_conversion() {
+        let mirror =
+            TargetMirrorConfig::from_simple("boats", vec!["boat1".to_owned(), "boat2".to_owned()]);
+        assert_eq!(
+            mirror.as_partition_maps(),
+            vec![
+                PartitionMap {
+                    id: 0,
+                    mirror: Some(PartitionMirrorConfig::Target(TargetPartitionConfig {
+                        source_replica: "boats-0".to_string(),
+                        remote_cluster: "boat1".to_owned(),
+                    })),
+                    ..Default::default()
+                },
+                PartitionMap {
+                    id: 1,
+                    mirror: Some(PartitionMirrorConfig::Target(TargetPartitionConfig {
+                        source_replica: "boats-0".to_string(),
+                        remote_cluster: "boat2".to_string(),
+                    })),
+                    replicas: vec![],
+                },
+            ]
+            .into()
+        );
     }
 }

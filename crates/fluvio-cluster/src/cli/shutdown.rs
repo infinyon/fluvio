@@ -2,11 +2,11 @@ use std::fs::remove_file;
 use std::process::Command;
 
 use clap::Parser;
+use fluvio_command::CommandExt;
 use tracing::debug;
 use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
-use fluvio_command::CommandExt;
 
 use crate::render::ProgressRenderer;
 use crate::cli::ClusterCliError;

@@ -8,8 +8,8 @@ pub mod versions;
 pub mod objects;
 pub mod shared;
 pub mod tableformat;
-
 pub mod edge;
+pub mod cloud;
 
 mod apis;
 mod request;

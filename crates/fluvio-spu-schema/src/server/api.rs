@@ -22,6 +22,7 @@ use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
 use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
+use super::mirror::StartMirrorRequest;
 
 #[allow(clippy::large_enum_variant)]
 /// Request to Spu Server
@@ -42,6 +43,8 @@ pub enum SpuServerRequest {
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     #[fluvio(tag = 5)]
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
+    #[fluvio(tag = 6)]
+    StartMirrorRequest(RequestMessage<StartMirrorRequest>),
 }
 
 impl fmt::Display for SpuServerRequest {
@@ -53,6 +56,7 @@ impl fmt::Display for SpuServerRequest {
             Self::FetchOffsetsRequest(_) => write!(f, "FetchOffsetsRequest"),
             Self::FileStreamFetchRequest(_) => write!(f, "FileStreamFetchRequest"),
             Self::UpdateOffsetsRequest(_) => write!(f, "UpdateOffsetsRequest"),
+            Self::StartMirrorRequest(_) => write!(f, "StartMirrorRequest"),
         }
     }
 }
@@ -85,6 +89,7 @@ impl ApiMessage for SpuServerRequest {
             SpuServerApiKey::FetchOffsets => api_decode!(Self, FetchOffsetsRequest, src, header),
             SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
             SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header),
+            SpuServerApiKey::StartMirror => api_decode!(Self, StartMirrorRequest, src, header),
         }
     }
 }

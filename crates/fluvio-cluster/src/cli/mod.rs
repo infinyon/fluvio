@@ -7,27 +7,32 @@ use fluvio::config::ConfigFile;
 use semver::Version;
 use tracing::debug;
 
+mod check;
+mod delete;
+mod diagnostics;
+mod error;
 mod group;
+mod shutdown;
 mod spu;
 mod start;
-mod delete;
-mod util;
-mod check;
-mod error;
-mod diagnostics;
 mod status;
-mod shutdown;
+mod remote_cluster;
+mod util;
 mod upgrade;
 
+use check::CheckOpt;
+use delete::DeleteOpt;
+use diagnostics::DiagnosticsOpt;
+use group::SpuGroupCmd;
+use shutdown::ShutdownOpt;
 use start::StartOpt;
+use start::UpgradeOpt;
 use delete::DeleteOpt;
 use check::CheckOpt;
 use group::SpuGroupCmd;
 use spu::SpuCmd;
-use diagnostics::DiagnosticsOpt;
 use status::StatusOpt;
 use shutdown::ShutdownOpt;
-use upgrade::UpgradeOpt;
 
 pub use self::error::ClusterCliError;
 
@@ -88,6 +93,15 @@ pub enum ClusterCmd {
     /// Shutdown cluster processes without deleting data
     #[command(name = "shutdown")]
     Shutdown(ShutdownOpt),
+
+    /// Remote-cluster commands
+    #[command(
+        subcommand,
+        name = "remote-cluster",
+        visible_alias = "rem",
+        alias = "remote"
+    )]
+    RemoteCluster(RemoteClusterOpt),
 }
 
 impl ClusterCmd {
@@ -159,6 +173,9 @@ impl ClusterCmd {
             }
             Self::Shutdown(opt) => {
                 opt.process().await?;
+            }
+            Self::RemoteCluster(opt) => {
+                opt.execute(out, target).await?;
             }
         }
 
