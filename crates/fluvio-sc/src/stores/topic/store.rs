@@ -41,7 +41,10 @@ where
         for (idx, replicas) in replica_map.iter() {
             let replica_key = ReplicaKey::new(self.key(), *idx);
 
-            let partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec);
+            let mut partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec);
+            if let Some(mirror_config) = self.status.mirror_map.get(idx) {
+                partition_spec.mirror = Some(mirror_config.clone());
+            }
             if !partition_store.contains_key(&replica_key).await {
                 debug!(?replica_key, ?partition_spec, "creating new partition");
                 partitions.push(

@@ -6,7 +6,7 @@ use fluvio_controlplane_metadata::{
     topic::{CleanupPolicy, TopicStorageConfig, CompressionAlgorithm, Deduplication},
     core::MetadataItem,
     store::MetadataStoreObject,
-    partition::PartitionSpec,
+    partition::{PartitionSpec, PartitionMirrorConfig},
 };
 use fluvio_protocol::{Encoder, Decoder, record::ReplicaKey};
 use fluvio_types::SpuId;
@@ -19,6 +19,7 @@ pub struct Replica {
     pub id: ReplicaKey,
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
+    pub mirror: Option<PartitionMirrorConfig>,
     pub is_being_deleted: bool,
     pub cleanup_policy: Option<CleanupPolicy>,
     pub storage: Option<TopicStorageConfig>,
@@ -62,6 +63,7 @@ where
             id: inner.key,
             leader: spec.leader,
             replicas: spec.replicas,
+            mirror: spec.mirror,
             is_being_deleted,
             cleanup_policy: spec.cleanup_policy,
             storage: spec.storage,

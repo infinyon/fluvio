@@ -1,10 +1,17 @@
+use std::fmt;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use adaptive_backoff::prelude::{ExponentialBackoff, ExponentialBackoffBuilder, Backoff};
 use tracing::{info, trace, error, debug, warn, instrument};
 use tokio::select;
 use futures_util::stream::StreamExt;
 use anyhow::{anyhow, Result};
+use adaptive_backoff::backoff::BackoffBuilder;
 
+use fluvio_controlplane::spu_api::update_remote_cluster::UpdateRemoteClusterRequest;
+use fluvio_controlplane::spu_api::update_upstream_cluster::UpdateUpstreamClusterRequest;
 use fluvio_controlplane::sc_api::register_spu::RegisterSpuRequest;
 use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
 use fluvio_controlplane::spu_api::api::{InternalSpuRequest, InternalSpuApi};
@@ -22,13 +29,58 @@ use crate::core::SharedGlobalContext;
 
 use super::message_sink::SharedStatusUpdate;
 
+pub(crate) type SharedScDispatcherMetrics = Arc<ScDispatcherMetrics>;
+
 // keep track of various internal state of dispatcher
 #[derive(Default)]
-struct DispatcherCounter {
-    pub replica_changes: u64, // replica changes received from sc
-    pub spu_changes: u64,     // spu changes received from sc
-    pub reconnect: u64,       // number of reconnect to sc
-    pub smartmodule: u64,     // number of sm updates from sc
+pub(crate) struct ScDispatcherMetrics {
+    loop_count: AtomicU64,      // overal loop count
+    replica_changes: AtomicU64, // replica changes received from sc
+    spu_changes: AtomicU64,     // spu changes received from sc
+    reconnect: AtomicU64,       // number of reconnect to sc
+    smartmodule: AtomicU64,     // number of sm updates from sc
+}
+
+impl ScDispatcherMetrics {
+    fn increase_loop_count(&self) {
+        self.loop_count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn get_loop_count(&self) -> u64 {
+        self.loop_count.load(Ordering::Relaxed)
+    }
+
+    fn increase_reconn_count(&self) {
+        self.reconnect.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn get_reconn_count(&self) -> u64 {
+        self.reconnect.load(Ordering::Relaxed)
+    }
+
+    fn increase_spu_changes(&self) {
+        self.spu_changes.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn get_spu_changes(&self) -> u64 {
+        self.spu_changes.load(Ordering::Relaxed)
+    }
+
+    fn increase_replica_changes(&self) {
+        self.replica_changes.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn get_replica_changes(&self) -> u64 {
+        self.replica_changes.load(Ordering::Relaxed)
+    }
+
+    fn increase_smartmodule(&self) {
+        self.smartmodule.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn get_smartmodule(&self) -> u64 {
+        self.smartmodule.load(Ordering::Relaxed)
+    }
 }
 
 /// Controller for handling connection to SC
@@ -36,69 +88,63 @@ struct DispatcherCounter {
 pub struct ScDispatcher<S> {
     ctx: SharedGlobalContext<S>,
     status_update: SharedStatusUpdate,
-    counter: DispatcherCounter,
+    metrics: SharedScDispatcherMetrics,
+}
+
+impl<S> fmt::Debug for ScDispatcher<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ScDispatcher")
+    }
 }
 
 impl ScDispatcher<FileReplica> {
-    pub fn new(ctx: SharedGlobalContext<FileReplica>) -> Self {
-        Self {
+    pub(crate) fn run(ctx: SharedGlobalContext<FileReplica>) -> SharedScDispatcherMetrics {
+        let metrics = Arc::new(ScDispatcherMetrics::default());
+
+        let dispatcher = Self {
             status_update: ctx.status_update_owned(),
             ctx,
-            counter: DispatcherCounter::default(),
-        }
+            metrics: metrics.clone(),
+        };
+
+        spawn(dispatcher.dispatch_loop());
+
+        metrics
     }
 
-    /// start the controller with ctx and receiver
-    pub fn run(self) {
-        spawn(self.dispatch_loop());
-    }
-
+    #[instrument()]
     async fn dispatch_loop(mut self) {
-        let mut counter: u64 = 0;
-
-        const WAIT_RECONNECT_INTERVAL: u64 = 3000;
+        let mut backoff = create_backoff();
 
         loop {
-            debug!(%counter, "entering SC dispatch loop", );
+            debug!(loop_count = self.metrics.get_loop_count(), "starting loop");
 
-            let mut socket = self.create_socket_to_sc().await;
+            let mut socket = self.create_socket_to_sc(&mut backoff).await;
             info!(
                 local_spu_id=%self.ctx.local_spu_id(),
                 "established connection to sc for spu",
             );
 
             // register and exit on error
-            let status = match self.send_spu_registration(&mut socket).await {
+            let _ = match self.send_spu_registration(&mut socket).await {
                 Ok(status) => status,
                 Err(err) => {
                     print_cli_err!(format!(
                         "spu registration failed with sc due to error: {err}"
                     ));
-                    false
+                    break;
                 }
             };
 
-            if !status {
-                warn!("sleeping 3 seconds before re-trying re-register");
-                sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
-            } else {
-                // continuously process updates from and send back status to SC
-                match self.request_loop(socket).await {
-                    Ok(_) => {
-                        debug!(
-                            %counter,
-                            "sc connection terminated, waiting before reconnecting",
-                        );
-                        // give little bit time before trying to reconnect
-                        sleep(Duration::from_millis(10)).await;
-                        counter += 1;
-                    }
-                    Err(err) => {
-                        warn!(?err, "error connecting to sc, waiting before reconnecting",);
-                        // We are  connection to sc.  Retry again
-                        // Currently we use 3 seconds to retry but this should be using backoff algorithm
-                        sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
-                    }
+            // continuously process updates from and send back status to SC
+            info!("starting sc request loop");
+            match self.request_loop(socket).await {
+                Ok(_) => {
+                    break;
+                }
+                Err(err) => {
+                    warn!(?err, "error connecting to sc, waiting before reconnecting",);
+                    break;
                 }
             }
         }
@@ -136,20 +182,33 @@ impl ScDispatcher<FileReplica> {
                     debug!("got request from sc");
                     match sc_request {
                         Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
-                            self.counter.replica_changes += 1;
+
+                            self.metrics.increase_replica_changes();
                             self.handle_update_replica_request(request,&mut sink).await;
                         },
                         Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
-                            self.counter.spu_changes += 1;
+                            self.metrics.increase_spu_changes();
                             if let Err(err) = self.handle_update_spu_request(request).await {
                                 error!(%err, "error handling update spu request");
                                 break;
                             }
                         },
                         Some(Ok(InternalSpuRequest::UpdateSmartModuleRequest(request))) => {
-                            self.counter.smartmodule += 1;
+                            self.metrics.increase_smartmodule();
                             if let Err(err) = self.handle_update_smartmodule_request(request).await {
                                 error!(%err, "error handling update SmartModule request", );
+                                break;
+                            }
+                        },
+                        Some(Ok(InternalSpuRequest::UpdateRemoteClusterRequest(request))) => {
+                            if let Err(err) = self.handle_remote_cluster_request(request).await {
+                                error!(%err, "error handling update remote cluster request", );
+                                break;
+                            }
+                        },
+                        Some(Ok(InternalSpuRequest::UpdateUpstreamClusterRequest(request))) => {
+                            if let Err(err) = self.handle_upstream_cluster_request(request).await {
+                                error!(%err, "error handling update upstream cluster request", );
                                 break;
                             }
                         },
@@ -178,9 +237,9 @@ impl ScDispatcher<FileReplica> {
         let requests = self.status_update.remove_all().await;
 
         if requests.is_empty() {
-            trace!("sending empty status");
+            debug!("sending empty status");
         } else {
-            trace!(requests = ?requests, "sending status back to sc");
+            debug!(requests = ?requests, "sending status back to sc");
         }
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
@@ -228,11 +287,10 @@ impl ScDispatcher<FileReplica> {
 
     /// connect to sc if can't connect try until we succeed
     /// or if we received termination message
-    async fn create_socket_to_sc(&mut self) -> FluvioSocket {
+    async fn create_socket_to_sc(&mut self, backoff: &mut ExponentialBackoff) -> FluvioSocket {
         let spu_id = self.ctx.local_spu_id();
         let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
 
-        let wait_interval = self.ctx.config().sc_retry_ms;
         loop {
             info!(
                 %sc_endpoint,
@@ -243,13 +301,14 @@ impl ScDispatcher<FileReplica> {
             match FluvioSocket::connect(&sc_endpoint).await {
                 Ok(socket) => {
                     info!(spu_id, "connected to sc for spu");
-                    self.counter.reconnect += 1;
+                    self.metrics.increase_reconn_count();
                     return socket;
                 }
                 Err(err) => {
                     warn!("error connecting to sc: {}", err);
-                    info!(wait_interval, spu_id, "sleeping ms");
-                    sleep(Duration::from_millis(wait_interval as u64)).await;
+                    let wait = backoff.wait();
+                    info!(wait = wait.as_secs(), spu_id, "sleeping ms");
+                    sleep(wait).await;
                 }
             }
         }
@@ -348,7 +407,7 @@ impl ScDispatcher<FileReplica> {
                 item_count = request.changes.len(),
                 "received smartmoudle changes"
             );
-            trace!("received spu change items: {:#?}", request.changes);
+            trace!("received smartmodule change items: {:#?}", request.changes);
             self.ctx
                 .smartmodule_localstore()
                 .apply_changes(request.changes)
@@ -358,4 +417,87 @@ impl ScDispatcher<FileReplica> {
 
         Ok(())
     }
+
+    async fn handle_remote_cluster_request(
+        &mut self,
+        req_msg: RequestMessage<UpdateRemoteClusterRequest>,
+    ) -> anyhow::Result<()> {
+        let (_, request) = req_msg.get_header_request();
+
+        debug!( message = ?request,"starting remote cluster update");
+
+        let actions = if !request.all.is_empty() {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.all.len(),
+                "received remote cluster sync all"
+            );
+            trace!("received spu all items: {:#?}", request.all);
+            self.ctx.remote_cluster_localstore().sync_all(request.all)
+        } else {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.changes.len(),
+                "received remote cluster changes"
+            );
+            trace!(
+                "received remote cluster change items: {:#?}",
+                request.changes
+            );
+            self.ctx
+                .remote_cluster_localstore()
+                .apply_changes(request.changes)
+        };
+
+        debug!(actions = actions.count(), "finished remote cluster update");
+
+        Ok(())
+    }
+
+    async fn handle_upstream_cluster_request(
+        &mut self,
+        req_msg: RequestMessage<UpdateUpstreamClusterRequest>,
+    ) -> anyhow::Result<()> {
+        let (_, request) = req_msg.get_header_request();
+
+        debug!( message = ?request,"starting upstream cluster update");
+
+        let actions = if !request.all.is_empty() {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.all.len(),
+                "received upstream cluster sync all"
+            );
+            trace!("received spu all items: {:#?}", request.all);
+            self.ctx.upstream_cluster_localstore().sync_all(request.all)
+        } else {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.changes.len(),
+                "received upstream cluster changes"
+            );
+            trace!(
+                "received upsream cluster change items: {:#?}",
+                request.changes
+            );
+            self.ctx
+                .upstream_cluster_localstore()
+                .apply_changes(request.changes)
+        };
+
+        debug!(
+            actions = actions.count(),
+            "finished upstream cluster update"
+        );
+
+        Ok(())
+    }
+}
+
+fn create_backoff() -> ExponentialBackoff {
+    ExponentialBackoffBuilder::default()
+        .min(Duration::from_secs(1))
+        .max(Duration::from_secs(300))
+        .build()
+        .unwrap()
 }

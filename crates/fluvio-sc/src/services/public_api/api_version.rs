@@ -10,6 +10,7 @@ use fluvio_protocol::link::versions::{
 use fluvio_sc_schema::objects::{
     ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
 };
+use fluvio_sc_schema::cloud::ObjectCloudRequest;
 use fluvio_sc_schema::AdminPublicApiKey;
 
 // Fluvi Client version 0.14.0 corresponds to Platform version 10.0.0
@@ -50,6 +51,12 @@ pub async fn handle_api_versions_request(
         AdminPublicApiKey::Watch,
         ObjectApiWatchRequest::MIN_API_VERSION,
         ObjectApiWatchRequest::MAX_API_VERSION,
+    ));
+
+    response.api_keys.push(make_version_key(
+        AdminPublicApiKey::Cloud,
+        ObjectCloudRequest::MIN_API_VERSION,
+        ObjectCloudRequest::MAX_API_VERSION,
     ));
 
     trace!("flv api versions response: {:#?}", response);

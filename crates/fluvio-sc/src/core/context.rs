@@ -14,7 +14,11 @@ use crate::stores::topic::*;
 use crate::stores::spg::*;
 use crate::stores::smartmodule::*;
 use crate::stores::tableformat::*;
+use crate::stores::remote_cluster::*;
+use crate::stores::upstream_cluster::*;
 use crate::stores::*;
+
+use super::metrics::ScMetrics;
 
 pub type SharedContext<C> = Arc<Context<C>>;
 pub type K8SharedContext = Arc<Context<K8MetaItem>>;
@@ -29,8 +33,11 @@ pub struct Context<C: MetadataItem> {
     spgs: StoreContext<SpuGroupSpec, C>,
     smartmodules: StoreContext<SmartModuleSpec, C>,
     tableformats: StoreContext<TableFormatSpec, C>,
+    remote_clusters: StoreContext<RemoteClusterSpec, C>,
+    upstream_clusters: StoreContext<UpstreamClusterSpec, C>,
     health: SharedHealthCheck,
     config: ScConfig,
+    metrics: Arc<ScMetrics>,
 }
 
 // -----------------------------------
@@ -52,7 +59,10 @@ impl<C: MetadataItem> Context<C> {
             smartmodules: StoreContext::new(),
             tableformats: StoreContext::new(),
             health: HealthCheck::shared(),
+            remote_clusters: StoreContext::new(),
+            upstream_clusters: StoreContext::new(),
             config,
+            metrics: Arc::new(ScMetrics::new()),
         }
     }
 
@@ -83,6 +93,14 @@ impl<C: MetadataItem> Context<C> {
         &self.tableformats
     }
 
+    pub fn remote_clusters(&self) -> &StoreContext<RemoteClusterSpec, C> {
+        &self.remote_clusters
+    }
+
+    pub fn upstream_clusters(&self) -> &StoreContext<UpstreamClusterSpec, C> {
+        &self.upstream_clusters
+    }
+
     /// spu health channel
     pub fn health(&self) -> &SharedHealthCheck {
         &self.health
@@ -93,6 +111,11 @@ impl<C: MetadataItem> Context<C> {
         &self.config
     }
 
+    pub(crate) fn metrics(&self) -> Arc<ScMetrics> {
+        self.metrics.clone()
+    }
+
+    #[cfg(feature = "k8")]
     pub fn namespace(&self) -> &str {
         &self.config.namespace
     }

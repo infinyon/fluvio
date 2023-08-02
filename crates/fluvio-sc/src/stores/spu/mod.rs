@@ -30,7 +30,7 @@ pub async fn is_conflict(
 mod health_check {
     use std::{collections::HashMap, ops::Deref, sync::Arc};
 
-    use tracing::{instrument, debug, info};
+    use tracing::{instrument, info, debug};
     use async_lock::RwLock;
 
     use fluvio_types::{

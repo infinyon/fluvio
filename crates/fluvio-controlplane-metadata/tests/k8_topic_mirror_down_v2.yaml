@@ -1,0 +1,15 @@
+# This is to create CRD but not for testing
+apiVersion: fluvio.infinyon.com/v2
+kind: Topic
+metadata:
+  name: downstream-topic
+  namespace: default
+spec:
+  replicas:
+    mirror:
+      target:
+        - remoteCluster: "boat1"
+          sourceReplica: "boats-0"
+        - remoteCluster: "boat2"
+          sourceReplica: "boats-0"
+  compressionType: Any

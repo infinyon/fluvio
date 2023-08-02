@@ -1,0 +1,30 @@
+{
+    "apiVersion": "fluvio.infinyon.com/v1",
+    "kind": "UpstreamCluster",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v1\",\"kind\":\"UpstreamCluster\",\"metadata\":{\"annotations\":{},\"name\":\"somecloud\",\"namespace\":\"default\"},\"spec\":{\"keyPair\":{\"publicKey\":\"public key: TJ33a\"},\"target\":{\"endpoint\":\"somecloud.com:9003\",\"tls\":{\"caCert\":\"AJWWZAWW\",\"clientCert\":\"ZZZ222\",\"clientKey\":\"ZZZ222\",\"domain\":\"somecloud.com\"}}}}\n"
+        },
+        "creationTimestamp": "2023-08-16T19:06:13Z",
+        "generation": 1,
+        "name": "somecloud",
+        "namespace": "default",
+        "resourceVersion": "239124",
+        "uid": "77d912f7-0051-411a-944f-62ea0fb2dbb8"
+    },
+    "spec": {
+        "keyPair": {
+            "publicKey": "public key: TJ33a"
+        },
+        "sourceId": "edge1", 
+        "target": {
+            "endpoint": "somecloud.com:9003",
+            "tls": {
+                "caCert": "AJWWZAWW",
+                "clientCert": "ZZZ222",
+                "clientKey": "ZZZ222",
+                "domain": "somecloud.com"
+            }
+        }
+    }
+}

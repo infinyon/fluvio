@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use tracing::{error, instrument};
 use anyhow::Result;
 
-use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_storage::FileReplica;
+use fluvio_controlplane_metadata::partition::{ReplicaKey, PartitionMirrorConfig};
+use fluvio_storage::{FileReplica, ReplicaStorage};
 
 use crate::{control_plane::SharedStatusUpdate, core::GlobalContext};
 use crate::config::ReplicationConfig;
@@ -61,6 +61,48 @@ impl<S> ReplicaLeadersState<S> {
     ) -> Option<SharedLeaderState<S>> {
         let mut writer = self.write().await;
         writer.insert(replica, state)
+    }
+}
+
+impl<S> ReplicaLeadersState<S>
+where
+    S: ReplicaStorage,
+{
+    /// find all replica configs
+    pub(crate) async fn replica_configs(&self) -> Vec<Replica> {
+        let read = self.read().await;
+
+        let mut replicas = Vec::new();
+        for (_replica_key, state) in read.iter() {
+            let replica_config = state.get_replica();
+            replicas.push(replica_config.clone());
+        }
+        replicas
+    }
+
+    /// find replica with mirror target that matches remote cluster and sourcre replica
+    pub async fn find_mirror_target_leader(
+        &self,
+        remote_cluster: &str,
+        source_replica: &str,
+    ) -> Option<SharedLeaderState<S>> {
+        let read = self.read().await;
+        for (_replica_key, state) in read.iter() {
+            let replica_config = state.get_replica();
+            if let Some(mirror) = &replica_config.mirror {
+                match mirror {
+                    PartitionMirrorConfig::Target(target) => {
+                        if target.remote_cluster == remote_cluster
+                            && target.source_replica == source_replica
+                        {
+                            return Some(state.clone());
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        None
     }
 }
 

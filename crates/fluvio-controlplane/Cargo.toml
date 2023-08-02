@@ -12,10 +12,19 @@ publish = false
 name = "fluvio_controlplane"
 path = "src/lib.rs"
 
+[features]
+use_serde = ["serde"]
+k8 = ["use_serde", "fluvio-stream-model/k8"]
+
 [dependencies]
 tracing = { workspace = true }
+serde = { workspace = true, features = ['derive'], optional = true }
 
 # Fluvio dependencies
 fluvio-types = { workspace = true  }
 fluvio-controlplane-metadata = { workspace = true  }
-fluvio-protocol = { workspace = true,  features = ["api"]}
+fluvio-protocol = { workspace = true,  features = ["api","link"]}
+fluvio-stream-model = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

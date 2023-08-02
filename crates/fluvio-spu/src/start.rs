@@ -88,8 +88,7 @@ pub fn create_services(
         None
     };
 
-    let sc_dispatcher = ScDispatcher::new(ctx.clone());
-    sc_dispatcher.run();
+    let _sc_metrics = ScDispatcher::run(ctx.clone());
 
     (ctx, internal_server, public_server)
 }

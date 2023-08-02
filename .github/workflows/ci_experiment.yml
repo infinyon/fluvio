@@ -1,8 +1,6 @@
 name: CI Experiment
 
 permissions: read-all
-#permissions:
-#  contents: read
 
 concurrency:
   group: ci-experiment-${{ github.ref }}
@@ -26,7 +24,6 @@ on:
         description: "Set --verbose to get verbose build output"
         required: false
         default: ""
-
       rust-channel:
         description: "Version of Rust release channel to use in builds"
         required: false
@@ -40,45 +37,6 @@ on:
         description: "Name to add to VERSION. (git hash will be appended to build-name automatically)"
         required: true
         type: string
-      release-after-build:
-        description: "Release artifacts to package manager at end (w/o GH Release)"
-        type: boolean
-        default: false
-      build-binary:
-        description: 'Choose which binary to build'
-        required: true
-        type: choice
-        options:
-          - fluvio 
-          - fluvio-run 
-          - fluvio-test 
-          - fluvio-channel
-          - smdk
-          - fbm
-          - cdk
-      binary-arch:
-        description: "Rust target binary to build"
-        required: true
-        type: choice
-        options:
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
-          - arm-unknown-linux-gnueabihf
-          - armv7-unknown-linux-gnueabihf
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
-          - x86_64-pc-windows-gnu
-      docker-image:
-        description: "Build a docker image"
-        required: false
-        type: choice
-        options:
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
-      run-ci-tests:
-        description: "Opt-in to run the CI tests"
-        type: boolean
-        default: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -92,15 +50,6 @@ env:
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
   FLV_CLUSTER_PROVISION_TIMEOUT: 600
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-# TODO: 
-  # - Opt into the testing
-  # - Include workflow for release that accomodates a private build (probably don't use GH Release - will require rebuild every time)
-  # - Update the VERSION before building to denote the experimental nature of the release
-  # - Add selection for rust targets to opt-in
-  # - Add selection for binaries
-  # - Add selection for docker images + arch
 
 jobs:
   # this job set up dynamic configuration shared among jobs
@@ -116,177 +65,82 @@ jobs:
     steps:
       - id: check
         run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
-      #- name: Set Staging runs
-      ##  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-      #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
 
-      - uses: cloudposse/github-action-matrix-outputs-write@main
-        id: out
-        with:
-          matrix-step-name: ${{ github.job }}
-          matrix-key: "experiment" 
-          outputs: |-
-            build-name: ${{ inputs.build-name }}
-            rust-channel: ${{ inputs.rust-channel }}
-            release-after-build: ${{ inputs.release-after-build }}
-            binary-arch: ${{ inputs.binary-arch }}
-            docker-image: ${{ inputs.docker-image }}
-            run-ci-tests: ${{ inputs.run-ci-tests }}
+  build_binaries_for_docker:
+    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      #    fail-fast: false
+      matrix:
+        include:
+          # fluvio-run
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: aarch64-unknown-linux-musl
+            binary: fluvio-run
 
-  read:
-    runs-on: ubuntu-latest
-    needs: [config]
-    steps:
-      - uses: cloudposse/github-action-matrix-outputs-read@main
-        id: read
-        with:
-          matrix-step-name: config 
-  
-    outputs:
-      result: "${{ steps.read.outputs.result }}"
-
-  # NOTE: This is expected to fail to build any non-linux binaries
-  build_binary:
-    needs: [read]
-    runs-on: ubuntu-latest
     env:
-      OS: ubuntu-latest
-      BUILD_BINARY: ${{ fromJson(needs.read.outputs.result).build-binary }}
-      BUILD_NAME: ${{ fromJson(needs.read.outputs.result).build-name }}
       RUST_BACKTRACE: full
-      RUSTV: ${{ fromJson(needs.read.outputs.result).rust-channel }}
-      TARGET: ${{ fromJson(needs.read.outputs.result).binary-arch }}
-      RUST_BIN_DIR: target/${{ fromJson(needs.read.outputs.result).binary-arch }}/release
-      RELEASE_NAME: release
-      RELEASE: true
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
+      RELEASE_NAME: debug
     steps:
       - uses: actions/checkout@v3
-      - name: Add experimental build name to VERSION
-        run: echo "-${{ env.BUILD_NAME }}-${{ github.sha }}" >> VERSION
+    
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode
+      - name: Set RELEASE mode
+        shell: bash
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
+          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" | tee -a $GITHUB_ENV
+
       - name: Print env
         run: |
-          echo "BUILD_NAME = ${{ env.BUILD_NAME }}"
-          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }}"
-      - name: Install Rust ${{ env.RUSTV }}
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
+      - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ env.TARGET }}
+          toolchain: ${{ matrix.rust }}
           profile: minimal
+          override: true
       - name: Install LLVM and Clang
+        if: contains(fromJSON('["x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl"]'), matrix.rust-target)
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: "14.0"
       - name: Install zig
-        run: ./actions/zig-install.sh ${{ env.OS }}
+        run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
         timeout-minutes: 10
         with:
-          key: ${{ env.BUILD_NAME }}-${{ env.RUST_BIN_DIR }}-${{ env.BUILD_BINARY }}
+          key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
 
-      - name: Build fluvio
-        if: env.BUILD_BINARY == 'fluvio'
-        run: make build-cli
-
+          # If build name given, add to VERSION
+      - name: Add experimental build name to VERSION
+        #if: inputs.build-name
+        run: |-
+          echo FLUVIO_REPO_VERSION=$(cat VERSION) | tee -a $GITHUB_ENV
+          echo -n "-${{ inputs.build-name }}-$(git rev-parse --short HEAD)" >> VERSION
+          cat VERSION | wc
+          cat VERSION
+    
       - name: Build fluvio-run
-        if: env.BUILD_BINARY == 'fluvio-run' || ${{ fromJson(needs.read.outputs.result).docker-image }}
+        timeout-minutes: 40
+        if: matrix.binary == 'fluvio-run'
         run: make build-cluster
-
-      - name: Build fluvio-test
-        if: env.BUILD_BINARY == 'fluvio-test'
-        run: make build-test
-
-      - name: Build fluvio-channel
-        if: env.BUILD_BINARY == 'fluvio-channel'
-        run: make build-channel
-
-      - name: Build smdk
-        if: env.BUILD_BINARY == 'smdk'
-        run: make build-smdk
-
-      - name: Build cdk
-        if: env.BUILD_BINARY == 'cdk'
-        run: make build-cdk
-
-      - name: Build fbm
-        if: env.BUILD_BINARY == 'fbm'
-        run: make build-fbm
-
+    
       # Upload artifacts
-      - name: Upload artifact - ${{ env.BUILD_BINARY }}
+      - name: Upload artifact - ${{ matrix.binary }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.BUILD_BINARY }}-${{ env.TARGET }}
-          path: ${{ env.RUST_BIN_DIR }}/${{ env.BUILD_BINARY }}
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
           retention-days: 1
-  
-  # TODO: Deal with this after binaries 
-  #build_image:
-  #  name: Build Fluvio Docker image
-  #  needs: [read,build_binary]
-  #  runs-on: ${{ matrix.os }}
-  #  strategy:
-  #    matrix:
-  #      os: [ubuntu-latest]
-  #      #rust-target:
-  #      #  - x86_64-unknown-linux-musl
-  #      #  - aarch64-unknown-linux-musl
-  #      rust: [stable]
-  #  env:
-  #    OS: ubuntu-latest
-  #    BUILD_BINARY: ${{ fromJson(needs.read.outputs.result).build-binary }}
-  #    BUILD_NAME: ${{ fromJson(needs.read.outputs.result).build-name }}
-  #    RUST_BACKTRACE: full
-  #    RUSTV: ${{ fromJson(needs.read.outputs.result).rust-channel }}
-  #    TARGET: ${{ fromJson(needs.read.outputs.result).binary-arch }}
-  #  steps:
-  #    # Needed for k8-util/docker/build.sh
-  #    - uses: actions/checkout@v3
-
-  #    # Download artifacts
-  #    - name: Download fluvio-run
-  #      uses: actions/download-artifact@v3
-  #      with:
-  #        name: fluvio-run-${{ env.TARGET }}
-  #        path: .
-
-  #    - name: Print fluvio-run path
-  #      run: pwd && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h || true
-
-  #    # Build and upload docker image
-  #    - name: Build Docker image
-  #      run: k8-util/docker/build.sh ${{ env.TARGET }} ${{ github.sha }} "$(pwd)/fluvio-run"
-  #    - name: Export Docker Image to tarball
-  #      run: docker image save infinyon/fluvio:${{ github.sha }}-${{ env.TARGET }} --output /tmp/infinyon-fluvio-${{ env.TARGET }}.tar
-  #    - name: Upload tarball as artifact
-  #      uses: actions/upload-artifact@v3
-  #      with:
-  #        name: infinyon-fluvio-${{ env.TARGET }}.tar
-  #        path: /tmp/infinyon-fluvio-${{ env.TARGET }}.tar
-  #        retention-days: 1
-
-  # Publish experimental build artifacts to packages.fluvio.io 
-  release_experimental_binary:
-    name: Release Fluvio CLI package
-    needs: [build_binary]
-    runs-on: ubuntu-latest
-    env:
-      BUILD_BINARY: ${{ fromJson(needs.read.outputs.result).build-binary }}
-      TARGET: ${{ fromJson(needs.read.outputs.result).binary-arch }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #VERSION: ${{ needs.setup_job.outputs.VERSION }}
-      #INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
-      #BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
-    steps:
-      - uses: actions/checkout@v3
-      # Check that this release does not already exist by trying to download it
-      - name: Attempt to install Fluvio CLI
-        id: check_fluvio
-        continue-on-error: true
-        env:
-          CHANNEL_TAG: stable 
-        run: make curl-install-fluvio
-
+    
       # If this release does not already exist (i.e. check_fluvio failed), continue
       - name: Install fluvio-package
         env:
@@ -294,38 +148,297 @@ jobs:
         run: |
           make curl-install-fluvio
           make install-fluvio-package
-
-      # Get binary artifacts
-      - name: Download artifact - ${{ env.BUILD_BINARY }}-${{ env.TARGET }}
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ env.BUILD_BINARY }}-${{ env.TARGET }}
-          path: . 
-      
+    
       - name: Publish artifacts
-        if: ${{ steps.check_fluvio.outcome == 'failure' }}
         env:
           FLUVIO_BIN: ~/.fluvio/bin/fluvio
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          make publish-artifacts-stable
-          ${{ env.FLUVIO_BIN }} package publish --package=${{ env.BUILD_BINARY }} --version=${{ env.BUILD_BINARY }}-${{ github.sha }} --target=${{ env.TARGET }} ./${{ env.BUILD_BINARY }}-${{ env.TARGET }}
+          ${{ env.FLUVIO_BIN }} package publish --package=${{ matrix.binary }} --version=${{ env.FLUVIO_REPO_VERSION }}+${{ inputs.build-name }}-$(git rev-parse --short HEAD) --target=${{ matrix.rust-target }} ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+  
+  build_binaries:
+    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      #    fail-fast: false
+      matrix:
+        include:
+          # fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: aarch64-unknown-linux-musl
+            binary: fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio
+          #- os: ubuntu-latest
+          #  rust: stable
+          #  rust-target: arm-unknown-linux-gnueabihf
+          #  binary: fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fluvio
+          #- os: ubuntu-latest
+          #  rust: stable
+          #  rust-target: x86_64-pc-windows-gnu
+          #  binary: fluvio.exe
+          - os: macos-12
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fluvio
+          - os: macos-12
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fluvio
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: ${{ !success() }}
+          # fluvio-run
+          # Note: aarch64-unknown-linux-musl target moved to separate job
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio-run
+
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fluvio-run
+
+          - os: macos-12
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fluvio-run
+          - os: macos-12
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fluvio-run
+
+          # fluvio-channel
+
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: aarch64-unknown-linux-musl
+            binary: fluvio-channel
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio-channel
+
+          #- os: ubuntu-latest
+          #  rust: stable
+          #  rust-target: arm-unknown-linux-gnueabihf
+          #  binary: fluvio-channel
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fluvio-channel
+          #- os: ubuntu-latest
+          #  rust: stable
+          #  rust-target: x86_64-pc-windows-gnu
+          #  binary: fluvio-channel.exe
+          - os: macos-12
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fluvio-channel
+          - os: macos-12
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fluvio-channel
+
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
+      RELEASE_NAME: debug
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set RELEASE mode
+        shell: bash
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
+
+      - name: Print env
+        run: |
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
         with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        if: contains(fromJSON('["x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl"]'), matrix.rust-target)
+        with:
+          version: "14.0"
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v2
+        timeout-minutes: 10
+        with:
+          key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
+      - name: Install Helm for Mac
+        run: brew install helm
+        if: matrix.binary == 'fluvio' && matrix.os == 'macos-12'
+
+      - name: Add experimental build name to VERSION
+        run: |-
+          echo FLUVIO_REPO_VERSION=$(cat VERSION) >> $GITHUB_ENV
+          echo -n "-${{ inputs.build-name }}-$(git rev-parse --short HEAD)" >> VERSION
+          cat VERSION | wc
+          cat VERSION
+
+      - name: Build fluvio
+        timeout-minutes: 40
+        if: matrix.binary == 'fluvio'
+        run: make build-cli
+
+      - name: Install mingw gcc
+        if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
+        run: |
+          sudo apt-get update -o="APT::Acquire::Retries=3"
+          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64
+
+      - name: Build fluvio.exe
+        timeout-minutes: 40
+        if: matrix.binary == 'fluvio.exe'
+        run: make build-cli-minimal
+
+      - name: Build fluvio-run
+        timeout-minutes: 40
+        if: matrix.binary == 'fluvio-run'
+        run: make build-cluster
+
+      - name: Build fluvio-channel
+        timeout-minutes: 40
+        if: matrix.binary == 'fluvio-channel'
+        run: make build-channel
+
+      - name: Build fluvio-channel.exe
+        timeout-minutes: 40
+        if: matrix.binary == 'fluvio-channel.exe'
+        run: make build-channel
+
+      - name: Build smdk
+        timeout-minutes: 40
+        if: matrix.binary == 'smdk'
+        run: make build-smdk
+
+      - name: Build smdk.exe
+        timeout-minutes: 40
+        if: matrix.binary == 'smdk.exe'
+        run: make build-smdk
+
+      - name: Build cdk
+        timeout-minutes: 40
+        if: matrix.binary == 'cdk'
+        run: make build-cdk
+
+      - name: Build fbm
+        timeout-minutes: 40
+        if: matrix.binary == 'fbm'
+        run: make build-fbm
+
+      - name: Build fbm.exe
+        timeout-minutes: 40
+        if: matrix.binary == 'fbm.exe'
+        run: make build-fbm
+
+      # Upload artifacts
+      - name: Upload artifact - ${{ matrix.binary }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+          retention-days: 1
+
+      - name: Install fluvio-package
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          #MATRIX_CONTEXT: ${{ toJson(matrix) }}
+          CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
+        run: |
+          make curl-install-fluvio
+          make install-fluvio-package
+
+      - name: Publish artifacts
+        env:
+          FLUVIO_BIN: ~/.fluvio/bin/fluvio
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          ${{ env.FLUVIO_BIN }} package publish --package=${{ matrix.binary }} --version=${{ env.FLUVIO_REPO_VERSION }}+${{ inputs.build-name }}-$(git rev-parse --short HEAD) --target=${{ matrix.rust-target }} ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+
+  build_image:
+    name: Build Fluvio Docker image
+    needs: build_binaries_for_docker
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target:
+          - aarch64-unknown-linux-musl
+        rust: [stable]
+    steps:
+      # Needed for k8-util/docker/build.sh
+      - uses: actions/checkout@v3
+
+          # If build name given, add to VERSION
+      - name: Add experimental build name to VERSION
+        run: |-
+          echo FLUVIO_REPO_VERSION=$(cat VERSION) | tee -a $GITHUB_ENV
+          echo -n "-${{ inputs.build-name }}-$(git rev-parse --short HEAD)" >> VERSION
+          cat VERSION | wc
+          cat VERSION
+          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" | tee -a $GITHUB_ENV
+
+      # Download artifacts
+      - name: Download fluvio-run
+        uses: actions/download-artifact@v3
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: .
+
+      - name: Print fluvio-run path
+        run: pwd && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h || true
+
+      # Build and upload docker image
+      - name: Build Docker image
+        run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
+      - name: Re-tag the docker image
+        run:  docker tag infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} infinyon/fluvio:${{ env.FLUVIO_REPO_VERSION }}-${{ inputs.build-name }}-${{ env.GIT_SHA_SHORT }}
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} --output infinyon-fluvio-${{ matrix.rust-target }}.tar
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          path: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          retention-days: 1
+
+      - uses: keithweaver/aws-s3-github-action@v1.0.0
+        env:
+          FLUVIO_REPO_VERSION: ${{ env.FLUVIO_REPO_VERSION }}
+          GIT_SHA_SHORT: ${{ env.GIT_SHA_SHORT }}
+        with:
+          command: cp
+          source: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          destination: s3://packages.fluvio.io/v1/images/infinyon-fluvio-${{ matrix.rust-target }}-${{ env.FLUVIO_REPO_VERSION }}-${{ inputs.build-name }}-${{ env.GIT_SHA_SHORT }}.tar
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: us-east-1
+          flags: --acl public-read
 
   # Job that follows the success of all required jobs in this workflow.
   # Used by Bors to detect that all required jobs have completed successfully
   done:
     name: Done
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [release_experimental_binary]
+    needs: [build_binaries, build_image]
     runs-on: ubuntu-latest
     steps:
       - name: Done
