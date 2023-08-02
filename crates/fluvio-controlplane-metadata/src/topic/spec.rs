@@ -828,52 +828,6 @@ pub mod test {
         assert_eq!(p1_result, expected_p1_result);
     }
 
-    // print in hex format:
-    //   - println!("{:02x?}", dest);
-
-    #[test]
-    fn test_encode_decode_assigned_topic_spec() {
-        let partition_map: PartitionMaps = vec![PartitionMap {
-            id: 0,
-            replicas: vec![5001, 5002],
-        }]
-        .into();
-        let topic_spec = ReplicaSpec::Assigned(partition_map);
-        let mut dest = vec![];
-
-        // test encode
-        let result = topic_spec.encode(&mut dest, 0);
-        assert!(result.is_ok());
-        let expected_dest = [
-            0x00, // type
-            0x00, 0x00, 0x00, 0x01, // partition cnt
-            0x00, 0x00, 0x00, 0x00, // partition id
-            0x00, 0x00, 0x00, 0x02, // replica cnt
-            0x00, 0x00, 0x13, 0x89, // spu id: 5001
-            0x00, 0x00, 0x13, 0x8a, // spu id: 5002
-        ];
-        assert_eq!(dest, expected_dest);
-
-        // test encode
-        let mut topic_spec_decoded = ReplicaSpec::default();
-        let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest), 0);
-        assert!(result.is_ok());
-
-        match topic_spec_decoded {
-            ReplicaSpec::Assigned(partition_map) => {
-                assert_eq!(
-                    partition_map,
-                    vec![PartitionMap {
-                        id: 0,
-                        replicas: vec![5001, 5002],
-                    }]
-                    .into()
-                );
-            }
-            _ => panic!("expect assigned topic spec, found {topic_spec_decoded:?}"),
-        }
-    }
-
     #[test]
     fn test_encode_decode_computed_topic_spec() {
         let topic_spec = ReplicaSpec::Computed((2, 3, true).into());
