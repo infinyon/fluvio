@@ -3,9 +3,6 @@
 //!
 //! CLI tree to generate Create Topics
 //!
-
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -121,12 +118,7 @@ impl CreateTopicOpt {
 
     fn construct(self) -> Result<(String, TopicSpec)> {
         if let Some(config_path) = self.config {
-            let config = TopicConfig::from_file(&config_path).map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("cannot read topic config file {config_path:?}: {err}"),
-                )
-            })?;
+            let config = TopicConfig::from_file(&config_path)?;
             return Ok((config.meta.name.clone(), config.into()));
         }
 
@@ -134,16 +126,7 @@ impl CreateTopicOpt {
         use load::PartitionLoad;
 
         let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
-            ReplicaSpec::Assigned(
-                PartitionMaps::read_replica_assignment(replica_assign_file).map_err(|err| {
-                    IoError::new(
-                        ErrorKind::InvalidInput,
-                        format!(
-                            "cannot parse replica assignment file {replica_assign_file:?}: {err}"
-                        ),
-                    )
-                })?,
-            )
+            ReplicaSpec::Assigned(PartitionMaps::read_replica_assignment(replica_assign_file)?)
         } else {
             ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
