@@ -182,8 +182,8 @@ impl TopicNextState {
                     let mut next_state = generate_replica_map(spu_store, param).await;
                     if next_state.resolution == TopicResolution::Provisioned {
                         debug!(
-                            "Topic: {} replica generate success, status is provisioned",
-                            topic.key()
+                            topic = %topic.key(),
+                            "generated replica map for mirror topic"
                         );
                         next_state.partitions = topic.create_new_partitions(partition_store).await;
                     }
@@ -191,8 +191,9 @@ impl TopicNextState {
                 }
                 _ => {
                     debug!(
-                        "topic: {} resolution: {:#?} ignoring",
-                        topic.key, topic.status.resolution
+                        topic = %topic.key(),
+                        status = ?topic.status.resolution,
+                        "partition generation status"
                     );
                     let mut next_state = TopicNextState::same_next_state(topic);
                     if next_state.resolution == TopicResolution::Provisioned {
