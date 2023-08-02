@@ -17,6 +17,7 @@ use crate::{
     services::auth::basic::BasicRbacPolicy,
     config::ScConfig,
     config::DEFAULT_NAMESPACE,
+    monitoring::init_monitoring,
 };
 
 pub fn main_loop(opt: ScOpt) {
@@ -107,6 +108,9 @@ fn k8_main_loop<C>(
         .await;
 
         proxy::start_if(sc_config, tls_option).await;
+
+        init_monitoring(ctx.clone());
+
 
         println!("Streaming Controller started successfully");
         // do infinite loop

@@ -1,0 +1,29 @@
+{
+    "apiVersion": "fluvio.infinyon.com/v2",
+    "kind": "Topic",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v2\",\"kind\":\"Topic\",\"metadata\":{\"annotations\":{},\"name\":\"upstream-topic\",\"namespace\":\"default\"},\"spec\":{\"compressionType\":\"Any\",\"replicas\":{\"mirror\":{\"source\":{\"spus\":[5001],\"upstreamCluster\":\"some\"}}}}}\n"
+        },
+        "creationTimestamp": "2023-08-17T17:51:17Z",
+        "generation": 1,
+        "name": "upstream-topic",
+        "namespace": "default",
+        "resourceVersion": "254054",
+        "uid": "8d866ab6-d30d-4677-a4fe-bd46f303a3d0"
+    },
+    "spec": {
+        "compressionType": "Any",
+        "replicas": {
+            "mirror": {
+                "source": {
+                    "targetSpus": [
+                        5001
+                    ],
+                    "targetTopic": "my-topic",
+                    "upstreamCluster": "some"
+                }
+            }
+        }
+    }
+}

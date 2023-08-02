@@ -1,0 +1,22 @@
+{
+    "apiVersion": "fluvio.infinyon.com/v1",
+    "kind": "RemoteCluster",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v1\",\"kind\":\"RemoteCluster\",\"metadata\":{\"annotations\":{},\"name\":\"boat1\",\"namespace\":\"default\"},\"spec\":{\"keyPair\":{\"privateKey\":\"private key: AC2333\",\"publicKey\":\"public key: TJ33a\"},\"remoteType\":\"MirrorEdge\"}}\n"
+        },
+        "creationTimestamp": "2023-08-16T17:36:58Z",
+        "generation": 1,
+        "name": "boat1",
+        "namespace": "default",
+        "resourceVersion": "237352",
+        "uid": "0115f1f9-a17b-446a-8b9d-45ac67a4627b"
+    },
+    "spec": {
+        "keyPair": {
+            "privateKey": "private key: AC2333",
+            "publicKey": "public key: TJ33a"
+        },
+        "remoteType": "MirrorEdge"
+    }
+}

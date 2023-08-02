@@ -31,7 +31,10 @@ mod test_spec {
 
     use fluvio_stream_model::k8_types::K8Obj;
 
-    use crate::topic::ReplicaSpec;
+    use crate::{
+        topic::{ReplicaSpec, MirrorConfig},
+        partition::TargetPartitionConfig,
+    };
 
     use super::TopicSpec;
 
@@ -44,5 +47,29 @@ mod test_spec {
         let topic: K8TopicSpec = serde_json::from_reader(reader).expect("failed to parse topic");
         assert_eq!(topic.metadata.name, "test3");
         assert!(matches!(topic.spec.replicas(), ReplicaSpec::Assigned(_)));
+    }
+
+    #[test]
+    fn read_k8_topic_partition_mirror_json() {
+        let reader: BufReader<File> =
+            BufReader::new(File::open("tests/k8_topic_mirror_down_v2.json").expect("spec"));
+        let topic: K8TopicSpec = serde_json::from_reader(reader).expect("failed to parse topic");
+        assert_eq!(topic.metadata.name, "downstream-topic");
+        assert_eq!(
+            topic.spec.replicas().to_owned(),
+            ReplicaSpec::Mirror(MirrorConfig::Target(
+                vec![
+                    TargetPartitionConfig {
+                        remote_cluster: "boat1".to_string(),
+                        source_replica: "boats-0".to_string()
+                    },
+                    TargetPartitionConfig {
+                        remote_cluster: "boat2".to_string(),
+                        source_replica: "boats-0".to_string()
+                    }
+                ]
+                .into()
+            ))
+        );
     }
 }

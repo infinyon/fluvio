@@ -110,15 +110,19 @@ where
                 shared_sink,
                 "list handler"
             ),
+            AdminPublicDecodedRequest::CloudRequest(request) => call_service!(
+                request,
+                super::cloud::handle_cloud_request(request, &service_context),
+                shared_sink,
+                "cloud req handler"
+            ),
             AdminPublicDecodedRequest::WatchRequest(request) =>
-
                 super::watch::handle_watch_request(
                     request,
                     &service_context,
                     shared_sink.clone(),
                     end_event.clone(),
                 )?
-
         );
 
         // we are done with this tcp stream, notify any controllers use this strep

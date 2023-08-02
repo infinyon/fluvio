@@ -15,7 +15,7 @@ use async_rwlock::RwLock;
 use anyhow::{Result, Context};
 
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};
-use fluvio_controlplane_metadata::partition::{PartitionStatus, ReplicaStatus};
+use fluvio_controlplane_metadata::partition::{PartitionStatus, ReplicaStatus, PartitionMirrorConfig};
 use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{
     event::offsets::{SharedOffsetPublisher, WeakSharedOffsetPublisher, TOPIC_DELETED},
@@ -32,6 +32,7 @@ use crate::{
         batch::process_record_set,
     },
     core::GlobalContext,
+    mirroring::source::controller::{SharedMirrorControllerState, MirrorSourceToTargetController},
 };
 use crate::replication::follower::sync::{PeerFileTopicResponse, PeerFilePartitionResponse};
 use crate::storage::SharableReplicaStorage;
@@ -53,6 +54,7 @@ pub struct LeaderReplicaState<S> {
     status_update: SharedStatusUpdate,
     sm_ctx: Option<SharedSmartModuleContext>,
     consumer_offset_publishers: Arc<Mutex<Vec<WeakSharedOffsetPublisher>>>,
+    mirro_controller_state: Option<SharedMirrorControllerState>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -66,6 +68,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             status_update: self.status_update.clone(),
             sm_ctx: self.sm_ctx.clone(),
             consumer_offset_publishers: self.consumer_offset_publishers.clone(),
+            mirro_controller_state: self.mirro_controller_state.clone(),
         }
     }
 }
@@ -136,6 +139,7 @@ where
             status_update,
             sm_ctx: None,
             consumer_offset_publishers: Arc::new(Mutex::new(Vec::new())),
+            mirro_controller_state: None,
         })
     }
 
@@ -165,6 +169,10 @@ where
     /// leader SPU. This should be same as our local SPU
     pub fn leader(&self) -> SpuId {
         self.replica.leader
+    }
+
+    pub fn get_replica(&self) -> &Replica {
+        &self.replica
     }
 
     /// override in sync replica
@@ -427,17 +435,45 @@ where
             }
         }
     }
+
+    /// append new record set.  this ensure record sets are aligned with leo
+    /// if not aligned, it will return false
+    pub(crate) async fn append_record_set(
+        &self,
+        records: &mut RecordSet<RawRecords>,
+        notifier: &FollowerNotifier,
+    ) -> Result<bool> {
+        let total_records = records.total_records();
+        debug!(total_records, "update from mirror source");
+        if records.total_records() == 0 {
+            debug!("no records");
+            return Ok(false);
+        }
+
+        // verify that new records are aligned with current leo
+        let storage_leo = self.leo();
+        if records.base_offset() != storage_leo {
+            return Ok(false);
+        }
+
+        self.write_record_set(records, notifier).await?;
+
+        Ok(true)
+    }
 }
 
 pub struct Uninit<S>(S);
 
-impl<S: ReplicaStorage> Uninit<LeaderReplicaState<S>> {
+impl<S: ReplicaStorage + 'static> Uninit<LeaderReplicaState<S>>
+where
+    S: Sync + Send,
+{
     pub async fn init(self, ctx: &GlobalContext<FileReplica>) -> Result<LeaderReplicaState<S>> {
         let mut state = self.0;
         if let Some(dedup) = &state.replica.deduplication {
             debug!(?state.replica.deduplication, "init leader smartmodule context");
             let dedup_filter = dedup_to_invocation(dedup);
-            let mut sm_ctx = SmartModuleContext::try_from(vec![dedup_filter], COMMON_VERSION, ctx)
+            let mut sm_ctx = SmartModuleContext::try_from(vec![dedup_filter], COMMON_VERSION, &ctx)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("SmartModule context is required here"))?;
             sm_ctx
@@ -446,6 +482,25 @@ impl<S: ReplicaStorage> Uninit<LeaderReplicaState<S>> {
                 .context("leader smartmodule context lookback failed")?;
             state.sm_ctx = Some(Arc::new(RwLock::new(sm_ctx)));
         };
+        // start up mirror controller if mirror is source
+        if let Some(mirror) = &state.replica.mirror {
+            match mirror {
+                PartitionMirrorConfig::Source(src) => {
+                    debug!("found mirror source, starting controller");
+                    let mirror_controller_state = MirrorSourceToTargetController::run(
+                        ctx,
+                        state.clone(),
+                        src.clone(),
+                        Isolation::ReadUncommitted,
+                        10000000,
+                    );
+                    state.mirro_controller_state = Some(mirror_controller_state);
+                }
+                PartitionMirrorConfig::Target(_target) => {
+                    debug!("ignoring target for now");
+                }
+            }
+        }
         Ok(state)
     }
 
@@ -1144,4 +1199,7 @@ mod test_leader {
         assert!(f1.drain_replicas().await.is_empty());
         assert!(f2.drain_replicas().await.is_empty());
     }
+
+    #[fluvio_future::test]
+    async fn test_update_from_mirror() {}
 }

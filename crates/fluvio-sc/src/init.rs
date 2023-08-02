@@ -7,13 +7,15 @@
 use std::sync::Arc;
 
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
+use fluvio_controlplane::remote_cluster::RemoteClusterSpec;
+use fluvio_controlplane::upstream_cluster::UpstreamClusterSpec;
 use fluvio_stream_model::core::MetadataItem;
 
 use crate::core::Context;
 use crate::core::SharedContext;
-use crate::controllers::partitions::PartitionController;
-use crate::controllers::spus::SpuController;
 use crate::controllers::topics::controller::TopicController;
+use crate::controllers::spus::SpuHealthCheckController;
+use crate::controllers::partitions::PartitionController;
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::MetadataDispatcher;
@@ -76,6 +78,18 @@ where
         ctx.smartmodules().clone(),
     );
 
+    MetadataDispatcher::<UpstreamClusterSpec, C, K8MetaItem>::start(
+        namespace.clone(),
+        metadata_client.clone(),
+        ctx.upstream_clusters().clone(),
+    );
+
+    MetadataDispatcher::<RemoteClusterSpec, C, K8MetaItem>::start(
+        namespace.clone(),
+        metadata_client.clone(),
+        ctx.remote_clusters().clone(),
+    );
+
     start_main_loop_services(ctx, auth_policy).await
 }
 
@@ -89,8 +103,7 @@ where
     C::UId: Send + Sync,
 {
     let config = ctx.config();
-
-    whitelist!(config, "spu", SpuController::start(ctx.clone()));
+    whitelist!(config, "spu", SpuHealthCheckController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
     whitelist!(
         config,

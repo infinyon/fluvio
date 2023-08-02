@@ -4,23 +4,35 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::time::Duration;
 
+use tracing::warn;
+use tracing::{debug, info, trace, instrument, error};
+use async_trait::async_trait;
+use futures_util::stream::Stream;
+use anyhow::Result;
+
 use fluvio_controlplane::message::ReplicaMsg;
 use fluvio_controlplane::message::SmartModuleMsg;
 use fluvio_controlplane::message::SpuMsg;
+use fluvio_controlplane::remote_cluster::RemoteClusterSpec;
 use fluvio_controlplane::replica::Replica;
 use fluvio_controlplane::sc_api::api::InternalScKey;
 use fluvio_controlplane::sc_api::api::InternalScRequest;
 use fluvio_controlplane::sc_api::register_spu::RegisterSpuResponse;
 use fluvio_controlplane::sc_api::remove::ReplicaRemovedRequest;
 use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
+use fluvio_controlplane::spu_api::update_remote_cluster::RemoteClusterMsg;
+use fluvio_controlplane::spu_api::update_remote_cluster::UpdateRemoteClusterRequest;
 use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
 use fluvio_controlplane::spu_api::update_smartmodule::UpdateSmartModuleRequest;
 use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
+use fluvio_controlplane::spu_api::update_upstream_cluster::UpdateUpstreamClusterRequest;
+use fluvio_controlplane::spu_api::update_upstream_cluster::UpstreamClusterMsg;
+use fluvio_controlplane::upstream_cluster::UpstreamClusterSpec;
 use fluvio_controlplane_metadata::message::Message;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::ChangeListener;
-use tracing::warn;
-use tracing::{debug, info, trace, instrument, error};
+
+use tracing::{debug, info, trace, warn, instrument, error};
 use async_trait::async_trait;
 use futures_util::stream::Stream;
 use anyhow::Result;
@@ -75,21 +87,22 @@ where
         let spu_id = wait_for_request!(api_stream,
             InternalScRequest::RegisterSpuRequest(req_msg) => {
                 let spu_id = req_msg.request.spu();
-                let mut status = true;
-                debug!(spu_id,"registration req");
+                info!(spu_id,"registration req received");
 
-                let register_res = if context.spus().store().validate_spu_for_registered(spu_id).await {
+                let reg_status = context.spus().store().validate_spu_for_registered(spu_id).await;
+                info!(spu_id, reg_status, "spu validation");
+                let register_res = if reg_status {
                     RegisterSpuResponse::ok()
                 } else {
-                    status = false;
-                    debug!(spu_id,"spu validation failed");
                     RegisterSpuResponse::failed_registration()
                 };
 
                 let response = req_msg.new_response(register_res);
                 sink.send_response(&response,req_msg.header.api_version()).await?;
+                info!(spu_id, "registration response sent");
 
-                if !status {
+                if !reg_status {
+                    warn!(spu_id, "spu not registered, closing connection");
                     return Ok(())
                 }
 
@@ -99,17 +112,11 @@ where
 
         info!(spu_id, "SPU connected");
 
-        let health_check = context.health().clone();
-
-        health_check.update(spu_id, true).await;
-
         if let Err(err) = dispatch_loop(context, spu_id, api_stream, sink).await {
             error!("error with SPU <{}>, error: {}", spu_id, err);
         }
 
         info!(spu_id, "Terminating connection to SPU");
-
-        health_check.update(spu_id, false).await;
 
         Ok(())
     }
@@ -126,9 +133,15 @@ async fn dispatch_loop<C>(
 where
     C: MetadataItem,
 {
+    let health_check = context.health().clone();
+
+    health_check.update(spu_id, true).await;
+
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
     let mut sm_spec_listener = context.smartmodules().change_listener();
+    let mut rm_cluster_listener = context.remote_clusters().change_listener();
+    let mut up_cluster_listener = context.upstream_clusters().change_listener();
 
     // send initial changes
 
@@ -141,6 +154,8 @@ where
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_smartmodule_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
+        send_remote_cluster_changes(&mut rm_cluster_listener, &mut sink, spu_id).await?;
+        send_upstream_cluster_changes(&mut up_cluster_listener, &mut sink, spu_id).await?;
 
         trace!(spu_id, "waiting for SPU channel");
 
@@ -160,6 +175,8 @@ where
                         match req_message {
                             InternalScRequest::UpdateLrsRequest(msg) => {
                                 receive_lrs_update(&context,msg.request).await;
+                             //   health_check.update(spu_id, true).await;
+
                             },
                             InternalScRequest::RegisterSpuRequest(msg) => {
                                 error!("registration req only valid during initialization: {:#?}",msg);
@@ -192,10 +209,24 @@ where
             _ = partition_spec_listener.listen() => {
                 debug!("partition lister changed");
 
-            }
+            },
+
+            _ = sm_spec_listener.listen() => {
+                debug!("smartmodule lister changed");
+            },
+
+            _ = rm_cluster_listener.listen() => {
+                debug!("remote cluster lister changed");
+            },
+
+            _ = up_cluster_listener.listen() => {
+                debug!("upstream cluster lister changed");
+            },
 
         }
     }
+
+    health_check.update(spu_id, false).await;
 
     Ok(())
 }
@@ -208,7 +239,7 @@ where
 {
     let requests = requests.into_requests();
     if requests.is_empty() {
-        trace!("no requests, just health check");
+        debug!("no requests, just health check");
         return;
     } else {
         debug!(?requests, "received lr requests");
@@ -440,6 +471,120 @@ async fn send_smartmodule_changes<C: MetadataItem>(
             .collect();
         changes.append(&mut deletes);
         UpdateSmartModuleRequest::with_changes(epoch, changes)
+    };
+
+    debug!(?request, "sending sm to spu");
+
+    let mut message = RequestMessage::new_request(request);
+    message.get_mut_header().set_client_id("sc");
+
+    sink.send_request(&message).await?;
+    Ok(())
+}
+
+#[instrument(level = "trace", skip(sink))]
+async fn send_remote_cluster_changes<C: MetadataItem>(
+    listener: &mut ChangeListener<RemoteClusterSpec, C>,
+    sink: &mut FluvioSink,
+    spu_id: SpuId,
+) -> Result<(), SocketError> {
+    use crate::stores::ChangeFlag;
+
+    if !listener.has_change() {
+        trace!("changes is empty, skipping");
+        return Ok(());
+    }
+
+    let changes = listener
+        .sync_changes_with_filter(&ChangeFlag {
+            spec: true,
+            status: false,
+            meta: true,
+        })
+        .await;
+    if changes.is_empty() {
+        trace!("spec changes is empty, skipping");
+        return Ok(());
+    }
+
+    let epoch = changes.epoch;
+
+    let is_sync_all = changes.is_sync_all();
+    let (updates, deletes) = changes.parts();
+
+    let request = if is_sync_all {
+        UpdateRemoteClusterRequest::with_all(
+            epoch,
+            updates.into_iter().map(|sm| sm.into()).collect(),
+        )
+    } else {
+        let mut changes: Vec<RemoteClusterMsg> = updates
+            .into_iter()
+            .map(|sm| Message::update(sm.into()))
+            .collect();
+        let mut deletes = deletes
+            .into_iter()
+            .map(|sm| Message::delete(sm.into()))
+            .collect();
+        changes.append(&mut deletes);
+        UpdateRemoteClusterRequest::with_changes(epoch, changes)
+    };
+
+    debug!(?request, "sending sm to spu");
+
+    let mut message = RequestMessage::new_request(request);
+    message.get_mut_header().set_client_id("sc");
+
+    sink.send_request(&message).await?;
+    Ok(())
+}
+
+#[instrument(level = "trace", skip(sink))]
+async fn send_upstream_cluster_changes<C: MetadataItem>(
+    listener: &mut ChangeListener<UpstreamClusterSpec, C>,
+    sink: &mut FluvioSink,
+    spu_id: SpuId,
+) -> Result<(), SocketError> {
+    use crate::stores::ChangeFlag;
+
+    if !listener.has_change() {
+        trace!("changes is empty, skipping");
+        return Ok(());
+    }
+
+    let changes = listener
+        .sync_changes_with_filter(&ChangeFlag {
+            spec: true,
+            status: false,
+            meta: true,
+        })
+        .await;
+    if changes.is_empty() {
+        trace!("spec changes is empty, skipping");
+        return Ok(());
+    }
+
+    let epoch = changes.epoch;
+
+    let is_sync_all = changes.is_sync_all();
+    let (updates, deletes) = changes.parts();
+
+    let request = if is_sync_all {
+        UpdateUpstreamClusterRequest::with_all(
+            epoch,
+            updates.into_iter().map(|sm| sm.into()).collect(),
+        )
+    } else {
+        let mut changes: Vec<UpstreamClusterMsg> = updates
+            .into_iter()
+            .map(|sm| Message::update(sm.into()))
+            .collect();
+        let mut deletes = deletes
+            .into_iter()
+            .map(|sm| Message::delete(sm.into()))
+            .collect();
+        changes.append(&mut deletes);
+        UpdateUpstreamClusterRequest::with_changes(epoch, changes)
     };
 
     debug!(?request, "sending sm to spu");

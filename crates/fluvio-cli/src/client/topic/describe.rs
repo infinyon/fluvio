@@ -144,6 +144,7 @@ mod display {
                     ));
                     */
                 }
+                ReplicaSpec::Mirror(_partitions) => {}
             }
 
             if let Some(dedup) = spec.get_deduplication() {

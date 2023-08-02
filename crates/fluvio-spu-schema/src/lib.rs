@@ -17,4 +17,5 @@ pub use fluvio_protocol::link::versions::{ApiVersions, ApiVersionsRequest, ApiVe
 pub use isolation::*;
 
 /// Default API version for all API
+/// TODO: Review this
 pub const COMMON_VERSION: i16 = 23;

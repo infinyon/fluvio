@@ -20,7 +20,11 @@ use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec, CompressionAlgo
 )]
 pub struct PartitionSpec {
     pub leader: SpuId,
+    #[cfg_attr(feature = "use_serde", serde(default))]
     pub replicas: Vec<SpuId>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    #[fluvio(min_version = 13)]
+    pub mirror: Option<PartitionMirrorConfig>,
     #[fluvio(min_version = 4)]
     pub cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
@@ -52,6 +56,7 @@ impl PartitionSpec {
             storage: topic.get_storage().cloned(),
             compression_type: topic.get_compression_type().clone(),
             deduplication: topic.get_deduplication().cloned(),
+            ..Default::default()
         }
     }
 
@@ -65,6 +70,14 @@ impl PartitionSpec {
             .iter()
             .filter_map(|r| if r == &self.leader { None } else { Some(*r) })
             .collect()
+    }
+
+    pub fn mirror_string(&self) -> String {
+        if let Some(mirror) = &self.mirror {
+            mirror.external_cluster()
+        } else {
+            "".to_owned()
+        }
     }
 }
 
@@ -82,4 +95,90 @@ impl From<Vec<SpuId>> for PartitionSpec {
 #[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct PartitionConfig {
     pub retention_time_seconds: Option<u32>,
+}
+
+#[derive(Decoder, Encoder, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub enum PartitionMirrorConfig {
+    #[fluvio(tag = 0)]
+    Source(SourcePartitionConfig),
+    #[fluvio(tag = 1)]
+    Target(TargetPartitionConfig),
+}
+
+impl Default for PartitionMirrorConfig {
+    fn default() -> Self {
+        Self::Source(SourcePartitionConfig::default())
+    }
+}
+
+impl PartitionMirrorConfig {
+    pub fn source(&self) -> Option<&SourcePartitionConfig> {
+        match self {
+            Self::Source(source) => Some(source),
+            _ => None,
+        }
+    }
+
+    pub fn target(&self) -> Option<&TargetPartitionConfig> {
+        match self {
+            Self::Target(target) => Some(target),
+            _ => None,
+        }
+    }
+
+    pub fn external_cluster(&self) -> String {
+        match self {
+            Self::Source(source) => format!("{}:{}", source.upstream_cluster, source.target_spu),
+            Self::Target(target) => target.remote_cluster.clone(),
+        }
+    }
+}
+
+impl std::fmt::Display for PartitionMirrorConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            PartitionMirrorConfig::Source(cfg) => write!(f, "{}", cfg),
+            PartitionMirrorConfig::Target(cfg) => write!(f, "{}", cfg),
+        }
+    }
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct TargetPartitionConfig {
+    pub remote_cluster: String,
+    pub source_replica: String,
+}
+
+impl std::fmt::Display for TargetPartitionConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Target:{}", self.remote_cluster)
+    }
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct SourcePartitionConfig {
+    pub upstream_cluster: String,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub target_spu: SpuId,
+}
+
+impl std::fmt::Display for SourcePartitionConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Source:{}:{}", self.upstream_cluster, self.target_spu)
+    }
 }
