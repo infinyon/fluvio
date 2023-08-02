@@ -89,7 +89,7 @@ pub async fn update_replica_map_for_assigned_topic(
         }
     }
 
-    let replica_map = partition_maps.partition_map_to_replica_map();
+    let replica_map = partition_maps.as_replica_map();
     if replica_map.is_empty() {
         TopicStatus::next_resolution_invalid_config("invalid replica map".to_owned()).into()
     } else {

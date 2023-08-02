@@ -441,8 +441,8 @@ impl PartitionMaps {
         spu_ids
     }
 
-    /// Convert partition map into replica map
-    pub fn partition_map_to_replica_map(&self) -> ReplicaMap {
+    /// convert to replica map
+    pub fn as_replica_map(&self) -> ReplicaMap {
         let mut replica_map: ReplicaMap = BTreeMap::new();
 
         for partition in &self.0 {

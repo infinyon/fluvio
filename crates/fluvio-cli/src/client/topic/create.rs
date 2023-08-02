@@ -118,15 +118,15 @@ impl CreateTopicOpt {
 
     fn construct(self) -> Result<(String, TopicSpec)> {
         if let Some(config_path) = self.config {
-            let config = TopicConfig::from_file(&config_path)?;
+            let config = TopicConfig::from_file(config_path)?;
             return Ok((config.meta.name.clone(), config.into()));
         }
 
         use fluvio::metadata::topic::{PartitionMaps, TopicReplicaParam};
-        use load::PartitionLoad;
+        use load::ReadFromJson;
 
         let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
-            ReplicaSpec::Assigned(PartitionMaps::read_replica_assignment(replica_assign_file)?)
+            ReplicaSpec::Assigned(PartitionMaps::read_from_json_file(replica_assign_file)?)
         } else {
             ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
@@ -205,13 +205,13 @@ mod load {
     use anyhow::{anyhow, Result};
     use fluvio::metadata::topic::PartitionMaps;
 
-    pub(crate) trait PartitionLoad: Sized {
-        /// Read and decode the json file into Replica Assignment map
-        fn read_replica_assignment<T: AsRef<Path>>(path: T) -> Result<Self>;
+    pub(crate) trait ReadFromJson: Sized {
+        /// Read and decode from json file
+        fn read_from_json_file<T: AsRef<Path>>(path: T) -> Result<Self>;
     }
 
-    impl PartitionLoad for PartitionMaps {
-        fn read_replica_assignment<T: AsRef<Path>>(path: T) -> Result<Self> {
+    impl ReadFromJson for PartitionMaps {
+        fn read_from_json_file<T: AsRef<Path>>(path: T) -> Result<Self> {
             let file_str: String = read_to_string(path)?;
             serde_json::from_str(&file_str)
                 .map_err(|err| anyhow!("error reading replica assignment: {err}"))
@@ -223,12 +223,12 @@ mod load {
 
         use fluvio_controlplane_metadata::topic::PartitionMaps;
 
-        use super::PartitionLoad;
+        use super::ReadFromJson;
 
         #[test]
         fn test_replica_map_file() {
             let p_map =
-                PartitionMaps::read_replica_assignment("test-data/topics/replica_assignment.json")
+                PartitionMaps::read_from_json_file("test-data/topics/replica_assignment.json")
                     .expect("v1 not found");
             assert_eq!(p_map.maps().len(), 3);
             assert_eq!(p_map.maps()[0].id, 0);
