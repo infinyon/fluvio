@@ -134,16 +134,16 @@ impl CreateTopicOpt {
         use load::PartitionLoad;
 
         let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
-            ReplicaSpec::Assigned(PartitionMaps::file_decode(replica_assign_file).map_err(
-                |err| {
+            ReplicaSpec::Assigned(
+                PartitionMaps::read_replica_assignment(replica_assign_file).map_err(|err| {
                     IoError::new(
                         ErrorKind::InvalidInput,
                         format!(
                             "cannot parse replica assignment file {replica_assign_file:?}: {err}"
                         ),
                     )
-                },
-            )?)
+                })?,
+            )
         } else {
             ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
@@ -216,23 +216,22 @@ pub struct TopicConfigOpt {
 /// module to load partitions maps from file
 mod load {
 
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
     use std::fs::read_to_string;
     use std::path::Path;
 
+    use anyhow::{anyhow, Result};
     use fluvio::metadata::topic::PartitionMaps;
 
-    pub trait PartitionLoad: Sized {
-        fn file_decode<T: AsRef<Path>>(path: T) -> Result<Self, IoError>;
+    pub(crate) trait PartitionLoad: Sized {
+        /// Read and decode the json file into Replica Assignment map
+        fn read_replica_assignment<T: AsRef<Path>>(path: T) -> Result<Self>;
     }
 
     impl PartitionLoad for PartitionMaps {
-        /// Read and decode the json file into Replica Assignment map
-        fn file_decode<T: AsRef<Path>>(path: T) -> Result<Self, IoError> {
+        fn read_replica_assignment<T: AsRef<Path>>(path: T) -> Result<Self> {
             let file_str: String = read_to_string(path)?;
             serde_json::from_str(&file_str)
-                .map_err(|err| IoError::new(ErrorKind::InvalidData, format!("{err}")))
+                .map_err(|err| anyhow!("error reading replica assignment: {err}"))
         }
     }
 
@@ -245,8 +244,9 @@ mod load {
 
         #[test]
         fn test_replica_map_file() {
-            let p_map = PartitionMaps::file_decode("test-data/topics/replica_assignment.json")
-                .expect("v1 not found");
+            let p_map =
+                PartitionMaps::read_replica_assignment("test-data/topics/replica_assignment.json")
+                    .expect("v1 not found");
             assert_eq!(p_map.maps().len(), 3);
             assert_eq!(p_map.maps()[0].id, 0);
             assert_eq!(p_map.maps()[0].replicas, vec![5001, 5002, 5003]);
