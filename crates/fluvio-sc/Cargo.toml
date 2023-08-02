@@ -20,7 +20,7 @@ required-features = ["k8"]
 
 [features]
 default = ["k8"]
-k8 = ["k8-client"]
+k8 = ["k8-client", "k8-types", "k8-metadata-client"]
 
 [dependencies]
 rand = { workspace = true }
@@ -58,8 +58,8 @@ fluvio-controlplane = { workspace = true  }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8","serde"] }
 fluvio-stream-dispatcher = { workspace = true }
 k8-client = { workspace = true, optional = true }
-k8-metadata-client = { workspace = true }
-k8-types = { workspace = true, features = ["app"] }
+k8-metadata-client = { workspace = true, optional = true }
+k8-types = { workspace = true, features = ["app"], optional = true }
 fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-service = { workspace = true  }

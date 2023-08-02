@@ -6,6 +6,7 @@ use std::fmt;
 use std::io::Error as IoError;
 
 use fluvio_types::PartitionError;
+#[cfg(feature = "k8")]
 use k8_client::ClientError;
 use fluvio_socket::SocketError;
 use fluvio_auth::AuthError;
@@ -13,6 +14,7 @@ use fluvio_auth::AuthError;
 #[derive(Debug)]
 pub enum ScError {
     Io(IoError),
+    #[cfg(feature = "k8")]
     Client(ClientError),
     Socket(SocketError),
     Partition(PartitionError),
@@ -24,6 +26,7 @@ impl fmt::Display for ScError {
         match self {
             Self::Io(err) => write!(f, "{err}"),
             //    Self::SendError(err) => write!(f, "{}", err),
+            #[cfg(feature = "k8")]
             Self::Client(err) => write!(f, "{err}"),
             Self::Socket(err) => write!(f, "{err}"),
             Self::Partition(err) => write!(f, "{err}"),
@@ -44,6 +47,7 @@ impl From<AuthError> for ScError {
     }
 }
 
+#[cfg(feature = "k8")]
 impl From<ClientError> for ScError {
     fn from(error: ClientError) -> Self {
         Self::Client(error)

@@ -14,7 +14,7 @@ use tracing::debug;
 use crate::AdminSpec;
 use crate::core::Spec;
 
-use super::{DYN_OBJ};
+use super::DYN_OBJ;
 
 #[derive(Encoder, Decoder, Default, Clone, Debug)]
 #[cfg_attr(

@@ -26,7 +26,7 @@ use fluvio_controlplane::{
 use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
 use crate::core::SharedContext;
-use crate::stores::{K8ChangeListener};
+use crate::stores::K8ChangeListener;
 use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
 use crate::stores::spu::SpuSpec;
 use crate::stores::actions::WSAction;

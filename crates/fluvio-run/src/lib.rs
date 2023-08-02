@@ -35,7 +35,7 @@ impl RunCmd {
                 fluvio_spu::main_loop(opt);
             }
             Self::SC(opt) => {
-                fluvio_sc::k8::main_k8_loop(opt);
+                fluvio_sc::start::main_loop(opt);
             }
             Self::Metadata(meta) => {
                 meta.process()?;
