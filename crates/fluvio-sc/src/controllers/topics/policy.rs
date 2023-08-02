@@ -17,7 +17,7 @@ use crate::stores::spu::*;
 ///  * error is passed to the topic reason.
 ///
 pub fn validate_assigned_topic_parameters(partition_map: &PartitionMaps) -> TopicNextState {
-    if let Err(err) = partition_map.valid_partition_map() {
+    if let Err(err) = partition_map.validate() {
         TopicStatus::next_resolution_invalid_config(err.to_string()).into()
     } else {
         TopicStatus::next_resolution_pending().into()

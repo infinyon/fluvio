@@ -7,9 +7,10 @@
 //!  * Assigned
 //!  * Computed
 //!
-use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
+
+use anyhow::{anyhow, Result};
 
 use fluvio_types::defaults::{
     STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
@@ -283,24 +284,18 @@ impl ReplicaSpec {
     // -----------------------------------
 
     /// Validate partitions
-    pub fn valid_partition(partitions: &PartitionCount) -> Result<(), Error> {
+    pub fn valid_partition(partitions: &PartitionCount) -> Result<()> {
         if *partitions == 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "partition must be greater than 0",
-            ));
+            return Err(anyhow!("partition must be greater than 0"));
         }
 
         Ok(())
     }
 
     /// Validate replication factor
-    pub fn valid_replication_factor(replication: &ReplicationFactor) -> Result<(), Error> {
+    pub fn valid_replication_factor(replication: &ReplicationFactor) -> Result<()> {
         if *replication == 0 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "replication factor must be greater than 0",
-            ));
+            return Err(anyhow!("replication factor must be greater than 0"));
         }
 
         Ok(())
@@ -457,15 +452,12 @@ impl PartitionMaps {
         replica_map
     }
 
-    /// Validate partition map for assigned topics
     #[allow(clippy::explicit_counter_loop)]
-    pub fn valid_partition_map(&self) -> Result<(), Error> {
+    /// Validate partition map for assigned topics
+    pub fn validate(&self) -> Result<()> {
         // there must be at least one partition in the partition map
         if self.0.is_empty() {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "no assigned partitions found",
-            ));
+            return Err(anyhow!("no assigned partitions found"));
         }
 
         // assigned partitions must meet the following criteria
@@ -483,36 +475,26 @@ impl PartitionMaps {
             if id == 0 {
                 // id must be 0
                 if partition.id != id {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        "assigned partitions must start with id 0",
-                    ));
+                    return Err(anyhow!("assigned partitions must start with id 0",));
                 }
 
                 // replica must have elements
                 replica_len = partition.replicas.len();
                 if replica_len == 0 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        "assigned replicas must have at least one spu id",
-                    ));
+                    return Err(anyhow!("assigned replicas must have at least one spu id",));
                 }
             } else {
                 // id must be in sequence
                 if partition.id != id {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        "assigned partition ids must be in sequence and without gaps",
+                    return Err(anyhow!(
+                        "assigned partition ids must be in sequence and without gaps"
                     ));
                 }
 
                 // replica must have same number of elements as previous one
                 if partition.replicas.len() != replica_len {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        format!(
-                            "all assigned replicas must have the same number of spu ids: {replica_len}"
-                        ),
+                    return Err(anyhow!(
+                        "all assigned replicas must have the same number of spu ids: {replica_len}"
                     ));
                 }
             }
@@ -525,18 +507,16 @@ impl PartitionMaps {
                 .filter(|pair| pair[0] != pair[1])
                 .count();
             if partition.replicas.len() != unique_count {
-                return Err(Error::new(
-                    ErrorKind::InvalidInput,
-                    format!("duplicate spu ids found in assigned partition with id: {id}"),
-                ));
+                return Err(anyhow!(format!(
+                    "duplicate spu ids found in assigned partition with id: {id}"
+                ),));
             }
 
             // all ids must be positive numbers
             for spu_id in &partition.replicas {
                 if *spu_id < 0 {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput,
-                        format!("invalid spu id: {spu_id} in assigned partition with id: {id}"),
+                    return Err(anyhow!(
+                        "invalid spu id: {spu_id} in assigned partition with id: {id}"
                     ));
                 }
             }
@@ -722,7 +702,7 @@ pub mod test {
     fn test_replica_map_ids() {
         // id starts from 1 rather than 0
         let p1: PartitionMaps = vec![(1, vec![0]), (2, vec![2])].into();
-        let p1_result = p1.valid_partition_map();
+        let p1_result = p1.validate();
         assert!(p1_result.is_err());
         assert_eq!(
             format!("{}", p1_result.unwrap_err()),
@@ -731,7 +711,7 @@ pub mod test {
 
         // id has a gap
         let p2: PartitionMaps = vec![(0, vec![0]), (2, vec![2])].into();
-        let p2_result = p2.valid_partition_map();
+        let p2_result = p2.validate();
         assert!(p2_result.is_err());
         assert_eq!(
             format!("{}", p2_result.unwrap_err()),
@@ -740,7 +720,7 @@ pub mod test {
 
         // ids are out of sequence
         let p3: PartitionMaps = vec![(0, vec![0]), (2, vec![2]), (1, vec![1])].into();
-        let p3_result = p3.valid_partition_map();
+        let p3_result = p3.validate();
         assert!(p3_result.is_err());
         assert_eq!(
             format!("{}", p3_result.unwrap_err()),
@@ -749,7 +729,7 @@ pub mod test {
 
         // duplicate ids
         let p4: PartitionMaps = vec![(0, vec![0]), (1, vec![1]), (1, vec![1])].into();
-        let p4_result = p4.valid_partition_map();
+        let p4_result = p4.validate();
         assert!(p4_result.is_err());
         assert_eq!(
             format!("{}", p4_result.unwrap_err()),
@@ -758,7 +738,7 @@ pub mod test {
 
         // ids are ok
         let p5: PartitionMaps = vec![(0, vec![1]), (1, vec![1]), (2, vec![2])].into();
-        let p5_result = p5.valid_partition_map();
+        let p5_result = p5.validate();
         assert!(p5_result.is_ok());
     }
 
@@ -771,7 +751,7 @@ pub mod test {
     fn test_replica_map_spu_ids() {
         // replicas must have at least one element
         let p1: PartitionMaps = vec![(0, vec![]), (1, vec![1])].into();
-        let p1_result = p1.valid_partition_map();
+        let p1_result = p1.validate();
         assert!(p1_result.is_err());
         assert_eq!(
             format!("{}", p1_result.unwrap_err()),
@@ -780,7 +760,7 @@ pub mod test {
 
         // all replicas must have the same number of elements
         let p2: PartitionMaps = vec![(0, vec![1, 2]), (1, vec![1])].into();
-        let p2_result = p2.valid_partition_map();
+        let p2_result = p2.validate();
         assert!(p2_result.is_err());
         assert_eq!(
             format!("{}", p2_result.unwrap_err()),
@@ -789,7 +769,7 @@ pub mod test {
 
         // all elements must be unique
         let p3: PartitionMaps = vec![(0, vec![1, 2]), (1, vec![1, 1])].into();
-        let p3_result = p3.valid_partition_map();
+        let p3_result = p3.validate();
         assert!(p3_result.is_err());
         assert_eq!(
             format!("{}", p3_result.unwrap_err()),
@@ -798,7 +778,7 @@ pub mod test {
 
         // all elements must be unique
         let p4: PartitionMaps = vec![(0, vec![3, 1, 2, 3])].into();
-        let p4_result = p4.valid_partition_map();
+        let p4_result = p4.validate();
         assert!(p4_result.is_err());
         assert_eq!(
             format!("{}", p4_result.unwrap_err()),
@@ -807,7 +787,7 @@ pub mod test {
 
         // all elements must be positive integers
         let p5: PartitionMaps = vec![(0, vec![1, 2]), (1, vec![1, -2])].into();
-        let p5_result = p5.valid_partition_map();
+        let p5_result = p5.validate();
         assert!(p5_result.is_err());
         assert_eq!(
             format!("{}", p5_result.unwrap_err()),
