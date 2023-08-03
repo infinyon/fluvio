@@ -651,7 +651,7 @@ impl std::fmt::Display for CompressionAlgorithm {
 }
 
 #[cfg(test)]
-pub mod test {
+mod test {
 
     use std::io::Cursor;
 
