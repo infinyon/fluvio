@@ -17,7 +17,7 @@ use crate::stores::spu::*;
 ///  * error is passed to the topic reason.
 ///
 pub fn validate_assigned_topic_parameters(partition_map: &PartitionMaps) -> TopicNextState {
-    if let Err(err) = partition_map.valid_partition_map() {
+    if let Err(err) = partition_map.validate() {
         TopicStatus::next_resolution_invalid_config(err.to_string()).into()
     } else {
         TopicStatus::next_resolution_pending().into()
@@ -89,7 +89,7 @@ pub async fn update_replica_map_for_assigned_topic(
         }
     }
 
-    let replica_map = partition_maps.partition_map_to_replica_map();
+    let replica_map = partition_maps.as_replica_map();
     if replica_map.is_empty() {
         TopicStatus::next_resolution_invalid_config("invalid replica map".to_owned()).into()
     } else {
@@ -182,8 +182,8 @@ impl TopicNextState {
                     let mut next_state = generate_replica_map(spu_store, param).await;
                     if next_state.resolution == TopicResolution::Provisioned {
                         debug!(
-                            "Topic: {} replica generate success, status is provisioned",
-                            topic.key()
+                            topic = %topic.key(),
+                            "generated replica map for mirror topic"
                         );
                         next_state.partitions = topic.create_new_partitions(partition_store).await;
                     }
@@ -191,8 +191,9 @@ impl TopicNextState {
                 }
                 _ => {
                     debug!(
-                        "topic: {} resolution: {:#?} ignoring",
-                        topic.key, topic.status.resolution
+                        topic = %topic.key(),
+                        status = ?topic.status.resolution,
+                        "partition generation status"
                     );
                     let mut next_state = TopicNextState::same_next_state(topic);
                     if next_state.resolution == TopicResolution::Provisioned {

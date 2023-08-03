@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-controlplane-metadata"
 edition = "2021"
-version = "0.23.1"
+version = "0.24.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Metadata definition for Fluvio control plane"
 repository = "https://github.com/infinyon/fluvio"
@@ -13,7 +13,7 @@ path = "src/lib.rs"
 
 [features]
 smartmodule = ["flate2","toml","use_serde"]
-use_serde = ["serde","semver/serde", "bytesize/serde", "humantime-serde", "serde_yaml", "anyhow"]
+use_serde = ["serde","semver/serde", "bytesize/serde", "humantime-serde", "serde_yaml"]
 k8 = ["use_serde", "fluvio-stream-model/k8"]
 
 [dependencies]
@@ -30,7 +30,7 @@ toml = { workspace = true,  default-features = true, optional = true, features =
 tracing = { workspace = true }
 bytesize = { workspace = true }
 humantime-serde = { workspace = true, optional = true }
-anyhow = { workspace = true, optional = true }
+anyhow = { workspace = true }
 serde_yaml = { workspace = true, optional = true }
 derive_builder = { workspace = true }
 
