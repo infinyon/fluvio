@@ -5,14 +5,18 @@
 //!
 use std::fmt;
 
-use crate::controllers::partitions::PartitionWSAction;
+use fluvio_controlplane_metadata::{topic::TopicSpec, partition::PartitionSpec};
+use fluvio_stream_model::{store::k8::K8MetaItem, core::MetadataItem};
 
-use super::*;
+use crate::stores::actions::WSAction;
 
 #[derive(Debug, Default)]
-pub struct TopicActions {
-    pub topics: Vec<TopicWSAction>,
-    pub partitions: Vec<PartitionWSAction>,
+pub struct TopicActions<C = K8MetaItem>
+where
+    C: MetadataItem + Send + Sync,
+{
+    pub topics: Vec<WSAction<TopicSpec, C>>,
+    pub partitions: Vec<WSAction<PartitionSpec, C>>,
 }
 
 impl fmt::Display for TopicActions {

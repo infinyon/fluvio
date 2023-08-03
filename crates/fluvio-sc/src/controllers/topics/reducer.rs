@@ -12,6 +12,8 @@
 //!
 use std::sync::Arc;
 
+use fluvio_stream_dispatcher::actions::WSAction;
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, trace, info, error, instrument};
 
 use crate::stores::topic::*;
@@ -35,29 +37,37 @@ use super::*;
 ///
 /// Actually replica assignment is done by Partition controller.
 #[derive(Debug)]
-pub struct TopicReducer {
-    topic_store: Arc<TopicAdminStore>,
-    spu_store: Arc<SpuAdminStore>,
-    partition_store: Arc<PartitionAdminStore>,
+pub struct TopicReducer<C = K8MetaItem>
+where
+    C: MetadataItem + Send + Sync,
+{
+    topic_store: Arc<TopicLocalStore<C>>,
+    spu_store: Arc<SpuLocalStore<C>>,
+    partition_store: Arc<PartitionLocalStore<C>>,
 }
 
-impl Default for TopicReducer {
+impl<C> Default for TopicReducer<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     fn default() -> Self {
         Self {
-            topic_store: TopicAdminStore::new_shared(),
-            spu_store: SpuAdminStore::new_shared(),
-            partition_store: PartitionAdminStore::new_shared(),
+            topic_store: TopicLocalStore::new_shared(),
+            spu_store: SpuLocalStore::new_shared(),
+            partition_store: PartitionLocalStore::new_shared(),
         }
     }
 }
 
-impl TopicReducer {
-    pub fn new<A, B, C>(topic_store: A, spu_store: B, partition_store: C) -> Self
-    where
-        A: Into<Arc<TopicAdminStore>>,
-        B: Into<Arc<SpuAdminStore>>,
-        C: Into<Arc<PartitionAdminStore>>,
-    {
+impl<C> TopicReducer<C>
+where
+    C: MetadataItem + Send + Sync,
+{
+    pub fn new(
+        topic_store: impl Into<Arc<TopicLocalStore<C>>>,
+        spu_store: impl Into<Arc<SpuLocalStore<C>>>,
+        partition_store: impl Into<Arc<PartitionLocalStore<C>>>,
+    ) -> Self {
         Self {
             topic_store: topic_store.into(),
             spu_store: spu_store.into(),
@@ -66,19 +76,19 @@ impl TopicReducer {
     }
 
     #[allow(unused)]
-    fn topic_store(&self) -> &TopicAdminStore {
+    fn topic_store(&self) -> &TopicLocalStore<C> {
         &self.topic_store
     }
 
-    fn spu_store(&self) -> &SpuAdminStore {
+    fn spu_store(&self) -> &SpuLocalStore<C> {
         &self.spu_store
     }
 
-    fn partition_store(&self) -> &PartitionAdminStore {
+    fn partition_store(&self) -> &PartitionLocalStore<C> {
         &self.partition_store
     }
 
-    pub async fn process_requests(&self, topic_updates: Vec<TopicAdminMd>) -> TopicActions {
+    pub async fn process_requests(&self, topic_updates: Vec<TopicMetadata<C>>) -> TopicActions<C> {
         trace!("processing requests: {:#?}", topic_updates);
 
         let mut actions = TopicActions::default();
@@ -95,9 +105,11 @@ impl TopicReducer {
     /// if state is different, apply actions
     ///
     #[instrument(level = "trace", skip(self, topic, actions))]
-    async fn update_actions_next_state(&self, topic: &TopicAdminMd, actions: &mut TopicActions) {
-        use fluvio_controlplane_metadata::core::MetadataItem;
-
+    async fn update_actions_next_state(
+        &self,
+        topic: &TopicMetadata<C>,
+        actions: &mut TopicActions<C>,
+    ) {
         // if foregroundDeletion is the finalizer, then we can mark it as delete
         if topic.ctx().item().is_being_deleted() {
             // set to delete if not it set
@@ -108,9 +120,10 @@ impl TopicReducer {
                 );
                 let mut status = topic.status().clone();
                 status.resolution = TopicResolution::Deleting;
-                actions
-                    .topics
-                    .push(TopicWSAction::UpdateStatus((topic.key_owned(), status)));
+                actions.topics.push(WSAction::<TopicSpec, C>::UpdateStatus((
+                    topic.key_owned(),
+                    status,
+                )));
 
                 // find children and delete them
                 let partitions = topic.childrens(self.partition_store()).await;
@@ -150,7 +163,7 @@ impl TopicReducer {
         {
             actions
                 .partitions
-                .push(PartitionWSAction::Apply(partition_kv));
+                .push(WSAction::<PartitionSpec, C>::Apply(partition_kv));
         }
 
         // apply changes to topics
@@ -163,7 +176,7 @@ impl TopicReducer {
                 updated_topic.status,
                 topic.status
             );
-            actions.topics.push(TopicWSAction::UpdateStatus((
+            actions.topics.push(WSAction::<TopicSpec, C>::UpdateStatus((
                 updated_topic.key_owned(),
                 updated_topic.status,
             )));
@@ -178,6 +191,8 @@ mod test2 {
     use fluvio_controlplane_metadata::topic::PENDING_REASON;
 
     use super::*;
+
+    type TopicWSAction = WSAction<TopicSpec, K8MetaItem>;
 
     // if topic are just created, it should transitioned to pending state if config are valid
     #[fluvio_future::test]

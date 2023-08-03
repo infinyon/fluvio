@@ -11,6 +11,7 @@
 
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_sc_schema::objects::CreateRequest;
+use fluvio_stream_model::store::k8::K8MetaItem;
 use tracing::{info, debug, trace, instrument};
 use anyhow::{anyhow, Result};
 
@@ -131,7 +132,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 
     match topic_spec.replicas() {
         ReplicaSpec::Computed(param) => {
-            let next_state = validate_computed_topic_parameters(param);
+            let next_state = validate_computed_topic_parameters::<K8MetaItem>(param);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
                 Status::new(
@@ -140,7 +141,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
                     Some(next_state.reason),
                 )
             } else {
-                let next_state = generate_replica_map(spus, param).await;
+                let next_state = generate_replica_map::<K8MetaItem>(spus, param).await;
                 trace!("validating, generate replica map topic: {:#?}", next_state);
                 if next_state.resolution.no_resource() {
                     Status::new(
@@ -154,7 +155,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
             }
         }
         ReplicaSpec::Assigned(ref partition_map) => {
-            let next_state = validate_assigned_topic_parameters(partition_map);
+            let next_state = validate_assigned_topic_parameters::<K8MetaItem>(partition_map);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
                 Status::new(
@@ -163,7 +164,8 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
                     Some(next_state.reason),
                 )
             } else {
-                let next_state = update_replica_map_for_assigned_topic(partition_map, spus).await;
+                let next_state =
+                    update_replica_map_for_assigned_topic::<K8MetaItem>(partition_map, spus).await;
                 trace!("validating, assign replica map topic: {:#?}", next_state);
                 if next_state.resolution.is_invalid() {
                     Status::new(

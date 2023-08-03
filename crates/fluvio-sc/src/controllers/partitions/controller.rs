@@ -12,7 +12,7 @@ use fluvio_future::task::spawn;
 use fluvio_controlplane_metadata::core::MetadataItem;
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 
-use crate::stores::{StoreContext};
+use crate::stores::StoreContext;
 use crate::stores::partition::PartitionSpec;
 use crate::stores::spu::SpuSpec;
 
