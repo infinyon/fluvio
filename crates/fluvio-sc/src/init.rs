@@ -4,22 +4,25 @@
 //! All processing engines are hooked-up here. Channels are created and split between sencders
 //! and receivers.
 //!
+use std::sync::Arc;
 
-use k8_metadata_client::SharedClient;
-use k8_metadata_client::MetadataClient;
+#[cfg(feature = "k8")]
+use k8_metadata_client::{MetadataClient, SharedClient};
 
 use crate::core::Context;
 use crate::core::SharedContext;
 use crate::controllers::spus::SpuController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
-use crate::config::{ScConfig};
+#[cfg(feature = "k8")]
+use crate::config::ScConfig;
 use crate::services::start_internal_server;
+#[cfg(feature = "k8")]
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
 use crate::services::auth::basic::BasicRbacPolicy;
 
-/// start the main loop
-pub async fn start_main_loop<C>(
+#[cfg(feature = "k8")]
+pub async fn start_main_loop_with_k8<C>(
     sc_config_policy: (ScConfig, Option<BasicRbacPolicy>),
     metadata_client: SharedClient<C>,
 ) -> SharedContext
@@ -37,7 +40,6 @@ where
 
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
-    let config = ctx.config();
 
     K8ClusterStateDispatcher::<SpuSpec, C>::start(
         namespace.clone(),
@@ -75,6 +77,15 @@ where
         ctx.smartmodules().clone(),
     );
 
+    start_main_loop(ctx, auth_policy).await
+}
+
+/// start the main loop
+pub async fn start_main_loop(
+    ctx: Arc<Context>,
+    auth_policy: Option<BasicRbacPolicy>,
+) -> SharedContext {
+    let config = ctx.config();
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
     whitelist!(

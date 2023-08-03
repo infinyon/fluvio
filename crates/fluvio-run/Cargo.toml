@@ -30,6 +30,11 @@ tracing-subscriber = { workspace = true }
 
 # regardless of TLS, sc and spu always use openssl_tls for now because we need cert API
 fluvio-future = { workspace = true, features = ["subscriber"] }
-fluvio-sc = { path = "../fluvio-sc" }
 fluvio-spu = { path = "../fluvio-spu" }
 fluvio-extension-common = { workspace = true }
+
+[target.'cfg(not(target_arch = "armv7"))'.dependencies]
+fluvio-sc = { path = "../fluvio-sc", features = ["k8"] }
+
+[target.'cfg(target_arch = "armv7")'.dependencies]
+fluvio-sc = { path = "../fluvio-sc", default-features = false }
