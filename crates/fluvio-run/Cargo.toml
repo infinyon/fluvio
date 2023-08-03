@@ -18,8 +18,9 @@ path = "src/bin/main.rs"
 doc = false
 
 [features]
-default = ["k8"]
+default = ["k8", "spu_smartengine"]
 k8 = [ "fluvio-sc/k8"]
+spu_smartengine = ["fluvio-spu/smartengine"]
 
 [dependencies]
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"]}
