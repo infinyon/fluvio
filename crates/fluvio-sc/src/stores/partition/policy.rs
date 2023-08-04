@@ -14,7 +14,7 @@ impl ElectionScoring {
     }
 }
 
-pub trait ElectionPolicy {
+pub(crate) trait ElectionPolicy {
     /// compute potential leade score against leader
     fn potential_leader_score(
         &self,
@@ -23,10 +23,10 @@ pub trait ElectionPolicy {
     ) -> ElectionScoring;
 }
 
-struct SimplePolicy {}
+pub(crate) struct SimplePolicy {}
 
 impl SimplePolicy {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         SimplePolicy {}
     }
 }
