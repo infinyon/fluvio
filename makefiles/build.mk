@@ -22,7 +22,7 @@ ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
 else
   fluvio_run_extra=
 endif
-build-cluster:
+build-cluster: install_rustup_target
 	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG) $(fluvio_run_extra)
 
 build-test:	install_rustup_target
