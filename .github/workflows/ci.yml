@@ -1219,6 +1219,8 @@ jobs:
             artifact: fluvio-run
           - rust-target: aarch64-apple-darwin
             artifact: fluvio-run
+          - rust-target: armv7-unknown-linux-gnueabihf
+            artifact: fluvio-run
           - rust-target: x86_64-pc-windows-gnu
             artifact: fluvio.exe
           - rust-target: x86_64-pc-windows-gnu
