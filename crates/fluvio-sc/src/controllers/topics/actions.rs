@@ -13,7 +13,7 @@ use crate::stores::actions::WSAction;
 #[derive(Debug, Default)]
 pub struct TopicActions<C = K8MetaItem>
 where
-    C: MetadataItem
+    C: MetadataItem,
 {
     pub topics: Vec<WSAction<TopicSpec, C>>,
     pub partitions: Vec<WSAction<PartitionSpec, C>>,

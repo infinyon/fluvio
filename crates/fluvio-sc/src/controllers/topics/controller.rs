@@ -50,7 +50,7 @@ impl TopicController<K8MetaItem> {
 
 impl<C> TopicController<C>
 where
-    C: MetadataItem
+    C: MetadataItem,
 {
     #[instrument(name = "TopicController", skip(self))]
     async fn dispatch_loop(mut self) {
