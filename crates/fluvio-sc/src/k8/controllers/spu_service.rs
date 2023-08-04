@@ -7,9 +7,9 @@ use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use fluvio_stream_dispatcher::actions::WSAction;
-use k8_client::{ClientError};
+use k8_client::ClientError;
 
-use crate::stores::spg::{SpuGroupSpec};
+use crate::stores::spg::SpuGroupSpec;
 use crate::stores::{StoreContext, K8ChangeListener};
 use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::spg_group::SpuGroupObj;
@@ -187,7 +187,7 @@ impl SpuServiceController {
         spu_name: &str,
         spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
-        use k8_types::core::service::{ServiceSpec as K8ServiceSpec};
+        use k8_types::core::service::ServiceSpec as K8ServiceSpec;
 
         let mut selector = HashMap::new();
         let pod_name = format!("fluvio-spg-{spu_name}");

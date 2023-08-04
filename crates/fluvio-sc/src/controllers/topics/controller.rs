@@ -3,6 +3,9 @@
 //!
 //! Reconcile Topics
 
+use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::store::ChangeListener;
+use fluvio_stream_model::store::k8::K8MetaItem;
 use tracing::debug;
 use tracing::instrument;
 
@@ -11,18 +14,21 @@ use fluvio_future::task::spawn;
 use crate::core::SharedContext;
 use crate::stores::topic::TopicSpec;
 use crate::stores::partition::PartitionSpec;
-use crate::stores::{StoreContext, K8ChangeListener};
+use crate::stores::StoreContext;
 
 use super::reducer::TopicReducer;
 
 #[derive(Debug)]
-pub struct TopicController {
-    topics: StoreContext<TopicSpec>,
-    partitions: StoreContext<PartitionSpec>,
-    reducer: TopicReducer,
+pub struct TopicController<C = K8MetaItem>
+where
+    C: MetadataItem + Send + Sync,
+{
+    topics: StoreContext<TopicSpec, C>,
+    partitions: StoreContext<PartitionSpec, C>,
+    reducer: TopicReducer<C>,
 }
 
-impl TopicController {
+impl TopicController<K8MetaItem> {
     /// streaming coordinator controller constructor
     pub fn start(ctx: SharedContext) {
         let topics = ctx.topics().clone();
@@ -40,7 +46,12 @@ impl TopicController {
 
         spawn(controller.dispatch_loop());
     }
+}
 
+impl<C> TopicController<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     #[instrument(name = "TopicController", skip(self))]
     async fn dispatch_loop(mut self) {
         use std::time::Duration;
@@ -70,7 +81,7 @@ impl TopicController {
     }
 
     #[instrument(skip(self, listener))]
-    async fn sync_topics(&mut self, listener: &mut K8ChangeListener<TopicSpec>) {
+    async fn sync_topics(&mut self, listener: &mut ChangeListener<TopicSpec, C>) {
         if !listener.has_change() {
             debug!("no change");
             return;

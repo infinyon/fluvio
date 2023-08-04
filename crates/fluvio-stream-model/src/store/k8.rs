@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use tracing::error;
 
 use crate::k8_types::{Spec as K8Spec, Status as K8Status, ObjectMeta, K8Obj};
-use crate::store::{MetadataStoreObject};
+use crate::store::MetadataStoreObject;
 use crate::core::{Spec, MetadataItem, MetadataContext};
 
 pub type K8MetadataContext = MetadataContext<K8MetaItem>;
