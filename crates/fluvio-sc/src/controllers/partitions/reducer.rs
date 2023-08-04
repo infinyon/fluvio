@@ -5,18 +5,17 @@
 //!
 use std::sync::Arc;
 
-use fluvio_controlplane_metadata::partition::store::{PartitionLocalStore, PartitionMetadata};
-use fluvio_controlplane_metadata::spu::store::{SpuLocalStore, SpuMetadata};
-use fluvio_controlplane_metadata::store::k8::K8MetaItem;
+use fluvio_controlplane::PartitionMetadata;
 use tracing::{debug, info, instrument};
 
+use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use fluvio_controlplane_metadata::core::MetadataItem;
 
 use crate::stores::partition::{
-    PartitionSpec, ReplicaStatus, PartitionResolution, ElectionPolicy, ElectionScoring,
+    PartitionSpec, PartitionResolution, PartitionLocalStore
 };
 use crate::stores::actions::WSAction;
-use crate::stores::spu::SpuLocalStorePolicy;
+use crate::stores::spu::{SpuLocalStorePolicy, SpuLocalStore, SpuMetadata};
 
 type PartitionWSAction<C = K8MetaItem> = WSAction<PartitionSpec, C>;
 
@@ -268,28 +267,6 @@ where
     }
 }
 
-struct SimplePolicy {}
-
-impl SimplePolicy {
-    fn new() -> Self {
-        SimplePolicy {}
-    }
-}
-
-impl ElectionPolicy for SimplePolicy {
-    fn potential_leader_score(
-        &self,
-        replica_status: &ReplicaStatus,
-        leader: &ReplicaStatus,
-    ) -> ElectionScoring {
-        let lag = leader.leo - replica_status.leo;
-        if lag < 4 {
-            ElectionScoring::Score(lag as u16)
-        } else {
-            ElectionScoring::NotSuitable
-        }
-    }
-}
 
 // -----------------------------------
 //  Unit Tests

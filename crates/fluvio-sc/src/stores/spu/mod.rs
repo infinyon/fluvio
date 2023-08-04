@@ -1,7 +1,6 @@
 mod store;
 
 pub use store::*;
-pub use fluvio_controlplane_metadata::spu::store::*;
 pub use fluvio_controlplane_metadata::spu::*;
 pub use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 pub use health_check::*;

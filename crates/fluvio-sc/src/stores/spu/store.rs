@@ -10,12 +10,14 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use fluvio_controlplane::message::SpuMsg;
+use fluvio_controlplane_metadata::spu::SpuSpec;
+use fluvio_controlplane_metadata::spu::SpuStatus;
+use fluvio_controlplane_metadata::store::MetadataStoreObject;
+use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::store::LocalStore;
 use fluvio_types::SpuId;
 
-use crate::spu::*;
-use crate::store::*;
-use crate::core::*;
-use crate::message::*;
 
 pub type SpuLocalStore<C> = LocalStore<SpuSpec, C>;
 pub type DefaultSpuStore = SpuLocalStore<u32>;
@@ -320,11 +322,11 @@ where
 
 #[cfg(test)]
 pub mod test {
+    use fluvio_controlplane_metadata::spu::SpuSpec;
+    use fluvio_controlplane_metadata::spu::SpuStatus;
+    use fluvio_stream_model::store::actions::LSUpdate;
     use fluvio_types::SpuId;
 
-    use crate::spu::{SpuSpec, SpuStatus};
-
-    use crate::store::actions::*;
     use super::DefaultSpuMd;
     use super::DefaultSpuStore;
     use super::SpuMd;
