@@ -104,11 +104,11 @@ spec:
         type: boolean
         description: Being deleted
         jsonPath: .status.isBeingDeleted
-      - name: LSR
+      - name: LRS
         type: integer
         format: int32
         description: Live Replicas
-        jsonPath: .status.lsr
+        jsonPath: .status.lrs
       - name: HW
         type: integer
         format: int64
