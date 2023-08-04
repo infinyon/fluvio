@@ -205,7 +205,7 @@ pub(crate) trait PartitonStatusExtension: Sized {
     where
         P: ElectionPolicy;
 
-        fn merge(&mut self, other: Self);
+    fn merge(&mut self, other: Self);
 
     fn update_lrs(&mut self);
 }
@@ -239,7 +239,6 @@ impl PartitonStatusExtension for PartitionStatus {
         candidate_spu
     }
 
-    
     /// merge status from spu
     /// ignore changes from spu = -1 or offsets = -1
     fn merge(&mut self, other: Self) {
@@ -270,8 +269,7 @@ impl PartitonStatusExtension for PartitionStatus {
             })
             .collect();
         self.update_lrs();
-    }   
-    
+    }
 
     /// recalculate lrs which is count of follower whose leo is same as leader
     fn update_lrs(&mut self) {
@@ -290,8 +288,6 @@ pub(crate) trait ReplicaStatusExtension: Sized {
 }
 
 impl ReplicaStatusExtension for ReplicaStatus {
-
-
     /// merge status
     fn merge(&mut self, source: &Self) -> Option<Self> {
         // if source spu is -1, we ignore it
@@ -322,8 +318,6 @@ impl ReplicaStatusExtension for ReplicaStatus {
             Some(old)
         }
     }
-
-    
 }
 
 #[cfg(test)]

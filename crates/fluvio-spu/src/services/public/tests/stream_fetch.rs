@@ -6,7 +6,9 @@ use fluvio_controlplane::replica::Replica;
 use fluvio_smartmodule::dataplane::smartmodule::Lookback;
 use tracing::{debug, info};
 
-use fluvio_controlplane_metadata::smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec};
+use fluvio_controlplane_metadata::smartmodule::{
+    SmartModule, SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec,
+};
 use fluvio_storage::FileReplica;
 use flv_util::fixture::ensure_clean_dir;
 use futures_util::{Future, StreamExt};

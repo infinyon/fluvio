@@ -13,9 +13,7 @@
 
 use fluvio_controlplane_metadata::message::{Message, Messages};
 
-
 use crate::replica::Replica;
-
 
 pub type ReplicaMsg = Message<Replica>;
 pub type ReplicaMsgs = Messages<Replica>;

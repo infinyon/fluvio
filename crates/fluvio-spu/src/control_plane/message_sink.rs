@@ -4,7 +4,6 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use fluvio_controlplane::sc_api::update_lrs::LrsRequest;
 
-
 pub type SharedStatusUpdate = Arc<StatusMessageSink>;
 
 /// channel used to send message to sc

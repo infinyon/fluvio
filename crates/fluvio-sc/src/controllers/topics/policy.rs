@@ -22,7 +22,6 @@ use crate::stores::spu::SpuLocalStorePolicy;
 use crate::stores::topic::TopicMd;
 use crate::stores::topic::TopicMetadata;
 
-
 //
 /// Validate assigned topic spec parameters and update topic status
 ///  * error is passed to the topic reason.

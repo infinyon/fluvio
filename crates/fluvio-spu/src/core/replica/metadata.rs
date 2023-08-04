@@ -1,4 +1,3 @@
-
 use fluvio_controlplane::replica::Replica;
 use fluvio_protocol::record::ReplicaKey;
 

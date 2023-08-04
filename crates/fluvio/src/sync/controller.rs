@@ -20,7 +20,6 @@ use super::StoreContext;
 use super::CacheMetadataStoreObject;
 use crate::metadata::store::actions::LSUpdate;
 
-
 pub struct SimpleEvent {
     flag: AtomicBool,
     event: Event,
@@ -192,9 +191,7 @@ where
                 .into_iter()
                 // .map(|it| LSUpdate::Mod(it))
                 .map(|(typ, obj)| match typ {
-                    MsgType::UPDATE => {
-                        LSUpdate::Mod(obj)
-                    },
+                    MsgType::UPDATE => LSUpdate::Mod(obj),
                     MsgType::DELETE => LSUpdate::Delete(obj.key),
                 })
                 .collect();

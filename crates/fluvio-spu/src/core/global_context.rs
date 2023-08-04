@@ -157,7 +157,10 @@ where
 
 mod file_replica {
 
-    use fluvio_controlplane::{sc_api::remove::ReplicaRemovedRequest, replica::Replica, spu_api::update_replica::UpdateReplicaRequest};
+    use fluvio_controlplane::{
+        sc_api::remove::ReplicaRemovedRequest, replica::Replica,
+        spu_api::update_replica::UpdateReplicaRequest,
+    };
     use tracing::{trace, warn};
 
     use fluvio_storage::FileReplica;

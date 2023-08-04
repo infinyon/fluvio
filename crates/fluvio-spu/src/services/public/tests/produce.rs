@@ -11,7 +11,9 @@ use fluvio_protocol::{
     link::ErrorCode,
     Decoder,
 };
-use fluvio_controlplane_metadata::topic::{CompressionAlgorithm, Deduplication, Bounds, Filter, Transform};
+use fluvio_controlplane_metadata::topic::{
+    CompressionAlgorithm, Deduplication, Bounds, Filter, Transform,
+};
 use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};
 use fluvio_spu_schema::{

@@ -21,7 +21,6 @@ use async_trait::async_trait;
 use futures_util::stream::Stream;
 use anyhow::Result;
 
-
 use fluvio_future::timer::sleep;
 use fluvio_service::ConnectInfo;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
@@ -29,7 +28,6 @@ use fluvio_types::SpuId;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_service::{FluvioService, wait_for_request};
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
-
 
 use crate::core::SharedContext;
 use crate::stores::K8ChangeListener;

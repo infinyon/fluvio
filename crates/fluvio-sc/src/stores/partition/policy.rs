@@ -45,4 +45,3 @@ impl ElectionPolicy for SimplePolicy {
         }
     }
 }
-

@@ -1,7 +1,10 @@
 use fluvio_controlplane::PartitionMetadata;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_protocol::record::ReplicaKey;
-use fluvio_stream_model::{store::{MetadataStoreObject, LocalStore}, core::MetadataItem};
+use fluvio_stream_model::{
+    store::{MetadataStoreObject, LocalStore},
+    core::MetadataItem,
+};
 use tracing::debug;
 use async_trait::async_trait;
 
@@ -101,8 +104,6 @@ mod test {
     use fluvio_controlplane_metadata::topic::{TopicStatus, TopicResolution};
 
     use crate::stores::topic::{DefaultTopicMd, DefaultTopicLocalStore};
-
-
 
     #[test]
     fn test_topic_replica_map() {

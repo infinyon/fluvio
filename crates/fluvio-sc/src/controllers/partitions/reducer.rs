@@ -12,7 +12,8 @@ use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use fluvio_controlplane_metadata::core::MetadataItem;
 
 use crate::stores::partition::{
-    PartitionSpec, PartitionResolution, PartitionLocalStore, SimplePolicy, PartitonStatusExtension, ElectionPolicy
+    PartitionSpec, PartitionResolution, PartitionLocalStore, SimplePolicy, PartitonStatusExtension,
+    ElectionPolicy,
 };
 use crate::stores::actions::WSAction;
 use crate::stores::spu::{SpuLocalStorePolicy, SpuLocalStore, SpuMetadata};
@@ -266,7 +267,6 @@ where
         }
     }
 }
-
 
 // -----------------------------------
 //  Unit Tests

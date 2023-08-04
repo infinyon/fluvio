@@ -9,7 +9,6 @@ use crate::requests::ControlPlaneRequest;
 
 use super::api::InternalSpuApi;
 
-
 pub type UpdateSmartModuleRequest = ControlPlaneRequest<SmartModule>;
 
 impl Request for UpdateSmartModuleRequest {

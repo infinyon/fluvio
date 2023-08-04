@@ -18,7 +18,6 @@ use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::LocalStore;
 use fluvio_types::SpuId;
 
-
 pub type SpuLocalStore<C> = LocalStore<SpuSpec, C>;
 pub type DefaultSpuStore = SpuLocalStore<u32>;
 pub type SharedSpuLocalStore<C> = Arc<SpuLocalStore<C>>;

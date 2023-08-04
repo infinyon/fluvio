@@ -5,7 +5,6 @@ pub use self::spec::*;
 pub use self::status::*;
 pub use fluvio_protocol::record::ReplicaKey;
 
-
 #[cfg(feature = "k8")]
 mod k8;
 #[cfg(feature = "k8")]

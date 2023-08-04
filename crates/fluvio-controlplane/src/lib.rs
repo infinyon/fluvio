@@ -4,11 +4,9 @@ pub mod replica;
 pub mod message;
 pub mod requests;
 
-
 pub use alias::*;
 mod alias {
     use fluvio_controlplane_metadata::{store::MetadataStoreObject, partition::PartitionSpec};
-
 
     pub type PartitionMetadata<C> = MetadataStoreObject<PartitionSpec, C>;
 }

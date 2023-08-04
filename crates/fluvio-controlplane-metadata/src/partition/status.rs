@@ -13,7 +13,6 @@ use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::record::Offset;
 use fluvio_types::SpuId;
 
-
 // -----------------------------------
 // Data Structures
 // -----------------------------------
@@ -143,12 +142,7 @@ impl PartitionStatus {
         self.is_being_deleted = true;
         self
     }
-
-    
-    
 }
-
-
 
 #[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
@@ -205,8 +199,6 @@ impl ReplicaStatus {
     pub fn high_watermark_lag(&self, leader_status: &Self) -> i64 {
         leader_status.hw - self.hw
     }
-
-    
 }
 
 impl From<(SpuId, Offset, Offset)> for ReplicaStatus {

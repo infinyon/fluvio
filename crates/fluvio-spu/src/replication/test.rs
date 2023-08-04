@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::env::temp_dir;
 
-
 use fluvio_controlplane::replica::Replica;
 use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
 use tracing::debug;

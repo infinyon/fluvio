@@ -9,13 +9,11 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt;
 
-
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::core::Spec;
 use fluvio_stream_model::store::MetadataStoreObject;
 use fluvio_stream_model::store::actions::LSChange;
-
 
 #[derive(Decoder, Default, Encoder, Debug, Eq, PartialEq, Clone)]
 pub enum MsgType {
@@ -57,8 +55,6 @@ impl<C> Message<C> {
         Self::new(MsgType::UPDATE, content)
     }
 }
-
-
 
 impl<S, C, D> From<LSChange<S, C>> for Message<D>
 where

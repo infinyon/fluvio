@@ -9,7 +9,6 @@ use crate::requests::ControlPlaneRequest;
 
 use super::api::InternalSpuApi;
 
-
 pub type UpdateSpuRequest = ControlPlaneRequest<SpuSpec>;
 
 impl Request for UpdateSpuRequest {
