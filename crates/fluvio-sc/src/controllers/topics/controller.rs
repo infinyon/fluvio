@@ -21,7 +21,7 @@ use super::reducer::TopicReducer;
 #[derive(Debug)]
 pub struct TopicController<C = K8MetaItem>
 where
-    C: MetadataItem + Send + Sync,
+    C: MetadataItem,
 {
     topics: StoreContext<TopicSpec, C>,
     partitions: StoreContext<PartitionSpec, C>,
@@ -50,7 +50,7 @@ impl TopicController<K8MetaItem> {
 
 impl<C> TopicController<C>
 where
-    C: MetadataItem + Send + Sync,
+    C: MetadataItem,
 {
     #[instrument(name = "TopicController", skip(self))]
     async fn dispatch_loop(mut self) {
