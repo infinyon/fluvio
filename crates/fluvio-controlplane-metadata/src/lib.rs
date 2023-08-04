@@ -4,6 +4,7 @@ pub mod partition;
 pub mod spg;
 pub mod smartmodule;
 pub mod tableformat;
+pub mod message;
 
 pub use fluvio_stream_model::core;
 

@@ -9,11 +9,12 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt;
 
-use fluvio_controlplane_metadata::core::MetadataItem;
-use fluvio_controlplane_metadata::core::Spec;
-use fluvio_controlplane_metadata::store::MetadataStoreObject;
-use fluvio_controlplane_metadata::store::actions::LSChange;
+
 use fluvio_protocol::{Encoder, Decoder};
+use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::core::Spec;
+use fluvio_stream_model::store::MetadataStoreObject;
+use fluvio_stream_model::store::actions::LSChange;
 
 
 #[derive(Decoder, Default, Encoder, Debug, Eq, PartialEq, Clone)]
@@ -57,16 +58,7 @@ impl<C> Message<C> {
     }
 }
 
-/*
-impl<C> From<C> for Message<C>
-where
-    C: Encoder + Decoder + Debug + Default,
-{
-    fn from(content: C) -> Message<C> {
-        Message::update(content)
-    }
-}
-*/
+
 
 impl<S, C, D> From<LSChange<S, C>> for Message<D>
 where

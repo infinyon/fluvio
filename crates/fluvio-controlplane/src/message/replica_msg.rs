@@ -11,27 +11,11 @@
 //! operation the comparing message with internal metadata.
 //!
 
-use fluvio_protocol::record::ReplicaKey;
-use fluvio_types::SpuId;
-
+use fluvio_controlplane_metadata::message::{Message, Messages};
 
 
 use crate::replica::Replica;
 
-use super::{MsgType, Message, Messages};
 
 pub type ReplicaMsg = Message<Replica>;
 pub type ReplicaMsgs = Messages<Replica>;
-
-// -----------------------------------
-// ReplicaMsg
-// -----------------------------------
-
-impl ReplicaMsg {
-    pub fn create_delete_msg(name: ReplicaKey, leader: SpuId) -> Self {
-        ReplicaMsg {
-            header: MsgType::DELETE,
-            content: Replica::new(name, leader, vec![]),
-        }
-    }
-}
