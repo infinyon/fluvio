@@ -21,6 +21,7 @@ doc = false
 default = ["k8", "spu_smartengine"]
 k8 = [ "fluvio-sc/k8"]
 spu_smartengine = ["fluvio-spu/smartengine"]
+rustls = ["fluvio-future/rust_tls"]
 
 [dependencies]
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"]}

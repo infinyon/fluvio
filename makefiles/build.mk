@@ -18,11 +18,14 @@ build-cli-minimal: install_rustup_target
 
 # note: careful that the if statement branches are leading spaces, tabs
 ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
-  fluvio_run_extra=--no-default-features
+  fluvio_run_extra=--no-default-features --features rustls
 else
   fluvio_run_extra=
 endif
 build-cluster: install_rustup_target
+	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG) $(fluvio_run_extra)
+
+build-run:
 	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG) $(fluvio_run_extra)
 
 build-test:	install_rustup_target
