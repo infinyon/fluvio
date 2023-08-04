@@ -16,8 +16,14 @@ build-cli-minimal: install_rustup_target
 	cargo build --bin fluvio -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) \
 	    --no-default-features --features consumer,producer-file-io
 
-build-cluster: install_rustup_target
-	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG)
+# note: careful that the if statement branches are leading spaces, tabs
+ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
+  fluvio_run_extra=--no-default-features
+else
+  fluvio_run_extra=
+endif
+build-cluster:
+	cargo build --bin fluvio-run -p fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(DEBUG_SMARTMODULE_FLAG) $(fluvio_run_extra)
 
 build-test:	install_rustup_target
 	cargo build --bin fluvio-test -p fluvio-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)

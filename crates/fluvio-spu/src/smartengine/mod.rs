@@ -14,8 +14,8 @@ mod chain;
 
 #[cfg(feature = "smartengine")]
 pub(crate) use fluvio_smartengine::{
-    EngineError, metrics::SmartModuleChainMetrics, SmartEngine, SmartModuleChainInstance, Version,
-    Lookback,
+    EngineError, Lookback, SmartModuleChainBuilder, metrics::SmartModuleChainMetrics, SmartEngine,
+    SmartModuleChainInstance, Version,
 };
 
 // Stub structures to support a null smartengine config
@@ -23,6 +23,7 @@ pub(crate) use fluvio_smartengine::{
 mod null_smartengine {
     use std::future::Future;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::Duration;
 
     use anyhow::Result;
     use serde::{Deserialize, Serialize};
@@ -81,6 +82,14 @@ mod null_smartengine {
         }
     }
 
+    #[derive(Default)]
+    pub struct SmartModuleChainBuilder;
+
+    impl SmartModuleChainBuilder {
+        pub fn set_store_memory_limit(&mut self, _max_memory_bytes: usize) {}
+    }
+
+    #[derive(Debug)]
     pub struct SmartModuleChainInstance;
 
     impl SmartModuleChainInstance {
@@ -101,7 +110,12 @@ mod null_smartengine {
             input: SmartModuleInput,
             _metric: &SmartModuleChainMetrics,
         ) -> Result<SmartModuleOutput> {
-            let out = SmartModuleOutput::new(input.try_into()?);
+            use fluvio_smartmodule::SMARTMODULE_TIMESTAMPS_VERSION;
+            const DEFAULT_SMARTENGINE_VERSION: Version = SMARTMODULE_TIMESTAMPS_VERSION;
+
+            #[allow(deprecated)]
+            let records = input.try_into_records(DEFAULT_SMARTENGINE_VERSION)?;
+            let out = SmartModuleOutput::new(records);
             Ok(out)
         }
     }
@@ -117,8 +131,19 @@ mod null_smartengine {
     }
 
     #[allow(dead_code)]
-    #[derive(Debug)]
-    pub enum EngineError {}
+    #[derive(thiserror::Error, Debug)]
+    pub enum EngineError {
+        #[error("No valid smartmodule found")]
+        UnknownSmartModule,
+        #[error("Failed to instantiate: {0}")]
+        Instantiate(anyhow::Error),
+        #[error("Requested memory {requested}b exceeded max allowed {max}b")]
+        StoreMemoryExceeded {
+            current: usize,
+            requested: usize,
+            max: usize,
+        },
+    }
 }
 
 #[cfg(not(feature = "smartengine"))]

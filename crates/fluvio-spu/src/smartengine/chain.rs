@@ -4,18 +4,18 @@ use fluvio_protocol::link::ErrorCode;
 use fluvio_spu_schema::server::smartmodule::SmartModuleInvocation;
 
 #[cfg(feature = "smartengine")]
-use fluvio_smartengine::{
-    EngineError, SmartModuleChainBuilder, SmartModuleConfig, SmartModuleInitialData,
-};
+use fluvio_smartengine::{EngineError, SmartModuleConfig, SmartModuleInitialData};
 
 #[cfg(feature = "smartengine")]
 use fluvio_spu_schema::server::smartmodule::{SmartModuleContextData, SmartModuleKind};
 
+use crate::smartengine::SmartModuleChainBuilder;
 use crate::smartengine::SmartEngine;
 use crate::smartengine::SmartModuleChainInstance;
 
 #[cfg(not(feature = "smartengine"))]
 pub(crate) fn build_chain(
+    mut _chain_builder: SmartModuleChainBuilder,
     _invocations: Vec<SmartModuleInvocation>,
     _version: i16,
     _engine: SmartEngine,
