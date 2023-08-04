@@ -8,7 +8,7 @@ use std::fmt::Debug;
 
 use fluvio_protocol::{Encoder, Decoder};
 
-use super::Message;
+use super::msg_type::Message;
 
 #[derive(Encoder, Decoder, Debug, Eq, PartialEq, Clone, Default)]
 pub struct Messages<S> {

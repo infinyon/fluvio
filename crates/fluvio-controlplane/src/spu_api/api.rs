@@ -9,9 +9,9 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::Decoder;
 
-use super::UpdateSpuRequest;
-use super::UpdateReplicaRequest;
-use super::UpdateSmartModuleRequest;
+use super::update_spu::UpdateSpuRequest;
+use super::update_replica::UpdateReplicaRequest;
+use super::update_smartmodule::UpdateSmartModuleRequest;
 
 #[repr(u16)]
 #[derive(Eq, PartialEq, Debug, Encoder, Decoder, Clone, Copy)]

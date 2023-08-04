@@ -3,20 +3,20 @@ use std::fmt::Debug;
 use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
+use fluvio_controlplane::replica::Replica;
 use tracing::{debug, warn, instrument};
-use async_rwlock::{RwLock};
+use async_rwlock::RwLock;
 use anyhow::Result;
 
-use fluvio_protocol::record::BatchRecords;
+use fluvio_protocol::record::{BatchRecords, ReplicaKey};
 use fluvio_storage::config::ReplicaConfig;
-use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_protocol::record::RecordSet;
 use fluvio_protocol::record::Offset;
 use fluvio_storage::{FileReplica, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 
 use crate::replication::leader::ReplicaOffsetRequest;
-use crate::core::{FileGlobalContext};
+use crate::core::FileGlobalContext;
 use crate::storage::SharableReplicaStorage;
 
 use super::controller::FollowerGroups;

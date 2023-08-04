@@ -48,6 +48,7 @@ fluvio-types = { workspace = true, features = ["events",]}
 fluvio-future = { workspace = true, features = ["fs", "mmap", "zero_copy"] }
 fluvio-protocol = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true  }
+fluvio-controlplane = { workspace = true }
 fluvio-spu-schema = { workspace = true, features = [ "file"] }
 
 [dev-dependencies]

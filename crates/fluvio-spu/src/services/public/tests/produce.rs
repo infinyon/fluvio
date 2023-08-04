@@ -1,6 +1,7 @@
 use std::{env::temp_dir, time::Duration};
 
 use fluvio::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind};
+use fluvio_controlplane::replica::Replica;
 use fluvio_smartmodule::{Record, dataplane::smartmodule::Lookback};
 use fluvio_storage::FileReplica;
 use tracing::debug;
@@ -10,9 +11,8 @@ use fluvio_protocol::{
     link::ErrorCode,
     Decoder,
 };
-use fluvio_controlplane_metadata::{
-    partition::Replica,
-    topic::{CompressionAlgorithm, Deduplication, Bounds, Filter, Transform},
+use fluvio_controlplane_metadata::topic::{
+    CompressionAlgorithm, Deduplication, Bounds, Filter, Transform,
 };
 use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};

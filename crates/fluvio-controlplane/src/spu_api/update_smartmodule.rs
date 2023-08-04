@@ -3,11 +3,11 @@
 use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::Request;
-
 use fluvio_controlplane_metadata::smartmodule::SmartModule;
 
-use crate::InternalSpuApi;
-use super::ControlPlaneRequest;
+use crate::requests::ControlPlaneRequest;
+
+use super::api::InternalSpuApi;
 
 pub type UpdateSmartModuleRequest = ControlPlaneRequest<SmartModule>;
 

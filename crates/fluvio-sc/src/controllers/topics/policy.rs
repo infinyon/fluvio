@@ -1,17 +1,26 @@
 use std::fmt;
 use std::collections::BTreeMap;
 
-use fluvio_stream_model::core::MetadataItem;
+use fluvio_controlplane::PartitionMetadata;
+use fluvio_controlplane_metadata::topic::ReplicaSpec;
+use fluvio_controlplane_metadata::topic::TopicReplicaParam;
+use fluvio_controlplane_metadata::topic::TopicResolution;
+use fluvio_types::PartitionId;
+use fluvio_types::ReplicaMap;
+use fluvio_types::ReplicationFactor;
 use tracing::{debug, trace, instrument};
 use rand::thread_rng;
 use rand::Rng;
 
-use fluvio_types::*;
-use fluvio_controlplane_metadata::topic::*;
+use fluvio_controlplane_metadata::topic::PartitionMaps;
+use fluvio_controlplane_metadata::topic::TopicStatus;
+use fluvio_stream_model::core::MetadataItem;
 
-use crate::stores::topic::*;
-use crate::stores::partition::*;
-use crate::stores::spu::*;
+use crate::stores::partition::PartitionLocalStore;
+use crate::stores::spu::SpuLocalStore;
+use crate::stores::spu::SpuLocalStorePolicy;
+use crate::stores::topic::TopicMd;
+use crate::stores::topic::TopicMetadata;
 
 //
 /// Validate assigned topic spec parameters and update topic status
@@ -355,7 +364,7 @@ pub mod replica_map_test {
 
     use std::collections::BTreeMap;
 
-    use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
+    use crate::stores::spu::SpuAdminStore;
 
     use super::*;
 

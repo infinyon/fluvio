@@ -6,10 +6,9 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use fluvio_smartengine::SmartEngine;
 use tracing::{debug, error, instrument};
 
-use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_smartengine::SmartEngine;
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
@@ -158,10 +157,14 @@ where
 
 mod file_replica {
 
-    use fluvio_controlplane::{ReplicaRemovedRequest, UpdateReplicaRequest};
+    use fluvio_controlplane::{
+        sc_api::remove::ReplicaRemovedRequest, replica::Replica,
+        spu_api::update_replica::UpdateReplicaRequest,
+    };
+    use tracing::{trace, warn};
+
     use fluvio_storage::FileReplica;
     use flv_util::actions::Actions;
-    use tracing::{trace, warn};
 
     use crate::core::SpecChange;
 

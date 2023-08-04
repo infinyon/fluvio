@@ -1,19 +1,12 @@
-mod sc_api;
-mod spu_api;
-mod requests;
+pub mod sc_api;
+pub mod spu_api;
+pub mod replica;
+pub mod message;
+pub mod requests;
 
-pub use self::sc_api::InternalScKey;
-pub use self::sc_api::InternalScRequest;
-pub use self::spu_api::InternalSpuApi;
-pub use self::spu_api::InternalSpuRequest;
+pub use alias::*;
+mod alias {
+    use fluvio_controlplane_metadata::{store::MetadataStoreObject, partition::PartitionSpec};
 
-pub use self::requests::update_spu::*;
-pub use self::requests::update_replica::*;
-pub use self::requests::register_spu::*;
-pub use self::requests::update_lrs::*;
-pub use self::requests::remove::*;
-pub use self::requests::update_smartmodule::*;
-
-use fluvio_protocol::api::RequestMessage;
-
-pub type UpdateSpuRequestMessage = RequestMessage<UpdateSpuRequest>;
+    pub type PartitionMetadata<C> = MetadataStoreObject<PartitionSpec, C>;
+}

@@ -9,7 +9,7 @@ use fluvio_protocol::Encoder;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::ReplicaStatus;
 
-use crate::InternalScKey;
+use super::api::InternalScKey;
 
 /// Live Replica Status
 /// First lrs is leader by convention but should not be relied upon

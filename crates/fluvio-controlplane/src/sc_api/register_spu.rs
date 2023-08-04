@@ -18,7 +18,7 @@ use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 use fluvio_types::SpuId;
 
-use crate::InternalScKey;
+use super::api::InternalScKey;
 
 // -----------------------------------
 // Data Structures

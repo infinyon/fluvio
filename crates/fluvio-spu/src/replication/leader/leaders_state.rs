@@ -1,11 +1,12 @@
 use std::ops::Deref;
 use async_lock::RwLock;
+use fluvio_controlplane::replica::Replica;
 use std::collections::HashMap;
 
 use tracing::{error, instrument};
 use anyhow::Result;
 
-use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
+use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_storage::FileReplica;
 
 use crate::{control_plane::SharedStatusUpdate, core::GlobalContext};

@@ -2,9 +2,9 @@ pub mod spu;
 pub mod topic;
 pub mod partition;
 pub mod spg;
-pub mod message;
 pub mod smartmodule;
 pub mod tableformat;
+pub mod message;
 
 pub use fluvio_stream_model::core;
 

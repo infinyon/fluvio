@@ -1,17 +1,17 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use tracing::{debug, error, trace, warn, instrument};
-use async_rwlock::{RwLock};
+use async_rwlock::RwLock;
 use adaptive_backoff::prelude::*;
 
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
-use crate::core::{FileGlobalContext};
+use crate::core::FileGlobalContext;
 
-use super::{FollowersState};
+use super::FollowersState;
 use super::state::{SharedFollowersState, FollowerReplicaState};
-use super::api_key::{FollowerPeerApiEnum};
-use super::sync::{DefaultSyncRequest};
+use super::api_key::FollowerPeerApiEnum;
+use super::sync::DefaultSyncRequest;
 use super::peer_api::FollowerPeerRequest;
 
 /// time to resync follower offsets to leader

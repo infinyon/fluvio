@@ -83,17 +83,17 @@ mod error {
 
 mod admin {
 
-    use std::{fmt::Debug};
+    use std::fmt::Debug;
 
-    use anyhow::{Result};
+    use anyhow::Result;
 
     use fluvio_protocol::{Encoder, Decoder, Version};
-    use fluvio_controlplane_metadata::{store::MetadataStoreObject};
+    use fluvio_controlplane_metadata::store::MetadataStoreObject;
 
     use crate::objects::Metadata;
     use crate::objects::classic::ClassicCreatableAdminSpec;
 
-    use super::core::{Spec};
+    use super::core::Spec;
 
     /// AdminSpec can perform list and watch
     pub trait AdminSpec: Spec + Encoder + Decoder {

@@ -10,10 +10,10 @@ use std::fmt::Display;
 use std::fmt;
 
 use fluvio_protocol::{Encoder, Decoder};
-
-use crate::store::actions::*;
-use crate::core::*;
-use crate::store::*;
+use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::core::Spec;
+use fluvio_stream_model::store::MetadataStoreObject;
+use fluvio_stream_model::store::actions::LSChange;
 
 #[derive(Decoder, Default, Encoder, Debug, Eq, PartialEq, Clone)]
 pub enum MsgType {
@@ -55,17 +55,6 @@ impl<C> Message<C> {
         Self::new(MsgType::UPDATE, content)
     }
 }
-
-/*
-impl<C> From<C> for Message<C>
-where
-    C: Encoder + Decoder + Debug + Default,
-{
-    fn from(content: C) -> Message<C> {
-        Message::update(content)
-    }
-}
-*/
 
 impl<S, C, D> From<LSChange<S, C>> for Message<D>
 where

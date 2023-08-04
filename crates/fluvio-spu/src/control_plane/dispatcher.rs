@@ -1,22 +1,23 @@
 use std::time::Duration;
 use std::io::Error as IoError;
 
+use fluvio_controlplane::sc_api::register_spu::RegisterSpuRequest;
+use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
+use fluvio_controlplane::spu_api::api::{InternalSpuRequest, InternalSpuApi};
+use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
+use fluvio_controlplane::spu_api::update_smartmodule::UpdateSmartModuleRequest;
+use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
 use tracing::{info, trace, error, debug, warn, instrument};
-use flv_util::print_cli_err;
-
 use tokio::select;
 use futures_util::stream::StreamExt;
 
+use flv_util::print_cli_err;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use fluvio_controlplane::{InternalSpuApi, UpdateSmartModuleRequest};
-use fluvio_controlplane::InternalSpuRequest;
-use fluvio_controlplane::RegisterSpuRequest;
-use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
-use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
+
 use crate::core::SharedGlobalContext;
 use crate::InternalServerError;
 

@@ -7,7 +7,7 @@ use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-use crate::InternalScKey;
+use super::api::InternalScKey;
 
 /// Confirmation of Replica replica
 #[derive(Decoder, Encoder, Debug, Default, Clone)]

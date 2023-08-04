@@ -4,6 +4,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use fluvio_sc_schema::message::MsgType;
 use tracing::{error, debug, instrument};
 use event_listener::{Event, EventListener};
 use futures_util::stream::StreamExt;
@@ -18,7 +19,6 @@ use fluvio_sc_schema::{AdminSpec, TryEncodableFrom};
 use super::StoreContext;
 use super::CacheMetadataStoreObject;
 use crate::metadata::store::actions::LSUpdate;
-use fluvio_sc_schema::message::MsgType;
 
 pub struct SimpleEvent {
     flag: AtomicBool,
@@ -176,7 +176,7 @@ where
                 count = updates.changes.len(),
                 "Received partial sync, updating store objects:"
             );
-            let changes = updates
+            let changes: Vec<_> = updates
                 .changes
                 .into_iter()
                 .map(|msg| {
@@ -194,7 +194,7 @@ where
                     MsgType::UPDATE => LSUpdate::Mod(obj),
                     MsgType::DELETE => LSUpdate::Delete(obj.key),
                 })
-                .collect::<Vec<_>>();
+                .collect();
 
             self.store.store().apply_changes(changes).await;
             return Ok(());

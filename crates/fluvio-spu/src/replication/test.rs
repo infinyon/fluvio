@@ -1,19 +1,19 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 use std::env::temp_dir;
 
-use fluvio_controlplane::UpdateReplicaRequest;
-use fluvio_storage::FileReplica;
+use fluvio_controlplane::replica::Replica;
+use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
 use tracing::debug;
 use derive_builder::Builder;
 use once_cell::sync::Lazy;
 
+use fluvio_storage::FileReplica;
 use fluvio_future::timer::sleep;
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_types::SpuId;
-use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
-use fluvio_protocol::fixture::{create_raw_recordset};
+use fluvio_protocol::fixture::create_raw_recordset;
 
 use crate::core::{DefaultSharedGlobalContext, GlobalContext};
 use crate::config::SpuConfig;

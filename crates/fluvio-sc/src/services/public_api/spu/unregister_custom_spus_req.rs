@@ -12,10 +12,9 @@ use fluvio_sc_schema::Status;
 use fluvio_sc_schema::customspu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuKey;
 use fluvio_auth::{AuthContext, InstanceAction};
-use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::stores::spu::{SpuAdminMd};
+use crate::stores::spu::{SpuAdminMd, SpuLocalStorePolicy};
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete custom spu request

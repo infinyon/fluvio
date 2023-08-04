@@ -1,7 +1,6 @@
 mod spec;
 mod status;
 mod deduplication;
-pub mod store;
 pub mod config;
 
 pub use self::spec::*;

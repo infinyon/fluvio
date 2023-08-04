@@ -2,15 +2,16 @@
 
 use std::fmt;
 
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_controlplane_metadata::{
+    topic::{CleanupPolicy, TopicStorageConfig, CompressionAlgorithm, Deduplication},
+    core::MetadataItem,
+    store::MetadataStoreObject,
+    partition::PartitionSpec,
+};
+use fluvio_protocol::{Encoder, Decoder, record::ReplicaKey};
 use fluvio_types::SpuId;
 
-use crate::partition::ReplicaKey;
-use crate::core::MetadataItem;
-use crate::store::MetadataStoreObject;
-use crate::partition::PartitionSpec;
-use crate::topic::{CleanupPolicy, TopicStorageConfig, CompressionAlgorithm, Deduplication};
-use super::store::*;
+use crate::PartitionMetadata;
 
 /// Metadata about Replica send from SC
 #[derive(Decoder, Encoder, Debug, Eq, PartialEq, Clone, Default)]
