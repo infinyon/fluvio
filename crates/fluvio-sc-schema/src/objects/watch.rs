@@ -7,7 +7,7 @@ use anyhow::Result;
 
 use fluvio_controlplane_metadata::message::Message;
 use fluvio_protocol::{Encoder, Decoder, Version};
-use fluvio_protocol::api::{Request};
+use fluvio_protocol::api::Request;
 use fluvio_controlplane_metadata::store::Epoch;
 
 use crate::{AdminPublicApiKey, AdminSpec, TryEncodableFrom};

@@ -2,8 +2,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use async_lock::Mutex;
+use fluvio_controlplane::sc_api::update_lrs::LrsRequest;
 
-use fluvio_controlplane::{LrsRequest};
 
 pub type SharedStatusUpdate = Arc<StatusMessageSink>;
 

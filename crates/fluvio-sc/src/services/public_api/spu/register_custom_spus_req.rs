@@ -4,19 +4,19 @@
 //! Converts Custom Spu API request into KV request and sends to KV store for processing.
 //!
 use tracing::{debug, info, trace, instrument};
-use std::io::{Error as IoError};
+use std::io::Error as IoError;
 
 use fluvio_protocol::link::ErrorCode;
-use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::customspu::CustomSpuSpec;
-use fluvio_sc_schema::objects::{CreateRequest};
+use fluvio_sc_schema::objects::CreateRequest;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
-use crate::core::{SharedContext};
+use crate::core::SharedContext;
 use crate::services::auth::AuthServiceContext;
+use crate::stores::spu::SpuLocalStorePolicy;
 
 pub struct RegisterCustomSpu {
     ctx: SharedContext,

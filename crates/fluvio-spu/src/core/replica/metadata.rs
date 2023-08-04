@@ -1,5 +1,6 @@
-use fluvio_controlplane_metadata::partition::Replica;
-use fluvio_controlplane_metadata::partition::ReplicaKey;
+
+use fluvio_controlplane::replica::Replica;
+use fluvio_protocol::record::ReplicaKey;
 
 use crate::core::Spec;
 use crate::core::LocalStore;

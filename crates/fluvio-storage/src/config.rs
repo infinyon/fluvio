@@ -5,10 +5,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, AtomicU64};
 
 use derive_builder::Builder;
-use fluvio_controlplane_metadata::partition::Replica;
-use fluvio_controlplane_metadata::topic::CleanupPolicy;
+use fluvio_controlplane::replica::Replica;
 use serde::Deserialize;
 
+use fluvio_controlplane_metadata::topic::CleanupPolicy;
 use fluvio_types::defaults::{
     SPU_LOG_INDEX_MAX_BYTES, SPU_LOG_BASE_DIR, STORAGE_FLUSH_WRITE_COUNT, STORAGE_FLUSH_IDLE_MSEC,
     STORAGE_MAX_BATCH_SIZE, STORAGE_RETENTION_SECONDS, SPU_PARTITION_MAX_BYTES,
@@ -17,7 +17,7 @@ use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
 use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
 use fluvio_protocol::record::{Size, Size64};
 
-use crate::{ReplicaStorageConfig};
+use crate::ReplicaStorageConfig;
 
 // Replica specific config
 #[derive(Builder, Clone, Debug, Eq, PartialEq, Deserialize)]

@@ -1,33 +1,41 @@
-use fluvio_controlplane_metadata::message::SmartModuleMsg;
-use fluvio_controlplane_metadata::partition::Replica;
-use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
-
-use fluvio_future::timer::sleep;
-use fluvio_service::ConnectInfo;
 use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::time::Duration;
 
+use fluvio_controlplane::message::ReplicaMsg;
+use fluvio_controlplane::message::SmartModuleMsg;
+use fluvio_controlplane::message::SpuMsg;
+use fluvio_controlplane::replica::Replica;
+use fluvio_controlplane::sc_api::api::InternalScKey;
+use fluvio_controlplane::sc_api::api::InternalScRequest;
+use fluvio_controlplane::sc_api::register_spu::RegisterSpuResponse;
+use fluvio_controlplane::sc_api::remove::ReplicaRemovedRequest;
+use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
+use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
+use fluvio_controlplane::spu_api::update_smartmodule::UpdateSmartModuleRequest;
+use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
+use fluvio_controlplane_metadata::message::Message;
 use tracing::{debug, info, trace, instrument, error};
 use async_trait::async_trait;
 use futures_util::stream::Stream;
 use anyhow::Result;
 
+
+use fluvio_future::timer::sleep;
+use fluvio_service::ConnectInfo;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_types::SpuId;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_service::{FluvioService, wait_for_request};
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
-use fluvio_controlplane::{
-    InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
-    UpdateSpuRequest, ReplicaRemovedRequest, UpdateSmartModuleRequest,
-};
-use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
+
 
 use crate::core::SharedContext;
 use crate::stores::K8ChangeListener;
+use crate::stores::partition::PartitonStatusExtension;
 use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
+use crate::stores::spu::SpuLocalStorePolicy;
 use crate::stores::spu::SpuSpec;
 use crate::stores::actions::WSAction;
 

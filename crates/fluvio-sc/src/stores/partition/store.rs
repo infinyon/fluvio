@@ -205,7 +205,7 @@ pub(crate) trait PartitonStatusExtension: Sized {
     where
         P: ElectionPolicy;
 
-    fn merge(&mut self, source: &Self) -> Option<Self>;
+        fn merge(&mut self, other: Self);
 
     fn update_lrs(&mut self);
 }
@@ -330,6 +330,8 @@ impl ReplicaStatusExtension for ReplicaStatus {
 mod test {
 
     use std::collections::HashSet;
+
+    use crate::stores::partition::PartitonStatusExtension;
 
     use super::PartitionStatus;
     use super::ReplicaStatus;

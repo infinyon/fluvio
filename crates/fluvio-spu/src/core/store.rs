@@ -264,8 +264,8 @@ where
 
 #[cfg(test)]
 pub mod test {
+    use fluvio_controlplane::message::SpuMsg;
     use fluvio_controlplane_metadata::spu::SpuSpec;
-    use fluvio_controlplane_metadata::message::SpuMsg;
 
     use crate::core::SpuLocalStore;
     use crate::core::SpecChange;

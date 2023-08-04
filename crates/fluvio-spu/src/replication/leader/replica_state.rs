@@ -7,14 +7,14 @@ use std::{
 use std::iter::FromIterator;
 use std::fmt;
 
+use fluvio_controlplane::{replica::Replica, sc_api::update_lrs::LrsRequest};
 use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::RwLock;
 use anyhow::{Result, Context};
 
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};
-use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
-use fluvio_controlplane::LrsRequest;
+use fluvio_controlplane_metadata::partition::{ReplicaStatus, PartitionStatus};
 use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 use fluvio_spu_schema::{Isolation, COMMON_VERSION};
@@ -723,7 +723,7 @@ mod test_leader {
 
     use async_trait::async_trait;
 
-    use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
+    use fluvio_controlplane_metadata::partition::ReplicaKey;
     use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo, ReplicaSlice};
     use fluvio_protocol::record::Offset;
     use fluvio_protocol::link::ErrorCode;

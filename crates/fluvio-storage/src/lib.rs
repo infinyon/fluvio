@@ -35,8 +35,8 @@ mod inner {
     use fluvio_spu_schema::Isolation;
     use fluvio_protocol::record::{Offset, ReplicaKey, Size64};
     use fluvio_protocol::record::RecordSet;
-    use fluvio_controlplane_metadata::partition::Replica;
     use fluvio_future::file_slice::AsyncFileSlice;
+    use fluvio_controlplane::replica::Replica;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub struct OffsetInfo {

@@ -3071,6 +3071,7 @@ dependencies = [
  "bytes 1.4.0",
  "clap",
  "derive_builder",
+ "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-future",
  "fluvio-protocol",
