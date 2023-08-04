@@ -22,7 +22,7 @@ use super::reducer::PartitionReducer;
 #[derive(Debug)]
 pub struct PartitionController<C = K8MetaItem>
 where
-    C: MetadataItem + Send + Sync,
+    C: MetadataItem
 {
     partitions: StoreContext<PartitionSpec, C>,
     spus: StoreContext<SpuSpec, C>,
@@ -31,7 +31,7 @@ where
 
 impl<C> PartitionController<C>
 where
-    C: MetadataItem + Send + Sync + 'static,
+    C: MetadataItem + 'static
 {
     pub fn start(partitions: StoreContext<PartitionSpec, C>, spus: StoreContext<SpuSpec, C>) {
         let controller = Self {

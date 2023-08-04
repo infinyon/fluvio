@@ -57,7 +57,7 @@ type PartitionWSAction<C = K8MetaItem> = WSAction<PartitionSpec, C>;
 #[derive(Debug)]
 pub struct PartitionReducer<C = K8MetaItem>
 where
-    C: MetadataItem + Send + Sync,
+    C: MetadataItem
 {
     partition_store: Arc<PartitionLocalStore<C>>,
     spu_store: Arc<SpuLocalStore<C>>,
@@ -65,7 +65,7 @@ where
 
 impl<C> Default for PartitionReducer<C>
 where
-    C: MetadataItem + Send + Sync,
+    C: MetadataItem
 {
     fn default() -> Self {
         Self {
@@ -77,7 +77,7 @@ where
 
 impl<C> PartitionReducer<C>
 where
-    C: MetadataItem + Send + Sync,
+    C: MetadataItem
 {
     pub fn new<A, B>(partition_store: A, spu_store: B) -> Self
     where
