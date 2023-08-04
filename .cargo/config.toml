@@ -1,7 +1,0 @@
-[profile.dev]
-debug = 1
-
-[target.armv7-unknown-linux-gnueabi]
-linker = "/usr/bin/arm-linux-gnueabi-gcc-11"
-ar = "/usr/bin/arm-linux-gnueabi-ar-11"
-
