@@ -18,7 +18,6 @@ use super::*;
 
 pub type SharedPartitionStore<C> = Arc<PartitionLocalStore<C>>;
 
-pub type PartitionMetadata<C> = MetadataStoreObject<PartitionSpec, C>;
 pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
 pub type DefaultPartitionMd = PartitionMetadata<String>;
 pub type DefaultPartitionStore = PartitionLocalStore<u32>;

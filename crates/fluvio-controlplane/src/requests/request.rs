@@ -1,7 +1,9 @@
 use std::fmt::Debug;
 
 use fluvio_protocol::{Encoder, Decoder};
-use fluvio_controlplane_metadata::message::Message;
+
+use crate::message::Message;
+
 
 /// General control plane request
 #[derive(Decoder, Encoder, Debug, Default)]

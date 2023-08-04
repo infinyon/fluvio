@@ -11,9 +11,12 @@
 //! operation the comparing message with internal metadata.
 //!
 
+use fluvio_protocol::record::ReplicaKey;
 use fluvio_types::SpuId;
 
-use crate::partition::*;
+
+
+use crate::replica::Replica;
 
 use super::{MsgType, Message, Messages};
 

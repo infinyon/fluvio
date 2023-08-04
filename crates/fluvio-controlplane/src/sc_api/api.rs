@@ -9,9 +9,9 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::Encoder;
 use fluvio_protocol::derive::Decoder;
 
-use super::RegisterSpuRequest;
-use super::UpdateLrsRequest;
-use super::ReplicaRemovedRequest;
+use super::register_spu::RegisterSpuRequest;
+use super::update_lrs::UpdateLrsRequest;
+use super::remove::ReplicaRemovedRequest;
 
 /// API call from Spu to SC
 

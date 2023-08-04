@@ -13,18 +13,14 @@ pub use spu_msg::*;
 pub use smartmodule_msg::*;
 
 mod spu_msg {
-
-    use crate::spu::SpuSpec;
-
+    use fluvio_controlplane_metadata::spu::SpuSpec;
     use super::Message;
 
     pub type SpuMsg = Message<SpuSpec>;
 }
 
 mod smartmodule_msg {
-
-    use crate::smartmodule::SmartModule;
-
+    use fluvio_controlplane_metadata::smartmodule::SmartModule;
     use super::{Message, Messages};
 
     pub type SmartModuleMsg = Message<SmartModule>;

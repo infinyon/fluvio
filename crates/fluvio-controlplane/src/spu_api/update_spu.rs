@@ -5,9 +5,10 @@ use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 
-use crate::InternalSpuApi;
+use crate::requests::ControlPlaneRequest;
 
-use super::ControlPlaneRequest;
+use super::api::InternalSpuApi;
+
 
 pub type UpdateSpuRequest = ControlPlaneRequest<SpuSpec>;
 

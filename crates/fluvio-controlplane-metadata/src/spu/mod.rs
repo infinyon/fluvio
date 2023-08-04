@@ -1,7 +1,6 @@
 mod spec;
 mod status;
 
-pub mod store;
 pub use self::spec::*;
 pub use self::status::*;
 pub use custom_metadata::CustomSpuKey;
