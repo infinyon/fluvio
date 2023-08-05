@@ -4,12 +4,13 @@
 //! Converts TableFormat API request into KV request and sends to KV store for processing.
 //!
 
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, info, trace, instrument};
 use anyhow::{anyhow, Result};
 
 use fluvio_protocol::link::ErrorCode;
-use fluvio_sc_schema::{Status};
-use fluvio_sc_schema::objects::{CreateRequest};
+use fluvio_sc_schema::Status;
+use fluvio_sc_schema::objects::CreateRequest;
 use fluvio_sc_schema::tableformat::TableFormatSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -19,9 +20,9 @@ use crate::services::auth::AuthServiceContext;
 
 /// Handler for tableformat request
 #[instrument(skip(req, auth_ctx))]
-pub async fn handle_create_tableformat_request<AC: AuthContext>(
+pub async fn handle_create_tableformat_request<AC: AuthContext, C: MetadataItem>(
     req: CreateRequest<TableFormatSpec>,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, spec) = req.parts();
     let name = create.name;
@@ -68,8 +69,8 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
 
 /// Process custom tableformat, converts tableformat spec to K8 and sends to KV store
 #[instrument(skip(ctx, name, tableformat_spec))]
-async fn process_tableformat_request(
-    ctx: &Context,
+async fn process_tableformat_request<C: MetadataItem>(
+    ctx: &Context<C>,
     name: String,
     tableformat_spec: TableFormatSpec,
 ) -> Status {

@@ -14,7 +14,7 @@ use k8_client::{K8Client, SharedK8Client, load_and_share};
 
 use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::config::ScConfig;
-use crate::core::{Context, SharedContext};
+use crate::core::{Context, K8SharedContext};
 
 type ScConfigMetadata = MetadataStoreObject<ScK8Config, K8MetaItem>;
 
@@ -79,7 +79,7 @@ impl TestEnv {
         &self.client
     }
 
-    pub async fn create_global_ctx(&self) -> (SharedContext, StoreContext<ScK8Config>) {
+    pub async fn create_global_ctx(&self) -> (K8SharedContext, StoreContext<ScK8Config>) {
         let config_map = ScConfigMetadata::with_spec("fluvio", ScK8Config::default());
         let config_store = LocalStore::new_shared();
         config_store.sync_all(vec![config_map]).await;

@@ -20,6 +20,7 @@ use fluvio_service::ConnectInfo;
 use fluvio_types::event::StickyEvent;
 use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
+use fluvio_stream_model::core::MetadataItem;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::FluvioSocket;
@@ -30,23 +31,25 @@ use fluvio_sc_schema::AdminPublicDecodedRequest;
 use crate::services::auth::{AuthGlobalContext, AuthServiceContext};
 
 #[derive(Debug)]
-pub struct PublicService<A> {
-    data: PhantomData<A>,
+pub struct PublicService<A, C> {
+    data: PhantomData<(A, C)>,
 }
 
-impl<A> PublicService<A> {
+impl<A, C> PublicService<A, C> {
     pub fn new() -> Self {
         PublicService { data: PhantomData }
     }
 }
 
 #[async_trait]
-impl<A> FluvioService for PublicService<A>
+impl<A, C> FluvioService for PublicService<A, C>
 where
     A: Authorization + Sync + Send,
+    C::UId: Send + Sync,
+    C: MetadataItem + 'static,
     <A as Authorization>::Context: Send + Sync,
 {
-    type Context = AuthGlobalContext<A>;
+    type Context = AuthGlobalContext<A, C>;
     type Request = AdminPublicDecodedRequest;
 
     #[instrument(skip(self, ctx))]

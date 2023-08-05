@@ -9,19 +9,19 @@
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
 //!
 
-use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
-use fluvio_sc_schema::objects::CreateRequest;
-use fluvio_stream_model::store::k8::K8MetaItem;
 use tracing::{info, debug, trace, instrument};
 use anyhow::{anyhow, Result};
 
 use fluvio_protocol::link::ErrorCode;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
+use fluvio_sc_schema::objects::CreateRequest;
 use fluvio_sc_schema::shared::validate_resource_name;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
+use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
+use fluvio_stream_model::core::MetadataItem;
 
 use crate::core::Context;
 use crate::controllers::topics::generate_replica_map;
@@ -32,9 +32,9 @@ use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
 #[instrument(skip(req, auth_ctx))]
-pub(crate) async fn handle_create_topics_request<AC: AuthContext>(
+pub(crate) async fn handle_create_topics_request<AC: AuthContext, C: MetadataItem>(
     req: CreateRequest<TopicSpec>,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, topic) = req.parts();
     let name = create.name;
@@ -59,7 +59,7 @@ pub(crate) async fn handle_create_topics_request<AC: AuthContext>(
     }
 
     // validate topic request
-    let mut status = validate_topic_request(&name, &topic, &auth_ctx.global_ctx).await;
+    let mut status = validate_topic_request::<C>(&name, &topic, &auth_ctx.global_ctx).await;
     if status.is_error() {
         return Ok(status);
     }
@@ -73,7 +73,11 @@ pub(crate) async fn handle_create_topics_request<AC: AuthContext>(
 }
 
 /// Validate topic, takes advantage of the validation routines inside topic action workflow
-async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &Context) -> Status {
+async fn validate_topic_request<C: MetadataItem>(
+    name: &str,
+    topic_spec: &TopicSpec,
+    metadata: &Context<C>,
+) -> Status {
     debug!("validating topic: {}", name);
 
     if let Err(err) = validate_resource_name(name) {
@@ -132,7 +136,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 
     match topic_spec.replicas() {
         ReplicaSpec::Computed(param) => {
-            let next_state = validate_computed_topic_parameters::<K8MetaItem>(param);
+            let next_state = validate_computed_topic_parameters::<C>(param);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
                 Status::new(
@@ -141,7 +145,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
                     Some(next_state.reason),
                 )
             } else {
-                let next_state = generate_replica_map::<K8MetaItem>(spus, param).await;
+                let next_state = generate_replica_map::<C>(spus, param).await;
                 trace!("validating, generate replica map topic: {:#?}", next_state);
                 if next_state.resolution.no_resource() {
                     Status::new(
@@ -155,7 +159,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
             }
         }
         ReplicaSpec::Assigned(ref partition_map) => {
-            let next_state = validate_assigned_topic_parameters::<K8MetaItem>(partition_map);
+            let next_state = validate_assigned_topic_parameters::<C>(partition_map);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
                 Status::new(
@@ -165,7 +169,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
                 )
             } else {
                 let next_state =
-                    update_replica_map_for_assigned_topic::<K8MetaItem>(partition_map, spus).await;
+                    update_replica_map_for_assigned_topic::<C>(partition_map, spus).await;
                 trace!("validating, assign replica map topic: {:#?}", next_state);
                 if next_state.resolution.is_invalid() {
                     Status::new(
@@ -183,8 +187,8 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 
 /// create new topic and wait until all partitions are fully provisioned
 /// if any partitions are not provisioned in time, this will generate error
-async fn process_topic_request<AC: AuthContext>(
-    auth_ctx: &AuthServiceContext<AC>,
+async fn process_topic_request<AC: AuthContext, C: MetadataItem>(
+    auth_ctx: &AuthServiceContext<AC, C>,
     name: String,
     topic_spec: TopicSpec,
 ) -> Status {
@@ -223,7 +227,7 @@ async fn process_topic_request<AC: AuthContext>(
         "waiting for partitions to be provisioned",
 
     );
-    let topic_uid = &topic_instance.ctx().item().uid;
+    let topic_uid = &topic_instance.ctx().item().uid();
 
     let partition_ctx = auth_ctx.global_ctx.partitions();
     let mut partition_listener = partition_ctx.change_listener();

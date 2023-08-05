@@ -9,10 +9,7 @@ use tracing::debug;
 
 use fluvio_protocol::{ByteBuf, Encoder, Decoder, Version};
 
-use super::{
-    SmartModuleMetadata,
-    spec_v1::{SmartModuleSpecV1},
-};
+use super::{SmartModuleMetadata, spec_v1::SmartModuleSpecV1};
 
 const V2_FORMAT: Version = 10;
 

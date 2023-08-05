@@ -11,7 +11,7 @@ mod k8_operator {
     use k8_client::SharedK8Client;
 
     use crate::cli::TlsConfig;
-    use crate::core::SharedContext;
+    use crate::core::K8SharedContext;
     use crate::stores::StoreContext;
     use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
     use crate::k8::objects::spu_service::SpuServiceSpec;
@@ -26,7 +26,7 @@ mod k8_operator {
     pub async fn run_k8_operators(
         namespace: String,
         k8_client: SharedK8Client,
-        global_ctx: SharedContext,
+        global_ctx: K8SharedContext,
         tls: Option<TlsConfig>,
     ) {
         let config = global_ctx.config();

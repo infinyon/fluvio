@@ -5,7 +5,7 @@ pub use fluvio_controlplane_metadata::spu::*;
 pub use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 pub use health_check::*;
 
-pub type SpuAdminMd = SpuMetadata<K8MetaItem>;
+pub type SpuAdminMd<C> = SpuMetadata<C>;
 pub type SpuAdminStore = SpuLocalStore<K8MetaItem>;
 
 // check if given range is conflict with any of the range

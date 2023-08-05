@@ -18,6 +18,7 @@ mod server {
 
     use std::fmt::Debug;
 
+    use fluvio_stream_model::core::MetadataItem;
     use tracing::debug;
 
     use fluvio_service::FluvioApiServer;
@@ -27,10 +28,13 @@ mod server {
     use super::public_server::PublicService;
 
     /// create public server
-    pub fn start_public_server<A>(ctx: AuthGlobalContext<A>)
+    pub fn start_public_server<A, C>(ctx: AuthGlobalContext<A, C>)
     where
         A: Authorization + Sync + Send + Debug + 'static,
-        AuthGlobalContext<A>: Clone + Debug,
+        C: MetadataItem + 'static,
+        C::UId: Send + Sync,
+
+        AuthGlobalContext<A, C>: Clone + Debug,
         <A as Authorization>::Context: Send + Sync,
     {
         let addr = ctx.global_ctx.config().public_endpoint.clone();

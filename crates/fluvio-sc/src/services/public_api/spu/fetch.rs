@@ -1,3 +1,4 @@
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{trace, debug, instrument};
 use anyhow::{anyhow, Result};
 
@@ -11,9 +12,9 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
-pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
+pub async fn handle_fetch_custom_spu_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<ListResponse<CustomSpuSpec>> {
     debug!("fetching custom spu list");
 
@@ -59,9 +60,9 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
 }
 
 #[instrument(skip(filters, auth_ctx))]
-pub async fn handle_fetch_spus_request<AC: AuthContext>(
+pub async fn handle_fetch_spus_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<ListResponse<SpuSpec>> {
     debug!("fetching spu list");
 

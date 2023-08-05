@@ -12,19 +12,23 @@ mod common {
     use fluvio_auth::{AuthContext, Authorization, TypeAction, InstanceAction, AuthError};
     use fluvio_socket::FluvioSocket;
     use fluvio_controlplane_metadata::extended::ObjectType;
+    use fluvio_stream_model::core::MetadataItem;
 
     use crate::core::SharedContext;
 
     /// SC global context with authorization
     /// auth is trait object which contains global auth auth policy
     #[derive(Clone, Debug)]
-    pub struct AuthGlobalContext<A> {
-        pub global_ctx: SharedContext,
+    pub struct AuthGlobalContext<A, C: MetadataItem> {
+        pub global_ctx: SharedContext<C>,
         pub auth: Arc<A>,
     }
 
-    impl<A> AuthGlobalContext<A> {
-        pub fn new(global_ctx: SharedContext, auth: Arc<A>) -> Self {
+    impl<A, C> AuthGlobalContext<A, C>
+    where
+        C: MetadataItem,
+    {
+        pub fn new(global_ctx: SharedContext<C>, auth: Arc<A>) -> Self {
             Self { global_ctx, auth }
         }
     }
@@ -79,13 +83,16 @@ mod common {
     /// Auth Service Context, this hold individual context that is enough enforce auth
     /// for this service context
     #[derive(Debug, Clone)]
-    pub struct AuthServiceContext<AC> {
-        pub global_ctx: SharedContext,
+    pub struct AuthServiceContext<AC, C: MetadataItem> {
+        pub global_ctx: SharedContext<C>,
         pub auth: AC,
     }
 
-    impl<AC> AuthServiceContext<AC> {
-        pub fn new(global_ctx: SharedContext, auth: AC) -> Self {
+    impl<AC, C> AuthServiceContext<AC, C>
+    where
+        C: MetadataItem,
+    {
+        pub fn new(global_ctx: SharedContext<C>, auth: AC) -> Self {
             Self { global_ctx, auth }
         }
     }

@@ -6,8 +6,9 @@
 //!
 
 use fluvio_protocol::link::ErrorCode;
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{instrument, trace, debug, error};
-use anyhow::{Result};
+use anyhow::Result;
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
@@ -17,15 +18,15 @@ use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status, TryEncodableFrom};
 use fluvio_sc_schema::objects::{ObjectApiDeleteRequest, DeleteRequest};
-use fluvio_auth::{AuthContext};
+use fluvio_auth::AuthContext;
 
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete topic request
 #[instrument(skip(request, auth_ctx))]
-pub async fn handle_delete_request<AC: AuthContext>(
+pub async fn handle_delete_request<AC: AuthContext, C: MetadataItem>(
     request: RequestMessage<ObjectApiDeleteRequest>,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<ResponseMessage<Status>> {
     let (header, del_req) = request.get_header_request();
 
@@ -63,6 +64,7 @@ mod delete_handler {
 
     use fluvio_protocol::link::ErrorCode;
     use fluvio_stream_dispatcher::store::StoreContext;
+    use fluvio_stream_model::core::MetadataItem;
     use tracing::{info, trace, instrument};
 
     use fluvio_sc_schema::{AdminSpec, Status};
@@ -73,10 +75,10 @@ mod delete_handler {
 
     /// Handler for object delete
     #[instrument(skip(auth_ctx, object_ctx, error_code, not_found_code))]
-    pub async fn process<AC: AuthContext, S, F, G>(
+    pub async fn process<AC: AuthContext, S, F, G, C: MetadataItem>(
         name: String,
-        auth_ctx: &AuthServiceContext<AC>,
-        object_ctx: &StoreContext<S>,
+        auth_ctx: &AuthServiceContext<AC, C>,
+        object_ctx: &StoreContext<S, C>,
         error_code: F,
         not_found_code: G,
     ) -> Result<Status, Error>

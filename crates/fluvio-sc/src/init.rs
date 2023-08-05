@@ -6,6 +6,7 @@
 //!
 use std::sync::Arc;
 
+use fluvio_stream_model::core::MetadataItem;
 #[cfg(feature = "k8")]
 use k8_metadata_client::{MetadataClient, SharedClient};
 
@@ -25,7 +26,7 @@ use crate::services::auth::basic::BasicRbacPolicy;
 pub async fn start_main_loop_with_k8<C>(
     sc_config_policy: (ScConfig, Option<BasicRbacPolicy>),
     metadata_client: SharedClient<C>,
-) -> SharedContext
+) -> crate::core::K8SharedContext
 where
     C: MetadataClient + 'static,
 {
@@ -81,10 +82,14 @@ where
 }
 
 /// start the main loop
-pub async fn start_main_loop(
-    ctx: Arc<Context>,
+pub async fn start_main_loop<C>(
+    ctx: Arc<Context<C>>,
     auth_policy: Option<BasicRbacPolicy>,
-) -> SharedContext {
+) -> SharedContext<C>
+where
+    C: MetadataItem + 'static,
+    C::UId: Send + Sync,
+{
     let config = ctx.config();
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
@@ -109,10 +114,15 @@ pub async fn start_main_loop(
         use crate::services::start_public_server;
         use crate::core::SharedContext;
 
+        use fluvio_controlplane_metadata::core::MetadataItem;
         use crate::services::auth::{AuthGlobalContext, RootAuthorization};
         use crate::services::auth::basic::{BasicAuthorization, BasicRbacPolicy};
 
-        pub fn start(ctx: SharedContext, auth_policy_option: Option<BasicRbacPolicy>) {
+        pub fn start<C>(ctx: SharedContext<C>, auth_policy_option: Option<BasicRbacPolicy>)
+        where
+            C: MetadataItem + 'static,
+            C::UId: Send + Sync,
+        {
             if let Some(policy) = auth_policy_option {
                 info!("using basic authorization");
                 start_public_server(AuthGlobalContext::new(

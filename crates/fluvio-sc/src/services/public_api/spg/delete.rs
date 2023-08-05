@@ -1,5 +1,6 @@
 use std::io::{Error, ErrorKind};
 
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{info, trace, instrument};
 
 use fluvio_sc_schema::Status;
@@ -11,9 +12,9 @@ use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete spu group request
 #[instrument(skip(name, auth_ctx))]
-pub async fn handle_delete_spu_group<AC: AuthContext>(
+pub async fn handle_delete_spu_group<AC: AuthContext, C: MetadataItem>(
     name: String,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status, Error> {
     use fluvio_protocol::link::ErrorCode;
 

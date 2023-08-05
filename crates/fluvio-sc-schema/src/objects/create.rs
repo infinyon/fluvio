@@ -7,7 +7,7 @@ use fluvio_protocol::api::Request;
 
 use crate::{AdminPublicApiKey, CreatableAdminSpec, Status, TryEncodableFrom};
 
-use super::{COMMON_VERSION};
+use super::COMMON_VERSION;
 
 #[derive(Encoder, Decoder, Default, Debug, Clone)]
 pub struct CommonCreateRequest {

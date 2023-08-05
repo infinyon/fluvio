@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::store::ChangeListener;
 use tracing::{debug, trace, error, instrument};
 use anyhow::{anyhow, Result};
 
@@ -20,14 +22,14 @@ use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
 use crate::services::auth::AuthServiceContext;
-use crate::stores::{StoreContext, K8ChangeListener};
+use crate::stores::StoreContext;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 /// handle watch request by spawning watch controller for each store
 #[instrument(skip(request, auth_ctx, sink, end_event))]
-pub fn handle_watch_request<AC>(
+pub fn handle_watch_request<AC, C: MetadataItem + 'static>(
     request: RequestMessage<ObjectApiWatchRequest>,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
 ) -> Result<()> {
@@ -35,7 +37,7 @@ pub fn handle_watch_request<AC>(
     debug!("handling watch header: {:#?}, request: {:#?}", header, req);
 
     if (req.downcast()? as Option<WatchRequest<TopicSpec>>).is_some() {
-        WatchController::<TopicSpec>::update(
+        WatchController::<TopicSpec, C>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.topics().clone(),
@@ -43,7 +45,7 @@ pub fn handle_watch_request<AC>(
             false,
         )
     } else if (req.downcast()? as Option<WatchRequest<SpuSpec>>).is_some() {
-        WatchController::<SpuSpec>::update(
+        WatchController::<SpuSpec, C>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
@@ -51,7 +53,7 @@ pub fn handle_watch_request<AC>(
             false,
         )
     } else if (req.downcast()? as Option<WatchRequest<SpuGroupSpec>>).is_some() {
-        WatchController::<SpuGroupSpec>::update(
+        WatchController::<SpuGroupSpec, C>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spgs().clone(),
@@ -59,7 +61,7 @@ pub fn handle_watch_request<AC>(
             false,
         )
     } else if (req.downcast()? as Option<WatchRequest<PartitionSpec>>).is_some() {
-        WatchController::<PartitionSpec>::update(
+        WatchController::<PartitionSpec, C>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
@@ -67,7 +69,7 @@ pub fn handle_watch_request<AC>(
             false,
         )
     } else if let Some(req) = req.downcast()? as Option<WatchRequest<SmartModuleSpec>> {
-        WatchController::<SmartModuleSpec>::update(
+        WatchController::<SmartModuleSpec, C>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.smartmodules().clone(),
@@ -75,7 +77,7 @@ pub fn handle_watch_request<AC>(
             req.summary,
         )
     } else if (req.downcast()? as Option<WatchRequest<TableFormatSpec>>).is_some() {
-        WatchController::<TableFormatSpec>::update(
+        WatchController::<TableFormatSpec, C>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.tableformats().clone(),
@@ -91,16 +93,17 @@ pub fn handle_watch_request<AC>(
 }
 
 /// Watch controller for each object.  Note that return type may or not be the same as the object hence two separate spec
-struct WatchController<S: AdminSpec> {
+struct WatchController<S: AdminSpec, C: MetadataItem> {
     response_sink: ExclusiveFlvSink,
-    store: StoreContext<S>,
+    store: StoreContext<S, C>,
     header: RequestHeader,
     summary: bool,
     end_event: Arc<StickyEvent>,
 }
 
-impl<S> WatchController<S>
+impl<S, C> WatchController<S, C>
 where
+    C: MetadataItem + 'static,
     S: AdminSpec + 'static,
     S: Encoder + Decoder + Send + Sync,
     S::Status: Encoder + Decoder + Send + Sync,
@@ -110,7 +113,7 @@ where
     fn update(
         response_sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
-        store: StoreContext<S>,
+        store: StoreContext<S, C>,
         header: RequestHeader,
         summary: bool,
     ) {
@@ -166,7 +169,7 @@ where
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
     #[instrument(skip(self, listener))]
-    async fn sync_and_send_changes(&mut self, listener: &mut K8ChangeListener<S>) -> bool {
+    async fn sync_and_send_changes(&mut self, listener: &mut ChangeListener<S, C>) -> bool {
         use fluvio_controlplane_metadata::message::*;
 
         if !listener.has_change() {

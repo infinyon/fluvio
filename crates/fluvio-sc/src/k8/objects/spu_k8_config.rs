@@ -1,12 +1,12 @@
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
-use serde::{Deserialize};
+use serde::Deserialize;
 use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::core::MetadataContext;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
-use k8_client::{ClientError};
+use k8_client::ClientError;
 use k8_types::Env;
 use k8_types::core::pod::{
     ResourceRequirements, PodSecurityContext, ContainerSpec, VolumeMount, VolumeSpec,
@@ -193,7 +193,7 @@ mod extended {
     use crate::stores::k8::K8ConvertError;
     use crate::stores::k8::K8ExtendedSpec;
     use crate::stores::k8::K8MetaItem;
-    use crate::stores::{MetadataStoreObject};
+    use crate::stores::MetadataStoreObject;
 
     use super::*;
 

@@ -1,5 +1,6 @@
 use std::io::{Error, ErrorKind};
 
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, trace, instrument};
 use anyhow::Result;
 
@@ -12,9 +13,9 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
-pub async fn handle_fetch_spu_groups_request<AC: AuthContext>(
+pub async fn handle_fetch_spu_groups_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<ListResponse<SpuGroupSpec>> {
     debug!("fetching spu groups");
 

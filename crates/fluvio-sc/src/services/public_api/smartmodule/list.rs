@@ -97,9 +97,7 @@ mod test {
         SmartModuleSpec, SmartModuleMetadata, SmartModulePackage, FluvioSemVersion,
     };
 
-    use crate::{
-        services::auth::{RootAuthContext},
-    };
+    use crate::services::auth::RootAuthContext;
 
     use super::fetch_smart_modules;
 
