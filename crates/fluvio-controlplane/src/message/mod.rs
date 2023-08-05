@@ -13,10 +13,9 @@ mod spu_msg {
 }
 
 mod smartmodule_msg {
-    use fluvio_controlplane_metadata::{
-        smartmodule::SmartModule,
-        message::{Message, Messages},
-    };
+    use fluvio_controlplane_metadata::message::{Message, Messages};
+
+    use crate::spu_api::update_smartmodule::SmartModule;
 
     pub type SmartModuleMsg = Message<SmartModule>;
     pub type SmartModuleMsgs = Messages<SmartModule>;

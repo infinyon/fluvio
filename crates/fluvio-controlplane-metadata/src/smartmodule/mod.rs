@@ -8,41 +8,10 @@ pub use self::spec::*;
 pub use self::status::*;
 pub use self::package::*;
 
-use std::fmt;
-
-use fluvio_stream_model::core::MetadataItem;
-use fluvio_stream_model::store::MetadataStoreObject;
-use fluvio_types::SmartModuleName;
-use fluvio_protocol::{Encoder, Decoder};
-
 #[cfg(feature = "k8")]
 mod k8;
 #[cfg(feature = "k8")]
 pub use k8::*;
-
-/// SmartModule object that can be used to transport from SC to SPU
-#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
-pub struct SmartModule {
-    pub name: SmartModuleName,
-    pub spec: SmartModuleSpec,
-}
-
-impl fmt::Display for SmartModule {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SmartModule({})", self.name)
-    }
-}
-
-impl<C> From<MetadataStoreObject<SmartModuleSpec, C>> for SmartModule
-where
-    C: MetadataItem,
-{
-    fn from(mso: MetadataStoreObject<SmartModuleSpec, C>) -> Self {
-        let name = mso.key_owned();
-        let spec = mso.spec;
-        Self { name, spec }
-    }
-}
 
 mod metadata {
 

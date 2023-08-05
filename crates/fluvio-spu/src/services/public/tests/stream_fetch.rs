@@ -3,11 +3,12 @@ use std::sync::Arc;
 
 use chrono::{Utc, Days};
 use fluvio_controlplane::replica::Replica;
+use fluvio_controlplane::spu_api::update_smartmodule::SmartModule;
 use fluvio_smartmodule::dataplane::smartmodule::Lookback;
 use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::smartmodule::{
-    SmartModule, SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec,
+    SmartModuleWasm, SmartModuleWasmFormat, SmartModuleSpec,
 };
 use fluvio_storage::FileReplica;
 use flv_util::fixture::ensure_clean_dir;

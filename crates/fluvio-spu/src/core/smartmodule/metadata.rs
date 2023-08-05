@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use fluvio_controlplane_metadata::smartmodule::SmartModule;
+use fluvio_controlplane::spu_api::update_smartmodule::SmartModule;
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_types::SmartModuleName;
 

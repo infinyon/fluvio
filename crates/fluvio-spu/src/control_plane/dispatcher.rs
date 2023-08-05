@@ -1,5 +1,9 @@
 use std::time::Duration;
-use std::io::Error as IoError;
+
+use tracing::{info, trace, error, debug, warn, instrument};
+use tokio::select;
+use futures_util::stream::StreamExt;
+use anyhow::{anyhow, Result};
 
 use fluvio_controlplane::sc_api::register_spu::RegisterSpuRequest;
 use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
@@ -7,19 +11,14 @@ use fluvio_controlplane::spu_api::api::{InternalSpuRequest, InternalSpuApi};
 use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
 use fluvio_controlplane::spu_api::update_smartmodule::UpdateSmartModuleRequest;
 use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
-use tracing::{info, trace, error, debug, warn, instrument};
-use tokio::select;
-use futures_util::stream::StreamExt;
-
 use flv_util::print_cli_err;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::RequestMessage;
-use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
+use fluvio_socket::{FluvioSocket, FluvioSink};
 use fluvio_storage::FileReplica;
 
 use crate::core::SharedGlobalContext;
-use crate::InternalServerError;
 
 use super::message_sink::SharedStatusUpdate;
 
@@ -112,7 +111,7 @@ impl ScDispatcher<FileReplica> {
             socket = socket.id()
         )
     )]
-    async fn request_loop(&mut self, socket: FluvioSocket) -> Result<(), SocketError> {
+    async fn request_loop(&mut self, socket: FluvioSocket) -> Result<()> {
         use async_io::Timer;
 
         /// Interval between each send to SC
@@ -175,10 +174,7 @@ impl ScDispatcher<FileReplica> {
 
     /// send status back to sc, if there is error return false
     #[instrument(skip(self))]
-    async fn send_status_back_to_sc(
-        &mut self,
-        sc_sink: &mut FluvioSink,
-    ) -> Result<(), SocketError> {
+    async fn send_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> Result<()> {
         let requests = self.status_update.remove_all().await;
 
         if requests.is_empty() {
@@ -188,10 +184,10 @@ impl ScDispatcher<FileReplica> {
         }
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
-        sc_sink.send_request(&message).await.map_err(|err| {
-            error!(?err, "error sending status back");
-            err
-        })
+        sc_sink
+            .send_request(&message)
+            .await
+            .map_err(|err| anyhow!("error sending status back to sc: {}", err))
     }
 
     /// register local spu to sc
@@ -199,10 +195,7 @@ impl ScDispatcher<FileReplica> {
         skip(self),
         fields(socket = socket.id())
     )]
-    async fn send_spu_registration(
-        &self,
-        socket: &mut FluvioSocket,
-    ) -> Result<bool, InternalServerError> {
+    async fn send_spu_registration(&self, socket: &mut FluvioSocket) -> Result<bool> {
         let local_spu_id = self.ctx.local_spu_id();
 
         debug!(%local_spu_id, "sending spu registration request",);
@@ -299,7 +292,7 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_spu_request(
         &mut self,
         req_msg: RequestMessage<UpdateSpuRequest>,
-    ) -> Result<(), IoError> {
+    ) -> Result<()> {
         let (_, request) = req_msg.get_header_request();
 
         debug!( message = ?request,"starting spu update");
@@ -336,7 +329,7 @@ impl ScDispatcher<FileReplica> {
     async fn handle_update_smartmodule_request(
         &mut self,
         req_msg: RequestMessage<UpdateSmartModuleRequest>,
-    ) -> Result<(), IoError> {
+    ) -> Result<()> {
         let (_, request) = req_msg.get_header_request();
 
         debug!( message = ?request,"starting SmartModule update");
