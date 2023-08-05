@@ -19,10 +19,7 @@ use crate::stores::StoreContext;
 use super::reducer::TopicReducer;
 
 #[derive(Debug)]
-pub struct TopicController<C = K8MetaItem>
-where
-    C: MetadataItem,
-{
+pub struct TopicController<C: MetadataItem = K8MetaItem> {
     topics: StoreContext<TopicSpec, C>,
     partitions: StoreContext<PartitionSpec, C>,
     reducer: TopicReducer<C>,
@@ -48,10 +45,7 @@ impl TopicController<K8MetaItem> {
     }
 }
 
-impl<C> TopicController<C>
-where
-    C: MetadataItem,
-{
+impl<C: MetadataItem> TopicController<C> {
     #[instrument(name = "TopicController", skip(self))]
     async fn dispatch_loop(mut self) {
         use std::time::Duration;
