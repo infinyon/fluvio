@@ -55,18 +55,12 @@ type PartitionWSAction<C = K8MetaItem> = WSAction<PartitionSpec, C>;
 /// If there are another topic1 with same number of partiition and replica then, they will
 /// have different leader because Topic0-0 already is using spu 0.
 #[derive(Debug)]
-pub struct PartitionReducer<C = K8MetaItem>
-where
-    C: MetadataItem,
-{
+pub struct PartitionReducer<C: MetadataItem = K8MetaItem> {
     partition_store: Arc<PartitionLocalStore<C>>,
     spu_store: Arc<SpuLocalStore<C>>,
 }
 
-impl<C> Default for PartitionReducer<C>
-where
-    C: MetadataItem,
-{
+impl<C: MetadataItem> Default for PartitionReducer<C> {
     fn default() -> Self {
         Self {
             partition_store: PartitionLocalStore::new_shared(),
@@ -75,10 +69,7 @@ where
     }
 }
 
-impl<C> PartitionReducer<C>
-where
-    C: MetadataItem,
-{
+impl<C: MetadataItem> PartitionReducer<C> {
     pub fn new<A, B>(partition_store: A, spu_store: B) -> Self
     where
         A: Into<Arc<PartitionLocalStore<C>>>,

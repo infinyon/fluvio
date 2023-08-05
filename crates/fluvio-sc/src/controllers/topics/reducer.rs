@@ -37,19 +37,13 @@ use super::*;
 ///
 /// Actually replica assignment is done by Partition controller.
 #[derive(Debug)]
-pub struct TopicReducer<C = K8MetaItem>
-where
-    C: MetadataItem + Send + Sync,
-{
+pub struct TopicReducer<C: MetadataItem = K8MetaItem> {
     topic_store: Arc<TopicLocalStore<C>>,
     spu_store: Arc<SpuLocalStore<C>>,
     partition_store: Arc<PartitionLocalStore<C>>,
 }
 
-impl<C> Default for TopicReducer<C>
-where
-    C: MetadataItem + Send + Sync,
-{
+impl<C: MetadataItem> Default for TopicReducer<C> {
     fn default() -> Self {
         Self {
             topic_store: TopicLocalStore::new_shared(),
@@ -59,10 +53,7 @@ where
     }
 }
 
-impl<C> TopicReducer<C>
-where
-    C: MetadataItem + Send + Sync,
-{
+impl<C: MetadataItem> TopicReducer<C> {
     pub fn new(
         topic_store: impl Into<Arc<TopicLocalStore<C>>>,
         spu_store: impl Into<Arc<SpuLocalStore<C>>>,

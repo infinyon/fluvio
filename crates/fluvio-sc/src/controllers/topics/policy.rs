@@ -1,6 +1,10 @@
 use std::fmt;
 use std::collections::BTreeMap;
 
+use tracing::{debug, trace, instrument};
+use rand::thread_rng;
+use rand::Rng;
+
 use fluvio_controlplane::PartitionMetadata;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_controlplane_metadata::topic::TopicReplicaParam;
@@ -8,10 +12,6 @@ use fluvio_controlplane_metadata::topic::TopicResolution;
 use fluvio_types::PartitionId;
 use fluvio_types::ReplicaMap;
 use fluvio_types::ReplicationFactor;
-use tracing::{debug, trace, instrument};
-use rand::thread_rng;
-use rand::Rng;
-
 use fluvio_controlplane_metadata::topic::PartitionMaps;
 use fluvio_controlplane_metadata::topic::TopicStatus;
 use fluvio_stream_model::core::MetadataItem;
@@ -26,10 +26,9 @@ use crate::stores::topic::TopicMetadata;
 /// Validate assigned topic spec parameters and update topic status
 ///  * error is passed to the topic reason.
 ///
-pub fn validate_assigned_topic_parameters<C>(partition_map: &PartitionMaps) -> TopicNextState<C>
-where
-    C: MetadataItem,
-{
+pub fn validate_assigned_topic_parameters<C: MetadataItem>(
+    partition_map: &PartitionMaps,
+) -> TopicNextState<C> {
     if let Err(err) = partition_map.validate() {
         TopicStatus::next_resolution_invalid_config(err.to_string()).into()
     } else {
@@ -41,10 +40,9 @@ where
 /// Validate computed topic spec parameters and update topic status
 ///  * error is passed to the topic reason.
 ///
-pub fn validate_computed_topic_parameters<C>(param: &TopicReplicaParam) -> TopicNextState<C>
-where
-    C: MetadataItem,
-{
+pub fn validate_computed_topic_parameters<C: MetadataItem>(
+    param: &TopicReplicaParam,
+) -> TopicNextState<C> {
     if let Err(err) = ReplicaSpec::valid_partition(&param.partitions) {
         TopicStatus::next_resolution_invalid_config(err.to_string()).into()
     } else if let Err(err) = ReplicaSpec::valid_replication_factor(&param.replication_factor) {
@@ -60,13 +58,10 @@ where
 ///  * fatal error  configuration errors and are not recoverable
 ///
 #[instrument(level = "trace", skip(spus, param))]
-pub async fn generate_replica_map<C>(
+pub async fn generate_replica_map<C: MetadataItem>(
     spus: &SpuLocalStore<C>,
     param: &TopicReplicaParam,
-) -> TopicNextState<C>
-where
-    C: MetadataItem,
-{
+) -> TopicNextState<C> {
     let spu_count = spus.count().await as ReplicationFactor;
     if spu_count < param.replication_factor {
         trace!(
@@ -93,13 +88,10 @@ where
 /// update topic status to ok. otherwise, mark as waiting for live SPUs
 ///
 #[instrument(skip(partition_maps, spu_store))]
-pub async fn update_replica_map_for_assigned_topic<C>(
+pub async fn update_replica_map_for_assigned_topic<C: MetadataItem>(
     partition_maps: &PartitionMaps,
     spu_store: &SpuLocalStore<C>,
-) -> TopicNextState<C>
-where
-    C: MetadataItem,
-{
+) -> TopicNextState<C> {
     let partition_map_spus = partition_maps.unique_spus_in_partition_map();
     let spus_id = spu_store.spu_ids().await;
 
@@ -121,29 +113,20 @@ where
 
 /// values for next state
 #[derive(Default, Debug)]
-pub struct TopicNextState<C>
-where
-    C: MetadataItem,
-{
+pub struct TopicNextState<C: MetadataItem> {
     pub resolution: TopicResolution,
     pub reason: String,
     pub replica_map: ReplicaMap,
     pub partitions: Vec<PartitionMetadata<C>>,
 }
 
-impl<C> fmt::Display for TopicNextState<C>
-where
-    C: MetadataItem,
-{
+impl<C: MetadataItem> fmt::Display for TopicNextState<C> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:#?}", self.resolution)
     }
 }
 
-impl<C> From<(TopicResolution, String)> for TopicNextState<C>
-where
-    C: MetadataItem,
-{
+impl<C: MetadataItem> From<(TopicResolution, String)> for TopicNextState<C> {
     fn from(val: (TopicResolution, String)) -> Self {
         let (resolution, reason) = val;
         Self {
@@ -154,10 +137,7 @@ where
     }
 }
 
-impl<C> From<((TopicResolution, String), ReplicaMap)> for TopicNextState<C>
-where
-    C: MetadataItem,
-{
+impl<C: MetadataItem> From<((TopicResolution, String), ReplicaMap)> for TopicNextState<C> {
     fn from(val: ((TopicResolution, String), ReplicaMap)) -> Self {
         let ((resolution, reason), replica_map) = val;
         Self {
@@ -169,9 +149,8 @@ where
     }
 }
 
-impl<C> From<((TopicResolution, String), Vec<PartitionMetadata<C>>)> for TopicNextState<C>
-where
-    C: MetadataItem,
+impl<C: MetadataItem> From<((TopicResolution, String), Vec<PartitionMetadata<C>>)>
+    for TopicNextState<C>
 {
     fn from(val: ((TopicResolution, String), Vec<PartitionMetadata<C>>)) -> Self {
         let ((resolution, reason), partitions) = val;
@@ -184,10 +163,7 @@ where
     }
 }
 
-impl<C> TopicNextState<C>
-where
-    C: MetadataItem,
-{
+impl<C: MetadataItem> TopicNextState<C> {
     /// apply this state to topic and return set of partitions
     pub fn apply_as_next_state(self, topic: &mut TopicMetadata<C>) -> Vec<PartitionMetadata<C>> {
         topic.status.resolution = self.resolution;
@@ -276,14 +252,11 @@ where
 /// Generate replica map for a specific topic
 ///
 #[instrument(level = "trace", skip(spus, param, from_index))]
-pub async fn generate_replica_map_for_topic<C>(
+pub async fn generate_replica_map_for_topic<C: MetadataItem>(
     spus: &SpuLocalStore<C>,
     param: &TopicReplicaParam,
     from_index: Option<u32>,
-) -> ReplicaMap
-where
-    C: MetadataItem,
-{
+) -> ReplicaMap {
     let in_rack_count = spus.spus_in_rack_count().await;
 
     // generate partition map (with our without rack assignment)
@@ -297,14 +270,11 @@ where
 ///
 /// Generate partitions on spus that have been assigned to racks
 ///
-async fn generate_partitions_with_rack_assignment<C>(
+async fn generate_partitions_with_rack_assignment<C: MetadataItem>(
     spus: &SpuLocalStore<C>,
     param: &TopicReplicaParam,
     start_index: Option<u32>,
-) -> ReplicaMap
-where
-    C: MetadataItem,
-{
+) -> ReplicaMap {
     let mut partition_map: ReplicaMap = BTreeMap::new();
     let rack_map = SpuLocalStore::live_spu_rack_map_sorted(spus).await;
     let spu_list = SpuLocalStore::<C>::online_spus_in_rack(&rack_map);
@@ -327,14 +297,11 @@ where
 ///
 /// Generate partitions without taking rack assignments into consideration
 ///
-async fn generate_partitions_without_rack<C>(
+async fn generate_partitions_without_rack<C: MetadataItem>(
     spus: &SpuLocalStore<C>,
     param: &TopicReplicaParam,
     start_index: Option<u32>,
-) -> ReplicaMap
-where
-    C: MetadataItem,
-{
+) -> ReplicaMap {
     let mut partition_map: ReplicaMap = BTreeMap::new();
     let spu_cnt = spus.spu_used_for_replica().await as u32;
     let spu_ids = spus.spu_ids().await;

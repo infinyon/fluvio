@@ -20,10 +20,7 @@ use super::reducer::PartitionReducer;
 
 /// Handles Partition election
 #[derive(Debug)]
-pub struct PartitionController<C = K8MetaItem>
-where
-    C: MetadataItem,
-{
+pub struct PartitionController<C: MetadataItem = K8MetaItem> {
     partitions: StoreContext<PartitionSpec, C>,
     spus: StoreContext<SpuSpec, C>,
     reducer: PartitionReducer<C>,
