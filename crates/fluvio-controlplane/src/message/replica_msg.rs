@@ -1,5 +1,3 @@
-#![allow(clippy::assign_op_pattern)]
-
 //!
 //! # Replica Messages
 //!
