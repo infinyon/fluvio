@@ -3,11 +3,11 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use tracing::{trace, instrument};
-use futures_util::{SinkExt};
+use futures_util::SinkExt;
 use async_lock::Mutex;
 use async_lock::MutexGuard;
 use tokio_util::compat::{Compat, FuturesAsyncWriteCompatExt};
-use tokio_util::codec::{FramedWrite};
+use tokio_util::codec::FramedWrite;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
