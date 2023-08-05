@@ -5,8 +5,9 @@ use std::{
 
 use chrono::Utc;
 use flate2::{bufread::GzEncoder, Compression};
+use fluvio_controlplane::spu_api::update_smartmodule::SmartModule;
 use fluvio_controlplane_metadata::smartmodule::{
-    SmartModuleSpec, SmartModule, SmartModuleWasm, SmartModuleWasmFormat,
+    SmartModuleSpec, SmartModuleWasm, SmartModuleWasmFormat,
 };
 use fluvio_protocol::{
     fixture::BatchProducer,

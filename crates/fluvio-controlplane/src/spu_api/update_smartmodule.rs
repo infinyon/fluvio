@@ -1,9 +1,12 @@
-#![allow(clippy::assign_op_pattern)]
+use std::fmt;
 
+use fluvio_controlplane_metadata::core::MetadataItem;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use fluvio_protocol::Decoder;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::Request;
-use fluvio_controlplane_metadata::smartmodule::SmartModule;
+use fluvio_types::SmartModuleName;
 
 use crate::requests::ControlPlaneRequest;
 
@@ -19,3 +22,27 @@ impl Request for UpdateSmartModuleRequest {
 
 #[derive(Decoder, Encoder, Default, Debug)]
 pub struct UpdateSmartModuleResponse {}
+
+/// SmartModule object that can be used to transport from SC to SPU
+#[derive(Debug, Default, Clone, Eq, PartialEq, Encoder, Decoder)]
+pub struct SmartModule {
+    pub name: SmartModuleName,
+    pub spec: SmartModuleSpec,
+}
+
+impl fmt::Display for SmartModule {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SmartModule({})", self.name)
+    }
+}
+
+impl<C> From<MetadataStoreObject<SmartModuleSpec, C>> for SmartModule
+where
+    C: MetadataItem,
+{
+    fn from(mso: MetadataStoreObject<SmartModuleSpec, C>) -> Self {
+        let name = mso.key_owned();
+        let spec = mso.spec;
+        Self { name, spec }
+    }
+}
