@@ -5,6 +5,7 @@ use std::time::Duration;
 use std::io::Error as IoError;
 
 use fluvio_future::timer::sleep;
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, info, error, trace, instrument};
 
 use fluvio_future::task::spawn;
@@ -15,14 +16,14 @@ use crate::stores::spu::*;
 
 /// Reconcile SPU health status with Meta data
 /// if SPU has not send heart beat within a period, it is considered down
-pub struct SpuController {
-    spus: StoreContext<SpuSpec>,
+pub struct SpuController<C: MetadataItem> {
+    spus: StoreContext<SpuSpec, C>,
     health_check: SharedHealthCheck,
     counter: u64, // how many time we have been sync
 }
 
-impl SpuController {
-    pub fn start(ctx: SharedContext) {
+impl<C: MetadataItem + 'static> SpuController<C> {
+    pub fn start(ctx: SharedContext<C>) {
         let controller = Self {
             spus: ctx.spus().clone(),
             health_check: ctx.health().clone(),

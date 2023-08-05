@@ -14,14 +14,15 @@ use fluvio_controlplane_metadata::spu::CustomSpuKey;
 use fluvio_auth::{AuthContext, InstanceAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
+use crate::dispatcher::core::MetadataItem;
 use crate::stores::spu::{SpuAdminMd, SpuLocalStorePolicy};
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete custom spu request
 #[instrument(skip(key, auth_ctx))]
-pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
+pub async fn handle_un_register_custom_spu_request<AC: AuthContext, C: MetadataItem>(
     key: CustomSpuKey,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status, Error> {
     let spu_name = key.to_string();
 
@@ -88,9 +89,9 @@ pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
 }
 
 /// Generate for delete custom spu operation and return result.
-async fn un_register_custom_spu<AC: AuthContext>(
-    auth_ctx: &AuthServiceContext<AC>,
-    spu: SpuAdminMd,
+async fn un_register_custom_spu<AC: AuthContext, C: MetadataItem>(
+    auth_ctx: &AuthServiceContext<AC, C>,
+    spu: SpuAdminMd<C>,
 ) -> Status {
     let spu_name = spu.key_owned();
 

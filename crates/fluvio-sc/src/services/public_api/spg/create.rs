@@ -6,13 +6,14 @@
 
 use std::time::Duration;
 
+use fluvio_stream_model::core::MetadataItem;
 use tracing::{info, trace, instrument};
 use anyhow::{anyhow, Result};
 
 use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::{CreateRequest};
+use fluvio_sc_schema::objects::CreateRequest;
 use fluvio_sc_schema::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -24,9 +25,9 @@ const DEFAULT_SPG_CREATE_TIMEOUT: u32 = 120 * 1000; // 2 minutes
 
 /// Handler for spu groups request
 #[instrument(skip(req, auth_ctx))]
-pub async fn handle_create_spu_group_request<AC: AuthContext>(
+pub async fn handle_create_spu_group_request<AC: AuthContext, C: MetadataItem>(
     req: CreateRequest<SpuGroupSpec>,
-    auth_ctx: &AuthServiceContext<AC>,
+    auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, spg) = req.parts();
     let name = create.name;
@@ -60,8 +61,8 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
 
 /// Process custom spu, converts spu spec to K8 and sends to KV store
 #[instrument(skip(ctx, spg_spec))]
-async fn process_custom_spu_request(
-    ctx: &Context,
+async fn process_custom_spu_request<C: MetadataItem>(
+    ctx: &Context<C>,
     name: String,
     timeout: Option<u32>,
     spg_spec: SpuGroupSpec,

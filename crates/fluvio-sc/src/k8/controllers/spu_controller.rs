@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt, net::IpAddr, time::Duration};
 
 use fluvio_controlplane_metadata::{
-    spu::{IngressPort},
+    spu::IngressPort,
     store::{MetadataStoreObject, k8::K8MetaItem},
 };
 
@@ -13,13 +13,11 @@ use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use k8_types::core::service::{LoadBalancerIngress, LoadBalancerType};
 
-use crate::{
-    stores::{StoreContext},
-};
+use crate::stores::StoreContext;
 use crate::stores::spu::{IngressAddr, SpuSpec};
 use crate::k8::objects::spu_service::SpuServiceSpec;
 use crate::k8::objects::spg_group::SpuGroupObj;
-use crate::stores::spg::{SpuGroupSpec};
+use crate::stores::spg::SpuGroupSpec;
 
 /// Update SPU from changes in SPU Group and SPU Services
 /// This is only place where we make changes to SPU

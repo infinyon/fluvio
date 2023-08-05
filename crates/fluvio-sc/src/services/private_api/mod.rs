@@ -1,5 +1,6 @@
 mod private_server;
 
+use fluvio_stream_model::core::MetadataItem;
 use tracing::info;
 use tracing::instrument;
 
@@ -14,7 +15,10 @@ use crate::core::SharedContext;
     skip(ctx),
     fields(address = &*ctx.config().private_endpoint)
 )]
-pub fn start_internal_server(ctx: SharedContext) {
+pub fn start_internal_server<C>(ctx: SharedContext<C>)
+where
+    C: MetadataItem + 'static,
+{
     info!("starting internal services");
 
     let addr = ctx.config().private_endpoint.clone();

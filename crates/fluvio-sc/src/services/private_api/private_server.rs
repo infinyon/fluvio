@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
@@ -16,6 +17,8 @@ use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
 use fluvio_controlplane::spu_api::update_smartmodule::UpdateSmartModuleRequest;
 use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
 use fluvio_controlplane_metadata::message::Message;
+use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::store::ChangeListener;
 use tracing::{debug, info, trace, instrument, error};
 use async_trait::async_trait;
 use futures_util::stream::Stream;
@@ -30,7 +33,6 @@ use fluvio_service::{FluvioService, wait_for_request};
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 
 use crate::core::SharedContext;
-use crate::stores::K8ChangeListener;
 use crate::stores::partition::PartitonStatusExtension;
 use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
 use crate::stores::spu::SpuLocalStorePolicy;
@@ -40,23 +42,28 @@ use crate::stores::actions::WSAction;
 const HEALTH_DURATION: u64 = 90;
 
 #[derive(Debug)]
-pub struct ScInternalService {}
+pub struct ScInternalService<C> {
+    data: PhantomData<C>,
+}
 
-impl ScInternalService {
+impl<C> ScInternalService<C> {
     pub fn new() -> Self {
-        Self {}
+        Self { data: PhantomData }
     }
 }
 
 #[async_trait]
-impl FluvioService for ScInternalService {
-    type Context = SharedContext;
+impl<C> FluvioService for ScInternalService<C>
+where
+    C: MetadataItem,
+{
+    type Context = SharedContext<C>;
     type Request = InternalScRequest;
 
     #[instrument(skip(self, context))]
     async fn respond(
         self: Arc<Self>,
-        context: SharedContext,
+        context: Self::Context,
         socket: FluvioSocket,
         _connection: ConnectInfo,
     ) -> Result<()> {
@@ -109,12 +116,15 @@ impl FluvioService for ScInternalService {
 
 // perform internal dispatch
 #[instrument(name = "ScInternalService", skip(context, api_stream))]
-async fn dispatch_loop(
-    context: SharedContext,
+async fn dispatch_loop<C>(
+    context: SharedContext<C>,
     spu_id: SpuId,
     mut api_stream: impl Stream<Item = Result<InternalScRequest, SocketError>> + Unpin,
     mut sink: FluvioSink,
-) -> Result<(), SocketError> {
+) -> Result<(), SocketError>
+where
+    C: MetadataItem,
+{
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
     let mut sm_spec_listener = context.smartmodules().change_listener();
@@ -191,7 +201,10 @@ async fn dispatch_loop(
 
 /// send lrs update to metadata stores
 #[instrument(skip(ctx, requests))]
-async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
+async fn receive_lrs_update<C>(ctx: &SharedContext<C>, requests: UpdateLrsRequest)
+where
+    C: MetadataItem,
+{
     let requests = requests.into_requests();
     if requests.is_empty() {
         trace!("no requests, just health check");
@@ -213,7 +226,7 @@ async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
             );
             current_status.merge(new_status);
 
-            actions.push(WSAction::UpdateStatus::<PartitionSpec>((
+            actions.push(WSAction::<PartitionSpec, C>::UpdateStatus((
                 key,
                 current_status,
             )));
@@ -237,7 +250,10 @@ async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
     skip(ctx,request),
     fields(replica=%request.id)
 )]
-async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequest) {
+async fn receive_replica_remove<C>(ctx: &SharedContext<C>, request: ReplicaRemovedRequest)
+where
+    C: MetadataItem,
+{
     debug!(request=?request);
     // create action inside to optimize read locking
     let read_guard = ctx.partitions().store().read().await;
@@ -245,7 +261,7 @@ async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequ
         // force to delete partition regardless if confirm
         if request.confirm {
             debug!("force delete");
-            Some(WSAction::DeleteFinal::<PartitionSpec>(request.id))
+            Some(WSAction::<PartitionSpec, C>::DeleteFinal(request.id))
         } else {
             debug!("no delete");
             None
@@ -264,8 +280,8 @@ async fn receive_replica_remove(ctx: &SharedContext, request: ReplicaRemovedRequ
 
 /// send spu spec changes only
 #[instrument(skip(sink))]
-async fn send_spu_spec_changes(
-    listener: &mut K8ChangeListener<SpuSpec>,
+async fn send_spu_spec_changes<C: MetadataItem>(
+    listener: &mut ChangeListener<SpuSpec, C>,
     sink: &mut FluvioSink,
     spu_id: SpuId,
 ) -> Result<(), SocketError> {
@@ -310,8 +326,8 @@ async fn send_spu_spec_changes(
 }
 
 #[instrument(level = "trace", skip(sink))]
-async fn send_replica_spec_changes(
-    listener: &mut K8ChangeListener<PartitionSpec>,
+async fn send_replica_spec_changes<C: MetadataItem>(
+    listener: &mut ChangeListener<PartitionSpec, C>,
     sink: &mut FluvioSink,
     spu_id: SpuId,
 ) -> Result<(), SocketError> {
@@ -381,8 +397,8 @@ async fn send_replica_spec_changes(
 }
 
 #[instrument(level = "trace", skip(sink))]
-async fn send_smartmodule_changes(
-    listener: &mut K8ChangeListener<SmartModuleSpec>,
+async fn send_smartmodule_changes<C: MetadataItem>(
+    listener: &mut ChangeListener<SmartModuleSpec, C>,
     sink: &mut FluvioSink,
     spu_id: SpuId,
 ) -> Result<(), SocketError> {

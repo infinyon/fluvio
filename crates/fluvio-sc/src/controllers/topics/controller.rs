@@ -25,9 +25,13 @@ pub struct TopicController<C: MetadataItem = K8MetaItem> {
     reducer: TopicReducer<C>,
 }
 
-impl TopicController<K8MetaItem> {
+impl<C> TopicController<C>
+where
+    C: MetadataItem + 'static,
+    C::UId: Send + Sync,
+{
     /// streaming coordinator controller constructor
-    pub fn start(ctx: SharedContext) {
+    pub fn start(ctx: SharedContext<C>) {
         let topics = ctx.topics().clone();
         let partitions = ctx.partitions().clone();
 
