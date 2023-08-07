@@ -1,9 +1,10 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use tracing::{debug, info};
+use anyhow::Result;
+use semver::Version;
 use tokio::sync::OnceCell;
-use anyhow::{anyhow, Result};
+use tracing::{debug, info};
 
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use fluvio_types::PartitionId;
@@ -11,7 +12,6 @@ use fluvio_socket::{
     ClientConfig, Versions, VersionedSerialSocket, SharedMultiplexerSocket, MultiplexerSocket,
 };
 use fluvio_future::net::DomainConnector;
-use semver::Version;
 
 use crate::admin::FluvioAdmin;
 use crate::TopicProducer;
@@ -115,7 +115,14 @@ impl Fluvio {
                 metric: Arc::new(ClientMetrics::new()),
             })
         } else {
-            Err(anyhow!("WatchApi version not found"))
+            let cluster_version = versions.platform_version().clone();
+            let client_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
+                .expect("MINIMUM_PLATFORM_VERSION must be semver");
+            Err(FluvioError::MinimumPlatformVersion {
+                cluster_version,
+                client_minimum_version: client_version,
+            }
+            .into())
         }
     }
 

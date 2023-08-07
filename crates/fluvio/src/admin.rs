@@ -3,9 +3,10 @@ use std::fmt::{Debug};
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use futures_util::{Stream, StreamExt};
-use tracing::{debug, trace, instrument};
 use anyhow::{Result, anyhow};
+use futures_util::{Stream, StreamExt};
+use semver::Version;
+use tracing::{debug, trace, instrument};
 
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::api::{Request, RequestMessage};
@@ -19,6 +20,7 @@ use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec, TryEnc
 use fluvio_socket::{ClientConfig, VersionedSerialSocket, SerialFrame, MultiplexerSocket};
 
 use crate::FluvioConfig;
+use crate::FluvioError;
 use crate::metadata::objects::{ListResponse, ListRequest};
 use crate::config::ConfigFile;
 use crate::sync::MetadataStores;
@@ -132,7 +134,14 @@ impl FluvioAdmin {
                 metadata,
             })
         } else {
-            Err(anyhow!("WatchApi version not found"))
+            let cluster_version = versions.platform_version().clone();
+            let client_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
+                .expect("MINIMUM_PLATFORM_VERSION must be semver");
+            Err(FluvioError::MinimumPlatformVersion {
+                cluster_version,
+                client_minimum_version: client_version,
+            }
+            .into())
         }
     }
 
