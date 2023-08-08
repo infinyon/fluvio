@@ -5,7 +5,7 @@ permissions: read-all
 #permissions:
 #  contents: read
 
-concurrency: 
+concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
@@ -119,7 +119,7 @@ jobs:
       - name: Build smdk
         if: matrix.binary == 'smdk'
         run: make build-smdk
-      
+
       - name: Build cdk
         if: matrix.binary == 'cdk'
         run: make build-cdk
@@ -154,6 +154,10 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fluvio-run
           - os: ubuntu-latest
             rust: stable
             rust-target: x86_64-pc-windows-gnu
@@ -208,7 +212,7 @@ jobs:
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: smdk
-          
+
           # cdk
           - os: macos-12
             rust: stable
@@ -288,7 +292,7 @@ jobs:
         if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
         run: |
           sudo apt-get update -o="APT::Acquire::Retries=3"
-          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64  
+          sudo apt-get install -y -V -o="APT::Acquire::Retries=3" gcc-mingw-w64-x86-64
 
       - name: Build fluvio.exe
         timeout-minutes: 40
@@ -319,7 +323,7 @@ jobs:
         timeout-minutes: 40
         if: matrix.binary == 'smdk.exe'
         run: make build-smdk
-      
+
       - name: Build cdk
         timeout-minutes: 40
         if: matrix.binary == 'cdk'
@@ -553,7 +557,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
-      - name: Rust version 
+      - name: Rust version
         run: rustc --version
       - uses: Swatinem/rust-cache@v2
         timeout-minutes: 10
@@ -943,7 +947,7 @@ jobs:
         exclude:
           - cluster_version:  stable
             cli_version: stable
-        
+
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
@@ -970,7 +974,7 @@ jobs:
         run: |
           curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
           echo "~/.fluvio/bin" >> $GITHUB_PATH
-    
+
       # Download artifacts from development build
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v3
@@ -1056,7 +1060,7 @@ jobs:
         if: matrix.test == 'smdk'
         timeout-minutes: 20
         run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
-      
+
       # test cdk
       - name: Download artifact - cdk
         if: matrix.test == 'cdk'
@@ -1214,6 +1218,8 @@ jobs:
           - rust-target: x86_64-apple-darwin
             artifact: fluvio-run
           - rust-target: aarch64-apple-darwin
+            artifact: fluvio-run
+          - rust-target: armv7-unknown-linux-gnueabihf
             artifact: fluvio-run
           - rust-target: x86_64-pc-windows-gnu
             artifact: fluvio.exe

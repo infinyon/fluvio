@@ -3,8 +3,6 @@ use std::time::Duration;
 
 use async_rwlock::RwLock;
 use chrono::Utc;
-use fluvio::SmartModuleChainBuilder;
-use fluvio_smartengine::{SmartModuleChainInstance, Version, Lookback};
 use fluvio_protocol::link::ErrorCode;
 use fluvio_smartmodule::Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
@@ -15,10 +13,13 @@ use tracing::{debug, trace, error};
 use crate::core::GlobalContext;
 use crate::core::metrics::SpuMetrics;
 use crate::replication::leader::LeaderReplicaState;
-use crate::smartengine::{
-    file_batch::{FileRecordIterator, FileBatchIterator},
-    chain,
-};
+
+use crate::smartengine::chain;
+use crate::smartengine::file_batch::{FileRecordIterator, FileBatchIterator};
+use crate::smartengine::Lookback;
+use crate::smartengine::SmartModuleChainBuilder;
+use crate::smartengine::SmartModuleChainInstance;
+use crate::smartengine::Version;
 
 use super::file_batch::{FileBatch, RecordItem};
 

@@ -8,7 +8,6 @@ use std::fmt::Debug;
 
 use tracing::{debug, error, instrument};
 
-use fluvio_smartengine::SmartEngine;
 use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
@@ -20,6 +19,7 @@ use crate::replication::leader::{
 };
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
 use crate::core::metrics::SpuMetrics;
+use crate::smartengine::SmartEngine;
 
 use super::leader_client::LeaderConnections;
 use super::smartmodule::SmartModuleLocalStore;
