@@ -116,13 +116,23 @@ impl Fluvio {
             })
         } else {
             let cluster_version = versions.platform_version().clone();
-            let client_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
-                .expect("MINIMUM_PLATFORM_VERSION must be semver");
-            Err(FluvioError::MinimumPlatformVersion {
-                cluster_version,
-                client_minimum_version: client_version,
+            let client_version = Version::parse(crate::PLATFORM_VERSION)
+                .expect("PLATFORM_VERSION must be semver");
+            if client_version > cluster_version {
+                Err(FluvioError::MaximumPlatformVersion {
+                    cluster_version,
+                    client_maximum_version: client_version,
+                }
+                .into())
+            } else {
+                let client_minimum_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
+                    .expect("MINIMUM_PLATFORM_VERSION must be semver");
+                Err(FluvioError::MinimumPlatformVersion {
+                    cluster_version,
+                    client_minimum_version,
+                }
+                .into())
             }
-            .into())
         }
     }
 
