@@ -2,7 +2,7 @@
 use k8_client::new_shared;
 use tracing::info;
 
-use crate::{cli::ScOpt, core::K8SharedContext};
+use crate::cli::ScOpt;
 
 pub fn main_loop(opt: ScOpt) {
     // parse configuration (program exits on error)
@@ -46,15 +46,16 @@ pub fn main_loop(opt: ScOpt) {
         info!("starting main loop");
 
         #[cfg(feature = "k8")]
-        let ctx: K8SharedContext = crate::init::start_main_loop_with_k8(
+        let ctx: crate::core::K8SharedContext = crate::init::start_main_loop_with_k8(
             (sc_config.clone(), auth_policy),
             k8_client.clone(),
         )
         .await;
 
         #[cfg(not(feature = "k8"))]
-        let _ctx: std::sync::Arc<crate::core::Context> = {
-            let ctx: std::sync::Arc<crate::core::Context> =
+        // TODO: don't use K8SharedContext
+        let _ctx: crate::core::K8SharedContext = {
+            let ctx: crate::core::K8SharedContext =
                 crate::core::Context::shared_metadata(sc_config.clone());
 
             crate::init::start_main_loop(ctx, auth_policy).await
