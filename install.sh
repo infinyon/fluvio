@@ -21,6 +21,7 @@ readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
 
 # Ensure that this target is supported and matches the
 # naming convention of known platform releases in the registry
+# A number of short aliases are also supported for use with FLUVIO_ARCH
 #
 # @param $1: The target triple of this architecture
 # @return: Status 0 if the architecture is supported, exit if not
@@ -35,6 +36,10 @@ normalize_target() {
             ;;
         aarch64-unknown-linux-gnu)
             echo "aarch64-unknown-linux-musl"
+            return 0
+            ;;
+        armv7)
+            echo "armv7-unknown-linux-gnueabihf"
             return 0
             ;;
     esac
@@ -140,7 +145,7 @@ verify_checksum() {
 remind_path() {
     say "💡 You'll need to add '~/.fluvio/bin/' to your PATH variable"
     say "    You can run the following to set your PATH on shell startup:"
-    
+
     # shellcheck disable=SC2016,SC2155
     local bash_hint="$(tput bold)"'echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'"$(tput sgr0)"
     # shellcheck disable=SC2016,SC2155
@@ -280,6 +285,11 @@ get_architecture() {
     _ostype="$(uname -s)"
     _cputype="$(uname -m)"
     _clibtype="gnu"
+
+    if [ -n "$FLUVIO_ARCH" ]; then
+        RETVAL="$FLUVIO_ARCH"
+        return 0
+    fi
 
     if [ "$_ostype" = Linux ]; then
         if [ "$(uname -o)" = Android ]; then
@@ -549,7 +559,7 @@ main() {
         fi
 
         local _install_file="${FLUVIO_BIN}/fluvio-${VERSION}"
-    else 
+    else
         # If we installed a specific version, place extension in that dir
         # Ex. fluvio-0.x.y
         local _install_file="${FLUVIO_BIN}/fluvio-${_version}"
