@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use clap::Parser;
 use tracing::debug;
 use anyhow::Result;
@@ -49,7 +50,7 @@ pub struct InstallOpt {
     #[arg(long, hide_short_help = true)]
     pub channel: Option<String>,
 
-    /// When this flag is provided, use the hub. Dev-only
+    /// override default target arch determination
     #[arg(long, hide_short_help = true)]
     pub target: Option<String>,
 }
@@ -144,7 +145,14 @@ impl InstallOpt {
     }
 
     async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
-        let target = fluvio_index::package_target()?;
+        let target = if let Some(user_override) = &self.target {
+            fluvio_index::Target::from_str(&user_override.to_string())?
+        } else {
+            // need to analyze to if we can make CURRENT_PLATFORM
+            // the default instead of PACKAGE_TARGET, keep
+            // each use the same for now
+            fluvio_index::package_target()?
+        };
 
         // If a version is given in the package ID, use it. Otherwise, use latest
         let id = match self
