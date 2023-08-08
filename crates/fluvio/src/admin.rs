@@ -135,8 +135,8 @@ impl FluvioAdmin {
             })
         } else {
             let cluster_version = versions.platform_version().clone();
-            let client_version = Version::parse(crate::PLATFORM_VERSION)
-                .expect("PLATFORM_VERSION must be semver");
+            let client_version =
+                Version::parse(crate::PLATFORM_VERSION).expect("PLATFORM_VERSION must be semver");
             if client_version > cluster_version {
                 Err(FluvioError::MaximumPlatformVersion {
                     cluster_version,
