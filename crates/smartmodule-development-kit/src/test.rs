@@ -1,7 +1,8 @@
+use std::collections::BTreeMap;
 use std::convert::TryInto;
-use std::{collections::BTreeMap, path::PathBuf};
-
 use std::fmt::Debug;
+use std::io;
+use std::path::PathBuf;
 
 use anyhow::{Result, Context, anyhow};
 use bytes::Bytes;
@@ -31,6 +32,10 @@ pub struct TestCmd {
     /// Provide test input with this flag
     #[arg(long, group = "TestInput")]
     text: Option<String>,
+
+    /// Read the test input from the StdIn (e.g. Unix piping)
+    #[arg(long, group = "TestInput")]
+    stdin: bool,
 
     /// Path to test file. Default: Read file line by line
     #[arg(long, groups = ["TestInput", "TestFile"])]
@@ -150,6 +155,13 @@ impl TestCmd {
             } else {
                 UserInputRecords::try_from(UserInputType::FileByLine { key, path })?
             }
+        } else if self.stdin {
+            let mut buf = String::new();
+            io::stdin().read_line(&mut buf)?;
+            UserInputRecords::try_from(UserInputType::StdIn {
+                key,
+                data: buf.into(),
+            })?
         } else {
             return Err(anyhow::anyhow!("No valid input provided"));
         };
