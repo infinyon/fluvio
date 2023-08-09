@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use clap::Parser;
 use tracing::{debug, instrument};
@@ -32,6 +33,10 @@ pub struct UpdateOpt {
     // pub develop_fluvio_channel: bool,
     /// (Optional) the name of one or more plugins to update
     plugins: Vec<PackageId>,
+
+    /// override default target arch determination
+    #[arg(long, hide_short_help = true)]
+    pub target: Option<String>,
 }
 
 impl UpdateOpt {
@@ -90,7 +95,15 @@ impl UpdateOpt {
 
     #[instrument(skip(self, agent))]
     async fn update_fluvio_cli(&self, agent: &HttpAgent) -> Result<()> {
-        let target = fluvio_index::package_target()?;
+        let target = if let Some(user_override) = &self.target {
+            fluvio_index::Target::from_str(&user_override.to_string())?
+        } else {
+            // need to analyze to if we can make CURRENT_PLATFORM
+            // the default instead of PACKAGE_TARGET, keep
+            // each use the same for now
+            fluvio_index::package_target()?
+        };
+
         let id: PackageId = FLUVIO_CLI_PACKAGE_ID.parse()?;
         debug!(%target, %id, "Fluvio CLI updating self:");
 

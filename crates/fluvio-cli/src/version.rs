@@ -1,6 +1,7 @@
 use sha2::{Digest, Sha256};
 use clap::Parser;
 use anyhow::Result;
+use current_platform::CURRENT_PLATFORM;
 
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
@@ -20,6 +21,7 @@ impl VersionOpt {
         };
 
         self.print("Fluvio CLI", crate::VERSION.trim());
+        self.print("Fluvio CLI Arch", CURRENT_PLATFORM);
 
         if let Some(sha) = self.format_cli_sha() {
             self.print("Fluvio CLI SHA256", &sha);
@@ -29,6 +31,7 @@ impl VersionOpt {
         }
         let platform = self.format_platform_version(target).await;
         self.print("Fluvio Platform", &platform);
+
         self.print("Git Commit", env!("GIT_HASH"));
         if let Some(os_info) = os_info() {
             self.print("OS Details", &os_info);
