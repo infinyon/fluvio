@@ -44,6 +44,8 @@ pub async fn process_local(
     let installer = LocalInstaller::from_config(config);
     if opt.setup {
         setup_local(&installer).await?;
+    } else if opt.no_k8 {
+        installer.install_no_k8().await?;
     } else {
         install_local(&installer).await?;
     }

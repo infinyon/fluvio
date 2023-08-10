@@ -149,6 +149,10 @@ pub struct StartOpt {
     #[arg(long)]
     local: bool,
 
+    /// install local spu/sc(custom) (temporary)
+    #[arg(long)]
+    no_k8: bool,
+
     #[clap(flatten)]
     pub tls: TlsOpt,
 

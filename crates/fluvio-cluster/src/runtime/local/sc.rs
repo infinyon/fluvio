@@ -6,7 +6,7 @@ use std::{
 
 use fluvio::config::TlsPolicy;
 use fluvio_command::CommandExt;
-use tracing::{info};
+use tracing::{debug, info};
 
 use super::{FluvioLocalProcess, LocalRuntimeError};
 
@@ -27,10 +27,12 @@ impl ScProcess {
         let launcher = self.launcher.clone();
         let mut binary = {
             let base = launcher.ok_or(LocalRuntimeError::MissingFluvioRunner)?;
+            debug!(launcher=?base);
             let mut cmd = Command::new(base);
             cmd.arg("run").arg("sc").arg("--local");
             cmd
         };
+
         if let TlsPolicy::Verified(tls) = &self.tls_policy {
             self.set_server_tls(&mut binary, tls, 9005)?;
         }

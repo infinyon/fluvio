@@ -439,6 +439,66 @@ impl LocalInstaller {
         Ok(StartStatus { address, port })
     }
 
+    /// Install fluvio locally w/o k8
+    #[instrument(skip(self))]
+    pub async fn install_no_k8(&self) -> Result<StartStatus, LocalInstallError> {
+        let pb = self.pb_factory.create()?;
+
+        debug!("using log dir: {}", self.config.log_dir.display());
+        pb.set_message("Creating log directory");
+        if !self.config.log_dir.exists() {
+            create_dir_all(&self.config.log_dir).map_err(|e| {
+                LocalInstallError::LogDirectoryError {
+                    path: self.config.log_dir.clone(),
+                    source: e,
+                }
+            })?;
+        }
+
+        // spus?
+        // pb.set_message("Ensure CRDs are installed");
+        // // before we do let's try make sure SPU are installed.
+        // check_crd(client.clone()).await?;
+        // pb.set_message("CRD Checked");
+
+        pb.set_message("Sync files");
+        // ensure we sync files before we launch servers
+        Command::new("sync")
+            .inherit()
+            .result()
+            .map_err(|e| LocalInstallError::Other(format!("sync issue: {e:#?}")))?;
+
+        // set host name and port for SC
+        // this should mirror K8
+        let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
+        pb.println(format!("{} {}", "✅".bold(), "Local Cluster initialized"));
+        pb.finish_and_clear();
+        drop(pb);
+
+        let pb = self.pb_factory.create()?;
+        let fluvio = self.launch_sc(&address, port, &pb).await?;
+        pb.println(InstallProgressMessage::ScLaunched.msg());
+        pb.finish_and_clear();
+
+        // set profile as long as sc is up
+        self.set_profile()?;
+
+        // launch spu locally
+        let pb = self.pb_factory.create()?;
+        self.launch_spu_group_local(&pb).await?;
+
+        self.confirm_spu(self.config.spu_replicas, &fluvio, &pb)
+            .await?;
+        pb.println(format!("✅ {} SPU launched", self.config.spu_replicas));
+        pb.finish_and_clear();
+        drop(pb);
+
+        self.pb_factory
+            .println("🎯 Successfully installed Local Fluvio cluster");
+
+        Ok(StartStatus { address, port })
+    }
+
     /// Launches an SC on the local machine
     ///
     /// Returns the address of the SC if successful
@@ -545,6 +605,51 @@ impl LocalInstaller {
         debug!("sleeping 1 sec");
         // sleep 1 seconds for sc to connect
         sleep(Duration::from_millis(1000)).await;
+
+        spu_process.start().map_err(|err| err.into())
+    }
+
+    #[instrument(skip(self))]
+    async fn launch_spu_group_local(&self, pb: &ProgressRenderer) -> Result<(), LocalInstallError> {
+        let count = self.config.spu_replicas;
+
+        let runtime = self.config.as_spu_cluster_manager();
+        for i in 0..count {
+            pb.set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
+            self.launch_spu_local(i, &runtime).await?;
+        }
+        debug!(
+            "SC log generated at {}/flv_sc.log",
+            &self.config.log_dir.display()
+        );
+        sleep(Duration::from_millis(500)).await;
+        Ok(())
+    }
+
+    #[instrument(skip(self, cluster_manager))]
+    async fn launch_spu_local(
+        &self,
+        spu_index: u16,
+        cluster_manager: &LocalSpuProcessClusterManager,
+    ) -> Result<(), LocalInstallError> {
+        use crate::runtime::spu::{SpuClusterManager};
+
+        let spu_process = cluster_manager.create_spu_relative(spu_index);
+
+        // let input = InputK8Obj::new(
+        //     spu_process.spec().clone(),
+        //     InputObjectMeta {
+        //         name: format!("custom-spu-{}", spu_process.id()),
+        //         namespace: "default".to_owned(),
+        //         ..Default::default()
+        //     },
+        // );
+
+        // debug!(input=?input,"creating spu");
+        // client.create_item(input).await?;
+        // debug!("sleeping 1 sec");
+        // sleep 1 seconds for sc to connect
+        // sleep(Duration::from_millis(1000)).await;
 
         spu_process.start().map_err(|err| err.into())
     }
