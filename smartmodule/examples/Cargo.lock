@@ -199,7 +199,7 @@ dependencies = [
  "crc32c",
  "eyre",
  "fluvio-compression 0.3.0",
- "fluvio-protocol-derive 0.5.3",
+ "fluvio-protocol-derive 0.5.4",
  "fluvio-types 0.4.3",
  "flv-util",
  "once_cell",
@@ -222,7 +222,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -243,11 +243,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "eyre",
  "fluvio-protocol 0.10.5",
- "fluvio-smartmodule-derive 0.6.1",
+ "fluvio-smartmodule-derive 0.6.2",
  "thiserror",
  "tracing",
 ]
@@ -256,7 +256,7 @@ dependencies = [
 name = "fluvio-smartmodule-aggregate"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
@@ -264,14 +264,14 @@ name = "fluvio-smartmodule-aggregate-with-timestamp"
 version = "0.0.0"
 dependencies = [
  "chrono",
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-array-map-array"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde_json",
 ]
 
@@ -280,7 +280,7 @@ name = "fluvio-smartmodule-array-map-array-with-timestamp"
 version = "0.0.0"
 dependencies = [
  "chrono",
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde_json",
 ]
 
@@ -288,7 +288,7 @@ dependencies = [
 name = "fluvio-smartmodule-array-map-object"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde_json",
 ]
 
@@ -305,7 +305,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -316,56 +316,56 @@ dependencies = [
 name = "fluvio-smartmodule-filter"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-hashset"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-init"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-lookback"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-lookback-with-timestamps"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-map"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-filter-param"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-smartmodule-map"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
@@ -373,7 +373,7 @@ name = "fluvio-smartmodule-map-with-timestamp"
 version = "0.0.0"
 dependencies = [
  "chrono",
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
@@ -398,7 +398,7 @@ dependencies = [
 name = "fluvio-wasm-aggregate-average"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde",
  "serde_json",
 ]
@@ -407,7 +407,7 @@ dependencies = [
 name = "fluvio-wasm-aggregate-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde",
  "serde_json",
 ]
@@ -416,14 +416,14 @@ dependencies = [
 name = "fluvio-wasm-aggregate-sum"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-wasm-array-map-reddit"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde",
  "serde_json",
 ]
@@ -432,7 +432,7 @@ dependencies = [
 name = "fluvio-wasm-filter-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde",
  "serde_json",
 ]
@@ -441,7 +441,7 @@ dependencies = [
 name = "fluvio-wasm-filter-odd"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "thiserror",
 ]
 
@@ -449,7 +449,7 @@ dependencies = [
 name = "fluvio-wasm-filter-regex"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "regex",
 ]
 
@@ -464,14 +464,14 @@ dependencies = [
 name = "fluvio-wasm-map-double"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
 name = "fluvio-wasm-map-json"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -481,7 +481,7 @@ dependencies = [
 name = "fluvio-wasm-map-regex"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
  "once_cell",
  "regex",
 ]
@@ -894,7 +894,7 @@ dependencies = [
 name = "sm-integer-sum-aggegrate"
 version = "0.0.0"
 dependencies = [
- "fluvio-smartmodule 0.7.2",
+ "fluvio-smartmodule 0.7.3",
 ]
 
 [[package]]
