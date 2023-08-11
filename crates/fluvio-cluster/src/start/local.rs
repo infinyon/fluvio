@@ -620,7 +620,6 @@ impl LocalInstaller {
         let runtime = self.config.as_spu_cluster_manager();
         for i in 0..count {
             pb.set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
-            // register spu_local!
             self.launch_spu_local(i, client, &runtime).await?;
         }
         debug!(
@@ -631,6 +630,7 @@ impl LocalInstaller {
         Ok(())
     }
 
+    /// Register and launch spu
     #[instrument(skip(self, client, cluster_manager))]
     async fn launch_spu_local(
         &self,
@@ -656,6 +656,10 @@ impl LocalInstaller {
         let name = format!("local-spu-{}", spec.id);
         let admin = client.admin().await;
         let spec = CustomSpuSpec::from(spec.clone());
+        debug!(spec=?spec, "creating custom spu");
+        // gets stuck here due to k8 in sc - for testing a fluvio-cluster --local was required
+        // to setup crds that the sc (even w/ k8 feat disabled) still uses..
+        // so some integration w/ edge mirror sc config is nseeded
         admin.create(name, false, spec).await?;
         Ok(())
     }
