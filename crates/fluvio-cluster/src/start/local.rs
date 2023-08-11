@@ -3,6 +3,7 @@ use std::fs::create_dir_all;
 use std::process::{Command};
 use std::time::{Duration, SystemTime};
 
+use anyhow::Result as AnyResult;
 use colored::Colorize;
 use semver::Version;
 use derive_builder::Builder;
@@ -485,8 +486,7 @@ impl LocalInstaller {
 
         // launch spu locally
         let pb = self.pb_factory.create()?;
-        self.launch_spu_group_local(&pb).await?;
-
+        self.launch_spu_group_local(&fluvio, &pb).await?;
         self.confirm_spu(self.config.spu_replicas, &fluvio, &pb)
             .await?;
         pb.println(format!("✅ {} SPU launched", self.config.spu_replicas));
@@ -609,14 +609,19 @@ impl LocalInstaller {
         spu_process.start().map_err(|err| err.into())
     }
 
-    #[instrument(skip(self))]
-    async fn launch_spu_group_local(&self, pb: &ProgressRenderer) -> Result<(), LocalInstallError> {
+    #[instrument(skip(self, client))]
+    async fn launch_spu_group_local(
+        &self,
+        client: &Fluvio,
+        pb: &ProgressRenderer,
+    ) -> Result<(), LocalInstallError> {
         let count = self.config.spu_replicas;
 
         let runtime = self.config.as_spu_cluster_manager();
         for i in 0..count {
             pb.set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
-            self.launch_spu_local(i, &runtime).await?;
+            // register spu_local!
+            self.launch_spu_local(i, client, &runtime).await?;
         }
         debug!(
             "SC log generated at {}/flv_sc.log",
@@ -626,32 +631,33 @@ impl LocalInstaller {
         Ok(())
     }
 
-    #[instrument(skip(self, cluster_manager))]
+    #[instrument(skip(self, client, cluster_manager))]
     async fn launch_spu_local(
         &self,
         spu_index: u16,
+        client: &Fluvio,
         cluster_manager: &LocalSpuProcessClusterManager,
     ) -> Result<(), LocalInstallError> {
         use crate::runtime::spu::{SpuClusterManager};
 
         let spu_process = cluster_manager.create_spu_relative(spu_index);
+        let spec = spu_process.spec();
+        debug!(spec=?spec,"registering spu");
+        self.register_spu_local(client, spec).await?;
 
-        // let input = InputK8Obj::new(
-        //     spu_process.spec().clone(),
-        //     InputObjectMeta {
-        //         name: format!("custom-spu-{}", spu_process.id()),
-        //         namespace: "default".to_owned(),
-        //         ..Default::default()
-        //     },
-        // );
-
-        // debug!(input=?input,"creating spu");
-        // client.create_item(input).await?;
-        // debug!("sleeping 1 sec");
-        // sleep 1 seconds for sc to connect
-        // sleep(Duration::from_millis(1000)).await;
-
+        debug!(spu_index, "starting spu");
         spu_process.start().map_err(|err| err.into())
+    }
+
+    /// register spu spec with sc connected to client
+    async fn register_spu_local(&self, client: &Fluvio, spec: &SpuSpec) -> AnyResult<()> {
+        use fluvio::metadata::customspu::CustomSpuSpec;
+
+        let name = format!("local-spu-{}", spec.id);
+        let admin = client.admin().await;
+        let spec = CustomSpuSpec::from(spec.clone());
+        admin.create(name, false, spec).await?;
+        Ok(())
     }
 
     /// Check to ensure SPUs are all running
