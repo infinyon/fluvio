@@ -1,4 +1,5 @@
 use std::fmt;
+use once_cell::sync::Lazy;
 use serde::{Serialize, Deserialize, Deserializer, Serializer};
 use url::Url;
 use crate::Error;
@@ -24,15 +25,12 @@ impl Registry {
     }
 }
 
-lazy_static::lazy_static! {
-    static ref DEFAULT_REGISTRY: Registry = {
-        let url = url::Url::parse("https://packages.fluvio.io/v1/").unwrap();
-        Registry::from(url)
-    };
-    static ref DEFAULT_GROUP: GroupName = {
-        "fluvio".parse().unwrap()
-    };
-}
+static DEFAULT_REGISTRY: Lazy<Registry> = Lazy::new(|| {
+    let url = url::Url::parse("https://packages.fluvio.io/v1/").unwrap();
+    Registry::from(url)
+});
+
+static DEFAULT_GROUP: Lazy<GroupName> = Lazy::new(|| GroupName("fluvio".to_owned()));
 
 impl fmt::Display for Registry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

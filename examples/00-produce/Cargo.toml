@@ -7,6 +7,6 @@ publish = false
 
 [dependencies]
 async-std = { workspace = true,  features = ["attributes"] }
-anyhow = { workspace = true}
+anyhow = { workspace = true }
 
 fluvio = { workspace = true  }

@@ -17,9 +17,9 @@ clap = { workspace = true , features = ["std", "derive", "help", "usage", "error
 async-trait = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 syn = { workspace = true }
-serde = { workspace = true}
-serde_json = { workspace = true}
-humantime = { workspace = true}
+serde = { workspace = true }
+serde_json = { workspace = true }
+humantime = { workspace = true }
 quote =  { workspace = true }
 proc-macro2 = { workspace = true }
 inventory = { workspace = true }

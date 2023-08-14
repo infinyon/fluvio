@@ -2791,7 +2791,7 @@ name = "fluvio-package-index"
 version = "0.7.4"
 dependencies = [
  "http",
- "lazy_static",
+ "once_cell",
  "semver 1.0.18",
  "serde",
  "serde_json",

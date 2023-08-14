@@ -37,6 +37,13 @@ setup_file() {
     cd -
 }
 
+# Call `$SMDK_BIN` via stdin.
+# To be able to `run` something that uses pipe, we first need to create a function.
+# see: https://bats-core.readthedocs.io/en/stable/tutorial.html#dealing-with-output
+smdk_via_stdin() {
+    echo -n $1 | $SMDK_BIN test --stdin ${@:2}
+}
+
 ### Using crates.io dependency for `fluvio-smartmodule`
 
 @test "Package" {
@@ -284,7 +291,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --verbose --text '2'
+    run smdk_via_stdin '2' --verbose
     assert_output --partial "1 records outputed"
     assert_output --partial "2"
     assert_success
@@ -590,14 +597,14 @@ setup_file() {
     assert_success
 
     # Test with verbose
-    run $SMDK_BIN test --verbose --text '["foo", "bar"]'
+    run smdk_via_stdin '["foo", "bar"]' --verbose
     assert_output --partial "2 records outputed"
     assert_output --partial "foo"
     assert_output --partial "bar"
     assert_success
 
     # Test with without verbose
-    run $SMDK_BIN test  --text '["foo", "bar"]' 
+    run smdk_via_stdin '["foo", "bar"]'
     refute_output --partial "2 records outputed"   
     assert_output --partial "foo"
     assert_output --partial "bar"
@@ -723,7 +730,7 @@ setup_file() {
     assert_success
 
     # Test
-    run $SMDK_BIN test --verbose --text 'a' -e key=value
+    run smdk_via_stdin 'a' -e key=value --verbose
     assert_output --partial "1 records outputed"
     assert_success
 }

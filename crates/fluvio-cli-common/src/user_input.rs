@@ -9,6 +9,7 @@ use fluvio_protocol::bytes::Bytes;
 
 pub enum UserInputType {
     Text { key: Option<Bytes>, data: Bytes },
+    StdIn { key: Option<Bytes>, data: Bytes },
     File { key: Option<Bytes>, path: PathBuf },
     FileByLine { key: Option<Bytes>, path: PathBuf },
 }
@@ -81,6 +82,11 @@ impl TryFrom<UserInputType> for UserInputRecords {
     fn try_from(input: UserInputType) -> Result<Self> {
         match input {
             UserInputType::Text { key, data } => Ok(UserInputRecords {
+                key,
+                size: data.len(),
+                data: vec![RecordData::from(data)],
+            }),
+            UserInputType::StdIn { key, data } => Ok(UserInputRecords {
                 key,
                 size: data.len(),
                 data: vec![RecordData::from(data)],

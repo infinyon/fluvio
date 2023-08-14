@@ -15,12 +15,12 @@ path = "src/lib.rs"
 target = ["fluvio"]
 
 [dependencies]
-anyhow = { workspace = true}
+anyhow = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 comfy-table = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
-serde_json ={ workspace = true}
+serde_json ={ workspace = true }
 serde_yaml = { workspace = true }
 futures-lite = { workspace = true }
 semver = { workspace = true, features = ["serde"] }
