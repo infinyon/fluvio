@@ -23,13 +23,13 @@ anyhow = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 cargo-builder = { path = "../cargo-builder"}
 serde = { workspace = true,  features = ["derive"] }
-toml = { workspace=true, features = ["parse", "display", "preserve_order"] }
+toml = { workspace = true, features = ["parse", "display", "preserve_order"] }
 comfy-table = { workspace = true  }
 sysinfo = { workspace = true, default-features = false }
 cargo-generate = { workspace = true }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
-current_platform = { version = "0.2" }
+current_platform = { workspace = true }
 
 fluvio = { workspace = true }
 fluvio-connector-deployer = { path = "../fluvio-connector-deployer"}

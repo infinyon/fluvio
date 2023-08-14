@@ -25,10 +25,10 @@ path = "tests/replica_test.rs"
 required-features = ["fixture"]
 
 [dependencies]
-anyhow = { workspace = true}
+anyhow = { workspace = true }
 async-lock = { workspace = true }
 blocking = "1.1.0"
-derive_builder = { workspace = true}
+derive_builder = { workspace = true }
 bytes = { workspace = true }
 nix = { workspace = true }
 thiserror = { workspace = true }

@@ -24,7 +24,7 @@ fastrand = "2.0.0"
 md-5 = "0.10"
 nix = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true}
+serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 inventory = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
@@ -32,7 +32,7 @@ comfy-table = { workspace = true }
 hdrhistogram = { workspace = true }
 crc = "3.0"
 fork = "0.1"
-crossbeam-channel = "0.5"
+crossbeam-channel = { workspace = true }
 sysinfo = { workspace = true }
 signal-hook = "0.3.13"
 indicatif = { workspace = true }
@@ -42,7 +42,7 @@ uuid = { workspace = true }
 tracing = { workspace = true }
 
 # Fluvio dependencies
-fluvio = { workspace = true}
+fluvio = { workspace = true }
 fluvio-types = { workspace = true  }
 fluvio-future = { workspace = true, features = [
     "io",

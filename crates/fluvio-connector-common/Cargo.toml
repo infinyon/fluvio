@@ -30,12 +30,12 @@ tracing = { workspace = true }
 fluvio = { workspace = true, features = ["smartengine"] }
 fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-connector-package = { workspace = true  }
-fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true}
+fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true }
 fluvio-sc-schema = { workspace = true }
 fluvio-smartengine = { workspace = true , features = [ "transformation"] }
 
 
 [dev-dependencies]
-trybuild = { version = "1.0" }
+trybuild = { workspace = true }
 serde = { workspace = true, features = ["derive"]}
 fluvio = { workspace = true }
