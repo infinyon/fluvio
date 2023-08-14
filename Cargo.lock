@@ -3091,7 +3091,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.10.1"
+version = "0.10.2"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -4505,9 +4505,9 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4557478b2ffe09b0d58b7176fb4c83f232d5c7b8838bd13fe7ee8ab9aea19a1"
+checksum = "be3116945211f0b007c5bf727f82fa789c5f59bbe536e79f7d54833339d24850"
 dependencies = [
  "serde",
  "serde_json",

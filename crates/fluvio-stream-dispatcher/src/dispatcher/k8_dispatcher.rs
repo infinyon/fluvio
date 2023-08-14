@@ -105,10 +105,10 @@ where
     )]
     async fn outer_loop(mut self) {
         loop {
-            debug!("starting rconcilation loop");
+            debug!("starting reconciliation loop");
             if let Err(err) = self.reconcillation_loop().await {
                 error!(
-                    "error with reconcillation loop: {:#?}, sleep 10 seconds",
+                    "error with reconciliation loop: {:#?}, sleep 10 seconds",
                     err
                 );
                 sleep(Duration::from_secs(10)).await;
@@ -485,7 +485,6 @@ mod convert {
                 Err(err) => error!("Problem parsing {} event: {} ... (exiting)", S::LABEL, err),
             }
         }
-
         local_store.apply_changes(changes).await
     }
 

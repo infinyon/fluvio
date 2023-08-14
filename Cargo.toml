@@ -130,7 +130,7 @@ x509-parser = "0.15.0"
 
 # external fluvio dep
 k8-client = { version = "10.0.0" }
-k8-types = { version = "0.8.0" }
+k8-types = { version = "0.8.3" }
 k8-config = { version = "2.0.0" }
 k8-metadata-client = { version = "5.1.0" }
 fluvio-future = { version = "0.5.1", default-features = false }
