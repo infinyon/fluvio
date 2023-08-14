@@ -8,7 +8,7 @@ mod k8_operator {
 
     use tracing::info;
 
-    use k8_client::SharedK8Client;
+    use k8_metadata_client::{SharedClient, MetadataClient};
 
     use crate::cli::TlsConfig;
     use crate::core::K8SharedContext;
@@ -23,9 +23,9 @@ mod k8_operator {
     use crate::k8::controllers::spu_service::SpuServiceController;
     use crate::k8::controllers::spu_controller::K8SpuController;
 
-    pub async fn run_k8_operators(
+    pub async fn run_k8_operators<C: MetadataClient + 'static>(
         namespace: String,
-        k8_client: SharedK8Client,
+        client: SharedClient<C>,
         global_ctx: K8SharedContext,
         tls: Option<TlsConfig>,
     ) {
@@ -41,23 +41,23 @@ mod k8_operator {
 
         K8ClusterStateDispatcher::<_, _>::start(
             namespace.clone(),
-            k8_client.clone(),
+            client.clone(),
             spu_service_ctx.clone(),
         );
 
         K8ClusterStateDispatcher::<_, _>::start(
             namespace.clone(),
-            k8_client.clone(),
+            client.clone(),
             statefulset_ctx.clone(),
         );
 
         K8ClusterStateDispatcher::<_, _>::start(
             namespace.clone(),
-            k8_client.clone(),
+            client.clone(),
             spg_service_ctx.clone(),
         );
 
-        K8ClusterStateDispatcher::<_, _>::start(namespace.clone(), k8_client, config_ctx.clone());
+        K8ClusterStateDispatcher::<_, _>::start(namespace.clone(), client, config_ctx.clone());
 
         whitelist!(config, "k8_spg", {
             SpgStatefulSetController::start(

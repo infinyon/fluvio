@@ -1,5 +1,5 @@
 //!
-//! # Auth Controller
+//! # Partition Controller
 //!
 
 use std::time::Duration;

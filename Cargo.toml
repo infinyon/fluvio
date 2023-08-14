@@ -145,7 +145,7 @@ flv-util = { version = "0.5.2", default-features = false }
 k8-client = { version = "10.0.0" }
 k8-config = { version = "2.0.0" }
 k8-metadata-client = { version = "5.1.0" }
-k8-types = { version = "0.8.0" }
+k8-types = { version = "0.8.3" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 
 # Internal fluvio dependencies

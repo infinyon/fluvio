@@ -326,6 +326,7 @@ where
             match change {
                 LSUpdate::Mod(new_kv_value) => {
                     let key = new_kv_value.key_owned();
+
                     if let Some(diff) = write_guard.update(key, new_kv_value) {
                         if diff.spec {
                             update_spec += 1;
@@ -336,7 +337,7 @@ where
                         if diff.meta {
                             update_meta += 1;
                         }
-                        trace!(update_spec, update_status, update_meta);
+                        trace!(update_spec, update_status, update_meta, "update metrics");
                     } else {
                         trace!("new");
                         // there was no existing, so this is new

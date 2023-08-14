@@ -1,5 +1,5 @@
-use std::convert::{TryFrom};
-use std::fmt::{Debug};
+use std::convert::TryFrom;
+use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
