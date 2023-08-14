@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-protocol"
 edition = "2021"
-version = "0.10.5"
+version = "0.10.6"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio streaming protocol"
 repository = "https://github.com/infinyon/fluvio"
@@ -46,8 +46,8 @@ compress = ["fluvio-compression/compress"]
 
 [dependencies]
 bytes = { workspace = true  }
-crc32c = { workspace = true,  optional = true}
-content_inspector = { version = "0.2.4", optional = true }
+crc32c = { workspace = true,  optional = true }
+content_inspector = { optional = true, workspace = true }
 once_cell = { workspace = true, optional = true }
 derive_builder = { workspace = true,  optional = true }
 eyre = { workspace = true,  optional = true }

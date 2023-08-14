@@ -16,7 +16,7 @@ path = "src/lib.rs"
 http_agent = ["http"]
 
 [dependencies]
-http = { version = "0.2", default-features = false, optional = true}
+http = { optional = true, workspace = true }
 once_cell = { workspace = true }
 semver = { workspace = true,  features = ["serde"] }
 serde = { workspace = true,  features = ["derive"] }

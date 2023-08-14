@@ -19,12 +19,12 @@ file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
 [dependencies]
 anyhow = { workspace = true }
 futures = { workspace = true, features = ["std", "io-compat"]}
-home = "0.5.3"
-hex = "0.4.2"
-http = { version = "0.2", default-features = false}
+home = { workspace = true }
+hex = { workspace = true }
+http = { workspace = true }
 isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
 semver = { workspace = true }
-sha2 = "0.10.0"
+sha2 = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

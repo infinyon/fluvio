@@ -10,15 +10,15 @@ publish = false
 
 [dependencies]
 cargo_toml = { workspace = true }
-const_format = "0.2"
-dirs = { workspace = true}
+const_format = { workspace = true }
+dirs = { workspace = true }
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 flate2 = { workspace = true }
-hex = "0.4"
+hex = { workspace = true }
 pem = "3.0"
 rand = { workspace = true }
 rand_core = "0.6"
-sha2 = "0.10.6"
+sha2 = { workspace = true }
 serde = { workspace = true, features=["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }

@@ -30,4 +30,4 @@ fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "
 clap = { workspace = true,  features = ["std", "derive", "help", "usage", "error-context"] }
 inventory = { workspace = true }
 tracing = { workspace = true }
-crossbeam-channel = "0.5"
+crossbeam-channel = { workspace = true }
