@@ -1,0 +1,12 @@
+apiVersion: 0.2.0
+meta:
+  version: 0.1.0
+  name: my-test-mqtt
+  type: mqtt
+  topic: 
+    version: 0.1.0
+    meta:
+      name: test-topic
+  consumer:
+    partition: all
+    max_bytes: "1 MB"

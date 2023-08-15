@@ -30,7 +30,7 @@ pub fn get_value(value: Value, root: Option<&str>) -> Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use fluvio_connector_package::config::MetaConfigV1;
+    use fluvio_connector_package::config::{MetaConfigV1, ConsumerPartitionConfig};
 
     #[test]
     fn test_from_value() {
@@ -57,7 +57,7 @@ mod tests {
                 .consumer
                 .expect("expected some consume config")
                 .partition,
-            Some(0)
+            ConsumerPartitionConfig::One(0)
         );
     }
 }
