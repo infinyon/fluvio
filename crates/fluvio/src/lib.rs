@@ -114,7 +114,7 @@ pub async fn producer(topic: impl Into<String>) -> anyhow::Result<TopicProducer>
     Ok(producer)
 }
 
-/// Creates a producer that receives events from the given topic and partition
+/// Creates a consumer that receives events from the given topic and partition
 ///
 /// This is a shortcut function that uses the current profile
 /// settings. If you need to specify any custom configurations,
