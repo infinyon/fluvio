@@ -36,6 +36,6 @@ fluvio-smartengine = { workspace = true , features = [ "transformation"] }
 
 
 [dev-dependencies]
-trybuild = { workspace = true }
+trybuild = { version = "1.0" } # default workspace dep is forked and fails for this crate 
 serde = { workspace = true, features = ["derive"]}
 fluvio = { workspace = true }
