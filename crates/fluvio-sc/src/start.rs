@@ -33,16 +33,6 @@ pub fn main_loop(opt: ScOpt) {
         #[cfg(feature = "k8")]
         let namespace = sc_config.namespace.clone();
 
-        #[cfg(feature = "k8")]
-        if let Err(err) = crate::k8::migration::SmartModuleMigrationController::migrate(
-            k8_client.clone(),
-            &namespace,
-        )
-        .await
-        {
-            tracing::error!("migration failed: {:#?}", err);
-        }
-
         info!("starting main loop");
 
         #[cfg(feature = "k8")]

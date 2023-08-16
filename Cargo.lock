@@ -2788,7 +2788,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-package-index"
-version = "0.7.4"
+version = "0.7.5"
 dependencies = [
  "http",
  "once_cell",
@@ -2802,7 +2802,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.5"
+version = "0.10.6"
 dependencies = [
  "bytes 1.4.0",
  "content_inspector",
