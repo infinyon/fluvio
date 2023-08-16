@@ -28,7 +28,7 @@ pub mod extended {
         Topic,
         Partition,
         SmartModule,
-        TableFormat
+        TableFormat,
     }
 
     pub trait SpecExt: Spec {
