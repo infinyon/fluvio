@@ -27,10 +27,8 @@ pub mod extended {
         SpuGroup,
         Topic,
         Partition,
-        ManagedConnector,
         SmartModule,
-        TableFormat,
-        DerivedStream,
+        TableFormat
     }
 
     pub trait SpecExt: Spec {
