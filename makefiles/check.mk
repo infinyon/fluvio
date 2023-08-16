@@ -39,6 +39,8 @@ run-all-unit-test: install_rustup_target
 	cargo test -p fluvio-storage $(BUILD_FLAGS)
 	cargo test -p fluvio-channel-cli $(BUILD_FLAGS)
 	cargo test -p fluvio-connector-derive $(BUILD_FLAGS)
+	cargo test -p fluvio-connector-common --all-features $(BUILD_FLAGS) 
+	cargo test -p fluvio-connector-package $(BUILD_FLAGS) 
 	cargo test -p fluvio-controlplane-metadata --features=smartmodule $(BUILD_FLAGS)
 	make test-all -C crates/fluvio-protocol
 
