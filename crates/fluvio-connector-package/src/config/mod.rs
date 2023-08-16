@@ -8,9 +8,11 @@ use std::time::Duration;
 
 use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use fluvio_types::PartitionId;
+use serde::de::{Visitor, SeqAccess};
+use serde::ser::SerializeSeq;
 use tracing::debug;
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer, Serializer};
 use bytesize::ByteSize;
 
 use fluvio_smartengine::transformation::TransformationConfig;
@@ -272,8 +274,8 @@ impl MetaConfig<'_> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub partition: Option<PartitionId>,
+    #[serde(default, skip_serializing_if = "ConsumerPartitionConfig::is_default")]
+    pub partition: ConsumerPartitionConfig,
     #[serde(
         with = "bytesize_serde",
         skip_serializing_if = "Option::is_none",
@@ -383,6 +385,102 @@ impl Serialize for SecretName {
         S: serde::Serializer,
     {
         serializer.serialize_str(&self.inner)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ConsumerPartitionConfig {
+    All,
+    One(PartitionId),
+    Many(Vec<PartitionId>),
+}
+
+impl Default for ConsumerPartitionConfig {
+    fn default() -> Self {
+        Self::One(0)
+    }
+}
+
+impl ConsumerPartitionConfig {
+    pub fn is_default(&self) -> bool {
+        matches!(self, ConsumerPartitionConfig::One(partition) if partition.eq(&PartitionId::default()))
+    }
+}
+
+struct PartitionConfigVisitor;
+impl<'de> Visitor<'de> for PartitionConfigVisitor {
+    type Value = ConsumerPartitionConfig;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("integer, sequence of integers or `all` string")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        if v.eq("all") {
+            Ok(ConsumerPartitionConfig::All)
+        } else {
+            Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Str(v),
+                &self,
+            ))
+        }
+    }
+
+    fn visit_u32<E>(self, v: u32) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(ConsumerPartitionConfig::One(v))
+    }
+
+    fn visit_u64<E>(self, v: u64) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        let partition = PartitionId::try_from(v).map_err(E::custom)?;
+        Ok(ConsumerPartitionConfig::One(partition))
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut partitions = Vec::with_capacity(seq.size_hint().unwrap_or(2));
+        while let Some(next) = seq.next_element()? {
+            partitions.push(next);
+        }
+        Ok(ConsumerPartitionConfig::Many(partitions))
+    }
+}
+
+impl<'de> Deserialize<'de> for ConsumerPartitionConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(PartitionConfigVisitor)
+    }
+}
+
+impl Serialize for ConsumerPartitionConfig {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            ConsumerPartitionConfig::All => serializer.serialize_str("all"),
+            ConsumerPartitionConfig::One(partition) => serializer.serialize_u32(*partition),
+            ConsumerPartitionConfig::Many(partitions) => {
+                let mut seq_serializer = serializer.serialize_seq(Some(partitions.len()))?;
+                for p in partitions {
+                    seq_serializer.serialize_element(p)?;
+                }
+                seq_serializer.end()
+            }
+        }
     }
 }
 
@@ -498,7 +596,7 @@ mod tests {
                     batch_size: Some(ByteSize::mb(44)),
                 }),
                 consumer: Some(ConsumerParameters {
-                    partition: Some(10),
+                    partition: ConsumerPartitionConfig::One(10),
                     max_bytes: Some(ByteSize::mb(1)),
                 }),
                 secrets: Some(vec![SecretConfig {
@@ -577,7 +675,7 @@ mod tests {
                     batch_size: Some(ByteSize::mb(44)),
                 }),
                 consumer: Some(ConsumerParameters {
-                    partition: Some(10),
+                    partition: ConsumerPartitionConfig::One(10),
                     max_bytes: Some(ByteSize::mb(1)),
                 }),
                 secrets: Some(vec![SecretConfig {
@@ -784,7 +882,7 @@ mod tests {
                 }),
                 consumer: Some(ConsumerParameters {
                     max_bytes: Some(ByteSize::b(1400)),
-                    partition: None,
+                    partition: Default::default(),
                 }),
                 secrets: None,
             },
@@ -993,7 +1091,7 @@ mod tests {
                 }),
                 consumer: Some(ConsumerParameters {
                     max_bytes: Some(ByteSize::b(1400)),
-                    partition: None,
+                    partition: Default::default(),
                 }),
                 secrets: None,
             },
@@ -1003,5 +1101,100 @@ mod tests {
         assert_eq!(have.name(), "my-test-mqtt");
         assert_eq!(have.version(), "0.1.0");
         assert_eq!(have.r#type(), "mqtt-source");
+    }
+
+    #[test]
+    fn test_deser_partition_config() {
+        //when
+
+        let with_one_partition: ConsumerParameters = serde_yaml::from_str(
+            r#"
+            partition: 1
+        "#,
+        )
+        .expect("one partition");
+
+        let with_multiple_partitions: ConsumerParameters = serde_yaml::from_str(
+            r#"
+            partition: 
+                - 120
+                - 230
+        "#,
+        )
+        .expect("sequence of partitions");
+
+        let with_all_partitions: ConsumerParameters = serde_yaml::from_str(
+            r#"
+            partition: all
+        "#,
+        )
+        .expect("all partitions");
+
+        let connector_cfg_all_partitions =
+            ConnectorConfig::from_file("test-data/connectors/all-partitions.yaml")
+                .expect("Failed to load test config");
+
+        let connector_cfg_many_partitions =
+            ConnectorConfig::from_file("test-data/connectors/many-partitions.yaml")
+                .expect("Failed to load test config");
+
+        //then
+        assert_eq!(
+            with_one_partition.partition,
+            ConsumerPartitionConfig::One(1)
+        );
+
+        assert_eq!(
+            with_multiple_partitions.partition,
+            ConsumerPartitionConfig::Many(vec![120, 230])
+        );
+
+        assert_eq!(with_all_partitions.partition, ConsumerPartitionConfig::All);
+
+        assert_eq!(
+            connector_cfg_all_partitions
+                .meta()
+                .consumer()
+                .unwrap()
+                .partition,
+            ConsumerPartitionConfig::All
+        );
+
+        assert_eq!(
+            connector_cfg_many_partitions
+                .meta()
+                .consumer()
+                .unwrap()
+                .partition,
+            ConsumerPartitionConfig::Many(vec![0, 1])
+        );
+    }
+
+    #[test]
+    fn test_ser_partition_config() {
+        //given
+        let one = ConsumerParameters {
+            partition: ConsumerPartitionConfig::One(1),
+            max_bytes: Default::default(),
+        };
+        let many = ConsumerParameters {
+            partition: ConsumerPartitionConfig::Many(vec![2, 3]),
+            max_bytes: Default::default(),
+        };
+
+        let all = ConsumerParameters {
+            partition: ConsumerPartitionConfig::All,
+            max_bytes: Default::default(),
+        };
+
+        //when
+        let one_ser = serde_yaml::to_string(&one).expect("one");
+        let many_ser = serde_yaml::to_string(&many).expect("many");
+        let all_ser = serde_yaml::to_string(&all).expect("all");
+
+        //then
+        assert_eq!(one_ser, "partition: 1\n");
+        assert_eq!(many_ser, "partition:\n- 2\n- 3\n");
+        assert_eq!(all_ser, "partition: all\n");
     }
 }
