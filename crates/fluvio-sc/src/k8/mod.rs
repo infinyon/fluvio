@@ -7,7 +7,6 @@
 
 pub(crate) mod controllers;
 mod objects;
-pub(crate) mod migration;
 
 #[cfg(test)]
 mod fixture;
