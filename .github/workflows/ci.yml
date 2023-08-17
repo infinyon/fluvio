@@ -1203,6 +1203,7 @@ jobs:
       - k8_upgrade_test
       - cli_smoke
       - build_binaries
+      - partition_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
