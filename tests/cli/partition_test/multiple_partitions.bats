@@ -16,7 +16,7 @@ setup_file() {
     MULTI_LINE_FILE_NAME=$(random_string)
     export MULTI_LINE_FILE_NAME
 
-    # Creates test File (Partitions * 2)
+    # Creates test File which will have 2 items per partition
     for (( p = 0; p < $PARTITIONS * 2; p++ ))
     do
         echo $p >> "$MULTI_LINE_FILE_NAME"
@@ -44,13 +44,20 @@ teardown_file() {
 }
 
 @test "Consumes on topic for P/C Multiple Partitions with Partition" {
-    run timeout 15s "$FLUVIO_BIN" consume "$PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME" -p 0 -B -d
-    assert_line --index 0 "0"
-    assert_line --index 1 "2"
-}
+    for (( part = 0; part < $PARTITIONS; part++ ))
+    do
+        run timeout 15s "$FLUVIO_BIN" consume "$PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME" -p "$part" -B -d
 
-@test "Consumes on topic for P/C Multiple Partitions with Partition 1" {
-    run timeout 15s "$FLUVIO_BIN" consume "$PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME" -p 1 -B -d
-    assert_line --index 0 "1"
-    assert_line --index 1 "3"
+        for set in {0..1}
+        do
+            if (( $set == 0 ))
+            then
+                WANT=$(( $part ))
+                assert_line --index 0 "$WANT"
+            else
+                WANT=$(( $PARTITIONS + $part ))
+                assert_line --index 1 "$WANT"
+            fi
+        done
+    done
 }
