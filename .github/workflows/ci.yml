@@ -1107,6 +1107,10 @@ jobs:
           - multiple_partitions
         spu:
           - 2
+        partitions:
+          - 2
+        replication:
+          - 1
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v3
@@ -1164,6 +1168,9 @@ jobs:
       - name: Run Multiple Partitions Test
         if: matrix.test == 'multiple_partitions'
         timeout-minutes: 15
+        env:
+          REPLICATION: ${{ matrix.replication }}
+          PARTITIONS: ${{ matrix.partitions }}
         run: make cli-partition-test-multiple-partitions
 
       - name: Shutdown Fluvio cluster

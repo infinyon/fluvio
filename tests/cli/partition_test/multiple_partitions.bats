@@ -29,7 +29,7 @@ teardown_file() {
 
 @test "Create a topic for P/C Multiple Partitions" {
     echo "Creates Topic: $PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME for P/C Multiple Partitions"
-    run timeout 15s "$FLUVIO_BIN" topic create "$PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME" --partitions 2 --replication 2
+    run timeout 15s "$FLUVIO_BIN" topic create "$PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME" --partitions $PARTITIONS --replication $REPLICATION
     assert_success
 
     echo "Topic Details: $PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME"
@@ -42,7 +42,7 @@ teardown_file() {
     assert_success
 }
 
-@test "Consumes on topic for P/C Multiple Partitions with Partition 0" {
+@test "Consumes on topic for P/C Multiple Partitions with Partition" {
     run timeout 15s "$FLUVIO_BIN" consume "$PRODUCE_CONSUME_MULTIPLE_PARTITIONS_TOPIC_NAME" -p 0 -B -d
     assert_line --index 0 "1"
     assert_line --index 1 "3"
