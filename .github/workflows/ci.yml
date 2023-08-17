@@ -1089,7 +1089,7 @@ jobs:
 
   # Runs tests on `tests/cli/partition_test`
   partition_test:
-    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs) on ${{ matrix.os }} for ${{ matrix.rust-target }}
+    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs, ${{ matrix.partitions }} Partitions and ${{ matrix.replication }} Replicas) on ${{ matrix.os }} for ${{ matrix.rust-target }}
     runs-on: ${{ matrix.os }}
     env:
       FLUVIO_BIN: "~/bin/fluvio"
