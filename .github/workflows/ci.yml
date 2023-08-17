@@ -1138,17 +1138,11 @@ jobs:
       - name: Wait 15s for K3D Reset
         run: sleep 15
 
-      # This will load into ~/.fluvio/bin which will be in PATH
-      - name: Install Stable CLI and start Fluvio cluster
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
-          echo "~/.fluvio/bin" >> $GITHUB_PATH
-
       - name: Set up Fluvio Binaries
         run: |
           chmod +x ~/bin/fluvio ~/.fluvio/extensions/fluvio-run
-          mv ~/bin/fluvio ~/.fluvio/bin/fluvio-dev
-          FLUVIO_BIN=~/.fluvio/bin/fluvio-dev
+          echo "~/bin" >> $GITHUB_PATH
+          FLUVIO_BIN=~/bin/fluvio
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
 
       - name: Print version
