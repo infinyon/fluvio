@@ -1091,6 +1091,106 @@ jobs:
           path: diagnostics*.gz
           retention-days: 1
 
+  # Runs tests on `tests/cli/partition_test`
+  partition_test:
+    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs, ${{ matrix.partitions }} Partitions and ${{ matrix.replication }} Replicas) on ${{ matrix.os }} for ${{ matrix.rust-target }}
+    runs-on: ${{ matrix.os }}
+    env:
+      FLUVIO_BIN: "~/bin/fluvio"
+      SERVER_LOG: fluvio=info
+    needs:
+      - build_primary_binaries
+      - config
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        rust-target:
+          - x86_64-unknown-linux-musl
+        test:
+          - multiple_partitions
+        spu:
+          - 2
+        partitions:
+          - 2
+          - 4
+          - 6
+        replication:
+          - 1
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      # Download Artifacts from Development Build (This Commit)
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v3
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v3
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/.fluvio/extensions
+
+      - name: Setup K8s Cluster
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+
+      - name: Wait 15s for K3D Reset
+        run: sleep 15
+
+      - name: Set up Fluvio Binaries
+        run: |
+          chmod +x ~/bin/fluvio ~/.fluvio/extensions/fluvio-run
+          echo "~/bin" >> $GITHUB_PATH
+          FLUVIO_BIN=~/bin/fluvio
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+
+      - name: Print version
+        run: fluvio version
+
+      - name: Start fluvio cluster
+        timeout-minutes: 10
+        run: fluvio cluster start --local --spu ${{ matrix.spu }}
+
+      - name: Await Cluster Startup
+        run: sleep 15
+
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      # Environment setup is ready, time to run the tests
+      - name: Run Multiple Partitions Test
+        if: matrix.test == 'multiple_partitions'
+        timeout-minutes: 15
+        env:
+          REPLICATION: ${{ matrix.replication }}
+          PARTITIONS: ${{ matrix.partitions }}
+        run: make cli-partition-test-multiple-partitions
+
+      - name: Shutdown Fluvio cluster
+        timeout-minutes: 10
+        run: fluvio cluster shutdown --local
+
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics --local
+
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v3
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: fluvio-components-${{ matrix.run }}-${{ matrix.test }}-diag
+          path: diagnostics*.gz
+          retention-days: 1
+
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
   docker_push:
@@ -1107,6 +1207,7 @@ jobs:
       - k8_upgrade_test
       - cli_smoke
       - build_binaries
+      - partition_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

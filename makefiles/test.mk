@@ -196,6 +196,9 @@ endif
 cli-platform-cross-version-test:
 	bats -t ./tests/cli/cli-platform-cross-version.bats
 
+cli-partition-test-multiple-partitions:
+	bats ./tests/cli/partition_test/multiple_partitions.bats
+
 cli-fluvio-smoke:
 	bats $(shell ls -1 ./tests/cli/fluvio_smoke_tests/*.bats | sort -R)
 	bats ./tests/cli/fluvio_smoke_tests/non-concurrent/cluster-delete.bats
