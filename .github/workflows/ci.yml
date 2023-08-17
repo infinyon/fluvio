@@ -1109,6 +1109,8 @@ jobs:
           - 2
         partitions:
           - 2
+          - 4
+          - 6
         replication:
           - 1
     steps:
