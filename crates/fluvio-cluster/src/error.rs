@@ -52,10 +52,10 @@ pub enum K8InstallError {
     #[error(transparent)]
     CommandError(#[from] CommandError),
     /// One or more pre-checks (successfully) failed when trying to start the cluster
-    #[error("Pre-checks failed during cluster startup: {0:#?}")]
+    #[error("Pre-checks failed during cluster startup")]
     FailedPrecheck(CheckStatuses),
     /// Encountered an error while performing one or more pre-checks
-    #[error("Failed to perform one or more pre-checks: {0:#?}")]
+    #[error("Failed to perform one or more pre-checks")]
     PrecheckErrored(CheckResults),
     /// Failed to update Fluvio cluster
     #[error("Expected to find cluster with platform version: {0}")]
@@ -125,10 +125,10 @@ pub enum LocalInstallError {
     #[error(transparent)]
     CommandError(#[from] CommandError),
     /// One or more pre-checks (successfully) failed when trying to start the cluster
-    #[error("Pre-checks failed during cluster startup: {0:#?}")]
+    #[error("Pre-checks failed during cluster startup")]
     FailedPrecheck(CheckStatuses),
     /// Encountered an error while performing one or more pre-checks
-    #[error("Failed to perform one or more pre-checks: {0:#?}")]
+    #[error("Failed to perform one or more pre-checks")]
     PrecheckErrored(CheckResults),
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
