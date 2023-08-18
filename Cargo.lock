@@ -2590,7 +2590,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.25",
  "tracing",
- "trybuild 1.0.42",
+ "trybuild 1.0.82",
 ]
 
 [[package]]
