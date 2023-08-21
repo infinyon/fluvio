@@ -311,7 +311,7 @@ jobs:
           FLUVIO_BIN: ~/.fluvio/bin/fluvio
         run: |
           make publish-artifacts-stable
-		      ${{ env.FLUVIO_BIN }} package publish --package=${{ env.BUILD_BINARY }} --version=${{ env.BUILD_BINARY }}-${{ github.sha }} --target=${{ env.TARGET }} ./${{ env.BUILD_BINARY }}-${{ env.TARGET }}
+          ${{ env.FLUVIO_BIN }} package publish --package=${{ env.BUILD_BINARY }} --version=${{ env.BUILD_BINARY }}-${{ github.sha }} --target=${{ env.TARGET }} ./${{ env.BUILD_BINARY }}-${{ env.TARGET }}
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
