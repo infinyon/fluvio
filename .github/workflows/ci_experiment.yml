@@ -270,7 +270,7 @@ jobs:
   # Publish experimental build artifacts to packages.fluvio.io 
   release_experimental_binary:
     name: Release Fluvio CLI package
-    needs: [setup_job]
+    needs: [build_binary]
     runs-on: ubuntu-latest
     env:
       BUILD_BINARY: ${{ fromJson(needs.read.outputs.result).build-binary }}
@@ -1733,13 +1733,13 @@ jobs:
   #        zip "${{ matrix.artifact }}-${{ matrix.rust-target }}.zip" "${{ matrix.artifact }}" .target
   #        gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.rust-target }}.zip"
 
-  ## Job that follows the success of all required jobs in this workflow.
-  ## Used by Bors to detect that all required jobs have completed successfully
-  #done:
-  #  name: Done
-  #  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-  #  needs: [publish_github_binaries, publish_github_helm_pkg]
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - name: Done
-  #      run: echo "Done!"
+  # Job that follows the success of all required jobs in this workflow.
+  # Used by Bors to detect that all required jobs have completed successfully
+  done:
+    name: Done
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: [release_experimental_binary]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done
+        run: echo "Done!"
