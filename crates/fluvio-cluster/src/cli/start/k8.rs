@@ -31,7 +31,8 @@ pub async fn process_k8(opt: StartOpt, platform_version: Version, upgrade: bool)
         .upgrade(upgrade)
         .spu_config(opt.spu_config.as_spu_config())
         .with_if(opt.skip_checks, |b| b.skip_checks(true))
-        .use_k8_port_forwarding(opt.k8_config.use_k8_port_forwarding);
+        .use_k8_port_forwarding(opt.k8_config.use_k8_port_forwarding)
+        .use_cluster_ip(opt.k8_config.use_cluster_ip);
 
     if cfg!(target_os = "macos") {
         builder.proxy_addr(opt.proxy_addr.unwrap_or_else(|| String::from("localhost")));
