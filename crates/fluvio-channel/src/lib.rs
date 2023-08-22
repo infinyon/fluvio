@@ -29,7 +29,7 @@ pub const FLUVIO_IMAGE_TAG_STRATEGY: &str = "FLUVIO_IMAGE_TAG_STRATEGY";
 pub enum ChannelConfigError {
     #[error(transparent)]
     ConfigFileError(#[from] IoError),
-    #[error("Failed to deserialize Fluvio config")]
+    #[error("Failed to deserialize Fluvio config: {0}")]
     TomlError(#[from] toml::de::Error),
 }
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]

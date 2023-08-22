@@ -18,18 +18,18 @@ use crate::runtime::local::LocalRuntimeError;
 #[derive(thiserror::Error, Debug)]
 pub enum ClusterError {
     /// An error occurred while trying to install Fluvio on Kubernetes
-    #[error("Failed to install Fluvio on Kubernetes")]
+    #[error("Failed to install Fluvio on Kubernetes: {0}")]
     InstallK8(#[from] K8InstallError),
     /// An error occurred while trying to install Fluvio locally
-    #[error("Failed to install Fluvio locally")]
+    #[error("Failed to install Fluvio locally: {0}")]
     InstallLocal(#[from] LocalInstallError),
     /// An error occurred while trying to install Fluvio system charts
-    #[error("Failed to install Fluvio system charts")]
+    #[error("Failed to install Fluvio system charts: {0}")]
     InstallSys(#[from] ChartInstallError),
     /// An error occurred while trying to uninstall Fluvio
-    #[error("Failed to uninstall Fluvio")]
+    #[error("Failed to uninstall Fluvio: {0}")]
     Uninstall(#[from] UninstallError),
-    #[error("Progress Error")]
+    #[error("Progress Error: {0}")]
     ProgressError(#[from] TemplateError),
 }
 
@@ -37,16 +37,16 @@ pub enum ClusterError {
 #[derive(thiserror::Error, Debug)]
 pub enum K8InstallError {
     /// An error occurred with the Kubernetes config.
-    #[error("Kubernetes config error")]
+    #[error("Kubernetes config error: {0}")]
     K8ConfigError(#[from] K8ConfigError),
     /// An error occurred with the Kubernetes client.
-    #[error("Kubernetes client error")]
+    #[error("Kubernetes client error: {0}")]
     K8ClientError(#[from] K8ClientError),
     /// An error occurred while running helm.
-    #[error("Helm client error")]
+    #[error("Helm client error: {0}")]
     HelmError(#[from] HelmError),
     /// An error occurred while running helm.
-    #[error("Helm Chart error")]
+    #[error("Helm Chart error: {0}")]
     ChartError(#[from] ChartInstallError),
     /// Failed to execute a command
     #[error(transparent)]
@@ -58,7 +58,7 @@ pub enum K8InstallError {
     #[error("Failed to perform one or more pre-checks")]
     PrecheckErrored(CheckResults),
     /// Failed to update Fluvio cluster
-    #[error("Expected to find cluster with platform version {0}")]
+    #[error("Expected to find cluster with platform version: {0}")]
     FailedPlatformVersion(String),
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
@@ -88,12 +88,12 @@ pub enum K8InstallError {
     #[error("Missing required config option {0}")]
     MissingRequiredConfig(String),
     /// Kubectl not found
-    #[error("kubectl not found")]
+    #[error("kubectl not found: {0}")]
     KubectlNotFoundError(IoError),
     /// Kubectl not found
     #[error("Port forwarding process exited with code: {0}")]
     PortForwardingFailed(ExitStatus),
-    #[error("Progress Error")]
+    #[error("Progress Error: {0}")]
     ProgressError(#[from] TemplateError),
 }
 
@@ -110,16 +110,16 @@ pub enum LocalInstallError {
     #[error(transparent)]
     IoError(#[from] IoError),
     /// An error occurred with the Fluvio client.
-    #[error("Fluvio client error")]
+    #[error("Fluvio client error: {0}")]
     FluvioError(#[from] FluvioError),
     /// An error occurred with the Kubernetes config.
-    #[error("Kubernetes config error")]
+    #[error("Kubernetes config error: {0}")]
     K8ConfigError(#[from] K8ConfigError),
     /// An error occurred with the Kubernetes client.
-    #[error("Kubernetes client error")]
+    #[error("Kubernetes client error: {0}")]
     K8ClientError(#[from] K8ClientError),
     /// An error occurred while running helm.
-    #[error("Helm client error")]
+    #[error("Helm client error: {0}")]
     HelmError(#[from] HelmError),
     /// Failed to execute a command
     #[error(transparent)]
@@ -160,7 +160,7 @@ pub enum LocalInstallError {
     Other(String),
     #[error(transparent)]
     ClusterCheckError(#[from] ClusterCheckError),
-    #[error("Progress Error")]
+    #[error("Progress Error: {0}")]
     ProgressError(#[from] TemplateError),
 }
 
@@ -171,19 +171,19 @@ pub enum UninstallError {
     #[error(transparent)]
     IoError(#[from] IoError),
     /// An error occurred with the Fluvio client.
-    #[error("Fluvio client error")]
+    #[error("Fluvio client error: {0}")]
     FluvioError(#[from] FluvioError),
     /// Failed to execute a command
     #[error(transparent)]
     CommandError(#[from] CommandError),
     /// An error occurred with the Kubernetes config.
-    #[error("Kubernetes config error")]
+    #[error("Kubernetes config error: {0}")]
     K8ConfigError(#[from] K8ConfigError),
     /// An error occurred with the Kubernetes client.
-    #[error("Kubernetes client error")]
+    #[error("Kubernetes client error: {0}")]
     K8ClientError(#[from] K8ClientError),
     /// An error occurred while running helm.
-    #[error("Helm client error")]
+    #[error("Helm client error: {0}")]
     HelmError(#[from] HelmError),
     /// Timed out when waiting for SC service.
     #[error("Timed out when waiting for SC service")]
