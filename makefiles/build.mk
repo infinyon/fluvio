@@ -63,4 +63,4 @@ endif
 endif
 fluvio_image: fluvio_run_bin
 	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
-	k8-util/docker/build.sh $(TARGET) $(GIT_COMMIT) "./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
+	k8-util/docker/build.sh $(TARGET) $(GIT_COMMIT) "./target/$(TARGET)/$(BUILD_PROFILE)" $(K8_CLUSTER)
