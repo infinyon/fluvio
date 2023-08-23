@@ -2,7 +2,7 @@
 # set up sccache
 set -e
 MATRIX_OS=${1}
-ZIG_VER=0.9.1
+ZIG_VER=0.11.0
 LLVM_VER=14
 ARCH=x86_64
 echo "installing zig matrix.os=$MATRIX_OS version=$ZIG_VER"
