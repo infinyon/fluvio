@@ -209,6 +209,9 @@ cli-smdk-smoke:
 cli-cdk-smoke:
 	bats $(shell ls -1 ./tests/cli/cdk_smoke_tests/*.bats | sort -R)
 
+cluster-base-test:
+	bats ./tests/cli/cluster_smoke_tests/basic.bats
+
 cli-basic-test:
 	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 

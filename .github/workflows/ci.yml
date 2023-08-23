@@ -708,6 +708,74 @@ jobs:
           path: diagnostics*.gz
           retention-days: 1
 
+  cluster_management_test:
+    name: Cluster ${{ matrix.test }} Tests (${{ matrix.os }})-${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build_primary_binaries
+      - config
+    env:
+      UNINSTALL: noclean
+      FLUVIO_BIN: ~/bin/fluvio
+      SERVER_LOG: fluvio=info
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+        test: [cluster-base-test]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v3
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+
+      - name: Set up Fluvio Binaries
+        run: |
+          chmod +x ~/bin/fluvio
+          echo "~/bin" >> $GITHUB_PATH
+          FLUVIO_BIN=~/bin/fluvio
+          echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
+
+      - name: Print version
+        run: fluvio version
+
+      - name: Set up cluster
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      - name: Sleep for 15s
+        run: sleep 15
+
+      - name: Run cluster-base-test
+        if: matrix.test == 'cluster-base-test'
+        timeout-minutes: 15
+        run: |
+          make cluster-base-test
+
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics --local
+
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v3
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: local-${{ matrix.run }}-${{ matrix.test }}-diag
+          path: diagnostics*.gz
+          retention-days: 1
+
   build_image:
     name: Build Fluvio Docker image
     needs: build_primary_binaries

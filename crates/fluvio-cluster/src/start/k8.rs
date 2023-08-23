@@ -1305,6 +1305,11 @@ impl ClusterInstaller {
     /// Provisions a SPU group for the given cluster according to internal config
     #[instrument(skip(self, fluvio))]
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<()> {
+        if self.config.spu_replicas == 0 {
+            println!("🤖 Skipping SPU Group creation");
+            return Ok(());
+        }
+
         let pb = self.pb_factory.create()?;
         let spg_name = self.config.group_name.clone();
         pb.set_message(format!("📝 Checking for existing SPU Group: {spg_name}"));
