@@ -14,4 +14,4 @@ publish = false
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 derive_builder = { workspace = true }
-cargo_metadata = "0.15.0"
+cargo_metadata = "0.17.0"
