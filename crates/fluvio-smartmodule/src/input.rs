@@ -136,7 +136,7 @@ impl SmartModuleInput {
     /// Creates an instance of [`Record`] from the raw bytes and ignoring the
     /// base offset and timestamp. This method is used to keep backwards
     /// compatibility with SmartModule engines previous to Version `21`.
-    #[deprecated = "use SmartModuleRecord instead"]
+    #[deprecated = "use SmartModuleRecord instead. Read more here: https://www.fluvio.io/smartmodules/smdk/smartmodulerecord/."]
     pub fn try_into_records(mut self, version: Version) -> Result<Vec<Record>, std::io::Error> {
         Decoder::decode_from(&mut Cursor::new(&mut self.raw_bytes), version)
     }
