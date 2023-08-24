@@ -105,6 +105,10 @@ pub struct K8Install {
     #[arg(long)]
     use_k8_port_forwarding: bool,
 
+    /// Uses port forwarding for connecting to SC during install
+    #[arg(long)]
+    use_cluster_ip: bool,
+
     /// TLS: Client secret name while adding to Kubernetes
     #[arg(long, default_value = TLS_CLIENT_SECRET_NAME)]
     tls_client_secret_name: String,
