@@ -64,6 +64,10 @@ setup_file() {
     export TOPIC_NAME_13
     debug_msg "Topic name: $TOPIC_NAME_13"
 
+    TOPIC_NAME_14=$(random_string)
+    export TOPIC_NAME_14
+    debug_msg "Topic name: $TOPIC_NAME_14"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -107,6 +111,19 @@ setup_file() {
 
 teardown_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME2"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME3"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME4"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME5"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME6"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME7"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME8"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME9"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME10"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME11"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME12"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME13"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME14"
 }
 
 # Create topic
@@ -138,6 +155,8 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_13" --compression-type zstd
     assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_14" -p 3
+    assert_success
 }
 
 # Produce message 
@@ -167,6 +186,12 @@ teardown_file() {
     run bash -c 'echo -e "$AT_MOST_ONCE_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_11" --delivery-semantic AtMostOnce'
     assert_success
     run bash -c 'echo -e "$AT_LEAST_ONCE_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_12" --delivery-semantic AtLeastOnce'
+    assert_success
+    run bash -c 'echo -e "1:1" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_14" --key-separator ":"'
+    assert_success
+    run bash -c 'echo -e "2:2" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_14" --key-separator ":"'
+    assert_success
+    run bash -c 'echo -e "3:3" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_14" --key-separator ":"'
     assert_success
 }
 
@@ -270,3 +295,29 @@ teardown_file() {
     assert_output --partial "$AT_LEAST_ONCE_MESSAGE"
     assert_success
 }
+
+@test "Consume all partitions by default" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on stable version"
+    fi
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_14" -B -d
+
+    assert_output --partial "1"
+    assert_output --partial "2"
+    assert_output --partial "3"
+    assert_success
+}
+
+@test "Consume subset of partitions" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on stable version"
+    fi
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_14" -p 1 -p 2 -B -d
+
+    assert_output --partial "1"
+    assert_output --partial "2"
+    refute_output --partial "3"
+    assert_success
+}
+
+

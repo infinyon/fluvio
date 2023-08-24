@@ -274,7 +274,7 @@ impl MetaConfig<'_> {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
-    #[serde(default, skip_serializing_if = "ConsumerPartitionConfig::is_default")]
+    #[serde(default)]
     pub partition: ConsumerPartitionConfig,
     #[serde(
         with = "bytesize_serde",
@@ -397,13 +397,7 @@ pub enum ConsumerPartitionConfig {
 
 impl Default for ConsumerPartitionConfig {
     fn default() -> Self {
-        Self::One(0)
-    }
-}
-
-impl ConsumerPartitionConfig {
-    pub fn is_default(&self) -> bool {
-        matches!(self, ConsumerPartitionConfig::One(partition) if partition.eq(&PartitionId::default()))
+        Self::All
     }
 }
 
