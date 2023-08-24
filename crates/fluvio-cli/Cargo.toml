@@ -59,7 +59,7 @@ colored = { workspace = true }
 handlebars = "4"
 content_inspector = { optional = true, workspace = true }
 flate2 = { workspace = true }
-crossterm = { version = "0.26.0", features = ['event-stream']}
+crossterm = { version = "0.27.0", features = ['event-stream']}
 tui = { version = "0.19.0", default-features = false, features = ['crossterm'] }
 futures = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
