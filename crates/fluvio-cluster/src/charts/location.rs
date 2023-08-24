@@ -2,14 +2,13 @@ use std::path::{PathBuf};
 
 use tracing::{debug, instrument};
 use include_dir::{Dir, include_dir};
+use anyhow::{Result, Context};
 
-use fluvio_helm::{HelmClient};
+use fluvio_helm::HelmClient;
 
 pub use inline::*;
 
 use crate::UserChartLocation;
-
-use super::ChartInstallError;
 
 const SYS_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_sys");
 const APP_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_app");
@@ -46,15 +45,11 @@ impl ChartLocation {
     }
 
     /// setup chart to be ready to be installed
-    pub fn setup(
-        &self,
-        name: &str,
-        helm_client: &HelmClient,
-    ) -> Result<ChartSetup, ChartInstallError> {
+    pub fn setup(&self, name: &str, helm_client: &HelmClient) -> Result<ChartSetup> {
         let chart_setup = match &self {
             &ChartLocation::Inline(dir) => {
                 debug!("unpacking using inline chart");
-                let chart = InlineChart::new(dir)?;
+                let chart = InlineChart::new(dir).context("create inline chart")?;
                 ChartSetup::Inline(chart)
             }
             ChartLocation::Remote(location) => {
@@ -62,8 +57,10 @@ impl ChartLocation {
                     %location,
                     %name,
                     "setting up remote helm chart");
-                helm_client.repo_add(name, location)?;
-                helm_client.repo_update()?;
+                helm_client
+                    .repo_add(name, location)
+                    .context("add helm repo")?;
+                helm_client.repo_update().context("update helm repo")?;
                 ChartSetup::Location(location.to_owned())
             }
             ChartLocation::Local(path) => {
@@ -77,7 +74,7 @@ impl ChartLocation {
     }
 
     #[instrument(skip(self))]
-    fn setup_remote_chart(&self, chart_location: &str) -> Result<(), ChartInstallError> {
+    fn setup_remote_chart(&self, chart_location: &str) -> Result<()> {
         Ok(())
     }
 }
@@ -108,8 +105,9 @@ mod inline {
     use std::io::Write;
 
     use tracing::{debug, trace};
-    use include_dir::{Dir};
+    use include_dir::Dir;
     use tempfile::TempDir;
+    use anyhow::{Result, Context, anyhow};
 
     /// Inline chart contains only a single chart
     pub struct InlineChart {
@@ -119,9 +117,12 @@ mod inline {
 
     impl InlineChart {
         /// create new inline chart
-        pub fn new(inline: &Dir<'static>) -> Result<Self, IoError> {
-            let temp_dir = tempfile::Builder::new().prefix("chart").tempdir()?;
-            let chart = Self::unpack(inline, temp_dir.path())?;
+        pub fn new(inline: &Dir<'static>) -> Result<Self> {
+            let temp_dir = tempfile::Builder::new()
+                .prefix("chart")
+                .tempdir()
+                .context("get temp dir")?;
+            let chart = Self::unpack(inline, temp_dir.path()).context("unpack inline chart")?;
             Ok(Self {
                 _dir: temp_dir,
                 chart,
@@ -134,27 +135,26 @@ mod inline {
         }
 
         /// find a single chart and return it's physical path
-        pub fn unpack(inline: &Dir, base_dir: &Path) -> Result<PathBuf, IoError> {
+        pub fn unpack(inline: &Dir, base_dir: &Path) -> Result<PathBuf> {
             debug!(?base_dir, "unpacking inline at base");
 
             // there should be only 1 chart file in the directory
             if inline.files().count() == 0 {
-                return Err(IoError::new(ErrorKind::InvalidData, "no chart found"));
+                return Err(anyhow!("no chart found"));
             }
             if inline.files().count() > 1 {
-                return Err(IoError::new(
-                    ErrorKind::InvalidData,
-                    "more than 1 chart file found",
-                ));
+                return Err(anyhow!("more than one chart file found"));
             }
 
             let inline_file = inline.files().next().unwrap();
             let chart = base_dir.to_owned().join(inline_file.path());
             trace!(?chart, "writing file");
             let contents = inline_file.contents();
-            let mut chart_file = File::create(&chart)?;
-            chart_file.write_all(contents)?;
-            chart_file.sync_all()?;
+            let mut chart_file = File::create(&chart).context("create chart file")?;
+            chart_file
+                .write_all(contents)
+                .context("write contents to chart file")?;
+            chart_file.sync_all().context("sync chart file to disk")?;
 
             // if there is debug env file, output it as well
             if let Ok(debug_dir) = std::env::var("FLV_INLINE_CHART_DIR") {
@@ -166,8 +166,8 @@ mod inline {
                     .expect("FLV_INLINE_CHART_DIR not exists");
                 let mut debug_file = File::create(debug_chart_path.join(inline_file.path()))
                     .expect("chart cant' be created");
-                debug_file.write_all(contents)?;
-                debug_file.sync_all()?;
+                debug_file.write_all(contents).context("write debug file")?;
+                debug_file.sync_all().context("sync debug file")?;
             }
 
             Ok(chart)

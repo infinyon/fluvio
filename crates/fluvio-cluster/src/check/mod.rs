@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::io::Error as IoError;
 use std::fmt::Debug;
-use std::process::{Command};
+use std::process::Command;
 use std::time::Duration;
 
 pub mod render;
@@ -24,7 +24,7 @@ use k8_client::ClientError as K8ClientError;
 use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
-use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
+use crate::charts::{ChartConfig, ChartInstaller, SYS_CHART_NAME};
 
 const KUBE_VERSION: &str = "1.7.0";
 const RESOURCE_SERVICE: &str = "service";
