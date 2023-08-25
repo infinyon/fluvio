@@ -76,8 +76,8 @@ mod cmd {
         pub topic: String,
 
         /// Partition id
-        #[arg(short = 'p', long, default_value = "0", value_name = "integer")]
-        pub partition: PartitionId,
+        #[arg(short = 'p', long, value_name = "integer")]
+        pub partition: Vec<PartitionId>,
 
         /// Consume records from all partitions
         #[arg(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
@@ -211,7 +211,7 @@ mod cmd {
         #[instrument(
             skip(self, fluvio),
             name = "Consume",
-            fields(topic = %self.topic, partition = self.partition),
+            fields(topic = %self.topic, partition = ?self.partition),
         )]
         async fn process_client<O: Terminal + Debug + Send + Sync>(
             self,
@@ -251,17 +251,19 @@ mod cmd {
                 None
             };
 
-            if self.all_partitions {
+            if self.all_partitions || self.partition.is_empty() {
                 let consumer = fluvio
                     .consumer(PartitionSelectionStrategy::All(self.topic.clone()))
                     .await?;
                 self.consume_records(consumer, maybe_tableformat).await?;
             } else {
                 let consumer = fluvio
-                    .consumer(PartitionSelectionStrategy::Multiple(vec![(
-                        self.topic.clone(),
-                        self.partition,
-                    )]))
+                    .consumer(PartitionSelectionStrategy::Multiple(
+                        self.partition
+                            .iter()
+                            .map(|p| (self.topic.clone(), *p))
+                            .collect(),
+                    ))
                     .await?;
                 self.consume_records(consumer, maybe_tableformat).await?;
             };

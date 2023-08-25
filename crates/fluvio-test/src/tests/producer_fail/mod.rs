@@ -49,7 +49,7 @@ pub async fn produce_batch(
     println!("Got cluster manager");
 
     let value = "a".repeat(5000);
-    let result: Result<_> = (|| async move {
+    let result: Result<_> = async move {
         let mut results = Vec::new();
         for _ in 0..1000 {
             let result = producer.send(RecordKey::NULL, value.clone()).await?;
@@ -86,7 +86,7 @@ pub async fn produce_batch(
         producer.flush().await?;
 
         Ok(())
-    })()
+    }
     .await;
 
     // Ensure that one of the calls returned a failure
