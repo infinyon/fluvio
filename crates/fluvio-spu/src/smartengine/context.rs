@@ -159,7 +159,7 @@ async fn lookback_last_iterator<R: ReplicaStorage>(
 
     let Some(file_slice) = slice.file_slice else {
         trace!(?slice);
-        return Ok(Box::new(std::iter::empty()))
+        return Ok(Box::new(std::iter::empty()));
     };
 
     let batch_iter = FileBatchIterator::from_raw_slice(file_slice);
@@ -218,7 +218,9 @@ async fn read_batches_by_age<R: ReplicaStorage>(
             break;
         };
         let mut batch_iter = FileBatchIterator::from_raw_slice(file_slice);
-        let Some(batch) = batch_iter.next() else { break };
+        let Some(batch) = batch_iter.next() else {
+            break;
+        };
         let batch = batch?;
         trace!(?batch.batch, "next file batch");
 
