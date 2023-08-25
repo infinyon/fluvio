@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn builds_obj_key_from_package_name() {
-        let pkg_names = vec![
+        let pkg_names = [
             "infinyon/example@0.0.1",
             "infinyon/example-sm@0.1.0",
             "infinyon/json-sql@0.0.2",
@@ -196,7 +196,7 @@ mod tests {
             "infinyon/test-cli@0.1.0",
             "infinyon/regex@0.0.1",
         ];
-        let obj_paths = vec![
+        let obj_paths = [
             "infinyon/example-0.0.1.ipkg",
             "infinyon/example-sm-0.1.0.ipkg",
             "infinyon/json-sql-0.0.2.ipkg",
@@ -414,7 +414,7 @@ mod tests {
         /// the current code should be able to load all old versions
         #[test]
         fn backward_compat() {
-            let flist = vec![
+            let flist = [
                 "tests/apackage/package-meta.yaml",
                 "tests/apackage/package-meta-v0.1.yaml",
                 "tests/apackage/package-meta-v0.2-owner.yaml",
@@ -435,7 +435,7 @@ mod tests {
             const TAGGED_PM: &str = "tests/apackage/package-meta-v0.3-targets.yaml";
             let msg = format!("couldn't read {TAGGED_PM}");
             let pm = read_pkgmeta(TAGGED_PM).expect(&msg);
-            let tags = vec![
+            let tags = [
                 ("arch", "aarch64-apple-darwin"),
                 ("arch", "aarch64-unknown-linux-musl"),
             ]

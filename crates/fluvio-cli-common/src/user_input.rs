@@ -148,7 +148,7 @@ mod file_tests {
     #[test]
     fn file_lines() -> Result<(), ()> {
         let mut file = NamedTempFile::new().unwrap();
-        let data = vec!["123", "abc", "📼🍅🐊"];
+        let data = ["123", "abc", "📼🍅🐊"];
 
         writeln!(file, "{}", data[0]).unwrap();
         writeln!(file, "{}", data[1]).unwrap();
@@ -173,7 +173,7 @@ mod file_tests {
     fn file_whole() -> Result<(), ()> {
         let mut file = NamedTempFile::new().unwrap();
 
-        let data = vec!["123", "abc", "📼🍅🐊"];
+        let data = ["123", "abc", "📼🍅🐊"];
 
         writeln!(file, "{}", data[0]).unwrap();
         writeln!(file, "{}", data[1]).unwrap();

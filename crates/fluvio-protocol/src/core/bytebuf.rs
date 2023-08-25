@@ -22,7 +22,7 @@ impl From<Bytes> for ByteBuf {
 impl From<Vec<u8>> for ByteBuf {
     fn from(bytes: Vec<u8>) -> Self {
         ByteBuf {
-            inner: Bytes::from_iter(bytes.into_iter()),
+            inner: Bytes::from_iter(bytes),
         }
     }
 }

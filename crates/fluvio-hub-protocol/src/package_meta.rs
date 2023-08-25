@@ -266,7 +266,7 @@ impl From<&SmartModuleVisibility> for PkgVisibility {
 
 #[test]
 fn builds_obj_key_from_package_name() {
-    let pkg_names = vec![
+    let pkg_names = [
         "infinyon/example@0.0.1",
         "infinyon/example-sm@0.1.0",
         "infinyon/json-sql@0.0.2",
@@ -275,7 +275,7 @@ fn builds_obj_key_from_package_name() {
         "infinyon/test-cli@0.1.0",
         "infinyon/regex@0.0.1",
     ];
-    let obj_paths = vec![
+    let obj_paths = [
         "infinyon/example-0.0.1.ipkg",
         "infinyon/example-sm-0.1.0.ipkg",
         "infinyon/json-sql-0.0.2.ipkg",

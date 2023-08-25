@@ -131,7 +131,7 @@ mod v1 {
 
     impl MetaConfigV1 {
         pub fn secrets(&self) -> HashSet<SecretConfig> {
-            HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
+            HashSet::from_iter(self.secrets.clone().unwrap_or_default())
         }
 
         pub fn direction(&self) -> Direction {
@@ -184,7 +184,7 @@ mod v2 {
 
     impl MetaConfigV2 {
         pub fn secrets(&self) -> HashSet<SecretConfig> {
-            HashSet::from_iter(self.secrets.clone().unwrap_or_default().into_iter())
+            HashSet::from_iter(self.secrets.clone().unwrap_or_default())
         }
 
         pub fn direction(&self) -> Direction {
