@@ -241,7 +241,6 @@ mod root {
                 Self::Metadata(metadata) => {
                     metadata.process()?;
                 }
-
                 Self::External(args) => {
                     process_external_subcommand(args)?;
                 }
