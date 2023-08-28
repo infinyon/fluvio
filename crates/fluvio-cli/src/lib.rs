@@ -3,18 +3,20 @@
 //! CLI configurations at the top of the tree
 
 mod error;
-pub mod client;
-pub mod install;
 mod profile;
-mod version;
 mod metadata;
 mod render;
-pub(crate) mod monitoring;
+mod uninstall;
+mod version;
 
+pub mod client;
+pub mod install;
+
+pub(crate) mod monitoring;
 pub(crate) use error::CliError;
-use fluvio_extension_common as common;
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
 
+use fluvio_extension_common as common;
 use fluvio_index::HttpAgent;
 use install::update::{
     should_always_print_available_update, check_update_available, prompt_available_update,
@@ -82,6 +84,7 @@ mod root {
     use crate::common::target::ClusterTarget;
     use crate::common::COMMAND_TEMPLATE;
     use crate::common::PrintTerminal;
+    use crate::uninstall::UninstallOpt;
 
     /// Fluvio Command Line Interface
     #[derive(Parser, Debug)]
@@ -153,6 +156,10 @@ mod root {
         #[command(name = "install")]
         Install(InstallOpt),
 
+        /// Uninstall Fluvio
+        #[command(name = "uninstall")]
+        Uninstall(UninstallOpt),
+
         /// Update the Fluvio CLI
         #[command(name = "update")]
         Update(UpdateOpt),
@@ -221,6 +228,9 @@ mod root {
                     };
 
                     update.process().await?;
+                }
+                Self::Uninstall(uninstall) => {
+                    uninstall.process().await?;
                 }
                 Self::Version(version) => {
                     version.process(root.target).await?;
