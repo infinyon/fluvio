@@ -1,6 +1,7 @@
+use fluvio_cli_common::charts::{ChartConfig, ChartInstallError, ChartInstaller};
+
 use crate::cli::start::StartOpt;
 use crate::cli::ClusterCliError;
-use crate::charts::{ChartConfig, ChartInstallError, ChartInstaller};
 use crate::ClusterError;
 
 pub fn process_sys(opt: &StartOpt, upgrade: bool) -> Result<(), ClusterCliError> {

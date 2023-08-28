@@ -26,7 +26,6 @@
 #![allow(clippy::upper_case_acronyms)]
 
 /// charts
-pub mod charts;
 mod check;
 mod start;
 mod render;

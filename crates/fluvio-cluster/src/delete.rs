@@ -6,10 +6,10 @@ use tracing::{info, warn, debug, instrument};
 use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_command::CommandExt;
+use fluvio_cli_common::charts::{APP_CHART_NAME, SYS_CHART_NAME};
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 
 use crate::helm::HelmClient;
-use crate::charts::{APP_CHART_NAME, SYS_CHART_NAME};
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
 use crate::{DEFAULT_NAMESPACE};

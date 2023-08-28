@@ -18,13 +18,15 @@ use serde_json::Error as JsonError;
 use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_helm::{HelmClient, HelmError};
+use fluvio_cli_common::charts::{
+    ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME, DEFAULT_HELM_VERSION,
+    APP_CHART_NAME,
+};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
 use k8_client::ClientError as K8ClientError;
 
-use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
-use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
 
 const KUBE_VERSION: &str = "1.7.0";
 const RESOURCE_SERVICE: &str = "service";

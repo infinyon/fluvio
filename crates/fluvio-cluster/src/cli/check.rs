@@ -4,7 +4,7 @@ use clap::Parser;
 use crate::progress::ProgressBarFactory;
 use crate::ClusterChecker;
 use crate::check::{SysChartCheck, ClusterCheckError};
-use crate::charts::ChartConfig;
+use fluvio_cli_common::charts::ChartConfig;
 
 #[derive(Debug, Parser)]
 pub struct CheckOpt {

@@ -5,12 +5,11 @@ pub use chart::*;
 pub use error::*;
 pub use location::*;
 
-pub(crate) const SYS_CHART_NAME: &str = "fluvio-sys";
-pub(crate) const APP_CHART_NAME: &str = "fluvio";
-pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
+pub const SYS_CHART_NAME: &str = "fluvio-sys";
+pub const APP_CHART_NAME: &str = "fluvio";
+pub const DEFAULT_HELM_VERSION: &str = "3.3.4";
 
-mod error {
-
+pub mod error {
     use std::io::Error as IoError;
     use fluvio_helm::HelmError;
 

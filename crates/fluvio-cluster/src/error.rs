@@ -9,9 +9,9 @@ use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
 use fluvio_helm::HelmError;
 use fluvio_command::CommandError;
+use fluvio_cli_common::charts::ChartInstallError;
 
 use crate::check::{CheckResults, CheckStatuses, ClusterCheckError};
-use crate::charts::ChartInstallError;
 use crate::runtime::local::LocalRuntimeError;
 
 /// The types of errors that can occur during cluster management

@@ -9,8 +9,8 @@ pub use inline::*;
 
 use super::ChartInstallError;
 
-const SYS_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_sys");
-const APP_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_app");
+pub const SYS_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_sys");
+pub const APP_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_app");
 
 /// User configuration chart location
 #[derive(Debug, Clone)]

@@ -2544,7 +2544,11 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "derive_builder",
+ "fluvio",
  "fluvio-future",
+ "fluvio-helm",
  "fluvio-package-index",
  "fluvio-protocol",
  "fluvio-types",
@@ -2552,12 +2556,20 @@ dependencies = [
  "hex",
  "home",
  "http",
+ "include_dir",
+ "indicatif",
  "isahc",
+ "k8-client",
+ "k8-config",
  "semver 1.0.18",
+ "serde",
+ "serde_json",
  "sha2 0.10.7",
+ "sysinfo",
  "tempfile",
  "thiserror",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -2579,6 +2591,7 @@ dependencies = [
  "flate2",
  "fluvio",
  "fluvio-channel",
+ "fluvio-cli-common",
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
