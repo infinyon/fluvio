@@ -17,21 +17,34 @@ default = ["fluvio-types"]
 file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
 
 [dependencies]
+isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
+
 anyhow = { workspace = true }
+async-trait = { workspace = true }
+derive_builder = { workspace = true }
 futures = { workspace = true, features = ["std", "io-compat"]}
 home = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
-isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
+include_dir = { workspace = true }
+indicatif = { workspace = true }
 semver = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 sha2 = { workspace = true }
+sysinfo = { workspace = true, default-features = false }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+url = { workspace = true }
 
+fluvio = { workspace = true  }
+fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
 fluvio-package-index = { workspace = true,  features = ["http_agent"] }
 fluvio-types = { workspace = true , optional = true }
 fluvio-protocol = { workspace = true,  optional = true }
 
-[dev-dependencies]
-fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
+# External Fluvio Dependencies
+fluvio-helm = { workspace = true }
+k8-config = { workspace = true }
+k8-client = { workspace = true }
