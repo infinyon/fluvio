@@ -430,13 +430,12 @@ dependencies = [
 
 [[package]]
 name = "async-rustls"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93b21a03b7c21702a0110f9f8d228763a533570deb376119042dabf33c37a01a"
+checksum = "29479d362e242e320fa8f5c831940a5b83c1679af014068196cd20d4bf497b6b"
 dependencies = [
  "futures-io",
- "rustls 0.20.8",
- "webpki 0.22.0",
+ "rustls 0.21.6",
 ]
 
 [[package]]
@@ -2756,9 +2755,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5f2d572470f98b25383ffe78d9c3fba2b986d9891efd78808025397e54eb1ec"
+checksum = "daf01d41a3439ecf3377477c34d5913241c186d03500a0a6793a6c2688815a61"
 dependencies = [
  "async-fs",
  "async-io",
@@ -2781,6 +2780,7 @@ dependencies = [
  "pin-project",
  "pin-utils",
  "rustls-pemfile",
+ "socket2 0.5.3",
  "thiserror",
  "tracing",
  "tracing-subscriber",
@@ -3353,9 +3353,9 @@ dependencies = [
 
 [[package]]
 name = "flv-tls-proxy"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b27a60f82edd03c090cd66888d6fe5ca247538d53a54ea1ec9329ec3089b9e68"
+checksum = "f282f382e62a7e429ee2fbb50ecfa919de2aa4a20a9134e1b7d70e026599ec35"
 dependencies = [
  "async-trait",
  "cfg-if",
@@ -4510,9 +4510,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "10.0.1"
+version = "10.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da4586095d434a231b33968cc08b00f8360f15f73971b7777793207125e4eeaf"
+checksum = "b2b634e8388eaeab70b77666c6aa05b1d02943775528d55e8ce6c99bb4ee0f85"
 dependencies = [
  "async-trait",
  "base64 0.13.1",
@@ -6232,18 +6232,6 @@ dependencies = [
  "ring",
  "sct 0.6.1",
  "webpki 0.21.4",
-]
-
-[[package]]
-name = "rustls"
-version = "0.20.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff78fc74d175294f4e83b28343315ffcfb114b156f0185e9741cb5570f50e2f"
-dependencies = [
- "log",
- "ring",
- "sct 0.7.0",
- "webpki 0.22.0",
 ]
 
 [[package]]
