@@ -15,14 +15,14 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 bytes = { workspace = true }
 futures-lite = { workspace = true }
-futures ={ workspace = true }
-clap = { workspace = true , features = [   "std",  "derive"]}
+futures = { workspace = true }
+clap = { workspace = true, features = ["std", "derive"] }
 
 rand = { workspace = true }
 # Cryptographically secure rand is unnecessary and slow enough to affect for benchmark testing
 fastrand = "2.0.0"
 md-5 = "0.10"
-nix = { workspace = true }
+nix = { workspace = true, features = ["time"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
@@ -36,14 +36,14 @@ crossbeam-channel = { workspace = true }
 sysinfo = { workspace = true }
 signal-hook = "0.3.13"
 indicatif = { workspace = true }
-async-std = { workspace = true,  features = ["attributes"] }
+async-std = { workspace = true, features = ["attributes"] }
 uuid = { workspace = true }
 
 tracing = { workspace = true }
 
 # Fluvio dependencies
 fluvio = { workspace = true }
-fluvio-types = { workspace = true  }
+fluvio-types = { workspace = true }
 fluvio-future = { workspace = true, features = [
     "io",
     "task",
@@ -54,12 +54,12 @@ fluvio-future = { workspace = true, features = [
 fluvio-command = { version = "0.2.0" }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-cli = { path = "../fluvio-cli" }
-fluvio-controlplane-metadata = { workspace = true, features = ["k8"]}
+fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
 
 # Fluvio test framework Attribute macro
 fluvio-test-derive = { path = "../fluvio-test-derive" }
 fluvio-test-util = { path = "../fluvio-test-util" }
-fluvio-protocol = { workspace = true,  features = ["api"] }
+fluvio-protocol = { workspace = true, features = ["api"] }
 
 # Fluvio test framework Options derive
 fluvio-test-case-derive = { path = "../fluvio-test-case-derive" }

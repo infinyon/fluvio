@@ -1667,7 +1667,7 @@ version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a011bbe2c35ce9c1f143b7af6f94f29a167beb4cd1d29e6740ce836f723120e"
 dependencies = [
- "nix",
+ "nix 0.26.4",
  "windows-sys 0.48.0",
 ]
 
@@ -2774,7 +2774,7 @@ dependencies = [
  "log",
  "memmap2",
  "native-tls",
- "nix",
+ "nix 0.26.4",
  "openssl",
  "openssl-sys",
  "pin-project",
@@ -2847,7 +2847,7 @@ dependencies = [
  "toml 0.7.6",
  "tracing",
  "tracing-subscriber",
- "wasmparser 0.110.0",
+ "wasmparser 0.112.0",
 ]
 
 [[package]]
@@ -3090,7 +3090,7 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "nix",
+ "nix 0.27.1",
  "once_cell",
  "portpicker",
  "regex",
@@ -3145,7 +3145,7 @@ dependencies = [
  "flv-util",
  "futures-lite",
  "libc",
- "nix",
+ "nix 0.27.1",
  "pin-utils",
  "serde",
  "thiserror",
@@ -3221,7 +3221,7 @@ dependencies = [
  "indicatif",
  "inventory",
  "md-5",
- "nix",
+ "nix 0.27.1",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -3441,7 +3441,7 @@ dependencies = [
  "cfg-if",
  "cvt",
  "libc",
- "nix",
+ "nix 0.26.4",
  "windows-sys 0.48.0",
 ]
 
@@ -5071,6 +5071,17 @@ dependencies = [
  "libc",
  "memoffset 0.7.1",
  "pin-utils",
+]
+
+[[package]]
+name = "nix"
+version = "0.27.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053"
+dependencies = [
+ "bitflags 2.4.0",
+ "cfg-if",
+ "libc",
 ]
 
 [[package]]
@@ -6728,9 +6739,9 @@ dependencies = [
 
 [[package]]
 name = "siphasher"
-version = "0.3.11"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
+checksum = "54ac45299ccbd390721be55b412d41931911f654fa99e2cb8bfb57184b2061fe"
 
 [[package]]
 name = "slab"
@@ -7906,16 +7917,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29e3ac9b780c7dda0cac7a52a5d6d2d6707cc6e3451c9db209b6c758f40d7acb"
 dependencies = [
  "indexmap 1.9.3",
- "semver 1.0.18",
-]
-
-[[package]]
-name = "wasmparser"
-version = "0.110.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dfcdb72d96f01e6c85b6bf20102e7423bdbaad5c337301bab2bbf253d26413c"
-dependencies = [
- "indexmap 2.0.0",
  "semver 1.0.18",
 ]
 
