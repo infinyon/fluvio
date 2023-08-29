@@ -2,9 +2,7 @@ use std::{borrow::Cow, time::Duration};
 
 use indicatif::{ProgressBar, ProgressStyle, style::TemplateError};
 
-use crate::{
-    render::{ProgressRenderedText, ProgressRenderer},
-};
+use crate::render::{ProgressRenderedText, ProgressRenderer};
 
 #[derive(Debug)]
 pub(crate) enum InstallProgressMessage {

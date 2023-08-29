@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::io::Error as IoError;
 use std::fmt::Debug;
-use std::process::{Command};
+use std::process::Command;
 use std::time::Duration;
 
 pub mod render;
@@ -749,6 +749,12 @@ impl ClusterChecker {
             Box::new(CreateCrdPermission),
             Box::new(CreateServiceAccountPermission),
         ];
+        self.checks.extend(checks);
+        self
+    }
+
+    pub fn with_no_k8_checks(mut self) -> Self {
+        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![Box::new(LocalClusterCheck)];
         self.checks.extend(checks);
         self
     }

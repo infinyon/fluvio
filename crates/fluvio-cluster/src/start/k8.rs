@@ -50,7 +50,7 @@ use crate::tls_config_to_cert_paths;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, ClusterChecker};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::UserChartLocation;
-use crate::progress::{InstallProgressMessage};
+use crate::progress::InstallProgressMessage;
 
 use super::constants::*;
 use super::common::try_connect_to_sc;

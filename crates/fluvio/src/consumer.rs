@@ -19,7 +19,7 @@ use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_protocol::record::Batch;
 
-use crate::{FluvioError};
+use crate::FluvioError;
 use crate::metrics::ClientMetrics;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};

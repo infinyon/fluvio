@@ -10,7 +10,7 @@ use fluvio_future::{net::TcpStream, openssl::DefaultServerTlsStream};
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use flv_tls_proxy::authenticator::Authenticator;
 
-use super::request::{AuthRequest};
+use super::request::AuthRequest;
 
 #[derive(Debug)]
 struct ScopeBindings(HashMap<String, Vec<String>>);

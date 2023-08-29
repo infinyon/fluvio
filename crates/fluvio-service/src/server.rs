@@ -14,7 +14,7 @@ use fluvio_future::net::{TcpListener, TcpStream};
 use fluvio_future::task::spawn;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use fluvio_socket::{FluvioSocket};
+use fluvio_socket::FluvioSocket;
 use fluvio_types::event::StickyEvent;
 
 pub struct ConnectInfo {

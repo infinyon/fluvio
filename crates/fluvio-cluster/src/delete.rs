@@ -12,7 +12,7 @@ use crate::helm::HelmClient;
 use crate::charts::{APP_CHART_NAME, SYS_CHART_NAME};
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
-use crate::{DEFAULT_NAMESPACE};
+use crate::DEFAULT_NAMESPACE;
 use crate::error::UninstallError;
 use crate::ClusterError;
 use crate::start::local::DEFAULT_DATA_DIR;
@@ -60,14 +60,20 @@ pub struct ClusterUninstaller {
     /// Configuration options for this process
     config: ClusterUninstallConfig,
     /// Helm client for performing uninstalls
-    helm_client: HelmClient,
+    helm_client: Option<HelmClient>,
     pb_factory: ProgressBarFactory,
 }
 
 impl ClusterUninstaller {
     fn from_config(config: ClusterUninstallConfig) -> Result<Self, ClusterError> {
+        let helm_client = if config.uninstall_k8 || config.uninstall_sys {
+            Some(HelmClient::new().map_err(UninstallError::HelmError)?)
+        } else {
+            None
+        };
+
         Ok(ClusterUninstaller {
-            helm_client: HelmClient::new().map_err(UninstallError::HelmError)?,
+            helm_client,
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
         })
@@ -100,7 +106,13 @@ impl ClusterUninstaller {
         let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
             .ignore_not_found();
-        self.helm_client
+
+        let Some(ref helm_client) = self.helm_client else {
+            return Err(ClusterError::Uninstall(UninstallError::Other(
+                "Helm client not found".to_string(),
+            )));
+        };
+        helm_client
             .uninstall(uninstall)
             .map_err(UninstallError::HelmError)?;
 
@@ -116,7 +128,12 @@ impl ClusterUninstaller {
 
         let pb = self.pb_factory.create()?;
         pb.set_message("Uninstalling Fluvio sys chart");
-        self.helm_client
+        let Some(ref helm_client) = self.helm_client else {
+            return Err(ClusterError::Uninstall(UninstallError::Other(
+                "Helm client not found".to_string(),
+            )));
+        };
+        helm_client
             .uninstall(
                 UninstallArg::new(self.config.sys_chart_name.to_owned())
                     .namespace(self.config.namespace.to_owned())

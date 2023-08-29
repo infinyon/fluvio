@@ -4,7 +4,7 @@ use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
 use crate::check::ClusterCheckError;
-use crate::{LocalInstallError};
+use crate::LocalInstallError;
 use crate::ClusterError;
 
 /// Cluster Command Error

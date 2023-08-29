@@ -16,7 +16,11 @@ use crate::{cli::ClusterCliError, cli::ClusterTarget};
 use crate::progress::ProgressBarFactory;
 
 #[derive(Debug, Parser)]
-pub struct StatusOpt {}
+pub struct StatusOpt {
+    /// Skip Kubernetes cluster checks
+    #[clap(long)]
+    no_k8: bool,
+}
 
 macro_rules! pad_format {
     ( $e:expr ) => {
@@ -41,7 +45,9 @@ impl StatusOpt {
             Self::profile_name(&config_file).italic()
         ));
 
-        Self::check_k8s_cluster(&pb).await?;
+        if !self.no_k8 {
+            let _ = Self::check_k8s_cluster(&pb).await;
+        }
         Self::check_sc(&pb, &fluvio_config, &config_file).await?;
         Self::check_spus(&pb, &fluvio_config).await?;
         Self::check_topics(&pb, &fluvio_config).await?;

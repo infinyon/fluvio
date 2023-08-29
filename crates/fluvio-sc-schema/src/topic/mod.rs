@@ -15,7 +15,7 @@ mod convert {
 
     use crate::CreatableAdminSpec;
     use crate::DeletableAdminSpec;
-    use crate::{AdminSpec};
+    use crate::AdminSpec;
 
     use super::TopicSpec;
 

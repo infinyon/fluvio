@@ -96,6 +96,7 @@ impl ConfigFile {
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
+        debug!(?path_ref, "loading from");
         let file_str: String = read_to_string(path_ref)
             .map_err(|e| config_file_error(&format!("{:?}", path_ref.as_os_str()), e))?;
         let config = toml::from_str(&file_str).map_err(|e| ConfigError::TomlError {
