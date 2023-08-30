@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::os::fd::BorrowedFd;
 use std::os::unix::io::RawFd;
 use std::io::{Error as IoError, ErrorKind, Cursor};
 
@@ -86,8 +87,12 @@ impl Iterator for FileBatchIterator {
         let offset: i32 = offset.try_into().unwrap();
 
         let mut header = vec![0u8; BATCH_FILE_HEADER_SIZE];
-        let bytes_read = match pread(self.fd, &mut header, offset)
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
+        let bytes_read = match pread(
+            unsafe { BorrowedFd::borrow_raw(self.fd) },
+            &mut header,
+            offset,
+        )
+        .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
         {
             Ok(bytes) => bytes,
             Err(err) => return Some(Err(err)),
@@ -132,8 +137,12 @@ impl Iterator for FileBatchIterator {
         #[cfg(all(target_pointer_width = "32", target_env = "gnu"))]
         let offset: i32 = offset.try_into().unwrap();
 
-        let bytes_read = match pread(self.fd, &mut raw_records, offset)
-            .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
+        let bytes_read = match pread(
+            unsafe { BorrowedFd::borrow_raw(self.fd) },
+            &mut raw_records,
+            offset,
+        )
+        .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {err}")))
         {
             Ok(bytes) => bytes,
             Err(err) => return Some(Err(err)),
