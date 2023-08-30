@@ -28,7 +28,7 @@ tracing = { workspace = true }
 bytes = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "env"]}
 thiserror = { workspace = true }
-nix = { workspace = true }
+nix = { workspace = true, features = ["uio"]}
 toml = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
 async-trait = { workspace = true }
