@@ -26,6 +26,7 @@ Table of contents:
   - [Running tests](#running-tests)
     - [Testing dependencies](#testing-dependencies)
       - [Installing Bats-core](#installing-bats-core)
+      - [Building smart modules](#building-smart-modules)
     - [Running local smoke test](#running-local-smoke-test)
     - [Running Kubernetes smoke test](#running-kubernetes-smoke-test)
     - [Running CLI smoke test](#running-cli-smoke-test)
@@ -93,20 +94,23 @@ Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install th
 
 ### Linker Pre-requisites
 
-Zig and LLD(version 12 or higher) are required to build binaries
+Zig and LLVM LLD(version 12 or higher) are required to build binaries.
 
 For mac:
 
+```bash
+$ brew install llvm@16
+$ ./actions/zig-install.sh
+$ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
 ```
-./actions/zig-install.sh macos-12
-export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm@14/bin/lld
-```
+
+LLVM is required for building docker image since it requires cross platform linker
+
 
 For ubuntu:
 
-```
-./actions/zig-install.sh ubuntu-latest
-export FLUVIO_BUILD_LLD=lld-12
+```bash
+$ ./actions/zig-install.sh
 ```
 
 ### Problem installing lld

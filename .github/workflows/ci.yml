@@ -34,6 +34,7 @@ env:
   K3D_VERSION: v5.4.9
   BATS_VERSION: 1.9.0
   MINIKUBE_VERSION: v1.30.1
+#  LLVM_VERSION: 16
   K8_VERSION: v1.26.3
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
@@ -89,10 +90,6 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "14.0"
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2

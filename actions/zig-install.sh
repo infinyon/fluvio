@@ -1,38 +1,48 @@
 #!/bin/bash
-# set up sccache
+# Install Zig
+# This is optimized for installing on GitHub Actions
+# To install llvm in Apple silicon, `brew install llvm@LLVM_VER`
 set -e
 MATRIX_OS=${1}
 ZIG_VER=0.11.0
-LLVM_VER=14
 ARCH=x86_64
-echo "installing zig matrix.os=$MATRIX_OS version=$ZIG_VER"
-
-if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
-    echo "installing zig on ubuntu"
-    echo "LLVM is available on: $LLVM_PATH"
-    wget https://ziglang.org/download/$ZIG_VER/zig-linux-$ARCH-$ZIG_VER.tar.xz && \
-    tar -xf zig-linux-$ARCH-$ZIG_VER.tar.xz && \
-    sudo mv zig-linux-$ARCH-$ZIG_VER /usr/local && \
-    pushd /usr/local/bin && \
-    sudo ln -s ../zig-linux-$ARCH-$ZIG_VER/zig . && \
-    popd && \
-    rm zig-linux-x86_64-0.9.1.tar.* && \
-    echo "FLUVIO_BUILD_LLD=$LLVM_PATH/bin/lld" | tee -a $GITHUB_ENV
-fi
-
-# remove zig
-if [[ "$MATRIX_OS" == "ubuntu-cleanup" ]]; then
-    echo "removing zig"
-    sudo rm -rf /usr/local/zig-linux-$ARCH-$ZIG_VER && \
-    sudo rm -rf /usr/local/bin/zig
-fi
-
-if [[ "$MATRIX_OS" == "macos-12" ]]; then
-    echo "installing zig on mac"
- #   brew update
-    brew install zig && \
-    echo "FLUVIO_BUILD_LLD=/opt/homebrew/opt/llvm@13/bin/lld" | tee -a $GITHUB_ENV
-fi
+OS=linux
 
 
+# auto detect OS
+unameOS="$(uname -s)"
+case "${unameOS}" in
+    Linux*)     OS=linux;;
+    Darwin*)    OS=macos;;
+    *)          machine="UNKNOWN:${unameOut}"
+esac
 
+unameARCH="$(uname -m)"
+case "${unameARCH}" in
+    arm64*)     ARCH=aarch64;;
+    aarch64*)   ARCH=aarch64;;
+    x86_64*)    ARCH=x86_64;;
+    *)          machine="UNKNOWN:${unameARCH}"
+esac
+
+echo "installing zig $ZIG_VER on $OS $ARCH"
+
+wget https://ziglang.org/download/$ZIG_VER/zig-$OS-$ARCH-$ZIG_VER.tar.xz && \
+tar -xf zig-$OS-$ARCH-$ZIG_VER.tar.xz && \
+sudo mv zig-$OS-$ARCH-$ZIG_VER /usr/local && \
+pushd /usr/local/bin && \
+sudo ln -s ../zig-$OS-$ARCH-$ZIG_VER/zig . && \
+popd && \
+sudo rm zig-$OS-$ARCH-$ZIG_VER.tar.*
+
+
+# output FLUVIO_BUILD_LLD if runnin in CI
+
+#if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then    
+#    echo "FLUVIO_BUILD_LLD=$LLVM_PATH/bin/lld" | tee -a $GITHUB_ENV
+#fi
+
+
+#if [[ "$MATRIX_OS" == "macos-12" ]]; then
+#    echo "FLUVIO_BUILD_LLD=/opt/homebrew/opt/llvm@$LLVM_VER/bin/lld" | tee -a $GITHUB_ENV
+#fi
