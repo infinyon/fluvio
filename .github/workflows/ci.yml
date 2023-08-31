@@ -91,7 +91,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
       - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
+        uses: KyleMayes/install-llvm-action@v1.8.3
         with:
           version: "${{ env.LLVM_VERSION }}"
       - name: Install zig
