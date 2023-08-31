@@ -8,7 +8,6 @@ Table of contents:
     - [Kubernetes dependencies](#kubernetes-dependencies)
       - [Helm](#helm)
     - [Linker Pre-requisites](#linker-pre-requisites)
-    - [Problem installing lld](#problem-installing-lld)
   - [Building and running Fluvio cluster from source code for local binaries](#building-and-running-fluvio-cluster-from-source-code-for-local-binaries)
     - [Building the CLI binary](#building-the-cli-binary)
     - [Building the Cluster binary](#building-the-cluster-binary)
@@ -94,9 +93,11 @@ Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install th
 
 ### Linker Pre-requisites
 
-Zig is used for compiling C code. 
+Zig and LLVM is required. 
 
 For mac:
+
+You can skip LLVM if you are not building docker image.
 
 ```bash
 $ brew install llvm@16
@@ -104,18 +105,15 @@ $ ./actions/zig-install.sh
 $ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
 ```
 
-LLVM is only required for building docker image since it requires cross platform linker for aarch64-unknown-linux-musl.  Otherwise, you can skip installing LLVM.
-
 
 For ubuntu:
+
+See https://apt.llvm.org for installing LLVM.
 
 ```bash
 $ ./actions/zig-install.sh
 ```
 
-### Problem installing lld
-
-If you have a problem installing `lld`, please see https://apt.llvm.org.
 
 ## Building and running Fluvio cluster from source code for local binaries
 

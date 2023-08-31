@@ -34,15 +34,3 @@ pushd /usr/local/bin && \
 sudo ln -s ../zig-$OS-$ARCH-$ZIG_VER/zig . && \
 popd && \
 sudo rm zig-$OS-$ARCH-$ZIG_VER.tar.*
-
-
-# output FLUVIO_BUILD_LLD if runnin in CI
-
-#if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then    
-#    echo "FLUVIO_BUILD_LLD=$LLVM_PATH/bin/lld" | tee -a $GITHUB_ENV
-#fi
-
-
-if [[ "$MATRIX_OS" == "macos-12" ]]; then
-    echo "FLUVIO_BUILD_LLD=/opt/homebrew/opt/llvm@$LLVM_VER/bin/lld" | tee -a $GITHUB_ENV
-fi
