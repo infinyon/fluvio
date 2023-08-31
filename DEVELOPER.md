@@ -94,7 +94,7 @@ Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install th
 
 ### Linker Pre-requisites
 
-Zig and LLVM LLD(version 12 or higher) are required to build binaries.
+Zig is used for compiling C code. 
 
 For mac:
 
@@ -104,7 +104,7 @@ $ ./actions/zig-install.sh
 $ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
 ```
 
-LLVM is required for building docker image since it requires cross platform linker
+LLVM is only required for building docker image since it requires cross platform linker for aarch64-unknown-linux-musl.  Otherwise, you can skip installing LLVM.
 
 
 For ubuntu:

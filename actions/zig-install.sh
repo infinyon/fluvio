@@ -43,6 +43,6 @@ sudo rm zig-$OS-$ARCH-$ZIG_VER.tar.*
 #fi
 
 
-#if [[ "$MATRIX_OS" == "macos-12" ]]; then
-#    echo "FLUVIO_BUILD_LLD=/opt/homebrew/opt/llvm@$LLVM_VER/bin/lld" | tee -a $GITHUB_ENV
-#fi
+if [[ "$MATRIX_OS" == "macos-12" ]]; then
+    echo "FLUVIO_BUILD_LLD=/opt/homebrew/opt/llvm@$LLVM_VER/bin/lld" | tee -a $GITHUB_ENV
+fi
