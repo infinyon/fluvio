@@ -7,6 +7,7 @@ MATRIX_OS=${1}
 ZIG_VER=0.11.0
 ARCH=x86_64
 OS=linux
+LLVM_VER=16
 
 
 # auto detect OS
@@ -36,6 +37,7 @@ popd && \
 sudo rm zig-$OS-$ARCH-$ZIG_VER.tar.*
 
 
+# For github actions, we need to point to specific lld version
 if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then    
-    echo "FLUVIO_BUILD_LLD=$LLVM_PATH/bin/lld" | tee -a $GITHUB_ENV
+    echo "FLUVIO_BUILD_LLD=/usr/bin/lld-$LLVM_VER" | tee -a $GITHUB_ENV
 fi
