@@ -70,7 +70,7 @@ Most of these are required for building a docker image: it is also possible to n
 
 * make
 * zig
-* lld (v14)
+* lld (v16)
 * git
 
 ### Kubernetes dependencies
@@ -108,7 +108,7 @@ $ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
 
 For ubuntu:
 
-See https://apt.llvm.org for installing LLVM.
+See https://apt.llvm.org for installing LLVM.  LLVM up to 16 is confirmed to work.
 
 ```bash
 $ ./actions/zig-install.sh
