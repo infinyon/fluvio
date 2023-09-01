@@ -12,7 +12,7 @@ use crate::helm::HelmClient;
 use crate::charts::{APP_CHART_NAME, SYS_CHART_NAME};
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
-use crate::{DEFAULT_NAMESPACE};
+use crate::DEFAULT_NAMESPACE;
 use crate::error::UninstallError;
 use crate::ClusterError;
 use crate::start::local::DEFAULT_DATA_DIR;
