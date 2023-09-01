@@ -277,19 +277,14 @@ jobs:
           name: fluvio-run-${{ matrix.rust-target }}
           path: .
 
-      - name: Download fluvio-cli
-        uses: actions/download-artifact@v3
-        with:
-          name: fluvio-${{ matrix.rust-target }}
-          path: .
+      - name: Print fluvio-run path
+        run: pwd && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h || true
 
       # Build and upload docker image
       - name: Build Docker image
-        run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)"
-
+        run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
-
       - name: Upload tarball as artifact
         uses: actions/upload-artifact@v3
         with:

@@ -8,14 +8,14 @@ readonly PROGDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # PARAMS:
 # $1: The tag to build this Docker image with
 #       Ex: 0.7.4-abcdef (where abcdef is a git commit)
-# $2: The path to the executables
-#       Ex: target/x86_64-unknown-linux-musl/$CARGO_PROFILE
+# $2: The path to the fluvio-run executable
+#       Ex: target/x86_64-unknown-linux-musl/$CARGO_PROFILE/fluvio-run
 # $3: Whether to build this Docker image in the Minikube context
 #       Ex: true, yes, or anything else that is non-empty
 main() {
   local -r target=$1; shift
   local -r commit_hash=$1; shift
-  local -r executables=$1; shift
+  local -r fluvio_run=$1; shift
   local -r K8=$1
   local -r tmp_dir=$(mktemp -d -t fluvio-docker-image-XXXXXX)
   local -r docker_repo="infinyon/fluvio"
@@ -26,10 +26,8 @@ main() {
     eval $(minikube -p minikube docker-env --shell=bash)
   fi
 
-  cp "${executables}/fluvio-run" "${tmp_dir}/fluvio-run"
-  cp "${executables}/fluvio" "${tmp_dir}/fluvio"
+  cp "${fluvio_run}" "${tmp_dir}/fluvio-run"
   chmod +x "${tmp_dir}/fluvio-run"
-  chmod +x "${tmp_dir}/fluvio"
   cp "${PROGDIR}/fluvio.Dockerfile" "${tmp_dir}/Dockerfile"
 
   if [ "$target" = "aarch64-unknown-linux-musl" ]; then
