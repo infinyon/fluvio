@@ -8,7 +8,6 @@ Table of contents:
     - [Kubernetes dependencies](#kubernetes-dependencies)
       - [Helm](#helm)
     - [Linker Pre-requisites](#linker-pre-requisites)
-    - [Problem installing lld](#problem-installing-lld)
   - [Building and running Fluvio cluster from source code for local binaries](#building-and-running-fluvio-cluster-from-source-code-for-local-binaries)
     - [Building the CLI binary](#building-the-cli-binary)
     - [Building the Cluster binary](#building-the-cluster-binary)
@@ -26,6 +25,7 @@ Table of contents:
   - [Running tests](#running-tests)
     - [Testing dependencies](#testing-dependencies)
       - [Installing Bats-core](#installing-bats-core)
+      - [Building smart modules](#building-smart-modules)
     - [Running local smoke test](#running-local-smoke-test)
     - [Running Kubernetes smoke test](#running-kubernetes-smoke-test)
     - [Running CLI smoke test](#running-cli-smoke-test)
@@ -70,7 +70,7 @@ Most of these are required for building a docker image: it is also possible to n
 
 * make
 * zig
-* lld (v14)
+* lld (v16)
 * git
 
 ### Kubernetes dependencies
@@ -93,25 +93,27 @@ Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install th
 
 ### Linker Pre-requisites
 
-Zig and LLD(version 12 or higher) are required to build binaries
+Zig and LLVM is required. 
 
 For mac:
 
+You can skip LLVM if you are not building docker image.
+
+```bash
+$ brew install llvm@16
+$ ./actions/zig-install.sh
+$ export PATH="/opt/homebrew/opt/llvm@16/bin:$PATH"
 ```
-./actions/zig-install.sh macos-12
-export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm@14/bin/lld
-```
+
 
 For ubuntu:
 
-```
-./actions/zig-install.sh ubuntu-latest
-export FLUVIO_BUILD_LLD=lld-12
+See https://apt.llvm.org for installing LLVM.  LLVM up to 16 is confirmed to work.
+
+```bash
+$ ./actions/zig-install.sh
 ```
 
-### Problem installing lld
-
-If you have a problem installing `lld`, please see https://apt.llvm.org.
 
 ## Building and running Fluvio cluster from source code for local binaries
 
