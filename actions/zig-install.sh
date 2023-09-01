@@ -35,9 +35,3 @@ pushd /usr/local/bin && \
 sudo ln -s ../zig-$OS-$ARCH-$ZIG_VER/zig . && \
 popd && \
 sudo rm zig-$OS-$ARCH-$ZIG_VER.tar.*
-
-
-# For github actions, we need to point to specific lld version
-if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then    
-    echo "FLUVIO_BUILD_LLD=/usr/bin/lld-$LLVM_VER" | tee -a $GITHUB_ENV
-fi
