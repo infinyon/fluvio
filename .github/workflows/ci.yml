@@ -95,7 +95,7 @@ jobs:
         with:
           version: "${{ env.LLVM_VERSION }}"
       - name: Install zig
-        run: ./actions/zig-install.sh ${{ matrix.os }}
+        run: ./actions/zig-install.sh
       - uses: Swatinem/rust-cache@v2
         timeout-minutes: 10
         with:
