@@ -1,6 +1,6 @@
 use syn::{
-    AttributeArgs, Result, Error, NestedMeta, Meta, spanned::Spanned, ItemFn, Ident, FnArg, Path,
-    Type, Lit, ItemStruct,
+    Result, Error, Meta, spanned::Spanned, ItemFn, Ident, FnArg, Path, Type, Lit, ItemStruct,
+    punctuated::Punctuated, Token, Expr,
 };
 
 pub(crate) enum ConnectorDirection {
@@ -9,10 +9,10 @@ pub(crate) enum ConnectorDirection {
 }
 
 impl ConnectorDirection {
-    pub(crate) fn from_ast(args: &AttributeArgs) -> Result<Self> {
+    pub(crate) fn from_ast(args: &Punctuated<Meta, Token![,]>) -> Result<Self> {
         args.iter()
             .find_map(|item| match item {
-                NestedMeta::Meta(Meta::Path(p)) => p.segments.iter().last().and_then(|p_it| {
+                Meta::Path(p) =>  p.segments.iter().last().and_then(|p_it| {
                     match p_it.ident.to_string().as_str() {
                         "source" => Some(Self::Source),
                         "sink" => Some(Self::Sink),
@@ -59,10 +59,13 @@ pub struct ConnectorConfigStruct<'a> {
 }
 
 impl<'a> ConnectorConfigStruct<'a> {
-    pub fn from_ast(args: &AttributeArgs, item_struct: &'a ItemStruct) -> Result<Self> {
+    pub fn from_ast(
+        args: &Punctuated<Meta, Token![,]>,
+        item_struct: &'a ItemStruct,
+    ) -> Result<Self> {
         args.iter()
             .find(|item| match item {
-                NestedMeta::Meta(Meta::Path(p)) => p.is_ident("config"),
+                Meta::Path(p) => p.is_ident("config"),
                 _ => false,
             })
             .ok_or_else(|| {
@@ -101,12 +104,14 @@ fn config_type_path(arg: &FnArg) -> Result<&Path> {
     }
 }
 
-fn config_name(args: &AttributeArgs) -> Result<String> {
+fn config_name(args: &Punctuated<Meta, Token![,]>) -> Result<String> {
     for arg in args {
         match arg {
-            NestedMeta::Meta(Meta::NameValue(name_value)) if name_value.path.is_ident("name") => {
-                if let Lit::Str(lit_str) = &name_value.lit {
-                    return Ok(lit_str.value());
+            Meta::NameValue(name_value) if name_value.path.is_ident("name") => {
+                if let Expr::Lit(lit_expr) = &name_value.value {
+                    if let Lit::Str(lit_str) = &lit_expr.lit {
+                        return Ok(lit_str.value());
+                    }
                 }
             }
             _ => {}

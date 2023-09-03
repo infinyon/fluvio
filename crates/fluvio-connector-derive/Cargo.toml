@@ -11,6 +11,6 @@ description = "Fluvio SmartConnector procedural macro"
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0", default-features = false, features = ["full", "parsing", "proc-macro", "derive", "printing"] }
+syn = { workspace = true, features = ["full"] }
 quote =  { workspace = true }
 proc-macro2 = { workspace = true }
