@@ -72,7 +72,7 @@ jobs:
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
@@ -142,7 +142,7 @@ jobs:
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v3
         with:
@@ -212,7 +212,7 @@ jobs:
         run: [r1]
         spu: [1]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v3
         with:
@@ -268,7 +268,7 @@ jobs:
         rust: [stable]
     steps:
       # Needed for k8-util/docker/build.sh
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Download artifacts
       - name: Download fluvio-run
@@ -311,7 +311,7 @@ jobs:
         k8: [kind]
         spu: [1]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # Download artifacts
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v3

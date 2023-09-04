@@ -27,7 +27,7 @@ jobs:
     name: Publish Docker Image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Publish latest development Fluvio Image
         env:
@@ -53,7 +53,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install fluvio-package
         env:
           CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
@@ -98,7 +98,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install stable Fluvio CLI
         env:
           CHANNEL_TAG: stable
