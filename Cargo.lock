@@ -4544,15 +4544,15 @@ dependencies = [
 
 [[package]]
 name = "k8-config"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c5357f8ba9845834f5c281d0702621b85365f0893909bc14c89b204ee074b11"
+checksum = "8b6c0a748d5a200177c5095396eff7757dbf972035ff9771fe495898a77c575b"
 dependencies = [
- "dirs 4.0.0",
+ "dirs 5.0.1",
  "hostfile",
  "serde",
  "serde_json",
- "serde_yaml 0.8.26",
+ "serde_yaml 0.9.25",
  "thiserror",
  "tracing",
 ]
@@ -6547,18 +6547,6 @@ checksum = "ef8099d3df28273c99a1728190c7a9f19d444c941044f64adf986bee7ec53051"
 dependencies = [
  "dtoa",
  "linked-hash-map",
- "serde",
- "yaml-rust",
-]
-
-[[package]]
-name = "serde_yaml"
-version = "0.8.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "578a7433b776b56a35785ed5ce9a7e777ac0598aac5a6dd1b4b18a307c7fc71b"
-dependencies = [
- "indexmap 1.9.3",
- "ryu",
  "serde",
  "yaml-rust",
 ]
