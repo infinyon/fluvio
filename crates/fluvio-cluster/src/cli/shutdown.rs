@@ -1,21 +1,26 @@
-use std::fs::{remove_file};
+use std::fs::remove_file;
+use std::process::Command;
 
 use clap::Parser;
 use tracing::debug;
 use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
+use fluvio_command::CommandExt;
 
 use crate::render::ProgressRenderer;
-use crate::{cli::ClusterCliError};
+use crate::cli::ClusterCliError;
 use crate::progress::ProgressBarFactory;
-use crate::ClusterError;
+use crate::{ClusterError, UninstallError};
 
 #[derive(Debug, Parser)]
 pub struct ShutdownOpt {
     /// shutdown local spu/sc
     #[arg(long)]
     local: bool,
+
+    #[arg(long)]
+    no_k8: bool,
 }
 
 impl ShutdownOpt {
@@ -74,6 +79,10 @@ impl ShutdownOpt {
         kill_proc("fluvio", Some(&["run".into()]));
         kill_proc("fluvio-run", None);
 
+        if !self.no_k8 {
+            let _ = self.remove_custom_objects("spus", true);
+        }
+
         // remove monitoring socket
         match remove_file(SPU_MONITORING_UNIX_SOCKET) {
             Ok(_) => {
@@ -90,6 +99,20 @@ impl ShutdownOpt {
 
         pb.println("Uninstalled fluvio local components");
         pb.finish_and_clear();
+
+        Ok(())
+    }
+
+    /// Remove objects of specified type, namespace
+    fn remove_custom_objects(&self, object_type: &str, force: bool) -> Result<(), UninstallError> {
+        let mut cmd = Command::new("kubectl");
+        cmd.arg("delete");
+        cmd.arg(object_type);
+        cmd.arg("--all");
+        if force {
+            cmd.arg("--force");
+        }
+        cmd.result()?;
 
         Ok(())
     }

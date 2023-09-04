@@ -55,6 +55,7 @@ impl StickyEvent {
 }
 
 pub mod offsets {
+    use std::fmt;
     use std::sync::atomic::{AtomicI64, Ordering};
     use std::sync::Arc;
 
@@ -115,6 +116,12 @@ pub mod offsets {
     pub struct OffsetChangeListener {
         publisher: Arc<OffsetPublisher>,
         last_value: i64,
+    }
+
+    impl fmt::Debug for OffsetChangeListener {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "OffsetCL{}", self.last_value)
+        }
     }
 
     impl OffsetChangeListener {

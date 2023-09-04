@@ -1,4 +1,4 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 use tracing::{info, debug, instrument};
 use derive_builder::Builder;

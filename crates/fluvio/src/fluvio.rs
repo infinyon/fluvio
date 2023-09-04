@@ -302,11 +302,8 @@ mod wasm_tests {
     use async_trait::async_trait;
     use fluvio_ws_stream_wasm::WsMeta;
     use std::io::Error as IoError;
-    use fluvio_future::{
-        net::{
-            BoxReadConnection, BoxWriteConnection, DomainConnector, TcpDomainConnector,
-            ConnectionFd,
-        },
+    use fluvio_future::net::{
+        BoxReadConnection, BoxWriteConnection, DomainConnector, TcpDomainConnector, ConnectionFd,
     };
     #[derive(Clone, Default)]
     pub struct FluvioWebsocketConnector {}

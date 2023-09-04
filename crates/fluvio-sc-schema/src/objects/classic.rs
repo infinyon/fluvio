@@ -7,7 +7,7 @@ mod object_macro {
 
     /// Macro to objectify generic Request/Response for Admin Objects
     /// AdminSpec is difficult to turn into TraitObject due to associated types and use of other derived
-    /// properties such as `PartialEq`.  This generates all possible variation of given API.  
+    /// properties such as `PartialEq`.  This generates all possible variation of given API.
     /// Not all variation will be constructed or used
     macro_rules! ClassicObjectApiEnum {
         ($api:ident) => {

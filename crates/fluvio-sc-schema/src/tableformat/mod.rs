@@ -4,7 +4,7 @@ mod convert {
 
     use crate::{DeletableAdminSpec, CreatableAdminSpec};
 
-    use crate::{AdminSpec};
+    use crate::AdminSpec;
     use super::TableFormatSpec;
 
     impl AdminSpec for TableFormatSpec {}

@@ -5,8 +5,8 @@ use anyhow::Error as AnyError;
 use indicatif::style::TemplateError;
 
 use fluvio::FluvioError;
-use k8_config::{ConfigError as K8ConfigError};
-use k8_client::{ClientError as K8ClientError};
+use k8_config::ConfigError as K8ConfigError;
+use k8_client::ClientError as K8ClientError;
 use fluvio_helm::HelmError;
 use fluvio_command::CommandError;
 
