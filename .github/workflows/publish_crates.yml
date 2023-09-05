@@ -27,7 +27,7 @@ jobs:
   #  name: CD_Dev check
   #  runs-on: ubuntu-latest
   #  steps:
-  #    - uses: actions/checkout@v3
+  #    - uses: actions/checkout@v4
   #    - name: Login GH CLI
   #      run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
   #    - name: Get status of latest CD_Dev run
@@ -59,7 +59,7 @@ jobs:
           profile: minimal
           override: true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.commit }}
 
