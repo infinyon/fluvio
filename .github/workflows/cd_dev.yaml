@@ -43,7 +43,7 @@ jobs:
       SLEEP: 10
       TOPIC: foobar
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up K3d for Ubuntu
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -126,7 +126,7 @@ jobs:
     env:
       FLV_SOCKET_WAIT: 600
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup K3d
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
@@ -168,7 +168,7 @@ jobs:
         os: [ubuntu-latest]
         version: [latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set the expected fluvio version
         run: |
           if [[ -z "${{ env.USE_VERSION }}" ]]; then
@@ -213,7 +213,7 @@ jobs:
         cluster_version: [stable, latest]
         cli_version: [stable, latest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:

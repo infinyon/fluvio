@@ -44,7 +44,7 @@ jobs:
       SLEEP: 10
       TOPIC: foobar
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up K3d for Ubuntu
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
