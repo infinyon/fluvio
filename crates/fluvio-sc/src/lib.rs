@@ -11,6 +11,7 @@ mod init;
 mod error;
 mod services;
 mod controllers;
+mod monitoring;
 
 #[cfg(feature = "k8")]
 pub use init::start_main_loop;

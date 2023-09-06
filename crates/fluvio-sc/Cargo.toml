@@ -23,6 +23,11 @@ default = ["k8"]
 k8 = ["k8-client", "k8-types", "k8-metadata-client"]
 
 [dependencies]
+async-channel = { workspace = true }
+async-lock = { workspace = true }
+async-net = { workspace = true }
+async-trait = { workspace = true }
+event-listener = { workspace = true }
 rand = { workspace = true }
 tracing = { workspace = true }
 sysinfo = { workspace = true }
@@ -31,10 +36,6 @@ serde = { workspace = true, features = ['derive'] }
 serde_json = { workspace = true }
 futures-util = { workspace = true }
 regex = { workspace = true }
-async-trait = { workspace = true }
-async-lock = { workspace = true }
-async-channel = { workspace = true }
-event-listener = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 clap = { workspace = true,features = ["std", "derive", "env"]}
 semver = { workspace = true }

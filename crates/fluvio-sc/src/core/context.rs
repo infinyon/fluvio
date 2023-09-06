@@ -16,6 +16,8 @@ use crate::stores::smartmodule::*;
 use crate::stores::tableformat::*;
 use crate::stores::*;
 
+use super::metrics::ScMetrics;
+
 pub type SharedContext<C> = Arc<Context<C>>;
 pub type K8SharedContext = Arc<Context<K8MetaItem>>;
 
@@ -31,6 +33,7 @@ pub struct Context<C: MetadataItem> {
     tableformats: StoreContext<TableFormatSpec, C>,
     health: SharedHealthCheck,
     config: ScConfig,
+    metrics: Arc<ScMetrics>,
 }
 
 // -----------------------------------
@@ -53,6 +56,7 @@ impl<C: MetadataItem> Context<C> {
             tableformats: StoreContext::new(),
             health: HealthCheck::shared(),
             config,
+            metrics: Arc::new(ScMetrics::new()),
         }
     }
 
@@ -91,6 +95,10 @@ impl<C: MetadataItem> Context<C> {
     /// reference to config
     pub fn config(&self) -> &ScConfig {
         &self.config
+    }
+
+    pub(crate) fn metrics(&self) -> Arc<ScMetrics> {
+        self.metrics.clone()
     }
 
     #[cfg(feature = "k8")]

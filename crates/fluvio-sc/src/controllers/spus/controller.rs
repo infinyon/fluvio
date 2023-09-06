@@ -6,7 +6,7 @@ use std::io::Error as IoError;
 
 use fluvio_future::timer::sleep;
 use fluvio_stream_model::core::MetadataItem;
-use tracing::{debug, info, error, trace, instrument};
+use tracing::{debug, info, error, instrument};
 
 use fluvio_future::task::spawn;
 
@@ -14,15 +14,14 @@ use crate::core::SharedContext;
 use crate::stores::StoreContext;
 use crate::stores::spu::*;
 
-/// Reconcile SPU health status with Meta data
-/// if SPU has not send heart beat within a period, it is considered down
-pub struct SpuController<C: MetadataItem> {
+/// Reconcile SPU's health status with the health check cache
+pub struct SpuHealthCheckController<C: MetadataItem> {
     spus: StoreContext<SpuSpec, C>,
     health_check: SharedHealthCheck,
     counter: u64, // how many time we have been sync
 }
 
-impl<C: MetadataItem + 'static> SpuController<C> {
+impl<C: MetadataItem + 'static> SpuHealthCheckController<C> {
     pub fn start(ctx: SharedContext<C>) {
         let controller = Self {
             spus: ctx.spus().clone(),
@@ -51,8 +50,6 @@ impl<C: MetadataItem + 'static> SpuController<C> {
         use tokio::select;
 
         debug!("initializing listeners");
-        let mut spu_listener = self.spus.change_listener();
-        let _ = spu_listener.wait_for_initial_sync().await;
 
         let mut health_listener = self.health_check.listener();
         debug!("finished initializing listeners");
@@ -61,11 +58,6 @@ impl<C: MetadataItem + 'static> SpuController<C> {
             self.sync_store().await?;
 
             select! {
-                _ = spu_listener.listen() => {
-                    debug!("detected changes in spu store");
-                    spu_listener.load_last();
-
-                },
                 _ = health_listener.listen() => {
                     debug!("detected changes in health listener");
 
@@ -92,14 +84,18 @@ impl<C: MetadataItem + 'static> SpuController<C> {
             if let Some(health_status) = health_read.get(&spu_id) {
                 // if status is init, we can set health
                 if spu.status.is_init() {
+                    debug!("SPU is in init state setting health status");
                     if *health_status {
+                        debug!("health status is ok, setting spu online");
                         spu.status.set_online();
                     } else {
+                        debug!("health status is bad, setting spu offline");
                         spu.status.set_offline();
                     }
                     info!(id = spu.spec.id, status = %spu.status,"init => health status change");
                     changes.push(spu);
                 } else {
+                    debug!("SPU's status was already set, checking if we need to update");
                     // change if health is different
                     let old_status = spu.status.is_online();
                     if old_status != *health_status {
@@ -111,7 +107,7 @@ impl<C: MetadataItem + 'static> SpuController<C> {
                         info!(id = spu.spec.id, status = %spu.status,"update health status");
                         changes.push(spu);
                     } else {
-                        trace!(id = spu.spec.id, status = %spu.status,"ignoring health status");
+                        debug!(id = spu.spec.id, status = %spu.status,"ignoring health status");
                     }
                 }
             }

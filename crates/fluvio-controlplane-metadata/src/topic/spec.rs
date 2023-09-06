@@ -31,13 +31,16 @@ use super::deduplication::Deduplication;
 pub struct TopicSpec {
     replicas: ReplicaSpec,
     #[fluvio(min_version = 3)]
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     cleanup_policy: Option<CleanupPolicy>,
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     #[fluvio(min_version = 4)]
     storage: Option<TopicStorageConfig>,
     #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 6)]
     compression_type: CompressionAlgorithm,
     #[cfg_attr(feature = "use_serde", serde(default))]
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     #[fluvio(min_version = 12)]
     deduplication: Option<Deduplication>,
 }
@@ -211,10 +214,7 @@ impl ReplicaSpec {
     }
 
     pub fn is_computed(&self) -> bool {
-        match self {
-            Self::Computed(_) => true,
-            Self::Assigned(_) => false,
-        }
+        matches!(self, Self::Computed(_))
     }
 
     pub fn partitions(&self) -> PartitionCount {
@@ -548,6 +548,10 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMap {
     pub id: PartitionId,
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub replicas: Vec<SpuId>,
 }
 

@@ -7,22 +7,18 @@
 use std::sync::Arc;
 
 use fluvio_stream_model::core::MetadataItem;
-#[cfg(feature = "k8")]
 use k8_metadata_client::{MetadataClient, SharedClient};
 
 use crate::core::Context;
 use crate::core::SharedContext;
-use crate::controllers::spus::SpuController;
+use crate::controllers::spus::SpuHealthCheckController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
-#[cfg(feature = "k8")]
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
-#[cfg(feature = "k8")]
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
 use crate::services::auth::basic::BasicRbacPolicy;
 
-#[cfg(feature = "k8")]
 pub async fn start_main_loop_with_k8<C>(
     sc_config_policy: (ScConfig, Option<BasicRbacPolicy>),
     metadata_client: SharedClient<C>,
@@ -91,7 +87,7 @@ where
     C::UId: Send + Sync,
 {
     let config = ctx.config();
-    whitelist!(config, "spu", SpuController::start(ctx.clone()));
+    whitelist!(config, "spu", SpuHealthCheckController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
     whitelist!(
         config,

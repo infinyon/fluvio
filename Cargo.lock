@@ -2921,6 +2921,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-lock",
+ "async-net",
  "async-trait",
  "base64 0.21.3",
  "cfg-if",

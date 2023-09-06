@@ -20,13 +20,11 @@ use tracing::debug;
 use clap::Parser;
 
 use fluvio_types::print_cli_err;
-#[cfg(feature = "k8")]
 use k8_client::K8Config;
 use fluvio_future::openssl::TlsAcceptor;
 use fluvio_future::openssl::SslVerifyMode;
 
 use crate::services::auth::basic::BasicRbacPolicy;
-#[cfg(feature = "k8")]
 use crate::error::ScError;
 use crate::config::ScConfig;
 
@@ -48,7 +46,6 @@ pub struct ScOpt {
     /// Address for internal service
     bind_private: Option<String>,
 
-    #[cfg(feature = "k8")]
     // k8 namespace
     #[arg(short = 'n', long = "namespace", value_name = "namespace")]
     namespace: Option<String>,
@@ -85,7 +82,6 @@ impl ScOpt {
         self.local
     }
 
-    #[cfg(feature = "k8")]
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
@@ -119,10 +115,7 @@ impl ScOpt {
             config.private_endpoint = private_addr;
         }
 
-        #[cfg(feature = "k8")]
-        {
-            config.namespace = self.namespace.unwrap();
-        }
+        config.namespace = self.namespace.unwrap();
 
         config.x509_auth_scopes = self.x509_auth_scopes;
         config.white_list = self.white_list.into_iter().collect();
@@ -160,20 +153,8 @@ impl ScOpt {
         }
     }
 
-    #[cfg(feature = "k8")]
     pub fn parse_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
-            Err(err) => {
-                print_cli_err!(err);
-                process::exit(-1);
-            }
-            Ok(config) => config,
-        }
-    }
-
-    #[cfg(not(feature = "k8"))]
-    pub fn parse_cli_or_exit(self) -> (Config, Option<(String, TlsConfig)>) {
-        match self.as_sc_config() {
             Err(err) => {
                 print_cli_err!(err);
                 process::exit(-1);
