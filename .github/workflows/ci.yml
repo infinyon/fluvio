@@ -384,6 +384,13 @@ jobs:
           override: true
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
+
+      # based upon https://github.com/orgs/community/discussions/25678
+      # check test regularly runs out of disk space
+      - name: Save Space
+        if: matrix.check == 'test'
+        run: rm -rf /opt/hostedtoolcache
+
       - uses: Swatinem/rust-cache@v2
         timeout-minutes: 10
         with:
