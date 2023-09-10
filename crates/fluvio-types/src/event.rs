@@ -56,6 +56,7 @@ impl StickyEvent {
 
 pub mod offsets {
     use std::fmt;
+    use std::pin::Pin;
     use std::sync::atomic::{AtomicI64, Ordering};
     use std::sync::Arc;
 
@@ -88,7 +89,7 @@ pub mod offsets {
             self.current_value.load(DEFAULT_EVENT_ORDERING)
         }
 
-        fn listen(&self) -> EventListener {
+        fn listen(&self) -> Pin<Box<EventListener>> {
             self.event.listen()
         }
 
@@ -166,7 +167,7 @@ pub mod offsets {
                 return new_value;
             }
 
-            let listener = self.publisher.listen();
+            let listener = self.publisher.event.listen();
 
             if let Some(new_value) = self.has_new_value() {
                 self.last_value = new_value;
