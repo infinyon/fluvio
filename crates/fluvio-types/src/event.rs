@@ -167,7 +167,7 @@ pub mod offsets {
                 return new_value;
             }
 
-            let listener = self.publisher.event.listen();
+            let listener = self.publisher.listen();
 
             if let Some(new_value) = self.has_new_value() {
                 self.last_value = new_value;
