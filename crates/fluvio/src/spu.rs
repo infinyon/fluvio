@@ -109,7 +109,10 @@ impl Drop for SpuPool {
 
 impl SpuPool {
     /// start synchronize based on pool
-    pub fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError> {
+    pub(crate) fn start(
+        config: Arc<ClientConfig>,
+        metadata: MetadataStores,
+    ) -> Result<Self, SocketError> {
         debug!("starting spu pool");
         Ok(Self {
             metadata,
@@ -178,7 +181,7 @@ impl SpuPool {
             .is_some())
     }
 
-    pub fn shutdown(&mut self) {
+    pub(crate) fn shutdown(&mut self) {
         self.metadata.shutdown();
     }
 }

@@ -1,8 +1,8 @@
 mod controller;
 mod store;
 
-pub use store::*;
-pub use context::*;
+pub(crate) use store::*;
+pub(crate) use context::*;
 
 mod context {
 
@@ -50,7 +50,7 @@ mod context {
     }
 
     #[derive(Debug, Clone)]
-    pub struct StoreContext<S>
+    pub(crate) struct StoreContext<S>
     where
         S: Spec,
     {
@@ -67,7 +67,7 @@ mod context {
             }
         }
 
-        pub fn store(&self) -> &Arc<LocalStore<S, AlwaysNewContext>> {
+        pub(crate) fn store(&self) -> &Arc<LocalStore<S, AlwaysNewContext>> {
             &self.store
         }
 
@@ -78,7 +78,7 @@ mod context {
             fields(
                 Store = %S::LABEL            )
         )]
-        pub async fn lookup_by_key(
+        pub(crate) async fn lookup_by_key(
             &self,
             key: &S::IndexKey,
         ) -> Result<Option<CacheMetadataStoreObject<S>>, IoError>
@@ -146,7 +146,7 @@ mod context {
     }
 
     impl StoreContext<SpuSpec> {
-        pub async fn look_up_by_id(
+        pub(crate) async fn look_up_by_id(
             &self,
             id: i32,
         ) -> Result<CacheMetadataStoreObject<SpuSpec>, FluvioError> {
@@ -175,7 +175,7 @@ mod context {
             <S as Spec>::Status: Send + Sync,
             S::IndexKey: Send + Sync,
         {
-            pub fn watch(&self) -> impl Stream<Item = MetadataChanges<S, AlwaysNewContext>> {
+            pub(crate) fn watch(&self) -> impl Stream<Item = MetadataChanges<S, AlwaysNewContext>> {
                 let mut listener = self.store.change_listener();
                 let (sender, receiver) = async_channel::unbounded();
 
