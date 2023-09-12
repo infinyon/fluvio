@@ -131,6 +131,8 @@ tracing-subscriber = { version = "0.3", default-features = false }
 url = "2.1.1"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
+wasmtime = { version = "12.0.1" }
+wasmtime-wasi = { version = "12.0.1" }
 wasmparser = "0.112.0"
 which = "4.1.0"
 x509-parser = "0.15.0"
