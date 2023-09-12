@@ -38,7 +38,7 @@ impl UnregisterCustomSpuOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let delete_key = self.validate()?;
         let admin = fluvio.admin().await;
-        admin.delete::<CustomSpuSpec, _>(delete_key).await?;
+        admin.delete::<CustomSpuSpec>(delete_key).await?;
         Ok(())
     }
 

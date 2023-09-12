@@ -36,7 +36,7 @@ impl ClientCmd for DeleteSmartModuleOpt {
         let mut err_happened = false;
         for name in self.names.iter() {
             debug!(name, "deleting smartmodule");
-            if let Err(error) = admin.delete::<SmartModuleSpec, _>(name).await {
+            if let Err(error) = admin.delete::<SmartModuleSpec>(name).await {
                 err_happened = true;
                 if self.continue_on_error {
                     println!("smart module \"{name}\" delete failed with: {error}");

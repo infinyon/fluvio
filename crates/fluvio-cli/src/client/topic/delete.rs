@@ -29,7 +29,7 @@ impl DeleteTopicOpt {
         let mut err_happened = false;
         for name in self.names.iter() {
             debug!(name, "deleting topic");
-            if let Err(error) = admin.delete::<TopicSpec, _>(name).await {
+            if let Err(error) = admin.delete::<TopicSpec>(name).await {
                 err_happened = true;
                 if self.continue_on_error {
                     println!("topic \"{name}\" delete failed with: {error}");

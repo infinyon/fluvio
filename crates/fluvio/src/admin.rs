@@ -187,10 +187,9 @@ impl FluvioAdmin {
     /// Delete object by key
     /// key is depend on spec, most are string but some allow multiple types
     #[instrument(skip(self, key))]
-    pub async fn delete<S, K>(&self, key: K) -> Result<()>
+    pub async fn delete<S>(&self, key: impl Into<S::DeleteKey>) -> Result<()>
     where
-        S: DeletableAdminSpec + Sync + Send,
-        K: Into<S::DeleteKey>,
+        S: DeletableAdminSpec + Sync + Send
     {
         let delete_request: DeleteRequest<S> = DeleteRequest::new(key.into());
         debug!("sending delete request: {:#?}", delete_request);

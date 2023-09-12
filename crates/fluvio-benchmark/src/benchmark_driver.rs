@@ -140,7 +140,7 @@ impl BenchmarkDriver {
         let result = BenchmarkDriver::run_samples(config.clone(), all_stats.clone()).await;
         // Clean up topic
         admin
-            .delete::<TopicSpec, String>(config.topic_name.clone())
+            .delete::<TopicSpec>(config.topic_name.clone())
             .await?;
         debug!("Topic deleted successfully {}", config.topic_name);
 
