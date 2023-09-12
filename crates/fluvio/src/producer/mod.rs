@@ -237,9 +237,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule filter to this TopicProducer
-            pub async fn with_filter<T: Into<Vec<u8>>>(
+            pub async fn with_filter(
                 self,
-                filter: T,
+                filter: impl  Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -247,9 +247,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule FilterMap to this TopicProducer
-            pub async fn with_filter_map<T: Into<Vec<u8>>>(
+            pub async fn with_filter_map(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -257,9 +257,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule map to this TopicProducer
-            pub async fn with_map<T: Into<Vec<u8>>>(
+            pub async fn with_map(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -267,9 +267,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule array_map to this TopicProducer
-            pub async fn with_array_map<T: Into<Vec<u8>>>(
+            pub async fn with_array_map(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -277,9 +277,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule aggregate to this TopicProducer
-            pub async fn with_aggregate<T: Into<Vec<u8>>>(
+            pub async fn with_aggregate(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
                 accumulator: Vec<u8>,
             ) -> Result<Self> {
@@ -290,9 +290,9 @@ cfg_if::cfg_if! {
             }
 
             /// Use generic smartmodule (the type is detected in smartengine)
-            pub async fn with_smartmodule<T: Into<Vec<u8>>>(
+            pub async fn with_smartmodule(
                 self,
-                smartmodule: T,
+                smartmodule: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
                 context: SmartModuleContextData,
             ) -> Result<Self> {
@@ -426,10 +426,7 @@ impl TopicProducer {
         skip(self, key, value),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send<K, V>(&self, key: K, value: V) -> Result<ProduceOutput>
-    where
-        K: Into<RecordKey>,
-        V: Into<RecordData>,
+    pub async fn send(&self, key: impl Into<RecordKey>, value: impl Into<RecordData>) -> Result<ProduceOutput>
     {
         let record_key = key.into();
         let record_value = value.into();

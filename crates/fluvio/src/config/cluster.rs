@@ -44,7 +44,7 @@ impl FluvioConfig {
     }
 
     /// Create a new cluster configuration with no TLS.
-    pub fn new<S: Into<String>>(addr: S) -> Self {
+    pub fn new(addr: impl Into<String>) -> Self {
         Self {
             endpoint: addr.into(),
             use_spu_local_address: false,
@@ -54,7 +54,7 @@ impl FluvioConfig {
     }
 
     /// Add TLS configuration for this cluster.
-    pub fn with_tls<T: Into<TlsPolicy>>(mut self, tls: T) -> Self {
+    pub fn with_tls(mut self, tls: impl Into<TlsPolicy>) -> Self {
         self.tls = tls.into();
         self
     }
