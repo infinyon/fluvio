@@ -67,9 +67,7 @@ impl<T> EpochCounter<T> {
         Self { epoch: 0, inner }
     }
 
-    pub fn new_with_epoch<E>(inner: T, epoch: E) -> Self
-    where
-        E: Into<i64>,
+    pub fn new_with_epoch(inner: T, epoch: impl Into<i64>) -> Self
     {
         Self {
             epoch: epoch.into(),

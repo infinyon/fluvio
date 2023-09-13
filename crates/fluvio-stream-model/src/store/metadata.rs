@@ -28,10 +28,7 @@ where
     C: MetadataItem,
     S::Status: Default,
 {
-    pub fn new<J>(key: J, spec: S, status: S::Status) -> Self
-    where
-        J: Into<S::IndexKey>,
-    {
+    pub fn new(key: impl Into<S::IndexKey>, spec: S, status: S::Status) -> Self {
         Self {
             key: key.into(),
             spec,
@@ -40,10 +37,7 @@ where
         }
     }
 
-    pub fn new_with_context<J>(key: J, spec: S, ctx: MetadataContext<C>) -> Self
-    where
-        J: Into<S::IndexKey>,
-    {
+    pub fn new_with_context(key: impl Into<S::IndexKey>, spec: S, ctx: MetadataContext<C>) -> Self {
         Self {
             key: key.into(),
             spec,
@@ -52,18 +46,14 @@ where
         }
     }
 
-    pub fn with_spec<J>(key: J, spec: S) -> Self
+    pub fn with_spec(key: impl Into<S::IndexKey>, spec: S) -> Self
     where
-        J: Into<S::IndexKey>,
         C: Default,
     {
         Self::new(key.into(), spec, S::Status::default())
     }
 
-    pub fn with_key<J>(key: J) -> Self
-    where
-        J: Into<S::IndexKey>,
-    {
+    pub fn with_key(key: impl Into<S::IndexKey>) -> Self {
         Self::with_spec(key.into(), S::default())
     }
 

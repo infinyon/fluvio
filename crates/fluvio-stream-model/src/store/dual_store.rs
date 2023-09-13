@@ -55,9 +55,7 @@ where
     C: MetadataItem,
 {
     /// initialize local stores with list of metadata objects
-    pub fn bulk_new<N>(objects: Vec<N>) -> Self
-    where
-        N: Into<MetadataStoreObject<S, C>>,
+    pub fn bulk_new(objects: Vec<impl Into<MetadataStoreObject<S, C>>>) -> Self
     {
         let obj: Vec<MetadataStoreObject<S, C>> = objects.into_iter().map(|s| s.into()).collect();
         let mut map = HashMap::new();
