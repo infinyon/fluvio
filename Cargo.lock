@@ -2847,6 +2847,7 @@ dependencies = [
  "toml 0.7.6",
  "tracing",
  "tracing-subscriber",
+ "url",
  "wasmparser 0.112.0",
 ]
 
