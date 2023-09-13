@@ -122,6 +122,7 @@ jobs:
         run: make build-smdk
 
       - name: Build cdk
+        timeout-minutes: 40
         if: matrix.binary == 'cdk'
         run: make build-cdk
 
