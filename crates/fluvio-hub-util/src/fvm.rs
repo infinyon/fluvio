@@ -1,4 +1,14 @@
 ///! Fluvio Version Manager (FVM) type definitions.
+use std::fmt::Display;
+
+use serde::{Deserialize, Serialize};
+use url::Url;
+
+pub const ARM_UNKNOWN_LINUX_GNUEABIHF: &str = "arm-unknown-linux-gnueabihf";
+pub const ARMV7_UNKNOWN_LINUX_GNUEABIHF: &str = "armv7-unknown-linux-gnueabihf";
+pub const X86_64_APPLE_DARWIN: &str = "x86_64-apple-darwin";
+pub const AARCH64_APPLE_DARWIN: &str = "aarch64-apple-darwin";
+pub const X86_64_PC_WINDOWS_GNU: &str = "x86_64-pc-windows-gnu";
 
 /// Available Rust Targets for Fluvio.
 ///
@@ -18,26 +28,13 @@ pub enum RustTarget {
 }
 
 impl Display for RustTarget {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ArmUnknownLinuxGnueabihf => write!(f, "arm-unknown-linux-gnueabihf"),
-            Self::Armv7UnknownLinuxGnueabihf => write!(f, "armv7-unknown-linux-gnueabihf"),
-            Self::X86_64AppleDarwin => write!(f, "x86_64-apple-darwin"),
-            Self::Aarch64AppleDarwin => write!(f, "aarch64-apple-darwin"),
-            Self::X86_64PcWindowsGnu => write!(f, "x86_64-pc-windows-gnu"),
-        }
-    }
-}
-
-impl RustTarget {
-    pub fn maybe_form_str(s: &str) -> Option<Self> {
-        match s {
-            "arm-unknown-linux-gnueabihf" => Some(Self::ArmUnknownLinuxGnueabihf),
-            "armv7-unknown-linux-gnueabihf" => Some(Self::Armv7UnknownLinuxGnueabihf),
-            "x86_64-apple-darwin" => Some(Self::X86_64AppleDarwin),
-            "aarch64-apple-darwin" => Some(Self::Aarch64AppleDarwin),
-            "x86_64-pc-windows-gnu" => Some(Self::X86_64PcWindowsGnu),
-            _ => None,
+            Self::ArmUnknownLinuxGnueabihf => write!(f, "{}", ARM_UNKNOWN_LINUX_GNUEABIHF),
+            Self::Armv7UnknownLinuxGnueabihf => write!(f, "{}", ARMV7_UNKNOWN_LINUX_GNUEABIHF),
+            Self::X86_64AppleDarwin => write!(f, "{}", X86_64_APPLE_DARWIN),
+            Self::Aarch64AppleDarwin => write!(f, "{}", AARCH64_APPLE_DARWIN),
+            Self::X86_64PcWindowsGnu => write!(f, "{}", X86_64_PC_WINDOWS_GNU),
         }
     }
 }
