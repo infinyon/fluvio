@@ -1,3 +1,4 @@
+mod fvm;
 mod hubaccess;
 mod package;
 mod package_meta_ext;
