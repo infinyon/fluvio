@@ -1,3 +1,4 @@
+use std::pin::Pin;
 use std::sync::atomic::{AtomicI64, Ordering, AtomicBool};
 use std::sync::Arc;
 
@@ -40,7 +41,7 @@ impl EventPublisher {
         self.notify()
     }
 
-    pub fn listen(&self) -> EventListener {
+    pub fn listen(&self) -> Pin<Box<EventListener>> {
         self.event.listen()
     }
 }

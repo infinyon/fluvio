@@ -25,7 +25,7 @@ use super::StoreContext;
 
 #[derive(Clone)]
 /// global cached stores necessary for consumer and producers
-pub struct MetadataStores {
+pub(crate) struct MetadataStores {
     shutdown: Arc<SimpleEvent>,
     spus: StoreContext<SpuSpec>,
     partitions: StoreContext<PartitionSpec>,
@@ -38,7 +38,7 @@ impl MetadataStores {
     /// start synchronization
 
     #[instrument(skip(socket))]
-    pub async fn start(socket: SharedMultiplexerSocket, watch_version: i16) -> Result<Self> {
+    pub(crate) async fn start(socket: SharedMultiplexerSocket, watch_version: i16) -> Result<Self> {
         debug!(watch_version, "starting metadata store");
         let store = Self {
             shutdown: SimpleEvent::shared(),
@@ -56,32 +56,32 @@ impl MetadataStores {
         Ok(store)
     }
 
-    pub fn spus(&self) -> &StoreContext<SpuSpec> {
+    pub(crate) fn spus(&self) -> &StoreContext<SpuSpec> {
         &self.spus
     }
 
-    pub fn partitions(&self) -> &StoreContext<PartitionSpec> {
+    pub(crate) fn partitions(&self) -> &StoreContext<PartitionSpec> {
         &self.partitions
     }
 
-    pub fn topics(&self) -> &StoreContext<TopicSpec> {
+    pub(crate) fn topics(&self) -> &StoreContext<TopicSpec> {
         &self.topics
     }
 
-    pub fn shutdown(&mut self) {
+    pub(crate) fn shutdown(&mut self) {
         self.shutdown.notify();
     }
 
     /// start watch for spu
     #[instrument(skip(self))]
-    pub async fn start_watch_for_spu(&self) -> Result<()> {
+    pub(crate) async fn start_watch_for_spu(&self) -> Result<()> {
         self.start_watch::<SpuSpec>(self.spus.clone()).await?;
 
         Ok(())
     }
 
     #[instrument(skip(self))]
-    pub async fn start_watch_for_partition(&self) -> Result<()> {
+    pub(crate) async fn start_watch_for_partition(&self) -> Result<()> {
         self.start_watch::<PartitionSpec>(self.partitions.clone())
             .await?;
 
@@ -89,7 +89,7 @@ impl MetadataStores {
     }
 
     #[instrument(skip(self))]
-    pub async fn start_watch_for_topic(&self) -> Result<()> {
+    pub(crate) async fn start_watch_for_topic(&self) -> Result<()> {
         self.start_watch::<TopicSpec>(self.topics.clone()).await?;
 
         Ok(())

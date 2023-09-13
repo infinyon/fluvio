@@ -1,6 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::io::{Error as IoError, ErrorKind};
 use std::fmt::Display;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -20,34 +21,34 @@ use super::StoreContext;
 use super::CacheMetadataStoreObject;
 use crate::metadata::store::actions::LSUpdate;
 
-pub struct SimpleEvent {
+pub(crate) struct SimpleEvent {
     flag: AtomicBool,
     event: Event,
 }
 
 impl SimpleEvent {
-    pub fn shared() -> Arc<Self> {
+    pub(crate) fn shared() -> Arc<Self> {
         Arc::new(Self {
             flag: AtomicBool::new(false),
             event: Event::new(),
         })
     }
     // is flag set
-    pub fn is_set(&self) -> bool {
+    pub(crate) fn is_set(&self) -> bool {
         self.flag.load(Ordering::SeqCst)
     }
 
-    pub fn listen(&self) -> EventListener {
+    pub(crate) fn listen(&self) -> Pin<Box<EventListener>> {
         self.event.listen()
     }
 
-    pub fn notify(&self) {
+    pub(crate) fn notify(&self) {
         self.event.notify(usize::MAX);
     }
 }
 
 /// Synchronize metadata from SC
-pub struct MetadataSyncController<S: AdminSpec> {
+pub(crate) struct MetadataSyncController<S: AdminSpec> {
     store: StoreContext<S>,
     shutdown: Arc<SimpleEvent>,
 }
@@ -62,7 +63,7 @@ where
     CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
     <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
 {
-    pub fn start(
+    pub(crate) fn start(
         store: StoreContext<S>,
         watch_response: AsyncResponse<ObjectApiWatchRequest>,
         shutdown: Arc<SimpleEvent>,
