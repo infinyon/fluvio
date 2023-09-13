@@ -12,7 +12,7 @@ publish = false
 cargo_toml = { workspace = true }
 const_format = { workspace = true }
 dirs = { workspace = true }
-ed25519-dalek = { version = "1.0.1", features = ["serde"] }
+ed25519-dalek = { version = "2.0.0", features = ["serde"] }
 flate2 = { workspace = true }
 hex = { workspace = true }
 pem = "3.0"
