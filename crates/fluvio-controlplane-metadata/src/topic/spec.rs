@@ -60,10 +60,7 @@ impl Deref for TopicSpec {
 }
 
 impl TopicSpec {
-    pub fn new_assigned<J>(partition_map: J) -> Self
-    where
-        J: Into<PartitionMaps>,
-    {
+    pub fn new_assigned(partition_map: impl Into<PartitionMaps>) -> Self {
         Self {
             replicas: ReplicaSpec::new_assigned(partition_map),
             ..Default::default()

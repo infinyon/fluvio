@@ -30,12 +30,12 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn new_binary<S1, S2, S3, V>(id: &PackageId<V>, author: S1, desc: S2, repo: S3) -> Self
-    where
-        S1: Into<String>,
-        S2: Into<String>,
-        S3: Into<String>,
-    {
+    pub fn new_binary<V>(
+        id: &PackageId<V>,
+        author: impl Into<String>,
+        desc: impl Into<String>,
+        repo: impl Into<String>,
+    ) -> Self {
         let author = author.into();
         let description = desc.into();
         let repository = repo.into();

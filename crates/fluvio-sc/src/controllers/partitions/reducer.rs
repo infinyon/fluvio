@@ -70,11 +70,10 @@ impl<C: MetadataItem> Default for PartitionReducer<C> {
 }
 
 impl<C: MetadataItem> PartitionReducer<C> {
-    pub fn new<A, B>(partition_store: A, spu_store: B) -> Self
-    where
-        A: Into<Arc<PartitionLocalStore<C>>>,
-        B: Into<Arc<SpuLocalStore<C>>>,
-    {
+    pub fn new(
+        partition_store: impl Into<Arc<PartitionLocalStore<C>>>,
+        spu_store: impl Into<Arc<SpuLocalStore<C>>>,
+    ) -> Self {
         Self {
             partition_store: partition_store.into(),
             spu_store: spu_store.into(),

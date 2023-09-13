@@ -426,8 +426,11 @@ impl TopicProducer {
         skip(self, key, value),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send(&self, key: impl Into<RecordKey>, value: impl Into<RecordData>) -> Result<ProduceOutput>
-    {
+    pub async fn send(
+        &self,
+        key: impl Into<RecordKey>,
+        value: impl Into<RecordData>,
+    ) -> Result<ProduceOutput> {
         let record_key = key.into();
         let record_value = value.into();
         let record = Record::from((record_key, record_value));
@@ -473,12 +476,10 @@ impl TopicProducer {
         skip(self, records),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send_all<K, V, I>(&self, records: I) -> Result<Vec<ProduceOutput>>
-    where
-        K: Into<RecordKey>,
-        V: Into<RecordData>,
-        I: IntoIterator<Item = (K, V)>,
-    {
+    pub async fn send_all(
+        &self,
+        records: impl IntoIterator<Item = (impl Into<RecordKey>, impl Into<RecordData>)>,
+    ) -> Result<Vec<ProduceOutput>> {
         let mut results = vec![];
         for (key, value) in records {
             let produce_output = self.send(key, value).await?;

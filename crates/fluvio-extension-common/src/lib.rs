@@ -105,7 +105,7 @@ pub mod target {
     }
 
     impl TargetError {
-        pub fn invalid_arg<M: Into<String>>(reason: M) -> Self {
+        pub fn invalid_arg(reason: impl Into<String>) -> Self {
             Self::InvalidArg(reason.into())
         }
     }

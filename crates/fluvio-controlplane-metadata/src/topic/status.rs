@@ -131,10 +131,11 @@ fn create_replica_map(rows: Vec<Vec<SpuId>>) -> ReplicaMap {
 }
 
 impl TopicStatus {
-    pub fn new<S>(resolution: TopicResolution, replica_map: Vec<Vec<SpuId>>, reason: S) -> Self
-    where
-        S: Into<String>,
-    {
+    pub fn new(
+        resolution: TopicResolution,
+        replica_map: Vec<Vec<SpuId>>,
+        reason: impl Into<String>,
+    ) -> Self {
         TopicStatus {
             resolution,
             replica_map: create_replica_map(replica_map),
@@ -220,17 +221,11 @@ impl TopicStatus {
         (TopicResolution::Pending, super::PENDING_REASON.to_owned())
     }
 
-    pub fn next_resolution_invalid_config<S>(reason: S) -> (TopicResolution, String)
-    where
-        S: Into<String>,
-    {
+    pub fn next_resolution_invalid_config(reason: impl Into<String>) -> (TopicResolution, String) {
         (TopicResolution::InvalidConfig, reason.into())
     }
 
-    pub fn set_resolution_no_resource<S>(reason: S) -> (TopicResolution, String)
-    where
-        S: Into<String>,
-    {
+    pub fn set_resolution_no_resource(reason: impl Into<String>) -> (TopicResolution, String) {
         (TopicResolution::InsufficientResources, reason.into())
     }
 

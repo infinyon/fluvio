@@ -455,21 +455,14 @@ impl<B: Default> Record<B> {
 }
 
 impl Record {
-    pub fn new<V>(value: V) -> Self
-    where
-        V: Into<RecordData>,
-    {
+    pub fn new(value: impl Into<RecordData>) -> Self {
         Record {
             value: value.into(),
             ..Default::default()
         }
     }
 
-    pub fn new_key_value<K, V>(key: K, value: V) -> Self
-    where
-        K: Into<RecordKey>,
-        V: Into<RecordData>,
-    {
+    pub fn new_key_value(key: impl Into<RecordKey>, value: impl Into<RecordData>) -> Self {
         let key = key.into().into_option();
         Record {
             key,
