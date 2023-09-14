@@ -1,0 +1,26 @@
+[package]
+name = "fvm"
+version = "0.0.0"
+edition = "2021"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio Version Manager"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "fluvio_version_manager"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fvm"
+path = "src/bin/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true , features = ["std", "derive", "env"] }
+color-eyre = { workspace = true }
+dirs = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
