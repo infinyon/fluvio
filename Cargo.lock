@@ -2551,6 +2551,7 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "curl",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-protocol",
@@ -2586,6 +2587,7 @@ dependencies = [
  "flate2",
  "fluvio",
  "fluvio-channel",
+ "fluvio-cli-common",
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
@@ -2605,6 +2607,7 @@ dependencies = [
  "once_cell",
  "portpicker",
  "rand 0.8.5",
+ "rcgen",
  "semver 1.0.18",
  "serde",
  "serde_json",
@@ -2840,7 +2843,7 @@ dependencies = [
  "hex",
  "http-client",
  "pathdiff",
- "pem",
+ "pem 3.0.2",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde",
@@ -5509,6 +5512,16 @@ checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
 
 [[package]]
 name = "pem"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b13fe415cdf3c8e44518e18a7c95a13431d9bdf6d15367d82b23c377fdd441a"
+dependencies = [
+ "base64 0.21.4",
+ "serde",
+]
+
+[[package]]
+name = "pem"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3163d2912b7c3b52d651a055f2c7eec9ba5cd22d26ef75b8dd3a59980b185923"
@@ -5963,6 +5976,18 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
  "num_cpus",
+]
+
+[[package]]
+name = "rcgen"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4954fbc00dcd4d8282c987710e50ba513d351400dbdd00e803a05172a90d8976"
+dependencies = [
+ "pem 2.0.1",
+ "ring",
+ "time 0.3.28",
+ "yasna",
 ]
 
 [[package]]
@@ -8745,6 +8770,15 @@ name = "yansi"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
+
+[[package]]
+name = "yasna"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e17bb3549cc1321ae1296b9cdc2698e2b6cb1992adfa19a8c72e5b7a738f44cd"
+dependencies = [
+ "time 0.3.28",
+]
 
 [[package]]
 name = "zeroize"

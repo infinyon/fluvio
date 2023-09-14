@@ -23,6 +23,7 @@ home = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
 isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
+curl = { version = "0.4", features = ["force-system-lib-on-osx"] } # https://github.com/curl/curl/issues/283
 semver = { workspace = true }
 sha2 = { workspace = true }
 tempfile = { workspace = true }
@@ -32,6 +33,7 @@ tracing = { workspace = true }
 fluvio-package-index = { workspace = true,  features = ["http_agent"] }
 fluvio-types = { workspace = true , optional = true }
 fluvio-protocol = { workspace = true,  optional = true }
+fluvio-future = { workspace = true, default-features = false, features = ["timer"] }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }

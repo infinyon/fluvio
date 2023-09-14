@@ -4,6 +4,7 @@ use std::process::Command;
 use std::time::{Duration, SystemTime};
 
 use colored::Colorize;
+use fluvio_cli_common::http::{wait_http_ready, wait_https_ready};
 use semver::Version;
 use derive_builder::Builder;
 use tracing::{debug, error, instrument, warn};
@@ -21,7 +22,9 @@ use crate::render::{ProgressRenderedText, ProgressRenderer};
 use crate::{ClusterChecker, LocalInstallError, StartStatus, UserChartLocation};
 use crate::charts::ChartConfig;
 use crate::check::{SysChartCheck, ClusterCheckError};
-use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
+use crate::runtime::local::{
+    LocalSpuProcessClusterManager, ScProcess, LocalRuntimeError, EtcdProcess, K8sProcess,
+};
 use crate::progress::{InstallProgressMessage, ProgressBarFactory};
 
 use super::constants::MAX_PROVISION_TIME_SEC;
@@ -389,6 +392,9 @@ impl LocalInstaller {
     /// Install fluvio locally
     #[instrument(skip(self))]
     pub async fn install(&self) -> Result<StartStatus, LocalInstallError> {
+        let pb = self.pb_factory.create()?;
+        self.launch_k8s(&pb).await?;
+
         if !self.config.skip_checks {
             self.preflight_check(true).await?;
         };
@@ -657,5 +663,58 @@ impl LocalInstaller {
             "not able to provision:{spu} spu in {} secs",
             time.elapsed().unwrap().as_secs()
         )))
+    }
+
+    #[instrument(skip(self))]
+    async fn launch_k8s(&self, pb: &ProgressRenderer) -> Result<(), LocalInstallError> {
+        pb.set_message(InstallProgressMessage::LaunchingK8s.msg());
+
+        let base = self
+            .config
+            .launcher
+            .clone()
+            .ok_or(LocalRuntimeError::MissingFluvioRunner)?;
+
+        let etcd_process = EtcdProcess {
+            log_dir: self.config.log_dir.clone(),
+            data_dir: self.config.data_dir.clone(),
+            base: base.clone(),
+        };
+
+        let etcd_endpoint_url = etcd_process.start()?;
+
+        if !wait_http_ready(
+            &format!("{}/version", &etcd_endpoint_url),
+            Duration::from_secs(60),
+        )
+        .await?
+        {
+            return Err(LocalInstallError::EtcdTimeout);
+        }
+
+        let k8s_process = K8sProcess {
+            log_dir: self.config.log_dir.clone(),
+            data_dir: self.config.data_dir.clone(),
+            base,
+            etcd_endpoint_url,
+        };
+
+        let (k8s_endpoint_url, certs) = k8s_process.start()?;
+
+        if !wait_https_ready(
+            &format!("{}/readyz/etcd", &k8s_endpoint_url),
+            Duration::from_secs(60),
+            Some(&certs.root_cert),
+            Some(&certs.client_cert),
+            Some(&certs.client_private_key),
+        )
+        .await?
+        {
+            return Err(LocalInstallError::K8sTimeout);
+        }
+
+        pb.finish_and_clear();
+
+        Ok(())
     }
 }

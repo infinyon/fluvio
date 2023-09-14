@@ -78,6 +78,8 @@ impl ShutdownOpt {
         kill_proc("fluvio", Some(&["cluster".into(), "run".into()]));
         kill_proc("fluvio", Some(&["run".into()]));
         kill_proc("fluvio-run", None);
+        kill_proc("fluvio-k8s", None);
+        kill_proc("fluvio-etcd", None);
 
         if !self.no_k8 {
             let _ = self.remove_custom_objects("spus", true);

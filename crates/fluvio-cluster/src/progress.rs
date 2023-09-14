@@ -6,6 +6,8 @@ use crate::render::{ProgressRenderedText, ProgressRenderer};
 
 #[derive(Debug)]
 pub(crate) enum InstallProgressMessage {
+    LaunchingK8s,
+
     PreFlightCheck,
     LaunchingSC,
     ScLaunched,
@@ -20,6 +22,10 @@ impl ProgressRenderedText for InstallProgressMessage {
         use colored::*;
 
         match self {
+            InstallProgressMessage::LaunchingK8s => {
+                format!("🚢 {}", "Starting k8s server".bold())
+            }
+
             InstallProgressMessage::PreFlightCheck => {
                 format!("{}", "📝 Running pre-flight checks".bold())
             }

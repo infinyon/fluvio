@@ -59,6 +59,7 @@ comfy-table = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }
 tar = { workspace = true ,  optional = true }
 sysinfo = { workspace = true, default-features = false }
+rcgen = { version = "0.11" }
 
 
 # External Fluvio dependencies
@@ -77,6 +78,7 @@ fluvio-controlplane-metadata = { workspace = true,  features = ["k8",] }
 fluvio-sc-schema = { workspace = true  }
 fluvio-types = { workspace = true  }
 fluvio-channel = { workspace = true  }
+fluvio-cli-common = { workspace = true  }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["task", "fixture"] }

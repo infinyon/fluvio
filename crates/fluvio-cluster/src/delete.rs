@@ -176,6 +176,8 @@ impl ClusterUninstaller {
         kill_proc("fluvio", Some(&["cluster".into(), "run".into()]));
         kill_proc("fluvio", Some(&["run".into()]));
         kill_proc("fluvio-run", None);
+        kill_proc("fluvio-k8s", None);
+        kill_proc("fluvio-etcd", None);
 
         // delete fluvio file
         debug!("Removing fluvio directory");
