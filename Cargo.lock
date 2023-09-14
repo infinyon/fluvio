@@ -3595,6 +3595,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fvm"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "color-eyre",
+ "dirs 5.0.1",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "fxhash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
