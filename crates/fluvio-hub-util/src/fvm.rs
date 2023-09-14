@@ -1,4 +1,5 @@
-///! Fluvio Version Manager (FVM) type definitions.
+//! Fluvio Version Manager (FVM) type definitions.
+
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
