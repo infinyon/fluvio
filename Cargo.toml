@@ -151,7 +151,7 @@ k8-types = { version = "0.8.3" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 
 # Internal fluvio dependencies
-fluvio = { version = "0.22.0", path = "crates/fluvio" }
+fluvio = { version = "0.21.0", path = "crates/fluvio" }
 fluvio-auth = { path = "crates/fluvio-auth" }
 fluvio-channel = { path = "crates/fluvio-channel" }
 fluvio-cli-common = { path = "crates/fluvio-cli-common"}
