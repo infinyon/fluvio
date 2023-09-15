@@ -25,7 +25,7 @@ impl Cli {
         let command = Cli::parse();
 
         match command {
-            Cli::Init => command::init::exec(),
+            Cli::Init => command::init::InitCommand::new(false).exec(),
         }
     }
 }

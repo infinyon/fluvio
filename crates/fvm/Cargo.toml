@@ -19,8 +19,7 @@ path = "src/bin/main.rs"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true , features = ["std", "derive", "env"] }
+colored = { workspace = true }
 color-eyre = { workspace = true }
 dirs = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }

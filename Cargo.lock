@@ -3601,10 +3601,9 @@ dependencies = [
  "anyhow",
  "clap",
  "color-eyre",
+ "colored",
  "dirs 5.0.1",
  "thiserror",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
