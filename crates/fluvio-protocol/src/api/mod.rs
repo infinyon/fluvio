@@ -113,10 +113,7 @@ mod common {
             Self::new_with_client(api_key, "dummy".to_owned())
         }
 
-        pub fn new_with_client<T>(api_key: u16, client_id: T) -> Self
-        where
-            T: Into<String>,
-        {
+        pub fn new_with_client(api_key: u16, client_id: impl Into<String>) -> Self {
             RequestHeader {
                 api_key,
                 api_version: 1,

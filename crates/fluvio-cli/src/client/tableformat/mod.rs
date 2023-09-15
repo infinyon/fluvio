@@ -83,7 +83,7 @@ mod cmd {
     }
 
     impl TableFormatConfig {
-        pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<TableFormatConfig> {
+        pub fn from_file(path: impl Into<PathBuf>) -> Result<TableFormatConfig> {
             let mut file = File::open(path.into())?;
             let mut contents = String::new();
             file.read_to_string(&mut contents)?;

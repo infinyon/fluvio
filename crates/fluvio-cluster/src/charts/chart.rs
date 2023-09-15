@@ -71,13 +71,13 @@ impl ChartConfigBuilder {
     }
 
     /// The local chart location to install sys charts from
-    pub fn local<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
+    pub fn local(&mut self, path: impl Into<PathBuf>) -> &mut Self {
         self.location = Some(ChartLocation::Local(path.into()));
         self
     }
 
     /// The remote chart location to install charts from
-    pub fn remote<S: Into<String>>(&mut self, location: S) -> &mut Self {
+    pub fn remote(&mut self, location: impl Into<String>) -> &mut Self {
         self.location = Some(ChartLocation::Remote(location.into()));
         self
     }

@@ -126,14 +126,14 @@ impl Deref for CustomConfigSchema {
 }
 
 impl Deployment {
-    pub fn from_image_name<T: Into<String>>(image: T) -> Self {
+    pub fn from_image_name(image: impl Into<String>) -> Self {
         Self {
             image: Some(image.into()),
             binary: None,
         }
     }
 
-    pub fn from_binary_name<T: Into<String>>(binary: T) -> Self {
+    pub fn from_binary_name(binary: impl Into<String>) -> Self {
         Self {
             image: None,
             binary: Some(binary.into()),

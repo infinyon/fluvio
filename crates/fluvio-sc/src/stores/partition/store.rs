@@ -31,7 +31,7 @@ pub type DefaultPartitionStore = PartitionLocalStore<u32>;
 pub trait PartitionMd<C: MetadataItem> {
     fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self;
 
-    fn quick<S: Into<String>>(partition: ((S, PartitionId), Vec<SpuId>)) -> Self;
+    fn quick(partition: ((impl Into<String>, PartitionId), Vec<SpuId>)) -> Self;
 }
 
 impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
@@ -42,7 +42,7 @@ impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
         Self::new(key, spec, PartitionStatus::default())
     }
 
-    fn quick<S: Into<String>>(partition: ((S, PartitionId), Vec<SpuId>)) -> Self {
+    fn quick(partition: ((impl Into<String>, PartitionId), Vec<SpuId>)) -> Self {
         let (replica_key, replicas) = partition;
         Self::with_replicas(replica_key.into(), replicas)
     }
@@ -72,7 +72,7 @@ where
 
     async fn leaders(&self) -> Vec<ReplicaLeader>;
 
-    fn bulk_load<S: Into<String>>(partitions: Vec<((S, PartitionId), Vec<SpuId>)>) -> Self;
+    fn bulk_load(partitions: Vec<((impl Into<String>, PartitionId), Vec<SpuId>)>) -> Self;
 }
 
 #[async_trait]
@@ -186,7 +186,7 @@ where
             .collect()
     }
 
-    fn bulk_load<S: Into<String>>(partitions: Vec<((S, PartitionId), Vec<SpuId>)>) -> Self {
+    fn bulk_load(partitions: Vec<((impl Into<String>, PartitionId), Vec<SpuId>)>) -> Self {
         let elements = partitions
             .into_iter()
             .map(|(replica_key, replicas)| PartitionMetadata::quick((replica_key, replicas)))

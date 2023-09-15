@@ -25,16 +25,11 @@ pub type SpuMetadata<C> = MetadataStoreObject<SpuSpec, C>;
 pub type DefaultSpuMd = SpuMetadata<u32>;
 
 pub trait SpuMd<C: MetadataItem> {
-    fn quick<J>(spu: (J, SpuId, bool, Option<String>)) -> SpuMetadata<C>
-    where
-        J: Into<String>;
+    fn quick(spu: (impl Into<String>, SpuId, bool, Option<String>)) -> SpuMetadata<C>;
 }
 
 impl<C: MetadataItem> SpuMd<C> for SpuMetadata<C> {
-    fn quick<J>(spu: (J, SpuId, bool, Option<String>)) -> SpuMetadata<C>
-    where
-        J: Into<String>,
-    {
+    fn quick(spu: (impl Into<String>, SpuId, bool, Option<String>)) -> SpuMetadata<C> {
         let spec = SpuSpec {
             id: spu.1,
             rack: spu.3,

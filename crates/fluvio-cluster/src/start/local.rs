@@ -260,11 +260,7 @@ impl LocalConfigBuilder {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
-        &mut self,
-        client: C,
-        server: S,
-    ) -> &mut Self {
+    pub fn tls(&mut self, client: impl Into<TlsPolicy>, server: impl Into<TlsPolicy>) -> &mut Self {
         let client_policy = client.into();
         let server_policy = server.into();
 
@@ -314,7 +310,7 @@ impl LocalConfigBuilder {
     /// ```
     ///
     /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
-    pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
+    pub fn local_chart(&mut self, local_chart_location: impl Into<PathBuf>) -> &mut Self {
         self.chart_location(UserChartLocation::Local(local_chart_location.into()));
         self
     }

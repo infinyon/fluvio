@@ -18,7 +18,7 @@ pub struct TransformationConfig {
 }
 
 impl TransformationConfig {
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, anyhow::Error> {
+    pub fn from_file(path: impl Into<PathBuf>) -> Result<Self, anyhow::Error> {
         let mut file = File::open(path.into())?;
         let mut content = Vec::new();
         file.read_to_end(&mut content)?;

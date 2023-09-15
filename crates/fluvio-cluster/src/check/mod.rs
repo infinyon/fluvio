@@ -147,7 +147,7 @@ pub enum CheckStatus {
 
 impl CheckStatus {
     /// Creates a passing check status with a success message
-    pub(crate) fn pass<S: Into<String>>(msg: S) -> Self {
+    pub(crate) fn pass(msg: impl Into<String>) -> Self {
         Self::Pass(msg.into())
     }
 }
@@ -730,7 +730,7 @@ impl ClusterChecker {
     }
 
     /// Adds a check to this `ClusterChecker`
-    pub fn with_check<C: ClusterCheck, B: Into<Box<C>>>(mut self, check: B) -> Self {
+    pub fn with_check<C: ClusterCheck>(mut self, check: impl Into<Box<C>>) -> Self {
         self.checks.push(check.into());
         self
     }

@@ -407,7 +407,7 @@ impl ClusterConfigBuilder {
     /// ```
     ///
     /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
-    pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
+    pub fn local_chart(&mut self, local_chart_location: impl Into<PathBuf>) -> &mut Self {
         let user_chart_location = UserChartLocation::Local(local_chart_location.into());
         debug!(?user_chart_location, "setting local chart");
         self.chart_location(user_chart_location);
@@ -436,7 +436,7 @@ impl ClusterConfigBuilder {
     /// ```
     ///
     /// [`local_chart`]: ./struct.ClusterInstallerBuilder#method.local_chart
-    pub fn remote_chart<S: Into<String>>(&mut self, remote_chart_location: S) -> &mut Self {
+    pub fn remote_chart(&mut self, remote_chart_location: impl Into<String>) -> &mut Self {
         self.chart_location(UserChartLocation::Remote(remote_chart_location.into()));
         self
     }
@@ -474,11 +474,7 @@ impl ClusterConfigBuilder {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn tls<C: Into<TlsPolicy>, S: Into<TlsPolicy>>(
-        &mut self,
-        client: C,
-        server: S,
-    ) -> &mut Self {
+    pub fn tls(&mut self, client: impl Into<TlsPolicy>, server: impl Into<TlsPolicy>) -> &mut Self {
         let client_policy = client.into();
         let server_policy = server.into();
 

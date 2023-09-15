@@ -171,7 +171,7 @@ impl SpuPool {
         Ok(serial_socket)
     }
 
-    pub async fn topic_exists<S: Into<String>>(&self, topic: S) -> Result<bool, FluvioError> {
+    pub async fn topic_exists(&self, topic: impl Into<String>) -> Result<bool, FluvioError> {
         let replica = ReplicaKey::new(topic, 0u32);
         Ok(self
             .metadata

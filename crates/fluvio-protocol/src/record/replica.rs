@@ -22,11 +22,7 @@ unsafe impl Send for ReplicaKey {}
 unsafe impl Sync for ReplicaKey {}
 
 impl ReplicaKey {
-    pub fn new<S, P>(topic: S, partition: P) -> Self
-    where
-        S: Into<String>,
-        P: Into<PartitionId>,
-    {
+    pub fn new(topic: impl Into<String>, partition: impl Into<PartitionId>) -> Self {
         ReplicaKey {
             topic: topic.into(),
             partition: partition.into(),
