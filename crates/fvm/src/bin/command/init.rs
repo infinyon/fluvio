@@ -4,25 +4,25 @@
 //! instance in the host system.
 
 use color_eyre::eyre::Result;
+use color_eyre::owo_colors::OwoColorize;
+use clap::Parser;
 
 use fluvio_version_manager::init::{is_fvm_installed, install_fvm};
 use fluvio_version_manager::notify::Notify;
 
 /// The `init` command is responsible of preparing the workspace for FVM.
-pub struct InitCommand {
-    quiet: bool,
-}
+#[derive(Debug, Parser)]
+pub struct InitOpt;
 
-impl InitCommand {
-    pub fn new(quiet: bool) -> Self {
-        Self { quiet }
-    }
-
-    pub fn exec(&self) -> Result<()> {
+impl InitOpt {
+    pub fn process(&self) -> Result<()> {
         self.notify_info("Checking for existent FVM installation");
 
-        if is_fvm_installed()? {
-            self.notify_warning("Detected FVM installation, skipping installation");
+        if let Some(installed_fvm_path) = is_fvm_installed()? {
+            self.notify_warning(&format!(
+                "Detected FVM installation at: {:?}, skipping installation",
+                installed_fvm_path.italic()
+            ));
             return Ok(());
         }
 
@@ -34,12 +34,8 @@ impl InitCommand {
     }
 }
 
-impl Notify for InitCommand {
+impl Notify for InitOpt {
     fn command(&self) -> &'static str {
         "init"
-    }
-
-    fn is_quiet(&self) -> bool {
-        self.quiet
     }
 }

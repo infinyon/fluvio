@@ -9,13 +9,14 @@
 
 use std::env::current_exe;
 use std::fs::{copy, create_dir};
+use std::path::PathBuf;
 
 use crate::constants;
 use crate::Error;
 
 /// Checks if the FVM is installed. This is achieved by checking if the
 /// binary is present in the FVM home directory.
-pub fn is_fvm_installed() -> Result<bool, Error> {
+pub fn is_fvm_installed() -> Result<Option<PathBuf>, Error> {
     let Some(home_dir) = dirs::home_dir() else {
         return Err(Error::HomeDirNotFound);
     };
@@ -26,10 +27,10 @@ pub fn is_fvm_installed() -> Result<bool, Error> {
         .join(constants::FVM_BINARY_NAME);
 
     if fvm_binary_path.exists() {
-        return Ok(true);
+        return Ok(Some(fvm_binary_path));
     }
 
-    Ok(false)
+    Ok(None)
 }
 
 /// Installs FVM in the host system.
