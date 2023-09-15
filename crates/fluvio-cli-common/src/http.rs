@@ -51,56 +51,57 @@ pub async fn read_to_end(response: Response<AsyncBody>) -> std::io::Result<Vec<u
     Ok(body)
 }
 
-pub async fn wait_http_ready(url: &str, timeout: Duration) -> Result<bool> {
-    let started = Instant::now();
-    while started.elapsed() < timeout {
-        let request = http::Request::get(url).body(())?;
-        if let Ok(response) = isahc::send_async(request).await {
-            let status = response.status();
-            if !status.is_client_error() && !status.is_server_error() {
-                return Ok(true);
-            }
-        }
-        sleep(Duration::from_secs(1)).await;
-    }
-    Ok(false)
+#[derive(Debug, derive_builder::Builder)]
+pub struct HttpsReadinessCheck<'a, 'b> {
+    #[builder(default = "Duration::from_secs(60)")]
+    timeout: Duration,
+    #[builder(default = "Duration::from_secs(1)")]
+    interval: Duration,
+    url: &'a str,
+    #[builder(setter(strip_option), default)]
+    ca_cert: Option<&'b Path>,
+    #[builder(setter(strip_option), default)]
+    client_cert: Option<&'b Path>,
+    #[builder(setter(strip_option), default)]
+    client_private_key: Option<&'b Path>,
 }
 
-pub async fn wait_https_ready(
-    url: &str,
-    timeout: Duration,
-    ca_cert: Option<&Path>,
-    client_cert: Option<&Path>,
-    client_private_key: Option<&Path>,
-) -> anyhow::Result<bool> {
-    let started = Instant::now();
-    let ca_cert = ca_cert.map(CaCertificate::file);
-    let client_cert = client_cert.map(|p| {
-        ClientCertificate::pem_file(
-            p,
-            client_private_key.map(|p_path| PrivateKey::pem_file(p_path, None)),
-        )
-    });
-    while started.elapsed() < timeout {
-        let builder = http::Request::get(url);
-        let builder = match ca_cert.clone() {
-            Some(ca_cert) => builder.ssl_ca_certificate(ca_cert),
-            None => builder,
-        };
-        let builder = match client_cert.clone() {
-            Some(client_cert) => builder.ssl_client_certificate(client_cert),
-            None => builder,
-        };
-        let request = builder.body(())?;
-        if let Ok(response) = isahc::send_async(request).await {
-            let status = response.status();
-            if !status.is_client_error() && !status.is_server_error() {
-                return Ok(true);
-            }
-        }
-        sleep(Duration::from_secs(1)).await;
+impl<'a, 'b> HttpsReadinessCheck<'a, 'b> {
+    pub fn builder() -> HttpsReadinessCheckBuilder<'a, 'b> {
+        HttpsReadinessCheckBuilder::default()
     }
-    Ok(false)
+
+    pub async fn wait_ready(&self) -> anyhow::Result<bool> {
+        let started = Instant::now();
+        let ca_cert = self.ca_cert.map(CaCertificate::file);
+        let client_cert = self.client_cert.map(|p| {
+            ClientCertificate::pem_file(
+                p,
+                self.client_private_key
+                    .map(|p_path| PrivateKey::pem_file(p_path, None)),
+            )
+        });
+        while started.elapsed() < self.timeout {
+            let builder = http::Request::get(self.url);
+            let builder = match ca_cert.clone() {
+                Some(ca_cert) => builder.ssl_ca_certificate(ca_cert),
+                None => builder,
+            };
+            let builder = match client_cert.clone() {
+                Some(client_cert) => builder.ssl_client_certificate(client_cert),
+                None => builder,
+            };
+            let request = builder.body(())?;
+            if let Ok(response) = isahc::send_async(request).await {
+                let status = response.status();
+                if !status.is_client_error() && !status.is_server_error() {
+                    return Ok(true);
+                }
+            }
+            sleep(self.interval).await;
+        }
+        Ok(false)
+    }
 }
 
 #[cfg(test)]

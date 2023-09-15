@@ -42,6 +42,7 @@ use fluvio_command::CommandExt;
 use crate::check::ClusterCheckError;
 use crate::check::{AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
+use crate::pick_unused_port;
 use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderedText;
 use crate::render::ProgressRenderer;
@@ -881,7 +882,7 @@ impl ClusterInstaller {
     ) -> Result<(String, u16, Child)> {
         let pf_host_name = "localhost";
 
-        let pf_port = portpicker::pick_unused_port().expect("No local ports available");
+        let pf_port = pick_unused_port()?;
         let target_port = ClusterInstaller::target_port_for_service(service)?;
 
         let mut pf_child = std::process::Command::new("kubectl")

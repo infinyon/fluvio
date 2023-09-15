@@ -2552,6 +2552,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "curl",
+ "derive_builder",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-protocol",

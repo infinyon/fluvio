@@ -3,13 +3,15 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
 };
+use tracing::info;
 
 use fluvio_command::CommandExt;
-use tracing::info;
+
+use crate::pick_unused_port;
 
 use super::LocalRuntimeError;
 
-pub struct EtcdProcess {
+pub(crate) struct EtcdProcess {
     pub log_dir: PathBuf,
     pub data_dir: PathBuf,
     pub base: PathBuf,
@@ -20,8 +22,7 @@ impl EtcdProcess {
         let outputs = File::create(format!("{}/flv_etcd.log", self.log_dir.display()))?;
         let errors = outputs.try_clone()?;
 
-        let port = portpicker::pick_unused_port()
-            .ok_or_else(|| LocalRuntimeError::Other("unable to allocate free port".to_string()))?;
+        let port = pick_unused_port()?;
         let endpoint = format!("http://127.0.0.1:{port}");
 
         let mut binary = {

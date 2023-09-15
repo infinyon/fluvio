@@ -1,13 +1,11 @@
 mod spu;
 mod sc;
-mod etcd;
-mod k8s;
+pub(crate) mod etcd;
+pub(crate) mod k8s;
 
 pub use spu::*;
 pub use sc::*;
 pub use process::*;
-pub use etcd::*;
-pub use k8s::*;
 
 pub use error::*;
 

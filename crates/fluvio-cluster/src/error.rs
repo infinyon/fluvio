@@ -155,12 +155,9 @@ pub enum LocalInstallError {
     ClusterCheckError(#[from] ClusterCheckError),
     #[error("Progress Error: {0}")]
     ProgressError(#[from] TemplateError),
-    /// Timed out when waiting for etcd.
-    #[error("Timed out when waiting for etcd")]
-    EtcdTimeout,
-    /// Timed out when waiting for k8s.
-    #[error("Timed out when waiting for k8s")]
-    K8sTimeout,
+    /// Timed out when waiting for Metadata server.
+    #[error("Timed out when waiting for Metadata server")]
+    MetadataServerTimeout,
 }
 
 /// Errors that may occur while trying to unintsall Fluvio

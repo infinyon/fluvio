@@ -60,6 +60,8 @@ mod common {
 
     use fluvio::config::{TlsPaths, TlsConfig};
 
+    use crate::runtime::local::LocalRuntimeError;
+
     /// The result of a successful startup of a Fluvio cluster
     ///
     /// A `StartStatus` carries additional information about the startup
@@ -136,5 +138,10 @@ mod common {
             }),
         };
         Ok(cert_paths)
+    }
+
+    pub(crate) fn pick_unused_port() -> Result<u16, LocalRuntimeError> {
+        portpicker::pick_unused_port()
+            .ok_or_else(|| LocalRuntimeError::Other("unable to allocate free port".to_string()))
     }
 }

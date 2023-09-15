@@ -4,10 +4,13 @@ use std::{
     process::{Command, Stdio},
 };
 
-use fluvio_command::CommandExt;
-use k8_config::{K8Config, User, UserDetail, Cluster, ClusterDetail, Context, ContextDetail};
 use rcgen::{Certificate, CertificateParams, IsCa, DistinguishedName, DnType, DnValue, KeyUsagePurpose};
 use tracing::{info, debug};
+
+use fluvio_command::CommandExt;
+use k8_config::{K8Config, User, UserDetail, Cluster, ClusterDetail, Context, ContextDetail};
+
+use crate::pick_unused_port;
 
 use super::LocalRuntimeError;
 
@@ -15,8 +18,9 @@ const DEFAULT_K8S_CONTEXT_NAME: &str = "fluvio-local";
 const DEFAULT_K8S_CLUSTER_NAME: &str = "fluvio-local-cluster";
 const DEFAULT_K8S_USER_NAME: &str = "fluvio-local-client";
 const DEFAULT_K8S_NAMESPACE: &str = "default";
+const CERT_DOMAINS: &[&str] = &["127.0.0.1", "localhost"];
 
-pub struct K8sProcess {
+pub(crate) struct K8sProcess {
     pub log_dir: PathBuf,
     pub data_dir: PathBuf,
     pub base: PathBuf,
@@ -29,8 +33,7 @@ impl K8sProcess {
         let outputs = File::create(&logs_path)?;
         let errors = outputs.try_clone()?;
 
-        let port = portpicker::pick_unused_port()
-            .ok_or_else(|| LocalRuntimeError::Other("unable to allocate free port".to_string()))?;
+        let port = pick_unused_port()?;
         let bind_addr = "127.0.0.1";
 
         let certs = generate_certificates(&self.data_dir.join("k8s/certs")).map_err(|err| {
@@ -128,8 +131,8 @@ fn set_k8s_context(certs: &Certs, endpoint: &str) -> anyhow::Result<()> {
             config.save()?;
 
             info!(
-                "k8s context succesfully added  to {}",
-                config.path.to_string_lossy()
+                path = ?config.path.to_string_lossy(),
+                "k8s context succesfully added"
             );
 
             Ok(())
@@ -175,14 +178,19 @@ fn generate_root_cert(private_key: &Path, public_key: &Path) -> anyhow::Result<C
         DnType::CommonName,
         DnValue::PrintableString("fluvio.io local ca cert".to_string()),
     );
-    let mut root_params = CertificateParams::new(["127.0.0.1".into(), "localhost".into()]);
+    let mut root_params = CertificateParams::new(
+        CERT_DOMAINS
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>(),
+    );
     root_params.is_ca = IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
     root_params.distinguished_name = dn;
     root_params.key_usages = vec![KeyUsagePurpose::CrlSign, KeyUsagePurpose::KeyCertSign];
     let cert = Certificate::from_params(root_params)?;
-    debug!("writing root private key to {private_key:?}");
+    debug!(?private_key, "writing to root private key");
     std::fs::write(private_key, cert.serialize_private_key_pem())?;
-    debug!("writing root public key to {public_key:?}");
+    debug!(?public_key, "writing to root public key");
     std::fs::write(public_key, cert.serialize_pem()?)?;
     Ok(cert)
 }
@@ -192,15 +200,20 @@ fn generate_cert(
     private_key: &Path,
     public_key: &Path,
 ) -> anyhow::Result<Certificate> {
-    let cert = rcgen::generate_simple_self_signed(["127.0.0.1".into(), "localhost".into()])?;
-    debug!("writing private key to {private_key:?}");
+    let cert = rcgen::generate_simple_self_signed(
+        CERT_DOMAINS
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>(),
+    )?;
+    debug!(?private_key, "writing to private key");
     std::fs::write(private_key, cert.serialize_private_key_pem())?;
-    debug!("writing public key to {public_key:?}");
+    debug!(?public_key, "writing to public key");
     std::fs::write(public_key, cert.serialize_pem_with_signer(root)?)?;
     Ok(cert)
 }
 
-pub struct Certs {
+pub(crate) struct Certs {
     pub root_cert: PathBuf,
     pub kube_private_key: PathBuf,
     pub kube_cert: PathBuf,

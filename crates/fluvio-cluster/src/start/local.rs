@@ -4,7 +4,7 @@ use std::process::Command;
 use std::time::{Duration, SystemTime};
 
 use colored::Colorize;
-use fluvio_cli_common::http::{wait_http_ready, wait_https_ready};
+use fluvio_cli_common::http::HttpsReadinessCheck;
 use semver::Version;
 use derive_builder::Builder;
 use tracing::{debug, error, instrument, warn};
@@ -19,12 +19,12 @@ use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::render::{ProgressRenderedText, ProgressRenderer};
+use crate::runtime::local::etcd::EtcdProcess;
+use crate::runtime::local::k8s::K8sProcess;
 use crate::{ClusterChecker, LocalInstallError, StartStatus, UserChartLocation};
 use crate::charts::ChartConfig;
 use crate::check::{SysChartCheck, ClusterCheckError};
-use crate::runtime::local::{
-    LocalSpuProcessClusterManager, ScProcess, LocalRuntimeError, EtcdProcess, K8sProcess,
-};
+use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess, LocalRuntimeError};
 use crate::progress::{InstallProgressMessage, ProgressBarFactory};
 
 use super::constants::MAX_PROVISION_TIME_SEC;
@@ -667,7 +667,7 @@ impl LocalInstaller {
 
     #[instrument(skip(self))]
     async fn launch_k8s(&self, pb: &ProgressRenderer) -> Result<(), LocalInstallError> {
-        pb.set_message(InstallProgressMessage::LaunchingK8s.msg());
+        pb.set_message(InstallProgressMessage::LaunchingMetadata.msg());
 
         let base = self
             .config
@@ -683,13 +683,14 @@ impl LocalInstaller {
 
         let etcd_endpoint_url = etcd_process.start()?;
 
-        if !wait_http_ready(
-            &format!("{}/version", &etcd_endpoint_url),
-            Duration::from_secs(60),
-        )
-        .await?
+        if !HttpsReadinessCheck::builder()
+            .url(&format!("{}/version", &etcd_endpoint_url))
+            .build()
+            .map_err(|e| LocalInstallError::RuntimeError(LocalRuntimeError::Other(e.to_string())))?
+            .wait_ready()
+            .await?
         {
-            return Err(LocalInstallError::EtcdTimeout);
+            return Err(LocalInstallError::MetadataServerTimeout);
         }
 
         let k8s_process = K8sProcess {
@@ -701,16 +702,17 @@ impl LocalInstaller {
 
         let (k8s_endpoint_url, certs) = k8s_process.start()?;
 
-        if !wait_https_ready(
-            &format!("{}/readyz/etcd", &k8s_endpoint_url),
-            Duration::from_secs(60),
-            Some(&certs.root_cert),
-            Some(&certs.client_cert),
-            Some(&certs.client_private_key),
-        )
-        .await?
+        if !HttpsReadinessCheck::builder()
+            .url(&format!("{}/version", &k8s_endpoint_url))
+            .ca_cert(&certs.root_cert)
+            .client_cert(&certs.client_cert)
+            .client_private_key(&certs.client_private_key)
+            .build()
+            .map_err(|e| LocalInstallError::RuntimeError(LocalRuntimeError::Other(e.to_string())))?
+            .wait_ready()
+            .await?
         {
-            return Err(LocalInstallError::K8sTimeout);
+            return Err(LocalInstallError::MetadataServerTimeout);
         }
 
         pb.finish_and_clear();
