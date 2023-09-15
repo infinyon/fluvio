@@ -3604,6 +3604,7 @@ dependencies = [
  "colored",
  "dirs 5.0.1",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

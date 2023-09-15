@@ -49,6 +49,7 @@ pub fn install_fvm() -> Result<(), Error> {
 
     if !fvm_dir.exists() {
         create_dir(&fvm_dir).map_err(|err| Error::InitFailed(err.to_string()))?;
+        tracing::debug!(?fvm_dir, "Created FVM home directory");
     }
 
     // Attempts to create the binary crate
@@ -61,6 +62,11 @@ pub fn install_fvm() -> Result<(), Error> {
 
     copy(&current_binary_path, &fvm_binary_path)
         .map_err(|err| Error::InitFailed(err.to_string()))?;
+    tracing::debug!(?fvm_dir, "Copied the FVM binary to the FVM home directory");
+
+    // Creates the package set directory
+    let fvm_pkgset_dir = fvm_dir.join(constants::FVM_PACKAGES_SET_DIR);
+    create_dir(&fvm_pkgset_dir).map_err(|err| Error::InitFailed(err.to_string()))?;
 
     Ok(())
 }
