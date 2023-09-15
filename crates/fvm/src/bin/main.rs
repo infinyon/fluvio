@@ -12,31 +12,57 @@ fn main() -> Result<()> {
 
     let args = Cli::parse();
 
-    args.exec()?;
+    args.process()?;
     Ok(())
 }
 
 #[derive(Debug, Parser)]
+#[command(next_line_help = true)]
+#[command(name = "fvm", version, about, arg_required_else_help = true)]
 pub struct Cli {
-    /// Initialize a new FVM instance. This is run after downloading FVM.
-    #[clap(subcommand)]
+    /// Suppress all output
+    #[arg(short = 'q', long)]
+    quiet: bool,
+    #[command(subcommand)]
     command: Command,
 }
 
 #[derive(Debug, Parser)]
-#[command(about = "Fluvio Version Manager (FVM)", name = "fvm")]
 pub enum Command {
-    #[command(name = "init", about = "Initialize a new FVM instance")]
+    /// Initialize a new FVM instance
+    #[command(name = "init")]
     Init(InitOpt),
 }
 
 impl Cli {
-    fn exec(&self) -> Result<()> {
+    fn process(&self) -> Result<()> {
         let args = Cli::parse();
         let command = args.command;
 
         match command {
             Command::Init(cmd) => cmd.process(),
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+
+    use crate::Command;
+
+    use super::Cli;
+
+    fn parse(command: &str) -> Result<Cli, clap::error::Error> {
+        Cli::try_parse_from(command.split_whitespace())
+    }
+
+    #[test]
+    fn recognizes_quiet_top_level_arg() {
+        let args = parse("fvm -q init").expect("Should parse command as valid");
+
+        assert!(args.quiet);
+        assert!(matches!(args.command, Command::Init(_)));
     }
 }
