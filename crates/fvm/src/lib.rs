@@ -4,8 +4,8 @@
 //! provided in this library crate.
 
 pub mod constants;
-pub mod init;
-pub mod notify;
+pub mod setup;
+pub mod utils;
 
 use thiserror::Error;
 

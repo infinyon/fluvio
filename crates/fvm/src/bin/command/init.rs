@@ -7,12 +7,17 @@ use color_eyre::eyre::Result;
 use color_eyre::owo_colors::OwoColorize;
 use clap::Parser;
 
-use fluvio_version_manager::init::{is_fvm_installed, install_fvm};
-use fluvio_version_manager::notify::Notify;
+use fluvio_version_manager::setup::{is_fvm_installed, install_fvm};
+use fluvio_version_manager::utils::notify::Notify;
+
+use crate::GlobalOptions;
 
 /// The `init` command is responsible of preparing the workspace for FVM.
 #[derive(Debug, Parser)]
-pub struct InitOpt;
+pub struct InitOpt {
+    #[command(flatten)]
+    global_opts: GlobalOptions,
+}
 
 impl InitOpt {
     pub fn process(&self) -> Result<()> {
@@ -37,5 +42,9 @@ impl InitOpt {
 impl Notify for InitOpt {
     fn command(&self) -> &'static str {
         "init"
+    }
+
+    fn is_quiet(&self) -> bool {
+        self.global_opts.quiet
     }
 }

@@ -1,8 +1,6 @@
-//! Fluvio Version Manager (FVM) CLI
-
 mod command;
 
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use color_eyre::eyre::Result;
 
 use self::command::init::InitOpt;
@@ -16,18 +14,24 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, Args, Clone, Default)]
+pub struct GlobalOptions {
+    /// Suppress stdout notifications
+    #[clap(short = 'q', long, global = true, default_value_t = false)]
+    quiet: bool,
+}
+
 #[derive(Debug, Parser)]
 #[command(next_line_help = true)]
 #[command(name = "fvm", version, about, arg_required_else_help = true)]
 pub struct Cli {
-    /// Suppress all output
-    #[arg(short = 'q', long)]
-    quiet: bool,
+    #[clap(flatten)]
+    global_opts: GlobalOptions,
     #[command(subcommand)]
     command: Command,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Subcommand)]
 pub enum Command {
     /// Initialize a new FVM instance
     #[command(name = "init")]
@@ -45,7 +49,6 @@ impl Cli {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use clap::Parser;
@@ -62,7 +65,7 @@ mod tests {
     fn recognizes_quiet_top_level_arg() {
         let args = parse("fvm -q init").expect("Should parse command as valid");
 
-        assert!(args.quiet);
+        assert!(args.global_opts.quiet);
         assert!(matches!(args.command, Command::Init(_)));
     }
 }
