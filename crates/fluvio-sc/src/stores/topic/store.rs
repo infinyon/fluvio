@@ -5,7 +5,7 @@ use fluvio_stream_model::{
     store::{MetadataStoreObject, LocalStore},
     core::MetadataItem,
 };
-use tracing::debug;
+use tracing::{debug, trace};
 use async_trait::async_trait;
 
 use crate::stores::partition::PartitionLocalStore;
@@ -36,15 +36,20 @@ where
         partition_store: &PartitionLocalStore<C>,
     ) -> Vec<PartitionMetadata<C>> {
         let mut partitions = vec![];
-        for (idx, replicas) in self.status.replica_map.iter() {
+        let replica_map = &self.status.replica_map;
+        trace!(?replica_map, "creating new partitions for topic");
+        for (idx, replicas) in replica_map.iter() {
             let replica_key = ReplicaKey::new(self.key(), *idx);
-            debug!("Topic: {} creating partition: {}", self.key(), replica_key);
+
             let partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec);
             if !partition_store.contains_key(&replica_key).await {
+                debug!(?replica_key, ?partition_spec, "creating new partition");
                 partitions.push(
                     MetadataStoreObject::with_spec(replica_key, partition_spec)
                         .with_context(self.ctx.create_child()),
                 )
+            } else {
+                debug!(?replica_key, "partition already exists");
             }
         }
         partitions
