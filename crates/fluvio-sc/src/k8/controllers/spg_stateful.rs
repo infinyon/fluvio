@@ -1,6 +1,7 @@
-use std::{time::Duration};
+use std::time::Duration;
 
-use fluvio_stream_dispatcher::{store::K8ChangeListener};
+use anyhow::Result;
+use fluvio_stream_dispatcher::store::K8ChangeListener;
 use tracing::debug;
 use tracing::error;
 use tracing::trace;
@@ -9,14 +10,13 @@ use tracing::instrument;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use k8_client::ClientError;
 
-use crate::stores::{StoreContext};
+use crate::stores::StoreContext;
 use crate::stores::spg::{SpuGroupSpec, SpuGroupStatus};
-use crate::stores::spu::{SpuSpec};
+use crate::stores::spu::SpuSpec;
 use crate::cli::TlsConfig;
 
-use crate::k8::objects::spg_group::{SpuGroupObj};
+use crate::k8::objects::spg_group::SpuGroupObj;
 use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::statefulset::StatefulsetSpec;
 use crate::k8::objects::spg_service::SpgServiceSpec;
@@ -66,7 +66,7 @@ impl SpgStatefulSetController {
     }
 
     #[instrument(skip(self), name = "SpgStatefulSetController")]
-    async fn inner_loop(&mut self) -> Result<(), ClientError> {
+    async fn inner_loop(&mut self) -> Result<()> {
         use tokio::select;
 
         let mut spg_listener = self.groups.change_listener();
@@ -99,7 +99,7 @@ impl SpgStatefulSetController {
     async fn sync_with_config(
         &mut self,
         listener: &mut K8ChangeListener<ScK8Config>,
-    ) -> Result<(), ClientError> {
+    ) -> Result<()> {
         if !listener.has_change() {
             trace!("no config change, skipping");
             return Ok(());
@@ -132,7 +132,7 @@ impl SpgStatefulSetController {
     async fn sync_spgs_to_statefulset(
         &mut self,
         listener: &mut K8ChangeListener<SpuGroupSpec>,
-    ) -> Result<(), ClientError> {
+    ) -> Result<()> {
         if !listener.has_change() {
             debug!("no spg change, skipping");
             return Ok(());
@@ -170,7 +170,7 @@ impl SpgStatefulSetController {
         &mut self,
         spu_group: SpuGroupObj,
         spu_k8_config: &ScK8Config,
-    ) -> Result<(), ClientError> {
+    ) -> Result<()> {
         let spg_name = spu_group.key();
 
         // ensure we don't have conflict with existing spu group

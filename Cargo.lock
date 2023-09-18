@@ -3162,21 +3162,26 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.10.2"
+version = "0.11.0"
 dependencies = [
+ "anyhow",
  "async-channel",
- "async-rwlock",
+ "async-lock",
  "async-trait",
  "event-listener 3.0.0",
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
  "futures-lite",
+ "futures-util",
+ "k8-diff",
  "k8-metadata-client",
  "k8-types",
  "once_cell",
  "serde",
  "serde_json",
+ "serde_yaml 0.9.25",
+ "thiserror",
  "tokio",
  "tracing",
 ]
@@ -4517,10 +4522,11 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "10.1.0"
+version = "11.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2b634e8388eaeab70b77666c6aa05b1d02943775528d55e8ce6c99bb4ee0f85"
+checksum = "995113c3a7e549a780a67d0a38467b6b050773e36b70377ca2a479c1a0325376"
 dependencies = [
+ "anyhow",
  "async-trait",
  "base64 0.13.1",
  "bytes 1.5.0",
@@ -4537,7 +4543,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_json",
- "serde_qs 0.10.1",
+ "serde_qs 0.12.0",
  "tokio",
  "tracing",
 ]
@@ -4570,10 +4576,11 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "5.1.0"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c229be3cd93fc47d21cca9ff4cac6ca32ec9b94a3443d125a839ddbbd1c642a8"
+checksum = "576a47a3a1cbd5daae3a197601f378987c92ec22d2918d6b5e1c822d5b984f5d"
 dependencies = [
+ "anyhow",
  "async-trait",
  "futures-util",
  "k8-diff",
@@ -4586,9 +4593,9 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8da4ee9d80b9ad358d185c48f222ce0e1ac5216bc8597e9776db8bbf6ccd4da8"
+checksum = "9f604a19941d3a538c86e8d2944b99cec1acd46043d9544804f2aaf0342a8401"
 dependencies = [
  "serde",
  "serde_json",
@@ -6524,9 +6531,9 @@ dependencies = [
 
 [[package]]
 name = "serde_qs"
-version = "0.10.1"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cac3f1e2ca2fe333923a1ae72caca910b98ed0630bb35ef6f8c8517d6e81afa"
+checksum = "0431a35568651e363364210c91983c1da5eb29404d9f0928b67d4ebcfa7d330c"
 dependencies = [
  "percent-encoding",
  "serde",

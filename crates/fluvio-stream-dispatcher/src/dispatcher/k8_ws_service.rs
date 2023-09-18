@@ -5,6 +5,7 @@ use std::fmt::Display;
 use std::convert::Into;
 use std::marker::PhantomData;
 
+use anyhow::Result;
 use tracing::trace;
 use tracing::debug;
 use serde::de::DeserializeOwned;
@@ -40,10 +41,7 @@ where
     }
 
     /// add/update
-    pub async fn apply(
-        &self,
-        value: MetadataStoreObject<S, K8MetaItem>,
-    ) -> Result<(), C::MetadataClientError> {
+    pub async fn apply(&self, value: MetadataStoreObject<S, K8MetaItem>) -> Result<()> {
         debug!("K8 Applying {}:{}", S::LABEL, value.key());
         trace!("adding KV {:#?} to k8 kv", value);
 
@@ -87,7 +85,7 @@ where
         &self,
         metadata: K8MetaItem,
         status: S::Status,
-    ) -> Result<K8Obj<S::K8Spec>, C::MetadataClientError> {
+    ) -> Result<K8Obj<S::K8Spec>> {
         debug!(
             "K8 Update Status: {} key: {} value: {}",
             S::LABEL,
@@ -110,11 +108,7 @@ where
     }
 
     /// update spec only
-    pub async fn update_spec(
-        &self,
-        metadata: K8MetaItem,
-        spec: S,
-    ) -> Result<(), C::MetadataClientError> {
+    pub async fn update_spec(&self, metadata: K8MetaItem, spec: S) -> Result<()> {
         debug!("K8 Update Spec: {} key: {}", S::LABEL, metadata.name);
         trace!("K8 Update Spec: {:#?}", spec);
 
@@ -133,7 +127,7 @@ where
         self.client.apply(k8_input).await.map(|_| ())
     }
 
-    pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
+    pub async fn delete(&self, meta: K8MetaItem) -> Result<()> {
         use k8_types::options::{DeleteOptions, PropogationPolicy};
 
         let options = if S::DELETE_WAIT_DEPENDENTS {
@@ -153,7 +147,7 @@ where
             .map(|_| ())
     }
 
-    pub async fn final_delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
+    pub async fn final_delete(&self, meta: K8MetaItem) -> Result<()> {
         use once_cell::sync::Lazy;
         use serde_json::Value;
 

@@ -405,8 +405,8 @@ mod convert {
     /// Translates watch events into metadata action and apply into local store
     ///
     #[instrument(skip(stream, local_store))]
-    pub async fn k8_watch_events_to_metadata_actions<S, E>(
-        stream: TokenStreamResult<S::K8Spec, E>,
+    pub async fn k8_watch_events_to_metadata_actions<S>(
+        stream: TokenStreamResult<S::K8Spec>,
         local_store: &LocalStore<S, K8MetaItem>,
         multi_namespace_context: bool,
     ) -> Option<SyncStatus>
@@ -415,7 +415,6 @@ mod convert {
         S::IndexKey: Display,
         <S as Spec>::Owner: K8ExtendedSpec,
         S::Status: PartialEq,
-        E: MetadataClientError,
         S::IndexKey: Display,
     {
         let events = stream.unwrap();

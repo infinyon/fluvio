@@ -4,7 +4,7 @@ use tracing::debug;
 use anyhow::Result;
 
 use fluvio::consumer::PartitionSelectionStrategy;
-use fluvio::{Fluvio};
+use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
 use fluvio::TopicProducerConfig;
