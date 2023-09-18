@@ -3161,21 +3161,25 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.10.2"
+version = "0.11.0"
 dependencies = [
  "async-channel",
- "async-rwlock",
+ "async-lock",
  "async-trait",
  "event-listener 3.0.0",
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
  "futures-lite",
+ "futures-util",
+ "k8-diff",
  "k8-metadata-client",
  "k8-types",
  "once_cell",
  "serde",
  "serde_json",
+ "serde_yaml 0.9.25",
+ "thiserror",
  "tokio",
  "tracing",
 ]

@@ -12,7 +12,7 @@ use tracing::trace;
 use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
-use fluvio_protocol::record::{Batch};
+use fluvio_protocol::record::Batch;
 use fluvio_compression::Compression;
 use fluvio_protocol::record::Offset;
 use fluvio_protocol::link::ErrorCode;

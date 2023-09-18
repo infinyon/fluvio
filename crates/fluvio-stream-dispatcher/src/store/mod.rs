@@ -4,6 +4,8 @@ pub use context::*;
 
 pub use fluvio_stream_model::store::*;
 
+pub mod memory;
+
 mod context {
 
     use std::sync::Arc;
