@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 
 use clap::Parser;
+use k8_client::http::status::StatusCode;
 use tracing::debug;
 use anyhow::{Result, anyhow};
 
@@ -10,7 +11,7 @@ use k8_config::K8Config;
 use k8_client::K8Client;
 use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::ServiceSpec;
-use k8_types::InputObjectMeta;
+use k8_types::{InputObjectMeta, MetaStatus};
 
 use crate::common::tls::TlsClientOpt;
 
@@ -112,22 +113,26 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
 /// find fluvio addr
 pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>> {
-    use k8_client::http::status::StatusCode;
-
     let ns = namespace.unwrap_or("default");
     let svc = match K8Client::try_default()?
         .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("fluvio-sc-public", ns))
         .await
     {
         Ok(svc) => svc,
-        Err(err) => match err {
-            k8_client::ClientError::ApiResponse(status)
-                if status.code == Some(StatusCode::NOT_FOUND.as_u16()) =>
+        Err(err) => {
+            if let Some(MetaStatus {
+                code: Some(code), ..
+            }) = err.downcast_ref()
             {
-                return Ok(None)
+                if *code == StatusCode::NOT_FOUND.as_u16() {
+                    return Ok(None);
+                } else {
+                    return Err(anyhow!("unable to look up fluvio service in k8: {}", err));
+                }
+            } else {
+                return Err(anyhow!("unable to look up fluvio service in k8: {}", err));
             }
-            _ => return Err(anyhow!("unable to look up fluvio service in k8: {}", err)),
-        },
+        }
     };
 
     debug!("fluvio svc: {:#?}", svc);

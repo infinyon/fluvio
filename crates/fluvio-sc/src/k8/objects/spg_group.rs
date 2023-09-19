@@ -13,13 +13,13 @@ use crate::stores::MetadataStoreObject;
 use crate::stores::spg::SpuGroupSpec;
 use crate::stores::spu::is_conflict;
 use crate::stores::k8::K8MetaItem;
-use crate::stores::spu::{SpuSpec};
-use crate::stores::{LocalStore};
+use crate::stores::spu::SpuSpec;
+use crate::stores::LocalStore;
 use crate::stores::actions::WSAction;
 use crate::cli::TlsConfig;
 
 use super::spu_k8_config::ScK8Config;
-use super::statefulset::{StatefulsetSpec};
+use super::statefulset::StatefulsetSpec;
 use super::spg_service::SpgServiceSpec;
 
 #[derive(Debug)]
@@ -191,7 +191,7 @@ mod k8_convert {
     };
 
     use crate::stores::spg::SpuGroupSpec;
-    use super::super::statefulset::{K8StatefulSetSpec};
+    use super::super::statefulset::K8StatefulSetSpec;
     use super::{ScK8Config, TlsConfig};
 
     /// convert spu group spec into k8 statefulset spec

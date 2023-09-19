@@ -6,7 +6,6 @@ use indicatif::style::TemplateError;
 
 use fluvio::FluvioError;
 use k8_config::ConfigError as K8ConfigError;
-use k8_client::ClientError as K8ClientError;
 use fluvio_helm::HelmError;
 use fluvio_command::CommandError;
 
@@ -39,9 +38,6 @@ pub enum K8InstallError {
     /// An error occurred with the Kubernetes config.
     #[error("Kubernetes config error: {0}")]
     K8ConfigError(#[from] K8ConfigError),
-    /// An error occurred with the Kubernetes client.
-    #[error("Kubernetes client error: {0}")]
-    K8ClientError(#[from] K8ClientError),
     /// An error occurred while running helm.
     #[error("Helm client error: {0}")]
     HelmError(#[from] HelmError),
@@ -115,9 +111,6 @@ pub enum LocalInstallError {
     /// An error occurred with the Kubernetes config.
     #[error("Kubernetes config error: {0}")]
     K8ConfigError(#[from] K8ConfigError),
-    /// An error occurred with the Kubernetes client.
-    #[error("Kubernetes client error: {0}")]
-    K8ClientError(#[from] K8ClientError),
     /// An error occurred while running helm.
     #[error("Helm client error: {0}")]
     HelmError(#[from] HelmError),
@@ -179,9 +172,6 @@ pub enum UninstallError {
     /// An error occurred with the Kubernetes config.
     #[error("Kubernetes config error: {0}")]
     K8ConfigError(#[from] K8ConfigError),
-    /// An error occurred with the Kubernetes client.
-    #[error("Kubernetes client error: {0}")]
-    K8ClientError(#[from] K8ClientError),
     /// An error occurred while running helm.
     #[error("Helm client error: {0}")]
     HelmError(#[from] HelmError),

@@ -2,6 +2,7 @@ use std::process::Command;
 use std::fs::{remove_dir_all, remove_file};
 
 use derive_builder::Builder;
+use k8_metadata_client::MetadataClient;
 use tracing::{info, warn, debug, instrument};
 use sysinfo::{ProcessExt, System, SystemExt};
 
@@ -283,17 +284,13 @@ impl ClusterUninstaller {
 
     /// in order to remove partitions, finalizers need to be cleared
     #[instrument(skip(self))]
-    async fn remove_finalizers_for_partitions(
-        &self,
-        namespace: &str,
-    ) -> Result<(), UninstallError> {
+    async fn remove_finalizers_for_partitions(&self, namespace: &str) -> anyhow::Result<()> {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
         use k8_client::load_and_share;
-        use k8_metadata_client::MetadataClient;
         use k8_metadata_client::PatchMergeType::JsonMerge;
 
-        let client = load_and_share().map_err(UninstallError::K8ClientError)?;
+        let client = load_and_share()?;
 
         let partitions = client
             .retrieve_items::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(namespace)

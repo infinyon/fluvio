@@ -19,7 +19,6 @@ use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_helm::{HelmClient, HelmError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
-use k8_client::ClientError as K8ClientError;
 
 use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
 use crate::progress::ProgressBarFactory;
@@ -52,10 +51,6 @@ pub enum ClusterCheckError {
     /// There was a problem fetching kubernetes configuration
     #[error("Kubernetes config error")]
     K8ConfigError(#[from] K8ConfigError),
-
-    /// Could not connect to K8 client
-    #[error("Kubernetes client error")]
-    K8ClientError(#[from] K8ClientError),
 
     /// Failed to parse kubernetes cluster server URL
     #[error("Failed to parse server url from Kubernetes context")]
@@ -110,10 +105,6 @@ pub enum ClusterAutoFixError {
     /// There was a problem fetching kubernetes configuration
     #[error("Kubernetes config error")]
     K8Config(#[from] K8ConfigError),
-
-    /// Could not connect to K8 client
-    #[error("Kubernetes client error")]
-    K8Client(#[from] K8ClientError),
 
     #[error("Chart Install error")]
     ChartInstall(#[from] ChartInstallError),

@@ -1,4 +1,4 @@
-use std::{convert::Infallible};
+use std::convert::Infallible;
 
 use handlebars::TemplateError;
 use indicatif::style::TemplateError as ProgressTemplateError;
@@ -27,14 +27,6 @@ pub enum CliError {
     TargetError(#[from] TargetError),
     #[error("Fluvio client error: {0}")]
     ClientError(#[from] FluvioError),
-
-    #[cfg(feature = "k8s")]
-    #[error("Kubernetes config error: {0}")]
-    K8ConfigError(#[from] k8_config::ConfigError),
-
-    #[cfg(feature = "k8s")]
-    #[error("Kubernetes client error: {0}")]
-    K8ClientError(#[from] k8_client::ClientError),
 
     /// An error occurred while processing the connector yaml
     #[error("Fluvio connector config: {0}")]

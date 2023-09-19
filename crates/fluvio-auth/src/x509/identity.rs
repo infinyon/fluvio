@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use futures_util::stream::StreamExt;
 
-use fluvio_protocol::api::{ResponseMessage};
+use fluvio_protocol::api::ResponseMessage;
 use fluvio_socket::FluvioSocket;
 
 use super::request::{AuthorizationScopes, AuthorizationApiRequest, AuthResponse};

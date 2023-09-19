@@ -573,15 +573,15 @@ impl ClusterInstaller {
     /// # Example
     ///
     /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterError, ClusterInstaller};
-    /// # fn example(config: ClusterConfig) -> Result<(), ClusterError> {
+    /// # use fluvio_cluster::{ClusterConfig, ClusterInstaller};
+    /// # fn example(config: ClusterConfig) -> anyhow::Result<()> {
     /// let installer = ClusterInstaller::from_config(config)?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {
+    pub fn from_config(config: ClusterConfig) -> Result<Self> {
         Ok(Self {
-            kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
+            kube_client: load_and_share()?,
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
         })
@@ -650,9 +650,7 @@ impl ClusterInstaller {
         self.install_app().await?;
 
         // before we do let's try make sure SPU are installed.
-        check_crd(self.kube_client.clone())
-            .await
-            .map_err(K8InstallError::from)?;
+        check_crd(self.kube_client.clone()).await?;
 
         let pb = self.pb_factory.create()?;
 
@@ -924,7 +922,7 @@ impl ClusterInstaller {
 
     /// Looks up the external address of a Fluvio SC instance in the given namespace
     #[instrument(skip(self))]
-    async fn discover_sc_service(&self) -> Result<K8Obj<ServiceSpec>, K8InstallError> {
+    async fn discover_sc_service(&self) -> Result<K8Obj<ServiceSpec>> {
         use tokio::select;
         use futures_util::stream::StreamExt;
 
@@ -940,7 +938,7 @@ impl ClusterInstaller {
             select! {
                 _ = &mut timer => {
                     debug!(timer = *MAX_SC_SERVICE_WAIT,"timer expired");
-                    return Err(K8InstallError::SCServiceTimeout)
+                    return Err(K8InstallError::SCServiceTimeout.into())
                 },
                 service_next = service_stream.next() => {
                     if let Some(service_watches) = service_next {
@@ -962,7 +960,7 @@ impl ClusterInstaller {
                         }
                     } else {
                         debug!("service stream ended");
-                        return Err(K8InstallError::SCServiceTimeout)
+                        return Err(K8InstallError::SCServiceTimeout.into())
                     }
                 }
             }
@@ -971,7 +969,7 @@ impl ClusterInstaller {
 
     /// Waits for SC pod
     #[instrument(skip(self))]
-    async fn wait_for_sc_availability(&self) -> Result<K8Obj<DeploymentSpec>, K8InstallError> {
+    async fn wait_for_sc_availability(&self) -> Result<K8Obj<DeploymentSpec>> {
         use tokio::select;
         use futures_util::stream::StreamExt;
 
@@ -987,7 +985,7 @@ impl ClusterInstaller {
             select! {
                 _ = &mut timer => {
                     debug!(timer = *MAX_SC_DEPLOYMENT_AVAILABLE_WAIT, "timer expired");
-                    return Err(K8InstallError::SCDeploymentTimeout)
+                    return Err(K8InstallError::SCDeploymentTimeout.into())
                 },
                 deployment_next = deployment_stream.next() => {
                     if let Some(deployment_watches) = deployment_next {
@@ -1014,7 +1012,7 @@ impl ClusterInstaller {
                         }
                     } else {
                         debug!("deployment stream ended");
-                        return Err(K8InstallError::SCDeploymentTimeout)
+                        return Err(K8InstallError::SCDeploymentTimeout.into())
                     }
                 }
             }
