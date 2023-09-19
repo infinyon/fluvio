@@ -194,14 +194,6 @@ pub(crate) struct PartitionCountSpu {
 }
 
 impl PartitionCountSpu {
-    pub(crate) fn leaders(&self) -> u16 {
-        self.leaders
-    }
-
-    pub(crate) fn followers(&self) -> u16 {
-        self.followers
-    }
-
     /// some fuzzy value to determine if how much this weight for replica
     /// less is more suitable for scheduling
     pub(crate) fn leader_weight(&self) -> u16 {
@@ -211,12 +203,6 @@ impl PartitionCountSpu {
     pub(crate) fn follower_weight(&self) -> u16 {
         self.followers
     }
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct PartitionBySpu {
-    leaders: HashSet<ReplicaKey>,
-    followers: HashSet<ReplicaKey>,
 }
 
 #[async_trait]

@@ -13,7 +13,7 @@ use k8_metadata_client::{MetadataClient, SharedClient};
 use crate::core::Context;
 use crate::core::SharedContext;
 use crate::controllers::spus::SpuController;
-use crate::controllers::topics::TopicController;
+use crate::controllers::topics::controller::TopicController;
 use crate::controllers::partitions::PartitionController;
 #[cfg(feature = "k8")]
 use crate::config::ScConfig;

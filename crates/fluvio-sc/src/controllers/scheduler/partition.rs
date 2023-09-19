@@ -49,9 +49,9 @@ impl From<&PartitionMaps> for ReplicaPartitionMap {
     }
 }
 
-impl Into<ReplicaMap> for ReplicaPartitionMap {
-    fn into(self) -> ReplicaMap {
-        self.0
+impl From<ReplicaPartitionMap> for ReplicaMap {
+    fn from(val: ReplicaPartitionMap) -> Self {
+        val.0
     }
 }
 
@@ -88,13 +88,14 @@ where
     }
 
     pub(crate) fn spus(&self) -> &'a SpuLocalStore<C> {
-        &self.spus
+        self.spus
     }
 
     pub(crate) fn partitions(&self) -> &'a PartitionLocalStore<C> {
-        &self.partitions
+        self.partitions
     }
 
+    #[cfg(test)]
     pub(crate) fn scheduling_groups(&self) -> &ReplicaSchedulingGroups {
         &self.scheduling_groups
     }
@@ -130,7 +131,7 @@ where
         //print!("group: {:#?}", group);
         let mut online_spus = self.spus.online_spu_ids().await;
         online_spus.sort();
-        trace!(?online_spus,"online");
+        trace!(?online_spus, "online");
         let mut partition_map = BTreeMap::new();
         for p_idx in 0..param.partitions {
             let mut reserved_spus: Vec<i32> = vec![]; // spu reserved
@@ -145,7 +146,7 @@ where
                         SpuWeightSelection::Follower
                     },
                 ) {
-                    trace!(spu,"found spu");
+                    trace!(spu, "found spu");
                     reserved_spus.push(spu);
                     if r_idx == 0 {
                         self.scheduling_groups.increase_leaders(spu);

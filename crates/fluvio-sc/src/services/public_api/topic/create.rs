@@ -23,11 +23,11 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_stream_model::core::MetadataItem;
 
-use crate::controllers::scheduler::PartitionScheduler;
+use crate::controllers::topics::policy::{
+    validate_computed_topic_parameters, validate_assigned_topic_parameters,
+    update_replica_map_for_assigned_topic,
+};
 use crate::core::Context;
-use crate::controllers::topics::update_replica_map_for_assigned_topic;
-use crate::controllers::topics::validate_computed_topic_parameters;
-use crate::controllers::topics::validate_assigned_topic_parameters;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request

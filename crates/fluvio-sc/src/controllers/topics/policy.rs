@@ -14,7 +14,6 @@ use fluvio_stream_model::core::MetadataItem;
 
 use crate::controllers::scheduler::PartitionScheduler;
 use crate::controllers::scheduler::ReplicaPartitionMap;
-use crate::stores::partition;
 use crate::stores::spu::SpuLocalStore;
 use crate::stores::spu::SpuLocalStorePolicy;
 use crate::stores::topic::TopicMd;
