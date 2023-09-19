@@ -90,7 +90,7 @@ impl<C: MetadataItem> PartitionReducer<C> {
             .into_iter()
             .filter_map(|partition| {
                 if partition.ctx().item().is_being_deleted() && !partition.status.is_being_deleted {
-                    debug!("set partition: {} to delete", partition.key());
+                    debug!(partition = ?partition.key(), "set partition to delete");
                     Some(PartitionWSAction::UpdateStatus((
                         partition.key,
                         partition.status.set_to_delete(),

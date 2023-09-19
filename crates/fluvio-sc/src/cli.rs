@@ -141,7 +141,7 @@ impl ScOpt {
         // because public is used by proxy which forward traffic to internal public port
         if tls.tls {
             let proxy_addr = config.public_endpoint.clone();
-            debug!("using tls proxy addr: {}", proxy_addr);
+            debug!(proxy_addr, "tls proxy addr");
             config.public_endpoint = tls.bind_non_tls_public.clone().ok_or_else(|| {
                 IoError::new(
                     ErrorKind::NotFound,

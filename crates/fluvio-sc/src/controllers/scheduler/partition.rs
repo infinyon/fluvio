@@ -95,16 +95,6 @@ where
         self.partitions
     }
 
-    #[cfg(test)]
-    pub(crate) fn scheduling_groups(&self) -> &ReplicaSchedulingGroups {
-        &self.scheduling_groups
-    }
-
-    /// create new partition scheduler
-    //pub(crate) fn init_with(replica_map: ReplicaPartitionMap) -> Self {
-    //    Self(replica_map)
-    //}
-
     /// Generate replica map for a specific topic
     #[instrument(level = "debug")]
     pub async fn generate_replica_map_for_topic(
@@ -128,7 +118,6 @@ where
         &mut self,
         param: &TopicReplicaParam,
     ) -> ReplicaPartitionMap {
-        //print!("group: {:#?}", group);
         let mut online_spus = self.spus.online_spu_ids().await;
         online_spus.sort();
         trace!(?online_spus, "online");
@@ -289,7 +278,7 @@ pub mod replica_map_test {
             ignore_rack_assignment: false,
         };
 
-        println!("before group: {:#?}", scheduler.scheduling_groups());
+        //println!("before group: {:#?}", scheduler.scheduling_groups());
 
         let expect: ReplicaPartitionMap = vec![
             (0, vec![2, 0, 1]),
@@ -301,7 +290,7 @@ pub mod replica_map_test {
         .into();
 
         let actual = scheduler.generate_partitions_without_rack(&param).await;
-        println!("after group: {:#?}", scheduler.scheduling_groups());
+        //println!("after group: {:#?}", scheduler.scheduling_groups());
 
         assert_eq!(actual, expect);
     }

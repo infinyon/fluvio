@@ -20,6 +20,7 @@ use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::LocalStore;
 use fluvio_types::PartitionId;
 use fluvio_types::SpuId;
+use tracing::trace;
 
 use super::*;
 use super::policy::ElectionPolicy;
@@ -108,10 +109,7 @@ impl ReplicaSchedulingGroups {
         anti_affinity: &Vec<SpuId>,
         weight: SpuWeightSelection,
     ) -> Option<SpuId> {
-        println!(
-            "find_suitable_spu: spu_list: {:?}, anti_affinity: {:?}",
-            spu_list, anti_affinity
-        );
+        trace!(?spu_list, ?anti_affinity, "find_suitable_spu");
 
         let mut current_spu: Option<SpuId> = None;
         let mut min_weight = u16::MAX;
@@ -676,7 +674,7 @@ mod test2 {
             Some(1)
         );
 
-        println!("partitions: {:#?}", group);
+        //println!("partitions: {:#?}", group);
     }
 
     #[fluvio_future::test]
@@ -691,7 +689,7 @@ mod test2 {
         ]);
 
         let groups = partitions.group_by_spu().await;
-        println!("groups: {:#?}", groups);
+        //println!("groups: {:#?}", groups);
         // this yields
         // 0 -> leaders: 2, followers: 1
         // 1 -> leaders: 1, followers: 0

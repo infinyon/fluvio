@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_stream_model::core::MetadataItem;
-use tracing::{debug, trace, info, error, instrument};
+use tracing::{debug, trace, error, instrument};
 
 use crate::controllers::scheduler::PartitionScheduler;
 use crate::controllers::topics::policy::TopicNextState;
@@ -82,7 +82,7 @@ impl<C: MetadataItem> TopicReducer<C> {
     }
 
     pub async fn process_requests(&self, topic_updates: Vec<TopicMetadata<C>>) -> TopicActions<C> {
-        trace!("processing requests: {:#?}", topic_updates);
+        trace!(?topic_updates, "processing requests");
 
         let mut actions = TopicActions::default();
 
@@ -97,7 +97,7 @@ impl<C: MetadataItem> TopicReducer<C> {
     /// Compute next state for topic
     /// if state is different, apply actions
     ///
-    #[instrument(level = "trace", skip(self, topic, actions))]
+    #[instrument(skip(self, actions))]
     async fn update_actions_next_state(
         &self,
         topic: &TopicMetadata<C>,
@@ -129,7 +129,7 @@ impl<C: MetadataItem> TopicReducer<C> {
                     return;
                 }
                 for partition in partitions.into_iter() {
-                    debug!("Deleting partition: {}", partition.key());
+                    debug!(partition = %partition.key(), "Deleting partition");
                     actions
                         .partitions
                         .push(PartitionWSAction::Delete(partition.key_owned()));
@@ -145,9 +145,9 @@ impl<C: MetadataItem> TopicReducer<C> {
             PartitionScheduler::init(self.spu_store(), self.partition_store()).await;
         let next_state = TopicNextState::compute_next_state(topic, &mut scheduler).await;
 
-        debug!("topic: {} next state: {}", topic.key(), next_state);
+        debug!(topic = %topic.key(), ?next_state, "topic and next");
         let mut updated_topic = topic.clone();
-        trace!("next state: {:#?}", next_state);
+        trace!(?next_state, "next state");
 
         // apply changes in partitions
         for partition_kv in next_state
@@ -163,11 +163,11 @@ impl<C: MetadataItem> TopicReducer<C> {
         if updated_topic.status.resolution != topic.status.resolution
             || updated_topic.status.reason != topic.status.reason
         {
-            info!(
-                "{} status change to {} from: {}",
-                topic.key(),
-                updated_topic.status,
-                topic.status
+            debug!(
+                topic = %topic.key(),
+                old_status = ?topic.status,
+                new_status = ?updated_topic.status,
+                "updating topic status"
             );
             actions.topics.push(WSAction::<TopicSpec, C>::UpdateStatus((
                 updated_topic.key_owned(),
