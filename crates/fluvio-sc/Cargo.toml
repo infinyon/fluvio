@@ -23,7 +23,6 @@ default = ["k8"]
 k8 = ["k8-client", "k8-types", "k8-metadata-client"]
 
 [dependencies]
-rand = { workspace = true }
 tracing = { workspace = true }
 sysinfo = { workspace = true }
 base64 = { workspace = true }

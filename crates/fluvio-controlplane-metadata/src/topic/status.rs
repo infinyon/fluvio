@@ -212,10 +212,6 @@ impl TopicStatus {
         self.resolution == TopicResolution::Provisioned
     }
 
-    pub fn next_resolution_provisioned() -> (TopicResolution, String) {
-        (TopicResolution::Provisioned, "".to_owned())
-    }
-
     /// set to pending mode which means it is waiting for spu resources to be allocated
     pub fn next_resolution_pending() -> (TopicResolution, String) {
         (TopicResolution::Pending, super::PENDING_REASON.to_owned())
@@ -223,10 +219,6 @@ impl TopicStatus {
 
     pub fn next_resolution_invalid_config(reason: impl Into<String>) -> (TopicResolution, String) {
         (TopicResolution::InvalidConfig, reason.into())
-    }
-
-    pub fn set_resolution_no_resource(reason: impl Into<String>) -> (TopicResolution, String) {
-        (TopicResolution::InsufficientResources, reason.into())
     }
 
     pub fn set_next_resolution(&mut self, next: (TopicResolution, String)) {

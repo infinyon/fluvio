@@ -4,7 +4,10 @@
 //! Partition metadata information on cached in the local Controller.
 //!
 
+use std::collections::HashMap;
 use std::collections::HashSet;
+use std::ops::Deref;
+use std::ops::DerefMut;
 use std::sync::Arc;
 
 use tracing::debug;
@@ -28,7 +31,7 @@ pub type PartitionLocalStore<C> = LocalStore<PartitionSpec, C>;
 pub type DefaultPartitionMd = PartitionMetadata<String>;
 pub type DefaultPartitionStore = PartitionLocalStore<u32>;
 
-pub trait PartitionMd<C: MetadataItem> {
+pub(crate) trait PartitionMd<C: MetadataItem> {
     fn with_replicas(key: ReplicaKey, replicas: Vec<SpuId>) -> Self;
 
     fn quick(partition: ((impl Into<String>, PartitionId), Vec<SpuId>)) -> Self;
@@ -49,7 +52,7 @@ impl<C: MetadataItem> PartitionMd<C> for PartitionMetadata<C> {
 }
 
 #[async_trait]
-pub trait PartitionLocalStorePolicy<C>
+pub(crate) trait PartitionLocalStorePolicy<C>
 where
     C: MetadataItem,
 {
@@ -73,6 +76,147 @@ where
     async fn leaders(&self) -> Vec<ReplicaLeader>;
 
     fn bulk_load(partitions: Vec<((impl Into<String>, PartitionId), Vec<SpuId>)>) -> Self;
+
+    /// group replicas by spu
+    async fn group_by_spu(&self) -> ReplicaSchedulingGroups;
+}
+
+/// List of Replica groups for scheduling
+#[derive(Debug, Default)]
+pub(crate) struct ReplicaSchedulingGroups(HashMap<SpuId, PartitionCountSpu>);
+
+impl Deref for ReplicaSchedulingGroups {
+    type Target = HashMap<SpuId, PartitionCountSpu>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ReplicaSchedulingGroups {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl ReplicaSchedulingGroups {
+    /// find suitable leader
+    /// this is done by scanning all spu and find the one with least weight
+    pub(crate) fn find_suitable_spu(
+        &self,
+        spu_list: &Vec<SpuId>,
+        anti_affinity: &Vec<SpuId>,
+        weight: SpuWeightSelection,
+    ) -> Option<SpuId> {
+        println!(
+            "find_suitable_spu: spu_list: {:?}, anti_affinity: {:?}",
+            spu_list, anti_affinity
+        );
+
+        let mut current_spu: Option<SpuId> = None;
+        let mut min_weight = u16::MAX;
+        for spu_id in spu_list {
+            // check for anti-affinity
+            if anti_affinity.contains(spu_id) {
+                continue;
+            }
+            let candidate_weight = if let Some(group) = self.get(spu_id) {
+                match weight {
+                    SpuWeightSelection::Leader => group.leader_weight(),
+                    SpuWeightSelection::Follower => group.follower_weight(),
+                }
+            } else {
+                0
+            };
+
+            if candidate_weight < min_weight {
+                min_weight = candidate_weight;
+                current_spu = Some(*spu_id);
+            }
+        }
+
+        current_spu
+    }
+
+    pub(crate) fn increase_leaders(&mut self, spu: SpuId) {
+        if let Some(groups) = self.get_mut(&spu) {
+            groups.leaders += 1;
+        } else {
+            let mut groups = PartitionCountSpu::default();
+            groups.leaders += 1;
+            self.insert(spu, groups);
+        }
+    }
+
+    pub(crate) fn increase_followers(&mut self, spu: SpuId) {
+        if let Some(groups) = self.get_mut(&spu) {
+            groups.followers += 1;
+        } else {
+            let mut new_group = PartitionCountSpu::default();
+            new_group.followers += 1;
+            self.insert(spu, new_group);
+        }
+    }
+
+    /*
+    pub(crate) fn insert_leader(&mut self, spu: SpuId, partition: ReplicaKey) {
+        if let Some(groups) = self.get_mut(&spu) {
+            groups.leaders.insert(partition);
+        } else {
+            let mut new_group = PartitionBySpu::default();
+            new_group.leaders.insert(partition);
+            self.insert(spu, new_group);
+        }
+    }
+
+    pub(crate) fn insert_follower(&mut self, spu: SpuId, partition: ReplicaKey) {
+        if let Some(groups) = self.get_mut(&spu) {
+            groups.followers.insert(partition);
+        } else {
+            let mut new_group = PartitionBySpu::default();
+            new_group.followers.insert(partition);
+            self.insert(spu, new_group);
+        }
+    }
+    */
+}
+
+// used for selecting weight
+pub(crate) enum SpuWeightSelection {
+    Leader,
+    Follower,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct PartitionCountSpu {
+    leaders: u16,
+    followers: u16,
+}
+
+impl PartitionCountSpu {
+    pub(crate) fn leaders(&self) -> u16 {
+        self.leaders
+    }
+
+    pub(crate) fn followers(&self) -> u16 {
+        self.followers
+    }
+
+    /// some fuzzy value to determine if how much this weight for replica
+    /// less is more suitable for scheduling
+    pub(crate) fn leader_weight(&self) -> u16 {
+        self.leaders
+    }
+
+    pub(crate) fn follower_weight(&self) -> u16 {
+        self.followers
+    }
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct PartitionBySpu {
+    leaders: HashSet<ReplicaKey>,
+    followers: HashSet<ReplicaKey>,
 }
 
 #[async_trait]
@@ -192,6 +336,23 @@ where
             .map(|(replica_key, replicas)| PartitionMetadata::quick((replica_key, replicas)))
             .collect();
         Self::bulk_new(elements)
+    }
+
+    /// count leades and follower by spu, this is used for scheduling
+    async fn group_by_spu(&self) -> ReplicaSchedulingGroups {
+        let mut groups = ReplicaSchedulingGroups::default();
+        for (_, partition) in self.read().await.iter() {
+            let leader = partition.spec.leader;
+            groups.increase_leaders(leader);
+
+            for follower_spu in partition.spec.replicas.iter() {
+                if follower_spu != &leader {
+                    groups.increase_followers(*follower_spu);
+                }
+            }
+        }
+
+        groups
     }
 }
 
@@ -485,5 +646,91 @@ mod test2 {
         let partitions = DefaultPartitionStore::bulk_load(vec![(("topic1", 0), vec![10, 11, 12])]);
         let replica_msg = partitions.replica_for_spu(10).await;
         assert_eq!(replica_msg.len(), 1);
+    }
+
+    #[fluvio_future::test]
+    async fn test_replica_group() {
+        let partitions = DefaultPartitionStore::bulk_load(vec![
+            (("t1", 0), vec![0]), // (topic1,0) at SPU 0
+            (("t1", 1), vec![1]),
+            (("t1", 2), vec![2]),
+            (("t2", 0), vec![0, 3, 4]),
+            (("t2", 1), vec![2, 4, 5]),
+            (("t2", 2), vec![4, 5, 0]),
+        ]);
+
+        let groups = partitions.group_by_spu().await;
+        println!("groups: {:#?}", groups);
+        assert_eq!(groups.len(), 6); // spus are 0,1,2,3,4,5
+        assert_eq!(groups[&0].leaders, 2); // spu 0 is leader for 1 partition
+        assert_eq!(groups[&0].followers, 1); // spu 0 is follower for 1 partition
+        assert_eq!(groups[&4].leaders, 1);
+        assert_eq!(groups[&4].followers, 2);
+    }
+
+    #[test]
+    fn test_spu_scheduling_simple() {
+        let group = ReplicaSchedulingGroups::default();
+        assert_eq!(
+            group.find_suitable_spu(&vec![0, 1, 2], &vec![], SpuWeightSelection::Leader),
+            Some(0)
+        );
+
+        assert_eq!(
+            group.find_suitable_spu(&vec![0, 1, 2], &vec![0], SpuWeightSelection::Leader),
+            Some(1)
+        ); // anti-affinity
+        assert_eq!(
+            group.find_suitable_spu(&vec![0, 1, 2], &vec![0, 1], SpuWeightSelection::Leader),
+            Some(2)
+        ); // anti-affinity
+
+        assert_eq!(
+            group.find_suitable_spu(&vec![1, 2], &vec![], SpuWeightSelection::Follower),
+            Some(1)
+        );
+
+        println!("partitions: {:#?}", group);
+    }
+
+    #[fluvio_future::test]
+    async fn test_spu_scheduling_no_empty() {
+        let partitions = DefaultPartitionStore::bulk_load(vec![
+            (("t1", 0), vec![0]),
+            (("t1", 1), vec![1, 6]),
+            (("t1", 2), vec![2, 4, 5]),
+            (("t2", 0), vec![0, 3]),
+            (("t2", 1), vec![2, 4]),
+            (("t2", 2), vec![5, 0]),
+        ]);
+
+        let groups = partitions.group_by_spu().await;
+        println!("groups: {:#?}", groups);
+        // this yields
+        // 0 -> leaders: 2, followers: 1
+        // 1 -> leaders: 1, followers: 0
+        // 2 -> leaders: 2, followers: 0
+        // 3 -> leaders: 0, followers: 1
+        // 4 -> leaders: 0, followers: 2
+        // 5 -> leaders: 1, followers: 1
+        // 6 -> leaders: 0, followers: 1
+
+        assert_eq!(
+            groups.find_suitable_spu(&vec![0, 1, 2], &vec![], SpuWeightSelection::Leader),
+            Some(1)
+        );
+        assert_eq!(
+            groups.find_suitable_spu(&vec![0, 1, 2], &vec![2], SpuWeightSelection::Leader),
+            Some(1)
+        ); // anti-affinity
+        assert_eq!(
+            groups.find_suitable_spu(&vec![1, 2, 3, 6], &vec![], SpuWeightSelection::Leader),
+            Some(3)
+        ); // anti-affinity
+
+        assert_eq!(
+            groups.find_suitable_spu(&vec![2, 3, 6], &vec![], SpuWeightSelection::Follower),
+            Some(2)
+        ); // anti-affinity
     }
 }

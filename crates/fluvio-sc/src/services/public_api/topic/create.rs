@@ -23,8 +23,8 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_stream_model::core::MetadataItem;
 
+use crate::controllers::scheduler::PartitionScheduler;
 use crate::core::Context;
-use crate::controllers::topics::generate_replica_map;
 use crate::controllers::topics::update_replica_map_for_assigned_topic;
 use crate::controllers::topics::validate_computed_topic_parameters;
 use crate::controllers::topics::validate_assigned_topic_parameters;
@@ -145,17 +145,7 @@ async fn validate_topic_request<C: MetadataItem>(
                     Some(next_state.reason),
                 )
             } else {
-                let next_state = generate_replica_map::<C>(spus, param).await;
-                trace!("validating, generate replica map topic: {:#?}", next_state);
-                if next_state.resolution.no_resource() {
-                    Status::new(
-                        name.to_string(),
-                        ErrorCode::TopicError,
-                        Some(next_state.reason),
-                    )
-                } else {
-                    Status::new_ok(name.to_owned())
-                }
+                Status::new_ok(name.to_owned())
             }
         }
         ReplicaSpec::Assigned(ref partition_map) => {

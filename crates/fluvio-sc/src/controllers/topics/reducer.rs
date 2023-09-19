@@ -16,6 +16,7 @@ use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, trace, info, error, instrument};
 
+use crate::controllers::scheduler::PartitionScheduler;
 use crate::stores::topic::*;
 use crate::stores::partition::*;
 use crate::stores::spu::*;
@@ -139,9 +140,9 @@ impl<C: MetadataItem> TopicReducer<C> {
             return;
         }
 
-        let next_state =
-            TopicNextState::compute_next_state(topic, self.spu_store(), self.partition_store())
-                .await;
+        let mut scheduler =
+            PartitionScheduler::init(self.spu_store(), self.partition_store()).await;
+        let next_state = TopicNextState::compute_next_state(topic, &mut scheduler).await;
 
         debug!("topic: {} next state: {}", topic.key(), next_state);
         let mut updated_topic = topic.clone();
