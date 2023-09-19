@@ -145,7 +145,7 @@ fluvio-helm = { version = "0.4.1" }
 flv-tls-proxy = { version = "0.8" }
 flv-util = { version = "0.5.2", default-features = false }
 k8-client = { version = "11.0.0" }
-k8-config = { version = "2.0.0" }
+k8-config = { version = "2.2.0" }
 k8-metadata-client = { version = "6.0.0" }
 k8-types =  { version = "0.8.5" }
 k8-diff = { version = "0.1.2" }

@@ -4550,9 +4550,9 @@ dependencies = [
 
 [[package]]
 name = "k8-config"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b6c0a748d5a200177c5095396eff7757dbf972035ff9771fe495898a77c575b"
+checksum = "ec22051e1ca0ffea56a8d7dc5fdbf1b82107653a99b8200cfc554d59ae9a3e22"
 dependencies = [
  "dirs 5.0.1",
  "hostfile",
