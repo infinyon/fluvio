@@ -8,7 +8,6 @@ use self::command::install::InstallOpt;
 #[async_std::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
-
     let _ = tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .try_init();

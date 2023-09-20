@@ -12,3 +12,6 @@ pub const INFINYON_HUB_URL: &str = "https://hub-dev.infinyon.cloud";
 
 /// The URI of the Infinyon Hub's FVM API Package Set Endpoint
 pub const INFINYON_HUB_FVM_PKGSET_API_URI: &str = "/hub/v1/fvm/pkgset";
+
+/// The Target Architecture of the current build (e.g. "aarch64-apple-darwin")
+pub const TARGET: &str = env!("TARGET");

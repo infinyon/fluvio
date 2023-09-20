@@ -21,6 +21,10 @@ pub enum Error {
     Install(String),
     #[error("Setup failed. This might be related to an issue preparing FVM directory. {0}")]
     Setup(String),
-    #[error("Failed to fetch registry during install. {0:?}")]
+    #[error("Failed to fetch registry during install. {1}")]
     RegistryFetch(InstallTask, surf::Error),
+    #[error("Failed to download artifact. {1}")]
+    ArtifactDownload(InstallTask, surf::Error),
+    #[error("Failed to create temporal directory. {0}")]
+    CreateTempDir(String),
 }

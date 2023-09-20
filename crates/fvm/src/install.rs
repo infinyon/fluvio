@@ -1,10 +1,12 @@
+use std::str::FromStr;
+
 use surf::Client;
 use url::Url;
 
 use fluvio_hub_util::fvm::{PackageSet, RustTarget};
 
 use crate::{Error, Result};
-use crate::common::INFINYON_HUB_FVM_PKGSET_API_URI;
+use crate::common::{INFINYON_HUB_FVM_PKGSET_API_URI, TARGET};
 
 /// A Fluvio Version Name
 pub type Version = String;
@@ -13,18 +15,20 @@ pub type Version = String;
 /// FVM CLI.
 #[derive(Clone, Debug)]
 pub struct InstallTask {
+    /// The Host's Architecture written in Rust Target Format
+    arch: RustTarget,
     /// Registry where to find the Fluvio Versions
     registry: Url,
     /// Package Set to install
     pkgset: String,
-    /// Host Architecture in the form of a [`RustTarget`]
-    arch: RustTarget,
     /// Version to install
     version: Version,
 }
 
 impl InstallTask {
-    pub fn new(registry: Url, pkgset: String, version: Version, arch: RustTarget) -> Self {
+    pub fn new(registry: Url, pkgset: String, version: Version) -> Self {
+        let arch = RustTarget::from_str(TARGET).expect("Platform not supported");
+
         Self {
             registry,
             pkgset,
