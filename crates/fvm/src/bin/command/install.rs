@@ -3,8 +3,9 @@
 //! This command is used to initialize a new Fluvio Version Manager (FVM)
 //! instance in the host system.
 
-use std::fs::File;
+use std::fs::{File, create_dir, copy};
 use std::io::Cursor;
+use std::path::PathBuf;
 
 use surf::{Client, StatusCode};
 use tempfile::TempDir;
@@ -15,12 +16,12 @@ use color_eyre::owo_colors::OwoColorize;
 use tracing::debug;
 use url::Url;
 
-use fluvio_hub_util::fvm::{DEFAULT_PACKAGE_SET, PackageSet};
+use fluvio_hub_util::fvm::PackageSet;
 
 use fluvio_version_manager::Error;
-use fluvio_version_manager::common::INFINYON_HUB_URL;
+use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
 use fluvio_version_manager::install::{InstallTask, Version};
-use fluvio_version_manager::setup::{is_fvm_installed, install_fvm};
+use fluvio_version_manager::setup::{is_fvm_installed, install_fvm, fvm_path};
 use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
@@ -31,10 +32,9 @@ pub struct InstallOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
     /// Package Set to install
-    #[arg(long, default_value = DEFAULT_PACKAGE_SET)]
+    #[arg(long, default_value = "default")]
     pkgset: String,
     /// Version to install
-    // #[arg(long, default_value = STABLE_CHANNEL)]
     #[arg(long, default_value = "0.10.14")]
     version: Version,
     /// Registry used to fetch Fluvio Versions
@@ -88,6 +88,14 @@ impl InstallOpt {
         let tmp_dir = TempDir::new().map_err(|err| Error::CreateTempDir(err.to_string()))?;
         self.download_artifacts(&tmp_dir, &install_task, &pkgset)
             .await?;
+
+        self.notify_success("Downloaded artifacts with success!");
+        let pkgset_dir = self.store_binaries(&tmp_dir, &pkgset)?;
+
+        self.notify_success(format!(
+            "Stored binaries on {pkgset_dir}",
+            pkgset_dir = pkgset_dir.display()
+        ));
         Ok(())
     }
 
@@ -102,6 +110,11 @@ impl InstallOpt {
 
         self.notify_info("Downloading artifacts...");
         for (idx, artf) in pkgset.artifacts.iter().enumerate() {
+            if artf.name != "fluvio" {
+                // FIXME: This should be removed when all pkgs are supported
+                continue;
+            }
+
             let mut res = client
                 .get(&artf.download_url)
                 .await
@@ -109,10 +122,11 @@ impl InstallOpt {
 
             if res.status() == StatusCode::Ok {
                 self.notify_info(format!(
-                    "Downloading artifact {idx}/{total}: {name}...",
+                    "Downloading artifact {idx}/{total}: {name}@{version}...",
                     idx = (idx + 1).to_string().bold(),
                     total = pkgset.artifacts.len().to_string().bold(),
-                    name = artf.name.bold()
+                    name = artf.name.bold(),
+                    version = pkgset.version.italic(),
                 ));
 
                 let out_path = tmp_dir.path().join(&artf.name);
@@ -137,6 +151,44 @@ impl InstallOpt {
         }
 
         Ok(())
+    }
+
+    /// Stores binaries in the FVM `pkgset` directory for future use
+    pub fn store_binaries(&self, tmp_dir: &TempDir, pkgset: &PackageSet) -> Result<PathBuf> {
+        let fvm_path = fvm_path()?;
+
+        // FIXME: `PackageSet` Support for package set "name"
+        let pkgset_dir = fvm_path.join(FVM_PACKAGES_SET_DIR).join("default");
+        tracing::info!(?pkgset_dir, "Target directory for storing versions");
+
+        if !pkgset_dir.exists() {
+            tracing::info!(?pkgset_dir, "Creating PackageSet directory");
+            create_dir(&pkgset_dir).map_err(|err| Error::Install(err.to_string()))?;
+        }
+
+        let pkgset_version_dir = pkgset_dir.join(&pkgset.version);
+        tracing::info!(
+            ?pkgset_version_dir,
+            version = pkgset.version,
+            "Target directory for storing version binaries"
+        );
+
+        if !pkgset_version_dir.exists() {
+            tracing::info!(?pkgset_version_dir, "Creating directory for version");
+            create_dir(&pkgset_version_dir).map_err(|err| Error::Install(err.to_string()))?;
+        }
+
+        let binary_path = tmp_dir.path().join("fluvio");
+
+        if binary_path.is_file() {
+            copy(
+                tmp_dir.path().join("fluvio"),
+                pkgset_version_dir.join("fluvio"),
+            )
+            .map_err(|err| Error::Install(err.to_string()))?;
+        }
+
+        Ok(pkgset_version_dir)
     }
 }
 

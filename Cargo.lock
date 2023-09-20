@@ -3674,6 +3674,7 @@ dependencies = [
  "dirs 5.0.1",
  "fluvio-hub-util",
  "surf",
+ "tempfile",
  "thiserror",
  "tracing",
  "tracing-subscriber",

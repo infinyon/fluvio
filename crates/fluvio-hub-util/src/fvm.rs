@@ -66,8 +66,8 @@ impl FromStr for RustTarget {
 /// Artifact download URL
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Artifact {
-    name: String,
-    download_url: Url,
+    pub name: String,
+    pub download_url: Url,
 }
 
 /// Fluvio Version Manager Package for a specific architecture and version.

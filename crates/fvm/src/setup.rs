@@ -14,17 +14,22 @@ use std::path::PathBuf;
 use crate::common::{FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR};
 use crate::Error;
 
-/// Checks if the FVM is installed. This is achieved by checking if the
-/// binary is present in the FVM home directory.
-pub fn is_fvm_installed() -> Result<Option<PathBuf>, Error> {
+/// Retrieves the path to the `.fvm` directory in the host system.
+/// This function only builds the path, it doesn't check if the directory exists.
+pub fn fvm_path() -> Result<PathBuf, Error> {
     let Some(home_dir) = dirs::home_dir() else {
         return Err(Error::HomeDirNotFound);
     };
+    let fvm_path = home_dir.join(FVM_HOME_DIR);
 
-    let fvm_binary_path = home_dir
-        .join(FVM_HOME_DIR)
-        .join("bin")
-        .join(FVM_BINARY_NAME);
+    Ok(fvm_path)
+}
+
+/// Checks if the FVM is installed. This is achieved by checking if the
+/// binary is present in the FVM home directory.
+pub fn is_fvm_installed() -> Result<Option<PathBuf>, Error> {
+    let fvm_path = fvm_path()?;
+    let fvm_binary_path = fvm_path.join("bin").join(FVM_BINARY_NAME);
 
     if fvm_binary_path.exists() {
         return Ok(Some(fvm_binary_path));
@@ -40,13 +45,11 @@ pub fn is_fvm_installed() -> Result<Option<PathBuf>, Error> {
 ///
 /// This is executed on the first installation of FVM, similar to hom `rustup`
 /// does when installed.
-pub fn install_fvm() -> Result<(), Error> {
-    let Some(home_dir) = dirs::home_dir() else {
-        return Err(Error::HomeDirNotFound);
-    };
-
+///
+/// Returs the path to the directory where FVM was installed.
+pub fn install_fvm() -> Result<PathBuf, Error> {
     // Creates the directory `~/.fvm` if doesn't exists
-    let fvm_dir = home_dir.join(FVM_HOME_DIR);
+    let fvm_dir = fvm_path()?;
 
     if !fvm_dir.exists() {
         create_dir(&fvm_dir).map_err(|err| Error::Setup(err.to_string()))?;
@@ -68,5 +71,5 @@ pub fn install_fvm() -> Result<(), Error> {
     let fvm_pkgset_dir = fvm_dir.join(FVM_PACKAGES_SET_DIR);
     create_dir(fvm_pkgset_dir).map_err(|err| Error::Setup(err.to_string()))?;
 
-    Ok(())
+    Ok(fvm_dir)
 }
