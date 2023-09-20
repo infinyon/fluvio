@@ -1,9 +1,9 @@
-mod fvm;
 mod hubaccess;
 mod package;
 mod package_meta_ext;
 mod utils;
 
+pub mod fvm;
 pub mod keymgmt;
 
 use const_format::concatcp;

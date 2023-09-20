@@ -17,10 +17,19 @@ name = "fluvio_version_manager"
 path = "src/lib.rs"
 
 [dependencies]
+surf = "2.3.2"
+
+# Workspace Dependencies
 anyhow = { workspace = true }
-clap = { workspace = true , features = ["std", "derive"] }
+async-std = { workspace = true, features = ["attributes"] }
+clap = { workspace = true , features = ["std", "color", "derive", "help"] }
 colored = { workspace = true }
 color-eyre = { workspace = true, default-features = false }
 dirs = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
+url = { workspace = true }
+
+# Workspace Crates
+fluvio-hub-util = { workspace = true }

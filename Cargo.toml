@@ -74,7 +74,7 @@ cargo_toml = "0.16.2"
 cargo-generate = { version = "0.18.2", default-features = false }
 cfg-if = "1.0.0"
 chrono = { version = "0.4.23", default-features = false }
-clap = { version = "4.0.10", default-features = false }
+clap = { version = "4.2.7", default-features = false }
 color-eyre = { version = "0.6.2", default-features = false }
 colored = "2.0.4"
 comfy-table = { version = "7.0.1", default-features = false }

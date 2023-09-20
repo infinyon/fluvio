@@ -1,7 +1,9 @@
 //! Fluvio Version Manager (FVM) type definitions.
 
 use std::fmt::Display;
+use std::str::FromStr;
 
+use thiserror::Error;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -10,6 +12,12 @@ pub const ARMV7_UNKNOWN_LINUX_GNUEABIHF: &str = "armv7-unknown-linux-gnueabihf";
 pub const X86_64_APPLE_DARWIN: &str = "x86_64-apple-darwin";
 pub const AARCH64_APPLE_DARWIN: &str = "aarch64-apple-darwin";
 pub const X86_64_PC_WINDOWS_GNU: &str = "x86_64-pc-windows-gnu";
+
+#[derive(Clone, Debug, Error)]
+pub enum Error {
+    #[error("The provided Rust Target Triple \"{0}\" is not supported")]
+    RustTripleNotSupported(String),
+}
 
 /// Available Rust Targets for Fluvio.
 ///
@@ -40,15 +48,30 @@ impl Display for RustTarget {
     }
 }
 
+impl FromStr for RustTarget {
+    type Err = Error;
+
+    fn from_str(v: &str) -> Result<Self, Self::Err> {
+        match v {
+            ARM_UNKNOWN_LINUX_GNUEABIHF => Ok(Self::ArmUnknownLinuxGnueabihf),
+            ARMV7_UNKNOWN_LINUX_GNUEABIHF => Ok(Self::Armv7UnknownLinuxGnueabihf),
+            X86_64_APPLE_DARWIN => Ok(Self::X86_64AppleDarwin),
+            AARCH64_APPLE_DARWIN => Ok(Self::Aarch64AppleDarwin),
+            X86_64_PC_WINDOWS_GNU => Ok(Self::X86_64PcWindowsGnu),
+            _ => Err(Error::RustTripleNotSupported(v.to_string())),
+        }
+    }
+}
+
 /// Artifact download URL
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Artifact {
     name: String,
     download_url: Url,
 }
 
 /// Fluvio Version Manager Package for a specific architecture and version.
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct PackageSet {
     pub version: String,
     pub arch: RustTarget,

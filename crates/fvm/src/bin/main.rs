@@ -1,16 +1,20 @@
 mod command;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser};
 use color_eyre::eyre::Result;
 
-use self::command::init::InitOpt;
+use self::command::install::InstallOpt;
 
-fn main() -> Result<()> {
+#[async_std::main]
+async fn main() -> Result<()> {
     color_eyre::install()?;
 
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .try_init();
     let args = Cli::parse();
 
-    args.process()?;
+    args.process().await?;
     Ok(())
 }
 
@@ -22,8 +26,6 @@ pub struct GlobalOptions {
 }
 
 #[derive(Debug, Parser)]
-#[command(next_line_help = true)]
-#[command(name = "fvm", version, about, arg_required_else_help = true)]
 pub struct Cli {
     #[clap(flatten)]
     global_opts: GlobalOptions,
@@ -31,20 +33,26 @@ pub struct Cli {
     command: Command,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Parser)]
+#[command(
+    about = "Fluvio Version Manager (FVM)",
+    name = "fvm",
+    max_term_width = 100,
+    disable_version_flag = true
+)]
 pub enum Command {
-    /// Initialize a new FVM instance
-    #[command(name = "init")]
-    Init(InitOpt),
+    /// Installs a Fluvio Version
+    #[command(name = "install")]
+    Install(InstallOpt),
 }
 
 impl Cli {
-    fn process(&self) -> Result<()> {
+    async fn process(&self) -> Result<()> {
         let args = Cli::parse();
         let command = args.command;
 
         match command {
-            Command::Init(cmd) => cmd.process(),
+            Command::Install(cmd) => cmd.process().await,
         }
     }
 }
@@ -63,9 +71,9 @@ mod tests {
 
     #[test]
     fn recognizes_quiet_top_level_arg() {
-        let args = parse("fvm -q init").expect("Should parse command as valid");
+        let args = parse("fvm -q install default").expect("Should parse command as valid");
 
         assert!(args.global_opts.quiet);
-        assert!(matches!(args.command, Command::Init(_)));
+        assert!(matches!(args.command, Command::Install(_)));
     }
 }
