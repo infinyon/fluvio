@@ -3,6 +3,7 @@
 //!
 //! Reconcile Topics
 
+use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::ChangeListener;
 use fluvio_stream_model::store::k8::K8MetaItem;
@@ -20,6 +21,7 @@ use super::reducer::TopicReducer;
 
 #[derive(Debug)]
 pub struct TopicController<C: MetadataItem = K8MetaItem> {
+    spus: StoreContext<SpuSpec, C>,
     topics: StoreContext<TopicSpec, C>,
     partitions: StoreContext<PartitionSpec, C>,
     reducer: TopicReducer<C>,
@@ -34,6 +36,7 @@ where
     pub fn start(ctx: SharedContext<C>) {
         let topics = ctx.topics().clone();
         let partitions = ctx.partitions().clone();
+        let spus = ctx.spus().clone();
 
         let controller = Self {
             reducer: TopicReducer::new(
@@ -43,6 +46,7 @@ where
             ),
             topics,
             partitions,
+            spus,
         };
 
         spawn(controller.dispatch_loop());
@@ -59,10 +63,11 @@ impl<C: MetadataItem> TopicController<C> {
 
         debug!("starting dispatch loop");
 
-        let mut listener = self.topics.change_listener();
-
+        let mut topics_listener = self.topics.change_listener();
+        let mut spus_listener = self.spus.change_listener();
         loop {
-            self.sync_topics(&mut listener).await;
+            self.sync_topics(&mut topics_listener).await;
+            self.sync_spus(&mut spus_listener).await;
 
             select! {
 
@@ -70,9 +75,12 @@ impl<C: MetadataItem> TopicController<C> {
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
-                _ = listener.listen() => {
+                _ = topics_listener.listen() => {
                     debug!("detected topic changes");
 
+                }
+                _ = spus_listener.listen() => {
+                    debug!("detected spu changes");
                 }
             }
         }
@@ -95,6 +103,47 @@ impl<C: MetadataItem> TopicController<C> {
         let (updates, _) = changes.parts();
 
         let actions = self.reducer.process_requests(updates).await;
+
+        if actions.topics.is_empty() && actions.partitions.is_empty() {
+            debug!("no actions needed");
+        } else {
+            debug!(
+                "sending topic actions: {}, partition actions: {}",
+                actions.topics.len(),
+                actions.partitions.len()
+            );
+            for action in actions.topics.into_iter() {
+                self.topics.send_action(action).await;
+            }
+
+            for action in actions.partitions.into_iter() {
+                self.partitions.send_action(action).await;
+            }
+        }
+    }
+
+    #[instrument(skip(self, listener))]
+    async fn sync_spus(&mut self, listener: &mut ChangeListener<SpuSpec, C>) {
+        if !listener.has_change() {
+            debug!("no change");
+            return;
+        }
+
+        let changes = listener.sync_changes().await;
+
+        if changes.is_empty() {
+            debug!("no spu changes");
+            return;
+        }
+
+        let (updates, _) = changes.parts();
+
+        if !updates.iter().any(|update| update.status.is_online()) {
+            debug!("no online spu");
+            return;
+        };
+
+        let actions = self.reducer.process_spu_update().await;
 
         if actions.topics.is_empty() && actions.partitions.is_empty() {
             debug!("no actions needed");
