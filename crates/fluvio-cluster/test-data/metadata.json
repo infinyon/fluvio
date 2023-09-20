@@ -1,0 +1,20 @@
+{
+  "topics": [
+    {
+      "apiVersion": "fluvio.infinyon.com/v2",
+      "kind": "Topic",
+      "metadata": {
+        "name": "my-topic"
+      },
+      "spec": {
+        "replicas": {
+          "computed": {
+            "partitions": 1,
+            "replicationFactor": 1,
+            "ignoreRackAssignment": false
+          }
+        }
+      }
+    }
+  ]
+}

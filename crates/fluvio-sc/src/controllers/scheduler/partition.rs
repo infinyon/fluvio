@@ -120,6 +120,7 @@ where
     ) -> ReplicaPartitionMap {
         let mut online_spus = self.spus.online_spu_ids().await;
         online_spus.sort_unstable();
+
         trace!(?online_spus, "online");
         let mut partition_map = BTreeMap::new();
         for p_idx in 0..param.partitions {

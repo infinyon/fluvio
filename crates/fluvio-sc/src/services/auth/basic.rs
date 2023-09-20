@@ -30,7 +30,12 @@ impl Authorization for BasicAuthorization {
         &self,
         socket: &mut fluvio_socket::FluvioSocket,
     ) -> Result<Self::Context, AuthError> {
-        let identity = X509Identity::create_from_connection(socket).await?;
+        let identity = X509Identity::create_from_connection(socket)
+            .await
+            .map_err(|err| {
+                tracing::error!(%err, "failed to create x509 identity");
+                err
+            })?;
         Ok(BasicAuthContext {
             identity,
             policy: self.policy.clone(),
@@ -165,7 +170,7 @@ mod policy {
     impl Default for BasicRbacPolicy {
         // default only allows the `Root` role to have full permissions;
         fn default() -> Self {
-            let mut root_policy = HashMap::new();
+            let mut root_policy: HashMap<ObjectType, Vec<Action>> = HashMap::new();
 
             root_policy.insert(ObjectType::Spu, vec![Action::All]);
             root_policy.insert(ObjectType::CustomSpu, vec![Action::All]);

@@ -93,7 +93,6 @@ impl<C: MetadataItem> Context<C> {
         &self.config
     }
 
-    #[cfg(feature = "k8")]
     pub fn namespace(&self) -> &str {
         &self.config.namespace
     }

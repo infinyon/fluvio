@@ -14,32 +14,36 @@ name = "fluvio_sc"
 path = "src/lib.rs"
 
 [[bin]]
-name = "fluvio-sc-k8"
-path = "src/bin/k8.rs"
-required-features = ["k8"]
+name = "fluvio-sc"
+path = "src/bin/main.rs"
+required-features = []
 
 [features]
-default = ["k8"]
-k8 = ["k8-client", "k8-types", "k8-metadata-client"]
+default = []
 
 [dependencies]
-tracing = { workspace = true }
-sysinfo = { workspace = true }
-base64 = { workspace = true }
-serde = { workspace = true, features = ['derive'] }
-serde_json = { workspace = true }
-futures-util = { workspace = true }
-regex = { workspace = true }
+anyhow = { workspace = true }
 async-trait = { workspace = true }
 async-lock = { workspace = true }
 async-channel = { workspace = true }
-event-listener = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
-clap = { workspace = true,features = ["std", "derive", "env"]}
-semver = { workspace = true }
-once_cell = { workspace = true }
+async-net = { workspace = true }
+base64 = { workspace = true }
 cfg-if = { workspace = true }
-anyhow = { workspace = true }
+clap = { workspace = true,features = ["std", "derive", "env"]}
+event-listener = { workspace = true }
+futures-util = { workspace = true }
+once_cell = { workspace = true }
+rand = { workspace = true }
+regex = { workspace = true }
+semver = { workspace = true }
+serde = { workspace = true, features = ['derive'] }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+sysinfo = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+tracing = { workspace = true }
+
 
 # Fluvio dependencies
 fluvio-auth = { workspace = true }
@@ -51,14 +55,14 @@ fluvio-future = { workspace = true, features = [
 fluvio-types = { workspace = true,  features = [
     "events",
 ] }
-fluvio-sc-schema = { workspace = true }
+fluvio-sc-schema = { workspace = true, features = ["use_serde", "json"] }
 fluvio-stream-model = { workspace = true  }
-fluvio-controlplane = { workspace = true  }
+fluvio-controlplane = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8","serde"] }
 fluvio-stream-dispatcher = { workspace = true }
-k8-client = { workspace = true, optional = true }
-k8-metadata-client = { workspace = true, optional = true }
-k8-types = { workspace = true, features = ["app"], optional = true }
+k8-client = { workspace = true, features = ["memory_client"] }
+k8-metadata-client = { workspace = true }
+k8-types = { workspace = true, features = ["app"] }
 fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-service = { workspace = true  }

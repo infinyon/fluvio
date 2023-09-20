@@ -173,6 +173,10 @@ pub struct StartOpt {
     /// Service Type
     #[arg(long)]
     pub service_type: Option<String>,
+
+    /// Start SC in read only mode
+    #[arg(long)]
+    read_only: Option<PathBuf>,
 }
 
 impl StartOpt {
@@ -183,7 +187,7 @@ impl StartOpt {
 
         if self.sys_only {
             process_sys(&self, upgrade)?;
-        } else if self.local {
+        } else if self.local || self.read_only.is_some() {
             process_local(self, platform_version).await?;
         } else {
             process_k8(self, platform_version, upgrade).await?;
