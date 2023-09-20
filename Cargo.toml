@@ -69,7 +69,7 @@ async-trait = { version = "0.1.41", default-features = false }
 base64 = "0.21.0"
 bytes = "1.1.0"
 bytesize = "1.1.0"
-cargo_toml = "0.15"
+cargo_toml = "0.16.2"
 cargo-generate = { version = "0.18.2", default-features = false }
 cfg-if = "1.0.0"
 chrono = { version = "0.4.23", default-features = false }
@@ -125,15 +125,15 @@ tempfile = "3.4.0"
 thiserror = "1.0.30"
 tokio = { version =  "1.4.0", default-features = false }
 tokio-util = { version = "0.7.0", default-features = false }
-toml = { version = "0.7.0", default-features = false }
+toml = { version = "0.8.0", default-features = false }
 tracing = "0.1.19"
 tracing-subscriber = { version = "0.3", default-features = false }
 url = "2.1.1"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
-wasmtime = { version = "12.0.2" }
-wasmtime-wasi = { version = "12.0.1" }
-wasmparser = "0.112.0"
+wasmtime = { version = "13.0.0" }
+wasmtime-wasi = { version = "13.0.0" }
+wasmparser = "0.113.1"
 which = "4.1.0"
 x509-parser = "0.15.0"
 
