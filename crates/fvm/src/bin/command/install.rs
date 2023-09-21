@@ -88,7 +88,7 @@ impl InstallOpt {
         ));
 
         let tmp_dir = TempDir::new().map_err(|err| Error::CreateTempDir(err.to_string()))?;
-        self.download_artifacts(&tmp_dir, &install_task, &pkgset)
+        self.download_artifacts(&tmp_dir, &pkgset)
             .await?;
 
         self.notify_info("Downloaded artifacts with success!");
@@ -107,17 +107,13 @@ impl InstallOpt {
     pub async fn download_artifacts(
         &self,
         tmp_dir: &TempDir,
-        install_task: &InstallTask,
         pkgset: &PackageSet,
     ) -> Result<()> {
         let client = Client::new();
 
         self.notify_info("Downloading artifacts...");
         for (idx, artf) in pkgset.artifacts.iter().enumerate() {
-            let mut res = client
-                .get(&artf.download_url)
-                .await
-                .map_err(|err| Error::ArtifactDownload(install_task.to_owned(), err))?;
+            let mut res = client.get(&artf.download_url).await.unwrap();
 
             if res.status() == StatusCode::Ok {
                 self.notify_info(format!(

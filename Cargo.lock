@@ -3673,6 +3673,8 @@ dependencies = [
  "colored",
  "dirs 5.0.1",
  "fluvio-hub-util",
+ "hex",
+ "sha2 0.10.7",
  "surf",
  "tempfile",
  "thiserror",

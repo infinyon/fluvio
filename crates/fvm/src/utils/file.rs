@@ -41,7 +41,7 @@ pub fn shasum256(file: &File) -> Result<String> {
     let mut hasher = Sha256::new();
     let mut buffer = vec![0; meta.len() as usize];
 
-    file.read(&mut buffer)?;
+    file.read_exact(&mut buffer)?;
     hasher.update(buffer);
 
     let output = hasher.finalize();

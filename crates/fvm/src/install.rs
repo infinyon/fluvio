@@ -43,12 +43,10 @@ impl InstallTask {
         let url = self.make_pkgset_url();
         let mut res = client
             .get(url)
-            .await
-            .map_err(|err| Error::RegistryFetch(self.clone(), err))?;
+            .await?;
         let pkgset = res
             .body_json::<PackageSet>()
-            .await
-            .map_err(|err| Error::RegistryFetch(self.clone(), err))?;
+            .await?;
 
         Ok(pkgset)
     }
