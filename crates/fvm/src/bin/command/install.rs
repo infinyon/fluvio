@@ -22,7 +22,7 @@ use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
 use fluvio_version_manager::install::{InstallTask, Version};
 use fluvio_version_manager::setup::{is_fvm_installed, install_fvm, fvm_path};
-use fluvio_version_manager::utils::file::set_executable_mode;
+use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
@@ -91,11 +91,13 @@ impl InstallOpt {
             .await?;
 
         self.notify_success("Downloaded artifacts with success!");
-        let pkgset_dir = self.store_binaries(&tmp_dir, &pkgset)?;
+        let pkgset_dir = self
+            .store_binaries(&install_task, &tmp_dir, &pkgset)
+            .await?;
 
         self.notify_success(format!(
             "Stored binaries on {pkgset_dir}",
-            pkgset_dir = pkgset_dir.display()
+            pkgset_dir = pkgset_dir.display().italic()
         ));
         Ok(())
     }
@@ -111,11 +113,6 @@ impl InstallOpt {
 
         self.notify_info("Downloading artifacts...");
         for (idx, artf) in pkgset.artifacts.iter().enumerate() {
-            if artf.name != "fluvio" {
-                // FIXME: This should be removed when all pkgs are supported
-                continue;
-            }
-
             let mut res = client
                 .get(&artf.download_url)
                 .await
@@ -144,7 +141,7 @@ impl InstallOpt {
             }
 
             self.notify_warning(format!(
-                "Failed to find artifact {idx}/{total}: {name}...",
+                "Failed to fetch artifact {idx}/{total}: {name}...",
                 idx = (idx + 1).to_string().bold(),
                 total = pkgset.artifacts.len().to_string().bold(),
                 name = artf.name.bold()
@@ -155,7 +152,12 @@ impl InstallOpt {
     }
 
     /// Stores binaries in the FVM `pkgset` directory for future use
-    pub fn store_binaries(&self, tmp_dir: &TempDir, pkgset: &PackageSet) -> Result<PathBuf> {
+    pub async fn store_binaries(
+        &self,
+        install_task: &InstallTask,
+        tmp_dir: &TempDir,
+        pkgset: &PackageSet,
+    ) -> Result<PathBuf> {
         let fvm_path = fvm_path()?;
 
         // FIXME: `PackageSet` Support for package set "name"
@@ -183,13 +185,21 @@ impl InstallOpt {
 
         if binary_path.is_file() {
             let mut binary = File::open(binary_path)?;
+            let shasum = shasum256(&binary)?;
+            let upstream_shasum256 = install_task
+                .fetch_artifact_shasum(&pkgset.artifacts[0].name)
+                .await
+                .map_err(|err| Error::Install(err.to_string()))?;
 
-            set_executable_mode(&mut binary)?;
-            copy(
-                tmp_dir.path().join("fluvio"),
-                pkgset_version_dir.join("fluvio"),
-            )
-            .map_err(|err| Error::Install(err.to_string()))?;
+            if shasum == upstream_shasum256 {
+                self.notify_info(format!("Checksums matched ~> {shasum}"));
+                set_executable_mode(&mut binary)?;
+                copy(
+                    tmp_dir.path().join("fluvio"),
+                    pkgset_version_dir.join("fluvio"),
+                )
+                .map_err(|err| Error::Install(err.to_string()))?;
+            }
         }
 
         Ok(pkgset_version_dir)

@@ -53,6 +53,24 @@ impl InstallTask {
         Ok(pkgset)
     }
 
+    /// Fetches the Pkgset from the Registry
+    pub async fn fetch_artifact_shasum(&self, artifact: &str) -> Result<String> {
+        let client = Client::new();
+        let url = self
+            .make_artifact_shasum256_url(artifact)
+            .map_err(|err| Error::Install(err.to_string()))?;
+        let mut res = client
+            .get(url)
+            .await
+            .map_err(|err| Error::Install(err.to_string()))?;
+        let shasum256 = res
+            .body_string()
+            .await
+            .map_err(|err| Error::Install(err.to_string()))?;
+
+        Ok(shasum256)
+    }
+
     /// Constructs the [`Url`] to fetch the [`PackageSet`] from the Registry
     fn make_pkgset_url(&self) -> Url {
         let mut registry = self.registry.clone();
@@ -65,6 +83,21 @@ impl InstallTask {
         ));
 
         registry
+    }
+
+    /// Constructs the [`Url`] to fetch the Sha256 for the Specified Artifact
+    /// https://packages.fluvio.io/v1/packages/fluvio/fluvio-run/0.10.14/aarch64-apple-darwin/fluvio-run.sha256
+    fn make_artifact_shasum256_url(
+        &self,
+        artifact: &str,
+    ) -> std::result::Result<Url, url::ParseError> {
+        let mut url = &format!(
+            "https://packages.fluvio.io/v1/packages/fluvio/{artifact}/{version}/{arch}/{artifact}.sha256",
+            version = self.version,
+            arch = self.arch,
+        );
+
+        Url::parse(url)
     }
 }
 
@@ -85,6 +118,24 @@ mod tests {
         let have = task.make_pkgset_url().to_string();
         let want =
             "https://hub-dev.infinyon.cloud/hub/v1/fvm/pkgset/default/0.10.14/aarch64-apple-darwin";
+
+        assert_eq!(have, want);
+    }
+
+    #[test]
+    fn creates_artifact_shasum_url_as_expected() {
+        let task = InstallTask {
+            arch: RustTarget::Aarch64AppleDarwin,
+            pkgset: "default".to_string(),
+            version: "0.10.14".to_string(),
+            registry: "https://hub-dev.infinyon.cloud".parse().unwrap(),
+        };
+        let have = task
+            .make_artifact_shasum256_url("fluvio-run")
+            .unwrap()
+            .to_string();
+        let want =
+            "https://packages.fluvio.io/v1/packages/fluvio/fluvio-run/0.10.14/aarch64-apple-darwin/fluvio-run.sha256";
 
         assert_eq!(have, want);
     }
