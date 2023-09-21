@@ -2930,6 +2930,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "async-lock",
+ "async-net",
  "async-trait",
  "base64 0.21.4",
  "cfg-if",
@@ -2958,7 +2959,9 @@ dependencies = [
  "semver 1.0.18",
  "serde",
  "serde_json",
+ "serde_yaml 0.9.25",
  "sysinfo",
+ "thiserror",
  "tokio",
  "tracing",
 ]
@@ -2972,9 +2975,11 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
+ "fluvio-stream-model",
  "fluvio-types",
  "paste",
  "serde",
+ "serde_json",
  "static_assertions",
  "thiserror",
  "tracing",
@@ -4531,11 +4536,13 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "11.0.0"
+version = "12.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "995113c3a7e549a780a67d0a38467b6b050773e36b70377ca2a479c1a0325376"
+checksum = "0145d7a40f92824fa8d55828493fd5fb26d833bdbdf778f9491c02b08d4879d7"
 dependencies = [
  "anyhow",
+ "async-channel",
+ "async-lock",
  "async-trait",
  "base64 0.13.1",
  "bytes 1.5.0",
@@ -4553,6 +4560,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs 0.12.0",
+ "serde_yaml 0.9.25",
  "tokio",
  "tracing",
 ]
@@ -4585,9 +4593,9 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "6.0.0"
+version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "576a47a3a1cbd5daae3a197601f378987c92ec22d2918d6b5e1c822d5b984f5d"
+checksum = "deae805435efcaf6bead5801c7c6170ebce24ec6c3b534d601a9b5b040139413"
 dependencies = [
  "anyhow",
  "async-trait",

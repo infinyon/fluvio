@@ -40,7 +40,7 @@ mod health_check {
 
     pub type SharedHealthCheck = Arc<HealthCheck>;
 
-    /// Stores Curret Health Check Data
+    /// Stores Current Health Check Data
     #[derive(Debug)]
     pub struct HealthCheck {
         health: RwLock<HashMap<SpuId, bool>>,

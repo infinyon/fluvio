@@ -25,7 +25,7 @@ use crate::controllers::partitions::PartitionWSAction;
 
 use super::actions::TopicActions;
 
-/// Generates Partition Spec from Toic Spec based on replication and partition factor.
+/// Generates Partition Spec from Topic Spec based on replication and partition factor.
 /// For example, if we have Topic with partitions = #1 and replication = #2,
 /// it will generates Partition with name "Topic-0" with Replication of 2.
 ///

@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
-use fluvio_controlplane_metadata::spu::SpuSpec;
+use fluvio_controlplane_metadata::spu::{SpuSpec, CustomSpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
@@ -166,6 +166,9 @@ pub struct LocalConfig {
 
     #[builder(default = "true")]
     hide_spinner: bool,
+
+    #[builder(default)]
+    read_only: Option<PathBuf>,
 }
 
 impl LocalConfig {
@@ -349,6 +352,18 @@ impl LocalInstaller {
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
     pub async fn preflight_check(&self, fix: bool) -> Result<(), ClusterCheckError> {
+        if self.config.read_only.is_some() {
+            self.pb_factory
+                .println(InstallProgressMessage::PreFlightCheck.msg());
+
+            ClusterChecker::empty()
+                .with_no_k8_checks()
+                .run(&self.pb_factory, fix)
+                .await?;
+
+            return Ok(());
+        }
+
         let mut sys_config: ChartConfig = ChartConfig::sys_builder()
             .version(self.config.chart_version.clone())
             .build()
@@ -377,7 +392,6 @@ impl LocalInstaller {
         if !self.config.skip_checks {
             self.preflight_check(true).await?;
         };
-        use k8_client::load_and_share;
 
         let pb = self.pb_factory.create()?;
 
@@ -392,12 +406,19 @@ impl LocalInstaller {
             })?;
         }
 
-        let client = load_and_share()?;
+        let maybe_k8_client = if self.config.read_only.is_none() {
+            use k8_client::load_and_share;
+            Some(load_and_share()?)
+        } else {
+            None
+        };
 
-        pb.set_message("Ensure CRDs are installed");
-        // before we do let's try make sure SPU are installed.
-        check_crd(client.clone()).await?;
-        pb.set_message("CRD Checked");
+        if let Some(ref client) = maybe_k8_client {
+            pb.set_message("Ensure CRDs are installed");
+            // before we do let's try make sure SPU are installed.
+            check_crd(client.clone()).await?;
+            pb.set_message("CRD Checked");
+        }
 
         pb.set_message("Sync files");
         // ensure we sync files before we launch servers
@@ -421,8 +442,14 @@ impl LocalInstaller {
         // set profile as long as sc is up
         self.set_profile()?;
 
-        let pb = self.pb_factory.create()?;
-        self.launch_spu_group(client.clone(), &pb).await?;
+        let pb: ProgressRenderer = self.pb_factory.create()?;
+
+        if let Some(ref client) = maybe_k8_client {
+            self.launch_spu_group(client.clone(), &pb).await?;
+        } else {
+            self.launch_spu_group_read_only(&fluvio, &pb).await?;
+        }
+
         self.confirm_spu(self.config.spu_replicas, &fluvio, &pb)
             .await?;
         pb.println(format!("✅ {} SPU launched", self.config.spu_replicas));
@@ -454,6 +481,7 @@ impl LocalInstaller {
             launcher: self.config.launcher.clone(),
             tls_policy: self.config.server_tls_policy.clone(),
             rust_log: self.config.rust_log.clone(),
+            read_only: self.config.read_only.clone(),
         };
 
         sc_process.start()?;
@@ -545,6 +573,45 @@ impl LocalInstaller {
         spu_process.start().map_err(|err| err.into())
     }
 
+    #[instrument(skip(self, fluvio))]
+    async fn launch_spu_group_read_only(
+        &self,
+        fluvio: &Fluvio,
+        pb: &ProgressRenderer,
+    ) -> Result<(), LocalInstallError> {
+        let count = self.config.spu_replicas;
+
+        let runtime = self.config.as_spu_cluster_manager();
+
+        for i in 0..count {
+            pb.set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
+            self.launch_spu_read_only(fluvio, i, &runtime).await?;
+        }
+        sleep(Duration::from_millis(500)).await;
+        Ok(())
+    }
+
+    /// Register and launch spu
+    #[instrument(skip(self, cluster_manager, fluvio))]
+    async fn launch_spu_read_only(
+        &self,
+        fluvio: &Fluvio,
+        spu_index: u16,
+        cluster_manager: &LocalSpuProcessClusterManager,
+    ) -> Result<(), LocalInstallError> {
+        use crate::runtime::spu::SpuClusterManager;
+
+        let spu_process = cluster_manager.create_spu_relative(spu_index);
+        let spec = spu_process.spec();
+        let admin = fluvio.admin().await;
+        let name = format!("custom-spu-{}", spu_process.id());
+        admin
+            .create::<CustomSpuSpec>(name, false, spec.to_owned().into())
+            .await?;
+
+        spu_process.start().map_err(|err| err.into())
+    }
+
     /// Check to ensure SPUs are all running
     #[instrument(skip(self, client))]
     async fn confirm_spu(
@@ -574,11 +641,11 @@ impl LocalInstaller {
                 elapsed.as_secs()
             ));
             if ready_spu == spu as usize {
-                sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
+                sleep(Duration::from_millis(1000)).await; // give destructor time to clean up properly
                 return Ok(());
             } else {
                 debug!("{} out of {} SPUs up, waiting 10 sec", ready_spu, spu);
-                sleep(Duration::from_secs(10)).await;
+                sleep(Duration::from_secs(5)).await;
             }
         }
 

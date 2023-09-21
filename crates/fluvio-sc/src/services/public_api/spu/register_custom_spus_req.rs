@@ -42,7 +42,7 @@ impl<C: MetadataItem> RegisterCustomSpu<C> {
 
         if let Ok(authorized) = auth_ctx
             .auth
-            .allow_type_action(CustomSpuSpec::OBJECT_TYPE, TypeAction::Read)
+            .allow_type_action(CustomSpuSpec::OBJECT_TYPE, TypeAction::Create)
             .await
         {
             if !authorized {

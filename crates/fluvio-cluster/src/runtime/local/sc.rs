@@ -6,15 +6,17 @@ use std::{
 
 use fluvio::config::TlsPolicy;
 use fluvio_command::CommandExt;
-use tracing::{info};
+use tracing::info;
 
 use super::{FluvioLocalProcess, LocalRuntimeError};
 
+#[derive(Debug)]
 pub struct ScProcess {
     pub log_dir: PathBuf,
     pub launcher: Option<PathBuf>,
     pub tls_policy: TlsPolicy,
     pub rust_log: String,
+    pub read_only: Option<PathBuf>,
 }
 
 impl FluvioLocalProcess for ScProcess {}
@@ -31,6 +33,11 @@ impl ScProcess {
             cmd.arg("run").arg("sc").arg("--local");
             cmd
         };
+
+        if let Some(path) = &self.read_only {
+            binary.arg("--read-only").arg(path);
+        }
+
         if let TlsPolicy::Verified(tls) = &self.tls_policy {
             self.set_server_tls(&mut binary, tls, 9005)?;
         }
