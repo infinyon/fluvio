@@ -3184,7 +3184,6 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
  "thiserror",
  "tokio",
  "tracing",

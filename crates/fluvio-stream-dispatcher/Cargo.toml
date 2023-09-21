@@ -23,7 +23,6 @@ futures-util = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true,  features = ['derive'] }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true }

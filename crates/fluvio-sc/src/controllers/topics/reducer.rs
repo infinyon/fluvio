@@ -45,16 +45,6 @@ pub struct TopicReducer<C: MetadataItem = K8MetaItem> {
     partition_store: Arc<PartitionLocalStore<C>>,
 }
 
-impl<C: MetadataItem> Default for TopicReducer<C> {
-    fn default() -> Self {
-        Self {
-            topic_store: TopicLocalStore::new_shared(),
-            spu_store: SpuLocalStore::new_shared(),
-            partition_store: PartitionLocalStore::new_shared(),
-        }
-    }
-}
-
 impl<C: MetadataItem> TopicReducer<C> {
     pub fn new(
         topic_store: impl Into<Arc<TopicLocalStore<C>>>,
@@ -88,6 +78,17 @@ impl<C: MetadataItem> TopicReducer<C> {
 
         for topic in topic_updates {
             self.update_actions_next_state(&topic, &mut actions).await;
+        }
+
+        actions
+    }
+
+    pub async fn process_spu_update(&self) -> TopicActions<C> {
+        let mut actions = TopicActions::default();
+
+        let topics = self.topic_store().read().await;
+        for topic in topics.values() {
+            self.update_actions_next_state(topic, &mut actions).await;
         }
 
         actions
@@ -190,7 +191,11 @@ mod test2 {
     // if topic are just created, it should transitioned to pending state if config are valid
     #[fluvio_future::test]
     async fn test_topic_reducer_init_to_pending() {
-        let topic_reducer = TopicReducer::default();
+        let topic_reducer = TopicReducer::new(
+            TopicLocalStore::new_shared(),
+            SpuLocalStore::new_shared(),
+            PartitionLocalStore::new_shared(),
+        );
         let topic_requests = vec![
             TopicAdminMd::with_spec("topic1", (1, 1).into()),
             TopicAdminMd::with_spec("topic2", (2, 2).into()),
