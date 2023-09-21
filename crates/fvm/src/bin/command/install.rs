@@ -22,6 +22,7 @@ use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
 use fluvio_version_manager::install::{InstallTask, Version};
 use fluvio_version_manager::setup::{is_fvm_installed, install_fvm, fvm_path};
+use fluvio_version_manager::utils::file::set_executable_mode;
 use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
@@ -181,6 +182,9 @@ impl InstallOpt {
         let binary_path = tmp_dir.path().join("fluvio");
 
         if binary_path.is_file() {
+            let mut binary = File::open(binary_path)?;
+
+            set_executable_mode(&mut binary)?;
             copy(
                 tmp_dir.path().join("fluvio"),
                 pkgset_version_dir.join("fluvio"),
