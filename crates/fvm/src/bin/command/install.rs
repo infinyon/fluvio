@@ -21,13 +21,13 @@ use fluvio_hub_util::fvm::PackageSet;
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
 use fluvio_version_manager::install::{InstallTask, Version};
-use fluvio_version_manager::setup::{is_fvm_installed, install_fvm, fvm_path};
+use fluvio_version_manager::setup::{fvm_bin_path, install_fvm, fvm_path};
 use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
 
-/// The `init` command is responsible of preparing the workspace for FVM.
+/// The `install` command is responsible of installing the desired Package Set
 #[derive(Debug, Parser)]
 pub struct InstallOpt {
     #[command(flatten)]
@@ -48,7 +48,7 @@ impl InstallOpt {
     /// FVM `install` command is being used, or the local FVM isn`t installed,
     /// then it also installs FVM.
     pub async fn process(&self) -> Result<()> {
-        if let Some(installed_fvm_path) = is_fvm_installed()? {
+        if let Some(installed_fvm_path) = fvm_bin_path()? {
             debug!(path=?installed_fvm_path, "FVM is already installed");
 
             self.install_package().await?;
@@ -58,8 +58,9 @@ impl InstallOpt {
         self.notify_info("Installing FVM...");
         install_fvm()?;
 
-        self.notify_success("FVM installed successfully");
+        self.notify_done("FVM installed successfully");
         self.install_package().await?;
+
         Ok(())
     }
 
@@ -95,7 +96,7 @@ impl InstallOpt {
             .store_binaries(&install_task, &tmp_dir, &pkgset)
             .await?;
 
-        self.notify_success(format!(
+        self.notify_done(format!(
             "Stored binaries on {pkgset_dir}",
             pkgset_dir = pkgset_dir.display().italic()
         ));
@@ -140,7 +141,7 @@ impl InstallOpt {
                 continue;
             }
 
-            self.notify_warning(format!(
+            self.notify_warn(format!(
                 "Failed to fetch artifact {idx}/{total}: {name}...",
                 idx = (idx + 1).to_string().bold(),
                 total = pkgset.artifacts.len().to_string().bold(),
@@ -207,7 +208,7 @@ impl InstallOpt {
                     continue;
                 }
 
-                self.notify_warning(format!(
+                self.notify_warn(format!(
                     "Artifact {} didnt matched upstream shasum {}. Skipping installation for this artifact...",
                     artifact.name, shasum
                 ));
@@ -219,10 +220,6 @@ impl InstallOpt {
 }
 
 impl Notify for InstallOpt {
-    fn command(&self) -> &'static str {
-        "install"
-    }
-
     fn is_quiet(&self) -> bool {
         self.global_opts.quiet
     }

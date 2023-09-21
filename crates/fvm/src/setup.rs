@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use crate::common::{FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR};
 use crate::Error;
 
-/// Retrieves the path to the `.fvm` directory in the host system.
+/// Retrieves the path to the `~/.fvm` directory in the host system.
 /// This function only builds the path, it doesn't check if the directory exists.
 pub fn fvm_path() -> Result<PathBuf, Error> {
     let Some(home_dir) = dirs::home_dir() else {
@@ -26,8 +26,10 @@ pub fn fvm_path() -> Result<PathBuf, Error> {
 }
 
 /// Checks if the FVM is installed. This is achieved by checking if the
-/// binary is present in the FVM home directory.
-pub fn is_fvm_installed() -> Result<Option<PathBuf>, Error> {
+/// binary is present in the `FVM` home directory.
+///
+/// The returned path is the path to the FVM binary found.
+pub fn fvm_bin_path() -> Result<Option<PathBuf>, Error> {
     let fvm_path = fvm_path()?;
     let fvm_binary_path = fvm_path.join("bin").join(FVM_BINARY_NAME);
 
@@ -36,6 +38,14 @@ pub fn is_fvm_installed() -> Result<Option<PathBuf>, Error> {
     }
 
     Ok(None)
+}
+
+/// Retrieves the path to the `~/.fvm/pkgset` directory in the host system.
+pub fn fvm_pkgset_path() -> Result<PathBuf, Error> {
+    let fvm_path = fvm_path()?;
+    let fvm_pkget_path = fvm_path.join(FVM_PACKAGES_SET_DIR);
+
+    Ok(fvm_pkget_path)
 }
 
 /// Installs FVM in the host system.

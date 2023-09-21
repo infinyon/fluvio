@@ -91,7 +91,7 @@ impl InstallTask {
         &self,
         artifact: &str,
     ) -> std::result::Result<Url, url::ParseError> {
-        let mut url = &format!(
+        let url = &format!(
             "https://packages.fluvio.io/v1/packages/fluvio/{artifact}/{version}/{arch}/{artifact}.sha256",
             version = self.version,
             arch = self.arch,

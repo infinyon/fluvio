@@ -3,6 +3,7 @@ mod command;
 use clap::{Args, Parser};
 use color_eyre::eyre::Result;
 
+use self::command::default::DefaultOpt;
 use self::command::install::InstallOpt;
 
 #[async_std::main]
@@ -43,6 +44,9 @@ pub enum Command {
     /// Installs a Fluvio Version
     #[command(name = "install")]
     Install(InstallOpt),
+    /// Sets the default Fluvio Version to use
+    #[command(name = "default")]
+    Default(DefaultOpt),
 }
 
 impl Cli {
@@ -52,6 +56,7 @@ impl Cli {
 
         match command {
             Command::Install(cmd) => cmd.process().await,
+            Command::Default(cmd) => cmd.process().await,
         }
     }
 }

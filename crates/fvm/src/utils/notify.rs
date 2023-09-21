@@ -1,8 +1,13 @@
 use colored::Colorize;
 
 pub trait Notify {
-    fn command(&self) -> &'static str;
     fn is_quiet(&self) -> bool;
+
+    fn notify_fail<T: Into<String>>(&self, message: T) {
+        if !self.is_quiet() {
+            println!("{}: {}", "fail".red().bold(), message.into());
+        }
+    }
 
     fn notify_info<T: Into<String>>(&self, message: T) {
         if !self.is_quiet() {
@@ -10,15 +15,21 @@ pub trait Notify {
         }
     }
 
-    fn notify_success<T: Into<String>>(&self, message: T) {
+    fn notify_done<T: Into<String>>(&self, message: T) {
         if !self.is_quiet() {
             println!("{}: {}", "done".green().bold(), message.into());
         }
     }
 
-    fn notify_warning<T: Into<String>>(&self, message: T) {
+    fn notify_warn<T: Into<String>>(&self, message: T) {
         if !self.is_quiet() {
             println!("{}: {}", "warn".yellow().bold(), message.into());
+        }
+    }
+
+    fn notify_help<T: Into<String>>(&self, message: T) {
+        if !self.is_quiet() {
+            println!("{}: {}", "help".purple().bold(), message.into());
         }
     }
 }
