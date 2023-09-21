@@ -90,7 +90,7 @@ impl InstallOpt {
         self.download_artifacts(&tmp_dir, &install_task, &pkgset)
             .await?;
 
-        self.notify_success("Downloaded artifacts with success!");
+        self.notify_info("Downloaded artifacts with success!");
         let pkgset_dir = self
             .store_binaries(&install_task, &tmp_dir, &pkgset)
             .await?;
@@ -181,24 +181,36 @@ impl InstallOpt {
             create_dir(&pkgset_version_dir).map_err(|err| Error::Install(err.to_string()))?;
         }
 
-        let binary_path = tmp_dir.path().join("fluvio");
+        for artifact in pkgset.artifacts.iter() {
+            let binary_path = tmp_dir.path().join(&artifact.name);
 
-        if binary_path.is_file() {
-            let mut binary = File::open(binary_path)?;
-            let shasum = shasum256(&binary)?;
-            let upstream_shasum256 = install_task
-                .fetch_artifact_shasum(&pkgset.artifacts[0].name)
-                .await
-                .map_err(|err| Error::Install(err.to_string()))?;
+            if binary_path.is_file() {
+                let mut binary = File::open(binary_path)?;
+                let shasum = shasum256(&binary)?;
+                let upstream_shasum256 = install_task
+                    .fetch_artifact_shasum(&artifact.name)
+                    .await
+                    .map_err(|err| Error::Install(err.to_string()))?;
 
-            if shasum == upstream_shasum256 {
-                self.notify_info(format!("Checksums matched ~> {shasum}"));
-                set_executable_mode(&mut binary)?;
-                copy(
-                    tmp_dir.path().join("fluvio"),
-                    pkgset_version_dir.join("fluvio"),
-                )
-                .map_err(|err| Error::Install(err.to_string()))?;
+                if shasum == upstream_shasum256 {
+                    self.notify_info(format!(
+                        "Checksums matched for package {} with shasum: {}",
+                        artifact.name.bold(),
+                        shasum.italic()
+                    ));
+                    set_executable_mode(&mut binary)?;
+                    copy(
+                        tmp_dir.path().join(&artifact.name),
+                        pkgset_version_dir.join(&artifact.name),
+                    )
+                    .map_err(|err| Error::Install(err.to_string()))?;
+                    continue;
+                }
+
+                self.notify_warning(format!(
+                    "Artifact {} didnt matched upstream shasum {}. Skipping installation for this artifact...",
+                    artifact.name, shasum
+                ));
             }
         }
 
