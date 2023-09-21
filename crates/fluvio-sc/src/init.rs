@@ -12,7 +12,7 @@ use k8_metadata_client::{MetadataClient, SharedClient};
 use crate::core::Context;
 use crate::core::SharedContext;
 use crate::controllers::partitions::PartitionController;
-use crate::controllers::spus::SpuController;
+use crate::controllers::health_check::SpuHealthCheckController;
 use crate::controllers::topics::controller::TopicController;
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
@@ -88,7 +88,7 @@ where
 {
     let config = ctx.config();
 
-    whitelist!(config, "spu", SpuController::start(ctx.clone()));
+    whitelist!(config, "spu", SpuHealthCheckController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
     whitelist!(
         config,
