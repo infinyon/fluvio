@@ -777,6 +777,7 @@ mod cmd {
                 beginning: Default::default(),
                 transforms_file: Default::default(),
                 transform: Default::default(),
+                truncate: Default::default(),
             }
         }
         #[test]
