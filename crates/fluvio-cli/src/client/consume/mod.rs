@@ -204,6 +204,10 @@ mod cmd {
         /// E.g. fluvio consume topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
         #[arg(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
         pub transform: Vec<String>,
+
+        /// Truncate the output to one line
+        #[arg(long, conflicts_with_all = &["output", "format"])]
+        pub truncate: bool,
     }
 
     #[async_trait]
@@ -636,7 +640,14 @@ mod cmd {
                         let output = format!("[{formatted_key}] {value}");
                         pb.println(&output);
                     }
-                    Some(value) => {
+                    Some(mut value) => {
+                        if self.truncate {
+                            // `indicatif` doesn't handle well lengthy messages
+                            // TODO: use `indicatif` truncation once the issue is solved
+                            // https://github.com/console-rs/indicatif/issues/591
+                            let (width, _) = crossterm::terminal::size().unwrap_or((u16::MAX, 0));
+                            value = value.chars().take(width as usize).collect();
+                        }
                         pb.println(&value);
                     }
                     // (Some(_), None) only if JSON cannot be printed, so skip.
