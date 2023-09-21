@@ -17,6 +17,7 @@ use crate::stores::topic::TopicSpec;
 use crate::stores::partition::PartitionSpec;
 use crate::stores::StoreContext;
 
+use super::actions::TopicActions;
 use super::reducer::TopicReducer;
 
 #[derive(Debug)]
@@ -104,22 +105,7 @@ impl<C: MetadataItem> TopicController<C> {
 
         let actions = self.reducer.process_requests(updates).await;
 
-        if actions.topics.is_empty() && actions.partitions.is_empty() {
-            debug!("no actions needed");
-        } else {
-            debug!(
-                "sending topic actions: {}, partition actions: {}",
-                actions.topics.len(),
-                actions.partitions.len()
-            );
-            for action in actions.topics.into_iter() {
-                self.topics.send_action(action).await;
-            }
-
-            for action in actions.partitions.into_iter() {
-                self.partitions.send_action(action).await;
-            }
-        }
+        self.handle_actions(actions).await;
     }
 
     #[instrument(skip(self, listener))]
@@ -139,12 +125,16 @@ impl<C: MetadataItem> TopicController<C> {
         let (updates, _) = changes.parts();
 
         if !updates.iter().any(|update| update.status.is_online()) {
-            debug!("no online spu");
+            debug!("no new online spu");
             return;
         };
 
         let actions = self.reducer.process_spu_update().await;
 
+        self.handle_actions(actions).await;
+    }
+
+    async fn handle_actions(&mut self, actions: TopicActions<C>) {
         if actions.topics.is_empty() && actions.partitions.is_empty() {
             debug!("no actions needed");
         } else {
