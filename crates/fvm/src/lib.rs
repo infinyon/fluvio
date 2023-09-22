@@ -4,9 +4,9 @@
 //! provided in this library crate.
 
 pub mod common;
-pub mod default;
 pub mod install;
-pub mod setup;
+pub mod settings;
+pub mod switch;
 pub mod utils;
 
 use std::fmt::Display;
@@ -28,6 +28,8 @@ pub enum Error {
     HttpError(HttpClientError),
     #[error("Failed to create temporal directory. {0}")]
     CreateTempDir(String),
+    #[error("Failed to parse URL. {0}")]
+    UrlParseError(#[from] url::ParseError),
     #[error("I/O Error. {0}")]
     IOError(#[from] std::io::Error),
 }
@@ -41,12 +43,7 @@ pub struct HttpClientError {
 
 impl Display for HttpClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Status Code: {}. {}",
-            self.status,
-            self.name,
-        )
+        write!(f, "Status Code: {}. {}", self.status, self.name,)
     }
 }
 

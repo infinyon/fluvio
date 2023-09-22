@@ -1,2 +1,2 @@
-pub mod default;
 pub mod install;
+pub mod switch;

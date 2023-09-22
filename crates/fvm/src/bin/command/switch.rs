@@ -7,16 +7,15 @@ use color_eyre::eyre::Result;
 use clap::Parser;
 use color_eyre::owo_colors::OwoColorize;
 
-use fluvio_version_manager::default::{overwrite_binaries, fluvio_bin_path};
-use fluvio_version_manager::install::Version;
-use fluvio_version_manager::setup::{fvm_path, fvm_pkgset_path};
+use fluvio_version_manager::install::{Version, fvm_path, fvm_pkgset_path};
+use fluvio_version_manager::switch::{overwrite_binaries, fluvio_bin_path};
 use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
 
 /// The `init` command is responsible of preparing the workspace for FVM.
 #[derive(Debug, Parser)]
-pub struct DefaultOpt {
+pub struct SwitchOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
     /// Package Set to install
@@ -27,7 +26,7 @@ pub struct DefaultOpt {
     version: Version,
 }
 
-impl DefaultOpt {
+impl SwitchOpt {
     pub async fn process(&self) -> Result<()> {
         let fvm_dir = fvm_path()?;
         let fvm_pkgset_dir = fvm_pkgset_path()?;
@@ -86,7 +85,7 @@ impl DefaultOpt {
     }
 }
 
-impl Notify for DefaultOpt {
+impl Notify for SwitchOpt {
     fn is_quiet(&self) -> bool {
         self.global_opts.quiet
     }

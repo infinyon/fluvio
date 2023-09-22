@@ -3,8 +3,8 @@ mod command;
 use clap::{Args, Parser};
 use color_eyre::eyre::Result;
 
-use self::command::default::DefaultOpt;
 use self::command::install::InstallOpt;
+use self::command::switch::SwitchOpt;
 
 #[async_std::main]
 async fn main() -> Result<()> {
@@ -44,9 +44,9 @@ pub enum Command {
     /// Installs a Fluvio Version
     #[command(name = "install")]
     Install(InstallOpt),
-    /// Sets the default Fluvio Version to use
-    #[command(name = "default")]
-    Default(DefaultOpt),
+    /// Switches the Fluvio Version in use
+    #[command(name = "switch")]
+    Switch(SwitchOpt),
 }
 
 impl Cli {
@@ -56,7 +56,7 @@ impl Cli {
 
         match command {
             Command::Install(cmd) => cmd.process().await,
-            Command::Default(cmd) => cmd.process().await,
+            Command::Switch(cmd) => cmd.process().await,
         }
     }
 }

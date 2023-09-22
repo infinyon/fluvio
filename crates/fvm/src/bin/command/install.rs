@@ -20,8 +20,7 @@ use fluvio_hub_util::fvm::PackageSet;
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
-use fluvio_version_manager::install::{InstallTask, Version};
-use fluvio_version_manager::setup::{fvm_bin_path, install_fvm, fvm_path};
+use fluvio_version_manager::install::{InstallTask, Version, fvm_bin_path, install_fvm, fvm_path};
 use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
 
@@ -88,8 +87,7 @@ impl InstallOpt {
         ));
 
         let tmp_dir = TempDir::new().map_err(|err| Error::CreateTempDir(err.to_string()))?;
-        self.download_artifacts(&tmp_dir, &pkgset)
-            .await?;
+        self.download_artifacts(&tmp_dir, &pkgset).await?;
 
         self.notify_info("Downloaded artifacts with success!");
         let pkgset_dir = self
@@ -104,11 +102,7 @@ impl InstallOpt {
     }
 
     /// Downloads artifacts from the [`PackageSet`] into a local cache
-    pub async fn download_artifacts(
-        &self,
-        tmp_dir: &TempDir,
-        pkgset: &PackageSet,
-    ) -> Result<()> {
+    pub async fn download_artifacts(&self, tmp_dir: &TempDir, pkgset: &PackageSet) -> Result<()> {
         let client = Client::new();
 
         self.notify_info("Downloading artifacts...");

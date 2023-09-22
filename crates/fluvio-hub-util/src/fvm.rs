@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use thiserror::Error;
 use serde::{Deserialize, Serialize};
+use semver::Version;
 use url::Url;
 
 pub const ARM_UNKNOWN_LINUX_GNUEABIHF: &str = "arm-unknown-linux-gnueabihf";
@@ -17,6 +18,41 @@ pub const X86_64_PC_WINDOWS_GNU: &str = "x86_64-pc-windows-gnu";
 pub enum Error {
     #[error("The provided Rust Target Triple \"{0}\" is not supported")]
     RustTripleNotSupported(String),
+    #[error("Invalid Fluvio Channel \"{0}\"")]
+    InvalidChannel(String),
+}
+
+/// Pacakge Set Channels based on Fluvio Channels
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum Channel {
+    Stable,
+    Latest,
+    Tag(Version),
+}
+
+impl Channel {
+    /// Parses the provided
+    pub fn parse<T: AsRef<str>>(s: T) -> Result<Self, Error> {
+        Self::from_str(s.as_ref())
+    }
+}
+
+impl FromStr for Channel {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "stable" => Ok(Self::Stable),
+            "latest" => Ok(Self::Latest),
+            _ => {
+                if let Ok(version) = Version::parse(s) {
+                    Ok(Self::Tag(version))
+                } else {
+                    Err(Error::InvalidChannel(s.to_string()))
+                }
+            }
+        }
+    }
 }
 
 /// Available Rust Targets for Fluvio.
@@ -76,4 +112,63 @@ pub struct PackageSet {
     pub version: String,
     pub arch: RustTarget,
     pub artifacts: Vec<Artifact>,
+}
+
+#[cfg(test)]
+mod tests {
+    use semver::{BuildMetadata, Identifier, Version};
+
+    use super::Channel;
+
+    #[test]
+    fn parses_latest_channel_from_str() {
+        let channel = Channel::parse("latest").unwrap();
+
+        assert_eq!(channel, Channel::Latest);
+    }
+
+    #[test]
+    fn parses_stable_channel_from_str() {
+        let channel = Channel::parse("stable").unwrap();
+
+        assert_eq!(channel, Channel::Stable);
+    }
+
+    #[test]
+    fn parses_version_from_string() {
+        let have = vec![
+            "0.6.0-alpha.4",
+            "0.10.7-dev-1+cc83a3d05a6bd74a694f647776e62f49ac667db4",
+        ];
+        let want: Vec<Version> = vec![
+            Version {
+                major: 0,
+                minor: 6,
+                patch: 0,
+                pre: vec![
+                    Identifier::AlphaNumeric("alpha".to_string()),
+                    Identifier::Numeric(4),
+                ],
+                build: vec![],
+            },
+            Version {
+                major: 0,
+                minor: 10,
+                patch: 7,
+                pre: vec![
+                    Identifier::AlphaNumeric("dev".to_string()),
+                    Identifier::Numeric(4),
+                ],
+                build: BuildMetadata {
+                    identifier: Identifier::AlphaNumeric("dev".to_string()),
+                },
+            },
+        ];
+
+        for (idx, ver) in have.iter().enumerate() {
+            let channel = Channel::parse(ver);
+
+            assert_eq!(channel, Channel::Tag(want[idx].clone()));
+        }
+    }
 }
