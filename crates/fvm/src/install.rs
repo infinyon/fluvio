@@ -22,9 +22,6 @@ use crate::common::{
     INFINYON_HUB_FVM_PKGSET_API_URI, TARGET, FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR,
 };
 
-/// A Fluvio Version Name
-pub type Version = String;
-
 /// Retrieves the path to the `~/.fvm` directory in the host system.
 /// This function only builds the path, it doesn't check if the directory exists.
 pub fn fvm_path() -> Result<PathBuf> {
@@ -100,17 +97,17 @@ pub fn install_fvm() -> Result<PathBuf> {
 #[derive(Clone, Debug)]
 pub struct InstallTask {
     /// The Host's Architecture written in Rust Target Format
-    arch: RustTarget,
+    pub arch: RustTarget,
     /// Registry where to find the Fluvio Versions
-    registry: Url,
+    pub registry: Url,
     /// Package Set to install
-    pkgset: String,
+    pub pkgset: String,
     /// Version to install
-    version: Version,
+    pub version: String,
 }
 
 impl InstallTask {
-    pub fn new(registry: Url, pkgset: String, version: Version) -> Self {
+    pub fn new(registry: Url, pkgset: String, version: String) -> Self {
         let arch = RustTarget::from_str(TARGET).expect("Platform not supported");
 
         Self {

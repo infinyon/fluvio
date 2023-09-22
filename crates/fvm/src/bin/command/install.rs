@@ -16,11 +16,11 @@ use color_eyre::owo_colors::OwoColorize;
 use tracing::debug;
 use url::Url;
 
-use fluvio_hub_util::fvm::PackageSet;
+use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET};
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
-use fluvio_version_manager::install::{InstallTask, Version, fvm_bin_path, install_fvm, fvm_path};
+use fluvio_version_manager::install::{InstallTask, fvm_bin_path, install_fvm, fvm_path};
 use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
 
@@ -31,14 +31,11 @@ use crate::GlobalOptions;
 pub struct InstallOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
-    /// Package Set to install
-    #[arg(long, default_value = "default")]
-    pkgset: String,
     /// Version to install
-    #[arg(long, default_value = "0.10.14")]
-    version: Version,
+    #[arg(index = 1, default_value = STABLE_VERSION_CHANNEL)]
+    version: String,
     /// Registry used to fetch Fluvio Versions
-    #[clap(long, default_value = INFINYON_HUB_URL)]
+    #[clap(long, hide = true, default_value = INFINYON_HUB_URL)]
     registry: Url,
 }
 
@@ -67,14 +64,14 @@ impl InstallOpt {
     async fn install_package(&self) -> Result<()> {
         let install_task = InstallTask::new(
             self.registry.clone(),
-            self.pkgset.clone(),
+            DEFAULT_PKGSET.to_string(),
             self.version.clone(),
         );
 
         tracing::info!(?install_task, "Created InstallTask");
         self.notify_info(format!(
             "Installing Package Set {pkgset}@{version}...",
-            pkgset = self.pkgset.bold(),
+            pkgset = install_task.pkgset.bold(),
             version = self.version.bold()
         ));
 
@@ -82,7 +79,7 @@ impl InstallOpt {
         self.notify_info(format!(
             "Found {arts} packages in {pkgset}@{version}...",
             arts = pkgset.artifacts.len(),
-            pkgset = self.pkgset.bold(),
+            pkgset = install_task.pkgset.bold(),
             version = self.version.bold()
         ));
 
@@ -106,18 +103,10 @@ impl InstallOpt {
         let client = Client::new();
 
         self.notify_info("Downloading artifacts...");
-        for (idx, artf) in pkgset.artifacts.iter().enumerate() {
+        for artf in pkgset.artifacts.iter() {
             let mut res = client.get(&artf.download_url).await.unwrap();
 
             if res.status() == StatusCode::Ok {
-                self.notify_info(format!(
-                    "Downloading artifact {idx}/{total}: {name}@{version}...",
-                    idx = (idx + 1).to_string().bold(),
-                    total = pkgset.artifacts.len().to_string().bold(),
-                    name = artf.name.bold(),
-                    version = pkgset.version.italic(),
-                ));
-
                 let out_path = tmp_dir.path().join(&artf.name);
                 let mut file = File::create(&out_path).unwrap();
                 let mut buf = Cursor::new(res.body_bytes().await.unwrap());
@@ -131,12 +120,7 @@ impl InstallOpt {
                 continue;
             }
 
-            self.notify_warn(format!(
-                "Failed to fetch artifact {idx}/{total}: {name}...",
-                idx = (idx + 1).to_string().bold(),
-                total = pkgset.artifacts.len().to_string().bold(),
-                name = artf.name.bold()
-            ));
+            tracing::warn!(artifact = artf.name, "Failed to fetch artifact",);
         }
 
         Ok(())

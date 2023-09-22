@@ -1,29 +1,26 @@
-//! Initialization Command
+//! Version Switching Command
 //!
-//! This command is used to initialize a new Fluvio Version Manager (FVM)
-//! instance in the host system.
+//! The `switch` command is responsible of changing the active Fluvio Version
 
 use color_eyre::eyre::Result;
 use clap::Parser;
 use color_eyre::owo_colors::OwoColorize;
 
-use fluvio_version_manager::install::{Version, fvm_path, fvm_pkgset_path};
+use fluvio_hub_util::fvm::{DEFAULT_PKGSET, STABLE_VERSION_CHANNEL};
+
+use fluvio_version_manager::install::{fvm_path, fvm_pkgset_path};
 use fluvio_version_manager::switch::{overwrite_binaries, fluvio_bin_path};
 use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
 
-/// The `init` command is responsible of preparing the workspace for FVM.
 #[derive(Debug, Parser)]
 pub struct SwitchOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
-    /// Package Set to install
-    #[arg(long, default_value = "default")]
-    pkgset: String,
     /// Version to install
-    #[arg(long, default_value = "0.10.14")]
-    version: Version,
+    #[arg(long, default_value = STABLE_VERSION_CHANNEL)]
+    version: String,
 }
 
 impl SwitchOpt {
@@ -41,19 +38,19 @@ impl SwitchOpt {
         }
 
         let binaries_dir = fvm_pkgset_dir
-            .join(&self.pkgset)
+            .join(DEFAULT_PKGSET)
             .join(self.version.as_str());
 
         if !binaries_dir.exists() {
             self.notify_fail(format!(
                 "The package {} at version {} is not installed",
-                &self.pkgset.bold(),
+                DEFAULT_PKGSET.bold(),
                 self.version.as_str()
             ));
 
             let help = format!(
                 "fvm install --pkgset {} --version {}",
-                &self.pkgset,
+                DEFAULT_PKGSET,
                 self.version.as_str()
             );
 
@@ -67,7 +64,7 @@ impl SwitchOpt {
 
         self.notify_info(format!(
             "Found package {} with version {}. Setting as default.",
-            &self.pkgset.bold(),
+            DEFAULT_PKGSET.bold(),
             self.version.as_str().bold()
         ));
 
@@ -78,7 +75,7 @@ impl SwitchOpt {
         self.notify_done(format!(
             "You are now using {} as default {} version",
             self.version.as_str().bold(),
-            self.pkgset.bold()
+            DEFAULT_PKGSET.bold()
         ));
 
         Ok(())
