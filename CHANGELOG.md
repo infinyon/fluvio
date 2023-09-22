@@ -1,6 +1,80 @@
 # Release Notes
 
-## Platform Version 0.10.15 - UNRELEASED
+## Platform Version 0.10.15 - 2023-09-22
+
+### Added
+
+* Update `fluvio hub` subcommands ([#3409](https://github.com/infinyon/fluvio/issues/3409))
+* Add stdin input support for `smdk test` ([#3464](https://github.com/infinyon/fluvio/issues/3464))
+* Multi partition consumer in sink connectors ([#3470](https://github.com/infinyon/fluvio/issues/3470))
+* Print more error causes ([#3475](https://github.com/infinyon/fluvio/issues/3475))
+* Add nonzero copy option ([#3519](https://github.com/infinyon/fluvio/issues/3519))
+* Remove unnecessary generics ([#3529](https://github.com/infinyon/fluvio/issues/3529))
+* Add `--truncate` arg to `fluvio consume` and pretty print json output ([#3551](https://github.com/infinyon/fluvio/issues/3551))
+* Add generic signature to topic controller to make it easier to test ([#3445](https://github.com/infinyon/fluvio/issues/3445))
+* Make k8 feature available in fluvio-run ([#3446](https://github.com/infinyon/fluvio/issues/3446))
+* Reduce metadata item bound ([#3448](https://github.com/infinyon/fluvio/issues/3448))
+
+### CI
+
+* Update Zig to `v0.11.0` ([#3484](https://github.com/infinyon/fluvio/issues/3484))
+* Update rust toolchain ([#3501](https://github.com/infinyon/fluvio/issues/3501))
+* Clean up zig install ([#3508](https://github.com/infinyon/fluvio/issues/3508))
+* Ci badge should report master status ([#3524](https://github.com/infinyon/fluvio/issues/3524))
+* Point ci badge to staging ([#3526](https://github.com/infinyon/fluvio/issues/3526))
+* Update k8 crates ([#3546](https://github.com/infinyon/fluvio/issues/3546))
+* Add capability to start SC on read-only mode. Read-only mode me… ([#3525](https://github.com/infinyon/fluvio/issues/3525))
+* Post release ([#3431](https://github.com/infinyon/fluvio/issues/3431))
+* Configure fluvio-run build for armv7 ([#3444](https://github.com/infinyon/fluvio/issues/3444))
+
+### Changed
+
+* Update dep ([#3474](https://github.com/infinyon/fluvio/issues/3474))
+* Update dep ([#3504](https://github.com/infinyon/fluvio/issues/3504))
+* Update `fluvio-connector-derive` to syn@2 ([#3513](https://github.com/infinyon/fluvio/issues/3513))
+* Update zstd@`v0.12.4` ([#3514](https://github.com/infinyon/fluvio/issues/3514))
+* Update toml and wasmtime ([#3547](https://github.com/infinyon/fluvio/issues/3547))
+* Update dep ([#3436](https://github.com/infinyon/fluvio/issues/3436))
+* Update dep ([#3447](https://github.com/infinyon/fluvio/issues/3447))
+
+### Fixed
+
+* Install.sh, fluvio install/update, add arch/target overrides ([#3463](https://github.com/infinyon/fluvio/issues/3463))
+* Enable connector crates tests in CI ([#3471](https://github.com/infinyon/fluvio/issues/3471))
+* Cleanup format in some crates and fix fluvio cluster status wh… ([#3500](https://github.com/infinyon/fluvio/issues/3500))
+* Provision topics in resource insufficient state if there is a ne… ([#3549](https://github.com/infinyon/fluvio/issues/3549))
+* Run replica test on stable ([#3432](https://github.com/infinyon/fluvio/issues/3432))
+* Re-enable skipped backwards compatibility tests ([#3434](https://github.com/infinyon/fluvio/issues/3434))
+
+### Other
+
+* Unify common dependencies ([#3442](https://github.com/infinyon/fluvio/issues/3442))
+* Use generic client on sm migration and on k8 controllers ([#3468](https://github.com/infinyon/fluvio/issues/3468))
+* Components tests on local cluster ([#3457](https://github.com/infinyon/fluvio/issues/3457))
+* Include cli in docker image ([#3483](https://github.com/infinyon/fluvio/issues/3483))
+* Expose use_cluster_ip cli flag ([#3480](https://github.com/infinyon/fluvio/issues/3480))
+* Consume all partitions by default ([#3489](https://github.com/infinyon/fluvio/issues/3489))
+* Fvm type definitions ([#3531](https://github.com/infinyon/fluvio/issues/3531))
+* Use `SmartModuleRecord` instead of `Record` for `smdk generate` ([#3427](https://github.com/infinyon/fluvio/issues/3427))
+* Unify common dependencies ([#3408](https://github.com/infinyon/fluvio/issues/3408))
+* Migrate anyhow for replica assignment ([#3439](https://github.com/infinyon/fluvio/issues/3439))
+* Sc k8 feature flag ([#3443](https://github.com/infinyon/fluvio/issues/3443))
+* Quote protection for pw inconvenient chars ([#3451](https://github.com/infinyon/fluvio/issues/3451))
+* Move spu smartmodule to controlplane only ([#3453](https://github.com/infinyon/fluvio/issues/3453))
+* Decouple from K8MetaItem struct on fluvio-sc ([#3454](https://github.com/infinyon/fluvio/issues/3454))
+
+### Removed
+
+* Remove lazy_static in favor of once_cell ([#3466](https://github.com/infinyon/fluvio/issues/3466))
+* Remove SmartModuleMigrationController ([#3472](https://github.com/infinyon/fluvio/issues/3472))
+* Provides deprecation docs for warning ([#3488](https://github.com/infinyon/fluvio/issues/3488))
+* Remove legacy install script ([#3503](https://github.com/infinyon/fluvio/issues/3503))
+* Clean up partition creation path ([#3540](https://github.com/infinyon/fluvio/issues/3540))
+* Fair replica scheduler ([#3545](https://github.com/infinyon/fluvio/issues/3545))
+* Remove unnecessary test for PartitionMap ([#3438](https://github.com/infinyon/fluvio/issues/3438))
+* Remove unnecessary dep in controlplane-metadata ([#3450](https://github.com/infinyon/fluvio/issues/3450))
+* More cleanup ([#3452](https://github.com/infinyon/fluvio/issues/3452))
+
 
 ## Platform Version 0.10.14 - 2023-07-28
 
