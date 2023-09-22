@@ -8,6 +8,10 @@ use serde::{Deserialize, Serialize};
 use semver::Version;
 use url::Url;
 
+pub const STABLE_VERSION_CHANNEL: &str = "stable";
+pub const LATEST_VERSION_CHANNEL: &str = "latest";
+pub const DEFAULT_PKGSET: &str = "default";
+
 pub const ARM_UNKNOWN_LINUX_GNUEABIHF: &str = "arm-unknown-linux-gnueabihf";
 pub const ARMV7_UNKNOWN_LINUX_GNUEABIHF: &str = "armv7-unknown-linux-gnueabihf";
 pub const X86_64_APPLE_DARWIN: &str = "x86_64-apple-darwin";
@@ -42,8 +46,8 @@ impl FromStr for Channel {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_ascii_lowercase().as_str() {
-            "stable" => Ok(Self::Stable),
-            "latest" => Ok(Self::Latest),
+            STABLE_VERSION_CHANNEL => Ok(Self::Stable),
+            LATEST_VERSION_CHANNEL => Ok(Self::Latest),
             _ => {
                 if let Ok(version) = Version::parse(s) {
                     Ok(Self::Tag(version))
