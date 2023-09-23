@@ -1,6 +1,6 @@
 # Release Notes
 
-## Platform Version 0.10.15 - 2023-09-22
+## Platform Version 0.10.15-dev-2 - PRERELEASE
 
 ### Added
 
