@@ -111,8 +111,8 @@ impl From<String> for ClientConfig {
 }
 
 impl ClientConfig {
-    pub fn new<S: Into<String>>(
-        addr: S,
+    pub fn new(
+        addr: impl Into<String>,
         connector: DomainConnector,
         use_spu_local_address: bool,
     ) -> Self {

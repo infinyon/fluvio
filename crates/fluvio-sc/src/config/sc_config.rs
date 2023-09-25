@@ -21,10 +21,10 @@ pub trait ScConfigBuilder {
 /// streaming controller configuration file
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ScConfig {
+    pub read_only_metadata: bool,
     pub public_endpoint: String,
     pub private_endpoint: String,
     pub run_k8_dispatchers: bool,
-    #[cfg(feature = "k8")]
     pub namespace: String,
     pub x509_auth_scopes: Option<PathBuf>,
     pub white_list: HashSet<String>,
@@ -33,10 +33,10 @@ pub struct ScConfig {
 impl ::std::default::Default for ScConfig {
     fn default() -> Self {
         Self {
+            read_only_metadata: false,
             public_endpoint: format!("0.0.0.0:{SC_PUBLIC_PORT}"),
             private_endpoint: format!("0.0.0.0:{SC_PRIVATE_PORT}"),
             run_k8_dispatchers: true,
-            #[cfg(feature = "k8")]
             namespace: "default".to_owned(),
             x509_auth_scopes: None,
             white_list: HashSet::new(),

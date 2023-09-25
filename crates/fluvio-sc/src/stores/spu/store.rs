@@ -6,7 +6,6 @@
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -18,23 +17,17 @@ use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::LocalStore;
 use fluvio_types::SpuId;
 
-pub type SpuLocalStore<C> = LocalStore<SpuSpec, C>;
-pub type DefaultSpuStore = SpuLocalStore<u32>;
-pub type SharedSpuLocalStore<C> = Arc<SpuLocalStore<C>>;
-pub type SpuMetadata<C> = MetadataStoreObject<SpuSpec, C>;
-pub type DefaultSpuMd = SpuMetadata<u32>;
+pub(crate) type SpuLocalStore<C> = LocalStore<SpuSpec, C>;
+#[cfg(test)]
+pub(crate) type DefaultSpuStore = SpuLocalStore<u32>;
+pub(crate) type SpuMetadata<C> = MetadataStoreObject<SpuSpec, C>;
 
 pub trait SpuMd<C: MetadataItem> {
-    fn quick<J>(spu: (J, SpuId, bool, Option<String>)) -> SpuMetadata<C>
-    where
-        J: Into<String>;
+    fn quick(spu: (impl Into<String>, SpuId, bool, Option<String>)) -> SpuMetadata<C>;
 }
 
 impl<C: MetadataItem> SpuMd<C> for SpuMetadata<C> {
-    fn quick<J>(spu: (J, SpuId, bool, Option<String>)) -> SpuMetadata<C>
-    where
-        J: Into<String>,
-    {
+    fn quick(spu: (impl Into<String>, SpuId, bool, Option<String>)) -> SpuMetadata<C> {
         let spec = SpuSpec {
             id: spu.1,
             rack: spu.3,
@@ -326,10 +319,12 @@ pub mod test {
     use fluvio_stream_model::store::actions::LSUpdate;
     use fluvio_types::SpuId;
 
-    use super::DefaultSpuMd;
     use super::DefaultSpuStore;
     use super::SpuMd;
     use super::SpuLocalStorePolicy;
+    use super::SpuMetadata;
+
+    type DefaultSpuMd = SpuMetadata<u32>;
 
     #[fluvio_future::test]
     async fn test_spu_inquiry_online_offline_count() {

@@ -19,7 +19,6 @@ use sysinfo::{ProcessExt, System, SystemExt};
 
 use fluvio_helm::{HelmClient, HelmError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
-use k8_client::ClientError as K8ClientError;
 
 use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
 use crate::progress::ProgressBarFactory;
@@ -52,10 +51,6 @@ pub enum ClusterCheckError {
     /// There was a problem fetching kubernetes configuration
     #[error("Kubernetes config error")]
     K8ConfigError(#[from] K8ConfigError),
-
-    /// Could not connect to K8 client
-    #[error("Kubernetes client error")]
-    K8ClientError(#[from] K8ClientError),
 
     /// Failed to parse kubernetes cluster server URL
     #[error("Failed to parse server url from Kubernetes context")]
@@ -111,10 +106,6 @@ pub enum ClusterAutoFixError {
     #[error("Kubernetes config error")]
     K8Config(#[from] K8ConfigError),
 
-    /// Could not connect to K8 client
-    #[error("Kubernetes client error")]
-    K8Client(#[from] K8ClientError),
-
     #[error("Chart Install error")]
     ChartInstall(#[from] ChartInstallError),
 }
@@ -147,7 +138,7 @@ pub enum CheckStatus {
 
 impl CheckStatus {
     /// Creates a passing check status with a success message
-    pub(crate) fn pass<S: Into<String>>(msg: S) -> Self {
+    pub(crate) fn pass(msg: impl Into<String>) -> Self {
         Self::Pass(msg.into())
     }
 }
@@ -730,7 +721,7 @@ impl ClusterChecker {
     }
 
     /// Adds a check to this `ClusterChecker`
-    pub fn with_check<C: ClusterCheck, B: Into<Box<C>>>(mut self, check: B) -> Self {
+    pub fn with_check<C: ClusterCheck>(mut self, check: impl Into<Box<C>>) -> Self {
         self.checks.push(check.into());
         self
     }

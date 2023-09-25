@@ -109,7 +109,10 @@ impl Drop for SpuPool {
 
 impl SpuPool {
     /// start synchronize based on pool
-    pub fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError> {
+    pub(crate) fn start(
+        config: Arc<ClientConfig>,
+        metadata: MetadataStores,
+    ) -> Result<Self, SocketError> {
         debug!("starting spu pool");
         Ok(Self {
             metadata,
@@ -168,7 +171,7 @@ impl SpuPool {
         Ok(serial_socket)
     }
 
-    pub async fn topic_exists<S: Into<String>>(&self, topic: S) -> Result<bool, FluvioError> {
+    pub async fn topic_exists(&self, topic: impl Into<String>) -> Result<bool, FluvioError> {
         let replica = ReplicaKey::new(topic, 0u32);
         Ok(self
             .metadata
@@ -178,7 +181,7 @@ impl SpuPool {
             .is_some())
     }
 
-    pub fn shutdown(&mut self) {
+    pub(crate) fn shutdown(&mut self) {
         self.metadata.shutdown();
     }
 }

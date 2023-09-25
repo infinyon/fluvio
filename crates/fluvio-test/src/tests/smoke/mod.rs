@@ -110,7 +110,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     sleep(Duration::from_secs(5)).await;
 
                     admin
-                        .delete::<TableFormatSpec, _>(name.clone())
+                        .delete::<TableFormatSpec>(name.clone())
                         .await
                         .expect("TableFormat delete failed");
                     println!(

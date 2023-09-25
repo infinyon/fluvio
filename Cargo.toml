@@ -69,7 +69,7 @@ async-trait = { version = "0.1.41", default-features = false }
 base64 = "0.21.0"
 bytes = "1.1.0"
 bytesize = "1.1.0"
-cargo_toml = "0.15"
+cargo_toml = "0.16.2"
 cargo-generate = { version = "0.18.2", default-features = false }
 cfg-if = "1.0.0"
 chrono = { version = "0.4.23", default-features = false }
@@ -87,7 +87,7 @@ derive_builder = "0.12.0"
 directories = "5.0.0"
 dirs = "5.0.0"
 duct = { version = "0.13", default-features = false }
-event-listener = "2.5.1"
+event-listener = "3.0.0"
 eyre = { version = "0.6", default-features = false }
 flate2 = { version = "1.0.25" }
 futures = { version = "0.3.1" }
@@ -125,13 +125,15 @@ tempfile = "3.4.0"
 thiserror = "1.0.30"
 tokio = { version =  "1.4.0", default-features = false }
 tokio-util = { version = "0.7.0", default-features = false }
-toml = { version = "0.7.0", default-features = false }
+toml = { version = "0.8.0", default-features = false }
 tracing = "0.1.19"
 tracing-subscriber = { version = "0.3", default-features = false }
 url = "2.1.1"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
-wasmparser = "0.112.0"
+wasmtime = { version = "13.0.0" }
+wasmtime-wasi = { version = "13.0.0" }
+wasmparser = "0.113.1"
 which = "4.1.0"
 x509-parser = "0.15.0"
 
@@ -142,10 +144,11 @@ fluvio-future = { version = "0.6.0", default-features = false }
 fluvio-helm = { version = "0.4.1" }
 flv-tls-proxy = { version = "0.8" }
 flv-util = { version = "0.5.2", default-features = false }
-k8-client = { version = "10.1.0" }
-k8-config = { version = "2.0.0" }
-k8-metadata-client = { version = "5.1.0" }
-k8-types = { version = "0.8.3" }
+k8-client = { version = "12.0.0" }
+k8-config = { version = "2.2.0" }
+k8-metadata-client = { version = "7.0.0" }
+k8-types =  { version = "0.8.5" }
+k8-diff = { version = "0.1.2" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
 
 # Internal fluvio dependencies
@@ -160,7 +163,7 @@ fluvio-controlplane-metadata = { version = "0.24.0", default-features = false, p
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-package-index = { version = "0.7.0", path = "crates/fluvio-package-index", default-features = false }
-fluvio-protocol = { version = "0.10.4", path = "crates/fluvio-protocol" }
+fluvio-protocol = { version = "0.10.6", path = "crates/fluvio-protocol" }
 fluvio-sc-schema = { version = "0.21.0", path = "crates/fluvio-sc-schema", default-features = false }
 fluvio-service = { path = "crates/fluvio-service" }
 fluvio-smartengine = {  version = "0.7.0", path = "crates/fluvio-smartengine", default-features = false }
@@ -168,8 +171,8 @@ fluvio-smartmodule = { version = "0.7.0", path = "crates/fluvio-smartmodule", de
 fluvio-socket = { version = "0.14.3", path = "crates/fluvio-socket", default-features = false }
 fluvio-spu-schema = { version = "0.14.0", path = "crates/fluvio-spu-schema", default-features  = false }
 fluvio-storage = { path = "crates/fluvio-storage" }
-fluvio-stream-dispatcher = { path = "crates/fluvio-stream-dispatcher" }
-fluvio-stream-model = { version = "0.9.0", path = "crates/fluvio-stream-model", default-features = false }
+fluvio-stream-dispatcher = { version = "0.11.0", path = "crates/fluvio-stream-dispatcher" }
+fluvio-stream-model = { version = "0.9.3", path = "crates/fluvio-stream-model", default-features = false }
 fluvio-types = { version = "0.4.4", path = "crates/fluvio-types", default-features = false }
 
 # Used to make eyre faster on debug builds

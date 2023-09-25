@@ -89,10 +89,10 @@ where
         Self::response_with_header(&self.header, response)
     }
 
-    pub fn response_with_header<H>(header: H, response: R::Response) -> ResponseMessage<R::Response>
-    where
-        H: Into<i32>,
-    {
+    pub fn response_with_header(
+        header: impl Into<i32>,
+        response: R::Response,
+    ) -> ResponseMessage<R::Response> {
         ResponseMessage::new(header.into(), response)
     }
 

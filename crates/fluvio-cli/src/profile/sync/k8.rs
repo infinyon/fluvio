@@ -112,22 +112,13 @@ pub async fn set_k8_context(opt: K8Opt, external_addr: String) -> Result<Profile
 
 /// find fluvio addr
 pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<String>> {
-    use k8_client::http::status::StatusCode;
-
     let ns = namespace.unwrap_or("default");
-    let svc = match K8Client::try_default()?
+    let maybe_svc = K8Client::try_default()?
         .retrieve_item::<ServiceSpec, _>(&InputObjectMeta::named("fluvio-sc-public", ns))
-        .await
-    {
-        Ok(svc) => svc,
-        Err(err) => match err {
-            k8_client::ClientError::ApiResponse(status)
-                if status.code == Some(StatusCode::NOT_FOUND.as_u16()) =>
-            {
-                return Ok(None)
-            }
-            _ => return Err(anyhow!("unable to look up fluvio service in k8: {}", err)),
-        },
+        .await?;
+
+    let Some(svc) = maybe_svc else {
+        return Ok(None);
     };
 
     debug!("fluvio svc: {:#?}", svc);

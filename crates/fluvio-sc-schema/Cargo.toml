@@ -13,10 +13,12 @@ path = "src/lib.rs"
 
 [features]
 use_serde = ["fluvio-controlplane-metadata/use_serde", "serde"]
+json = ["serde_json"]
 
 [dependencies]
 tracing = { workspace = true }
 serde = { workspace = true, features = ['derive'], optional = true }
+serde_json = { workspace = true, optional = true }
 static_assertions = { workspace = true }
 anyhow = { workspace = true }
 paste = "1.0"
@@ -25,10 +27,11 @@ paste = "1.0"
 thiserror = { workspace = true }
 
 # Fluvio dependencies
-fluvio-types = { workspace = true }
-fluvio-controlplane-metadata = {  workspace = true, features = ["smartmodule"] }
+fluvio-controlplane-metadata = {  workspace = true, features = ["smartmodule", "k8"] }
 fluvio-protocol = { workspace = true,  features = ["link"]}
 fluvio-socket = { workspace = true }
+fluvio-stream-model = { workspace = true, features = ["k8"] }
+fluvio-types = { workspace = true }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["subscriber"] }

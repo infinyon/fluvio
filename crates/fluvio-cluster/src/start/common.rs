@@ -4,7 +4,7 @@ use std::{
 };
 
 use fluvio_controlplane_metadata::spu::SpuSpec;
-use k8_client::{SharedK8Client, ClientError};
+use k8_client::SharedK8Client;
 use once_cell::sync::Lazy;
 use semver::Version;
 use tracing::{debug, error, instrument, warn};
@@ -88,7 +88,7 @@ pub async fn try_connect_to_sc(
 }
 
 // hack
-pub async fn check_crd(client: SharedK8Client) -> Result<(), ClientError> {
+pub async fn check_crd(client: SharedK8Client) -> anyhow::Result<()> {
     use k8_metadata_client::MetadataClient;
 
     for i in 0..100 {
@@ -103,5 +103,5 @@ pub async fn check_crd(client: SharedK8Client) -> Result<(), ClientError> {
         }
     }
 
-    Err(ClientError::Other("Fluvio CRD not ready".to_string()))
+    Err(anyhow::anyhow!("Fluvio CRD not ready"))
 }

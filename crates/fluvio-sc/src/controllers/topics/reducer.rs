@@ -14,16 +14,18 @@ use std::sync::Arc;
 
 use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_stream_model::core::MetadataItem;
-use tracing::{debug, trace, info, error, instrument};
+use tracing::{debug, trace, error, instrument};
 
+use crate::controllers::scheduler::PartitionScheduler;
+use crate::controllers::topics::policy::TopicNextState;
 use crate::stores::topic::*;
 use crate::stores::partition::*;
 use crate::stores::spu::*;
 use crate::controllers::partitions::PartitionWSAction;
 
-use super::*;
+use super::actions::TopicActions;
 
-/// Generates Partition Spec from Toic Spec based on replication and partition factor.
+/// Generates Partition Spec from Topic Spec based on replication and partition factor.
 /// For example, if we have Topic with partitions = #1 and replication = #2,
 /// it will generates Partition with name "Topic-0" with Replication of 2.
 ///
@@ -41,16 +43,6 @@ pub struct TopicReducer<C: MetadataItem = K8MetaItem> {
     topic_store: Arc<TopicLocalStore<C>>,
     spu_store: Arc<SpuLocalStore<C>>,
     partition_store: Arc<PartitionLocalStore<C>>,
-}
-
-impl<C: MetadataItem> Default for TopicReducer<C> {
-    fn default() -> Self {
-        Self {
-            topic_store: TopicLocalStore::new_shared(),
-            spu_store: SpuLocalStore::new_shared(),
-            partition_store: PartitionLocalStore::new_shared(),
-        }
-    }
 }
 
 impl<C: MetadataItem> TopicReducer<C> {
@@ -80,7 +72,7 @@ impl<C: MetadataItem> TopicReducer<C> {
     }
 
     pub async fn process_requests(&self, topic_updates: Vec<TopicMetadata<C>>) -> TopicActions<C> {
-        trace!("processing requests: {:#?}", topic_updates);
+        trace!(?topic_updates, "processing requests");
 
         let mut actions = TopicActions::default();
 
@@ -91,11 +83,22 @@ impl<C: MetadataItem> TopicReducer<C> {
         actions
     }
 
+    pub async fn process_spu_update(&self) -> TopicActions<C> {
+        let mut actions = TopicActions::default();
+
+        let topics = self.topic_store().read().await;
+        for topic in topics.values() {
+            self.update_actions_next_state(topic, &mut actions).await;
+        }
+
+        actions
+    }
+
     ///
     /// Compute next state for topic
     /// if state is different, apply actions
     ///
-    #[instrument(level = "trace", skip(self, topic, actions))]
+    #[instrument(skip(self, actions))]
     async fn update_actions_next_state(
         &self,
         topic: &TopicMetadata<C>,
@@ -127,7 +130,7 @@ impl<C: MetadataItem> TopicReducer<C> {
                     return;
                 }
                 for partition in partitions.into_iter() {
-                    debug!("Deleting partition: {}", partition.key());
+                    debug!(partition = %partition.key(), "Deleting partition");
                     actions
                         .partitions
                         .push(PartitionWSAction::Delete(partition.key_owned()));
@@ -139,13 +142,13 @@ impl<C: MetadataItem> TopicReducer<C> {
             return;
         }
 
-        let next_state =
-            TopicNextState::compute_next_state(topic, self.spu_store(), self.partition_store())
-                .await;
+        let mut scheduler =
+            PartitionScheduler::init(self.spu_store(), self.partition_store()).await;
+        let next_state = TopicNextState::compute_next_state(topic, &mut scheduler).await;
 
-        debug!("topic: {} next state: {}", topic.key(), next_state);
+        debug!(topic = %topic.key(), ?next_state, "topic and next");
         let mut updated_topic = topic.clone();
-        trace!("next state: {:#?}", next_state);
+        trace!(?next_state, "next state");
 
         // apply changes in partitions
         for partition_kv in next_state
@@ -161,11 +164,11 @@ impl<C: MetadataItem> TopicReducer<C> {
         if updated_topic.status.resolution != topic.status.resolution
             || updated_topic.status.reason != topic.status.reason
         {
-            info!(
-                "{} status change to {} from: {}",
-                topic.key(),
-                updated_topic.status,
-                topic.status
+            debug!(
+                topic = %topic.key(),
+                old_status = ?topic.status,
+                new_status = ?updated_topic.status,
+                "updating topic status"
             );
             actions.topics.push(WSAction::<TopicSpec, C>::UpdateStatus((
                 updated_topic.key_owned(),
@@ -188,7 +191,11 @@ mod test2 {
     // if topic are just created, it should transitioned to pending state if config are valid
     #[fluvio_future::test]
     async fn test_topic_reducer_init_to_pending() {
-        let topic_reducer = TopicReducer::default();
+        let topic_reducer = TopicReducer::new(
+            TopicLocalStore::new_shared(),
+            SpuLocalStore::new_shared(),
+            PartitionLocalStore::new_shared(),
+        );
         let topic_requests = vec![
             TopicAdminMd::with_spec("topic1", (1, 1).into()),
             TopicAdminMd::with_spec("topic2", (2, 2).into()),

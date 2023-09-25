@@ -122,6 +122,7 @@ jobs:
         run: make build-smdk
 
       - name: Build cdk
+        timeout-minutes: 40
         if: matrix.binary == 'cdk'
         run: make build-cdk
 
@@ -384,6 +385,13 @@ jobs:
           override: true
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
+
+      # based upon https://github.com/orgs/community/discussions/25678
+      # check test regularly runs out of disk space
+      - name: Save Space
+        if: matrix.check == 'test'
+        run: rm -rf /opt/hostedtoolcache
+
       - uses: Swatinem/rust-cache@v2
         timeout-minutes: 10
         with:
@@ -957,8 +965,6 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
-      - uses: Swatinem/rust-cache@v2
-        timeout-minutes: 10
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
@@ -967,7 +973,6 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
-
 
       # Download stable, this will load into ~/.fluvio/bin which will be in PATH
       # from now, fluvio will be stable
@@ -1091,6 +1096,50 @@ jobs:
           name: cli-smoke_log
           path: diagnostics*.gz
           retention-days: 1
+
+  read_only_test:
+    runs-on: ubuntu-latest
+    needs: build_primary_binaries
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+
+      # Download artifacts from development build
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v3
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v3
+        with:
+          name: fluvio-run-x86_64-unknown-linux-musl
+          path: ~/extensions
+      - run: |
+          chmod +x ~/bin/fluvio
+          chmod +x ~/extensions/fluvio-run
+
+          mkdir -p ~/.fluvio/bin
+          mkdir -p ~/.fluvio/extensions
+
+          mv ~/bin/fluvio ~/.fluvio/bin/fluvio
+          mv ~/extensions/fluvio-run ~/.fluvio/extensions/fluvio-run
+
+          echo "~/.fluvio/bin" >> $GITHUB_PATH
+
+      - name: Start cluster in read-only mode
+        run: |
+          fluvio cluster start  --read-only crates/fluvio-cluster/test-data/metadata.json
+      - name: Run Fluvio read-only tests
+        run: make FLUVIO_BIN=~/.fluvio/bin/fluvio cli-fluvio-read-only-smoke
+
+      - name: Print SC logs
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: cat /tmp/flv_sc.log
 
   # Runs tests on `tests/cli/partition_test`
   partition_test:

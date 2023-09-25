@@ -101,7 +101,6 @@ impl<C: MetadataItem> Context<C> {
         self.metrics.clone()
     }
 
-    #[cfg(feature = "k8")]
     pub fn namespace(&self) -> &str {
         &self.config.namespace
     }

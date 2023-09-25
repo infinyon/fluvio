@@ -157,48 +157,6 @@ mod test {
 
     use super::*;
 
-    mod meta {
-        use fluvio_controlplane_metadata::core::{MetadataItem, MetadataRevExtension};
-
-        /// simple memory representation of meta
-        #[derive(Debug, Default, PartialEq, Clone)]
-        pub struct MemoryMeta {
-            pub rev: u32,
-        }
-
-        impl MetadataItem for MemoryMeta {
-            type UId = u32;
-
-            fn uid(&self) -> &Self::UId {
-                &self.rev
-            }
-
-            fn is_newer(&self, another: &Self) -> bool {
-                self.rev >= another.rev
-            }
-        }
-
-        impl MetadataRevExtension for MemoryMeta {
-            fn next_rev(&self) -> Self {
-                Self { rev: self.rev + 1 }
-            }
-        }
-
-        impl MemoryMeta {
-            pub fn new(rev: u32) -> Self {
-                Self { rev }
-            }
-        }
-
-        /*
-        impl From<u32> for MetadataContext<MemoryMeta> {
-            fn from(val: u32) -> MetadataContext<MemoryMeta> {
-                MemoryMeta::new(val).into()
-            }
-        }
-        */
-    }
-
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
     use meta::*;
 

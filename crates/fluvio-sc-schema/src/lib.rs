@@ -9,6 +9,8 @@ pub mod objects;
 pub mod shared;
 pub mod tableformat;
 
+pub mod edge;
+
 mod apis;
 mod request;
 mod response;

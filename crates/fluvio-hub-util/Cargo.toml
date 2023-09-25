@@ -29,6 +29,7 @@ tempfile = { workspace = true }
 toml = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
+url = { workspace = true }
 wasmparser = { workspace = true }
 
 fluvio-future = { workspace = true, features = ["task"]}

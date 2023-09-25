@@ -1,13 +1,3 @@
-#![allow(clippy::assign_op_pattern)]
-
-//!
-//! # Topic Spec
-//!
-//! Topic spec consists of 2 types of topics
-//!  * Assigned
-//!  * Computed
-//!
-use std::collections::BTreeMap;
 use std::ops::Deref;
 
 use anyhow::{anyhow, Result};
@@ -16,7 +6,7 @@ use fluvio_types::defaults::{
     STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
     SPU_PARTITION_MAX_BYTES_MIN, SPU_LOG_SEGMENT_MAX_BYTES,
 };
-use fluvio_types::{ReplicaMap, SpuId};
+use fluvio_types::SpuId;
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 use fluvio_protocol::{Encoder, Decoder};
 
@@ -63,10 +53,7 @@ impl Deref for TopicSpec {
 }
 
 impl TopicSpec {
-    pub fn new_assigned<J>(partition_map: J) -> Self
-    where
-        J: Into<PartitionMaps>,
-    {
+    pub fn new_assigned(partition_map: impl Into<PartitionMaps>) -> Self {
         Self {
             replicas: ReplicaSpec::new_assigned(partition_map),
             ..Default::default()
@@ -439,17 +426,6 @@ impl PartitionMaps {
         }
 
         spu_ids
-    }
-
-    /// convert to replica map
-    pub fn as_replica_map(&self) -> ReplicaMap {
-        let mut replica_map: ReplicaMap = BTreeMap::new();
-
-        for partition in &self.0 {
-            replica_map.insert(partition.id as PartitionId, partition.replicas.clone());
-        }
-
-        replica_map
     }
 
     #[allow(clippy::explicit_counter_loop)]

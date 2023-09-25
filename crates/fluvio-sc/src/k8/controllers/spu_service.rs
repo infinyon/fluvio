@@ -2,12 +2,12 @@ use std::{collections::HashMap, fmt, time::Duration};
 
 use tracing::{debug, error, info, instrument, trace, warn};
 
+use anyhow::{Result, anyhow};
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use fluvio_stream_dispatcher::actions::WSAction;
-use k8_client::ClientError;
 
 use crate::stores::spg::SpuGroupSpec;
 use crate::stores::{StoreContext, K8ChangeListener};
@@ -60,7 +60,7 @@ impl SpuServiceController {
     }
 
     #[instrument(skip(self), name = "SpuSvcLoop")]
-    async fn inner_loop(&mut self) -> Result<(), ClientError> {
+    async fn inner_loop(&mut self) -> Result<()> {
         use tokio::select;
 
         let mut spg_listener = self.groups.change_listener();
@@ -100,7 +100,7 @@ impl SpuServiceController {
     async fn sync_with_config(
         &mut self,
         listener: &mut K8ChangeListener<ScK8Config>,
-    ) -> Result<(), ClientError> {
+    ) -> Result<()> {
         if !listener.has_change() {
             trace!("no config change, skipping");
             return Ok(());
@@ -126,10 +126,7 @@ impl SpuServiceController {
         Ok(())
     }
 
-    async fn sync_with_spg(
-        &mut self,
-        listener: &mut K8ChangeListener<SpuGroupSpec>,
-    ) -> Result<(), ClientError> {
+    async fn sync_with_spg(&mut self, listener: &mut K8ChangeListener<SpuGroupSpec>) -> Result<()> {
         if !listener.has_change() {
             trace!("no spg changes, skipping");
             return Ok(());
@@ -150,7 +147,7 @@ impl SpuServiceController {
             self.update_services(updates, config.inner_owned().spec)
                 .await?;
         } else {
-            return Err(ClientError::Other("fluvio config not found".to_owned()));
+            return Err(anyhow!("fluvio config not found"));
         }
 
         Ok(())
@@ -161,7 +158,7 @@ impl SpuServiceController {
         &self,
         updates: Vec<MetadataStoreObject<SpuGroupSpec, K8MetaItem>>,
         config: ScK8Config,
-    ) -> Result<(), ClientError> {
+    ) -> Result<()> {
         for group_item in updates.into_iter() {
             let spg_obj = SpuGroupObj::new(group_item);
 
@@ -186,7 +183,7 @@ impl SpuServiceController {
         spg_obj: &SpuGroupObj,
         spu_name: &str,
         spu_k8_config: &ScK8Config,
-    ) -> Result<(), ClientError> {
+    ) -> Result<()> {
         use k8_types::core::service::ServiceSpec as K8ServiceSpec;
 
         let mut selector = HashMap::new();

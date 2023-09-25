@@ -148,7 +148,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn topic_producer<S: Into<String>>(&self, topic: S) -> Result<TopicProducer> {
+    pub async fn topic_producer(&self, topic: impl Into<String>) -> Result<TopicProducer> {
         self.topic_producer_with_config(topic, Default::default())
             .await
     }
@@ -170,9 +170,9 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn topic_producer_with_config<S: Into<String>>(
+    pub async fn topic_producer_with_config(
         &self,
-        topic: S,
+        topic: impl Into<String>,
         config: TopicProducerConfig,
     ) -> Result<TopicProducer> {
         let topic = topic.into();
@@ -192,9 +192,9 @@ impl Fluvio {
     /// all of the events in all of the partitions, use `consumer` instead.
     ///
     ///
-    pub async fn partition_consumer<S: Into<String>>(
+    pub async fn partition_consumer(
         &self,
-        topic: S,
+        topic: impl Into<String>,
         partition: PartitionId,
     ) -> Result<PartitionConsumer> {
         let topic = topic.into();

@@ -18,8 +18,7 @@ path = "src/bin/main.rs"
 doc = false
 
 [features]
-default = ["k8", "spu_smartengine"]
-k8 = [ "fluvio-sc/k8"]
+default = ["spu_smartengine"]
 spu_smartengine = ["fluvio-spu/smartengine"]
 rustls = ["fluvio-future/rust_tls"]
 

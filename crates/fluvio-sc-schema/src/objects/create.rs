@@ -65,7 +65,7 @@ use classic::*;
 mod classic {
 
     use std::io::{Error as IoError, ErrorKind, Cursor};
-    use std::fmt::{Debug};
+    use std::fmt::Debug;
 
     use anyhow::Result;
 

@@ -2,6 +2,7 @@ use std::process::Command;
 use std::fs::{remove_dir_all, remove_file};
 
 use derive_builder::Builder;
+use k8_metadata_client::MetadataClient;
 use tracing::{info, warn, debug, instrument};
 use sysinfo::{ProcessExt, System, SystemExt};
 
@@ -88,7 +89,9 @@ impl ClusterUninstaller {
             self.uninstall_local().await?;
         }
 
-        self.cleanup().await?;
+        if let Err(err) = self.cleanup().await {
+            warn!("Cleanup failed: {}", err);
+        }
 
         if self.config.uninstall_sys {
             self.uninstall_sys().await?;
@@ -106,13 +109,9 @@ impl ClusterUninstaller {
         let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
             .ignore_not_found();
-
-        let Some(ref helm_client) = self.helm_client else {
-            return Err(ClusterError::Uninstall(UninstallError::Other(
-                "Helm client not found".to_string(),
-            )));
-        };
-        helm_client
+        self.helm_client
+            .as_ref()
+            .ok_or(UninstallError::Other("helm client undefined".into()))?
             .uninstall(uninstall)
             .map_err(UninstallError::HelmError)?;
 
@@ -128,12 +127,9 @@ impl ClusterUninstaller {
 
         let pb = self.pb_factory.create()?;
         pb.set_message("Uninstalling Fluvio sys chart");
-        let Some(ref helm_client) = self.helm_client else {
-            return Err(ClusterError::Uninstall(UninstallError::Other(
-                "Helm client not found".to_string(),
-            )));
-        };
-        helm_client
+        self.helm_client
+            .as_ref()
+            .ok_or(UninstallError::Other("helm client undefined".into()))?
             .uninstall(
                 UninstallArg::new(self.config.sys_chart_name.to_owned())
                     .namespace(self.config.namespace.to_owned())
@@ -283,17 +279,13 @@ impl ClusterUninstaller {
 
     /// in order to remove partitions, finalizers need to be cleared
     #[instrument(skip(self))]
-    async fn remove_finalizers_for_partitions(
-        &self,
-        namespace: &str,
-    ) -> Result<(), UninstallError> {
+    async fn remove_finalizers_for_partitions(&self, namespace: &str) -> anyhow::Result<()> {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
         use k8_client::load_and_share;
-        use k8_metadata_client::MetadataClient;
         use k8_metadata_client::PatchMergeType::JsonMerge;
 
-        let client = load_and_share().map_err(UninstallError::K8ClientError)?;
+        let client = load_and_share()?;
 
         let partitions = client
             .retrieve_items::<<PartitionSpec as K8ExtendedSpec>::K8Spec, _>(namespace)

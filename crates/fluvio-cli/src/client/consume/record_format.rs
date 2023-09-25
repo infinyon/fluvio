@@ -27,7 +27,7 @@ pub fn format_json(value: &[u8], suppress: bool) -> Option<String> {
         _ => None,
     };
 
-    maybe_json.and_then(|json| serde_json::to_string(&json).ok())
+    maybe_json.and_then(|json| serde_json::to_string_pretty(&json).ok())
 }
 
 // -----------------------------------

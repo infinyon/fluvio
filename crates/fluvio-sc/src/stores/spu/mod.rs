@@ -7,6 +7,7 @@ pub use health_check::*;
 
 pub type SpuAdminMd<C> = SpuMetadata<C>;
 pub type SpuAdminStore = SpuLocalStore<K8MetaItem>;
+pub type DefaultSpuStore = SpuLocalStore<u32>;
 
 // check if given range is conflict with any of the range
 pub async fn is_conflict(
@@ -39,7 +40,7 @@ mod health_check {
 
     pub type SharedHealthCheck = Arc<HealthCheck>;
 
-    /// Stores Curret Health Check Data
+    /// Stores Current Health Check Data
     #[derive(Debug)]
     pub struct HealthCheck {
         health: RwLock<HashMap<SpuId, bool>>,

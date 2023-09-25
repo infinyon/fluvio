@@ -1,12 +1,13 @@
 use std::{collections::HashMap, fmt, net::IpAddr, time::Duration};
 
+use anyhow::Result;
+
 use fluvio_controlplane_metadata::{
     spu::IngressPort,
     store::{MetadataStoreObject, k8::K8MetaItem},
 };
 
 use fluvio_stream_dispatcher::actions::WSAction;
-use k8_client::ClientError;
 use tracing::{debug, error, instrument, info};
 
 use fluvio_future::task::spawn;
@@ -67,7 +68,7 @@ impl K8SpuController {
         }
     }
 
-    async fn inner_loop(&mut self) -> Result<(), ClientError> {
+    async fn inner_loop(&mut self) -> Result<()> {
         use tokio::select;
 
         debug!("initializing listeners");
@@ -150,7 +151,7 @@ impl K8SpuController {
 
     #[instrument(skip(self))]
     /// synchronize change from spg to spu
-    async fn sync_spu(&mut self) -> Result<(), ClientError> {
+    async fn sync_spu(&mut self) -> Result<()> {
         // get all models
         let spg = self.groups.store().clone_values().await;
         let services = self.get_spu_services().await;
@@ -205,7 +206,7 @@ impl K8SpuController {
 
 fn get_ingress_from_service(
     svc_md: &MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
-) -> Result<IngressPort, ClientError> {
+) -> Result<IngressPort> {
     // Get the external ingress from the service
     // Look at svc_md to identify if LoadBalancer
     let lb_type = svc_md.spec().inner().r#type.as_ref();
@@ -219,7 +220,7 @@ fn get_ingress_from_service(
         Some(LoadBalancerType::NodePort) => {
             let port = svc_md.spec().inner().ports[0]
                 .node_port
-                .ok_or_else(|| ClientError::Other("SPU service missing NodePort".into()))?;
+                .ok_or_else(|| anyhow::anyhow!("SPU service missing NodePort"))?;
             IngressPort {
                 port,
                 ..Default::default()

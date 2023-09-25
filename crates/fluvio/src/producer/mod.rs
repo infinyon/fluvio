@@ -32,7 +32,7 @@ pub use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 #[cfg(feature = "stats")]
 use crate::stats::{ClientStats, ClientStatsDataCollect, metrics::ClientStatsDataFrame};
 
-use self::accumulator::{BatchHandler};
+use self::accumulator::BatchHandler;
 pub use self::config::{
     TopicProducerConfigBuilder, TopicProducerConfig, TopicProducerConfigBuilderError,
     DeliverySemantic, RetryPolicy, RetryStrategy,
@@ -237,9 +237,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule filter to this TopicProducer
-            pub async fn with_filter<T: Into<Vec<u8>>>(
+            pub async fn with_filter(
                 self,
-                filter: T,
+                filter: impl  Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -247,9 +247,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule FilterMap to this TopicProducer
-            pub async fn with_filter_map<T: Into<Vec<u8>>>(
+            pub async fn with_filter_map(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -257,9 +257,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule map to this TopicProducer
-            pub async fn with_map<T: Into<Vec<u8>>>(
+            pub async fn with_map(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -267,9 +267,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule array_map to this TopicProducer
-            pub async fn with_array_map<T: Into<Vec<u8>>>(
+            pub async fn with_array_map(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
             ) -> Result<Self> {
                 let config = SmartModuleConfig::builder().params(params.into()).build()?;
@@ -277,9 +277,9 @@ cfg_if::cfg_if! {
             }
 
             /// Adds a SmartModule aggregate to this TopicProducer
-            pub async fn with_aggregate<T: Into<Vec<u8>>>(
+            pub async fn with_aggregate(
                 self,
-                map: T,
+                map: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
                 accumulator: Vec<u8>,
             ) -> Result<Self> {
@@ -290,9 +290,9 @@ cfg_if::cfg_if! {
             }
 
             /// Use generic smartmodule (the type is detected in smartengine)
-            pub async fn with_smartmodule<T: Into<Vec<u8>>>(
+            pub async fn with_smartmodule(
                 self,
-                smartmodule: T,
+                smartmodule: impl Into<Vec<u8>>,
                 params: BTreeMap<String, String>,
                 context: SmartModuleContextData,
             ) -> Result<Self> {
@@ -426,11 +426,11 @@ impl TopicProducer {
         skip(self, key, value),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send<K, V>(&self, key: K, value: V) -> Result<ProduceOutput>
-    where
-        K: Into<RecordKey>,
-        V: Into<RecordData>,
-    {
+    pub async fn send(
+        &self,
+        key: impl Into<RecordKey>,
+        value: impl Into<RecordData>,
+    ) -> Result<ProduceOutput> {
         let record_key = key.into();
         let record_value = value.into();
         let record = Record::from((record_key, record_value));
@@ -476,12 +476,10 @@ impl TopicProducer {
         skip(self, records),
         fields(topic = %self.inner.topic),
     )]
-    pub async fn send_all<K, V, I>(&self, records: I) -> Result<Vec<ProduceOutput>>
-    where
-        K: Into<RecordKey>,
-        V: Into<RecordData>,
-        I: IntoIterator<Item = (K, V)>,
-    {
+    pub async fn send_all(
+        &self,
+        records: impl IntoIterator<Item = (impl Into<RecordKey>, impl Into<RecordData>)>,
+    ) -> Result<Vec<ProduceOutput>> {
         let mut results = vec![];
         for (key, value) in records {
             let produce_output = self.send(key, value).await?;

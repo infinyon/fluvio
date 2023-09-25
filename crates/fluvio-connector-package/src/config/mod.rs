@@ -479,7 +479,7 @@ impl Serialize for ConsumerPartitionConfig {
 }
 
 impl ConnectorConfig {
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self> {
+    pub fn from_file(path: impl Into<PathBuf>) -> Result<Self> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;

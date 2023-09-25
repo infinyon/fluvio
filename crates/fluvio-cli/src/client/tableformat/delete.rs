@@ -22,7 +22,7 @@ pub struct DeleteTableFormatOpt {
 impl DeleteTableFormatOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
-        admin.delete::<TableFormatSpec, _>(&self.name).await?;
+        admin.delete::<TableFormatSpec>(&self.name).await?;
         Ok(())
     }
 }

@@ -14,13 +14,13 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
-use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use tracing::info;
 use tracing::debug;
 use clap::Parser;
 
-use fluvio_types::print_cli_err;
 use k8_client::K8Config;
+use fluvio_types::print_cli_err;
+use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use fluvio_future::openssl::TlsAcceptor;
 use fluvio_future::openssl::SslVerifyMode;
 
@@ -37,6 +37,10 @@ pub struct ScOpt {
     #[arg(long)]
     /// running in local mode only
     local: bool,
+
+    /// run on k8
+    #[arg(long)]
+    no_k8: bool,
 
     #[arg(long)]
     /// Address for external service
@@ -70,6 +74,10 @@ pub struct ScOpt {
     /// only allow white list of controllers
     #[arg(long)]
     white_list: Vec<String>,
+
+    /// run SC in read only mode
+    #[arg(long, hide = true, conflicts_with_all = &["auth_policy"])]
+    read_only: Option<PathBuf>,
 }
 
 impl ScOpt {
@@ -80,6 +88,10 @@ impl ScOpt {
 
     pub fn is_local(&self) -> bool {
         self.local
+    }
+
+    pub fn read_only(&self) -> &Option<PathBuf> {
+        &self.read_only
     }
 
     #[allow(clippy::type_complexity)]
@@ -102,6 +114,7 @@ impl ScOpt {
     }
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
+    /// 3rd part is path to read only metadata config
     #[allow(clippy::wrong_self_convention)]
     fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
@@ -115,12 +128,16 @@ impl ScOpt {
             config.private_endpoint = private_addr;
         }
 
-        config.namespace = self.namespace.unwrap();
+        if self.read_only.is_none() {
+            config.namespace = self.namespace.expect("no namespace defined");
+        }
 
         config.x509_auth_scopes = self.x509_auth_scopes;
         config.white_list = self.white_list.into_iter().collect();
+        config.read_only_metadata = self.read_only.is_some();
 
-        // Set Configuration Authorzation Policy
+        // Set Configuration Authorization Policy
+
         let policy = match self.auth_policy {
             // Lookup a policy from a path
             Some(p) => Some(BasicRbacPolicy::try_from(p)?),
@@ -134,7 +151,7 @@ impl ScOpt {
         // because public is used by proxy which forward traffic to internal public port
         if tls.tls {
             let proxy_addr = config.public_endpoint.clone();
-            debug!("using tls proxy addr: {}", proxy_addr);
+            debug!(proxy_addr, "tls proxy addr");
             config.public_endpoint = tls.bind_non_tls_public.clone().ok_or_else(|| {
                 IoError::new(
                     ErrorKind::NotFound,
@@ -155,6 +172,16 @@ impl ScOpt {
 
     pub fn parse_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
+            Err(err) => {
+                print_cli_err!(err);
+                process::exit(-1);
+            }
+            Ok(config) => config,
+        }
+    }
+
+    pub fn parse_cli_or_exit_read_only(self) -> (Config, Option<(String, TlsConfig)>) {
+        match self.as_sc_config() {
             Err(err) => {
                 print_cli_err!(err);
                 process::exit(-1);

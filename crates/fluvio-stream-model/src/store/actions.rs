@@ -52,10 +52,7 @@ where
     S::Status: PartialEq,
     C: MetadataItem,
 {
-    pub fn add<K>(value: K) -> Self
-    where
-        K: Into<MetadataStoreObject<S, C>>,
-    {
+    pub fn add(value: impl Into<MetadataStoreObject<S, C>>) -> Self {
         LSChange::Add(value.into())
     }
 

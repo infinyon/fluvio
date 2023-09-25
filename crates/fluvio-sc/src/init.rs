@@ -19,7 +19,7 @@ use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
 use crate::services::auth::basic::BasicRbacPolicy;
 
-pub async fn start_main_loop_with_k8<C>(
+pub async fn start_main_loop<C>(
     sc_config_policy: (ScConfig, Option<BasicRbacPolicy>),
     metadata_client: SharedClient<C>,
 ) -> crate::core::K8SharedContext
@@ -69,16 +69,16 @@ where
     );
 
     K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
-        namespace,
-        metadata_client,
+        namespace.clone(),
+        metadata_client.clone(),
         ctx.smartmodules().clone(),
     );
 
-    start_main_loop(ctx, auth_policy).await
+    start_main_loop_services(ctx, auth_policy).await
 }
 
 /// start the main loop
-pub async fn start_main_loop<C>(
+async fn start_main_loop_services<C>(
     ctx: Arc<Context<C>>,
     auth_policy: Option<BasicRbacPolicy>,
 ) -> SharedContext<C>
@@ -111,7 +111,7 @@ where
         use crate::core::SharedContext;
 
         use fluvio_controlplane_metadata::core::MetadataItem;
-        use crate::services::auth::{AuthGlobalContext, RootAuthorization};
+        use crate::services::auth::{AuthGlobalContext, RootAuthorization, ReadOnlyAuthorization};
         use crate::services::auth::basic::{BasicAuthorization, BasicRbacPolicy};
 
         pub fn start<C>(ctx: SharedContext<C>, auth_policy_option: Option<BasicRbacPolicy>)
@@ -124,6 +124,13 @@ where
                 start_public_server(AuthGlobalContext::new(
                     ctx,
                     Arc::new(BasicAuthorization::new(policy)),
+                ));
+            } else if ctx.config().read_only_metadata {
+                info!("using read-only authorization");
+
+                start_public_server(AuthGlobalContext::new(
+                    ctx,
+                    Arc::new(ReadOnlyAuthorization::new()),
                 ));
             } else {
                 info!("using root authorization");

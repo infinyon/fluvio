@@ -108,7 +108,7 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
 #[instrument(skip(topic))]
-pub async fn producer<S: Into<String>>(topic: S) -> anyhow::Result<TopicProducer> {
+pub async fn producer(topic: impl Into<String>) -> anyhow::Result<TopicProducer> {
     let fluvio = Fluvio::connect().await?;
     let producer = fluvio.topic_producer(topic).await?;
     Ok(producer)
@@ -142,8 +142,8 @@ pub async fn producer<S: Into<String>>(topic: S) -> anyhow::Result<TopicProducer
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
 #[instrument(skip(topic, partition))]
-pub async fn consumer<S: Into<String>>(
-    topic: S,
+pub async fn consumer(
+    topic: impl Into<String>,
     partition: PartitionId,
 ) -> anyhow::Result<PartitionConsumer> {
     let fluvio = Fluvio::connect().await?;
