@@ -125,7 +125,11 @@ install-fluvio-package:
 download-fluvio-release:
 	$(DRY_RUN_ECHO) gh release download $(GH_RELEASE_TAG) -R infinyon/fluvio --skip-existing
 
-unzip-gh-release-artifacts: download-fluvio-release
+download-latest-k8s-release:
+	$(DRY_RUN_ECHO) gh release download $(gh release list --exclude-drafts --exclude-pre-releases -R infinyon/kubernetes-ops | grep etcd | awk '{print $1}' | head -n 1) -R infinyon/kubernetes-ops --skip-existing
+	$(DRY_RUN_ECHO) gh release download $(gh release list --exclude-drafts --exclude-pre-releases -R infinyon/kubernetes-ops | grep k8s | awk '{print $1}' | head -n 1) -R infinyon/kubernetes-ops --skip-existing
+
+unzip-gh-release-artifacts: download-fluvio-release download-latest-k8s-release
 	@echo "unzip stuff"
 	@$(foreach bin, $(wildcard *.zip), \
 		printf "\n"; \
