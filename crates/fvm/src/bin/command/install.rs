@@ -20,7 +20,8 @@ use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET};
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
-use fluvio_version_manager::install::{InstallTask, fvm_bin_path, install_fvm, fvm_path};
+use fluvio_version_manager::install::{fvm_bin_path, fvm_path};
+use fluvio_version_manager::package::InstallTask;
 use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
 
@@ -51,12 +52,8 @@ impl InstallOpt {
             return Ok(());
         }
 
-        self.notify_info("Installing FVM...");
-        install_fvm()?;
-
-        self.notify_done("FVM installed successfully");
-        self.install_package().await?;
-
+        self.notify_warn("Aborting installation due to missing FVM installation");
+        self.notify_help("Try running `fvm self install` and then retry this command");
         Ok(())
     }
 

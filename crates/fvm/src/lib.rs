@@ -5,6 +5,7 @@
 
 pub mod common;
 pub mod install;
+pub mod package;
 pub mod settings;
 pub mod switch;
 pub mod utils;

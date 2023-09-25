@@ -4,6 +4,7 @@ use clap::{Args, Parser};
 use color_eyre::eyre::Result;
 
 use self::command::install::InstallOpt;
+use self::command::selfie::SelfOpt;
 use self::command::switch::SwitchOpt;
 
 #[async_std::main]
@@ -44,6 +45,9 @@ pub enum Command {
     /// Installs a Fluvio Version
     #[command(name = "install")]
     Install(InstallOpt),
+    /// Manages FVM installation
+    #[command(name = "self")]
+    Selfie(SelfOpt),
     /// Switches the Fluvio Version in use
     #[command(name = "switch")]
     Switch(SwitchOpt),
@@ -56,6 +60,7 @@ impl Cli {
 
         match command {
             Command::Install(cmd) => cmd.process().await,
+            Command::Selfie(cmd) => cmd.process().await,
             Command::Switch(cmd) => cmd.process().await,
         }
     }
