@@ -5,7 +5,7 @@ use std::str::FromStr;
 use surf::Client;
 use url::Url;
 
-use fluvio_hub_util::fvm::{PackageSet, RustTarget};
+use fluvio_hub_util::fvm::{PackageSet, RustTarget, Channel};
 
 use crate::Result;
 use crate::common::{INFINYON_HUB_FVM_PKGSET_API_URI, TARGET};
@@ -20,11 +20,11 @@ pub struct InstallTask {
     /// Package Set to install
     pub pkgset: String,
     /// Version to install
-    pub version: String,
+    pub version: Channel,
 }
 
 impl InstallTask {
-    pub fn new(registry: Url, pkgset: String, version: String) -> Self {
+    pub fn new(registry: Url, pkgset: String, version: Channel) -> Self {
         let arch = RustTarget::from_str(TARGET).expect("Platform not supported");
 
         Self {
@@ -85,7 +85,9 @@ impl InstallTask {
 
 #[cfg(test)]
 mod tests {
-    use fluvio_hub_util::fvm::RustTarget;
+    use std::str::FromStr;
+
+    use fluvio_hub_util::fvm::{Channel, RustTarget};
 
     use super::InstallTask;
 
@@ -94,7 +96,7 @@ mod tests {
         let task = InstallTask {
             arch: RustTarget::Aarch64AppleDarwin,
             pkgset: "default".to_string(),
-            version: "0.10.14".to_string(),
+            version: Channel::from_str("0.10.14").expect("Channel parsing failed"),
             registry: "https://hub-dev.infinyon.cloud".parse().unwrap(),
         };
         let have = task.make_pkgset_url().to_string();
@@ -109,7 +111,7 @@ mod tests {
         let task = InstallTask {
             arch: RustTarget::Aarch64AppleDarwin,
             pkgset: "default".to_string(),
-            version: "0.10.14".to_string(),
+            version: Channel::from_str("0.10.14").expect("Channel parsing failed"),
             registry: "https://hub-dev.infinyon.cloud".parse().unwrap(),
         };
         let have = task

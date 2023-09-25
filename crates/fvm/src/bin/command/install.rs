@@ -6,6 +6,7 @@
 use std::fs::{File, create_dir, copy};
 use std::io::Cursor;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use surf::{Client, StatusCode};
 use tempfile::TempDir;
@@ -16,7 +17,7 @@ use color_eyre::owo_colors::OwoColorize;
 use tracing::debug;
 use url::Url;
 
-use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET};
+use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET, Channel};
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
@@ -59,17 +60,18 @@ impl InstallOpt {
 
     ///  Performs the installation of the specified `PackageSet`
     async fn install_package(&self) -> Result<()> {
+        let channel = Channel::from_str(&self.version)?;
         let install_task = InstallTask::new(
             self.registry.clone(),
             DEFAULT_PKGSET.to_string(),
-            self.version.clone(),
+            channel,
         );
 
         tracing::info!(?install_task, "Created InstallTask");
         self.notify_info(format!(
             "Installing Package Set {pkgset}@{version}...",
             pkgset = install_task.pkgset.bold(),
-            version = self.version.bold()
+            version = self.version.to_string().bold()
         ));
 
         let pkgset = install_task.fetch_pkgset().await?;
@@ -77,7 +79,7 @@ impl InstallOpt {
             "Found {arts} packages in {pkgset}@{version}...",
             arts = pkgset.artifacts.len(),
             pkgset = install_task.pkgset.bold(),
-            version = self.version.bold()
+            version = self.version.to_string().bold()
         ));
 
         let tmp_dir = TempDir::new().map_err(|err| Error::CreateTempDir(err.to_string()))?;

@@ -27,6 +27,12 @@ pub struct GlobalOptions {
 }
 
 #[derive(Debug, Parser)]
+#[command(
+    about = "Fluvio Version Manager (FVM)",
+    name = "fvm",
+    max_term_width = 100,
+    disable_version_flag = true
+)]
 pub struct Cli {
     #[clap(flatten)]
     global_opts: GlobalOptions,
@@ -35,12 +41,6 @@ pub struct Cli {
 }
 
 #[derive(Debug, Parser)]
-#[command(
-    about = "Fluvio Version Manager (FVM)",
-    name = "fvm",
-    max_term_width = 100,
-    disable_version_flag = true
-)]
 pub enum Command {
     /// Installs a Fluvio Version
     #[command(name = "install")]

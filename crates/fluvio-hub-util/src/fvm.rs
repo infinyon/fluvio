@@ -34,6 +34,16 @@ pub enum Channel {
     Tag(Version),
 }
 
+impl Display for Channel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Channel::Stable => write!(f, "{}", STABLE_VERSION_CHANNEL),
+            Channel::Latest => write!(f, "{}", LATEST_VERSION_CHANNEL),
+            Channel::Tag(version) => write!(f, "{}", version),
+        }
+    }
+}
+
 impl Channel {
     /// Parses the provided
     pub fn parse<T: AsRef<str>>(s: T) -> Result<Self, Error> {
