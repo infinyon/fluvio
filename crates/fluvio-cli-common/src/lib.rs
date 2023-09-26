@@ -4,8 +4,11 @@ pub mod error;
 
 #[cfg(feature = "file-records")]
 pub mod user_input;
+
 #[cfg(feature = "version-cmd")]
 pub mod version_cmd;
+
+pub mod smartmodule;
 
 // Environment vars for Channels
 pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";

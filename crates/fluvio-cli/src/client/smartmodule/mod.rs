@@ -2,6 +2,7 @@ mod create;
 mod list;
 mod delete;
 mod watch;
+mod test;
 
 pub use cmd::SmartModuleCmd;
 
@@ -11,7 +12,7 @@ mod cmd {
     use std::fmt::Debug;
 
     use async_trait::async_trait;
-    use clap::Parser;
+    use clap::Subcommand;
     use anyhow::Result;
 
     use fluvio::Fluvio;
@@ -23,15 +24,17 @@ mod cmd {
     use super::create::CreateSmartModuleOpt;
     use super::list::ListSmartModuleOpt;
     use super::delete::DeleteSmartModuleOpt;
+    use super::test::TestSmartModuleOpt;
     use super::watch::WatchSmartModuleOpt;
 
-    #[derive(Debug, Parser)]
+    #[derive(Debug, Subcommand)]
     pub enum SmartModuleCmd {
         Create(CreateSmartModuleOpt),
         List(ListSmartModuleOpt),
         Watch(WatchSmartModuleOpt),
         /// Delete one or more SmartModules with the given name(s)
         Delete(DeleteSmartModuleOpt),
+        Test(TestSmartModuleOpt),
     }
 
     #[async_trait]
@@ -52,6 +55,9 @@ mod cmd {
                     opt.process(out, target).await?;
                 }
                 Self::Watch(opt) => {
+                    opt.process(out, target).await?;
+                }
+                Self::Test(opt) => {
                     opt.process(out, target).await?;
                 }
             }

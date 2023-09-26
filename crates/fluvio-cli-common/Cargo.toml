@@ -21,6 +21,8 @@ version-cmd = ["dep:current_platform", "dep:clap", "dep:sysinfo"]
 anyhow = { workspace = true }
 current_platform = { workspace = true, optional = true }
 clap = { workspace = true, optional = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
 futures = { workspace = true, features = ["std", "io-compat"]}
 home = { workspace = true }
 hex = { workspace = true }
@@ -34,9 +36,13 @@ tempfile = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 
+fluvio = { path = "../fluvio", default-features = false }
 fluvio-package-index = { workspace = true,  features = ["http_agent"] }
 fluvio-types = { workspace = true , optional = true }
 fluvio-protocol = { workspace = true,  optional = true }
+fluvio-sc-schema = { path = "../fluvio-sc-schema" }
+fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
+fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation"] }
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
