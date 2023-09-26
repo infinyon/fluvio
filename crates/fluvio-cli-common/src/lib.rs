@@ -8,6 +8,7 @@ pub mod user_input;
 #[cfg(feature = "version-cmd")]
 pub mod version_cmd;
 
+#[cfg(feature = "smartmodule-test")]
 pub mod smartmodule;
 
 // Environment vars for Channels
