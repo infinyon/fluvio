@@ -1,21 +1,10 @@
 use std::fs::{copy, read_dir};
-use std::path::{PathBuf, Path};
+use std::path::{Path};
 
 use tracing::info;
 
-use crate::common::FLUVIO_HOME_DIR;
-use crate::{Result, Error};
 
-/// Retrieves the absolute path to `~/.fluvio/bin/` for the host
-pub fn fluvio_bin_path() -> Result<PathBuf> {
-    let Some(home_dir) = dirs::home_dir() else {
-        return Err(Error::HomeDirNotFound);
-    };
-
-    let fluvio_bin = home_dir.join(FLUVIO_HOME_DIR).join("bin");
-
-    Ok(fluvio_bin)
-}
+use crate::{Result};
 
 /// Replaces binaries in the `pkgset` path with the binaries in `target` path
 pub fn overwrite_binaries(pkgset_path: &Path, target_path: &Path) -> Result<()> {

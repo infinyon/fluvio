@@ -95,6 +95,17 @@ pub fn fluvio_path() -> Result<PathBuf> {
     Ok(flv_path)
 }
 
+/// Retrieves the path to the `~/.fluvio/bin` directory in the host system.
+/// This function only builds the path, it doesn't check if the directory exists.
+pub fn fluvio_binaries_path() -> Result<PathBuf> {
+    let Some(home_dir) = dirs::home_dir() else {
+        return Err(Error::HomeDirNotFound);
+    };
+    let flv_path = home_dir.join(FLUVIO_HOME_DIR).join("bin");
+
+    Ok(flv_path)
+}
+
 /// Checks if Fluvio is installed. This is achieved by checking if the
 /// binary is present in the `Fluvio` home directory.
 ///

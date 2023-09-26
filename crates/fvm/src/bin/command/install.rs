@@ -21,7 +21,9 @@ use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET, C
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
-use fluvio_version_manager::install::{fvm_bin_path, fvm_path, fluvio_bin_path, create_fluvio_dir};
+use fluvio_version_manager::install::{
+    fvm_bin_path, fvm_path, create_fluvio_dir, fluvio_binaries_path,
+};
 use fluvio_version_manager::package::InstallTask;
 use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
@@ -47,16 +49,23 @@ impl InstallOpt {
     /// then it also installs FVM.
     pub async fn process(&self) -> Result<()> {
         if fvm_bin_path()?.is_some() {
-            if fluvio_bin_path()?.is_some() {
+            if fluvio_binaries_path()?.exists() {
                 self.install_package().await?;
+                self.notify_help(format!(
+                    "Use {} to switch to this version",
+                    format!("fvm switch {}", self.version).bold()
+                ));
                 return Ok(());
             }
 
-            self.notify_info("No previous Fluvio installation found. Installing Fluvio...");
+            self.notify_info(
+                "No previous Fluvio installation found. Preparing Fluvio workspace...",
+            );
             create_fluvio_dir()?;
 
             self.notify_info("Proceeding to install Fluvio...");
             self.install_package().await?;
+
             return Ok(());
         }
 
@@ -68,11 +77,8 @@ impl InstallOpt {
     ///  Performs the installation of the specified `PackageSet`
     async fn install_package(&self) -> Result<()> {
         let channel = Channel::from_str(&self.version)?;
-        let install_task = InstallTask::new(
-            self.registry.clone(),
-            DEFAULT_PKGSET.to_string(),
-            channel,
-        );
+        let install_task =
+            InstallTask::new(self.registry.clone(), DEFAULT_PKGSET.to_string(), channel);
 
         tracing::info!(?install_task, "Created InstallTask");
         self.notify_info(format!(
@@ -185,6 +191,11 @@ impl InstallOpt {
                         pkgset_version_dir.join(&artifact.name),
                     )
                     .map_err(|err| Error::Install(err.to_string()))?;
+                    self.notify_done(format!(
+                        "{}@{} is ready for use",
+                        artifact.name.bold(),
+                        self.version.italic()
+                    ));
                     continue;
                 }
 

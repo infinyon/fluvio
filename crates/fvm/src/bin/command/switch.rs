@@ -8,8 +8,10 @@ use color_eyre::owo_colors::OwoColorize;
 
 use fluvio_hub_util::fvm::{DEFAULT_PKGSET, STABLE_VERSION_CHANNEL};
 
-use fluvio_version_manager::install::{fvm_path, fvm_pkgset_path};
-use fluvio_version_manager::switch::{overwrite_binaries, fluvio_bin_path};
+use fluvio_version_manager::install::{
+    fvm_path, fvm_pkgset_path, fluvio_binaries_path,
+};
+use fluvio_version_manager::switch::overwrite_binaries;
 use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
@@ -68,14 +70,23 @@ impl SwitchOpt {
             self.version.as_str().bold()
         ));
 
-        let fluvio_bin = fluvio_bin_path()?;
+        let fluvio_bin_dir = fluvio_binaries_path()?;
 
-        overwrite_binaries(&binaries_dir, &fluvio_bin)?;
+        if fluvio_bin_dir.exists() {
+            overwrite_binaries(&binaries_dir, &fluvio_bin_dir)?;
+            self.notify_done(format!(
+                "You are now using {} as default {} version",
+                self.version.as_str().bold(),
+                DEFAULT_PKGSET.bold()
+            ));
 
-        self.notify_done(format!(
-            "You are now using {} as default {} version",
-            self.version.as_str().bold(),
-            DEFAULT_PKGSET.bold()
+            return Ok(());
+        }
+
+        self.notify_warn("No Fluvio workspace found. Install a version first");
+        self.notify_help(format!(
+            "Try running `fvm install {}` and then retry this command",
+            self.version.as_str().bold()
         ));
 
         Ok(())
