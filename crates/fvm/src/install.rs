@@ -12,7 +12,7 @@ use std::fs::{copy, create_dir};
 use std::path::PathBuf;
 
 use crate::{Error, Result};
-use crate::common::{FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR};
+use crate::common::{FLUVIO_HOME_DIR, FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR, FLUVIO_BINARY_NAME};
 
 /// Retrieves the path to the `~/.fvm` directory in the host system.
 /// This function only builds the path, it doesn't check if the directory exists.
@@ -82,4 +82,47 @@ pub fn install_fvm() -> Result<PathBuf> {
     create_dir(fvm_pkgset_dir).map_err(|err| Error::Setup(err.to_string()))?;
 
     Ok(fvm_dir)
+}
+
+/// Retrieves the path to the `~/.fluvio` directory in the host system.
+/// This function only builds the path, it doesn't check if the directory exists.
+pub fn fluvio_path() -> Result<PathBuf> {
+    let Some(home_dir) = dirs::home_dir() else {
+        return Err(Error::HomeDirNotFound);
+    };
+    let flv_path = home_dir.join(FLUVIO_HOME_DIR);
+
+    Ok(flv_path)
+}
+
+/// Checks if Fluvio is installed. This is achieved by checking if the
+/// binary is present in the `Fluvio` home directory.
+///
+/// The returned path is the path to the Fluvio binary found.
+pub fn fluvio_bin_path() -> Result<Option<PathBuf>> {
+    let flv_path = fluvio_path()?;
+    let flv_binary_path = flv_path.join("bin").join(FLUVIO_BINARY_NAME);
+
+    if flv_binary_path.exists() {
+        return Ok(Some(flv_binary_path));
+    }
+
+    Ok(None)
+}
+
+/// Creates the Fluvio Home directory in the host system.
+pub fn create_fluvio_dir() -> Result<PathBuf> {
+    // Creates the directory `~/.fluvio` if doesn't exists
+    let flv_dir = fluvio_path()?;
+
+    if !flv_dir.exists() {
+        create_dir(&flv_dir).map_err(|err| Error::Setup(err.to_string()))?;
+        tracing::debug!(?flv_dir, "Created Fluvio home directory");
+    }
+
+    // Attempts to create the binary crate
+    let flv_binary_dir = flv_dir.join("bin");
+    create_dir(flv_binary_dir).map_err(|err| Error::Setup(err.to_string()))?;
+
+    Ok(flv_dir)
 }

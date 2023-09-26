@@ -25,7 +25,7 @@ pub fn overwrite_binaries(pkgset_path: &Path, target_path: &Path) -> Result<()> 
         target_path.display()
     );
 
-    let binaries = read_dir(target_path)?;
+    let binaries = read_dir(pkgset_path)?;
 
     for binary in binaries {
         let binary = binary?;
@@ -33,7 +33,7 @@ pub fn overwrite_binaries(pkgset_path: &Path, target_path: &Path) -> Result<()> 
 
         if let Some(binary_name) = binary_name.to_str() {
             let pkgset_binary_path = pkgset_path.join(binary_name);
-            let binary_path = binary.path();
+            let binary_path = target_path.join(binary_name);
 
             info!(
                 "Overwriting binary {} with {}",

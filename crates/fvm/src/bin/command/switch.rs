@@ -19,7 +19,7 @@ pub struct SwitchOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
     /// Version to install
-    #[arg(long, default_value = STABLE_VERSION_CHANNEL)]
+    #[arg(index = 1, default_value = STABLE_VERSION_CHANNEL)]
     version: String,
 }
 

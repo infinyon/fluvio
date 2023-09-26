@@ -14,14 +14,14 @@ use tempfile::TempDir;
 use color_eyre::eyre::Result;
 use clap::Parser;
 use color_eyre::owo_colors::OwoColorize;
-use tracing::debug;
+
 use url::Url;
 
 use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET, Channel};
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
-use fluvio_version_manager::install::{fvm_bin_path, fvm_path};
+use fluvio_version_manager::install::{fvm_bin_path, fvm_path, fluvio_bin_path, create_fluvio_dir};
 use fluvio_version_manager::package::InstallTask;
 use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
@@ -46,9 +46,16 @@ impl InstallOpt {
     /// FVM `install` command is being used, or the local FVM isn`t installed,
     /// then it also installs FVM.
     pub async fn process(&self) -> Result<()> {
-        if let Some(installed_fvm_path) = fvm_bin_path()? {
-            debug!(path=?installed_fvm_path, "FVM is already installed");
+        if fvm_bin_path()?.is_some() {
+            if fluvio_bin_path()?.is_some() {
+                self.install_package().await?;
+                return Ok(());
+            }
 
+            self.notify_info("No previous Fluvio installation found. Installing Fluvio...");
+            create_fluvio_dir()?;
+
+            self.notify_info("Proceeding to install Fluvio...");
             self.install_package().await?;
             return Ok(());
         }

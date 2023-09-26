@@ -1,6 +1,9 @@
 /// Home Directory for Fluvio
 pub const FLUVIO_HOME_DIR: &str = ".fluvio";
 
+/// Fluvio Binary Name
+pub const FLUVIO_BINARY_NAME: &str = "fluvio";
+
 /// Home Directory for the Fluvio Version Manager (FVM) CLI
 pub const FVM_HOME_DIR: &str = ".fvm";
 
