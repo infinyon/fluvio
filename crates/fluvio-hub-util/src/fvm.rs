@@ -28,6 +28,7 @@ pub enum Error {
 
 /// Pacakge Set Channels based on Fluvio Channels
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum Channel {
     Stable,
     Latest,
@@ -117,7 +118,9 @@ impl FromStr for RustTarget {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Artifact {
     pub name: String,
+    pub version: Version,
     pub download_url: Url,
+    pub sha256_url: Url,
 }
 
 /// Fluvio Version Manager Package for a specific architecture and version.

@@ -12,7 +12,9 @@ use std::fs::{copy, create_dir};
 use std::path::PathBuf;
 
 use crate::{Error, Result};
-use crate::common::{FLUVIO_HOME_DIR, FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR, FLUVIO_BINARY_NAME};
+use crate::common::{
+    FLUVIO_HOME_DIR, FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR, FLUVIO_BINARY_NAME,
+};
 
 /// Retrieves the path to the `~/.fvm` directory in the host system.
 /// This function only builds the path, it doesn't check if the directory exists.

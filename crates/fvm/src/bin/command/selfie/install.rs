@@ -2,8 +2,9 @@ use clap::Parser;
 use color_eyre::eyre::Result;
 use color_eyre::owo_colors::OwoColorize;
 
-use fluvio_version_manager::utils::notify::Notify;
 use fluvio_version_manager::install::{fvm_bin_path, install_fvm};
+use fluvio_version_manager::settings::Settings;
+use fluvio_version_manager::utils::notify::Notify;
 
 use crate::GlobalOptions;
 
@@ -25,8 +26,9 @@ impl InstallOpt {
 
         self.notify_info("Installing FVM...");
         install_fvm()?;
-
+        Settings::create()?;
         self.notify_done("FVM installed successfully");
+
         Ok(())
     }
 }

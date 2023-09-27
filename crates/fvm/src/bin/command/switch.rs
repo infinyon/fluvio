@@ -6,11 +6,9 @@ use color_eyre::eyre::Result;
 use clap::Parser;
 use color_eyre::owo_colors::OwoColorize;
 
-use fluvio_hub_util::fvm::{DEFAULT_PKGSET, STABLE_VERSION_CHANNEL};
-
-use fluvio_version_manager::install::{
-    fvm_path, fvm_pkgset_path, fluvio_binaries_path,
-};
+use fluvio_hub_util::fvm::{DEFAULT_PKGSET, Channel};
+use fluvio_version_manager::install::{fvm_path, fvm_pkgset_path, fluvio_binaries_path};
+use fluvio_version_manager::settings::Settings;
 use fluvio_version_manager::switch::overwrite_binaries;
 use fluvio_version_manager::utils::notify::Notify;
 
@@ -21,8 +19,8 @@ pub struct SwitchOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
     /// Version to install
-    #[arg(index = 1, default_value = STABLE_VERSION_CHANNEL)]
-    version: String,
+    #[arg(index = 1, default_value_t = Channel::Stable)]
+    version: Channel,
 }
 
 impl SwitchOpt {
@@ -41,19 +39,18 @@ impl SwitchOpt {
 
         let binaries_dir = fvm_pkgset_dir
             .join(DEFAULT_PKGSET)
-            .join(self.version.as_str());
+            .join(self.version.to_string());
 
         if !binaries_dir.exists() {
             self.notify_fail(format!(
                 "The package {} at version {} is not installed",
                 DEFAULT_PKGSET.bold(),
-                self.version.as_str()
+                self.version
             ));
 
             let help = format!(
                 "fvm install --pkgset {} --version {}",
-                DEFAULT_PKGSET,
-                self.version.as_str()
+                DEFAULT_PKGSET, self.version
             );
 
             self.notify_help(format!(
@@ -67,7 +64,7 @@ impl SwitchOpt {
         self.notify_info(format!(
             "Found package {} with version {}. Setting as default.",
             DEFAULT_PKGSET.bold(),
-            self.version.as_str().bold()
+            self.version.bold()
         ));
 
         let fluvio_bin_dir = fluvio_binaries_path()?;
@@ -76,9 +73,13 @@ impl SwitchOpt {
             overwrite_binaries(&binaries_dir, &fluvio_bin_dir)?;
             self.notify_done(format!(
                 "You are now using {} as default {} version",
-                self.version.as_str().bold(),
+                self.version.bold(),
                 DEFAULT_PKGSET.bold()
             ));
+
+            let mut settings = Settings::open()?;
+
+            settings.set_active(self.version.clone())?;
 
             return Ok(());
         }
@@ -86,7 +87,7 @@ impl SwitchOpt {
         self.notify_warn("No Fluvio workspace found. Install a version first");
         self.notify_help(format!(
             "Try running `fvm install {}` and then retry this command",
-            self.version.as_str().bold()
+            self.version.bold()
         ));
 
         Ok(())

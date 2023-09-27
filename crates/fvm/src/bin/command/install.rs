@@ -6,7 +6,6 @@
 use std::fs::{File, create_dir, copy};
 use std::io::Cursor;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use surf::{Client, StatusCode};
 use tempfile::TempDir;
@@ -14,10 +13,10 @@ use tempfile::TempDir;
 use color_eyre::eyre::Result;
 use clap::Parser;
 use color_eyre::owo_colors::OwoColorize;
-
+use surf::get;
 use url::Url;
 
-use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET, Channel};
+use fluvio_hub_util::fvm::{PackageSet, DEFAULT_PKGSET, Channel};
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
@@ -34,8 +33,8 @@ pub struct InstallOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
     /// Version to install
-    #[arg(index = 1, default_value = STABLE_VERSION_CHANNEL)]
-    version: String,
+    #[arg(index = 1, default_value_t = Channel::Stable)]
+    version: Channel,
     /// Registry used to fetch Fluvio Versions
     #[clap(long, hide = true, default_value = INFINYON_HUB_URL)]
     registry: Url,
@@ -75,9 +74,11 @@ impl InstallOpt {
 
     ///  Performs the installation of the specified `PackageSet`
     async fn install_package(&self) -> Result<()> {
-        let channel = Channel::from_str(&self.version)?;
-        let install_task =
-            InstallTask::new(self.registry.clone(), DEFAULT_PKGSET.to_string(), channel);
+        let install_task = InstallTask::new(
+            self.registry.clone(),
+            DEFAULT_PKGSET.to_string(),
+            self.version.clone(),
+        );
         let pkgset = install_task.fetch_pkgset().await?;
 
         self.notify_info(format!(
@@ -91,9 +92,7 @@ impl InstallOpt {
         self.download_artifacts(&tmp_dir, &pkgset).await?;
         self.notify_info("Downloaded artifacts with success!");
 
-        let pkgset_dir = self
-            .store_binaries(&install_task, &tmp_dir, &pkgset)
-            .await?;
+        let pkgset_dir = self.store_binaries(&tmp_dir, &pkgset).await?;
 
         self.notify_done(format!(
             "Stored binaries on {pkgset_dir}",
@@ -132,12 +131,7 @@ impl InstallOpt {
     }
 
     /// Stores binaries in the FVM `pkgset` directory for future use
-    pub async fn store_binaries(
-        &self,
-        install_task: &InstallTask,
-        tmp_dir: &TempDir,
-        pkgset: &PackageSet,
-    ) -> Result<PathBuf> {
+    pub async fn store_binaries(&self, tmp_dir: &TempDir, pkgset: &PackageSet) -> Result<PathBuf> {
         let fvm_path = fvm_path()?;
 
         // FIXME: `PackageSet` Support for package set "name"
@@ -167,17 +161,14 @@ impl InstallOpt {
             if binary_path.is_file() {
                 let mut binary = File::open(binary_path)?;
                 let shasum = shasum256(&binary)?;
-                let upstream_shasum256 = install_task
-                    .fetch_artifact_shasum(&artifact.name)
+                let upstream_shasum256 = get(&artifact.sha256_url)
                     .await
-                    .map_err(|err| Error::Install(err.to_string()))?;
+                    .unwrap()
+                    .body_string()
+                    .await
+                    .unwrap();
 
                 if shasum == upstream_shasum256 {
-                    self.notify_info(format!(
-                        "Checksums matched for package {} with shasum: {}",
-                        artifact.name.bold(),
-                        shasum.italic()
-                    ));
                     set_executable_mode(&mut binary)?;
                     copy(
                         tmp_dir.path().join(&artifact.name),
@@ -187,7 +178,7 @@ impl InstallOpt {
                     self.notify_done(format!(
                         "{}@{} is ready for use",
                         artifact.name.bold(),
-                        self.version.italic()
+                        artifact.version.italic()
                     ));
                     continue;
                 }
