@@ -126,7 +126,7 @@ pub struct Artifact {
 /// Fluvio Version Manager Package for a specific architecture and version.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct PackageSet {
-    pub version: String,
+    pub version: Version,
     pub arch: RustTarget,
     pub artifacts: Vec<Artifact>,
 }

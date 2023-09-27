@@ -37,6 +37,8 @@ pub enum Error {
     InstallError(#[from] install::InstallError),
     #[error("Settings error. {0}")]
     SettingsError(#[from] settings::SettingsError),
+    #[error("Package error. {0}")]
+    PackageError(#[from] package::PackageError),
 }
 
 /// Generic HTTP Client Error

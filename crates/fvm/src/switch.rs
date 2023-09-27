@@ -1,9 +1,9 @@
 use std::fs::{copy, read_dir};
-use std::path::{Path};
+use std::path::Path;
 
 use tracing::info;
 
-use crate::{Result};
+use crate::Result;
 
 /// Replaces binaries in the `pkgset` path with the binaries in `target` path
 pub fn overwrite_binaries(pkgset_path: &Path, target_path: &Path) -> Result<()> {

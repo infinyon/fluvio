@@ -3,6 +3,7 @@ mod command;
 use clap::{Args, Parser};
 use color_eyre::eyre::Result;
 
+use self::command::current::CurrentOpt;
 use self::command::install::InstallOpt;
 use self::command::selfie::SelfOpt;
 use self::command::switch::SwitchOpt;
@@ -42,6 +43,9 @@ pub struct Cli {
 
 #[derive(Debug, Parser)]
 pub enum Command {
+    /// Prints the active Fluvio Version
+    #[command(name = "current")]
+    Current(CurrentOpt),
     /// Installs a Fluvio Version
     #[command(name = "install")]
     Install(InstallOpt),
@@ -59,6 +63,7 @@ impl Cli {
         let command = args.command;
 
         match command {
+            Command::Current(cmd) => cmd.process().await,
             Command::Install(cmd) => cmd.process().await,
             Command::Selfie(cmd) => cmd.process().await,
             Command::Switch(cmd) => cmd.process().await,

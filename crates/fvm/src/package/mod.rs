@@ -1,14 +1,25 @@
 //! Fluvio Versions Management (a.k.a. Package)
 
+pub mod manifest;
+
 use std::str::FromStr;
 
 use surf::Client;
+use thiserror::Error;
 use url::Url;
 
 use fluvio_hub_util::fvm::{PackageSet, RustTarget, Channel};
 
 use crate::Result;
 use crate::common::{INFINYON_HUB_FVM_PKGSET_API_URI, TARGET};
+
+#[derive(Debug, Error)]
+pub enum PackageError {
+    #[error("Failed to parse manifest file. {0}")]
+    ManifestParse(serde_json::Error),
+    #[error("Failed to serialize manifest. {0}")]
+    ManifestSerialization(serde_json::Error),
+}
 
 /// Installation Task used to install a specific version of Fluvio
 #[derive(Clone, Debug)]

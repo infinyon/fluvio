@@ -3,10 +3,11 @@
 //! This command is used to initialize a new Fluvio Version Manager (FVM)
 //! instance in the host system.
 
-use std::fs::{File, create_dir, copy};
+use std::fs::{File, create_dir, copy, write};
 use std::io::Cursor;
 use std::path::PathBuf;
 
+use fluvio_version_manager::package::manifest::PackageManifest;
 use surf::{Client, StatusCode};
 use tempfile::TempDir;
 
@@ -67,7 +68,10 @@ impl InstallOpt {
         }
 
         self.notify_warn("Aborting installation due to missing FVM installation");
-        self.notify_help("Try running `fvm self install` and then retry this command");
+        self.notify_help(format!(
+            "Try running {} and then retry this command",
+            "fvm self install".bold()
+        ));
 
         Ok(())
     }
@@ -84,7 +88,7 @@ impl InstallOpt {
         self.notify_info(format!(
             "Found packages for {pkgset}@{version}",
             pkgset = install_task.pkgset.bold(),
-            version = pkgset.version.bold(),
+            version = self.version.clone().bold(),
         ));
 
         let tmp_dir = TempDir::new().map_err(|err| Error::CreateTempDir(err.to_string()))?;
@@ -143,10 +147,10 @@ impl InstallOpt {
             create_dir(&pkgset_dir).map_err(|err| Error::Install(err.to_string()))?;
         }
 
-        let pkgset_version_dir = pkgset_dir.join(&pkgset.version);
+        let pkgset_version_dir = pkgset_dir.join(self.version.to_string());
         tracing::info!(
             ?pkgset_version_dir,
-            version = pkgset.version,
+            version = ?pkgset.version,
             "Target directory for storing version binaries"
         );
 
@@ -190,6 +194,11 @@ impl InstallOpt {
             }
         }
 
+        let manifest = PackageManifest::from(pkgset.clone());
+        let manifest_json = manifest.to_json()?;
+        let manifest_path = pkgset_version_dir.join("manifest.json");
+
+        write(manifest_path, manifest_json).map_err(|err| Error::Install(err.to_string()))?;
         Ok(pkgset_version_dir)
     }
 }
