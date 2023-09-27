@@ -11,16 +11,30 @@ use std::env::current_exe;
 use std::fs::{copy, create_dir};
 use std::path::PathBuf;
 
-use crate::{Error, Result};
+use thiserror::Error;
+
+use crate::Result;
 use crate::common::{
     FLUVIO_HOME_DIR, FVM_BINARY_NAME, FVM_HOME_DIR, FVM_PACKAGES_SET_DIR, FLUVIO_BINARY_NAME,
 };
+
+#[derive(Debug, Error)]
+pub enum InstallError {
+    #[error("Failed to resolve home directory")]
+    ResolveHomeDir,
+    #[error("Failed to create directory. {0}")]
+    CreateDir(#[from] std::io::Error),
+    #[error("Failed determine the path to the current executable (fvm). {0}")]
+    ResolveCurrentExe(std::io::Error),
+    #[error("Failed copy item. {0}")]
+    Copy(std::io::Error),
+}
 
 /// Retrieves the path to the `~/.fvm` directory in the host system.
 /// This function only builds the path, it doesn't check if the directory exists.
 pub fn fvm_path() -> Result<PathBuf> {
     let Some(home_dir) = dirs::home_dir() else {
-        return Err(Error::HomeDirNotFound);
+        return Err(InstallError::ResolveHomeDir.into());
     };
     let fvm_path = home_dir.join(FVM_HOME_DIR);
 
@@ -64,24 +78,24 @@ pub fn install_fvm() -> Result<PathBuf> {
     let fvm_dir = fvm_path()?;
 
     if !fvm_dir.exists() {
-        create_dir(&fvm_dir).map_err(|err| Error::Setup(err.to_string()))?;
+        create_dir(&fvm_dir).map_err(InstallError::CreateDir)?;
         tracing::debug!(?fvm_dir, "Created FVM home directory");
     }
 
     // Attempts to create the binary crate
     let fvm_binary_dir = fvm_dir.join("bin");
-    create_dir(fvm_binary_dir).map_err(|err| Error::Setup(err.to_string()))?;
+    create_dir(fvm_binary_dir).map_err(InstallError::CreateDir)?;
 
     // Copies "this" binary to the FVM binary directory
-    let current_binary_path = current_exe().map_err(|err| Error::Setup(err.to_string()))?;
+    let current_binary_path = current_exe().map_err(InstallError::ResolveCurrentExe)?;
     let fvm_binary_path = fvm_dir.join("bin").join("fvm");
 
-    copy(current_binary_path, fvm_binary_path).map_err(|err| Error::Setup(err.to_string()))?;
+    copy(current_binary_path, fvm_binary_path).map_err(InstallError::Copy)?;
     tracing::debug!(?fvm_dir, "Copied the FVM binary to the FVM home directory");
 
     // Creates the package set directory
     let fvm_pkgset_dir = fvm_dir.join(FVM_PACKAGES_SET_DIR);
-    create_dir(fvm_pkgset_dir).map_err(|err| Error::Setup(err.to_string()))?;
+    create_dir(fvm_pkgset_dir).map_err(InstallError::CreateDir)?;
 
     Ok(fvm_dir)
 }
@@ -90,7 +104,7 @@ pub fn install_fvm() -> Result<PathBuf> {
 /// This function only builds the path, it doesn't check if the directory exists.
 pub fn fluvio_path() -> Result<PathBuf> {
     let Some(home_dir) = dirs::home_dir() else {
-        return Err(Error::HomeDirNotFound);
+        return Err(InstallError::ResolveHomeDir.into());
     };
     let flv_path = home_dir.join(FLUVIO_HOME_DIR);
 
@@ -101,7 +115,7 @@ pub fn fluvio_path() -> Result<PathBuf> {
 /// This function only builds the path, it doesn't check if the directory exists.
 pub fn fluvio_binaries_path() -> Result<PathBuf> {
     let Some(home_dir) = dirs::home_dir() else {
-        return Err(Error::HomeDirNotFound);
+        return Err(InstallError::ResolveHomeDir.into());
     };
     let flv_path = home_dir.join(FLUVIO_HOME_DIR).join("bin");
 
@@ -129,13 +143,13 @@ pub fn create_fluvio_dir() -> Result<PathBuf> {
     let flv_dir = fluvio_path()?;
 
     if !flv_dir.exists() {
-        create_dir(&flv_dir).map_err(|err| Error::Setup(err.to_string()))?;
+        create_dir(&flv_dir).map_err(InstallError::ResolveCurrentExe)?;
         tracing::debug!(?flv_dir, "Created Fluvio home directory");
     }
 
     // Attempts to create the binary crate
     let flv_binary_dir = flv_dir.join("bin");
-    create_dir(flv_binary_dir).map_err(|err| Error::Setup(err.to_string()))?;
+    create_dir(flv_binary_dir).map_err(InstallError::ResolveCurrentExe)?;
 
     Ok(flv_dir)
 }

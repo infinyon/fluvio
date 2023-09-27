@@ -48,10 +48,8 @@ impl Settings {
         let settings_path = Self::settings_file_path()?;
 
         if settings_path.exists() {
-            let contents =
-                read_to_string(settings_path).map_err(SettingsError::OpenFile)?;
-            let settings: Settings =
-                toml::from_str(&contents).map_err(SettingsError::Parse)?;
+            let contents = read_to_string(settings_path).map_err(SettingsError::OpenFile)?;
+            let settings: Settings = toml::from_str(&contents).map_err(SettingsError::Parse)?;
 
             return Ok(settings);
         }

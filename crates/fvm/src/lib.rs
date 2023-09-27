@@ -33,6 +33,8 @@ pub enum Error {
     UrlParseError(#[from] url::ParseError),
     #[error("I/O Error. {0}")]
     IOError(#[from] std::io::Error),
+    #[error("Version installation error. {0}")]
+    InstallError(#[from] install::InstallError),
     #[error("Settings error. {0}")]
     SettingsError(#[from] settings::SettingsError),
 }
