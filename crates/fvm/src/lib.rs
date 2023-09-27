@@ -33,6 +33,8 @@ pub enum Error {
     UrlParseError(#[from] url::ParseError),
     #[error("I/O Error. {0}")]
     IOError(#[from] std::io::Error),
+    #[error("Settings error. {0}")]
+    SettingsError(#[from] settings::SettingsError),
 }
 
 /// Generic HTTP Client Error

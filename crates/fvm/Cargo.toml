@@ -27,11 +27,13 @@ colored = { workspace = true }
 color-eyre = { workspace = true, default-features = false }
 dirs = { workspace = true }
 hex = { workspace = true }
+serde = { workspace = true }
 sha2 = { workspace = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
+toml = { workspace = true }
 url = { workspace = true }
 
 # Workspace Crates

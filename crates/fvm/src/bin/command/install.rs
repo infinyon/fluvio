@@ -21,9 +21,7 @@ use fluvio_hub_util::fvm::{PackageSet, STABLE_VERSION_CHANNEL, DEFAULT_PKGSET, C
 
 use fluvio_version_manager::Error;
 use fluvio_version_manager::common::{INFINYON_HUB_URL, FVM_PACKAGES_SET_DIR};
-use fluvio_version_manager::install::{
-    fvm_bin_path, fvm_path, create_fluvio_dir, fluvio_binaries_path,
-};
+use fluvio_version_manager::install::{fvm_bin_path, fvm_path, create_fluvio_dir, fluvio_binaries_path};
 use fluvio_version_manager::package::InstallTask;
 use fluvio_version_manager::utils::file::{set_executable_mode, shasum256};
 use fluvio_version_manager::utils::notify::Notify;
@@ -71,6 +69,7 @@ impl InstallOpt {
 
         self.notify_warn("Aborting installation due to missing FVM installation");
         self.notify_help("Try running `fvm self install` and then retry this command");
+
         Ok(())
     }
 
@@ -79,26 +78,19 @@ impl InstallOpt {
         let channel = Channel::from_str(&self.version)?;
         let install_task =
             InstallTask::new(self.registry.clone(), DEFAULT_PKGSET.to_string(), channel);
-
-        tracing::info!(?install_task, "Created InstallTask");
-        self.notify_info(format!(
-            "Installing Package Set {pkgset}@{version}...",
-            pkgset = install_task.pkgset.bold(),
-            version = self.version.to_string().bold()
-        ));
-
         let pkgset = install_task.fetch_pkgset().await?;
+
         self.notify_info(format!(
-            "Found {arts} packages in {pkgset}@{version}...",
-            arts = pkgset.artifacts.len(),
+            "Found packages for {pkgset}@{version}",
             pkgset = install_task.pkgset.bold(),
-            version = self.version.to_string().bold()
+            version = pkgset.version.bold(),
         ));
 
         let tmp_dir = TempDir::new().map_err(|err| Error::CreateTempDir(err.to_string()))?;
-        self.download_artifacts(&tmp_dir, &pkgset).await?;
 
+        self.download_artifacts(&tmp_dir, &pkgset).await?;
         self.notify_info("Downloaded artifacts with success!");
+
         let pkgset_dir = self
             .store_binaries(&install_task, &tmp_dir, &pkgset)
             .await?;
@@ -107,6 +99,7 @@ impl InstallOpt {
             "Stored binaries on {pkgset_dir}",
             pkgset_dir = pkgset_dir.display().italic()
         ));
+
         Ok(())
     }
 
