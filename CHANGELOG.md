@@ -1,6 +1,6 @@
 # Release Notes
 
-## Platform Version 0.10.15-dev-2 - PRERELEASE
+## Platform Version 0.10.15 - 2023-09-28
 
 ### Added
 
@@ -29,6 +29,7 @@
 
 ### Changed
 
+* Update dep ([#3560](https://github.com/infinyon/fluvio/issues/3560))
 * Update dep ([#3474](https://github.com/infinyon/fluvio/issues/3474))
 * Update dep ([#3504](https://github.com/infinyon/fluvio/issues/3504))
 * Update `fluvio-connector-derive` to syn@2 ([#3513](https://github.com/infinyon/fluvio/issues/3513))
