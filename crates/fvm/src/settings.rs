@@ -77,6 +77,14 @@ impl Settings {
         (self.channel.clone(), self.version.clone())
     }
 
+    pub fn active_channel(&self) -> Option<Channel> {
+        self.channel.clone()
+    }
+
+    pub fn active_version(&self) -> Option<Version> {
+        self.version.clone()
+    }
+
     /// Sets the active version in the `settings.toml` file
     pub fn set_active(&mut self, channel: Channel, version: Version) -> Result<()> {
         self.channel = Some(channel);

@@ -6,6 +6,7 @@ use color_eyre::eyre::Result;
 use self::command::current::CurrentOpt;
 use self::command::install::InstallOpt;
 use self::command::selfie::SelfOpt;
+use self::command::show::ShowOpt;
 use self::command::switch::SwitchOpt;
 
 #[async_std::main]
@@ -52,6 +53,9 @@ pub enum Command {
     /// Manages FVM installation
     #[command(name = "self")]
     Selfie(SelfOpt),
+    /// Lists installed package versions
+    #[command(name = "show")]
+    Show(ShowOpt),
     /// Switches the Fluvio Version in use
     #[command(name = "switch")]
     Switch(SwitchOpt),
@@ -66,6 +70,7 @@ impl Cli {
             Command::Current(cmd) => cmd.process().await,
             Command::Install(cmd) => cmd.process().await,
             Command::Selfie(cmd) => cmd.process().await,
+            Command::Show(cmd) => cmd.process().await,
             Command::Switch(cmd) => cmd.process().await,
         }
     }

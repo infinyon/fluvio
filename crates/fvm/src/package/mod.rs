@@ -4,7 +4,7 @@ pub mod manifest;
 
 use std::str::FromStr;
 
-use surf::Client;
+use surf::{Client, StatusCode};
 use thiserror::Error;
 use url::Url;
 
@@ -19,6 +19,8 @@ pub enum PackageError {
     ManifestParse(serde_json::Error),
     #[error("Failed to serialize manifest. {0}")]
     ManifestSerialization(serde_json::Error),
+    #[error("Failed to fetch package set. Server responded with status: {0}")]
+    PackageSetFetch(StatusCode),
 }
 
 /// Installation Task used to install a specific version of Fluvio
@@ -54,9 +56,22 @@ impl InstallTask {
         tracing::info!("Fetching package set from: {}", url);
 
         let mut res = client.get(url).await?;
-        let pkgset = res.body_json::<PackageSet>().await?;
 
-        Ok(pkgset)
+        if res.status() == StatusCode::Ok {
+            let pkgset = res.body_json::<PackageSet>().await?;
+
+            return Ok(pkgset);
+        }
+
+        if let Ok(message) = res.body_string().await {
+            tracing::error!(
+                message,
+                status = res.status().to_string(),
+                "Failed to fetch package set. Server responded with error code."
+            );
+        }
+
+        Err(PackageError::PackageSetFetch(res.status()).into())
     }
 
     /// Constructs the [`Url`] to fetch the [`PackageSet`] from the Registry

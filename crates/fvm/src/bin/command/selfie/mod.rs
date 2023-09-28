@@ -1,6 +1,8 @@
 //! Fluvio Version Manager (FVM) Management Command
 //!
 //! The `self` command installs and updates FVM in your system
+//!
+//! NOTE: We use `selfie` over `self` because `self` is a reserved keyword in Rust
 
 mod install;
 

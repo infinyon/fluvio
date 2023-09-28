@@ -3672,6 +3672,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "colored",
+ "comfy-table",
  "dirs 5.0.1",
  "fluvio-hub-util",
  "hex",

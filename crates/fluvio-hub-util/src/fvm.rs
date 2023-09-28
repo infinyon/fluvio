@@ -1,6 +1,6 @@
 //! Fluvio Version Manager (FVM) type definitions.
 
-use std::fmt::Display;
+use std::{fmt::Display, cmp::Ordering};
 use std::str::FromStr;
 
 use thiserror::Error;
@@ -41,6 +41,35 @@ impl Display for Channel {
             Channel::Stable => write!(f, "{}", STABLE_VERSION_CHANNEL),
             Channel::Latest => write!(f, "{}", LATEST_VERSION_CHANNEL),
             Channel::Tag(version) => write!(f, "{}", version),
+        }
+    }
+}
+
+// Refer: https://rust-lang.github.io/rust-clippy/master/index.html#/derive_ord_xor_partial_ord
+impl PartialOrd for Channel {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Channel {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self {
+            Channel::Stable => match other {
+                Channel::Stable => Ordering::Equal,
+                Channel::Latest => Ordering::Greater,
+                Channel::Tag(_) => Ordering::Greater,
+            },
+            Channel::Latest => match other {
+                Channel::Stable => Ordering::Less,
+                Channel::Latest => Ordering::Equal,
+                Channel::Tag(_) => Ordering::Greater,
+            },
+            Channel::Tag(version) => match other {
+                Channel::Stable => Ordering::Less,
+                Channel::Latest => Ordering::Less,
+                Channel::Tag(other_version) => version.cmp(other_version),
+            },
         }
     }
 }
@@ -133,8 +162,6 @@ pub struct PackageSet {
 
 #[cfg(test)]
 mod tests {
-    use semver::{BuildMetadata, Identifier, Version};
-
     use super::Channel;
 
     #[test]
@@ -149,43 +176,5 @@ mod tests {
         let channel = Channel::parse("stable").unwrap();
 
         assert_eq!(channel, Channel::Stable);
-    }
-
-    #[test]
-    fn parses_version_from_string() {
-        let have = vec![
-            "0.6.0-alpha.4",
-            "0.10.7-dev-1+cc83a3d05a6bd74a694f647776e62f49ac667db4",
-        ];
-        let want: Vec<Version> = vec![
-            Version {
-                major: 0,
-                minor: 6,
-                patch: 0,
-                pre: vec![
-                    Identifier::AlphaNumeric("alpha".to_string()),
-                    Identifier::Numeric(4),
-                ],
-                build: vec![],
-            },
-            Version {
-                major: 0,
-                minor: 10,
-                patch: 7,
-                pre: vec![
-                    Identifier::AlphaNumeric("dev".to_string()),
-                    Identifier::Numeric(4),
-                ],
-                build: BuildMetadata {
-                    identifier: Identifier::AlphaNumeric("dev".to_string()),
-                },
-            },
-        ];
-
-        for (idx, ver) in have.iter().enumerate() {
-            let channel = Channel::parse(ver);
-
-            assert_eq!(channel, Channel::Tag(want[idx].clone()));
-        }
     }
 }

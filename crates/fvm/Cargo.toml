@@ -25,6 +25,7 @@ async-std = { workspace = true, features = ["attributes"] }
 clap = { workspace = true , features = ["std", "color", "derive", "help"] }
 colored = { workspace = true }
 color-eyre = { workspace = true, default-features = false }
+comfy-table = { workspace = true }
 dirs = { workspace = true }
 hex = { workspace = true }
 semver = { workspace = true }
