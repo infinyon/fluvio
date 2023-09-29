@@ -36,7 +36,10 @@ pub fn main_loop(opt: ScOpt) {
     } else if is_local {
         info!("Running in local mode");
         let ((sc_config, auth_policy), tls_option) = opt.parse_cli_or_exit_read_only();
-        let client = Arc::new(LocalMetadataStorage::new());
+        let client = Arc::new(
+            LocalMetadataStorage::load_from("/tmp/fluvio_meta")
+                .expect("failed to initialize metadata store"),
+        );
         inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)
     } else {
         info!("Running with K8");

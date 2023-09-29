@@ -4537,8 +4537,7 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "12.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0145d7a40f92824fa8d55828493fd5fb26d833bdbdf778f9491c02b08d4879d7"
+source = "git+https://github.com/infinyon/k8-api?branch=feat/spec-static-lifetime#79fe623080a1351c827fe9c0d92f6c2b2489679b"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -4568,8 +4567,7 @@ dependencies = [
 [[package]]
 name = "k8-config"
 version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec22051e1ca0ffea56a8d7dc5fdbf1b82107653a99b8200cfc554d59ae9a3e22"
+source = "git+https://github.com/infinyon/k8-api?branch=feat/spec-static-lifetime#79fe623080a1351c827fe9c0d92f6c2b2489679b"
 dependencies = [
  "dirs 5.0.1",
  "hostfile",
@@ -4583,19 +4581,16 @@ dependencies = [
 [[package]]
 name = "k8-diff"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef435d912eeb448129d7ae11d3c497691f1f383d2d2ff1dff4365a81c7bd4f3b"
+source = "git+https://github.com/infinyon/k8-api?branch=feat/spec-static-lifetime#79fe623080a1351c827fe9c0d92f6c2b2489679b"
 dependencies = [
  "serde",
  "serde_json",
- "tracing",
 ]
 
 [[package]]
 name = "k8-metadata-client"
 version = "7.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deae805435efcaf6bead5801c7c6170ebce24ec6c3b534d601a9b5b040139413"
+source = "git+https://github.com/infinyon/k8-api?branch=feat/spec-static-lifetime#79fe623080a1351c827fe9c0d92f6c2b2489679b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4610,9 +4605,8 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f604a19941d3a538c86e8d2944b99cec1acd46043d9544804f2aaf0342a8401"
+version = "0.8.6"
+source = "git+https://github.com/infinyon/k8-api?branch=feat/spec-static-lifetime#79fe623080a1351c827fe9c0d92f6c2b2489679b"
 dependencies = [
  "serde",
  "serde_json",
