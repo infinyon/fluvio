@@ -9,6 +9,7 @@ repository = "https://github.com/infinyon/fluvio"
 publish = false
 
 [dependencies]
+anyhow = { workspace = true }
 cargo_toml = { workspace = true }
 const_format = { workspace = true }
 dirs = { workspace = true }
@@ -19,6 +20,7 @@ pem = "3.0"
 rand = { workspace = true }
 rand_core = "0.6"
 sha2 = { workspace = true }
+semver = { workspace = true }
 serde = { workspace = true, features=["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }

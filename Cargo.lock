@@ -2846,6 +2846,7 @@ dependencies = [
 name = "fluvio-hub-util"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "cargo_toml 0.16.3",
  "const_format",
  "dirs 5.0.1",
@@ -2860,6 +2861,7 @@ dependencies = [
  "pem",
  "rand 0.8.5",
  "rand_core 0.6.4",
+ "semver 1.0.19",
  "serde",
  "serde_json",
  "serde_yaml 0.9.25",
