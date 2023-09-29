@@ -15,6 +15,7 @@ pub struct Client {
 
 impl Client {
     /// Creates a new [`Client`] with the default Hub API URL
+    #[allow(unused)]
     pub fn new() -> Result<Self> {
         let api_url = Url::parse(HUB_REMOTE)?;
 
@@ -23,9 +24,9 @@ impl Client {
 
     /// Fetches a [`PackageSet`] from the Hub with the specific [`Channel`]
     #[allow(unused)]
-    pub async fn fetch_package_set<S: AsRef<str>>(
+    pub async fn fetch_package_set(
         &self,
-        name: S,
+        name: impl AsRef<str>,
         channel: &Channel,
         arch: &RustTarget,
     ) -> Result<PackageSet> {
@@ -74,7 +75,7 @@ mod tests {
 
         assert_eq!(
             client.api_url,
-            Url::parse("https://hub.infinyon.cloud/hub/v1/fvm").unwrap()
+            Url::parse("https://hub.infinyon.cloud").unwrap()
         );
     }
 

@@ -83,7 +83,7 @@ impl Ord for Channel {
 impl Channel {
     /// Parses the provided string into a [`Channel`].
     #[allow(unused)]
-    pub fn parse<T: AsRef<str>>(s: T) -> Result<Self, Error> {
+    pub fn parse(s: impl AsRef<str>) -> Result<Self, Error> {
         Self::from_str(s.as_ref())
     }
 }
