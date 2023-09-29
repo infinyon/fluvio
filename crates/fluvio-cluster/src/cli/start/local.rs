@@ -41,6 +41,7 @@ pub async fn process_local(
     }
 
     builder.read_only(opt.read_only);
+    builder.local(opt.local);
 
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);

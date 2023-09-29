@@ -169,6 +169,9 @@ pub struct LocalConfig {
 
     #[builder(default)]
     read_only: Option<PathBuf>,
+
+    #[builder(default = "false")]
+    local: bool,
 }
 
 impl LocalConfig {
@@ -352,7 +355,7 @@ impl LocalInstaller {
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
     pub async fn preflight_check(&self, fix: bool) -> Result<(), ClusterCheckError> {
-        if self.config.read_only.is_some() {
+        if self.config.read_only.is_some() || self.config.local {
             self.pb_factory
                 .println(InstallProgressMessage::PreFlightCheck.msg());
 
@@ -406,11 +409,10 @@ impl LocalInstaller {
             })?;
         }
 
-        let maybe_k8_client = if self.config.read_only.is_none() {
-            use k8_client::load_and_share;
-            Some(load_and_share()?)
-        } else {
+        let maybe_k8_client = if self.config.read_only.is_some() || self.config.local {
             None
+        } else {
+            Some(k8_client::load_and_share()?)
         };
 
         if let Some(ref client) = maybe_k8_client {

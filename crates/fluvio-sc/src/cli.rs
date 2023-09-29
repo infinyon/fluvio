@@ -129,7 +129,7 @@ impl ScOpt {
         }
 
         if self.read_only.is_none() {
-            config.namespace = self.namespace.expect("no namespace defined");
+            config.namespace = self.namespace.unwrap_or_default();
         }
 
         config.x509_auth_scopes = self.x509_auth_scopes;

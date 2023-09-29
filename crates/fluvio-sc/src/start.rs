@@ -10,6 +10,7 @@ use crate::{
     cli::{ScOpt, TlsConfig},
     services::auth::basic::BasicRbacPolicy,
     config::ScConfig,
+    metadata_store::LocalMetadataStorage,
 };
 
 pub fn main_loop(opt: ScOpt) {
@@ -31,6 +32,11 @@ pub fn main_loop(opt: ScOpt) {
             )
             .expect("failed to initialize metadata from read only configuration"),
         );
+        inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)
+    } else if is_local {
+        info!("Running in local mode");
+        let ((sc_config, auth_policy), tls_option) = opt.parse_cli_or_exit_read_only();
+        let client = Arc::new(LocalMetadataStorage::new());
         inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)
     } else {
         info!("Running with K8");
