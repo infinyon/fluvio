@@ -13,16 +13,12 @@ pub struct Client {
     api_url: Url,
 }
 
-impl Default for Client {
-    fn default() -> Self {
-        // Safe to `unwrap`, `API_BASE_URL` is a valid URL and it's a constant
-        Self::new(Url::parse(HUB_REMOTE).unwrap())
-    }
-}
-
 impl Client {
-    pub fn new(api_url: Url) -> Self {
-        Self { api_url }
+    /// Creates a new [`Client`] with the default Hub API URL
+    pub fn new() -> Result<Self> {
+        let api_url = Url::parse(HUB_REMOTE)?;
+
+        Ok(Self { api_url })
     }
 
     /// Fetches a [`PackageSet`] from the Hub with the specific [`Channel`]
@@ -34,14 +30,11 @@ impl Client {
         arch: &RustTarget,
     ) -> Result<PackageSet> {
         let url = self.make_fetch_package_set_url(name, channel, arch)?;
-        let mut res = get(url).await.map_err(|err| {
-            tracing::error!("Failed to fetch package set: {}", err);
-            Error::msg(err.to_string())
-        })?;
-        let pkg = res.body_json::<PackageSet>().await.map_err(|err| {
-            tracing::error!("Failed to parse package set: {}", err);
-            Error::msg(err.to_string())
-        })?;
+        let mut res = get(url).await.map_err(|err| Error::msg(err.to_string()))?;
+        let pkg = res
+            .body_json::<PackageSet>()
+            .await
+            .map_err(|err| Error::msg(err.to_string()))?;
 
         Ok(pkg)
     }
@@ -77,7 +70,7 @@ mod tests {
 
     #[test]
     fn creates_a_default_client() {
-        let client = Client::default();
+        let client = Client::new().unwrap();
 
         assert_eq!(
             client.api_url,
@@ -87,7 +80,7 @@ mod tests {
 
     #[test]
     fn builds_url_for_fetching_pkgsets() {
-        let client = Client::default();
+        let client = Client::new().unwrap();
         let url = client
             .make_fetch_package_set_url(
                 "fluvio",
@@ -101,7 +94,7 @@ mod tests {
 
     #[test]
     fn builds_url_for_fetching_pkgsets_on_version() {
-        let client = Client::default();
+        let client = Client::new().unwrap();
         let url = client
             .make_fetch_package_set_url(
                 "fluvio",
