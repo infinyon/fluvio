@@ -85,6 +85,7 @@ criterion = "0.5.0"
 crossbeam-channel = "0.5"
 current_platform = { version = "0.2" }
 derive_builder = "0.12.0"
+dialoguer = "0.11.0"
 directories = "5.0.0"
 dirs = "5.0.0"
 duct = { version = "0.13", default-features = false }
