@@ -1,5 +1,5 @@
 use std::env::current_exe;
-use std::fs::{create_dir, copy};
+use std::fs::{create_dir, copy, write};
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -11,6 +11,17 @@ use crate::GlobalOptions;
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
 use crate::common::workdir::{fvm_bin_path, fvm_workdir_path, fvm_pkgset_path};
+
+const FVM_ENV_FILE_CONTENTS: &str = r#"
+#!/bin/sh
+case ":${PATH}:" in
+    *:"$HOME/.fvm/bin":*)
+        ;;
+    *)
+        export PATH="$PATH:$HOME/.fvm/bin"
+        ;;
+esac
+"#;
 
 #[derive(Clone, Debug, Parser)]
 pub struct InstallOpt {
@@ -37,6 +48,10 @@ impl InstallOpt {
         self.notify_done(format!(
             "FVM installed successfully at {}",
             fvm_installation_path.display().italic()
+        ));
+        self.notify_help(format!(
+            "Add FVM to PATH using {}",
+            "source $HOME/.fvm/env".bold()
         ));
 
         Ok(())
@@ -71,6 +86,10 @@ impl InstallOpt {
         // Creates the package set directory
         let fvm_pkgset_dir = fvm_pkgset_path()?;
         create_dir(fvm_pkgset_dir)?;
+
+        // Creates the `env` file
+        let fvm_env_file_path = fvm_dir.join("env");
+        write(fvm_env_file_path, FVM_ENV_FILE_CONTENTS)?;
 
         Ok(fvm_dir)
     }
