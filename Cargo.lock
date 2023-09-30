@@ -771,12 +771,6 @@ dependencies = [
 
 [[package]]
 name = "bytes"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
-
-[[package]]
-name = "bytes"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
@@ -1765,7 +1759,6 @@ checksum = "70c44a72e830f0e40ad90dda8a6ab6ed6314d39776599a58a2e5e37fbc6db5b9"
 dependencies = [
  "cc",
  "libc",
- "libnghttp2-sys",
  "libz-sys",
  "openssl-sys",
  "pkg-config",
@@ -2452,17 +2445,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "flume"
-version = "0.9.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bebadab126f8120d410b677ed95eee4ba6eb7c6dd8e34a5ec88a08050e26132"
-dependencies = [
- "futures-core",
- "futures-sink",
- "spinning_top",
-]
-
-[[package]]
 name = "fluvio"
 version = "0.21.0"
 dependencies = [
@@ -2657,7 +2639,7 @@ dependencies = [
  "hex",
  "home",
  "http",
- "isahc 1.7.2",
+ "isahc",
  "semver 1.0.19",
  "sha2 0.10.8",
  "tempfile",
@@ -3455,7 +3437,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.8",
- "surf",
  "tempfile",
  "toml 0.8.1",
  "tracing",
@@ -4239,7 +4220,6 @@ dependencies = [
  "deadpool",
  "futures 0.3.28",
  "http-types",
- "isahc 0.9.14",
  "log",
  "rustls 0.18.1",
 ]
@@ -4561,29 +4541,6 @@ dependencies = [
 
 [[package]]
 name = "isahc"
-version = "0.9.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2948a0ce43e2c2ef11d7edf6816508998d99e13badd1150be0914205df9388a"
-dependencies = [
- "bytes 0.5.6",
- "crossbeam-utils",
- "curl",
- "curl-sys",
- "flume",
- "futures-lite",
- "http",
- "log",
- "once_cell",
- "slab",
- "sluice",
- "tracing",
- "tracing-futures",
- "url",
- "waker-fn",
-]
-
-[[package]]
-name = "isahc"
 version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "334e04b4d781f436dc315cb1e7515bd96826426345d498149e4bde36b67f8ee9"
@@ -4884,16 +4841,6 @@ name = "libm"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7012b1bbb0719e1097c47611d3898568c546d597c2e74d66f6087edd5233ff4"
-
-[[package]]
-name = "libnghttp2-sys"
-version = "0.1.8+1.55.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fae956c192dadcdb5dace96db71fa0b827333cce7c7b38dc71446f024d8a340"
-dependencies = [
- "cc",
- "libc",
-]
 
 [[package]]
 name = "libssh2-sys"
@@ -7018,15 +6965,6 @@ name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
-
-[[package]]
-name = "spinning_top"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b9eb1a2f4c41445a3a0ff9abc5221c5fcd28e1f13cd7c0397706f9ac938ddb0"
-dependencies = [
- "lock_api",
-]
 
 [[package]]
 name = "spki"
