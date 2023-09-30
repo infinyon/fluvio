@@ -12,12 +12,12 @@ use crate::common::notify::Notify;
 use crate::common::workdir::fvm_workdir_path;
 
 #[derive(Clone, Debug, Parser)]
-pub struct UninstallOpt {
+pub struct SelfUninstallOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
 }
 
-impl UninstallOpt {
+impl SelfUninstallOpt {
     pub async fn process(&self) -> Result<()> {
         // Checks if FVM is already installed
         let workdir_path = fvm_workdir_path()?;
@@ -49,7 +49,7 @@ impl UninstallOpt {
     }
 }
 
-impl Notify for UninstallOpt {
+impl Notify for SelfUninstallOpt {
     fn is_quiet(&self) -> bool {
         self.global_opts.quiet
     }

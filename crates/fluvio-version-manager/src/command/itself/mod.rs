@@ -9,20 +9,20 @@ use clap::Parser;
 use crate::GlobalOptions;
 use crate::common::notify::Notify;
 
-use self::install::InstallOpt;
-use self::uninstall::UninstallOpt;
+use self::install::SelfInstallOpt;
+use self::uninstall::SelfUninstallOpt;
 
 #[derive(Debug, Parser)]
 pub enum ItselfCommand {
     /// Install `fvm` and setup the workspace
-    Install(InstallOpt),
+    Install(SelfInstallOpt),
     /// Uninstall `fvm` and removes the workspace
-    Uninstall(UninstallOpt),
+    Uninstall(SelfUninstallOpt),
 }
 
 /// The `install` command is responsible of installing the desired Package Set
 #[derive(Debug, Parser)]
-pub struct ItselfOpt {
+pub struct SelfOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
     /// Subcommand to execute
@@ -30,7 +30,7 @@ pub struct ItselfOpt {
     command: ItselfCommand,
 }
 
-impl ItselfOpt {
+impl SelfOpt {
     pub async fn process(&self) -> Result<()> {
         match &self.command {
             ItselfCommand::Install(cmd) => cmd.process().await?,
@@ -41,7 +41,7 @@ impl ItselfOpt {
     }
 }
 
-impl Notify for ItselfOpt {
+impl Notify for SelfOpt {
     fn is_quiet(&self) -> bool {
         self.global_opts.quiet
     }

@@ -4,14 +4,14 @@ mod common;
 use clap::{Args, Parser};
 use color_eyre::eyre::Result;
 
-use self::command::itself::ItselfOpt;
+use self::command::itself::SelfOpt;
 
 #[async_std::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .try_init();
+
+    fluvio_future::subscriber::init_tracer(None);
+
     let args = Cli::parse();
 
     args.process().await?;
@@ -43,7 +43,7 @@ pub struct Cli {
 pub enum Command {
     /// Manage FVM
     #[command(name = "self")]
-    Itself(ItselfOpt),
+    Itself(SelfOpt),
 }
 
 impl Cli {

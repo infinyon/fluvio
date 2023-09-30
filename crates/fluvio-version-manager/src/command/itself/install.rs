@@ -24,12 +24,12 @@ esac
 "#;
 
 #[derive(Clone, Debug, Parser)]
-pub struct InstallOpt {
+pub struct SelfInstallOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
 }
 
-impl InstallOpt {
+impl SelfInstallOpt {
     pub async fn process(&self) -> Result<()> {
         // Checks if FVM is already installed
         let bin_path = fvm_bin_path()?;
@@ -95,7 +95,7 @@ impl InstallOpt {
     }
 }
 
-impl Notify for InstallOpt {
+impl Notify for SelfInstallOpt {
     fn is_quiet(&self) -> bool {
         self.global_opts.quiet
     }

@@ -29,9 +29,9 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 tempfile = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
 toml = { workspace = true }
 url = { workspace = true }
 
 # Workspace Crates
 fluvio-hub-util = { workspace = true }
+fluvio-future = { workspace = true, features = ["subscriber"] }
