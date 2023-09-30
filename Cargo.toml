@@ -42,6 +42,7 @@ members = [
     "crates/fluvio-test-case-derive",
     "crates/fluvio-test-util",
     "crates/fluvio-types",
+    "crates/fluvio-version-manager",
     "crates/fluvio-connector-package",
     "crates/fluvio-connector-deployer",
     "crates/fluvio-connector-common",
@@ -118,6 +119,7 @@ serde_yaml = { version = "0.9.0", default-features = false }
 sha2 = { version = "0.10" }
 siphasher = "1.0.0"
 static_assertions = "1.1.0"
+surf = "2.3.2"
 syn = "2.0"
 sysinfo = { version = "0.29.0", default-features = false }
 tar = { version = "0.4.38", default-features = false }

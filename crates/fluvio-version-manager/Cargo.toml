@@ -1,0 +1,38 @@
+[package]
+name = "fluvio-version-manager"
+version = "0.1.0"
+edition = "2021"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio Version Manager"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[[bin]]
+name = "fvm"
+path = "src/main.rs"
+
+[dependencies]
+dialoguer = "0.11.0"
+
+# Workspace Dependencies
+async-std = { workspace = true, features = ["attributes"] }
+clap = { workspace = true , features = ["std", "color", "derive", "help"] }
+colored = { workspace = true }
+color-eyre = { workspace = true, default-features = false }
+comfy-table = { workspace = true }
+dirs = { workspace = true }
+hex = { workspace = true }
+semver = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+surf = { workspace = true }
+tempfile = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
+toml = { workspace = true }
+url = { workspace = true }
+
+# Workspace Crates
+fluvio-hub-util = { workspace = true }

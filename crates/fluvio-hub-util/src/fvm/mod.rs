@@ -14,8 +14,6 @@ pub use api::Client;
 
 pub const STABLE_VERSION_CHANNEL: &str = "stable";
 pub const LATEST_VERSION_CHANNEL: &str = "latest";
-
-#[allow(unused)]
 pub const DEFAULT_PKGSET: &str = "default";
 
 pub const ARM_UNKNOWN_LINUX_GNUEABIHF: &str = "arm-unknown-linux-gnueabihf";
