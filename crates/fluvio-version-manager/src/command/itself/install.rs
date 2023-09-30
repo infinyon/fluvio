@@ -62,7 +62,7 @@ impl InstallOpt {
         let current_binary_path = current_exe()?;
         let fvm_binary_path = fvm_bin_path()?;
 
-        copy(&current_binary_path, &fvm_binary_path)?;
+        copy(current_binary_path, fvm_binary_path)?;
         tracing::debug!(
             ?fvm_dir,
             "Copied the FVM binary to the FVM home directory with success"
@@ -70,7 +70,7 @@ impl InstallOpt {
 
         // Creates the package set directory
         let fvm_pkgset_dir = fvm_pkgset_path()?;
-        create_dir(&fvm_pkgset_dir)?;
+        create_dir(fvm_pkgset_dir)?;
 
         Ok(fvm_dir)
     }

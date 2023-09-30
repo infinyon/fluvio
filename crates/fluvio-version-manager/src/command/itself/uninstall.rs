@@ -30,7 +30,11 @@ impl UninstallOpt {
                 ))
                 .interact()?
             {
-                remove_dir_all(workdir_path)?;
+                remove_dir_all(&workdir_path)?;
+                self.notify_done(format!(
+                    "Fluvio Version Manager was removed from {}",
+                    workdir_path.display().italic()
+                ));
             }
 
             return Ok(());

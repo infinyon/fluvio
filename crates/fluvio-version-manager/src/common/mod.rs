@@ -1,4 +1,3 @@
-pub mod fluvio;
 pub mod notify;
 pub mod settings;
 pub mod workdir;

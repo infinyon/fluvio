@@ -16,9 +16,6 @@ pub const FVM_BINARY_NAME: &str = "fvm";
 /// FVM Packages Set Directory Name
 pub const FVM_PACKAGES_SET_DIR: &str = "pkgset";
 
-/// The Target Architecture of the current build (e.g. "aarch64-apple-darwin")
-pub const TARGET: &str = env!("TARGET");
-
 /// Retrieves the path to the `~/.fvm` directory in the host system
 pub fn fvm_workdir_path() -> Result<PathBuf> {
     let home = home_dir()?;
