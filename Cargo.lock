@@ -3424,9 +3424,9 @@ dependencies = [
 name = "fluvio-version-manager"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "async-std",
  "clap",
- "color-eyre",
  "colored",
  "comfy-table",
  "dialoguer 0.11.0",

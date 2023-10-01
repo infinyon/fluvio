@@ -4,7 +4,7 @@ pub mod workdir;
 
 use std::path::PathBuf;
 
-use color_eyre::eyre::{Error, Result};
+use anyhow::{Error, Result};
 
 /// Wrapper on `dirs::home_dir` which returns `anyhow::Error` instead of `Option`.
 pub(super) fn home_dir() -> Result<PathBuf> {

@@ -1,8 +1,7 @@
 use std::fs::remove_dir_all;
 
+use anyhow::Result;
 use clap::Parser;
-use color_eyre::eyre::Result;
-use color_eyre::owo_colors::OwoColorize;
 use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
 
@@ -26,14 +25,14 @@ impl SelfUninstallOpt {
             if Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt(&format!(
                     "Are you sure you want to uninstall FVM from {}?",
-                    workdir_path.display().italic()
+                    workdir_path.display()
                 ))
                 .interact()?
             {
                 remove_dir_all(&workdir_path)?;
                 self.notify_done(format!(
                     "Fluvio Version Manager was removed from {}",
-                    workdir_path.display().italic()
+                    workdir_path.display()
                 ));
             }
 
@@ -42,7 +41,7 @@ impl SelfUninstallOpt {
 
         self.notify_warn(format!(
             "Aborting uninstallation, no FVM installation found at {}",
-            workdir_path.display().italic()
+            workdir_path.display()
         ));
 
         Ok(())

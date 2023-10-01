@@ -1,7 +1,7 @@
 use std::fs::write;
 use std::path::PathBuf;
 
-use color_eyre::eyre::{Error, Result};
+use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 use semver::Version;
 

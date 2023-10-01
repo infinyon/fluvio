@@ -15,10 +15,10 @@ path = "src/main.rs"
 [dependencies]
 
 # Workspace Dependencies
+anyhow = { workspace = true }
 async-std = { workspace = true, features = ["attributes"] }
-clap = { workspace = true , features = ["std", "color", "derive", "help"] }
+clap = { workspace = true, features = ["std", "color", "derive", "help"] }
 colored = { workspace = true }
-color-eyre = { workspace = true, default-features = false }
 comfy-table = { workspace = true }
 dialoguer = { workspace = true }
 dirs = { workspace = true }

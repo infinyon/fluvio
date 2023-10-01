@@ -1,15 +1,13 @@
 mod command;
 mod common;
 
+use anyhow::Result;
 use clap::{Args, Parser};
-use color_eyre::eyre::Result;
 
 use self::command::itself::SelfOpt;
 
 #[async_std::main]
 async fn main() -> Result<()> {
-    color_eyre::install()?;
-
     fluvio_future::subscriber::init_tracer(None);
 
     let args = Cli::parse();

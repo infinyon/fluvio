@@ -3,8 +3,7 @@ use std::fs::{create_dir, copy, write};
 use std::path::PathBuf;
 
 use clap::Parser;
-use color_eyre::eyre::Result;
-use color_eyre::owo_colors::OwoColorize;
+use anyhow::Result;
 
 use crate::GlobalOptions;
 
@@ -37,7 +36,7 @@ impl SelfInstallOpt {
         if bin_path.exists() {
             self.notify_info(format!(
                 "FVM is already installed at {}",
-                bin_path.display().italic()
+                bin_path.display()
             ));
             return Ok(());
         }
@@ -47,12 +46,9 @@ impl SelfInstallOpt {
 
         self.notify_done(format!(
             "FVM installed successfully at {}",
-            fvm_installation_path.display().italic()
+            fvm_installation_path.display()
         ));
-        self.notify_help(format!(
-            "Add FVM to PATH using {}",
-            "source $HOME/.fvm/env".bold()
-        ));
+        self.notify_help(format!("Add FVM to PATH using {}", "source $HOME/.fvm/env"));
 
         Ok(())
     }

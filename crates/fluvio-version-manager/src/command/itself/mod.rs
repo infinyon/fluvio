@@ -3,7 +3,7 @@
 pub mod install;
 pub mod uninstall;
 
-use color_eyre::eyre::Result;
+use anyhow::Result;
 use clap::Parser;
 
 use crate::GlobalOptions;
