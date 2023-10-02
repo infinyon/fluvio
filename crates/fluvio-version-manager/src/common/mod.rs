@@ -9,8 +9,8 @@ use anyhow::{Error, Result};
 /// Wrapper on `dirs::home_dir` which returns `anyhow::Error` instead of `Option`.
 pub(super) fn home_dir() -> Result<PathBuf> {
     if let Some(home_dir) = dirs::home_dir() {
-        return Ok(home_dir);
+        Ok(home_dir)
+    } else {
+        Err(Error::msg("Failed to resolve home directory"))
     }
-
-    Err(Error::msg("Failed to resolve home directory"))
 }

@@ -35,14 +35,12 @@ impl SelfUninstallOpt {
                     workdir_path.display()
                 ));
             }
-
-            return Ok(());
+        } else {
+            self.notify_warn(format!(
+                "Aborting uninstallation, no FVM installation found at {}",
+                workdir_path.display()
+            ));
         }
-
-        self.notify_warn(format!(
-            "Aborting uninstallation, no FVM installation found at {}",
-            workdir_path.display()
-        ));
 
         Ok(())
     }

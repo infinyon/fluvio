@@ -64,3 +64,21 @@ impl Settings {
         Ok(settings_path)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::common::home_dir;
+
+    use super::*;
+
+    #[test]
+    fn test_settings_file_path() {
+        let settings_path =
+            Settings::settings_file_path().expect("Failed to get settings.toml path");
+        let home = home_dir().expect("Failed to get home directory");
+
+        assert!(settings_path.is_absolute());
+        assert!(settings_path.starts_with(home));
+        assert!(settings_path.ends_with(SETTINGS_TOML_FILENAME));
+    }
+}
