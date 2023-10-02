@@ -998,7 +998,6 @@ dependencies = [
  "fluvio-hub-util",
  "include_dir",
  "serde",
- "sha2 0.10.8",
  "sysinfo",
  "tempfile",
  "thiserror",
@@ -2616,6 +2615,7 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "clap",
  "current_platform",
  "fluvio-future",
  "fluvio-package-index",
@@ -2628,6 +2628,7 @@ dependencies = [
  "isahc",
  "semver 1.0.19",
  "sha2 0.10.8",
+ "sysinfo",
  "tempfile",
  "thiserror",
  "tracing",
@@ -6913,8 +6914,6 @@ dependencies = [
  "fluvio-smartmodule",
  "include_dir",
  "lib-cargo-crate",
- "sha2 0.10.8",
- "sysinfo",
  "tempfile",
  "thiserror",
  "toml 0.8.2",

@@ -15,9 +15,12 @@ path = "src/lib.rs"
 [features]
 default = ["fluvio-types"]
 file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
+version-cmd = ["dep:current_platform", "dep:clap", "dep:sysinfo"]
 
 [dependencies]
 anyhow = { workspace = true }
+current_platform = { workspace = true, optional = true }
+clap = { workspace = true, optional = true }
 futures = { workspace = true, features = ["std", "io-compat"]}
 home = { workspace = true }
 hex = { workspace = true }
@@ -26,6 +29,7 @@ http = { workspace = true }
 
 semver = { workspace = true }
 sha2 = { workspace = true }
+sysinfo = { workspace = true, optional = true }
 tempfile = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
