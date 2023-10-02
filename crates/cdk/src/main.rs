@@ -7,6 +7,7 @@ mod publish;
 mod set_public;
 
 pub(crate) mod utils;
+mod version;
 
 fn main() -> anyhow::Result<()> {
     use clap::Parser;

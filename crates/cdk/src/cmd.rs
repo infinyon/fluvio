@@ -8,6 +8,7 @@ use crate::deploy::DeployCmd;
 use crate::test::TestCmd;
 use crate::publish::PublishCmd;
 use crate::set_public::SetPublicCmd;
+use crate::version::VersionCmd;
 
 /// Connector Development Kit
 #[derive(Debug, Parser)]
@@ -17,6 +18,7 @@ pub enum CdkCommand {
     Generate(GenerateCmd),
     Deploy(DeployCmd),
     Publish(PublishCmd),
+    Version(VersionCmd),
 
     #[command(name = "set-public")]
     SetPublic(SetPublicCmd),
@@ -31,6 +33,8 @@ impl CdkCommand {
             CdkCommand::Publish(opt) => opt.process(),
             CdkCommand::SetPublic(opt) => opt.process(),
             CdkCommand::Generate(opt) => opt.process(),
+            CdkCommand::Version(opt) => opt.process(),
+            
         }
     }
 }
