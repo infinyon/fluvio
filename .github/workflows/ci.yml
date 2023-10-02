@@ -70,7 +70,7 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk, fvm]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -129,6 +129,10 @@ jobs:
       - name: Build fbm
         if: matrix.binary == 'fbm'
         run: make build-fbm
+
+      - name: Build fvm
+        if: matrix.binary == 'fvm'
+        run: make build-fvm
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -247,6 +251,28 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: fbm
 
+          # fvm
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: arm-unknown-linux-gnueabihf
+            binary: fvm
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fvm
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: fvm.exe
+          - os: macos-12
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fvm
+          - os: macos-12
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fvm
+
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -340,6 +366,16 @@ jobs:
         timeout-minutes: 40
         if: matrix.binary == 'fbm.exe'
         run: make build-fbm
+
+      - name: Build fvm
+        timeout-minutes: 40
+        if: matrix.binary == 'fvm'
+        run: make build-fvm
+
+      - name: Build fvm.exe
+        timeout-minutes: 40
+        if: matrix.binary == 'fvm.exe'
+        run: make build-fvm
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -951,7 +987,7 @@ jobs:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
         cli_version: [stable, dev]
-        test: [fluvio,smdk,cdk]
+        test: [fluvio,smdk,cdk,fvm]
         # no need to test stable to stable
         exclude:
           - cluster_version:  stable
@@ -1083,6 +1119,23 @@ jobs:
         if: matrix.test == 'cdk'
         timeout-minutes: 20
         run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
+
+      # test fvm
+      - name: Download artifact - fvm
+        if: matrix.test == 'fvm'
+        uses: actions/download-artifact@v3
+        with:
+          name: fvm-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: mark fvm
+        if: matrix.test == 'fvm'
+        run: |
+          chmod +x ~/bin/fvm
+          echo "~/bin" >> $GITHUB_PATH
+      - name: Run FVM smoke tests
+        if: matrix.test == 'fvm'
+        timeout-minutes: 20
+        run: make FVM_BIN=~/bin/fvm cli-fvm-smoke
 
       - name: Run diagnostics
         if: ${{ !success() }}

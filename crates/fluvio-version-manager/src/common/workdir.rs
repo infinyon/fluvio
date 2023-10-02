@@ -2,6 +2,7 @@
 //! store its files and binaries.
 
 use std::path::PathBuf;
+use std::env::var;
 
 use anyhow::Result;
 
@@ -16,11 +17,20 @@ pub const FVM_BINARY_NAME: &str = "fvm";
 /// FVM Packages Set Directory Name
 pub const FVM_PACKAGES_SET_DIR: &str = "pkgset";
 
+/// FVM Workdir Name Environment Variable
+pub const FVM_WORKDIR_NAME_ENV_VAR: &str = "FVM_WORKDIR_NAME";
+
 /// Retrieves the path to the `~/.fvm` directory in the host system
 pub fn fvm_workdir_path() -> Result<PathBuf> {
-    let fvm_path = home_dir()?.join(FVM_HOME_DIR);
+    let fvm_path = home_dir()?;
 
-    Ok(fvm_path)
+    if let Ok(workdir_name) = var(FVM_WORKDIR_NAME_ENV_VAR) {
+        tracing::warn!("Using custom FVM workdir name: {}", workdir_name);
+
+        Ok(fvm_path.join(workdir_name))
+    } else {
+        Ok(fvm_path.join(FVM_HOME_DIR))
+    }
 }
 
 /// Retrieves the path to the `~/.fvm/bin/fvm` directory in the host system

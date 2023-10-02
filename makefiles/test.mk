@@ -212,6 +212,9 @@ cli-smdk-smoke:
 cli-cdk-smoke:
 	bats $(shell ls -1 ./tests/cli/cdk_smoke_tests/*.bats | sort -R)
 
+cli-fvm-smoke:
+	bats $(shell ls -1 ./tests/cli/fvm_smoke_tests/*.bats | sort -R)
+
 cli-basic-test:
 	bats ./tests/cli/fluvio_smoke_tests/e2e-basic.bats
 
@@ -235,6 +238,9 @@ cli-smdk-basic-test:
 
 cli-cdk-basic-test:
 	CDK_BIN=$(shell readlink -f $(CDK_BIN)) bats   ./tests/cli/cdk_smoke_tests/cdk-basic.bats
+
+cli-fvm-basic-test:
+	FVM_BIN=$(shell readlink -f $(FVM_BIN)) bats   ./tests/cli/fvm_smoke_tests/fvm-basic.bats
 
 # test rbac
 #

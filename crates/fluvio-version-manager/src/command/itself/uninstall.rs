@@ -14,6 +14,9 @@ use crate::common::workdir::fvm_workdir_path;
 pub struct SelfUninstallOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
+    /// Skip the confirmation prompt and uninstall FVM
+    #[clap(long)]
+    yes: bool,
 }
 
 impl SelfUninstallOpt {
@@ -22,12 +25,13 @@ impl SelfUninstallOpt {
         let workdir_path = fvm_workdir_path()?;
 
         if workdir_path.exists() {
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(&format!(
-                    "Are you sure you want to uninstall FVM from {}?",
-                    workdir_path.display()
-                ))
-                .interact()?
+            if self.yes
+                || Confirm::with_theme(&ColorfulTheme::default())
+                    .with_prompt(&format!(
+                        "Are you sure you want to uninstall FVM from {}?",
+                        workdir_path.display()
+                    ))
+                    .interact()?
             {
                 remove_dir_all(&workdir_path)?;
                 self.notify_done(format!(
@@ -35,13 +39,14 @@ impl SelfUninstallOpt {
                     workdir_path.display()
                 ));
             }
-        } else {
-            self.notify_warn(format!(
-                "Aborting uninstallation, no FVM installation found at {}",
-                workdir_path.display()
-            ));
+
+            return Ok(());
         }
 
+        self.notify_warn(format!(
+            "Aborting uninstallation, no FVM installation found at {}",
+            workdir_path.display()
+        ));
         Ok(())
     }
 }

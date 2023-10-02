@@ -67,9 +67,27 @@ impl Settings {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::{remove_file, read_to_string, create_dir, remove_dir_all};
+
     use crate::common::home_dir;
 
     use super::*;
+
+    fn create_fvm_dir() {
+        let fvm_dir = fvm_workdir_path().unwrap();
+
+        if !fvm_dir.exists() {
+            create_dir(&fvm_dir).unwrap();
+        }
+    }
+
+    fn delete_fvm_dir() {
+        let fvm_dir = fvm_workdir_path().unwrap();
+
+        if fvm_dir.exists() {
+            remove_dir_all(&fvm_dir).unwrap();
+        }
+    }
 
     #[test]
     fn test_settings_file_path() {
@@ -80,5 +98,45 @@ mod tests {
         assert!(settings_path.is_absolute());
         assert!(settings_path.starts_with(home));
         assert!(settings_path.ends_with(SETTINGS_TOML_FILENAME));
+    }
+
+    #[test]
+    fn creates_settings_file() {
+        create_fvm_dir();
+
+        let _settings = Settings::init().expect("Failed to create settings.toml file");
+        let settings_path =
+            Settings::settings_file_path().expect("Failed to get settings.toml path");
+
+        assert!(
+            settings_path.exists(),
+            "the settings file should exist at this point"
+        );
+
+        remove_file(settings_path).expect("Failed to remove settings.toml file");
+        delete_fvm_dir();
+    }
+
+    #[test]
+    fn update_settings_file() {
+        create_fvm_dir();
+
+        let settings_path =
+            Settings::settings_file_path().expect("Failed to get settings.toml path");
+        let mut settings = Settings::init().expect("Failed to create settings.toml file");
+
+        settings.channel = Some(Channel::Stable);
+        settings.version = Some(Version::new(0, 11, 0));
+
+        settings.save().expect("Failed to save settings.toml file");
+
+        let settings_str =
+            read_to_string(&settings_path).expect("Failed to read settings.toml file");
+
+        assert!(settings_str.contains("channel = \"stable\""));
+        assert!(settings_str.contains("version = \"0.11.0\""));
+
+        remove_file(&settings_path).expect("Failed to remove settings.toml file");
+        delete_fvm_dir();
     }
 }
