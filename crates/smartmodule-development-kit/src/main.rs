@@ -6,6 +6,7 @@ mod load;
 mod publish;
 mod hub;
 mod set_public;
+mod version;
 
 use std::path::PathBuf;
 
