@@ -18,15 +18,16 @@ setup_file() {
 @test "Install fvm and setup a settings.toml file" {
     run $FVM_BIN self install
     assert_line --index 0 "done: FVM installed successfully at /home/runner/.fvm"
-    assert_success
-
-    cd ~/.fvm
+    assert_line --index 1 "help: Add FVM to PATH using source $HOME/.fvm/env"
     assert_success
 
     # The file is going to be present but is going to be empty at first given
     # that at this point no fluvio version is installed by FVM
-    cat ./settings.toml
-    assert_output ""
+    cat  ~/.fvm/settings.toml
+    assert_success
+
+    # Ensure the `fvm` binary is available
+    ~/.fvm/bin/fvm
     assert_success
 }
 
