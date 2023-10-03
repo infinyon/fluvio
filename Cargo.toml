@@ -42,6 +42,7 @@ members = [
     "crates/fluvio-test-case-derive",
     "crates/fluvio-test-util",
     "crates/fluvio-types",
+    "crates/fluvio-version-manager",
     "crates/fluvio-connector-package",
     "crates/fluvio-connector-deployer",
     "crates/fluvio-connector-common",
@@ -84,6 +85,7 @@ criterion = "0.5.0"
 crossbeam-channel = "0.5"
 current_platform = { version = "0.2" }
 derive_builder = "0.12.0"
+dialoguer = "0.11.0"
 directories = "5.0.0"
 dirs = "5.0.0"
 duct = { version = "0.13", default-features = false }
@@ -118,6 +120,7 @@ serde_yaml = { version = "0.9.0", default-features = false }
 sha2 = { version = "0.10" }
 siphasher = "1.0.0"
 static_assertions = "1.1.0"
+surf = "2.3.2"
 syn = "2.0"
 sysinfo = { version = "0.29.0", default-features = false }
 tar = { version = "0.4.38", default-features = false }

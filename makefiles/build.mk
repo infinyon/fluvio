@@ -11,6 +11,9 @@ build-cdk: install_rustup_target
 build-fbm: install_rustup_target
 	$(CARGO_BUILDER) build --bin fbm -p fluvio-benchmark $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
 
+build-fvm: install_rustup_target
+	$(CARGO_BUILDER) build --bin fvm -p fluvio-version-manager $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) $(SMARTENGINE_FLAG)
+
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
 	cargo build --bin fluvio -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) \
