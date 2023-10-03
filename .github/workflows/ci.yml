@@ -369,12 +369,7 @@ jobs:
 
       - name: Build fvm
         timeout-minutes: 40
-        if: matrix.binary == 'fvm'
-        run: make build-fvm
-
-      - name: Build fvm.exe
-        timeout-minutes: 40
-        if: matrix.binary == 'fvm.exe'
+        if: matrix.binary == 'fvm' || matrix.binary == 'fvm.exe'
         run: make build-fvm
 
       # Upload artifacts
