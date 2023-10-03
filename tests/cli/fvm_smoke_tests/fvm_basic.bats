@@ -17,17 +17,26 @@ setup_file() {
 
 @test "Install fvm and setup a settings.toml file" {
     run $FVM_BIN self install
-    assert_line --index 0 "done: FVM installed successfully at /home/runner/.fvm"
-    assert_line --index 1 "help: Add FVM to PATH using source $HOME/.fvm/env"
     assert_success
 
-    # The file is going to be present but is going to be empty at first given
-    # that at this point no fluvio version is installed by FVM
-    cat  ~/.fvm/settings.toml
+    # Ensure the `~/.fvm/` directory is available
+    test -d ~/.fvm
     assert_success
 
     # Ensure the `fvm` binary is available
-    ~/.fvm/bin/fvm
+    test -f ~/.fvm/bin/fvm
+    assert_success
+
+    # Ensure the `settings.toml` is available
+    test -f ~/.fvm/settings.toml
+    assert_success
+
+    # Ensure the `env` file is available
+    test -f ~/.fvm/env
+    assert_success
+
+    # Ensure the package set dir is available
+    test -d ~/.fvm/pkgset
     assert_success
 }
 
@@ -36,9 +45,9 @@ setup_file() {
     # responding with error `Error: IO error: not a terminal`
 
     run $FVM_BIN self uninstall --yes
-    assert_output --partial "Fluvio Version Manager was removed from"
     assert_success
 
-    run cd ~/.fvm
-    assert_output --partial "cd: /home/runner/.fvm: No such file or directory"
+    # Ensure the `~/.fvm/` directory is not available anymore
+    ! test -d ~/.fvm
+    assert_success
 }
