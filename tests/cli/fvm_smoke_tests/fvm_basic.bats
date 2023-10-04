@@ -12,7 +12,7 @@ load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
-  echo "No-Op"
+    echo "No-Op"
 }
 
 @test "Install fvm and setup a settings.toml file" {
@@ -35,8 +35,8 @@ setup_file() {
     test -f ~/.fvm/env
     assert_success
 
-    # Ensure the package set dir is available
-    test -d ~/.fvm/pkgset
+    # Ensure the versions dir is available
+    test -d ~/.fvm/versions
     assert_success
 }
 
@@ -49,5 +49,56 @@ setup_file() {
 
     # Ensure the `~/.fvm/` directory is not available anymore
     ! test -d ~/.fvm
+    assert_success
+}
+
+@test "Install Fluvio at 0.10.15" {
+    $FVM_BIN self install
+
+    # Output install logs
+    export HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud"
+    run bash -c '$FVM_BIN install 0.10.15'
+    assert_success
+
+    # Ensure the stable version dir is available
+    test -d ~/.fvm/versions/0.10.15
+    assert_success
+
+    # Verify fluvio binary is present
+    test -f ~/.fvm/versions/0.10.15/fluvio
+    assert_success
+
+    # Verify fluvio-run binary is present
+    test -f ~/.fvm/versions/0.10.15/fluvio-run
+    assert_success
+
+    # Verify fluvio-cloud binary is present
+    test -f ~/.fvm/versions/0.10.15/fluvio-cloud
+    assert_success
+
+    # Verify cdk binary is present
+    test -f ~/.fvm/versions/0.10.15/cdk
+    assert_success
+
+    # Verify smdk binary is present
+    test -f ~/.fvm/versions/0.10.15/smdk
+    assert_success
+
+    # Check mainfest matches
+    run bash -c 'cat ~/.fvm/versions/0.10.15/manifest.json | jq .channel.tag'
+    assert_output "0.10.15"
+    assert_success
+
+    run bash -c 'cat ~/.fvm/versions/0.10.15/manifest.json | jq .channel.version'
+    assert_output "0.10.15"
+    assert_success
+
+    # Check downloaded Fluvio Version
+    run bash -c '~/.fvm/versions/0.10.15/fluvio version > flv_version_0.10.15.out && cat flv_version_0.10.15.out | head -n 1 | grep "0.10.15"'
+    assert_output --partial "0.10.15"
+    assert_success
+
+    # Removes FVM
+    $FVM_BIN self uninstall
     assert_success
 }

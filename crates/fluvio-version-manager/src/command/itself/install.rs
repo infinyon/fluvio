@@ -9,7 +9,7 @@ use crate::GlobalOptions;
 
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
-use crate::common::workdir::{fvm_bin_path, fvm_workdir_path, fvm_pkgset_path};
+use crate::common::workdir::{fvm_bin_path, fvm_workdir_path, fvm_versions_path};
 
 const FVM_ENV_FILE_CONTENTS: &str = r#"
 #!/bin/sh
@@ -80,7 +80,7 @@ impl SelfInstallOpt {
         );
 
         // Creates the package set directory
-        let fvm_pkgset_dir = fvm_pkgset_path()?;
+        let fvm_pkgset_dir = fvm_versions_path()?;
         create_dir(fvm_pkgset_dir)?;
 
         // Creates the `env` file

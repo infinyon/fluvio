@@ -14,8 +14,10 @@ pub const FVM_HOME_DIR: &str = ".fvm";
 /// FVM Binary Name
 pub const FVM_BINARY_NAME: &str = "fvm";
 
-/// FVM Packages Set Directory Name
-pub const FVM_PACKAGES_SET_DIR: &str = "pkgset";
+/// FVM Versions Directory Name
+///
+/// Here is where all the versions are stored
+pub const FVM_VERSIONS_DIR: &str = "versions";
 
 /// FVM Workdir Name Environment Variable
 pub const FVM_WORKDIR_NAME_ENV_VAR: &str = "FVM_WORKDIR_NAME";
@@ -35,18 +37,12 @@ pub fn fvm_workdir_path() -> Result<PathBuf> {
 
 /// Retrieves the path to the `~/.fvm/bin/fvm` directory in the host system
 pub fn fvm_bin_path() -> Result<PathBuf> {
-    let fvm_workdir_path = fvm_workdir_path()?;
-    let fvm_binary_path = fvm_workdir_path.join("bin").join(FVM_BINARY_NAME);
-
-    Ok(fvm_binary_path)
+    Ok(fvm_workdir_path()?.join("bin").join(FVM_BINARY_NAME))
 }
 
-/// Retrieves the path to the `~/.fvm/pkgset` directory in the host system
-pub fn fvm_pkgset_path() -> Result<PathBuf> {
-    let fvm_workdir_path = fvm_workdir_path()?;
-    let fvm_pkget_path = fvm_workdir_path.join(FVM_PACKAGES_SET_DIR);
-
-    Ok(fvm_pkget_path)
+/// Retrieves the path to the `~/.fvm/versions` directory in the host system
+pub fn fvm_versions_path() -> Result<PathBuf> {
+    Ok(fvm_workdir_path()?.join(FVM_VERSIONS_DIR))
 }
 
 #[cfg(test)]
@@ -70,10 +66,10 @@ mod tests {
     }
 
     #[test]
-    fn test_fvm_pkgset_path() {
-        let fvm_pkgset_path = fvm_pkgset_path().expect("Failed to get fvm pkgset path");
+    fn test_fvm_versions_path() {
+        let fvm_version_path = fvm_versions_path().expect("Failed to get fvm pkgset path");
         let fvm_path = fvm_workdir_path().expect("Failed to get fvm path");
 
-        assert_eq!(fvm_pkgset_path, fvm_path.join(FVM_PACKAGES_SET_DIR));
+        assert_eq!(fvm_version_path, fvm_path.join(FVM_VERSIONS_DIR));
     }
 }

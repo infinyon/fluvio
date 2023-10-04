@@ -77,6 +77,12 @@ impl Channel {
     pub fn parse(s: impl AsRef<str>) -> Result<Self, Error> {
         Self::from_str(s.as_ref())
     }
+
+    /// Returns `true` if the instance is a version tag instead of a channel
+    /// string.
+    pub fn is_version_tag(&self) -> bool {
+        matches!(self, Self::Tag(_))
+    }
 }
 
 impl FromStr for Channel {
