@@ -18,7 +18,7 @@ pub fn main_loop(opt: ScOpt) {
     let is_local = opt.is_local();
 
     inspect_system();
-    println!("Starting SC, platform: {}", crate::VERSION);
+    println!("Starting SC, platform: {}", *crate::FLUVIO_PLATFORM_VERSION);
 
     if let Some(read_only_path) = opt.read_only().clone() {
         info!("Running in read only mode");
@@ -48,7 +48,8 @@ fn inspect_system() {
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    info!(version = crate::VERSION, "Platform");
+    let platform_version = crate::FLUVIO_PLATFORM_VERSION.to_string();
+    info!(version = platform_version, "Platform");
     info!(commit = env!("GIT_HASH"), "Git");
     info!(name = ?sys.name(),"System");
     info!(kernel = ?sys.kernel_version(),"System");

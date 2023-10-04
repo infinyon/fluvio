@@ -12,10 +12,14 @@ events = ["event-listener"]
 
 [dependencies]
 event-listener = { workspace = true,  optional = true }
+once_cell = { workspace = true }
+semver = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture", "subscriber"] }
 tokio = { workspace = true,  features = ["macros"] }
+
+[build-dependencies]
+semver = { workspace = true }

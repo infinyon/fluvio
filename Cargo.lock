@@ -2998,6 +2998,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",
+ "fluvio-types",
  "semver 1.0.19",
  "serde_json",
  "thiserror",
@@ -3415,6 +3416,8 @@ version = "0.4.4"
 dependencies = [
  "event-listener 3.0.0",
  "fluvio-future",
+ "once_cell",
+ "semver 1.0.19",
  "thiserror",
  "tokio",
  "tracing",

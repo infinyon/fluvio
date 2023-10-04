@@ -23,7 +23,7 @@ spu_smartengine = ["fluvio-spu/smartengine"]
 rustls = ["fluvio-future/rust_tls"]
 
 [dependencies]
-clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"]}
+clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "string"] }
 semver = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -35,3 +35,4 @@ fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-extension-common = { workspace = true }
 fluvio-sc = { path = "../fluvio-sc", default-features = false }
 fluvio-spu = { path = "../fluvio-spu", default-features = false  }
+fluvio-types = { workspace = true }

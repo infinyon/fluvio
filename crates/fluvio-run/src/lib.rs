@@ -7,11 +7,10 @@ use error::Result;
 use fluvio_spu::SpuOpt;
 use fluvio_sc::cli::ScOpt;
 use fluvio_extension_common::FluvioExtensionMetadata;
-
-const VERSION: &str = include_str!("../../../VERSION");
+use fluvio_types::FLUVIO_PLATFORM_VERSION;
 
 #[derive(Debug, Parser)]
-#[command(version = crate::VERSION)]
+#[command(version = FLUVIO_PLATFORM_VERSION.to_string())]
 pub enum RunCmd {
     /// Run a new Streaming Processing Unit (SPU)
     #[command(name = "spu")]
@@ -74,7 +73,7 @@ pub struct VersionOpt {}
 impl VersionOpt {
     pub fn process(self) -> Result<()> {
         println!("Git Commit: {}", env!("GIT_HASH"));
-        println!("Platform Version: {VERSION}");
+        println!("Platform Version: {}", *FLUVIO_PLATFORM_VERSION);
 
         Ok(())
     }

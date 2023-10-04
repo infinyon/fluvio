@@ -30,7 +30,8 @@ pub fn main_loop(opt: SpuOpt) {
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    info!(version = crate::VERSION, "Platform");
+    let platform_version = crate::FLUVIO_PLATFORM_VERSION.to_string();
+    info!(version = platform_version, "Platform");
     info!(commit = env!("GIT_HASH"), "Git");
     info!(name = ?sys.name(),"System");
     info!(kernel = ?sys.kernel_version(),"System");

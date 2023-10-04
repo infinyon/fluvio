@@ -1,7 +1,15 @@
+use once_cell::sync::Lazy;
+use semver::Version;
+
 pub const PRODUCT_NAME: &str = "fluvio";
 
 // Fluvio
 pub const FLUVIO_MAX_SIZE_TOPIC_NAME: u8 = 255;
+pub static FLUVIO_PLATFORM_VERSION: Lazy<Version> = Lazy::new(|| {
+    let version = env!("FLUVIO_PLATFORM_VERSION").trim();
+    Version::parse(version)
+        .expect("Env variable 'FLUVIO_PLATFORM_VERSION' should contain a valid semver.")
+});
 
 // Client
 pub const FLUVIO_CLIENT_MAX_FETCH_BYTES: i32 = 1_048_588;

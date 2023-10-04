@@ -20,7 +20,7 @@ impl VersionOpt {
             self.print("Release Channel", &channel_name);
         };
 
-        self.print("Fluvio CLI", crate::VERSION.trim());
+        self.print("Fluvio CLI", &crate::FLUVIO_PLATFORM_VERSION.to_string());
         self.print("Fluvio CLI Arch", CURRENT_PLATFORM);
 
         if let Some(sha) = self.format_cli_sha() {

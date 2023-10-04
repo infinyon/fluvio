@@ -4,11 +4,10 @@ pub mod tls;
 
 pub mod test_meta;
 use once_cell::sync::Lazy;
+use semver::Version;
 
-static VERSION: Lazy<String> = Lazy::new(|| {
-    let version = include_str!("../../VERSION");
-    match option_env!("FLUVIO_VERSION_SUFFIX") {
-        Some(suffix) => format!("{version}-{suffix}"),
-        None => version.to_string(),
-    }
+static FLUVIO_PLATFORM_TEST_VERSION: Lazy<Version> = Lazy::new(|| {
+    let version = env!("FLUVIO_PLATFORM_TEST_VERSION").trim();
+    Version::parse(version)
+        .expect("Env variable 'FLUVIO_PLATFORM_TEST_VERSION' should contain a valid semver.")
 });

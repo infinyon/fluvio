@@ -8,7 +8,7 @@ pub mod partition;
 pub mod event;
 
 pub use partition::PartitionError;
-
+pub use defaults::FLUVIO_PLATFORM_VERSION;
 //
 // Types
 //

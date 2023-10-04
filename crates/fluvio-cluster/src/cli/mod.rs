@@ -34,8 +34,7 @@ use fluvio_extension_common as common;
 use common::target::ClusterTarget;
 use common::output::Terminal;
 use fluvio_channel::{ImageTagStrategy, FLUVIO_IMAGE_TAG_STRATEGY};
-
-pub(crate) const VERSION: &str = include_str!("../../../../VERSION");
+use fluvio_types::FLUVIO_PLATFORM_VERSION;
 
 /// Manage and view Fluvio clusters
 #[derive(Debug, Parser)]
@@ -104,10 +103,11 @@ impl ClusterCmd {
                         .unwrap_or(ImageTagStrategy::Version);
                     match tag_strategy {
                         ImageTagStrategy::Version => {
-                            debug!("Using image version: {}", VERSION);
+                            debug!("Using image version: {}", *FLUVIO_PLATFORM_VERSION);
                         }
                         ImageTagStrategy::VersionGit => {
-                            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
+                            let image_version =
+                                format!("{}-{}", *FLUVIO_PLATFORM_VERSION, env!("GIT_HASH"));
                             debug!("Using image version: {:?}", &image_version);
                             start.k8_config.image_version = Some(image_version);
                         }
@@ -127,7 +127,8 @@ impl ClusterCmd {
                     match tag_strategy {
                         ImageTagStrategy::Version => {}
                         ImageTagStrategy::VersionGit => {
-                            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
+                            let image_version =
+                                format!("{}-{}", *FLUVIO_PLATFORM_VERSION, env!("GIT_HASH"));
                             upgrade.start.k8_config.image_version = Some(image_version);
                         }
                         ImageTagStrategy::Git => upgrade.start.develop = true,

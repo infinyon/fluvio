@@ -11,7 +11,7 @@ mod error;
 mod services;
 mod controllers;
 
-const VERSION: &str = include_str!("../../../VERSION");
+use fluvio_types::FLUVIO_PLATFORM_VERSION;
 
 pub mod dispatcher {
     pub use fluvio_stream_dispatcher::*;

@@ -1,6 +1,5 @@
 use tracing::{trace, instrument, debug};
 use semver::Version;
-use once_cell::sync::Lazy;
 use anyhow::Result;
 
 use fluvio_protocol::api::{RequestMessage, ResponseMessage, Request};
@@ -14,14 +13,12 @@ use fluvio_sc_schema::AdminPublicApiKey;
 
 // Fluvi Client version 0.14.0 corresponds to Platform version 10.0.0
 
-static PLATFORM_VER: Lazy<Version> = Lazy::new(|| Version::parse(crate::VERSION).unwrap());
-
 #[instrument(skip(request))]
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>> {
     let mut response = ApiVersionsResponse {
-        platform_version: PlatformVersion::new(&PLATFORM_VER),
+        platform_version: PlatformVersion::new(&crate::FLUVIO_PLATFORM_VERSION),
         ..Default::default()
     };
 

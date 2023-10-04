@@ -38,5 +38,8 @@ fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-command = { workspace = true  }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
 
+[build-dependencies]
+semver = { workspace = true }
+
 [lib]
 path = "lib.rs"

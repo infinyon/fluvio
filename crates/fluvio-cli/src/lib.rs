@@ -13,9 +13,8 @@ pub(crate) mod monitoring;
 
 pub(crate) use error::CliError;
 use fluvio_extension_common as common;
-pub(crate) const VERSION: &str = include_str!("../../../VERSION");
-
 use fluvio_index::HttpAgent;
+use fluvio_types::FLUVIO_PLATFORM_VERSION;
 use install::update::{
     should_always_print_available_update, check_update_available, prompt_available_update,
 };
@@ -197,7 +196,7 @@ mod root {
                         println!("Current channel: {}", &channel_name);
                     };
 
-                    let version = semver::Version::parse(crate::VERSION).unwrap();
+                    let version = crate::FLUVIO_PLATFORM_VERSION.clone();
                     cluster.process(out, version, root.target).await?;
                 }
                 Self::Install(mut install) => {
