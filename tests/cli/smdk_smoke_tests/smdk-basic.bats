@@ -916,9 +916,9 @@ smdk_via_stdin() {
     cd "$(pwd)/smartmodule/examples/map_with_timestamp/"
 
     # Set Date Variables
-    DATE_NOW_YEAR="$(date +%Y)"
-    DATE_NOW_MONTH="$(date +%m)"
-    DATE_NOW_DAY="$(date +%d)"
+    DATE_NOW_YEAR="$(date --utc +%Y)"
+    DATE_NOW_MONTH="$(date --utc +%m)"
+    DATE_NOW_DAY="$(date --utc +%d)"
 
     # Build
     run $SMDK_BIN build
@@ -935,9 +935,9 @@ smdk_via_stdin() {
     cd "$(pwd)/smartmodule/examples/aggregate_with_timestamp/"
 
     # Set Date Variables
-    DATE_NOW_YEAR="$(date +%Y)"
-    DATE_NOW_MONTH="$(date +%m)"
-    DATE_NOW_DAY="$(date +%d)"
+    DATE_NOW_YEAR="$(date --utc +%Y)"
+    DATE_NOW_MONTH="$(date --utc +%m)"
+    DATE_NOW_DAY="$(date --utc +%d)"
 
     # Build
     run $SMDK_BIN build
@@ -972,9 +972,9 @@ smdk_via_stdin() {
     cd "$(pwd)/smartmodule/examples/array_map_json_array_with_timestamp/"
 
     # Set Date Variables
-    DATE_NOW_YEAR="$(date +%Y)"
-    DATE_NOW_MONTH="$(date +%m)"
-    DATE_NOW_DAY="$(date +%d)"
+    DATE_NOW_YEAR="$(date --utc +%Y)"
+    DATE_NOW_MONTH="$(date --utc +%m)"
+    DATE_NOW_DAY="$(date --utc +%d)"
 
     # Build
     run $SMDK_BIN build
