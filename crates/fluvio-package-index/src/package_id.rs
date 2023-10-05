@@ -406,7 +406,7 @@ impl fmt::Display for PackageId<MaybeVersion> {
             .version
             .as_ref()
             .map(|it| format!(":{it}"))
-            .unwrap_or_else(|| "".to_string());
+            .unwrap_or_default();
         write!(
             f,
             "{registry}{group}/{name}{version}",
