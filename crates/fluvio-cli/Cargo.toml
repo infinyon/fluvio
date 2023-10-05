@@ -59,7 +59,7 @@ colored = { workspace = true }
 handlebars = { workspace = true }
 content_inspector = { optional = true, workspace = true }
 flate2 = { workspace = true }
-crossterm = { workspace = true, features = ['event-stream']}
+crossterm = { workspace = true, features = ['event-stream',"bracketed-paste", "windows","events"]}
 tui = { workspace = true, features = ['crossterm'] }
 futures = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
