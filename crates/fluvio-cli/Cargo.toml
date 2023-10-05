@@ -44,23 +44,23 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"] }
-clap_complete = "4.0.2"
+clap_complete = { workspace = true }
 dirs = { workspace = true }
 indicatif = { workspace = true }
 eyre = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 home = { workspace = true }
-current_platform = "0.2"
+current_platform = { workspace = true }
 comfy-table = { workspace = true }
-atty = { version = "0.2.14", optional = true }
-ctrlc = { version = "3.1.3", optional = true }
+atty = { workspace = true, optional = true }
+ctrlc = { workspace = true, optional = true }
 colored = { workspace = true }
-handlebars = "4"
+handlebars = { workspace = true }
 content_inspector = { optional = true, workspace = true }
 flate2 = { workspace = true }
-crossterm = { version = "0.27.0", features = ['event-stream']}
-tui = { version = "0.19.0", default-features = false, features = ['crossterm'] }
+crossterm = { workspace = true, features = ['event-stream']}
+tui = { workspace = true, features = ['crossterm'] }
 futures = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
 humantime = { workspace = true }
