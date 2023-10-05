@@ -3428,7 +3428,6 @@ dependencies = [
  "async-std",
  "clap",
  "colored",
- "comfy-table",
  "dialoguer 0.11.0",
  "dirs 5.0.1",
  "fluvio-future",
