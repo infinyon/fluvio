@@ -98,7 +98,7 @@ impl VersionOpt {
                     .map(|name| name.to_string())
             })
             .map(|name| format!(" ({name})"))
-            .unwrap_or_else(|| "".to_string());
+            .unwrap_or_default();
         format!("{platform_version}{profile_name}")
     }
 
