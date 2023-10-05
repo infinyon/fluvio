@@ -22,7 +22,8 @@ futures = { workspace = true, features = ["std", "io-compat"]}
 home = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
-isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
+
+
 semver = { workspace = true }
 sha2 = { workspace = true }
 tempfile = { workspace = true }
@@ -32,6 +33,14 @@ tracing = { workspace = true }
 fluvio-package-index = { workspace = true,  features = ["http_agent"] }
 fluvio-types = { workspace = true , optional = true }
 fluvio-protocol = { workspace = true,  optional = true }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+isahc = { version = "1.7", default-features = false, features = ["static-curl"] }
+
+# 2023-10-05
+# on macos sonoma, the system curl library is required due to segfault in currently available non-system libcurls
+[target.'cfg(target_os = "macos")'.dependencies]
+isahc = { version = "1.7", default-features = false }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
