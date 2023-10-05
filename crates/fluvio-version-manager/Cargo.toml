@@ -19,7 +19,6 @@ anyhow = { workspace = true }
 async-std = { workspace = true, features = ["attributes"] }
 clap = { workspace = true, features = ["std", "color", "derive", "help"] }
 colored = { workspace = true }
-comfy-table = { workspace = true }
 dialoguer = { workspace = true }
 dirs = { workspace = true }
 hex = { workspace = true }

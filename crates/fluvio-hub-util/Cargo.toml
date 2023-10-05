@@ -16,6 +16,7 @@ dirs = { workspace = true }
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 flate2 = { workspace = true }
 hex = { workspace = true }
+http-client = { workspace = true }
 pem = "3.0"
 rand = { workspace = true }
 rand_core = "0.6"
@@ -25,6 +26,7 @@ serde = { workspace = true, features=["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 ssh-key = { version="0.6.1", features=[ "ed25519" ] }
+surf = { workspace = true }
 tar = { workspace = true }
 pathdiff = { version = "0.2.1", default-features = false }
 tempfile = { workspace = true }
@@ -37,17 +39,6 @@ wasmparser = { workspace = true }
 fluvio-future = { workspace = true, features = ["task"]}
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { workspace = true }
-
-# feature control
-[dependencies.surf]
-version = "2.3.2"
-features = ["h1-client-rustls", "encoding"]
-default-features = false
-
-[dependencies.http-client]
-version = "6.5.3"
-features = ["h1_client", "rustls"]
-default-features = false
 
 [dev-dependencies]
 tracing-subscriber = { workspace = true,  features = ["env-filter", "fmt"] }
