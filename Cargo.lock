@@ -2893,6 +2893,7 @@ name = "fluvio-hub-util"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-std",
  "cargo_toml 0.16.3",
  "const_format",
  "dirs 5.0.1",

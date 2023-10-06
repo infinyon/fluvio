@@ -41,4 +41,5 @@ fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { workspace = true }
 
 [dev-dependencies]
+async-std = { workspace = true, features = ["attributes"] }
 tracing-subscriber = { workspace = true,  features = ["env-filter", "fmt"] }

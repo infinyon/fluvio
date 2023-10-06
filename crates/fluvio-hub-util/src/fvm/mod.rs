@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use semver::Version;
 use url::Url;
 
-pub use api::Client;
+pub use api::{Client, Download};
 
 pub const STABLE_VERSION_CHANNEL: &str = "stable";
 pub const LATEST_VERSION_CHANNEL: &str = "latest";
