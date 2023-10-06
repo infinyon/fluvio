@@ -3,7 +3,7 @@ use colored::Colorize;
 use anyhow::{Result, anyhow};
 
 use fluvio::{Fluvio, FluvioAdmin, FluvioConfig};
-use fluvio::config::ConfigFile;
+use fluvio::config::{ConfigFile, ClusterKind};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec};
 use fluvio_sc_schema::objects::Metadata;
@@ -45,7 +45,7 @@ impl StatusOpt {
             Self::profile_name(&config_file).italic()
         ));
 
-        if !self.no_k8 {
+        if !self.no_k8 && fluvio_config.kind != ClusterKind::K8s {
             let _ = Self::check_k8s_cluster(&pb).await;
         }
         Self::check_sc(&pb, &fluvio_config, &config_file).await?;

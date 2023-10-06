@@ -13,6 +13,7 @@ use std::time::SystemTime;
 
 use anyhow::{anyhow, Result};
 use derive_builder::Builder;
+use fluvio::config::ClusterKind;
 use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
@@ -1272,6 +1273,7 @@ impl ClusterInstaller {
             &profile_name,
             external_addr,
             &self.config.client_tls_policy,
+            ClusterKind::K8s,
         )?;
         pb.println(InstallProgressMessage::ProfileSet.msg());
         pb.finish_and_clear();

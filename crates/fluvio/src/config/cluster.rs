@@ -3,6 +3,8 @@
 //!
 //! Stores configuration parameter retrieved from the default or custom profile file.
 //!
+use std::{str::FromStr, io::ErrorKind, fmt::Display};
+
 use serde::{Serialize, Deserialize};
 
 use crate::{config::TlsPolicy, FluvioError};
@@ -33,6 +35,41 @@ pub struct FluvioConfig {
     /// It is purely to override client id when creating ClientConfig
     #[serde(skip)]
     pub client_id: Option<String>,
+
+    #[serde(default)]
+    pub kind: ClusterKind,
+}
+
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ClusterKind {
+    Local,
+    #[default]
+    K8s,
+}
+
+impl FromStr for ClusterKind {
+    type Err = std::io::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "k8s" => Ok(Self::K8s),
+            "local" => Ok(Self::Local),
+            _ => Err(std::io::Error::new(
+                ErrorKind::InvalidInput,
+                "unable to parse cluster kind",
+            )),
+        }
+    }
+}
+
+impl Display for ClusterKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ClusterKind::Local => write!(f, "local"),
+            ClusterKind::K8s => write!(f, "k8s"),
+        }
+    }
 }
 
 impl FluvioConfig {
@@ -50,6 +87,7 @@ impl FluvioConfig {
             use_spu_local_address: false,
             tls: TlsPolicy::Disabled,
             client_id: None,
+            kind: ClusterKind::default(),
         }
     }
 

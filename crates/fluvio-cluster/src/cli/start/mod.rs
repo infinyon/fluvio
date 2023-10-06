@@ -14,6 +14,7 @@ mod sys;
 mod tls;
 
 use tls::TlsOpt;
+use tracing::info;
 
 #[cfg(target_os = "macos")]
 pub fn get_log_directory() -> &'static str {
@@ -153,6 +154,9 @@ pub struct StartOpt {
     #[arg(long, default_value = "true")]
     local: bool,
 
+    #[arg(long)]
+    k8s: bool,
+
     #[clap(flatten)]
     pub tls: TlsOpt,
 
@@ -186,10 +190,13 @@ impl StartOpt {
         use crate::cli::start::k8::process_k8;
 
         if self.sys_only {
+            info!("processing sys install");
             process_sys(&self, upgrade)?;
-        } else if self.local || self.read_only.is_some() {
+        } else if !self.k8s || self.read_only.is_some() {
+            info!("processing local cluster");
             process_local(self, platform_version).await?;
         } else {
+            info!("processing k8s cluster");
             process_k8(self, platform_version, upgrade).await?;
         }
 

@@ -9,7 +9,7 @@ use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt, PidExt};
 use which::which;
 use anyhow::Result;
 
-use fluvio::config::ConfigFile;
+use fluvio::config::{ConfigFile, ClusterKind};
 use fluvio::metadata::{topic::TopicSpec, partition::PartitionSpec, spg::SpuGroupSpec, spu::SpuSpec};
 use fluvio_sc_schema::objects::Metadata;
 
@@ -28,12 +28,6 @@ enum ProfileType {
 pub struct DiagnosticsOpt {
     #[arg(long)]
     quiet: bool,
-
-    #[arg(long)]
-    k8: bool,
-
-    #[arg(long)]
-    local: bool,
 
     #[arg(long)]
     cloud: bool,
@@ -60,7 +54,6 @@ impl DiagnosticsOpt {
         match profile_ty {
             // Local cluster
             ProfileType::Local => {
-                self.write_helm(temp_path)?;
                 self.copy_local_logs(temp_path)?;
                 for spu in spu_specs {
                     self.spu_disk_usage(None, temp_path, &spu.spec)?;
@@ -112,19 +105,20 @@ impl DiagnosticsOpt {
 
     // get type of profile
     fn get_profile_ty(&self) -> Result<ProfileType> {
-        if self.k8 {
-            Ok(ProfileType::K8)
-        } else if self.local {
-            Ok(ProfileType::Local)
-        } else if self.cloud {
+        if self.cloud {
             Ok(ProfileType::Cloud)
         } else {
             let config = ConfigFile::load_default_or_new()?;
-            match config.config().current_profile_name() {
-                Some("local") => Ok(ProfileType::Local),
-                // Cloud cluster
-                Some(other) if other.contains("cloud") => Ok(ProfileType::Cloud),
-                _ => Ok(ProfileType::K8),
+            match config.config().current_cluster() {
+                Ok(config) if config.kind.eq(&ClusterKind::Local) => Ok(ProfileType::Local),
+                _ => {
+                    match config.config().current_profile_name() {
+                        Some("local") => Ok(ProfileType::Local),
+                        // Cloud cluster
+                        Some(other) if other.contains("cloud") => Ok(ProfileType::Cloud),
+                        _ => Ok(ProfileType::K8),
+                    }
+                }
             }
         }
     }

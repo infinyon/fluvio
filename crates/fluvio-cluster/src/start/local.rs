@@ -10,7 +10,7 @@ use tracing::{debug, error, instrument, warn};
 use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
-use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
+use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE, ClusterKind};
 use fluvio_controlplane_metadata::spu::{SpuSpec, CustomSpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
@@ -516,6 +516,7 @@ impl LocalInstaller {
             LOCAL_PROFILE,
             LOCAL_SC_ADDRESS,
             &self.config.client_tls_policy,
+            ClusterKind::Local,
         )?;
 
         pb.println(InstallProgressMessage::ProfileSet.msg());

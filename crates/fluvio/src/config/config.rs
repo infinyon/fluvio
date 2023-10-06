@@ -30,6 +30,7 @@ use serde::Serialize;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 use crate::{FluvioConfig, FluvioError};
 
+use super::ClusterKind;
 use super::TlsPolicy;
 
 fn config_file_error(msg: &str, source: IoError) -> ConfigError {
@@ -154,6 +155,7 @@ impl ConfigFile {
         profile_name: &str,
         cluster_addr: &str,
         tls_policy: &TlsPolicy,
+        kind: ClusterKind,
     ) -> Result<(), FluvioError> {
         let config = self.mut_config();
 
@@ -163,6 +165,7 @@ impl ConfigFile {
             Some(cluster) => {
                 cluster.endpoint = cluster_addr.to_string();
                 cluster.tls = tls_policy.clone();
+                cluster.kind = kind;
             }
             None => {
                 let mut new_cluster = FluvioConfig::new(cluster_addr);

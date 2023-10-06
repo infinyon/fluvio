@@ -1,7 +1,7 @@
 use clap::Parser;
 use anyhow::Result;
 
-use fluvio::config::{ConfigFile, TlsPolicy};
+use fluvio::config::{ConfigFile, TlsPolicy, ClusterKind};
 
 #[derive(Debug, Parser)]
 pub struct ManualAddOpt {
@@ -10,6 +10,9 @@ pub struct ManualAddOpt {
 
     /// address of cluster, e.g. 127.0.0.1:9003
     cluster_address: String,
+
+    // kind of cluster: local or k8s
+    kind: ClusterKind,
 }
 // todo: p2 add tls config, p1 is default disabled for manual add
 
@@ -22,6 +25,7 @@ impl ManualAddOpt {
                     &self.profile_name,
                     &self.cluster_address,
                     &def_tls,
+                    self.kind,
                 )?;
                 if config_file
                     .mut_config()
