@@ -16,7 +16,6 @@ dirs = { workspace = true }
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 flate2 = { workspace = true }
 hex = { workspace = true }
-http-client = { workspace = true }
 pem = "3.0"
 rand = { workspace = true }
 rand_core = "0.6"
