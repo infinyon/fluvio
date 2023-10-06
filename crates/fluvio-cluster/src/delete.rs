@@ -84,13 +84,12 @@ impl ClusterUninstaller {
     pub async fn uninstall(&self) -> Result<(), ClusterError> {
         if self.config.uninstall_k8 {
             self.uninstall_k8().await?;
+            if let Err(err) = self.cleanup_k8s().await {
+                warn!("Cleanup failed: {}", err);
+            }
         }
         if self.config.uninstall_local {
             self.uninstall_local().await?;
-        }
-
-        if let Err(err) = self.cleanup().await {
-            warn!("Cleanup failed: {}", err);
         }
 
         if self.config.uninstall_sys {
@@ -216,7 +215,7 @@ impl ClusterUninstaller {
     /// Clean up objects and secrets created during the installation process
     ///
     /// Ignore any errors, cleanup should be idempotent
-    async fn cleanup(&self) -> Result<(), ClusterError> {
+    async fn cleanup_k8s(&self) -> Result<(), ClusterError> {
         let pb = self.pb_factory.create()?;
         pb.set_message("Cleaning up objects and secrets created during the installation process");
         let ns = &self.config.namespace;

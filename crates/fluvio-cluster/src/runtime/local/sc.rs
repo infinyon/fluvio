@@ -17,6 +17,7 @@ pub struct ScProcess {
     pub tls_policy: TlsPolicy,
     pub rust_log: String,
     pub read_only: Option<PathBuf>,
+    pub metadata_dir: Option<PathBuf>,
 }
 
 impl FluvioLocalProcess for ScProcess {}
@@ -36,6 +37,10 @@ impl ScProcess {
 
         if let Some(path) = &self.read_only {
             binary.arg("--read-only").arg(path);
+        }
+
+        if let Some(metadata_dir) = &self.metadata_dir {
+            binary.arg("--metadata-dir").arg(metadata_dir);
         }
 
         if let TlsPolicy::Verified(tls) = &self.tls_policy {

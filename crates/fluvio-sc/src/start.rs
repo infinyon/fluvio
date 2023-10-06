@@ -34,10 +34,11 @@ pub fn main_loop(opt: ScOpt) {
         );
         inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)
     } else if is_local {
-        info!("Running in local mode");
+        let metadata_dir = opt.metadata_dir();
+        info!(?metadata_dir, "Running in local mode");
         let ((sc_config, auth_policy), tls_option) = opt.parse_cli_or_exit_read_only();
         let client = Arc::new(
-            LocalMetadataStorage::load_from("/tmp/fluvio_meta")
+            LocalMetadataStorage::load_from(metadata_dir)
                 .expect("failed to initialize metadata store"),
         );
         inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)

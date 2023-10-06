@@ -2950,6 +2950,7 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
+ "json-patch",
  "k8-client",
  "k8-metadata-client",
  "k8-types",
@@ -4518,6 +4519,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5f195fe497f702db0f318b07fdd68edb16955aed830df8363d837542f8f935a"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "json-patch"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f7765dccf8c39c3a470fc694efe322969d791e713ca46bc7b5c506886157572"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

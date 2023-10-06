@@ -68,6 +68,12 @@ impl LocalMetadataStorage {
             .ok_or_else(|| anyhow::anyhow!("store not found for {kind}"))
     }
 
+    #[allow(dead_code)]
+    pub fn load(&mut self) -> Result<()> {
+        info!("loading from {}", self.base_path.to_string_lossy());
+        Ok(())
+    }
+
     pub async fn retrieve_items_inner<S: Spec>(&self) -> Result<K8List<S>> {
         let store = self.get_store::<S>()?;
         let items: Vec<K8Obj<S>> = store.items().await?;
@@ -80,12 +86,6 @@ impl LocalMetadataStorage {
             },
             items,
         })
-    }
-
-    #[allow(dead_code)]
-    pub fn load(&mut self) -> Result<()> {
-        info!("loading from {}", self.base_path.to_string_lossy());
-        Ok(())
     }
 }
 
@@ -134,22 +134,22 @@ impl SpecStore {
             return Ok(None);
         };
 
-        let output = value.get::<S>()?.clone();
+        let output = value.get_ref::<S>()?.clone();
         drop(lock);
 
         Ok(Some(output))
     }
 
-    async fn insert<S>(&self, key: String, mut k8_obj: K8Obj<S>) -> anyhow::Result<()>
+    async fn insert<S>(&self, key: String, mut k8_obj: K8Obj<S>) -> anyhow::Result<K8Obj<S>>
     where
         S: Spec + Clone + std::fmt::Debug + 'static,
     {
         let mut lock = self.data.write().await;
 
-        let watch: K8Watch<S> = match lock.entry(key.clone()) {
+        let (watch, k8_obj) = match lock.entry(key.clone()) {
             Entry::Occupied(mut entry) => {
                 let old_version = entry.get_mut();
-                let old_k8_obj = old_version.get::<S>()?;
+                let old_k8_obj = old_version.get_ref::<S>()?;
                 let old_resource_version = old_k8_obj
                     .metadata
                     .resource_version
@@ -158,13 +158,13 @@ impl SpecStore {
                 k8_obj.metadata.resource_version = (old_resource_version + 1).to_string();
                 old_version.set(k8_obj.clone());
                 old_version.flush::<S>()?;
-                K8Watch::MODIFIED(k8_obj)
+                (K8Watch::MODIFIED(k8_obj.clone()), k8_obj)
             }
             Entry::Vacant(entry) => {
                 let new_pointer = SpecPointer::new(k8_obj.clone(), self.base_path.join(key));
                 new_pointer.flush::<S>()?;
                 entry.insert(new_pointer);
-                K8Watch::ADDED(k8_obj)
+                (K8Watch::ADDED(k8_obj.clone()), k8_obj)
             }
         };
 
@@ -172,7 +172,7 @@ impl SpecStore {
 
         let _ = self.sender.send(WatchPointer::new(watch)).await;
 
-        Ok(())
+        Ok(k8_obj)
     }
 
     async fn items<S>(&self) -> Result<Vec<K8Obj<S>>>
@@ -180,8 +180,10 @@ impl SpecStore {
         S: Spec,
     {
         let lock = self.data.read().await;
-        let items: Result<Vec<K8Obj<S>>, _> =
-            lock.values().map(|value| value.get_cloned()).collect();
+        let items: Result<Vec<K8Obj<S>>, _> = lock
+            .values()
+            .map(|value| value.get_ref().cloned())
+            .collect();
 
         items
     }
@@ -196,7 +198,6 @@ impl SpecStore {
         };
 
         drop(lock);
-
         let k8_obj = value.delete::<S>()?;
 
         let watch: K8Watch<S> = K8Watch::DELETED(k8_obj.clone());
@@ -214,7 +215,7 @@ impl SpecStore {
     {
         self.receiver
             .clone()
-            .map(|f| Ok(vec![f.get_cloned::<S>()]))
+            .map(|f| Ok(vec![f.get::<S>()]))
             .boxed()
     }
 }
@@ -244,7 +245,7 @@ impl SpecPointer {
         Ok((name, Self::new(parsed, path)))
     }
 
-    fn get<S: Spec>(&self) -> Result<&K8Obj<S>> {
+    fn get_ref<S: Spec>(&self) -> Result<&K8Obj<S>> {
         self.inner.downcast_ref::<K8Obj<S>>().ok_or_else(|| {
             anyhow::anyhow!(
                 "incompatible type {} for spec kind {:?}",
@@ -254,16 +255,12 @@ impl SpecPointer {
         })
     }
 
-    fn get_cloned<S: Spec>(&self) -> Result<K8Obj<S>> {
-        self.get().map(Clone::clone)
-    }
-
     fn set<S: Spec>(&mut self, obj: K8Obj<S>) {
         self.inner = Box::new(obj);
     }
 
     fn flush<S: Spec>(&self) -> Result<()> {
-        let obj = self.get::<S>()?;
+        let obj = self.get_ref::<S>()?;
 
         serde_yaml::to_writer(std::fs::File::create(&self.path)?, obj)?;
         Ok(())
@@ -291,18 +288,15 @@ impl WatchPointer {
         }
     }
 
-    fn get<S: Spec>(&self) -> Result<&K8Watch<S>> {
-        self.inner.downcast_ref::<K8Watch<S>>().ok_or_else(|| {
-            anyhow::anyhow!(
-                "incompatible type {} for spec kind {:?}",
+    fn get<S: Spec>(self) -> Result<K8Watch<S>> {
+        match self.inner.downcast::<K8Watch<S>>() {
+            Ok(res) => Ok(*res),
+            Err(err) => Err(anyhow::anyhow!(
+                "incompatible type {:?} for spec kind {}",
+                err.type_id(),
                 S::kind(),
-                self.inner.type_id()
-            )
-        })
-    }
-
-    fn get_cloned<S: Spec>(&self) -> Result<K8Watch<S>> {
-        self.get().map(Clone::clone)
+            )),
+        }
     }
 }
 
@@ -314,9 +308,7 @@ impl MetadataClient for LocalMetadataStorage {
         M: K8Meta + Send + Sync,
     {
         let store = self.get_store::<S>()?;
-
-        let name: String = metadata.name().to_owned();
-        store.get::<S>(&name).await
+        store.get::<S>(metadata.name()).await
     }
 
     async fn retrieve_items_with_option<S, N>(
@@ -341,7 +333,7 @@ impl MetadataClient for LocalMetadataStorage {
         S: Spec + 'static,
         N: Into<NameSpace> + Send + Sync + 'static,
     {
-        futures_util::stream::pending().boxed()
+        unimplemented!()
     }
 
     async fn delete_item_with_option<S, M>(
@@ -369,7 +361,6 @@ impl MetadataClient for LocalMetadataStorage {
         }))
     }
 
-    /// create new object
     async fn create_item<S>(&self, value: InputK8Obj<S>) -> Result<K8Obj<S>>
     where
         S: Spec,
@@ -396,7 +387,6 @@ impl MetadataClient for LocalMetadataStorage {
         Ok(k8_obj)
     }
 
-    /// update status
     async fn update_status<S>(&self, value: &UpdateK8ObjStatus<S>) -> Result<K8Obj<S>>
     where
         S: Spec,
@@ -422,16 +412,33 @@ impl MetadataClient for LocalMetadataStorage {
     /// patch existing with spec
     async fn patch<S, M>(
         &self,
-        _metadata: &M,
-        _patch: &serde_json::Value,
-        _merge_type: PatchMergeType,
+        metadata: &M,
+        patch: &serde_json::Value,
+        merge_type: PatchMergeType,
     ) -> Result<K8Obj<S>>
     where
         S: Spec,
         M: K8Meta + Display + Send + Sync,
     {
-        // TODO: implement or move to another trait
-        unimplemented!()
+        let store = self.get_store::<S>()?;
+        let key = metadata.name();
+        let item = store.get::<S>(key).await?;
+
+        let Some(item) = item else {
+            return Err(ObjectKeyNotFound::new(key.to_owned()).into());
+        };
+        let mut serialized: serde_json::Value = serde_json::to_value(&item)?;
+        match merge_type {
+            PatchMergeType::Json => {
+                let patch: json_patch::Patch = serde_json::from_value(patch.clone())?;
+                json_patch::patch(&mut serialized, &patch)?;
+            }
+            PatchMergeType::JsonMerge | PatchMergeType::StrategicMerge => {
+                json_patch::merge(&mut serialized, patch);
+            }
+        };
+        let k8_obj = serde_json::from_value(serialized)?;
+        store.insert(key.to_owned(), k8_obj).await
     }
 
     /// patch status
@@ -445,7 +452,6 @@ impl MetadataClient for LocalMetadataStorage {
         S: Spec,
         M: K8Meta + Display + Send + Sync,
     {
-        // TODO: implement or move to another trait
         unimplemented!()
     }
 

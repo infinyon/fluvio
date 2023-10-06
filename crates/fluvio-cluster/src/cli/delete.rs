@@ -9,7 +9,12 @@ pub struct DeleteOpt {
     namespace: Option<String>,
 
     /// Remove only local spu/sc(custom) fluvio installation
-    #[arg(long, conflicts_with = "k8", conflicts_with = "sys")]
+    #[arg(
+        long,
+        conflicts_with = "k8",
+        conflicts_with = "sys",
+        default_value = "true"
+    )]
     local: bool,
 
     /// Remove only k8 fluvio installation

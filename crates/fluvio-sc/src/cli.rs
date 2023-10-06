@@ -78,6 +78,9 @@ pub struct ScOpt {
     /// run SC in read only mode
     #[arg(long, hide = true, conflicts_with_all = &["auth_policy"])]
     read_only: Option<PathBuf>,
+
+    #[arg(long)]
+    metadata_dir: Option<PathBuf>,
 }
 
 impl ScOpt {
@@ -188,6 +191,13 @@ impl ScOpt {
             }
             Ok(config) => config,
         }
+    }
+
+    pub fn metadata_dir(&self) -> PathBuf {
+        self.metadata_dir
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| std::env::temp_dir().join("metadata_dir"))
     }
 }
 

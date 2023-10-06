@@ -150,7 +150,7 @@ pub struct StartOpt {
     sys_only: bool,
 
     /// install local spu/sc(custom)
-    #[arg(long)]
+    #[arg(long, default_value = "true")]
     local: bool,
 
     #[clap(flatten)]

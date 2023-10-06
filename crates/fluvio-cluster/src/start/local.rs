@@ -484,6 +484,7 @@ impl LocalInstaller {
             tls_policy: self.config.server_tls_policy.clone(),
             rust_log: self.config.rust_log.clone(),
             read_only: self.config.read_only.clone(),
+            metadata_dir: Some(self.config.data_dir.join("metadata")),
         };
 
         sc_process.start()?;

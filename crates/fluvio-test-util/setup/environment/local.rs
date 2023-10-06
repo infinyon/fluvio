@@ -46,6 +46,9 @@ impl LocalEnvDriver {
             builder.tls(client, server);
         }
 
+        builder.local(option.local);
+        builder.skip_checks(option.skip_checks);
+
         builder.build().expect("should build LocalConfig")
     }
 }
@@ -63,7 +66,7 @@ impl EnvironmentDriver for LocalEnvDriver {
     }
 
     async fn start_cluster(&self) -> StartStatus {
-        let installer = LocalInstaller::from_config(self.config.clone());
+        let installer = LocalInstaller::from_config(dbg!(&self.config).clone());
         installer
             .install()
             .await
