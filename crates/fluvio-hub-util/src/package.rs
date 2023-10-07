@@ -556,16 +556,6 @@ mod tests {
 
     const PKG_SIGN_PUBKEY: &str = "tests/hubutil_package_sign-pubkey.pem";
 
-    fn rust_log_init() {
-        let trs = tracing_subscriber::fmt().with_max_level(tracing::Level::INFO);
-        if std::env::var("RUST_LOG").is_ok() {
-            trs.with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-                .init();
-        } else {
-            trs.init();
-        }
-    }
-
     #[test]
     fn hubutil_serialize_package_meta() {
         let pm = PackageMeta {
@@ -617,7 +607,6 @@ mod tests {
 
     #[test]
     fn hubutil_package_assemble() {
-        rust_log_init();
         let testfile: &str = "tests/apackage/package-meta.yaml";
         let res = package_assemble(testfile, "tests", None);
         assert!(res.is_ok());
