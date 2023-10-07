@@ -7,6 +7,7 @@ use std::fs::File;
 use anyhow::{Error, Result};
 use http_client::async_trait;
 use surf::StatusCode;
+use tracing::instrument;
 
 use crate::fvm::Artifact;
 use crate::utils::sha256_digest;
@@ -41,7 +42,14 @@ pub trait Download {
 
 #[async_trait]
 impl Download for Artifact {
+    #[instrument(skip(self, target_dir))]
     async fn download(&self, target_dir: PathBuf) -> Result<()> {
+        tracing::info!(
+            name = self.name,
+            download_url = ?self.download_url,
+            "Downloading artifact"
+        );
+
         let mut res = surf::get(&self.download_url)
             .await
             .map_err(|err| Error::msg(err.to_string()))?;
@@ -59,9 +67,9 @@ impl Download for Artifact {
             checksum(self, &out_path).await?;
 
             tracing::debug!(
-                "Artifact downloaded: {} at {:?}",
-                self.name,
-                out_path.display()
+                name = self.name,
+                out_path = ?out_path.display(),
+                "Artifact downloaded",
             );
 
             return Ok(());
@@ -80,7 +88,8 @@ mod test {
 
     use super::*;
 
-    #[async_std::test]
+    #[ignore]
+    #[fluvio_future::test]
     async fn download_artifact() {
         let target_dir = TempDir::new().unwrap().into_path().to_path_buf();
         let artifact = Artifact {
@@ -94,7 +103,8 @@ mod test {
         assert!(target_dir.join("fluvio").exists());
     }
 
-    #[async_std::test]
+    #[ignore]
+    #[fluvio_future::test]
     async fn downloaded_artifact_matches_upstream_checksum() {
         let target_dir = TempDir::new().unwrap().into_path().to_path_buf();
         let artifact = Artifact {

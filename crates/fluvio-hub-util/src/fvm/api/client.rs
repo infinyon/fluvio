@@ -36,6 +36,8 @@ impl Client {
             ))
         })?;
 
+        tracing::info!(?pkg, "Found PackageSet");
+
         Ok(pkg)
     }
 
