@@ -1,6 +1,9 @@
-use std::path::Path;
+use std::fs::File;
+use std::path::{Path, PathBuf};
+use std::io::copy;
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use surf::http::mime;
 use surf::StatusCode;
 use tracing::{debug, info};
@@ -213,8 +216,24 @@ async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) -> R
     }
 }
 
+/// Generates Sha256 checksum for a given file
+pub fn sha256_digest(path: &PathBuf) -> Result<String> {
+    let mut hasher = Sha256::new();
+    let mut file = File::open(path)?;
+
+    copy(&mut file, &mut hasher)?;
+
+    let hash_bytes = hasher.finalize();
+
+    Ok(hex::encode(hash_bytes))
+}
+
 #[cfg(test)]
 mod util_tests {
+    use tempfile::TempDir;
+
+    use crate::sha256_digest;
+
     use super::cli_pkgname_split;
     use super::cli_pkgname_to_url;
     use super::cli_pkgname_to_filename;
@@ -291,5 +310,54 @@ mod util_tests {
             let url = out.unwrap();
             assert_eq!(rec.1, &url);
         }
+    }
+
+    #[test]
+    fn creates_shasum_digest() {
+        use std::fs::write;
+
+        let tempdir = TempDir::new().unwrap().into_path().to_path_buf();
+        let foo_path = tempdir.join("foo");
+
+        write(&foo_path, "foo").unwrap();
+
+        let foo_a_checksum = sha256_digest(&foo_path).unwrap();
+
+        assert_eq!(
+            foo_a_checksum,
+            "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+        );
+    }
+
+    #[test]
+    fn checks_files_checksums_diff() {
+        use std::fs::write;
+
+        let tempdir = TempDir::new().unwrap().into_path().to_path_buf();
+        let foo_path = tempdir.join("foo");
+        let bar_path = tempdir.join("bar");
+
+        write(&foo_path, "foo").unwrap();
+        write(&bar_path, "bar").unwrap();
+
+        let foo_checksum = sha256_digest(&foo_path).unwrap();
+        let bar_checksum = sha256_digest(&bar_path).unwrap();
+
+        assert_ne!(foo_checksum, bar_checksum);
+    }
+
+    #[test]
+    fn checks_files_checksums_same() {
+        use std::fs::write;
+
+        let tempdir = TempDir::new().unwrap().into_path().to_path_buf();
+        let foo_path = tempdir.join("foo");
+
+        write(&foo_path, "foo").unwrap();
+
+        let foo_a_checksum = sha256_digest(&foo_path).unwrap();
+        let foo_b_checksum = sha256_digest(&foo_path).unwrap();
+
+        assert_eq!(foo_a_checksum, foo_b_checksum);
     }
 }

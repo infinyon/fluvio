@@ -1,12 +1,9 @@
 //! Hub FVM API Client
 
 use anyhow::{Error, Result};
-use surf::get;
 use url::Url;
 
-use fluvio_hub_protocol::constants::HUB_REMOTE;
-
-use super::{Channel, PackageSet, RustTarget};
+use crate::fvm::{Channel, PackageSet};
 
 /// HTTP Client for interacting with the Hub FVM API
 pub struct Client {
@@ -15,27 +12,31 @@ pub struct Client {
 
 impl Client {
     /// Creates a new [`Client`] with the default Hub API URL
-    #[allow(unused)]
-    pub fn new() -> Result<Self> {
-        let api_url = Url::parse(HUB_REMOTE)?;
+    pub fn new(url: &str) -> Result<Self> {
+        let api_url = url.parse::<Url>()?;
 
         Ok(Self { api_url })
     }
 
     /// Fetches a [`PackageSet`] from the Hub with the specific [`Channel`]
-    #[allow(unused)]
     pub async fn fetch_package_set(
         &self,
         name: impl AsRef<str>,
         channel: &Channel,
-        arch: &RustTarget,
+        arch: &str,
     ) -> Result<PackageSet> {
         let url = self.make_fetch_package_set_url(name, channel, arch)?;
-        let mut res = get(url).await.map_err(|err| Error::msg(err.to_string()))?;
-        let pkg = res
-            .body_json::<PackageSet>()
+        let mut res = surf::get(url)
             .await
             .map_err(|err| Error::msg(err.to_string()))?;
+        let pkg = res.body_json::<PackageSet>().await.map_err(|err| {
+            Error::msg(format!(
+                "Server responded with status code {}",
+                err.status()
+            ))
+        })?;
+
+        tracing::info!(?pkg, "Found PackageSet");
 
         Ok(pkg)
     }
@@ -46,7 +47,7 @@ impl Client {
         &self,
         name: impl AsRef<str>,
         channel: &Channel,
-        arch: &RustTarget,
+        arch: &str,
     ) -> Result<Url> {
         let url = format!(
             "{}hub/v1/fvm/pkgset/{name}/{channel}/{arch}",
@@ -67,11 +68,11 @@ mod tests {
     use url::Url;
     use semver::Version;
 
-    use super::{Client, Channel, RustTarget};
+    use super::{Client, Channel};
 
     #[test]
     fn creates_a_default_client() {
-        let client = Client::new().unwrap();
+        let client = Client::new("https://hub.infinyon.cloud").unwrap();
 
         assert_eq!(
             client.api_url,
@@ -81,13 +82,9 @@ mod tests {
 
     #[test]
     fn builds_url_for_fetching_pkgsets() {
-        let client = Client::new().unwrap();
+        let client = Client::new("https://hub.infinyon.cloud").unwrap();
         let url = client
-            .make_fetch_package_set_url(
-                "fluvio",
-                &Channel::Stable,
-                &RustTarget::ArmUnknownLinuxGnueabihf,
-            )
+            .make_fetch_package_set_url("fluvio", &Channel::Stable, "arm-unknown-linux-gnueabihf")
             .unwrap();
 
         assert_eq!(url.as_str(), "https://hub.infinyon.cloud/hub/v1/fvm/pkgset/fluvio/stable/arm-unknown-linux-gnueabihf");
@@ -95,12 +92,12 @@ mod tests {
 
     #[test]
     fn builds_url_for_fetching_pkgsets_on_version() {
-        let client = Client::new().unwrap();
+        let client = Client::new("https://hub.infinyon.cloud").unwrap();
         let url = client
             .make_fetch_package_set_url(
                 "fluvio",
                 &Channel::Tag(Version::from_str("0.10.14-dev+123345abc").unwrap()),
-                &RustTarget::ArmUnknownLinuxGnueabihf,
+                "arm-unknown-linux-gnueabihf",
             )
             .unwrap();
 
