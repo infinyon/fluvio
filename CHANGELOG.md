@@ -1,6 +1,21 @@
 # Release Notes
 
-## Platform Version 0.11.0 - UNRELEASED
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+
+## Platform Version 0.10.16 - 2023-10-06
+
+### Fixed
+
+* Fluvio crash on downloading in macos-sonoma ([#3584](https://github.com/infinyon/fluvio/issues/3584))
+
+### Other
+
+* FVM `self` subcommand ([#3570](https://github.com/infinyon/fluvio/issues/3570))
+* Use utc timestamp in cli-smdk-basic-test ([#3574](https://github.com/infinyon/fluvio/issues/3574))
+* Use `surf` and `http-client` as workspace deps ([#3581](https://github.com/infinyon/fluvio/issues/3581))
+* Move cli dep to workspace ([#3582](https://github.com/infinyon/fluvio/issues/3582))
+* Fvm API Client and updated type definitions ([#3566](https://github.com/infinyon/fluvio/issues/3566))
+
 
 ## Platform Version 0.10.15 - 2023-09-28
 
