@@ -2,6 +2,8 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.11.00 - UNRELEASED
+
 ## Platform Version 0.10.16 - 2023-10-06
 
 ### Fixed
