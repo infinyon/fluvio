@@ -14,7 +14,8 @@ use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_hub_util as hubutil;
 use hubutil::{HubAccess, HUB_API_BPKG_AUTH, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
-use hubutil::http::{self, StatusCode};
+use hubutil::reqwest::{self, StatusCode};
+use hubutil::reqwest::header::AUTHORIZATION;
 
 use crate::error::CliError;
 use crate::install::update::{
@@ -263,16 +264,18 @@ impl InstallOpt {
             systuple = self.get_target(),
         );
         debug!("Downloading binary from hub: {binurl}");
-        let mut resp = http::get(binurl)
-            .header("Authorization", actiontoken)
+        let resp = reqwest::Client::new()
+            .get(binurl)
+            .header(AUTHORIZATION, actiontoken)
+            .send()
             .await
             .map_err(|_| HttpError::InvalidInput("authorization error".into()))?;
 
         match resp.status() {
-            StatusCode::Ok => {}
+            StatusCode::OK => {}
             code => {
                 let body_err_message = resp
-                    .body_string()
+                    .text()
                     .await
                     .unwrap_or_else(|_err| "couldn't fetch error message".to_string());
                 let msg = format!("Status({code}) {body_err_message}");
@@ -280,9 +283,10 @@ impl InstallOpt {
             }
         }
         let data = resp
-            .body_bytes()
+            .bytes()
             .await
-            .map_err(|_| crate::CliError::HubError("Data unpack failure".into()))?;
+            .map_err(|_| crate::CliError::HubError("Data unpack failure".into()))?
+            .to_vec();
         Ok(data)
     }
 }

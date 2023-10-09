@@ -11,8 +11,8 @@ use const_format::concatcp;
 pub use hubaccess::*;
 pub use package::*;
 pub use package_meta_ext::*;
+pub use reqwest;
 pub use utils::*;
-pub use surf as http;
 
 pub use fluvio_hub_protocol::*;
 pub use fluvio_hub_protocol::constants::*;

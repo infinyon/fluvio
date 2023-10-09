@@ -5,8 +5,8 @@ use std::io::{Cursor, copy};
 use std::fs::File;
 
 use anyhow::{Error, Result};
-use http_client::async_trait;
-use surf::StatusCode;
+use async_trait::async_trait;
+use reqwest::StatusCode;
 use tracing::instrument;
 
 use crate::fvm::Artifact;
@@ -15,10 +15,10 @@ use crate::utils::sha256_digest;
 /// Verifies downloaded artifact checksums against the upstream checksums
 async fn checksum(artf: &Artifact, path: &PathBuf) -> Result<()> {
     let local_file_shasum = sha256_digest(path)?;
-    let upstream_shasum = surf::get(&artf.sha256_url)
+    let upstream_shasum = reqwest::get(artf.sha256_url.as_str())
         .await
         .map_err(|err| Error::msg(err.to_string()))?
-        .body_string()
+        .text()
         .await
         .map_err(|err| Error::msg(err.to_string()))?;
 
@@ -50,15 +50,15 @@ impl Download for Artifact {
             "Downloading artifact"
         );
 
-        let mut res = surf::get(&self.download_url)
+        let res = reqwest::get(self.download_url.as_str())
             .await
             .map_err(|err| Error::msg(err.to_string()))?;
 
-        if res.status() == StatusCode::Ok {
+        if res.status() == StatusCode::OK {
             let out_path = target_dir.join(&self.name);
             let mut file = File::create(&out_path)?;
             let mut buf = Cursor::new(
-                res.body_bytes()
+                res.bytes()
                     .await
                     .map_err(|err| Error::msg(err.to_string()))?,
             );
@@ -118,11 +118,11 @@ mod test {
 
         let binary_path = target_dir.join("fluvio");
         let downstream_shasum = sha256_digest(&binary_path).unwrap();
-        let upstream_shasum = surf::get(&artifact.sha256_url)
+        let upstream_shasum = reqwest::get(artifact.sha256_url.as_str())
             .await
             .map_err(|err| Error::msg(err.to_string()))
             .unwrap()
-            .body_string()
+            .text()
             .await
             .map_err(|err| Error::msg(err.to_string()))
             .unwrap();

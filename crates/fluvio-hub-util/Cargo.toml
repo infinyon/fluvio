@@ -10,23 +10,23 @@ publish = false
 
 [dependencies]
 anyhow = { workspace = true }
+async-trait = { workspace = true }
 cargo_toml = { workspace = true }
 const_format = { workspace = true }
 dirs = { workspace = true }
 ed25519-dalek = { version = "1.0.1", features = ["serde"] }
 flate2 = { workspace = true }
 hex = { workspace = true }
-http-client = { workspace = true }
 pem = "3.0"
 rand = { workspace = true }
 rand_core = "0.6"
+reqwest = { workspace = true }
 sha2 = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true, features=["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 ssh-key = { version="0.6.1", features=[ "ed25519" ] }
-surf = { workspace = true }
 tar = { workspace = true }
 pathdiff = { version = "0.2.1", default-features = false }
 tempfile = { workspace = true }

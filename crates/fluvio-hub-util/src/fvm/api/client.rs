@@ -1,6 +1,7 @@
 //! Hub FVM API Client
 
-use anyhow::{Error, Result};
+use anyhow::Result;
+use reqwest;
 use url::Url;
 
 use crate::fvm::{Channel, PackageSet};
@@ -26,15 +27,8 @@ impl Client {
         arch: &str,
     ) -> Result<PackageSet> {
         let url = self.make_fetch_package_set_url(name, channel, arch)?;
-        let mut res = surf::get(url)
-            .await
-            .map_err(|err| Error::msg(err.to_string()))?;
-        let pkg = res.body_json::<PackageSet>().await.map_err(|err| {
-            Error::msg(format!(
-                "Server responded with status code {}",
-                err.status()
-            ))
-        })?;
+        let res = reqwest::get(url).await?;
+        let pkg = res.json().await?;
 
         tracing::info!(?pkg, "Found PackageSet");
 

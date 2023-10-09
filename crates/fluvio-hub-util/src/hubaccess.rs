@@ -2,11 +2,12 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
-use surf::http::mime;
-use surf::StatusCode;
+use reqwest;
+use reqwest::StatusCode;
 use tracing::{debug, info};
 
 use fluvio_future::task::run_block_on;
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use fluvio_hub_protocol::{Result, HubError};
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token_rem;
@@ -64,26 +65,28 @@ impl HubAccess {
         let host = &self.remote;
         let api_url = format!("{host}/{HUB_API_HUBID}");
         debug!("Sending Action token {action_token}");
-        let req = surf::put(api_url)
-            .content_type(mime::JSON)
-            .body_bytes(msg_json)
-            .header("Authorization", &action_token);
+        let req = reqwest::Client::new()
+            .put(api_url)
+            .header(CONTENT_TYPE, "application/json")
+            .body(msg_json)
+            .header(AUTHORIZATION, &action_token);
         let res = req
+            .send()
             .await
             .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
         let status = res.status();
         match status {
-            StatusCode::Created => {
+            StatusCode::CREATED => {
                 println!("hub: hubid {hubid} created");
             }
-            StatusCode::Ok => {
+            StatusCode::OK => {
                 println!("hub: hubid {hubid} is set");
             }
-            StatusCode::Forbidden => {
+            StatusCode::FORBIDDEN => {
                 let msg = format!("hub: hubid {hubid} already taken");
                 return Err(HubError::HubAccess(msg));
             }
-            StatusCode::Unauthorized => {
+            StatusCode::UNAUTHORIZED => {
                 let msg = "hub: authorization error, try 'fluvio cloud login'".to_string();
                 return Err(HubError::HubAccess(msg));
             }
@@ -135,23 +138,25 @@ impl HubAccess {
         };
         let msg_action_token = serde_json::to_string(&mat)
             .map_err(|_e| HubError::HubAccess("Failed access setup".to_string()))?;
-        let req = surf::get(api_url)
-            .content_type(mime::JSON)
-            .body_bytes(msg_action_token)
-            .header("Authorization", &authn_token);
-        let mut res = req
+        let req = reqwest::Client::new()
+            .get(api_url)
+            .header(CONTENT_TYPE, "application/json")
+            .body(msg_action_token)
+            .header(AUTHORIZATION, &authn_token);
+        let res = req
+            .send()
             .await
             .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
         let status_code = res.status();
         match status_code {
-            StatusCode::Ok => {
-                let action_token = res.body_string().await.map_err(|e| {
-                    debug!("err {e} {res:?}");
+            StatusCode::OK => {
+                let action_token = res.text().await.map_err(|e| {
+                    debug!("err {e}");
                     HubError::HubAccess("Failed to parse reply".to_string())
                 })?;
                 Ok(action_token)
             }
-            StatusCode::Unauthorized => Err(HubError::HubAccess(
+            StatusCode::UNAUTHORIZED => Err(HubError::HubAccess(
                 "Unauthorized, please log in with 'fluvio cloud login'".into(),
             )),
             _ => {
@@ -307,10 +312,9 @@ fn get_hubref() -> Option<String> {
         return None; // use default
     }
     let hubref_url = format!("{fcremote}/api/v1/hubref");
-    let reply: std::result::Result<String, surf::Error> = run_block_on(async {
-        let req = surf::get(hubref_url);
-        let mut res = req.await?;
-        let reply: ReplyHubref = res.body_json().await?;
+    let reply: std::result::Result<String, reqwest::Error> = run_block_on(async {
+        let res = reqwest::get(hubref_url).await?;
+        let reply: ReplyHubref = res.json().await?;
         // fluvio profile switch does not switch the cloud login
         // so hub remote can be pointed to the cloud login different that the profile
         // this will only be printed when using a nonstd hub
