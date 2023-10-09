@@ -1,10 +1,10 @@
 [package]
 name = "fluvio-socket"
-version = "0.14.5"
+version = "0.14.6"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
-repository = "https://github.com/infinyon/fluvio-socket"
+repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 categories = ["encoding"]
 
