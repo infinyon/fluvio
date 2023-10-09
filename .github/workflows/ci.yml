@@ -1027,10 +1027,6 @@ jobs:
         run: |
           FLUVIO_CLUSTER_RELEASE_CHANNEL=dev
           echo "FLUVIO_CLUSTER_RELEASE_CHANNEL=${FLUVIO_CLUSTER_RELEASE_CHANNEL}" >> $GITHUB_ENV
-          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
-          docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
           fluvio-dev cluster start --develop --spu ${{ env.SPU }}
 
       - name: Build smartmodules for E2E test
@@ -1083,7 +1079,7 @@ jobs:
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: fluvio cluster diagnostics
+        run: $FLUVIO_BIN cluster diagnostics
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
