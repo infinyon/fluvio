@@ -116,7 +116,7 @@ impl DiagnosticsOpt {
                         Some("local") => Ok(ProfileType::Local),
                         // Cloud cluster
                         Some(other) if other.contains("cloud") => Ok(ProfileType::Cloud),
-                        _ => Ok(ProfileType::K8),
+                        _ => Ok(ProfileType::Local),
                     }
                 }
             }
