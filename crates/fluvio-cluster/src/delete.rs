@@ -2,7 +2,7 @@ use std::process::Command;
 use std::fs::{remove_dir_all, remove_file};
 
 use derive_builder::Builder;
-use k8_metadata_client::MetadataClient;
+use k8_client::meta_client::MetadataClient;
 use tracing::{info, warn, debug, instrument};
 use sysinfo::{ProcessExt, System, SystemExt};
 
@@ -283,7 +283,7 @@ impl ClusterUninstaller {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
         use k8_client::load_and_share;
-        use k8_metadata_client::PatchMergeType::JsonMerge;
+        use k8_client::meta_client::PatchMergeType::JsonMerge;
 
         let client = load_and_share()?;
 

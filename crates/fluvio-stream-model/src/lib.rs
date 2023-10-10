@@ -9,6 +9,8 @@ pub use k8_types;
 #[cfg(feature = "fixture")]
 pub mod fixture {
 
+    use std::fmt::Display;
+
     use crate::core::{Spec, Status, MetadataItem, MetadataContext, MetadataRevExtension};
     use crate::store::MetadataStoreObject;
     use crate::epoch::DualEpochMap;
@@ -32,6 +34,12 @@ pub mod fixture {
     }
 
     impl Status for TestStatus {}
+
+    impl Display for TestStatus {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "test_status")
+        }
+    }
 
     pub type DefaultTest = MetadataStoreObject<TestSpec, TestMeta>;
 

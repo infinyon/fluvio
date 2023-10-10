@@ -54,7 +54,6 @@ mod metadata {
 
         impl K8ExtendedSpec for TopicSpec {
             type K8Spec = Self;
-            type K8Status = Self::Status;
 
             const DELETE_WAIT_DEPENDENTS: bool = true;
 
@@ -64,6 +63,14 @@ mod metadata {
             ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>
             {
                 default_convert_from_k8(k8_obj, multi_namespace_context)
+            }
+
+            fn convert_status_from_k8(status: &Self::Status) -> Self::Status {
+                status.clone()
+            }
+
+            fn into_k8(self) -> Self::K8Spec {
+                self
             }
         }
     }

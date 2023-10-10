@@ -1,10 +1,9 @@
 use std::{sync::Arc, path::PathBuf};
 
+use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
+use fluvio_stream_model::store::k8::K8MetaItem;
+use k8_client::{K8Client, K8Config, memory::MemoryClient};
 use tracing::info;
-
-use k8_client::new_shared;
-use k8_client::memory::MemoryClient;
-use k8_metadata_client::{SharedClient, MetadataClient};
 
 use crate::{
     cli::{ScOpt, TlsConfig},
@@ -25,18 +24,17 @@ pub fn main_loop(opt: ScOpt) {
         let ((sc_config, auth_policy), tls_option) = opt.parse_cli_or_exit_read_only();
 
         info!("initializing metadata from read only configuration");
-        let client = Arc::new(
+        let client =
             fluvio_future::task::run_block_on(
                 async move { create_memory_client(read_only_path).await },
             )
-            .expect("failed to initialize metadata from read only configuration"),
-        );
+            .expect("failed to initialize metadata from read only configuration");
         inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)
     } else {
         info!("Running with K8");
 
         let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
-        let client = new_shared(k8_config).expect("failed to create k8 client");
+        let client = create_k8_client(k8_config).expect("failed to create k8 client");
         inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)
     };
 }
@@ -66,7 +64,7 @@ fn inner_main_loop<C>(
     auth_policy: Option<BasicRbacPolicy>,
     tls_option: Option<(String, TlsConfig)>,
 ) where
-    C: MetadataClient + 'static,
+    C: MetadataClient<K8MetaItem> + 'static,
 {
     use std::time::Duration;
 
@@ -142,9 +140,10 @@ mod proxy {
     }
 }
 
-async fn create_memory_client(path: PathBuf) -> anyhow::Result<MemoryClient> {
+async fn create_memory_client(path: PathBuf) -> anyhow::Result<Arc<MemoryClient>> {
     use std::ops::Deref;
     use fluvio_sc_schema::edge::EdgeMetadataFile;
+    use k8_client::meta_client::MetadataClient;
 
     let metadata_file = EdgeMetadataFile::open(path)?;
     let config = metadata_file.deref();
@@ -156,5 +155,9 @@ async fn create_memory_client(path: PathBuf) -> anyhow::Result<MemoryClient> {
         client.create_item(value.as_input()).await?;
     }
 
-    Ok(client)
+    Ok(Arc::new(client))
+}
+
+fn create_k8_client(config: K8Config) -> anyhow::Result<Arc<K8Client>> {
+    k8_client::new_shared(config)
 }

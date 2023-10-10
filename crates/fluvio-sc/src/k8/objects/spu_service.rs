@@ -3,11 +3,11 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
-use k8_types::{
+use fluvio_stream_model::k8_types::{
     ObjectMeta,
     core::service::{ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus},
 };
-use k8_types::core::service::LoadBalancerIngress;
+use fluvio_stream_model::k8_types::core::service::LoadBalancerIngress;
 
 use crate::dispatcher::core::{Spec, Status};
 use crate::stores::spg::SpuGroupSpec;
@@ -92,9 +92,9 @@ mod extended {
     use tracing::debug;
     use tracing::trace;
 
-    use k8_types::core::service::ServiceSpec;
-    use k8_types::core::service::ServiceStatus;
-    use k8_types::K8Obj;
+    use fluvio_stream_model::k8_types::core::service::ServiceSpec;
+    use fluvio_stream_model::k8_types::K8Obj;
+    use fluvio_stream_model::k8_types::Spec as K8Spec;
 
     use crate::stores::k8::K8ConvertError;
     use crate::stores::k8::K8ExtendedSpec;
@@ -106,7 +106,6 @@ mod extended {
 
     impl K8ExtendedSpec for SpuServiceSpec {
         type K8Spec = ServiceSpec;
-        type K8Status = ServiceStatus;
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
@@ -125,6 +124,13 @@ mod extended {
                     "skipping non spu service");
                 Err(K8ConvertError::Skip(Box::new(k8_obj)))
             }
+        }
+
+        fn convert_status_from_k8(status: &Self::Status) -> <ServiceSpec as K8Spec>::Status {
+            status.clone().into()
+        }
+        fn into_k8(self) -> Self::K8Spec {
+            self.into()
         }
     }
 }

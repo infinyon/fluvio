@@ -177,12 +177,12 @@ mod k8_convert {
 
     use std::collections::HashMap;
 
-    use k8_types::*;
-    use k8_types::core::pod::{
+    use fluvio_stream_model::k8_types::*;
+    use fluvio_stream_model::k8_types::core::pod::{
         ContainerSpec, ContainerPortSpec, PodSpec, VolumeMount, VolumeSpec, SecretVolumeSpec,
     };
-    use k8_types::core::service::*;
-    use k8_types::app::stateful::{
+    use fluvio_stream_model::k8_types::core::service::*;
+    use fluvio_stream_model::k8_types::app::stateful::{
         PersistentVolumeClaim, VolumeAccessMode, ResourceRequirements, VolumeRequest,
     };
     use fluvio_types::defaults::{

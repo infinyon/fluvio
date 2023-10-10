@@ -184,7 +184,7 @@ impl SpuServiceController {
         spu_name: &str,
         spu_k8_config: &ScK8Config,
     ) -> Result<()> {
-        use k8_types::core::service::ServiceSpec as K8ServiceSpec;
+        use fluvio_stream_model::k8_types::core::service::ServiceSpec as K8ServiceSpec;
 
         let mut selector = HashMap::new();
         let pod_name = format!("fluvio-spg-{spu_name}");

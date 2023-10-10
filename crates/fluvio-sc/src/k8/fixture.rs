@@ -1,16 +1,17 @@
 use std::iter;
 
+use fluvio_stream_dispatcher::metadata::SharedClient;
 use fluvio_stream_dispatcher::store::StoreContext;
 use tracing::debug;
 use rand::{Rng, thread_rng};
 use rand::distributions::Alphanumeric;
+use k8_client::K8Client;
+use k8_client::meta_client::MetadataClient;
 
 use fluvio_controlplane_metadata::store::{LocalStore, MetadataStoreObject};
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
-use k8_metadata_client::MetadataClient;
-use k8_types::core::namespace::NamespaceSpec;
-use k8_types::{InputK8Obj, InputObjectMeta, K8Obj};
-use k8_client::{K8Client, SharedK8Client, load_and_share};
+use fluvio_stream_model::k8_types::core::namespace::NamespaceSpec;
+use fluvio_stream_model::k8_types::{InputK8Obj, InputObjectMeta, K8Obj};
 
 use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::config::ScConfig;
@@ -30,12 +31,12 @@ type ScConfigMetadata = MetadataStoreObject<ScK8Config, K8MetaItem>;
 
 pub struct TestEnv {
     ns: K8Obj<NamespaceSpec>,
-    client: SharedK8Client,
+    client: SharedClient<K8Client>,
 }
 
 impl TestEnv {
     pub async fn create() -> Self {
-        let client = load_and_share().expect("creating k8 client");
+        let client = k8_client::load_and_share().expect("creating k8 client");
         let ns = Self::create_unique_ns();
         let ns_obj = Self::create_ns(&ns, &client).await;
 
@@ -54,6 +55,7 @@ impl TestEnv {
 
     #[allow(unused)]
     async fn delete(self) {
+        use core::ops::Deref;
         self.client
             .delete_item_with_option::<NamespaceSpec, _>(&self.ns.metadata, None)
             .await
@@ -75,7 +77,7 @@ impl TestEnv {
         &self.ns.metadata.name
     }
 
-    pub fn client(&self) -> &SharedK8Client {
+    pub(crate) fn client(&self) -> &SharedClient<K8Client> {
         &self.client
     }
 

@@ -12,7 +12,7 @@ use tracing::{debug, error, instrument, info};
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use k8_types::core::service::{LoadBalancerIngress, LoadBalancerType};
+use fluvio_stream_model::k8_types::core::service::{LoadBalancerIngress, LoadBalancerType};
 
 use crate::stores::StoreContext;
 use crate::stores::spu::{IngressAddr, SpuSpec};

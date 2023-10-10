@@ -3,7 +3,9 @@ use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
 
-use k8_types::core::service::{ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus};
+use fluvio_stream_model::k8_types::core::service::{
+    ServiceSpec as K8ServiceSpec, ServiceStatus as K8ServiceStatus,
+};
 
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
@@ -67,9 +69,9 @@ mod extended {
     use tracing::debug;
     use tracing::trace;
 
-    use k8_types::core::service::ServiceSpec;
-    use k8_types::core::service::ServiceStatus;
-    use k8_types::K8Obj;
+    use fluvio_stream_model::k8_types::core::service::ServiceSpec;
+    use fluvio_stream_model::k8_types::K8Obj;
+    use fluvio_stream_model::k8_types::Spec as K8Spec;
 
     use crate::stores::k8::K8ConvertError;
     use crate::stores::k8::K8ExtendedSpec;
@@ -81,7 +83,6 @@ mod extended {
 
     impl K8ExtendedSpec for SpgServiceSpec {
         type K8Spec = ServiceSpec;
-        type K8Status = ServiceStatus;
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
@@ -99,6 +100,14 @@ mod extended {
                     "skipping non spg service");
                 Err(K8ConvertError::Skip(Box::new(k8_obj)))
             }
+        }
+
+        fn convert_status_from_k8(status: &Self::Status) -> <ServiceSpec as K8Spec>::Status {
+            status.clone().into()
+        }
+
+        fn into_k8(self) -> Self::K8Spec {
+            self.into()
         }
     }
 }

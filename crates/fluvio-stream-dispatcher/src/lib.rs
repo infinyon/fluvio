@@ -3,6 +3,7 @@ pub mod dispatcher;
 pub mod actions;
 
 mod error;
+pub mod metadata;
 
 pub use error::StoreError;
 

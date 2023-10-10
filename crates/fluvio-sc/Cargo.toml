@@ -56,13 +56,11 @@ fluvio-types = { workspace = true,  features = [
     "events",
 ] }
 fluvio-sc-schema = { workspace = true, features = ["use_serde", "json"] }
-fluvio-stream-model = { workspace = true  }
+fluvio-stream-model = { workspace = true, features = ["k8"]  }
 fluvio-controlplane = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8","serde"] }
-fluvio-stream-dispatcher = { workspace = true }
+fluvio-stream-dispatcher = { workspace = true, features = ["k8"]}
 k8-client = { workspace = true, features = ["memory_client"] }
-k8-metadata-client = { workspace = true }
-k8-types = { workspace = true, features = ["app"] }
 fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-service = { workspace = true  }

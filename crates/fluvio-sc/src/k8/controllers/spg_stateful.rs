@@ -219,10 +219,11 @@ impl SpgStatefulSetController {
 #[cfg(test)]
 mod test {
 
+    use fluvio_stream_model::store::k8::K8MetaItem;
     use tracing::debug;
 
     use fluvio_stream_dispatcher::actions::WSAction;
-    use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
+    use fluvio_stream_dispatcher::dispatcher::ClusterStateDispatcher;
 
     use crate::k8::fixture::TestEnv;
     use super::*;
@@ -246,20 +247,20 @@ mod test {
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
 
         // start statefullset dispatcher
-        K8ClusterStateDispatcher::<_, _>::start(
+        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
             statefulset_ctx.clone(),
         );
 
         // start spg service dispatcher
-        K8ClusterStateDispatcher::<_, _>::start(
+        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
             spg_service_ctx.clone(),
         );
 
-        K8ClusterStateDispatcher::<_, _>::start(
+        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
             global_ctx.spgs().clone(),
