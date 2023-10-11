@@ -35,7 +35,7 @@ pub struct GlobalOptions {
     about = "Fluvio Version Manager (FVM)",
     name = "fvm",
     max_term_width = 100,
-    disable_version_flag = true
+    version = env!("CARGO_PKG_VERSION")
 )]
 pub struct Cli {
     #[clap(flatten)]

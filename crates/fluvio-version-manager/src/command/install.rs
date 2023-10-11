@@ -3,7 +3,7 @@
 //! Downloads and stores the sepecific Fluvio Version binaries in the local
 //! FVM cache.
 
-use std::fs::{File, create_dir, rename};
+use std::fs::{File, create_dir, create_dir_all, rename};
 
 use std::path::PathBuf;
 
@@ -33,6 +33,13 @@ pub struct InstallOpt {
 
 impl InstallOpt {
     pub async fn process(&self) -> Result<()> {
+        let versions_path = fvm_versions_path()?;
+
+        if !versions_path.exists() {
+            tracing::info!(?versions_path, "Creating versions directory");
+            create_dir_all(&versions_path)?;
+        }
+
         // The `tmp_dir` must be dropped after copying the binaries to the
         // destination directory. By dropping `tmp_dir` the directory will be
         // deleted from the filesystem.

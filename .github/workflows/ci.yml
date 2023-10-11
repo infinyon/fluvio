@@ -1130,7 +1130,8 @@ jobs:
       - name: Run FVM smoke tests
         if: matrix.test == 'fvm'
         timeout-minutes: 20
-        run: make FVM_BIN=~/bin/fvm cli-fvm-smoke
+        run: |
+          make FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
 
       - name: Run diagnostics
         if: ${{ !success() }}
