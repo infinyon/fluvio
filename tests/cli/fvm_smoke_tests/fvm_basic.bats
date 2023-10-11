@@ -16,7 +16,7 @@ setup_file() {
 }
 
 @test "Install fvm and setup a settings.toml file" {
-    run $FVM_BIN self install
+    run bash -c '$FVM_BIN self install'
     assert_success
 
     # Ensure the `~/.fvm/` directory is available
@@ -44,7 +44,7 @@ setup_file() {
     # We use `--yes` because prompting is not supported in CI environment,
     # responding with error `Error: IO error: not a terminal`
 
-    run $FVM_BIN self uninstall --yes
+    run bash -c '$FVM_BIN self uninstall --yes'
     assert_success
 
     # Ensure the `~/.fvm/` directory is not available anymore
@@ -53,11 +53,12 @@ setup_file() {
 }
 
 @test "Install Fluvio at 0.10.15" {
-    $FVM_BIN self install
+    run bash -c '$FVM_BIN self install'
+    assert_success
 
     # Output install logs
     export HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud"
-    run bash -c '$FVM_BIN install 0.10.15'
+    run bash -c '"$FVM_BIN" install 0.10.15'
     assert_success
 
     # Ensure the stable version dir is available
@@ -86,11 +87,11 @@ setup_file() {
 
     # Check mainfest matches
     run bash -c 'cat ~/.fvm/versions/0.10.15/manifest.json | jq .channel.tag'
-    assert_output "0.10.15"
+    assert_output "\"0.10.15\""
     assert_success
 
-    run bash -c 'cat ~/.fvm/versions/0.10.15/manifest.json | jq .channel.version'
-    assert_output "0.10.15"
+    run bash -c 'cat ~/.fvm/versions/0.10.15/manifest.json | jq .version'
+    assert_output "\"0.10.15\""
     assert_success
 
     # Check downloaded Fluvio Version
@@ -99,6 +100,6 @@ setup_file() {
     assert_success
 
     # Removes FVM
-    $FVM_BIN self uninstall
+    run bash -c '$FVM_BIN self uninstall --yes'
     assert_success
 }
