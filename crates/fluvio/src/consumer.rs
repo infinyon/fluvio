@@ -564,9 +564,9 @@ pub struct ConsumerConfig {
     #[builder(default)]
     disable_continuous: bool,
     #[builder(default = "*MAX_FETCH_BYTES")]
-    pub(crate) max_bytes: i32,
+    pub max_bytes: i32,
     #[builder(default)]
-    pub(crate) isolation: Isolation,
+    pub isolation: Isolation,
     #[builder(default)]
     pub(crate) smartmodule: Vec<SmartModuleInvocation>,
 }
