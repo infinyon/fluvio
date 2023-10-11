@@ -12,7 +12,11 @@ load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
-    echo "No-Op"
+    # Retrieves the latest stable version from the GitHub API and removes the
+    # `v` prefix from the tag name.
+    STABLE_VERSION=$(curl "https://api.github.com/repos/infinyon/fluvio/releases/latest" | jq -r .tag_name | cut -c2-)
+    export STABLE_VERSION
+    debug_msg "Stable Version: $STABLE_VERSION"
 }
 
 @test "Install fvm and setup a settings.toml file" {
@@ -97,6 +101,58 @@ setup_file() {
     # Check downloaded Fluvio Version
     run bash -c '~/.fvm/versions/0.10.15/fluvio version > flv_version_0.10.15.out && cat flv_version_0.10.15.out | head -n 1 | grep "0.10.15"'
     assert_output --partial "0.10.15"
+    assert_success
+
+    # Removes FVM
+    run bash -c '$FVM_BIN self uninstall --yes'
+    assert_success
+}
+
+@test "Install Stable Fluvio" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Output install logs
+    export HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud"
+    run bash -c '"$FVM_BIN" install'
+    assert_success
+
+    # Ensure the stable version dir is available
+    test -d ~/.fvm/versions/stable
+    assert_success
+
+    # Verify fluvio binary is present
+    test -f ~/.fvm/versions/stable/fluvio
+    assert_success
+
+    # Verify fluvio-run binary is present
+    test -f ~/.fvm/versions/stable/fluvio-run
+    assert_success
+
+    # Verify fluvio-cloud binary is present
+    test -f ~/.fvm/versions/stable/fluvio-cloud
+    assert_success
+
+    # Verify cdk binary is present
+    test -f ~/.fvm/versions/stable/cdk
+    assert_success
+
+    # Verify smdk binary is present
+    test -f ~/.fvm/versions/stable/smdk
+    assert_success
+
+    # Check mainfest matches
+    run bash -c 'cat ~/.fvm/versions/stable/manifest.json | jq .channel'
+    assert_output "\"stable\""
+    assert_success
+
+    run bash -c 'cat ~/.fvm/versions/stable/manifest.json | jq .version'
+    assert_output "\"$STABLE_VERSION\""
+    assert_success
+
+    # Check downloaded Fluvio Version
+    run bash -c '~/.fvm/versions/stable/fluvio version > flv_version_stable.out && cat flv_version_stable.out | head -n 1 | grep "$STABLE_VERSION"'
+    assert_output --partial "$STABLE_VERSION"
     assert_success
 
     # Removes FVM
