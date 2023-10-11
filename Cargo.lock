@@ -991,6 +991,7 @@ dependencies = [
  "comfy-table",
  "current_platform",
  "fluvio",
+ "fluvio-cli-common",
  "fluvio-connector-deployer",
  "fluvio-connector-package",
  "fluvio-future",
@@ -2614,6 +2615,8 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "clap",
+ "current_platform",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-protocol",
@@ -2625,6 +2628,7 @@ dependencies = [
  "isahc",
  "semver 1.0.19",
  "sha2 0.10.8",
+ "sysinfo",
  "tempfile",
  "thiserror",
  "tracing",
@@ -6895,6 +6899,7 @@ dependencies = [
  "cargo-generate",
  "chrono",
  "clap",
+ "current_platform",
  "dirs 5.0.1",
  "enum-display",
  "fluvio",

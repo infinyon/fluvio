@@ -1,6 +1,7 @@
+use anyhow::Result;
 use cargo_builder::package::PackageOption;
 use clap::Parser;
-use anyhow::Result;
+use fluvio_cli_common::version_cmd::BasicVersionCmd;
 
 use crate::build::{BuildCmd, BUILD_TARGET};
 use crate::generate::GenerateCmd;
@@ -27,6 +28,8 @@ pub enum SmdkCommand {
     /// Set package as public
     #[command(name = "set-public")]
     SetPublic(SetPublicOpt),
+    /// Print smdk version information
+    Version(BasicVersionCmd),
 }
 
 impl SmdkCommand {
@@ -39,6 +42,7 @@ impl SmdkCommand {
             SmdkCommand::Publish(opt) => opt.process(),
             SmdkCommand::Hub(opt) => opt.process(),
             SmdkCommand::SetPublic(opt) => opt.process(),
+            SmdkCommand::Version(opt) => opt.process("SMDK"),
         }
     }
 }

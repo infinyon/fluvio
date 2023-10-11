@@ -32,6 +32,7 @@ tempfile = { workspace = true }
 current_platform = { workspace = true }
 
 fluvio = { workspace = true }
+fluvio-cli-common = { workspace = true, features = ["version-cmd"] }
 fluvio-connector-deployer = { path = "../fluvio-connector-deployer"}
 fluvio-connector-package = { workspace = true,  features = ["toml"]}
 fluvio-future = { workspace = true, features = ["subscriber"]}

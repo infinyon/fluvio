@@ -1,6 +1,7 @@
+use anyhow::Result;
 use cargo_builder::package::PackageOption;
 use clap::Parser;
-use anyhow::Result;
+use fluvio_cli_common::version_cmd::BasicVersionCmd;
 
 use crate::build::BuildCmd;
 use crate::generate::GenerateCmd;
@@ -17,6 +18,7 @@ pub enum CdkCommand {
     Generate(GenerateCmd),
     Deploy(DeployCmd),
     Publish(PublishCmd),
+    Version(BasicVersionCmd),
 
     #[command(name = "set-public")]
     SetPublic(SetPublicCmd),
@@ -31,6 +33,7 @@ impl CdkCommand {
             CdkCommand::Publish(opt) => opt.process(),
             CdkCommand::SetPublic(opt) => opt.process(),
             CdkCommand::Generate(opt) => opt.process(),
+            CdkCommand::Version(opt) => opt.process("CDK"),
         }
     }
 }
