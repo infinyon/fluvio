@@ -88,13 +88,22 @@ impl VersionDirectory {
 pub struct SwitchOpt {
     #[command(flatten)]
     global_opts: GlobalOptions,
-    /// Version to install
-    #[arg(index = 1, default_value_t = Channel::Stable)]
-    version: Channel,
+    /// Version to set as active
+    #[arg(index = 1)]
+    version: Option<Channel>,
 }
 
 impl SwitchOpt {
     pub async fn process(&self) -> Result<()> {
+        let Some(version) = self.version.clone() else {
+            self.notify_help(format!(
+                "You can use {} to see installed versions",
+                "fvm show".bold()
+            ));
+
+            return Err(anyhow::anyhow!("No version provided"));
+        };
+
         let versions_path = fvm_versions_path()?;
 
         // If the user runs this command before installing any versions, we
@@ -109,17 +118,17 @@ impl SwitchOpt {
             return Ok(());
         }
 
-        let pkgset_path = versions_path.join(self.version.to_string());
+        let pkgset_path = versions_path.join(version.to_string());
 
         // If the package is not available locally, we should notify the user
         // and exit early.
         if !pkgset_path.exists() {
             self.notify_warn(format!(
                 "Fluvio version {} is not installed",
-                self.version.to_string().bold()
+                version.to_string().bold()
             ));
 
-            let help = format!("fvm install {}", self.version);
+            let help = format!("fvm install {}", version);
 
             self.notify_help(format!(
                 "Install the desired version using {}, and then retry this command.",
@@ -148,7 +157,7 @@ impl SwitchOpt {
 
         self.notify_done(format!(
             "Now using Fluvio version {}",
-            self.version.to_string().bold(),
+            version.to_string().bold(),
         ));
 
         Ok(())

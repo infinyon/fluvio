@@ -200,6 +200,9 @@ setup_file() {
     # Sets `fvm` in the PATH using the "env" file included in the installation
     source ~/.fvm/env
 
+    # Removes Fluvio Directory
+    rm -rf $FLUVIO_HOME_DIR
+
     # Ensure `~/.fluvio` is not present
     run bash -c '! test -d $FLUVIO_HOME_DIR'
     assert_success
@@ -343,4 +346,17 @@ setup_file() {
     # Removes Fluvio
     rm -rf $FLUVIO_HOME_DIR
     assert_success
+}
+
+@test "Recommends using fvm show to list available versions" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    run bash -c 'fvm switch'
+    assert_line --index 0 "help: You can use fvm show to see installed versions"
+    assert_line --index 1 "Error: No version provided"
+    assert_failure
 }
