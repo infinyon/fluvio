@@ -17,7 +17,7 @@ case ":${PATH}:" in
     *:"$HOME/.fvm/bin":*)
         ;;
     *)
-        export PATH="$PATH:$HOME/.fvm/bin"
+        export PATH="$PATH:$HOME/.fvm/bin:$HOME/.fluvio/bin"
         ;;
 esac
 "#;

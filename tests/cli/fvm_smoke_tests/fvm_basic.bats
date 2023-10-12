@@ -29,6 +29,14 @@ setup_file() {
     STATIC_VERSION="0.10.15"
     export STATIC_VERSION
     debug_msg "Static Version: $STATIC_VERSION"
+
+    FLUVIO_HOME_DIR="$HOME/.fluvio"
+    export FLUVIO_HOME_DIR
+    debug_msg "Fluvio Home Directory: $FLUVIO_HOME_DIR"
+
+    FLUVIO_BINARIES_DIR="$FLUVIO_HOME_DIR/bin"
+    export FLUVIO_BINARIES_DIR
+    debug_msg "Fluvio Binaries Directory: $FLUVIO_BINARIES_DIR"
 }
 
 @test "Install fvm and setup a settings.toml file" {
@@ -182,5 +190,157 @@ setup_file() {
 
     # Removes FVM
     run bash -c 'fvm self uninstall --yes'
+    assert_success
+}
+
+@test "Copies binaries to Fluvio Binaries Directory when using fvm switch" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Ensure `~/.fluvio` is not present
+    run bash -c '! test -d $FLUVIO_HOME_DIR'
+    assert_success
+
+    # Installs Stable Fluvio
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Switch version to use Stable Fluvio
+    run bash -c 'fvm switch stable'
+    assert_success
+
+    # Expected binaries
+    declare -a binaries=(
+        fluvio
+        fluvio-run
+        fluvio-cloud
+        cdk
+        smdk
+    )
+
+    for binary in "${binaries[@]}"
+    do
+        export FVM_BIN_PATH="$VERSIONS_DIR/stable/$binary"
+        echo "Checking binary: $BINARY_PATH"
+        run bash -c 'test -f $FVM_BIN_PATH'
+        assert_success
+
+        export FLV_BIN_PATH="$FLUVIO_BINARIES_DIR/$binary"
+        echo "Checking binary: $FLV_BIN_PATH"
+        run bash -c 'test -f $FLV_BIN_PATH'
+        assert_success
+    done
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Sets the desired Fluvio Version" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Ensure `~/.fluvio` is not present
+    run bash -c '! test -d $FLUVIO_HOME_DIR'
+    assert_success
+
+    # Installs Fluvio at 0.10.15
+    run bash -c 'fvm install 0.10.15'
+    assert_success
+
+    # Installs Fluvio at 0.10.14
+    run bash -c 'fvm install 0.10.14'
+    assert_success
+
+    # Switch version to use Fluvio at 0.10.15
+    run bash -c 'fvm switch 0.10.15'
+    assert_success
+
+    # Checks version is set
+    run bash -c 'fluvio version > active_flv_ver.out && cat active_flv_ver.out | head -n 1 | grep "0.10.15"'
+    assert_output --partial "0.10.15"
+    assert_success
+
+    # Switch version to use Fluvio at 0.10.14
+    run bash -c 'fvm switch 0.10.14'
+    assert_success
+
+    # Checks version is set
+    run bash -c 'fluvio version > active_flv_ver.out && cat active_flv_ver.out | head -n 1 | grep "0.10.14"'
+    assert_output --partial "0.10.14"
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Keeps track of the active Fluvio Version in settings.toml" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Ensure `~/.fluvio` is not present
+    run bash -c '! test -d $FLUVIO_HOME_DIR'
+    assert_success
+
+    # Installs Fluvio Stable
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Installs Fluvio at 0.10.14
+    run bash -c 'fvm install 0.10.14'
+    assert_success
+
+    # Switch version to use Fluvio at 0.10.15
+    run bash -c 'fvm switch stable'
+    assert_success
+
+    # Checks channel is set
+    run bash -c 'cat ~/.fvm/settings.toml | grep "channel = \"stable\""'
+    assert_output --partial "channel = \"stable\""
+    assert_success
+
+    # Checks version is set
+    run bash -c 'cat ~/.fvm/settings.toml | grep "version = \"$STABLE_VERSION\""'
+    assert_output --partial "version = \"$STABLE_VERSION\""
+    assert_success
+
+    # Switch version to use Fluvio at 0.10.14
+    run bash -c 'fvm switch 0.10.14'
+    assert_success
+
+    # Checks version is set
+    run bash -c 'cat ~/.fvm/settings.toml | grep "version = \"0.10.14\""'
+    assert_output --partial "version = \"0.10.14\""
+    assert_success
+
+    # Checks channel is tag
+    run bash -c 'cat ~/.fvm/settings.toml | grep "tag = \"0.10.14\""'
+    assert_output --partial "tag = \"0.10.14\""
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
     assert_success
 }

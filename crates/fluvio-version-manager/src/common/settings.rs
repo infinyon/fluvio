@@ -1,4 +1,4 @@
-use std::fs::write;
+use std::fs::{write, read_to_string};
 use std::path::PathBuf;
 
 use anyhow::{Error, Result};
@@ -44,6 +44,30 @@ impl Settings {
         tracing::debug!(?settings_path, "Created settings file with success");
 
         Ok(initial)
+    }
+
+    /// Opens the `settings.toml` file and parses it into a `Settings` struct.
+    ///
+    /// If the file doesn't exist, it will be created.
+    pub fn open() -> Result<Self> {
+        let settings_path = Self::settings_file_path()?;
+
+        if !settings_path.exists() {
+            Self::init()?;
+        }
+
+        let contents = read_to_string(settings_path)?;
+        let settings: Settings = toml::from_str(&contents)?;
+
+        Ok(settings)
+    }
+
+    pub fn update_version(&mut self, channel: &Channel, version: &Version) -> Result<()> {
+        self.channel = Some(channel.to_owned());
+        self.version = Some(version.to_owned());
+        self.save()?;
+
+        Ok(())
     }
 
     /// Saves the `settings.toml` file to disk, overwriting the previous version
@@ -137,6 +161,28 @@ mod tests {
         assert!(settings_str.contains("version = \"0.11.0\""));
 
         remove_file(&settings_path).expect("Failed to remove settings.toml file");
+        delete_fvm_dir();
+    }
+
+    #[test]
+    fn creates_settings_file_if_not_exists_on_open() {
+        create_fvm_dir();
+
+        let settings_path =
+            Settings::settings_file_path().expect("Failed to get settings.toml path");
+
+        assert!(
+            !settings_path.exists(),
+            "the settings file should not exist at this point"
+        );
+
+        Settings::open().expect("Failed to create settings.toml file");
+
+        assert!(
+            settings_path.exists(),
+            "the settings file should exist at this point"
+        );
+
         delete_fvm_dir();
     }
 }

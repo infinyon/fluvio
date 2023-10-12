@@ -9,6 +9,7 @@ use fluvio_hub_util::HUB_REMOTE;
 
 use self::command::install::InstallOpt;
 use self::command::itself::SelfOpt;
+use self::command::switch::SwitchOpt;
 
 #[async_std::main]
 async fn main() -> Result<()> {
@@ -52,6 +53,9 @@ pub enum Command {
     /// Install a Fluvio Version
     #[command(name = "install")]
     Install(InstallOpt),
+    /// Set a installed Fluvio Version as active
+    #[command(name = "switch")]
+    Switch(SwitchOpt),
 }
 
 impl Cli {
@@ -62,6 +66,7 @@ impl Cli {
         match command {
             Command::Itself(cmd) => cmd.process().await,
             Command::Install(cmd) => cmd.process().await,
+            Command::Switch(cmd) => cmd.process().await,
         }
     }
 }
