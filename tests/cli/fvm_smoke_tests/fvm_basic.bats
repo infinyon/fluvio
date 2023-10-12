@@ -25,8 +25,11 @@ setup_file() {
     VERSIONS_DIR="$HOME/.fvm/versions"
     export VERSIONS_DIR
     debug_msg "Versions Directory: $VERSIONS_DIR"
-}
 
+    STATIC_VERSION="0.10.15"
+    export STATIC_VERSION
+    debug_msg "Static Version: $STATIC_VERSION"
+}
 
 @test "Install fvm and setup a settings.toml file" {
     # Ensure the `fvm` directory is not present
@@ -84,113 +87,6 @@ setup_file() {
     assert_success
 }
 
-@test "Install Fluvio at 0.10.15" {
-    # Ensure the `~/.fvm/` directory is not available anymore
-    run bash -c '! test -d ~/.fvm'
-    assert_success
-
-    run bash -c '$FVM_BIN self install'
-    assert_success
-
-    # Sets `fvm` in the PATH using the "env" file included in the installation
-    source ~/.fvm/env
-
-    run bash -c 'fvm install 0.10.15'
-    assert_success
-
-    # Verify fluvio binary is present
-    run bash -c 'test -f $VERSIONS_DIR/0.10.15/fluvio'
-    assert_success
-
-    # Verify fluvio-run binary is present
-    run bash -c 'test -f $VERSIONS_DIR/0.10.15/fluvio-run'
-    assert_success
-
-    # Verify fluvio-cloud binary is present
-    run bash -c 'test -f $VERSIONS_DIR/0.10.15/fluvio-cloud'
-    assert_success
-
-    # Verify cdk binary is present
-    run bash -c 'test -f $VERSIONS_DIR/0.10.15/cdk'
-    assert_success
-
-    # Verify smdk binary is present
-    run bash -c 'test -f $VERSIONS_DIR/0.10.15/smdk'
-    assert_success
-
-    # Check mainfest matches
-    run bash -c 'cat $VERSIONS_DIR/0.10.15/manifest.json | jq .channel.tag'
-    assert_output "\"0.10.15\""
-    assert_success
-
-    run bash -c 'cat $VERSIONS_DIR/0.10.15/manifest.json | jq .version'
-    assert_output "\"0.10.15\""
-    assert_success
-
-    # Check downloaded Fluvio Version
-    run bash -c '$VERSIONS_DIR/0.10.15/fluvio version > flv_version_0.10.15.out && cat flv_version_0.10.15.out | head -n 1 | grep "0.10.15"'
-    assert_output --partial "0.10.15"
-    assert_success
-
-    # Removes FVM
-    run bash -c 'fvm self uninstall --yes'
-    assert_success
-}
-
-@test "Install Stable Fluvio" {
-    run bash -c '$FVM_BIN self install'
-    assert_success
-
-    # Sets `fvm` in the PATH using the "env" file included in the installation
-    source ~/.fvm/env
-
-    # Installs Stable Fluvio
-    run bash -c 'fvm install'
-    assert_success
-
-    # Ensure the stable version dir is available
-    run bash -c 'test -d $VERSIONS_DIR/stable'
-    assert_success
-
-    # Verify fluvio binary is present
-    run bash -c 'test -f $VERSIONS_DIR/stable/fluvio'
-    assert_success
-
-    # Verify fluvio-run binary is present
-    run bash -c 'test -f $VERSIONS_DIR/stable/fluvio-run'
-    assert_success
-
-    # Verify fluvio-cloud binary is present
-    run bash -c 'test -f $VERSIONS_DIR/stable/fluvio-cloud'
-    assert_success
-
-    # Verify cdk binary is present
-    run bash -c 'test -f $VERSIONS_DIR/stable/cdk'
-    assert_success
-
-    # Verify smdk binary is present
-    run bash -c 'test -f $VERSIONS_DIR/stable/smdk'
-    assert_success
-
-    # Check mainfest matches
-    run bash -c 'cat $VERSIONS_DIR/stable/manifest.json | jq .channel'
-    assert_output "\"stable\""
-    assert_success
-
-    run bash -c 'cat $VERSIONS_DIR/stable/manifest.json | jq .version'
-    assert_output "\"$STABLE_VERSION\""
-    assert_success
-
-    # Check downloaded Fluvio Version
-    run bash -c '$VERSIONS_DIR/stable/fluvio version > flv_version_stable.out && cat flv_version_stable.out | head -n 1 | grep "$STABLE_VERSION"'
-    assert_output --partial "$STABLE_VERSION"
-    assert_success
-
-    # Removes FVM
-    run bash -c 'fvm self uninstall --yes'
-    assert_success
-}
-
 @test "Creates the `$VERSIONS_DIR` path if not present when attempting to install" {
     # Verify the directory is not present initally
     run bash -c '! test -d $VERSIONS_DIR'
@@ -217,6 +113,72 @@ setup_file() {
     # Checks the presence of the binary in the versions directory
     run bash -c 'test -f $VERSIONS_DIR/stable/fluvio'
     assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+}
+
+@test "Install Fluvio Versions" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Expected binaries
+    declare -a binaries=(
+        fluvio
+        fluvio-run
+        fluvio-cloud
+        cdk
+        smdk
+    )
+
+    # Expected versions
+    declare -a versions=(
+        $STATIC_VERSION
+        stable
+        latest
+    )
+
+    for version in "${versions[@]}"
+    do
+        export VERSION="$version"
+
+        run bash -c 'fvm install "$VERSION"'
+        assert_success
+
+        for binary in "${binaries[@]}"
+        do
+            export BINARY_PATH="$VERSIONS_DIR/$VERSION/$binary"
+            echo "Checking binary: $BINARY_PATH"
+            run bash -c 'test -f $BINARY_PATH'
+            assert_success
+        done
+
+        if [ "$VERSION" == "stable" ] || [ "$VERSION" == "latest" ]; then
+            run bash -c 'cat "$VERSIONS_DIR/$VERSION/manifest.json" | jq .channel'
+            assert_output "\"$version\""
+            assert_success
+        else
+            run bash -c 'cat "$VERSIONS_DIR/$VERSION/manifest.json" | jq .version'
+            assert_output "\"$version\""
+            assert_success
+        fi
+
+        if [ "$VERSION" == "stable" ]; then
+            run bash -c '$VERSIONS_DIR/$VERSION/fluvio version > flv_version_$version.out && cat flv_version_$version.out | head -n 1 | grep "$STABLE_VERSION"'
+            assert_output --partial "$STABLE_VERSION"
+            assert_success
+        fi
+
+        if [ "$VERSION" == "$STATIC_VERSION" ]; then
+            run bash -c '$VERSIONS_DIR/$VERSION/fluvio version > flv_version_$version.out && cat flv_version_$version.out | head -n 1 | grep "$STATIC_VERSION"'
+            assert_output --partial "$STATIC_VERSION"
+            assert_success
+        fi
+    done
 
     # Removes FVM
     run bash -c 'fvm self uninstall --yes'
