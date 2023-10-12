@@ -37,13 +37,14 @@ pub trait Download {
     /// Downloads the artifact to the specified directory
     ///
     /// Internally validates the checksum of the downloaded artifact
-    async fn download(&self, target_dir: PathBuf) -> Result<()>;
+    /// and returns the path to the downloaded artifact
+    async fn download(&self, target_dir: PathBuf) -> Result<PathBuf>;
 }
 
 #[async_trait]
 impl Download for Artifact {
     #[instrument(skip(self, target_dir))]
-    async fn download(&self, target_dir: PathBuf) -> Result<()> {
+    async fn download(&self, target_dir: PathBuf) -> Result<PathBuf> {
         tracing::info!(
             name = self.name,
             download_url = ?self.download_url,
@@ -72,7 +73,7 @@ impl Download for Artifact {
                 "Artifact downloaded",
             );
 
-            return Ok(());
+            return Ok(out_path);
         }
 
         Err(Error::msg(format!(
@@ -98,9 +99,10 @@ mod test {
             download_url: "https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.10.15/aarch64-apple-darwin/fluvio".parse().unwrap(),
             sha256_url: "https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.10.15/aarch64-apple-darwin/fluvio.sha256".parse().unwrap(),
         };
+        let download_path = artifact.download(target_dir.clone()).await.unwrap();
 
-        artifact.download(target_dir.clone()).await.unwrap();
         assert!(target_dir.join("fluvio").exists());
+        assert_eq!(download_path, target_dir.join("fluvio"));
     }
 
     #[ignore]

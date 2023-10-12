@@ -3,7 +3,11 @@ mod common;
 
 use anyhow::Result;
 use clap::{Args, Parser};
+use url::Url;
 
+use fluvio_hub_util::HUB_REMOTE;
+
+use self::command::install::InstallOpt;
 use self::command::itself::SelfOpt;
 
 #[async_std::main]
@@ -16,11 +20,14 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Args, Clone, Default)]
+#[derive(Debug, Args, Clone)]
 pub struct GlobalOptions {
     /// Suppress stdout notifications
     #[clap(short = 'q', long, global = true, default_value_t = false)]
     quiet: bool,
+    /// Registry used to fetch Fluvio Versions
+    #[arg(long, env = "HUB_REGISTRY_URL", default_value = HUB_REMOTE)]
+    registry: Url,
 }
 
 #[derive(Debug, Parser)]
@@ -28,7 +35,7 @@ pub struct GlobalOptions {
     about = "Fluvio Version Manager (FVM)",
     name = "fvm",
     max_term_width = 100,
-    disable_version_flag = true
+    version = env!("CARGO_PKG_VERSION")
 )]
 pub struct Cli {
     #[clap(flatten)]
@@ -42,6 +49,9 @@ pub enum Command {
     /// Manage FVM
     #[command(name = "self")]
     Itself(SelfOpt),
+    /// Install a Fluvio Version
+    #[command(name = "install")]
+    Install(InstallOpt),
 }
 
 impl Cli {
@@ -51,6 +61,7 @@ impl Cli {
 
         match command {
             Command::Itself(cmd) => cmd.process().await,
+            Command::Install(cmd) => cmd.process().await,
         }
     }
 }
