@@ -92,24 +92,27 @@ impl InstallOpt {
 
     /// Sets the executable mode for the specified file in Unix systems.
     /// This is no-op in non-Unix systems.
+    #[cfg(unix)]
     fn set_executable_mode(path: PathBuf) -> Result<()> {
-        if cfg!(unix) {
-            use std::os::unix::fs::PermissionsExt;
+        use std::os::unix::fs::PermissionsExt;
 
-            const EXECUTABLE_MODE: u32 = 0o700;
+        const EXECUTABLE_MODE: u32 = 0o700;
 
-            // Add u+rwx mode to the existing file permissions, leaving others unchanged
-            let file = File::open(path)?;
-            let mut permissions = file.metadata()?.permissions();
-            let mut mode = permissions.mode();
+        // Add u+rwx mode to the existing file permissions, leaving others unchanged
+        let file = File::open(path)?;
+        let mut permissions = file.metadata()?.permissions();
+        let mut mode = permissions.mode();
 
-            mode |= EXECUTABLE_MODE;
-            permissions.set_mode(mode);
-            file.set_permissions(permissions)?;
+        mode |= EXECUTABLE_MODE;
+        permissions.set_mode(mode);
+        file.set_permissions(permissions)?;
 
-            return Ok(());
-        }
+        Ok(())
+    }
 
+    /// Setting binary executable mode is a no-op in non-Unix systems.
+    #[cfg(not(unix))]
+    fn set_executable_mode(path: PathBuf) -> Result<()> {
         Ok(())
     }
 }
