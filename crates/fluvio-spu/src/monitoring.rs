@@ -4,7 +4,7 @@ use async_net::unix::UnixListener;
 
 use futures_util::{StreamExt, AsyncWriteExt};
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
-use fluvio_future::task::spawn;
+use tokio::spawn;
 use tracing::{error, info, debug};
 
 use crate::core::{DefaultSharedGlobalContext, metrics::SpuMetrics};

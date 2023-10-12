@@ -326,7 +326,7 @@ pub mod test {
 
     type DefaultSpuMd = SpuMetadata<u32>;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_spu_inquiry_online_offline_count() {
         let online_spu = DefaultSpuMd::quick(("spu-0", 0, true, None));
         let offline_spu = DefaultSpuMd::quick(("spu-1", 1, false, None));
@@ -354,7 +354,7 @@ pub mod test {
         assert!(!test_spu.status.is_online());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_delete_spu_from_local_cache() {
         let online_spu = DefaultSpuMd::quick(("spu-0", 0, true, None));
         let offline_spu = DefaultSpuMd::quick(("spu-1", 1, false, None));
@@ -379,7 +379,7 @@ pub mod test {
         assert_eq!(spus.epoch().await, 1);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_update_spu_spec_in_local_cache() {
         let spu_0 = DefaultSpuMd::quick(("spu-0", 0, false, None));
         let mut spu_1 = DefaultSpuMd::quick(("spu-1", 1, false, None));
@@ -409,7 +409,7 @@ pub mod test {
         assert_eq!(updated_spu.inner_owned(), other_spu);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_update_spu_status_in_local_cache() {
         let online = DefaultSpuMd::quick(("spu-0", 0, true, None));
         let offline = DefaultSpuMd::quick(("spu-1", 1, false, None));
@@ -455,7 +455,7 @@ pub mod test {
         assert!(spu.status.is_online());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn rack_map_test_racks_3_spus_6_unbalanced() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
@@ -488,7 +488,7 @@ pub mod test {
         assert_eq!(expected_list, spu_list);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn rack_map_test_racks_5_spus_10_unbalanced() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
@@ -527,7 +527,7 @@ pub mod test {
         assert_eq!(spu_list, expected_list);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn rack_map_test_racks_4_spus_10_unbalanced() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
@@ -564,7 +564,7 @@ pub mod test {
         assert_eq!(spu_list, expected_list);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn rack_map_test_racks_4_spus_12_full() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");

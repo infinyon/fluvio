@@ -2,7 +2,6 @@ use clap::Parser;
 use anyhow::Result;
 
 use fluvio_cli::{Root, HelpOpt};
-use fluvio_future::task::run_block_on;
 
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
@@ -11,7 +10,10 @@ fn main() -> Result<()> {
     let root: Root = Root::parse();
 
     // If the CLI comes back with an error, attempt to handle it
-    if let Err(e) = run_block_on(root.process()) {
+    if let Err(e) = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(root.process())
+    {
         eprintln!("{e}");
         std::process::exit(1);
     }

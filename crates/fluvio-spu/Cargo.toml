@@ -55,9 +55,9 @@ fluvio-storage = { workspace = true }
 fluvio-compression = { workspace = true }
 fluvio-controlplane = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true }
-fluvio-spu-schema = { workspace = true,  features = ["file"] }
+fluvio-spu-schema = { workspace = true, features = ["file"] }
 fluvio-protocol = { workspace = true }
-fluvio-socket = { workspace = true, features = ["file",] }
+fluvio-socket = { workspace = true, features = ["file"] }
 fluvio-service = { workspace = true }
 flv-tls-proxy = { workspace = true }
 flv-util = { workspace = true }
@@ -77,5 +77,4 @@ flate2 = { workspace = true }
 portpicker = { workspace = true }
 
 flv-util = { workspace = true, features = ["fixture"] }
-fluvio-future = { workspace = true,features = ["fixture", "subscriber"] }
 fluvio-protocol = { workspace = true,  features = ["fixture"] }

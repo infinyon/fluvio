@@ -120,7 +120,7 @@ mod test {
 
     use fluvio_future::net::TcpListener;
     use fluvio_future::net::TcpStream;
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
     use crate::{Encoder, Decoder};
 
     use super::FluvioCodec;
@@ -219,7 +219,7 @@ mod test {
         Ok(())
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_async_tcp_vec() {
         debug!("start running test");
 
@@ -232,7 +232,7 @@ mod test {
         let _rt = join(client_ft, server_ft).await;
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_async_tcp_string() {
         debug!("start running test");
 
@@ -246,7 +246,7 @@ mod test {
     }
 
     #[allow(clippy::clone_on_copy)]
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_async_tcp_i32() {
         debug!("start running test");
 
@@ -259,7 +259,7 @@ mod test {
         let _rt = join(client_ft, server_ft).await;
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_async_tcp_raw_data() {
         debug!("start running test");
 

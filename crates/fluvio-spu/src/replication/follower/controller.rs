@@ -75,14 +75,14 @@ impl FollowerGroups {
 
 use inner::*;
 mod inner {
-
+    use std::pin::pin;
     use tracing::info;
     use tokio::select;
     use futures_util::StreamExt;
     use once_cell::sync::Lazy;
 
-    use fluvio_future::task::spawn;
-    use fluvio_future::timer::sleep;
+    use tokio::spawn;
+    use tokio::time::{Instant, sleep};
     use fluvio_socket::FluvioSocket;
     use fluvio_socket::FluvioSink;
     use fluvio_socket::SocketError;
@@ -200,7 +200,9 @@ mod inner {
 
             let mut counter: i32 = 0;
 
-            let mut timer = sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
+            let mut timer = pin!(sleep(Duration::from_secs(
+                LEADER_RECONCILIATION_INTERVAL_SEC
+            )));
 
             loop {
                 debug!(counter, "waiting request from leader");
@@ -209,7 +211,7 @@ mod inner {
                     _ = &mut timer => {
                         debug!("timer fired - kickoff sync offsets to leader");
                         self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
-                        timer= sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
+                        timer.as_mut().reset(Instant::now() + Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
                     },
 
                     offset_value = event_listener.listen() => {
@@ -231,7 +233,7 @@ mod inner {
                                 FollowerPeerRequest::SyncRecords(sync_request)=> self.sync_from_leader(&mut sink,sync_request.request).await?,
                                  FollowerPeerRequest::RejectedOffsetRequest(requests) => {
                                      debug!(fail_req = ?requests,"leader rejected these requests");
-                                     timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
+                                     timer.as_mut().reset(Instant::now() + Duration::from_secs(*SHORT_RECONCILLATION))
                                  },
                              }
 

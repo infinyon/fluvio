@@ -63,7 +63,7 @@ pub async fn validate_consume_message_api(
     test_case: &SmokeTestCase,
 ) {
     use tokio::select;
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
     use std::time::SystemTime;
 
     use fluvio_controlplane_metadata::partition::PartitionSpec;

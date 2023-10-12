@@ -23,7 +23,7 @@ use fluvio_protocol::api::ResponseMessage;
 use fluvio_protocol::record::RecordSet;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;

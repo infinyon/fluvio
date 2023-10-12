@@ -6,7 +6,6 @@ use fluvio::FluvioConfig;
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec, SmartModuleMetadata};
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio::Fluvio;
-use fluvio_future::task::run_block_on;
 use cargo_builder::package::PackageInfo;
 
 use crate::cmd::PackageCmd;
@@ -75,7 +74,10 @@ impl LoadCmd {
 
         let fluvio_config = self.target.clone().load()?;
 
-        if let Err(e) = run_block_on(create(fluvio_config, spec, sm_id, self.dry_run)) {
+        if let Err(e) = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async { create(fluvio_config, spec, sm_id, self.dry_run).await })
+        {
             eprintln!("{e}");
             std::process::exit(1);
         }

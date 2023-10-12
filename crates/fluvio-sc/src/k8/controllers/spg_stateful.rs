@@ -8,8 +8,8 @@ use tracing::trace;
 use tracing::warn;
 use tracing::instrument;
 
-use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
+use tokio::spawn;
+use tokio::time::sleep;
 
 use crate::stores::StoreContext;
 use crate::stores::spg::{SpuGroupSpec, SpuGroupStatus};
@@ -237,7 +237,8 @@ mod test {
     // spuPodConfig: '{"nodeSelector":{},"resources":{"limits":{"memory":"1Gi"},"requests":{"memory":"256Mi"}},"storageClass":null}'
     //kind: ConfigMap
 
-    #[fluvio_future::test(ignore)]
+    #[ignore]
+    #[tokio::test]
     async fn test_statefulset() {
         let test_env = TestEnv::create().await;
         let (global_ctx, config_ctx) = test_env.create_global_ctx().await;

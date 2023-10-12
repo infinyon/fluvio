@@ -166,7 +166,7 @@ mod tests {
     use crate::config::ReplicaConfig;
     use super::CheckPoint;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn checkpoint_test() {
         let test_file = temp_dir().join("test.chk");
         ensure_clean_file(&test_file);

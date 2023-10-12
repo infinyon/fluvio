@@ -14,7 +14,7 @@ use fluvio_storage::FileReplica;
 use flv_util::fixture::ensure_clean_dir;
 use futures_util::{Future, StreamExt};
 
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket, AsyncResponse};
 use fluvio_spu_schema::server::{
     smartmodule::{
@@ -47,7 +47,8 @@ use fluvio_protocol::{api::RequestMessage, record::RecordSet};
 
 use super::{zip, read_wasm_module, load_wasm_module};
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_basic() {
     let test_path = temp_dir().join("test_stream_fetch");
     ensure_clean_dir(&test_path);
@@ -351,7 +352,8 @@ async fn predefined_chain_test<Fut, TestFn>(
 
 const FLUVIO_WASM_FILTER: &str = "fluvio_smartmodule_filter";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_adhoc() {
     adhoc_test(
         "test_stream_fetch_filter_adhoc",
@@ -362,7 +364,8 @@ async fn test_stream_fetch_filter_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_predefined() {
     predefined_test(
         "test_stream_fetch_filter_predefined",
@@ -373,7 +376,8 @@ async fn test_stream_fetch_filter_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_generic() {
     predefined_test(
         "test_stream_fetch_filter_generic",
@@ -542,7 +546,8 @@ async fn test_stream_fetch_filter(
 
 const FLUVIO_WASM_FILTER_ODD: &str = "fluvio_wasm_filter_odd";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_individual_adhoc() {
     adhoc_test(
         "test_stream_fetch_filter_individual_adhoc",
@@ -553,7 +558,8 @@ async fn test_stream_fetch_filter_individual_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_individual_predefined() {
     predefined_test(
         "test_stream_fetch_filter_individual_predefined",
@@ -564,7 +570,8 @@ async fn test_stream_fetch_filter_individual_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_individual_generic() {
     predefined_test(
         "test_stream_fetch_filter_individual_generic",
@@ -668,7 +675,8 @@ async fn test_stream_fetch_filter_individual(
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_filter_error_fetch_adhoc() {
     adhoc_test(
         "test_stream_filter_error_fetch_adhoc",
@@ -679,7 +687,8 @@ async fn test_stream_filter_error_fetch_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_filter_error_fetch_predefined() {
     predefined_test(
         "test_stream_filter_error_fetch_predefined",
@@ -690,7 +699,8 @@ async fn test_stream_filter_error_fetch_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_filter_error_fetch_generic() {
     predefined_test(
         "test_stream_filter_error_fetch_generic",
@@ -802,7 +812,8 @@ async fn test_stream_filter_error_fetch(
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_filter_max_adhoc() {
     adhoc_test(
         "test_stream_filter_max_adhoc",
@@ -813,7 +824,8 @@ async fn test_stream_filter_max_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_filter_max_predefined() {
     predefined_test(
         "test_stream_filter_max_predefined",
@@ -824,7 +836,8 @@ async fn test_stream_filter_max_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_filter_max_generic() {
     predefined_test(
         "test_stream_filter_max_generic",
@@ -970,7 +983,8 @@ async fn test_stream_filter_max(
 
 const FLUVIO_WASM_MAP_DOUBLE: &str = "fluvio_wasm_map_double";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_map_adhoc() {
     adhoc_test(
         "test_stream_fetch_map_adhoc",
@@ -1108,7 +1122,8 @@ async fn test_stream_fetch_map(
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_map_adhoc_chain() {
     adhoc_chain_test(
         "test_stream_fetch_map_adhoc_chain",
@@ -1122,7 +1137,8 @@ async fn test_stream_fetch_map_adhoc_chain() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_map_predefined_chain() {
     predefined_chain_test(
         "test_stream_fetch_map_predefined_chain",
@@ -1263,7 +1279,8 @@ async fn test_stream_fetch_map_chain(
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_map_error_adhoc() {
     adhoc_test(
         "test_stream_fetch_map_error_adhoc",
@@ -1274,7 +1291,8 @@ async fn test_stream_fetch_map_error_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_map_error_predefined() {
     predefined_test(
         "test_stream_fetch_map_error_predefined",
@@ -1285,7 +1303,8 @@ async fn test_stream_fetch_map_error_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_map_error_generic() {
     predefined_test(
         "test_stream_fetch_map_error_generic",
@@ -1396,7 +1415,8 @@ async fn test_stream_fetch_map_error(
 
 const FLUVIO_WASM_AGGREGATE: &str = "fluvio_smartmodule_aggregate";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_aggregate_fetch_single_batch_adhoc() {
     adhoc_test(
         "test_stream_aggregate_fetch_single_batch_adhoc",
@@ -1409,7 +1429,8 @@ async fn test_stream_aggregate_fetch_single_batch_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_aggregate_fetch_single_batch_predefined() {
     predefined_test(
         "test_stream_aggregate_fetch_single_batch_predefined",
@@ -1422,7 +1443,8 @@ async fn test_stream_aggregate_fetch_single_batch_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_aggregate_fetch_single_batch_generic() {
     predefined_test(
         "test_stream_aggregate_fetch_single_batch_generic",
@@ -1543,7 +1565,8 @@ async fn test_stream_aggregate_fetch_single_batch(
     server_end_event.notify();
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_aggregate_fetch_multiple_batch_adhoc() {
     adhoc_test(
         "test_stream_aggregate_fetch_multiple_batch_adhoc",
@@ -1556,7 +1579,8 @@ async fn test_stream_aggregate_fetch_multiple_batch_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_aggregate_fetch_multiple_batch_predefined() {
     predefined_test(
         "test_stream_aggregate_fetch_multiple_batch_predefined",
@@ -1568,7 +1592,8 @@ async fn test_stream_aggregate_fetch_multiple_batch_predefined() {
     )
     .await;
 }
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_aggregate_fetch_multiple_batch_generic() {
     predefined_test(
         "test_stream_aggregate_fetch_multiple_batch_generic",
@@ -1708,7 +1733,8 @@ async fn test_stream_aggregate_fetch_multiple_batch(
     server_end_event.notify();
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_and_new_request_adhoc() {
     adhoc_test(
         "test_stream_fetch_and_new_request_adhoc",
@@ -1775,7 +1801,8 @@ async fn test_stream_fetch_and_new_request(
 
 const FLUVIO_WASM_ARRAY_MAP_ARRAY: &str = "fluvio_smartmodule_array_map_array";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_array_map_adhoc() {
     adhoc_test(
         "test_stream_fetch_array_map_adhoc",
@@ -1786,7 +1813,8 @@ async fn test_stream_fetch_array_map_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_array_map_predefined() {
     predefined_test(
         "test_stream_fetch_array_map_predefined",
@@ -1797,7 +1825,8 @@ async fn test_stream_fetch_array_map_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_array_map_generic() {
     predefined_test(
         "test_stream_fetch_array_map_generic",
@@ -1897,7 +1926,8 @@ async fn test_stream_fetch_array_map(
 
 const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_smartmodule_filter_map";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_map_adhoc() {
     adhoc_test(
         "test_stream_fetch_filter_map_adhoc",
@@ -1908,7 +1938,8 @@ async fn test_stream_fetch_filter_map_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_map_predefined() {
     predefined_test(
         "test_stream_fetch_filter_map_predefined",
@@ -1919,7 +1950,8 @@ async fn test_stream_fetch_filter_map_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_map_generic() {
     predefined_test(
         "test_stream_fetch_filter_map_generic",
@@ -2021,7 +2053,8 @@ async fn test_stream_fetch_filter_map(
 
 const FLUVIO_WASM_FILTER_WITH_PARAMETERS: &str = "fluvio_smartmodule_filter_param";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_with_params_adhoc() {
     adhoc_test(
         "test_stream_fetch_filter_with_params_adhoc",
@@ -2032,7 +2065,8 @@ async fn test_stream_fetch_filter_with_params_adhoc() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_with_params_predefined() {
     predefined_test(
         "test_stream_fetch_filter_with_params_predefined",
@@ -2043,7 +2077,8 @@ async fn test_stream_fetch_filter_with_params_predefined() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_with_params_generic() {
     predefined_test(
         "test_stream_fetch_filter_with_params_generic",
@@ -2201,7 +2236,8 @@ async fn test_stream_fetch_filter_with_params(
     server_end_event.notify();
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_invalid_smartmodule_adhoc() {
     let test_path = temp_dir().join("test_stream_fetch_invalid_smartmodule_adhoc");
     let mut spu_config = SpuConfig::default();
@@ -2218,7 +2254,8 @@ async fn test_stream_fetch_invalid_smartmodule_adhoc() {
     test_stream_fetch_invalid_smartmodule(ctx, test_path, vec![(smartmodule)]).await
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_invalid_smartmodule_predefined() {
     let test_path = temp_dir().join("test_stream_fetch_invalid_smartmodule_predefined");
     let mut spu_config = SpuConfig::default();
@@ -2305,7 +2342,8 @@ async fn test_stream_fetch_invalid_smartmodule(
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_metrics() {
     let test_path = temp_dir().join("test_stream_metrics");
     ensure_clean_dir(&test_path);
@@ -2462,7 +2500,8 @@ async fn test_stream_metrics() {
 
 const FLUVIO_WASM_FILTER_WITH_LOOKBACK: &str = "fluvio_smartmodule_filter_lookback";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_lookback() {
     predefined_test(
         "test_stream_fetch_filter_lookback",
@@ -2473,7 +2512,8 @@ async fn test_stream_fetch_filter_lookback() {
     .await;
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_stream_fetch_filter_lookback_age() {
     predefined_test(
         "test_stream_fetch_filter_lookback",

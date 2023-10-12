@@ -3,8 +3,8 @@ use std::{collections::HashMap, fmt, time::Duration};
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use anyhow::{Result, anyhow};
-use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
+use tokio::spawn;
+use tokio::time::sleep;
 use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use fluvio_stream_dispatcher::actions::WSAction;

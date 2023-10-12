@@ -625,14 +625,14 @@ mod test2 {
 
     use super::*;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_partitions_to_replica_msgs() {
         let partitions = DefaultPartitionStore::bulk_load(vec![(("topic1", 0), vec![10, 11, 12])]);
         let replica_msg = partitions.replica_for_spu(10).await;
         assert_eq!(replica_msg.len(), 1);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_group() {
         let partitions = DefaultPartitionStore::bulk_load(vec![
             (("t1", 0), vec![0]), // (topic1,0) at SPU 0
@@ -677,7 +677,7 @@ mod test2 {
         //println!("partitions: {:#?}", group);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_spu_scheduling_no_empty() {
         let partitions = DefaultPartitionStore::bulk_load(vec![
             (("t1", 0), vec![0]),

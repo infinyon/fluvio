@@ -2,7 +2,8 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::time::Duration;
+use std::pin::pin;
+use std::time::{Duration};
 
 use fluvio_controlplane::message::ReplicaMsg;
 use fluvio_controlplane::message::SmartModuleMsg;
@@ -19,12 +20,12 @@ use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
 use fluvio_controlplane_metadata::message::Message;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::ChangeListener;
+use tokio::time::{sleep, Instant};
 use tracing::{debug, info, trace, instrument, error};
 use async_trait::async_trait;
 use futures_util::stream::Stream;
 use anyhow::Result;
 
-use fluvio_future::timer::sleep;
 use fluvio_service::ConnectInfo;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_types::SpuId;
@@ -131,7 +132,7 @@ where
 
     // send initial changes
 
-    let mut health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
+    let mut health_check_timer = pin!(sleep(Duration::from_secs(HEALTH_DURATION)));
 
     loop {
         use tokio::select;
@@ -168,8 +169,7 @@ where
                                 receive_replica_remove(&context,msg.request).await;
                             }
                         }
-                        // reset timer
-                        health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
+                        health_check_timer.as_mut().reset(Instant::now() + Duration::from_secs(HEALTH_DURATION));
                         trace!("health check reset");
                     } else {
                         debug!(spu_id,"no message content, ending processing loop");

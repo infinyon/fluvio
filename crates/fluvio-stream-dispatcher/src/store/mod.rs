@@ -10,6 +10,7 @@ mod context {
     use std::io::Error as IoError;
     use std::io::ErrorKind;
     use std::fmt::{Display, Debug};
+    use std::pin::pin;
     use std::time::Duration;
 
     use fluvio_stream_model::core::MetadataItem;
@@ -19,7 +20,7 @@ mod context {
     use tokio::select;
     use tracing::{debug, trace};
 
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
 
     use crate::actions::WSAction;
     use crate::store::k8::K8MetaItem;
@@ -178,7 +179,7 @@ mod context {
                 Ok(_) => {
                     // wait for object created in the store
 
-                    let mut timer = sleep(Duration::from_secs(self.wait_time));
+                    let mut timer = pin!(sleep(Duration::from_secs(self.wait_time)));
                     let mut spec_listener = self.change_listener();
                     loop {
                         // check if we can find old object
@@ -246,7 +247,7 @@ mod context {
             let current_value = self.store.value(key).await;
 
             let mut spec_listener = self.change_listener();
-            let mut timer = sleep(timeout);
+            let mut timer = pin!(sleep(timeout));
 
             let debug_action = action.to_string();
             let mut loop_count: u16 = 0;
@@ -277,7 +278,7 @@ mod context {
 
                         _ = spec_listener.listen() => {
                             let changes = spec_listener.sync_changes().await;
-                            trace!("{} received changes: {:#?}",S::LABEL,changes);
+                            trace!("{} received changes: {:#?}", S::LABEL,changes);
                         }
                     }
 

@@ -91,13 +91,13 @@
 use std::time::Duration;
 use fluvio::{Offset, RecordKey};
 use futures::future::join;
-use async_std::task::spawn;
-use async_std::future::timeout;
+use tokio::spawn;
+use tokio::time::timeout;
 
 const TOPIC: &str = "echo";
 const TIMEOUT_MS: u64 = 5_000;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     let produce_handle = spawn(produce());
     let consume_handle = spawn(consume());

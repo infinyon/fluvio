@@ -4,11 +4,11 @@
 use std::time::Duration;
 use std::io::Error as IoError;
 
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, info, error, trace, instrument};
 
-use fluvio_future::task::spawn;
+use tokio::spawn;
 
 use crate::core::SharedContext;
 use crate::stores::StoreContext;
@@ -138,7 +138,7 @@ mod tests {
     use futures::channel::mpsc::channel;
     use futures::channel::mpsc::Receiver;
 
-    use flv_future_core::fluvio_future::test;
+    use flv_future_core::tokio::test;
     use utils::actions::Actions;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
@@ -181,7 +181,7 @@ mod tests {
     }
 
     /// test add new spu
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_controller_basic()  {
         let (mut controller, _other) = sample_controller();
 

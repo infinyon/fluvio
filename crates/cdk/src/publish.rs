@@ -14,7 +14,6 @@ use clap::Parser;
 
 use fluvio_connector_package::metadata::ConnectorMetadata;
 use fluvio_connector_package::metadata::ConnectorVisibility;
-use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::package_meta_relative_path;
 use hubutil::{DEF_HUB_INIT_DIR, HubAccess, PackageMeta, PkgVisibility, PackageMetaExt};
@@ -190,11 +189,10 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
             verify_public_or_exit()?;
         }
     }
-    if let Err(e) = run_block_on(hubutil::push_package_conn(
-        pkgpath,
-        access,
-        &opts.package.target,
-    )) {
+    if let Err(e) = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async { hubutil::push_package_conn(pkgpath, access, &opts.package.target).await })
+    {
         eprintln!("{e}");
         std::process::exit(1);
     }

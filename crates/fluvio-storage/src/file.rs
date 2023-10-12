@@ -332,7 +332,7 @@ mod tests {
 
     use super::*;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_file_descriptor() {
         let test_file = temp_dir().join("simple_write");
 
@@ -356,7 +356,7 @@ mod tests {
         assert!(pread(fd, 100, 10).expect("read bytes").is_empty());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_file_iterator() {
         let test_file = temp_dir().join("simple_write");
 

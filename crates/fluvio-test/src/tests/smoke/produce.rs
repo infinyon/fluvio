@@ -90,7 +90,7 @@ mod cli {
 
     use std::io::Write;
     use std::process::Stdio;
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
     use std::time::Duration;
     use crate::get_binary;
 

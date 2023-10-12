@@ -2,11 +2,9 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
-use reqwest;
 use reqwest::StatusCode;
 use tracing::{debug, info};
 
-use fluvio_future::task::run_block_on;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use fluvio_hub_protocol::{Result, HubError};
 use fluvio_hub_protocol::infinyon_tok::read_infinyon_token;
@@ -233,10 +231,8 @@ impl HubAccess {
         } else if let Ok(envurl) = std::env::var(INFINYON_HUB_REMOTE) {
             info!("using {INFINYON_HUB_REMOTE}={envurl}");
             envurl
-        } else if let Some(hubremote) = get_hubref() {
-            hubremote
         } else {
-            HUB_REMOTE.to_string()
+            get_hubref().unwrap_or_else(|| HUB_REMOTE.to_string())
         };
         Ok(ha)
     }
@@ -312,14 +308,12 @@ fn get_hubref() -> Option<String> {
         return None; // use default
     }
     let hubref_url = format!("{fcremote}/api/v1/hubref");
-    let reply: std::result::Result<String, reqwest::Error> = run_block_on(async {
-        let res = reqwest::get(hubref_url).await?;
-        let reply: ReplyHubref = res.json().await?;
-        // fluvio profile switch does not switch the cloud login
-        // so hub remote can be pointed to the cloud login different that the profile
-        // this will only be printed when using a nonstd hub
-        println!("Using hub {}", reply.hub_remote);
-        Ok(reply.hub_remote)
-    });
-    reply.ok()
+
+    let res = reqwest::blocking::get(hubref_url).ok()?;
+    let reply: ReplyHubref = res.json().ok()?;
+    // fluvio profile switch does not switch the cloud login
+    // so hub remote can be pointed to the cloud login different that the profile
+    // this will only be printed when using a nonstd hub
+    println!("Using hub {}", reply.hub_remote);
+    Some(reply.hub_remote)
 }

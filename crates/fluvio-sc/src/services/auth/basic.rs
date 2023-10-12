@@ -228,7 +228,7 @@ mod test {
         )
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_policy_enforcement_simple() {
         let mut policy = BasicRbacPolicy::default();
         let identity = X509Identity::new("User".to_owned(), vec!["Default".to_owned()]);

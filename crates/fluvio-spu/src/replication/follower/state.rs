@@ -290,7 +290,7 @@ mod follower_tests {
     const TOPIC: &str = "test";
     const TEST_REPLICA: (&str, PartitionId) = (TOPIC, 0);
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_follower_creation() {
         let test_path = "/tmp/follower_init";
         ensure_clean_dir(test_path);

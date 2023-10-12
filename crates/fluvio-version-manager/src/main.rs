@@ -6,7 +6,7 @@ use clap::{Args, Parser};
 
 use self::command::itself::SelfOpt;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
 

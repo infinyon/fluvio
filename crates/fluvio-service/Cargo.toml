@@ -20,12 +20,11 @@ tokio = { workspace = true, features = ["macros"] }
 anyhow = { workspace = true }
 
 # Fluvio dependencies
-futures-util = { workspace = true }
 fluvio-future = { workspace = true }
-fluvio-socket = { workspace = true }
 fluvio-protocol = { workspace = true, features = ["derive", "api", "codec"] }
+fluvio-socket = { workspace = true }
 fluvio-types = { workspace = true, features = ["events"] }
+futures-util = { workspace = true }
 
 [dev-dependencies]
-fluvio-future = { workspace = true, features = ["fixture"] }
 portpicker = { workspace = true }

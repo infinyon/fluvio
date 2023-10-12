@@ -158,7 +158,7 @@ mod test {
         assert_eq!(topic1, topic2);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_topics_in_pending_state() {
         use std::collections::HashSet;
 

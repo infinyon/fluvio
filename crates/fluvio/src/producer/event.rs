@@ -53,29 +53,19 @@ impl EventHandler {
 mod test {
     use super::EventHandler;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_event_handler() {
         let event = EventHandler::new();
         let timeout = std::time::Duration::from_millis(150);
 
-        assert!(async_std::future::timeout(timeout, event.listen())
-            .await
-            .is_err());
+        assert!(tokio::time::timeout(timeout, event.listen()).await.is_err());
 
         event.notify().await;
-        assert!(async_std::future::timeout(timeout, event.listen())
-            .await
-            .is_ok());
+        assert!(tokio::time::timeout(timeout, event.listen()).await.is_ok());
         event.notify().await;
         event.notify().await;
-        assert!(async_std::future::timeout(timeout, event.listen())
-            .await
-            .is_ok());
-        assert!(async_std::future::timeout(timeout, event.listen())
-            .await
-            .is_ok());
-        assert!(async_std::future::timeout(timeout, event.listen())
-            .await
-            .is_err());
+        assert!(tokio::time::timeout(timeout, event.listen()).await.is_ok());
+        assert!(tokio::time::timeout(timeout, event.listen()).await.is_ok());
+        assert!(tokio::time::timeout(timeout, event.listen()).await.is_err());
     }
 }

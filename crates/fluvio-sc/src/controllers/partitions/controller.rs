@@ -5,10 +5,10 @@
 use std::time::Duration;
 
 use fluvio_controlplane_metadata::store::ChangeListener;
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use tracing::{debug, trace, info, error, instrument};
 
-use fluvio_future::task::spawn;
+use tokio::spawn;
 use fluvio_controlplane_metadata::core::MetadataItem;
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 
@@ -163,7 +163,8 @@ mod test {
     type MemPartition = MetadataStoreObject<PartitionSpec, MemoryMeta>;
     type MemSpu = MetadataStoreObject<SpuSpec, MemoryMeta>;
 
-    #[fluvio_future::test(ignore)]
+    #[ignore]
+#[tokio::test]
     async fn test_election() {
         let partitions: StoreContext<PartitionSpec, MemoryMeta> = StoreContext::new();
         let spus: StoreContext<SpuSpec, MemoryMeta> = StoreContext::new();

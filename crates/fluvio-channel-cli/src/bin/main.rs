@@ -14,7 +14,6 @@ use tracing::debug;
 use cfg_if::cfg_if;
 use anyhow::{anyhow, Result};
 
-use fluvio_future::task::run_block_on;
 use fluvio_channel::{
     FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, DEV_CHANNEL_NAME, STABLE_CHANNEL_NAME,
 };
@@ -186,7 +185,10 @@ fn main() -> Result<()> {
                     println!();
                     std::process::exit(0);
                 } else if let Some(subcmd) = &channel_opt.cmd {
-                    if let Err(e) = run_block_on(subcmd.process()) {
+                    let res = tokio::runtime::Runtime::new()
+                        .unwrap()
+                        .block_on(async { subcmd.process().await });
+                    if let Err(e) = res {
                         println!("{e}");
                         std::process::exit(1);
                     }

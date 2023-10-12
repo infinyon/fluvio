@@ -656,7 +656,7 @@ mod cmd {
         force_print_summary: bool,
     ) -> Result<()> {
         let result = ctrlc::set_handler(move || {
-            fluvio_future::task::run_block_on(async {
+            tokio::task::spawn_blocking(async {
                 producer_summary(&producer, maybe_stats_bar.as_ref(), force_print_summary).await;
             });
 

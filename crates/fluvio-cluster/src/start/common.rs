@@ -2,6 +2,7 @@ use std::{
     env,
     time::{Duration, SystemTime},
 };
+use std::pin::pin;
 
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use k8_client::SharedK8Client;
@@ -10,7 +11,7 @@ use semver::Version;
 use tracing::{debug, error, instrument, warn};
 
 use fluvio::{Fluvio, FluvioConfig};
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 
 use crate::render::ProgressRenderer;
 
@@ -34,7 +35,7 @@ pub async fn try_connect_to_sc(
         use tokio::select;
 
         select! {
-            _ = &mut sleep(Duration::from_secs(10)) => {
+            _ = &mut pin!(sleep(Duration::from_secs(10))) => {
                 debug!("timer expired");
                 None
             },

@@ -10,8 +10,8 @@ use fluvio_controlplane_metadata::{
 use fluvio_stream_dispatcher::actions::WSAction;
 use tracing::{debug, error, instrument, info};
 
-use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
+use tokio::spawn;
+use tokio::time::sleep;
 use k8_types::core::service::{LoadBalancerIngress, LoadBalancerType};
 
 use crate::stores::StoreContext;

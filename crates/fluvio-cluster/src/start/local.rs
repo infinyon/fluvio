@@ -12,7 +12,7 @@ use once_cell::sync::Lazy;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec, CustomSpuSpec};
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;

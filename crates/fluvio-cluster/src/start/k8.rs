@@ -9,6 +9,7 @@ use std::process::Child;
 use std::process::Command;
 use std::time::Duration;
 use std::env;
+use std::pin::pin;
 use std::time::SystemTime;
 
 use anyhow::{anyhow, Result};
@@ -32,7 +33,7 @@ use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile};
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
@@ -926,14 +927,14 @@ impl ClusterInstaller {
         use tokio::select;
         use futures_util::stream::StreamExt;
 
-        use fluvio_future::timer::sleep;
+        use tokio::time::sleep;
         use k8_types::K8Watch;
 
         let mut service_stream = self
             .kube_client
             .watch_stream_now::<ServiceSpec>(self.config.namespace.clone());
 
-        let mut timer = sleep(Duration::from_secs(*MAX_SC_SERVICE_WAIT));
+        let mut timer = pin!(sleep(Duration::from_secs(*MAX_SC_SERVICE_WAIT)));
         loop {
             select! {
                 _ = &mut timer => {
@@ -973,14 +974,16 @@ impl ClusterInstaller {
         use tokio::select;
         use futures_util::stream::StreamExt;
 
-        use fluvio_future::timer::sleep;
+        use tokio::time::sleep;
         use k8_types::K8Watch;
 
         let mut deployment_stream = self
             .kube_client
             .watch_stream_now::<DeploymentSpec>(self.config.namespace.clone());
 
-        let mut timer = sleep(Duration::from_secs(*MAX_SC_DEPLOYMENT_AVAILABLE_WAIT));
+        let mut timer = pin!(sleep(Duration::from_secs(
+            *MAX_SC_DEPLOYMENT_AVAILABLE_WAIT
+        )));
         loop {
             select! {
                 _ = &mut timer => {

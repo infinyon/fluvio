@@ -11,7 +11,7 @@ use tracing::{instrument, debug, error, info};
 use anyhow::Result;
 
 use fluvio_future::net::{TcpListener, TcpStream};
-use fluvio_future::task::spawn;
+use tokio::spawn;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
 use fluvio_socket::FluvioSocket;
@@ -159,7 +159,7 @@ mod test {
     use tracing::debug;
     use tracing::trace;
 
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
     use fluvio_protocol::api::RequestMessage;
     use fluvio_socket::FluvioSocket;
 
@@ -230,7 +230,8 @@ mod test {
             .expect("send");
     }
 
-    #[fluvio_future::test(ignore)]
+    #[ignore]
+    #[tokio::test]
     async fn test_server() {
         // create fake server, anything will do since we only
         // care about creating tcp stream

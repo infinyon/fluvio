@@ -266,7 +266,6 @@ mod test {
     use std::env::temp_dir;
     use std::os::unix::io::AsRawFd;
 
-    use fluvio_future::task::run_block_on;
     use fluvio_protocol::record::RecordSet;
     use fluvio_storage::{FileReplica, ReplicaStorage};
     use fluvio_storage::config::{StorageConfigBuilder, ReplicaConfigBuilder};
@@ -277,18 +276,21 @@ mod test {
     fn test_file_record_iterator() -> anyhow::Result<()> {
         //given
         let base_dir = temp_dir().join("test_file_record_iterator");
-        let mut replica = run_block_on(FileReplica::create_or_load_with_storage(
-            format!(
-                "test_file_record_iterator_{}",
-                SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)?
-                    .as_millis()
-            ),
-            Default::default(),
-            Default::default(),
-            ReplicaConfigBuilder::default().base_dir(base_dir).build(),
-            Arc::new(StorageConfigBuilder::default().build()?),
-        ))?;
+        let mut replica = tokio::runtime::Runtime::new().unwrap().block_on(async {
+            FileReplica::create_or_load_with_storage(
+                format!(
+                    "test_file_record_iterator_{}",
+                    SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)?
+                        .as_millis()
+                ),
+                Default::default(),
+                Default::default(),
+                ReplicaConfigBuilder::default().base_dir(base_dir).build(),
+                Arc::new(StorageConfigBuilder::default().build()?),
+            )
+            .await
+        })?;
 
         let mut batch1 = Batch::default();
         batch1.header.first_timestamp = 100;
@@ -310,14 +312,16 @@ mod test {
         let mut records = RecordSet {
             batches: vec![batch1, batch2],
         };
-        run_block_on(replica.write_recordset(&mut records, false))?;
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async { replica.write_recordset(&mut records, false).await })?;
 
         //when
-        let slice = run_block_on(replica.read_partition_slice(
-            0,
-            u32::MAX,
-            fluvio::Isolation::ReadUncommitted,
-        ))?;
+        let slice = tokio::runtime::Runtime::new().unwrap().block_on(async {
+            replica
+                .read_partition_slice(0, u32::MAX, fluvio::Isolation::ReadUncommitted)
+                .await
+        })?;
         let file_slice = slice
             .file_slice
             .ok_or_else(|| anyhow::anyhow!("expected file slice"))?;

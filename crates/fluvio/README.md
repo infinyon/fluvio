@@ -38,12 +38,11 @@ and printed to the stdout.
 fluvio topic create "echo-test"
 ```
 
-3. Create a new cargo project and install `fluvio`, `futures` and `async-std`
+3. Create a new cargo project and install `fluvio` and `futures`
 
 ```bash
 cargo add fluvio
 cargo add futures
-cargo add async-std --features attributes
 ```
 
 4. Copy and paste the following snippet into your  `src/main.rs`
@@ -57,7 +56,7 @@ use futures::StreamExt;
 const TOPIC: &str = "echo-test";
 const MAX_RECORDS: u8 = 10;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let producer = fluvio::producer(TOPIC).await?;
     let consumer = fluvio::consumer(TOPIC, 0).await?;
@@ -66,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for i in 0..10 {
         producer.send(RecordKey::NULL, format!("Hello from Fluvio {}!", i)).await?;
         println!("[PRODUCER] sent record {}", i);
-        async_std::task::sleep(Duration::from_secs(1)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
     // Fluvio batches records by default, call flush() when done producing

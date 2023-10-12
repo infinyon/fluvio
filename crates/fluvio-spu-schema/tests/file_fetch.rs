@@ -7,7 +7,7 @@ use futures_util::io::AsyncWriteExt;
 use futures_util::future::join;
 use futures_util::stream::StreamExt;
 
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_future::fs::util as file_util;
 use fluvio_future::fs::AsyncFileExtension;
 use fluvio_future::net::TcpListener;
@@ -124,7 +124,7 @@ async fn setup_client(addr: &str) -> Result<(), SocketError> {
 }
 
 /// test server where it is sending out file copy
-#[fluvio_future::test]
+#[tokio::test]
 async fn test_save_fetch() {
     // create fetch and save
     setup_batch_file().await.expect("setup");

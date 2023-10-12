@@ -3,10 +3,10 @@ use std::time::{Duration, Instant};
 
 use async_channel::{Sender, Receiver};
 use anyhow::Result;
+use tokio::time::timeout;
 
 use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode};
 use fluvio::dataplane::record::ConsumerRecord;
-use fluvio_future::future::timeout;
 use futures_util::{Stream, StreamExt};
 use crate::{BenchmarkError, hash_record};
 use crate::{benchmark_config::BenchmarkConfig, stats_collector::StatsCollectorMessage};

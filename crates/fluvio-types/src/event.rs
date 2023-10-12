@@ -192,12 +192,13 @@ mod test {
         sync::{Arc, atomic::Ordering},
         time::Duration,
     };
+    use std::pin::pin;
     use std::sync::atomic::AtomicBool;
 
     use tracing::debug;
 
-    use fluvio_future::task::spawn;
-    use fluvio_future::timer::sleep;
+    use tokio::spawn;
+    use tokio::time::sleep;
 
     use super::offsets::{OffsetChangeListener, OffsetPublisher};
 
@@ -219,7 +220,7 @@ mod test {
         async fn dispatch_loop(mut self) {
             use tokio::select;
 
-            let mut timer = sleep(Duration::from_millis(300));
+            let mut timer = pin!(sleep(Duration::from_millis(300)));
 
             let mut last_value = 0;
             loop {
@@ -248,7 +249,7 @@ mod test {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_offset_listener_no_wait() {
         let publisher = OffsetPublisher::shared(0);
         let listener = publisher.change_listener();
@@ -275,7 +276,7 @@ mod test {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_offset_listener_wait() {
         let publisher = OffsetPublisher::shared(0);
         let listener = publisher.change_listener();

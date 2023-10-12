@@ -11,7 +11,7 @@ use clap::{arg, Parser};
 use anyhow::Result;
 
 use fluvio_cli_common::install::fluvio_base_dir;
-use fluvio_future::{task::run_block_on, sync::Mutex, future::timeout};
+use fluvio_future::{task::spawn_blocking, sync::Mutex, future::timeout};
 use futures_util::FutureExt;
 use fluvio::{Compression, Isolation};
 use fluvio_benchmark::{
@@ -54,7 +54,7 @@ fn main() -> Result<()> {
     for matrix in matrices {
         println!("## Matrix: {}", matrix.shared_config.matrix_name);
         for (i, config) in matrix.into_iter().enumerate() {
-            run_block_on(timeout(
+            spawn_blocking(timeout(
                 // Give time for workers to clean up if workers timeout.
                 config.worker_timeout + Duration::from_secs(10),
                 BenchmarkDriver::run_benchmark(config.clone(), all_stats.clone()),
@@ -62,13 +62,13 @@ fn main() -> Result<()> {
             println!("### {}: Iteration {:3.0}", config.matrix_name, i);
             println!("{}", config.to_markdown());
             println!();
-            run_block_on(
+            spawn_blocking(
                 all_stats
                     .lock()
                     .map(|a| println!("{}", a.to_markdown(&config))),
             );
             if let Some(other) = previous.as_ref() {
-                run_block_on(
+                spawn_blocking(
                     all_stats
                         .lock()
                         .map(|a| println!("{}", a.compare_stats(&config, other))),
@@ -78,7 +78,7 @@ fn main() -> Result<()> {
         }
     }
 
-    let mut all_stats = run_block_on(take_stats(all_stats));
+    let mut all_stats = spawn_blocking(take_stats(all_stats));
 
     if let Some(previous) = previous {
         all_stats.merge(&previous)

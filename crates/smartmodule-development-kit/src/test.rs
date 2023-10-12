@@ -12,7 +12,6 @@ use chrono::Utc;
 use tracing::debug;
 
 use fluvio::FluvioConfig;
-use fluvio_future::task::run_block_on;
 use fluvio_sc_schema::smartmodule::SmartModuleApiClient;
 use fluvio_smartengine::DEFAULT_SMARTENGINE_VERSION;
 use fluvio_smartengine::metrics::SmartModuleChainMetrics;
@@ -103,7 +102,9 @@ fn parse_key_val(s: &str) -> Result<(String, String)> {
 
 impl TestCmd {
     pub(crate) fn process(self) -> Result<()> {
-        run_block_on(self.process_async())
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async { self.process_async().await })
     }
 
     async fn process_async(self) -> Result<()> {

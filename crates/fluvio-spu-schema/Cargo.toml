@@ -21,10 +21,11 @@ educe = { version = "0.4.19", features = ["Debug"] }
 flate2 = { workspace = true  }
 serde = { workspace = true, features = ['derive'] }
 static_assertions = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
 
-fluvio-types = { workspace = true }
 fluvio-future = { workspace = true, optional = true }
+fluvio-types = { workspace = true }
 # Fluvio dependencies
 fluvio-protocol = { workspace = true,  features = [
     "api",
@@ -35,9 +36,9 @@ fluvio-smartmodule = { workspace = true }
 
 
 [dev-dependencies]
+fluvio-future = { workspace = true, features = ["fs"] }
 futures-util = { workspace = true }
 fluvio-socket = { workspace = true, features = ["file"] }
-fluvio-future = { workspace = true, features = ["fixture", "fs"] }
 flv-util = { workspace = true, features = ["fixture"] }
 fluvio-protocol = { workspace = true,  features = [
     "compress"

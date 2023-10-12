@@ -4,7 +4,7 @@ use futures_lite::stream::StreamExt;
 
 use fluvio::{Offset, RecordKey};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;

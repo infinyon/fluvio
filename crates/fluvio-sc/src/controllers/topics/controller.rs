@@ -10,7 +10,7 @@ use fluvio_stream_model::store::k8::K8MetaItem;
 use tracing::debug;
 use tracing::instrument;
 
-use fluvio_future::task::spawn;
+use tokio::spawn;
 
 use crate::core::SharedContext;
 use crate::stores::topic::TopicSpec;
@@ -60,7 +60,7 @@ impl<C: MetadataItem> TopicController<C> {
         use std::time::Duration;
 
         use tokio::select;
-        use fluvio_future::timer::sleep;
+        use tokio::time::sleep;
 
         debug!("starting dispatch loop");
 

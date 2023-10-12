@@ -21,7 +21,7 @@ fn generate_source(func: &ConnectorFn) -> TokenStream {
         fn main() -> ::fluvio_connector_common::Result<()> {
             #init_and_parse_config
 
-            ::fluvio_connector_common::future::run_block_on(async {
+            ::fluvio_connector_common::future::spawn_blocking(async {
                 let (fluvio, producer) = ::fluvio_connector_common::producer::producer_from_config(&common_config).await?;
 
                 let metrics = ::std::sync::Arc::new(::fluvio_connector_common::monitoring::ConnectorMetrics::new(fluvio.metrics()));
@@ -47,7 +47,7 @@ fn generate_sink(func: &ConnectorFn) -> TokenStream {
         fn main() -> ::fluvio_connector_common::Result<()> {
             #init_and_parse_config
 
-            ::fluvio_connector_common::future::run_block_on(async {
+            ::fluvio_connector_common::future::spawn_blocking(async {
                 let (fluvio, stream) = ::fluvio_connector_common::consumer::consumer_stream_from_config(&common_config).await?;
 
                 let metrics = ::std::sync::Arc::new(::fluvio_connector_common::monitoring::ConnectorMetrics::new(fluvio.metrics()));

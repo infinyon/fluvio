@@ -19,11 +19,11 @@
 //! ```
 
 use std::time::Duration;
-use async_std::future::timeout;
+use tokio::time::timeout;
 
 const TIMEOUT_MS: u64 = 3_000;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     // The consumer will run forever if we let it, so we set a timeout
     let result = timeout(Duration::from_millis(TIMEOUT_MS), consume()).await;

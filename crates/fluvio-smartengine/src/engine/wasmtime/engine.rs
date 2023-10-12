@@ -404,14 +404,20 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        fluvio_future::task::run_block_on(chain.look_back(
-            |lookback| {
-                assert_eq!(lookback, Lookback::Last(1));
-                async { Ok(vec![Record::new("2")]) }
-            },
-            &metrics,
-        ))
-        .expect("chain look_back");
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async {
+                chain
+                    .look_back(
+                        |lookback| {
+                            assert_eq!(lookback, Lookback::Last(1));
+                            async { Ok(vec![Record::new("2")]) }
+                        },
+                        &metrics,
+                    )
+                    .await
+            })
+            .expect("chain look_back");
 
         // then
         let input = vec![Record::new("1"), Record::new("2"), Record::new("3")];
@@ -449,13 +455,17 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        let res = fluvio_future::task::run_block_on(chain.look_back(
-            |lookback| {
-                assert_eq!(lookback, Lookback::Last(1));
-                async { Ok(vec![Record::new("wrong str")]) }
-            },
-            &metrics,
-        ));
+        let res = tokio::runtime::Runtime::new().unwrap().block_on(async {
+            chain
+                .look_back(
+                    |lookback| {
+                        assert_eq!(lookback, Lookback::Last(1));
+                        async { Ok(vec![Record::new("wrong str")]) }
+                    },
+                    &metrics,
+                )
+                .await
+        });
 
         // then
         assert!(res.is_err());
@@ -557,13 +567,17 @@ mod chaining_test {
             .expect("failed to build chain");
 
         // when
-        let res = fluvio_future::task::run_block_on(chain.look_back(
-            |_| {
-                let res = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
-                async { Ok(res) }
-            },
-            &metrics,
-        ));
+        let res = tokio::runtime::Runtime::new().unwrap().block_on(async {
+            chain
+                .look_back(
+                    |_| {
+                        let res = (0..1000).map(|_| Record::new([0u8; 1_000])).collect();
+                        async { Ok(res) }
+                    },
+                    &metrics,
+                )
+                .await
+        });
 
         // then
         assert!(res.is_err());

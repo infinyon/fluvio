@@ -824,7 +824,7 @@ mod test_leader {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_leader_in_sync_replica() {
         let leader_config = SpuConfig {
             id: 5000,
@@ -845,7 +845,7 @@ mod test_leader {
         assert_eq!(state.in_sync_replica, 1);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_follower_update() {
         let leader_config = SpuConfig {
             id: 5000,
@@ -926,7 +926,7 @@ mod test_leader {
         assert!(state.follower_updates(&5001, MAX_BYTES).await.is_some()); // 5001 is still need to besync
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_update_leader_from_followers() {
         use crate::core::GlobalContext;
         use fluvio_controlplane_metadata::spu::SpuSpec;

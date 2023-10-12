@@ -87,7 +87,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     // We need to conditionally generate test code (per test) based on the `async` keyword
     let maybe_async_test = if fn_test_reqs.r#async {
         quote! {
-            fluvio_future::task::run_block_on(async {
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
                 // Automatically connect to cluster before handing control to async test
                 test_driver
                     .connect()
@@ -147,7 +147,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Otherwise there is .await blocking in child processes if tests fork() too
 
                 let _setup_status = fork_and_wait! {
-                    fluvio_future::task::run_block_on(async {
+                    tokio::runtime::Runtime::new().unwrap().block_on(async {
                         let mut test_driver_setup = test_driver.clone();
                         // Connect test driver to cluster before starting test
                         test_driver_setup.connect().await.expect("Unable to connect to cluster");

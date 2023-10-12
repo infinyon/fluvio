@@ -177,7 +177,7 @@ impl StatsWorker {
     pub async fn compute_stats(&self) {
         self.all_stats
             .lock()
-            .await
+            .unwrap()
             .compute_stats(&self.config, &self.current_batch);
     }
 

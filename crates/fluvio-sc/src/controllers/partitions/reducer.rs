@@ -268,7 +268,7 @@ impl<C: MetadataItem> PartitionReducer<C> {
 pub mod test {
 
     /*
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_process_partition_actions_without_partitions()  {
         // utils::init_logger();
 

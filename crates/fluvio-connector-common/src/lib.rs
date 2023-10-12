@@ -19,7 +19,7 @@ pub type Error = anyhow::Error;
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub mod future {
-    pub use fluvio_future::task::run_block_on;
+    pub use tokio::task::spawn_blocking;
     pub use fluvio_future::subscriber::init_logger;
     pub use fluvio_future::retry;
 }

@@ -568,7 +568,7 @@ mod test {
 
     type DefaultTestStore = LocalStore<TestSpec, TestMeta>;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_store_sync_all() {
         let tests = vec![DefaultTest::with_spec("t1", TestSpec::default())];
         let test_store = DefaultTestStore::default();
@@ -607,7 +607,7 @@ mod test {
         assert_eq!(sync3.update_status, 0);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_store_update() {
         let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
 
@@ -663,18 +663,18 @@ mod test {
 #[cfg(test)]
 #[cfg(feature = "fixture")]
 mod test_notify {
-
+    use std::pin::pin;
     use std::sync::Arc;
     use std::time::Duration;
     use std::sync::atomic::{AtomicI64, AtomicBool};
     use std::sync::atomic::Ordering::SeqCst;
 
-    use async_std::task::JoinHandle;
     use tokio::select;
     use tracing::debug;
 
-    use fluvio_future::task::spawn;
-    use fluvio_future::timer::sleep;
+    use tokio::spawn;
+    use tokio::time::sleep;
+    use tokio::task::JoinHandle;
 
     use crate::core::{Spec, MetadataItem};
     use crate::store::actions::LSUpdate;
@@ -740,7 +740,7 @@ mod test_notify {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_store_notifications() {
         let topic_store = Arc::new(DefaultTestStore::default());
         let last_change = Arc::new(AtomicI64::new(0));
@@ -766,9 +766,9 @@ mod test_notify {
 
         //  assert_eq!(last_change.load(SeqCst), 4);
     }
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_change_listener_non_blocking() {
-        let mut timer = sleep(Duration::from_millis(5));
+        let mut timer = pin!(sleep(Duration::from_millis(5)));
         let store = Arc::new(DefaultTestStore::default());
         let listener = store.change_listener();
 
@@ -793,7 +793,7 @@ mod test_notify {
         assert_eq!(0, topic_store.change_listener().current_change())
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_change_listener() {
         let topic_store = Arc::new(DefaultTestStore::default());
         let last_change = Arc::new(AtomicI64::new(0));
@@ -812,14 +812,14 @@ mod test_notify {
 
         // make sure that every listener got notified and returned
         for j in jh {
-            j.await
+            j.await.unwrap()
         }
 
         // Test batch again with a store that already has updates
         let jh = start_batch_of_test_listeners(topic_store.clone(), has_been_updated.clone());
         // make sure that every listener got notified and returned
         for j in jh {
-            j.await
+            j.await.unwrap()
         }
 
         // update with apply_changes
@@ -831,7 +831,7 @@ mod test_notify {
         let jh = start_batch_of_test_listeners(topic_store, has_been_updated);
         // make sure that every listener got notified and returned
         for j in jh {
-            j.await
+            j.await.unwrap()
         }
 
         // wait for controller to sync
@@ -849,7 +849,7 @@ mod test_notify {
             .map(|_| {
                 let store = store.clone();
 
-                spawn(listener_thread(store, has_been_updated.clone()))
+                tokio::spawn(listener_thread(store, has_been_updated.clone()))
             })
             .collect()
     }

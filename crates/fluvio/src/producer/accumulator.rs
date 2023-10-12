@@ -1,15 +1,14 @@
 use std::collections::VecDeque;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc};
 use std::task::{Context, Poll};
-use std::time::Duration;
 
-use async_lock::Mutex;
 use async_channel::Sender;
 use tracing::trace;
+use tokio::sync::Mutex;
+use tokio_condvar::Condvar;
 
-use fluvio_future::sync::Condvar;
 use futures_util::future::{BoxFuture, Either, Shared};
 use futures_util::{FutureExt, ready};
 use fluvio_protocol::record::Batch;
@@ -28,7 +27,7 @@ use crate::error::Result;
 use super::event::EventHandler;
 use super::memory_batch::MemoryBatch;
 
-const RECORD_ENQUEUE_TIMEOUT: Duration = Duration::from_secs(30);
+//const RECORD_ENQUEUE_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<BatchesDeque>);
 
@@ -91,15 +90,15 @@ impl RecordAccumulator {
 
         let mut batches = batches_lock.batches.lock().await;
         if batches.len() >= self.queue_size {
-            let (guard, wait_result) = batches_lock
+            let guard = batches_lock
                 .control
-                .wait_timeout_until(batches, RECORD_ENQUEUE_TIMEOUT, |queue| {
-                    queue.len() < self.queue_size
-                })
-                .await;
-            if wait_result.timed_out() {
-                return Err(ProducerError::BatchQueueWaitTimeout);
-            }
+                .wait(batches)
+                .await
+                // XXX
+                //.wait_timeout_while(batches, RECORD_ENQUEUE_TIMEOUT, |queue| {
+                //    queue.len() < self.queue_size
+                //})
+                ;
             batches = guard;
         }
         if let Some(batch) = batches.back_mut() {
@@ -351,7 +350,7 @@ mod test {
         assert!(pb.push_record(record).is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_record_accumulator() {
         let record = Record::from(("key", "value"));
 
@@ -377,40 +376,32 @@ mod test {
             .push_record(record.clone(), 0)
             .await
             .expect("failed push");
-        assert!(
-            async_std::future::timeout(timeout, batches.listen_new_batch())
-                .await
-                .is_ok()
-        );
+        assert!(tokio::time::timeout(timeout, batches.listen_new_batch())
+            .await
+            .is_ok());
 
-        assert!(
-            async_std::future::timeout(timeout, batches.listen_batch_full())
-                .await
-                .is_err()
-        );
+        assert!(tokio::time::timeout(timeout, batches.listen_batch_full())
+            .await
+            .is_err());
         accumulator
             .push_record(record.clone(), 0)
             .await
             .expect("failed push");
 
-        assert!(
-            async_std::future::timeout(timeout, batches.listen_batch_full())
-                .await
-                .is_err()
-        );
+        assert!(tokio::time::timeout(timeout, batches.listen_batch_full())
+            .await
+            .is_err());
         accumulator
             .push_record(record, 0)
             .await
             .expect("failed push");
 
-        assert!(
-            async_std::future::timeout(timeout, batches.listen_batch_full())
-                .await
-                .is_ok()
-        );
+        assert!(tokio::time::timeout(timeout, batches.listen_batch_full())
+            .await
+            .is_ok());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_produce_partition_response_future_ready() {
         //given
         let offset = 10;
@@ -425,7 +416,7 @@ mod test {
         assert_eq!(error_code, resolved_error);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_produce_partition_response_future_on_error() {
         //given
         let num = 0;
@@ -442,7 +433,7 @@ mod test {
         assert_eq!(resolved_error, ErrorCode::Other("SocketClosed".to_string()));
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_produce_partition_response_future_resolved() {
         //given
         let num = 2;
@@ -485,7 +476,7 @@ mod test {
         assert_eq!(resolved_error, ErrorCode::None);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_produce_partition_response_future_not_found() {
         //given
         let num = 2;

@@ -25,17 +25,18 @@ futures-util = { workspace = true , features = ["sink"]}
 serde = { workspace = true,  features = ["derive", "rc"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
 
 fluvio = { workspace = true, features = ["smartengine"] }
-fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-connector-package = { workspace = true  }
 fluvio-connector-derive = { path = "../fluvio-connector-derive/", optional = true }
+fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-sc-schema = { workspace = true }
 fluvio-smartengine = { workspace = true , features = [ "transformation"] }
 
 
 [dev-dependencies]
-trybuild = { version = "1.0" } # default workspace dep is forked and fails for this crate 
+trybuild = { version = "1.0" } # default workspace dep is forked and fails for this crate
 serde = { workspace = true, features = ["derive"]}
 fluvio = { workspace = true }

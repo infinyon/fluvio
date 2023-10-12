@@ -496,7 +496,7 @@ mod tests {
     const TEST_FILE_NAME: &str = "00000000000000000020.log"; // offset 20 different from other test
     const SEG_INDEX: &str = "00000000000000000020.index";
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_single_record() {
         let test_dir = temp_dir().join("seg-single-record");
         ensure_new_dir(&test_dir).expect("dir");
@@ -545,7 +545,7 @@ mod tests {
         assert!((active_segment.find_offset_position(30).await.expect("find")).is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_multiple_record() {
         let test_dir = temp_dir().join("seg-multiple-record");
         ensure_new_dir(&test_dir).expect("new");
@@ -589,7 +589,7 @@ mod tests {
 
     const TEST2_FILE_NAME: &str = "00000000000000000040.log"; // offset 20 different from other test
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_multiple_batch() {
         let test_dir = temp_dir().join("multiple-segment");
         ensure_new_dir(&test_dir).expect("new");

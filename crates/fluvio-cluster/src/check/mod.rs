@@ -8,7 +8,7 @@ use std::time::Duration;
 pub mod render;
 
 use colored::Colorize;
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use indicatif::style::TemplateError;
 use tracing::{error, debug};
 use async_trait::async_trait;

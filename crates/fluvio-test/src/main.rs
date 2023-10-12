@@ -397,9 +397,9 @@ mod tests {
     //fn skip_cluster_delete_then_skip_cluster_start() {
     //    use super::*;
     //    use fluvio::config::ConfigFile;
-    //    use fluvio_future::task::run_block_on;
+    //    use tokio::task::spawn_blocking;
 
-    //    run_block_on(async {
+    //    spawn_blocking(async {
     //        let skip_cluster_delete_cmd = CliArgs::parse_from(vec![
     //            "fluvio-test",
     //            "smoke",

@@ -33,7 +33,3 @@ fluvio-stream-model = { workspace = true, features = [ "k8"]  }
 k8-diff = { workspace = true }
 k8-metadata-client = { workspace = true }
 k8-types = { workspace = true }
-fluvio-future = { workspace = true, features = ["task", "timer"] }
-
-[dev-dependencies]
-fluvio-future = { workspace = true, features = ["fixture"] }

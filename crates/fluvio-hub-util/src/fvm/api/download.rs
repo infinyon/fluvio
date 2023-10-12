@@ -89,7 +89,7 @@ mod test {
     use super::*;
 
     #[ignore]
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn download_artifact() {
         let target_dir = TempDir::new().unwrap().into_path().to_path_buf();
         let artifact = Artifact {
@@ -104,7 +104,7 @@ mod test {
     }
 
     #[ignore]
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn downloaded_artifact_matches_upstream_checksum() {
         let target_dir = TempDir::new().unwrap().into_path().to_path_buf();
         let artifact = Artifact {

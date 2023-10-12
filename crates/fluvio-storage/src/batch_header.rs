@@ -45,7 +45,7 @@ mod tests {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_decode_batch_header_simple() {
         const BASE_OFFSET: Offset = 200;
         const PRODUCER_ID: i64 = 12;
@@ -86,7 +86,7 @@ mod tests {
         assert!((stream.try_next().await.expect("ok")).is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_decode_batch_header_multiple() {
         const BASE_OFFSET: Offset = 200;
         const PRODUCER_ID: i64 = 25;
@@ -139,7 +139,7 @@ mod tests {
         assert!((stream.try_next().await.expect("ok")).is_none());
     }
 
-    //#[fluvio_future::test]
+    //#[tokio::test]
     #[allow(unused)]
     async fn test_code_perf() {
         let mut stream = BatchHeaderStream::open(
@@ -175,7 +175,7 @@ mod tests {
         );
     }
 
-    //#[fluvio_future::test]
+    //#[tokio::test]
     #[allow(unused)]
     async fn test_find_position() {
         let mut header_stream = BatchHeaderStream::open("/tmp/bad_header.log")

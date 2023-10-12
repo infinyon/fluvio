@@ -2,9 +2,10 @@ use std::time::Instant;
 
 use anyhow::Result;
 use async_channel::{unbounded, Sender, Receiver};
+use tokio::spawn;
+use tokio::time::{sleep, timeout};
 use tracing::{debug, info};
 
-use fluvio_future::{task::spawn, future::timeout, timer::sleep};
 use fluvio::{metadata::topic::TopicSpec, FluvioAdmin};
 use crate::{
     benchmark_config::BenchmarkConfig, producer_worker::ProducerWorker,
@@ -121,7 +122,7 @@ impl BenchmarkDriver {
         // Close all worker tasks.
         send_control_message(&mut tx_controls, ControlMessage::Exit).await?;
         for jh in workers_jh {
-            timeout(config.worker_timeout, jh).await???;
+            timeout(config.worker_timeout, jh).await????;
         }
 
         Ok(())

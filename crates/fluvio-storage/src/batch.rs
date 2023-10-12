@@ -286,7 +286,7 @@ mod tests {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_batch_stream_single() {
         let test_dir = temp_dir().join("batch-stream-single");
         ensure_new_dir(&test_dir).expect("new");
@@ -313,7 +313,7 @@ mod tests {
         assert_eq!(pos, 0);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_batch_stream_multiple() {
         let test_dir = temp_dir().join("batch-stream-multiple");
         ensure_new_dir(&test_dir).expect("new");

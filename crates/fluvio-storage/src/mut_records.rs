@@ -218,7 +218,7 @@ impl MutFileRecords {
             }
 
 
-            fluvio_future::task::spawn(async move {
+            tokio::spawn(async move {
                 let mut delay_dur = delay_tgt;
                 let mut write_time = Instant::now();
 
@@ -301,7 +301,7 @@ impl FileRecords for MutFileRecords {
     //
     //     // &self.f_sink.inner()
     //
-    //     block_on(async {
+    //     spawn_blocking(async {
     //         let am = self.f_sink.clone();
     //         let f_sink = am.lock().await;
     //         &f_sink.inner().clone()
@@ -400,7 +400,7 @@ mod tests {
     use crate::fixture::BatchProducer;
     use super::MutFileRecords;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_records_with_invalid_base() {
         const BASE_OFFSET: Offset = 401;
 
@@ -437,7 +437,7 @@ mod tests {
         assert!(msg_sink.write_batch(&wrong_builder.batch()).await.is_err());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_write_records_every() {
         const BASE_OFFSET: Offset = 100;
 
@@ -501,7 +501,7 @@ mod tests {
     // This Test configures policy to flush after every NUM_WRITES
     // and checks to see when the flush occurs relative to the write count
 
-    //#[fluvio_future::test]
+    //#[tokio::test]
     #[allow(unused)]
     async fn test_write_records_count() {
         let test_dir = temp_dir().join("mut_records_word_count");
@@ -580,7 +580,7 @@ mod tests {
     // expected timeframe
     #[cfg(not(target_os = "macos"))]
     #[allow(unused)]
-    //#[fluvio_future::test]
+    //#[tokio::test]
     async fn test_write_records_idle_delay() {
         use std::time::Duration;
         use fluvio_future::timer;

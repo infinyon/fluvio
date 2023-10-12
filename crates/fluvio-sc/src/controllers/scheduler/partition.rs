@@ -168,7 +168,7 @@ pub mod replica_map_test {
 
     use super::*;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn generate_replica_simple() {
         let spus = SpuAdminStore::quick(vec![(0, true, None), (1, true, None)]);
         let partitions = PartitionAdminStore::new_shared();
@@ -188,7 +188,7 @@ pub mod replica_map_test {
         );
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn generate_replica_partition_more_spu() {
         let spus = SpuAdminStore::quick(vec![(0, true, None), (1, true, None)]);
         let partitions = PartitionAdminStore::new_shared();
@@ -208,7 +208,7 @@ pub mod replica_map_test {
         );
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn generate_replica_partition_not_enough_follower() {
         let spus = SpuAdminStore::quick(vec![(0, true, None), (1, true, None)]);
         let partitions = PartitionAdminStore::new_shared();
@@ -226,7 +226,7 @@ pub mod replica_map_test {
             .is_empty());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn generate_replica_map_for_topic_1x_replicas() {
         let spus = SpuAdminStore::quick(vec![
             (0, true, None),
@@ -254,7 +254,7 @@ pub mod replica_map_test {
         );
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn generate_replica_map_for_topic_2x_replicas() {
         let spus = DefaultSpuStore::quick(vec![
             (0, true, None),

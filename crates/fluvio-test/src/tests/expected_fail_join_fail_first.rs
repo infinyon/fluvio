@@ -2,7 +2,7 @@ use std::any::Any;
 use std::time::Duration;
 
 use clap::Parser;
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;

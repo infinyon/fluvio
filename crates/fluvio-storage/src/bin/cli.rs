@@ -5,7 +5,7 @@ use anyhow::{Result, anyhow};
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_protocol::record::Offset;
-use fluvio_future::task::run_block_on;
+use tokio::task::spawn_blocking;
 use fluvio_storage::{
     LogIndex, OffsetPosition,
     batch_header::BatchHeaderStream,
@@ -42,7 +42,7 @@ fn main() {
 
     let main_opt = Main::parse();
 
-    let result = run_block_on(async {
+    let result = spawn_blocking(async {
         match main_opt {
             Main::Log(opt) => dump_log(opt).await,
             Main::Index(opt) => dump_index(opt).await,

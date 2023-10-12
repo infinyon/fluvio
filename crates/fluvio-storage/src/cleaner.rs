@@ -5,8 +5,8 @@ use std::ops::Rem;
 
 use tracing::{debug, info, instrument};
 
-use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
+use tokio::spawn;
+use tokio::time::sleep;
 use fluvio_types::event::StickyEvent;
 
 use crate::config::{SharedReplicaConfig, StorageConfig};
@@ -142,7 +142,7 @@ mod tests {
 
     use anyhow::Result;
 
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
     use flv_util::fixture::ensure_new_dir;
     use fluvio_protocol::fixture::create_batch;
     use fluvio_protocol::record::Offset;
@@ -158,7 +158,7 @@ mod tests {
 
     use crate::cleaner::Cleaner;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_enforce_size_delete_one() {
         //given
         let mut config = default_option();
@@ -179,7 +179,7 @@ mod tests {
         assert_eq!(read.occupied_memory(), replica_size.get());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_enforce_size_delete_many() {
         //given
         let mut config = default_option();
@@ -200,7 +200,7 @@ mod tests {
         assert_eq!(read.occupied_memory(), replica_size.get());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_enforce_ttl() {
         //given
         let mut config = default_option();

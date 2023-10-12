@@ -32,11 +32,10 @@ uuid = { workspace = true }
 anyhow = { workspace = true }
 
 fluvio = { workspace = true  }
-fluvio-types = { workspace = true }
-fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-command = { workspace = true  }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
+fluvio-types = { workspace = true }
 
 [lib]
 path = "lib.rs"

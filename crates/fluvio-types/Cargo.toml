@@ -17,5 +17,4 @@ tracing = { workspace = true }
 
 
 [dev-dependencies]
-fluvio-future = { workspace = true, features = ["fixture", "subscriber"] }
 tokio = { workspace = true,  features = ["macros"] }

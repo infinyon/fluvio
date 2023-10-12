@@ -46,12 +46,12 @@ tracing = { workspace = true }
 
 
 # Fluvio dependencies
-fluvio-auth = { workspace = true }
 fluvio-future = { workspace = true, features = [
     "subscriber",
     "openssl_tls",
     "zero_copy",
 ] }
+fluvio-auth = { workspace = true }
 fluvio-types = { workspace = true,  features = [
     "events",
 ] }
@@ -70,6 +70,5 @@ flv-tls-proxy = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true }
-fluvio-future = { workspace = true, features = ["fixture"] }
 flv-util = { workspace = true, features = ["fixture"] }
 fluvio-stream-model = { workspace = true, features = ["fixture"] }

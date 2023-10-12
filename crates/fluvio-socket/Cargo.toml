@@ -24,7 +24,7 @@ futures-util = { features = ["sink", "io"], workspace = true }
 async-lock = { workspace = true }
 event-listener = { workspace = true }
 async-channel = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true, features = ["macros", "rt", "time"] }
 tokio-util = { features = ["codec", "compat"], workspace = true }
 async-trait = { workspace = true }
 pin-project = { workspace = true }
@@ -33,7 +33,7 @@ semver = { workspace = true }
 nix = { workspace = true, features = ["uio"]}
 
 # Fluvio dependencies
-fluvio-future = { workspace = true, features = ["net", "task", "retry"] }
+fluvio-future = { workspace = true, features = ["net", "retry"] }
 fluvio-protocol = { workspace = true, features = [
     "derive",
     "api",
@@ -46,15 +46,8 @@ portpicker = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 async-net = { workspace = true }
 
-fluvio-future = { workspace = true, features = [
-    "fixture",
-    "fs",
-    "zero_copy",
-    "native2_tls",
-] }
+fluvio-future = { workspace = true, features = ["fs", "zero_copy", "native2_tls"] }
 fluvio-types = { workspace = true, features = ["events"] }
-
-
 
 [build-dependencies]
 built = "0.7.0"

@@ -309,7 +309,7 @@ mod tests {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_empty() {
         let rep_dir = temp_dir().join("segmentlist-read-empty");
         ensure_new_dir(&rep_dir).expect("new");
@@ -322,7 +322,7 @@ mod tests {
         assert!(last_segment.is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_single_base_zero() {
         let rep_dir = temp_dir().join("segmentlist-single-zero");
         ensure_new_dir(&rep_dir).expect("new");
@@ -342,7 +342,7 @@ mod tests {
         assert!(list.find_segment(501).is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_single_base_some() {
         let rep_dir = temp_dir().join("segmentlist-single-some");
         ensure_new_dir(&rep_dir).expect("new");
@@ -360,7 +360,7 @@ mod tests {
         assert!(list.find_segment(500).is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_many_zero() {
         let rep_dir = temp_dir().join("segmentlist-many-zero");
         ensure_new_dir(&rep_dir).expect("new");
@@ -405,7 +405,7 @@ mod tests {
         assert!(list.find_segment(4001).is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_segment_many_some() {
         let rep_dir = temp_dir().join("segmentlist-many-some");
         ensure_new_dir(&rep_dir).expect("new");
@@ -446,7 +446,7 @@ mod tests {
         assert!(list.find_segment(10000).is_none());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_find_and_remove_many() {
         //given
         let rep_dir = temp_dir().join("segmentlist-remove-many");

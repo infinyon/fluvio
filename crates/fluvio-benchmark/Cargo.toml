@@ -23,13 +23,9 @@ serde = { workspace = true , features = ['derive'] }
 serde_yaml = { workspace = true }
 statrs = "0.16.0"
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["time"] }
 tracing = {workspace = true }
 
 fluvio = { workspace = true  }
 fluvio-cli-common = { workspace = true }
-fluvio-future = { workspace = true, features = [
-    'task',
-    'future',
-    'sync',
-    'subscriber',
-] }
+fluvio-future = { workspace = true, features = ["subscriber"] }

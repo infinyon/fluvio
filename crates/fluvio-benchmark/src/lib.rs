@@ -5,7 +5,6 @@ use std::io::Error as IoError;
 use async_channel::{SendError, RecvError};
 
 use rand::{distributions::Alphanumeric, Rng};
-use fluvio_future::future::TimeoutError;
 use fluvio::{RecordKey, FluvioError};
 
 pub mod consumer_worker;
@@ -40,8 +39,8 @@ pub enum BenchmarkError {
     IoError(#[from] IoError),
     #[error("{0}")]
     ErrorWithExplanation(String),
-    #[error(transparent)]
-    TimeoutError(#[from] TimeoutError),
+    //#[error(transparent)]
+    //TimeoutError(#[from] tokio::timer::Error),
     #[error("SendError")]
     SendError,
     #[error(transparent)]

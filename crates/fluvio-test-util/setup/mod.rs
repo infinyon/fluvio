@@ -8,7 +8,7 @@ mod cluster {
 
     use anyhow::Result;
 
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
     use fluvio::{Fluvio, FluvioConfig};
 
     use crate::tls::load_tls;

@@ -27,7 +27,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 inventory = { workspace = true }
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
 comfy-table = { workspace = true }
 hdrhistogram = { workspace = true }
 crc = "3.0"
@@ -36,25 +36,18 @@ crossbeam-channel = { workspace = true }
 sysinfo = { workspace = true }
 signal-hook = "0.3.13"
 indicatif = { workspace = true }
-async-std = { workspace = true, features = ["attributes"] }
 uuid = { workspace = true }
 
 tracing = { workspace = true }
 
 # Fluvio dependencies
 fluvio = { workspace = true }
-fluvio-types = { workspace = true }
-fluvio-future = { workspace = true, features = [
-    "io",
-    "task",
-    "timer",
-    "subscriber",
-    "fixture",
-] }
-fluvio-command = { version = "0.2.0" }
-fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-cli = { path = "../fluvio-cli" }
+fluvio-cluster = { path = "../fluvio-cluster" }
+fluvio-command = { version = "0.2.0" }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
+fluvio-future = { workspace = true, features = ["io", "subscriber"] }
+fluvio-types = { workspace = true }
 
 # Fluvio test framework Attribute macro
 fluvio-test-derive = { path = "../fluvio-test-derive" }

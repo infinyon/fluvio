@@ -14,7 +14,7 @@ use fluvio_protocol::{
 use fluvio_controlplane_metadata::topic::{
     CompressionAlgorithm, Deduplication, Bounds, Filter, Transform,
 };
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};
 use fluvio_spu_schema::{
     produce::{
@@ -37,7 +37,8 @@ use crate::{
     smartengine::file_batch::FileBatchIterator,
 };
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_basic() {
     let test_path = temp_dir().join("produce_basic");
     ensure_clean_dir(&test_path);
@@ -150,7 +151,8 @@ async fn test_produce_basic() {
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_invalid_compression() {
     let test_path = temp_dir().join("produce_invalid_compression");
     ensure_clean_dir(&test_path);
@@ -224,7 +226,8 @@ async fn test_produce_invalid_compression() {
 use crate::replication::test::TestConfig;
 use crate::services::create_internal_server;
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_request_timed_out() {
     let config = TestConfig::builder()
         .followers(1_u16)
@@ -287,7 +290,8 @@ async fn test_produce_request_timed_out() {
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_not_waiting_replication() {
     let config = TestConfig::builder()
         .followers(1_u16)
@@ -346,7 +350,8 @@ async fn test_produce_not_waiting_replication() {
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_waiting_replication() {
     let config = TestConfig::builder()
         .followers(1_u16)
@@ -415,7 +420,8 @@ async fn test_produce_waiting_replication() {
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_metrics() {
     let test_path = temp_dir().join("produce_basic_metrics");
     ensure_clean_dir(&test_path);
@@ -519,7 +525,8 @@ async fn test_produce_metrics() {
 
 const FLUVIO_WASM_FILTER_WITH_LOOKBACK: &str = "fluvio_smartmodule_filter_lookback";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_basic_with_smartmodule_with_lookback() {
     let test_path = temp_dir().join("test_produce_basic_with_smartmodule_with_lookback");
     ensure_clean_dir(&test_path);
@@ -837,7 +844,8 @@ async fn test_produce_basic_with_smartmodule_with_lookback() {
 
 const FLUVIO_WASM_DEDUPLICATION_FILTER: &str = "fluvio_smartmodule_filter_hashset";
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_with_deduplication() {
     let test_path = temp_dir().join("test_produce_with_deduplication");
     ensure_clean_dir(&test_path);
@@ -1025,7 +1033,8 @@ async fn test_produce_with_deduplication() {
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_produce_smart_engine_memory_overfow() {
     let test_path = temp_dir().join("test_produce_smart_engine_memory_overfow");
     ensure_clean_dir(&test_path);
@@ -1111,7 +1120,8 @@ async fn test_produce_smart_engine_memory_overfow() {
     debug!("terminated controller");
 }
 
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_dedup_init_smart_engine_memory_overfow() {
     let test_path = temp_dir().join("test_dedup_init_smart_engine_memory_overfow");
     ensure_clean_dir(&test_path);

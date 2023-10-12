@@ -282,7 +282,7 @@ mod tests {
 
     use super::*;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_validate_empty() {
         const BASE_OFFSET: Offset = 301;
 
@@ -308,7 +308,7 @@ mod tests {
         assert_eq!(validator.leo(), BASE_OFFSET);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_validate_success() {
         const BASE_OFFSET: Offset = 601;
 
@@ -352,7 +352,7 @@ mod tests {
         assert_eq!(validator.batches, 2);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_validating_invalid_contents() {
         const OFFSET: i64 = 501;
 
@@ -442,7 +442,7 @@ mod perf {
 
     use super::*;
 
-    //#[fluvio_future::test]
+    //#[tokio::test]
     #[allow(unused)]
     // execute this with: `cargo test perf_test -p fluvio-storage --release -- --nocapture`
     async fn perf_test() {

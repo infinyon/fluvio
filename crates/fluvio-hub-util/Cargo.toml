@@ -28,6 +28,7 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 ssh-key = { version="0.6.1", features=[ "ed25519" ] }
 tar = { workspace = true }
+tokio = { workspace = true, features=["rt"] }
 pathdiff = { version = "0.2.1", default-features = false }
 tempfile = { workspace = true }
 toml = { workspace = true }
@@ -36,7 +37,6 @@ thiserror = { workspace = true }
 url = { workspace = true }
 wasmparser = { workspace = true }
 
-fluvio-future = { workspace = true, features = ["fixture", "task"] }
 fluvio-hub-protocol = { path = "../fluvio-hub-protocol" }
 fluvio-types = { workspace = true }
 

@@ -2,15 +2,14 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::io::copy;
 
+use reqwest::StatusCode;
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tracing::{debug, info};
 
 use fluvio_hub_protocol::{PackageMeta, Result, HubError};
 use fluvio_hub_protocol::constants::HUB_PACKAGE_EXT;
-use reqwest;
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
-use reqwest::StatusCode;
 use crate::HubAccess;
 use crate::{HUB_API_SM, HUB_API_CONN_PKG};
 use crate::{package_get_meta, packagename_validate};

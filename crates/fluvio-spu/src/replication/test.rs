@@ -9,7 +9,7 @@ use derive_builder::Builder;
 use once_cell::sync::Lazy;
 
 use fluvio_storage::FileReplica;
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
@@ -209,7 +209,8 @@ impl TestConfigBuilder {
 /// Test 2 replica
 /// Replicating with existing records
 ///    
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_just_leader() {
     let builder = TestConfig::builder()
         .base_port(13000_u16)
@@ -251,7 +252,8 @@ async fn test_just_leader() {
 
 /// Test 2 replica
 /// Replicating with existing records
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_replication2_existing() {
     let builder = TestConfig::builder()
         .followers(1_u16)
@@ -318,7 +320,8 @@ async fn test_replication2_existing() {
 /// Test 2 replica
 /// Replicating new records
 ///    
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_replication2_new_records() {
     let builder = TestConfig::builder()
         .followers(1_u16)
@@ -391,7 +394,8 @@ async fn test_replication2_new_records() {
 }
 
 /// test with 3 SPU
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_replication3_existing() {
     let builder = TestConfig::builder()
         .followers(2_u16)
@@ -452,7 +456,8 @@ async fn test_replication3_existing() {
 /// Test 2 replica
 /// Replicating new records
 ///    
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_replication3_new_records() {
     let builder = TestConfig::builder()
         .followers(2_u16)
@@ -525,7 +530,8 @@ async fn test_replication3_new_records() {
 /// Test 2 replica
 /// Replicating new records
 ///    
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_replication2_promote() {
     let builder = TestConfig::builder()
         .followers(1_u16)
@@ -585,7 +591,8 @@ async fn test_replication2_promote() {
 
 /// Test leader and follower starts in sequence
 /// receiving request from SC
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_replication_dispatch_in_sequence() {
     let builder = TestConfig::builder()
         .followers(1_u16)
@@ -660,7 +667,8 @@ async fn test_replication_dispatch_in_sequence() {
 
 /// Test leader and follower starts in sequence
 /// receiving request from SC
-#[fluvio_future::test(ignore)]
+#[ignore]
+#[tokio::test]
 async fn test_replication_dispatch_out_of_sequence() {
     //std::env::set_var("FLV_SHORT_RECONCILLATION", "1");
     let builder = TestConfig::builder()

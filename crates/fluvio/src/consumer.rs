@@ -305,7 +305,7 @@ where
         impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
         fluvio_protocol::record::Offset,
     )> {
-        use fluvio_future::task::spawn;
+        use tokio::spawn;
         use futures_util::stream::empty;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);

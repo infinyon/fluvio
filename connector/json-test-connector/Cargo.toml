@@ -12,7 +12,6 @@ publish = false
 async-trait = { workspace = true }
 futures = { version = "0.3", default-features = false }
 anyhow = { workspace = true }
-async-std = { features = ["attributes", "tokio1"], workspace = true }
 tokio = { default-features = false, features = ["time"], workspace = true }
 serde = { default-features = false, features = ["derive"], workspace = true }
 

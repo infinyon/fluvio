@@ -8,7 +8,7 @@ pub mod memory {
 
     use std::fmt::Display;
 
-    use fluvio_future::task::spawn;
+    use tokio::spawn;
     use fluvio_stream_model::{
         core::Spec,
         store::{actions::LSUpdate, memory::MemoryMeta},

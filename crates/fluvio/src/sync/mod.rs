@@ -9,6 +9,7 @@ mod context {
     use std::sync::Arc;
     use std::fmt::Display;
     use std::io::Error as IoError;
+    use std::pin::pin;
 
     use tracing::{debug, instrument};
     use async_rwlock::RwLockReadGuard;
@@ -106,14 +107,14 @@ mod context {
             use std::io::ErrorKind;
 
             use tokio::select;
-            use fluvio_future::timer::sleep;
+            use tokio::time::sleep;
 
             // We can short circuit here if already present
             if let Some(found) = search(self.store().read().await) {
                 return Ok(Some(found));
             }
 
-            let mut timer = sleep(Duration::from_millis(*MAX_WAIT_TIME));
+            let mut timer = pin!(sleep(Duration::from_millis(*MAX_WAIT_TIME)));
 
             // No changes recieved yet, wait for first changes from store or timeout
             select! {
@@ -179,7 +180,7 @@ mod context {
                 let mut listener = self.store.change_listener();
                 let (sender, receiver) = async_channel::unbounded();
 
-                fluvio_future::task::spawn_local(async move {
+                tokio::task::spawn_local(async move {
                     loop {
                         listener.listen().await;
                         let changes = listener.sync_changes().await;

@@ -58,7 +58,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
     // Create topics
     let _setup_status = fork_and_wait! {
-        fluvio_future::task::run_block_on(async {
+        tokio::runtime::Runtime::new().unwrap().block_on(async {
             let mut test_driver_setup = test_driver.clone();
 
             // Connect test driver to cluster before starting test
@@ -99,7 +99,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     }
 
     let _setup_status = fork_and_wait! {
-        fluvio_future::task::run_block_on(async {
+        tokio::runtime::Runtime::new().unwrap().block_on(async {
             let mut test_driver_setup = test_driver.clone();
 
             // Connect test driver to cluster before starting test

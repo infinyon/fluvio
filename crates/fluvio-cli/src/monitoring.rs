@@ -21,7 +21,7 @@ mod monitor_impl {
     use async_net::unix::UnixListener;
     use futures_util::{StreamExt, AsyncWriteExt};
 
-    use fluvio_future::task::spawn;
+    use tokio::spawn;
 
     use super::ClientMetrics;
 

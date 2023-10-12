@@ -152,7 +152,7 @@ mod common {
         /// test read only context
         /// read only context allows read on everything
         /// and create on spu
-        #[fluvio_future::test]
+        #[tokio::test]
         async fn test_read_only_context() {
             let auth_context = ReadOnlyAuthContext {};
             assert!(auth_context
@@ -175,7 +175,7 @@ mod common {
 
         /// test root context
         /// root context allows everything
-        #[fluvio_future::test]
+        #[tokio::test]
         async fn test_root_context() {
             let auth_context = RootAuthContext {};
             assert!(auth_context

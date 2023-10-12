@@ -4,7 +4,7 @@ use futures::stream::StreamExt;
 use futures::select;
 use futures::future::FutureExt;
 
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio::profile::ScConfig;
 use fluvio::SpuController;
 use fluvio::ReplicaLeader;

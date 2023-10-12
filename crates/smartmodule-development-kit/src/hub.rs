@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 use tracing::debug;
 
-use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::HubAccess;
 
@@ -63,7 +62,10 @@ impl IdOpt {
 
 pub fn set_hubid(hubid: &str, access: &mut HubAccess) -> Result<()> {
     // if not: ask server if it exists
-    if let Err(e) = run_block_on(access.create_hubid(hubid)) {
+    if let Err(e) = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async { access.create_hubid(hubid).await })
+    {
         eprintln!("{e}");
         std::process::exit(1);
     }

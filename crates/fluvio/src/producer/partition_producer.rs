@@ -1,3 +1,4 @@
+use std::pin::pin;
 use std::sync::Arc;
 
 use async_lock::{RwLock};
@@ -6,7 +7,7 @@ use tracing::{debug, info, instrument, error, trace};
 use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::record::{RawRecords, Batch};
 use fluvio_spu_schema::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
-use fluvio_future::timer::sleep;
+use tokio::time::{Instant, sleep};
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
 
@@ -95,9 +96,13 @@ impl PartitionProducer {
             error,
             metrics,
         );
-        fluvio_future::task::spawn(async move {
-            producer.run(end_event, flush_event).await;
-        });
+        // XXX
+        // NOTE: there is a preexisting executor here.
+        //tokio::spawn(async move { producer.run(end_event, flush_event).await });
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            // XXX
+            .block_on(async move { producer.run(end_event, flush_event).await });
     }
 
     #[instrument(skip(self, end_event, flush_event))]
@@ -108,7 +113,8 @@ impl PartitionProducer {
     ) {
         use tokio::select;
 
-        let mut linger_sleep = None;
+        let mut should_linger = false;
+        let mut linger_sleep = pin!(sleep(self.config.linger));
 
         loop {
             select! {
@@ -124,7 +130,7 @@ impl PartitionProducer {
                         self.set_error(e).await;
                     }
                     flush_event.1.notify().await;
-                    linger_sleep = None;
+                    should_linger = false;
 
                 }
                 _ =  self.batch_events.listen_batch_full() => {
@@ -137,17 +143,18 @@ impl PartitionProducer {
 
                 _ = self.batch_events.listen_new_batch() => {
                     debug!("new batch event");
-                    linger_sleep = Some(sleep(self.config.linger));
+                    should_linger = true;
+                    linger_sleep.as_mut().reset(Instant::now() + self.config.linger);
                 }
 
-                _ = async { linger_sleep.as_mut().expect("unexpected failure").await }, if linger_sleep.is_some() => {
+                _ = async { linger_sleep.as_mut().await }, if should_linger => {
                     debug!("Flushing because linger time was reached");
 
                     if let Err(e) = self.flush(false).await {
                         error!("Failed to flush producer: {:?}", e);
                         self.set_error(e).await;
                     }
-                    linger_sleep = None;
+                    should_linger = false;
                 }
             }
         }

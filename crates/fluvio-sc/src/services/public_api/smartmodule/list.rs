@@ -104,7 +104,7 @@ mod test {
     type TestSmartModuleStore = LocalStore<SmartModuleSpec, TestMeta>;
     type SmartModuleTest = MetadataStoreObject<SmartModuleSpec, TestMeta>;
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_sm_search() {
         let root_auth = RootAuthContext {};
 

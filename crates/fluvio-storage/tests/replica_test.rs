@@ -8,7 +8,7 @@ use futures_lite::StreamExt;
 use futures_lite::future::zip;
 
 use fluvio_spu_schema::Isolation;
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_future::net::TcpListener;
 use fluvio_spu_schema::{
     fetch::{
@@ -199,7 +199,7 @@ async fn test_client(addr: &str) {
 }
 
 /// test replica fetch using dummy server
-#[fluvio_future::test]
+#[tokio::test]
 async fn test_replica_fetch() {
     let addr = "127.0.0.1:9911";
 

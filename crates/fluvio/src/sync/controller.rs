@@ -68,7 +68,7 @@ where
         watch_response: AsyncResponse<ObjectApiWatchRequest>,
         shutdown: Arc<SimpleEvent>,
     ) {
-        use fluvio_future::task::spawn;
+        use tokio::spawn;
 
         let controller = Self { store, shutdown };
 

@@ -9,7 +9,7 @@ members = [
     "examples/04-admin-watch",
     "crates/fluvio",
     "crates/fluvio-auth",
-    "crates/fluvio-benchmark",
+#    "crates/fluvio-benchmark",
     "crates/fluvio-channel",
     "crates/fluvio-channel-cli",
     "crates/fluvio-cli",
@@ -52,8 +52,8 @@ members = [
     "crates/smartmodule-development-kit",
     "crates/cdk",
     "crates/cargo-builder",
-    "connector/json-test-connector",
-    "connector/sink-test-connector",
+#    "connector/json-test-connector",
+#    "connector/sink-test-connector",
 ]
 resolver = "2"
 
@@ -65,7 +65,6 @@ async-io = "1.3.1"
 async-lock = "2.4.0"
 async-net = { version = "1.7.0", default-features = false  }
 async-rwlock = "1.3.0"
-async-std = { version = "1.8.0", default-features = false }
 async-trait = { version = "0.1.41", default-features = false }
 atty = { version = "0.2.14" }
 base64 = "0.21.0"
@@ -118,7 +117,7 @@ proc-macro2 = "1.0"
 quote = "1.0"
 rand = "0.8.5"
 regex = "1.7"
-reqwest = { version = "0.11.22", features = ["rustls-tls"] }
+reqwest = { version = "0.11.22", default-features = false, features = ["json", "rustls-tls"] }
 semver = "1.0.13"
 serde = { version = "1.0.144", default-features = false }
 serde_json = "1.0.60"

@@ -97,8 +97,8 @@ mod test {
 
     use tracing::debug;
 
-    use fluvio_future::task::spawn;
-    use fluvio_future::timer::sleep;
+    use tokio::spawn;
+    use tokio::time::sleep;
 
     use super::ChangeListener;
     use super::EventPublisher;
@@ -152,7 +152,7 @@ mod test {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_listener()  {
         let publisher = Arc::new(EventPublisher::new());
         let listener = publisher.change_listener(0);

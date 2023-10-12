@@ -26,7 +26,6 @@ rand = { workspace = true }
 trybuild = { workspace = true }
 fluvio = { workspace = true  }
 tokio = { workspace = true,  features = ["macros"] }
-fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "fixture"] }
 clap = { workspace = true,  features = ["std", "derive", "help", "usage", "error-context"] }
 inventory = { workspace = true }
 tracing = { workspace = true }

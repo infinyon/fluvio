@@ -5,7 +5,6 @@ use cargo_builder::package::PackageInfo;
 use clap::Parser;
 
 use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadata;
-use fluvio_future::task::run_block_on;
 use fluvio_hub_util as hubutil;
 use hubutil::{
     DEF_HUB_INIT_DIR, DEF_HUB_PKG_META, HubAccess, PackageMeta, PkgVisibility, PackageMetaExt,
@@ -159,7 +158,10 @@ pub fn package_push(opts: &PublishCmd, pkgpath: &str, access: &HubAccess) -> Res
             verify_public_or_exit()?;
         }
     }
-    if let Err(e) = run_block_on(hubutil::push_package(pkgpath, access)) {
+    if let Err(e) = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async { hubutil::push_package(pkgpath, access).await })
+    {
         eprintln!("{e}");
         std::process::exit(1);
     }

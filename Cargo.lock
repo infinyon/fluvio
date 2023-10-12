@@ -31,9 +31,9 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 name = "admin"
 version = "0.0.0"
 dependencies = [
- "async-std",
  "fluvio",
  "futures 0.3.28",
+ "tokio",
 ]
 
 [[package]]
@@ -156,15 +156,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d301b3b94cb4b2f23d7917810addbbaff90738e0ca2be692bd027e70d7e0330c"
 
 [[package]]
-name = "approx"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cab112f0a86d568ea0e627cc1d6be74a1e9cd55214684db5561995f6dad897c6"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -234,16 +225,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-attributes"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
-dependencies = [
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "async-channel"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -293,7 +274,6 @@ dependencies = [
  "blocking",
  "futures-lite",
  "once_cell",
- "tokio",
 ]
 
 [[package]]
@@ -401,7 +381,6 @@ version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62565bb4402e926b29953c785397c6dc0391b7b446e45008b0049eb43cec6f5d"
 dependencies = [
- "async-attributes",
  "async-channel",
  "async-global-executor",
  "async-io",
@@ -618,12 +597,6 @@ dependencies = [
  "serde",
  "utf8-width",
 ]
-
-[[package]]
-name = "bytemuck"
-version = "1.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "374d28ec25809ee0e23827c2ab573d729e293f281dfe393500e7ad618baa61c6"
 
 [[package]]
 name = "byteorder"
@@ -889,6 +862,7 @@ dependencies = [
  "sysinfo",
  "tempfile",
  "thiserror",
+ "tokio",
  "toml 0.8.2",
  "tracing",
 ]
@@ -1154,9 +1128,9 @@ name = "consume"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-std",
  "fluvio",
  "futures-lite",
+ "tokio",
 ]
 
 [[package]]
@@ -1873,12 +1847,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
-name = "dtoa"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
-
-[[package]]
 name = "duct"
 version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1915,9 +1883,9 @@ name = "echo"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-std",
  "fluvio",
  "futures 0.3.28",
+ "tokio",
 ]
 
 [[package]]
@@ -2213,7 +2181,6 @@ dependencies = [
  "async-channel",
  "async-lock",
  "async-rwlock",
- "async-std",
  "async-trait",
  "base64 0.21.4",
  "bytes 1.5.0",
@@ -2241,6 +2208,7 @@ dependencies = [
  "siphasher",
  "thiserror",
  "tokio",
+ "tokio-condvar",
  "toml 0.8.2",
  "tracing",
  "wasm-bindgen-test",
@@ -2263,30 +2231,6 @@ dependencies = [
  "thiserror",
  "tracing",
  "x509-parser 0.15.1",
-]
-
-[[package]]
-name = "fluvio-benchmark"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-channel",
- "bincode",
- "chrono",
- "clap",
- "derive_builder",
- "fluvio",
- "fluvio-cli-common",
- "fluvio-future",
- "futures-util",
- "hdrhistogram",
- "madato",
- "rand 0.8.5",
- "serde",
- "serde_yaml 0.9.25",
- "statrs",
- "thiserror",
- "tracing",
 ]
 
 [[package]]
@@ -2322,6 +2266,7 @@ dependencies = [
  "fluvio-types",
  "predicates",
  "rand 0.8.5",
+ "tokio",
  "tracing",
 ]
 
@@ -2375,7 +2320,7 @@ dependencies = [
  "semver 1.0.19",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "sha2 0.10.8",
  "static_assertions",
  "sysinfo",
@@ -2392,7 +2337,6 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "fluvio-future",
  "fluvio-package-index",
  "fluvio-protocol",
  "fluvio-types",
@@ -2405,6 +2349,7 @@ dependencies = [
  "sha2 0.10.8",
  "tempfile",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 
@@ -2430,7 +2375,6 @@ dependencies = [
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future",
  "fluvio-helm",
  "fluvio-sc-schema",
  "fluvio-types",
@@ -2449,7 +2393,7 @@ dependencies = [
  "semver 1.0.19",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "sysinfo",
  "tar",
  "tempfile",
@@ -2500,7 +2444,8 @@ dependencies = [
  "futures-util",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
+ "tokio",
  "tracing",
  "trybuild 1.0.85",
 ]
@@ -2540,7 +2485,7 @@ dependencies = [
  "openapiv3",
  "pretty_assertions",
  "serde",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "tempfile",
  "toml 0.8.2",
  "tracing",
@@ -2567,7 +2512,6 @@ dependencies = [
  "bytesize",
  "derive_builder",
  "flate2",
- "fluvio-future",
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
@@ -2577,7 +2521,7 @@ dependencies = [
  "semver 1.0.19",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "thiserror",
  "toml 0.8.2",
  "tracing",
@@ -2597,7 +2541,7 @@ dependencies = [
  "semver 1.0.19",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "thiserror",
  "tracing",
 ]
@@ -2616,7 +2560,6 @@ dependencies = [
  "async-std",
  "async-trait",
  "cfg-if",
- "fluvio-test-derive 0.1.1",
  "fluvio-wasm-timer",
  "futures-lite",
  "futures-util",
@@ -2660,7 +2603,7 @@ dependencies = [
  "fluvio-types",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "thiserror",
  "toml 0.8.2",
  "tracing",
@@ -2677,7 +2620,6 @@ dependencies = [
  "dirs 5.0.1",
  "ed25519-dalek 1.0.1",
  "flate2",
- "fluvio-future",
  "fluvio-hub-protocol",
  "fluvio-types",
  "hex",
@@ -2689,12 +2631,13 @@ dependencies = [
  "semver 1.0.19",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "sha2 0.10.8",
  "ssh-key",
  "tar",
  "tempfile",
  "thiserror",
+ "tokio",
  "toml 0.8.2",
  "tracing",
  "tracing-subscriber",
@@ -2735,6 +2678,7 @@ dependencies = [
  "once_cell",
  "semver 1.0.19",
  "thiserror",
+ "tokio",
  "tokio-util",
  "tracing",
  "trybuild 1.0.85",
@@ -2802,7 +2746,7 @@ dependencies = [
  "semver 1.0.19",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "sysinfo",
  "thiserror",
  "tokio",
@@ -2851,15 +2795,15 @@ dependencies = [
  "anyhow",
  "cfg-if",
  "derive_builder",
- "fluvio-future",
  "fluvio-protocol",
  "fluvio-smartmodule",
  "fluvio-types",
  "humantime-serde",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "thiserror",
+ "tokio",
  "tracing",
  "wasmtime",
  "wasmtime-wasi",
@@ -2979,6 +2923,7 @@ dependencies = [
  "futures-util",
  "serde",
  "static_assertions",
+ "tokio",
  "tracing",
 ]
 
@@ -3021,7 +2966,6 @@ dependencies = [
  "async-lock",
  "async-trait",
  "event-listener 3.0.0",
- "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
  "futures-lite",
@@ -3042,9 +2986,7 @@ name = "fluvio-stream-model"
 version = "0.9.3"
 dependencies = [
  "async-rwlock",
- "async-std",
  "event-listener 3.0.0",
- "fluvio-future",
  "k8-types",
  "once_cell",
  "serde",
@@ -3058,7 +3000,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-channel",
- "async-std",
  "async-trait",
  "bytes 1.5.0",
  "clap",
@@ -3074,7 +3015,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-test-case-derive",
- "fluvio-test-derive 0.0.0",
+ "fluvio-test-derive",
  "fluvio-test-util",
  "fluvio-types",
  "fork",
@@ -3088,7 +3029,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "signal-hook",
  "sysinfo",
  "tokio",
@@ -3113,7 +3054,6 @@ dependencies = [
  "clap",
  "crossbeam-channel",
  "fluvio",
- "fluvio-future",
  "fluvio-test-util",
  "inflections",
  "inventory",
@@ -3125,17 +3065,6 @@ dependencies = [
  "tokio",
  "tracing",
  "trybuild 1.0.42",
-]
-
-[[package]]
-name = "fluvio-test-derive"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -3152,7 +3081,6 @@ dependencies = [
  "fluvio-cluster",
  "fluvio-command",
  "fluvio-controlplane-metadata",
- "fluvio-future",
  "fluvio-types",
  "futures-lite",
  "hdrhistogram",
@@ -3175,7 +3103,6 @@ name = "fluvio-types"
 version = "0.4.4"
 dependencies = [
  "event-listener 3.0.0",
- "fluvio-future",
  "thiserror",
  "tokio",
  "tracing",
@@ -3186,7 +3113,6 @@ name = "fluvio-version-manager"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-std",
  "clap",
  "colored",
  "dialoguer 0.11.0",
@@ -3199,6 +3125,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "tempfile",
+ "tokio",
  "toml 0.8.2",
  "tracing",
  "url",
@@ -4310,20 +4237,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "json-test-connector"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-std",
- "async-trait",
- "fluvio",
- "fluvio-connector-common",
- "futures 0.3.28",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "k8-client"
 version = "12.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4349,7 +4262,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "tokio",
  "tracing",
 ]
@@ -4364,7 +4277,7 @@ dependencies = [
  "hostfile",
  "serde",
  "serde_json",
- "serde_yaml 0.9.25",
+ "serde_yaml",
  "thiserror",
  "tracing",
 ]
@@ -4539,15 +4452,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "linked-hash-map"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "linux-raw-sys"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4654,36 +4558,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "madato"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c36112680b23ee7a5d2a10e56b59a74e4028963e9080b8abec4e69d0d773dc06"
-dependencies = [
- "indexmap 1.9.3",
- "linked-hash-map",
- "regex",
- "serde",
- "serde_derive",
- "serde_yaml 0.7.5",
-]
-
-[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
  "regex-automata 0.1.10",
-]
-
-[[package]]
-name = "matrixmultiply"
-version = "0.3.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7574c1cf36da4798ab73da5b215bbf444f50718207754cb522201d78d1cd0ff2"
-dependencies = [
- "autocfg",
- "rawpointer",
 ]
 
 [[package]]
@@ -4794,35 +4674,6 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "nalgebra"
-version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d506eb7e08d6329505faa8a3a00a5dcc6de9f76e0c77e4b75763ae3c770831ff"
-dependencies = [
- "approx",
- "matrixmultiply",
- "nalgebra-macros",
- "num-complex",
- "num-rational",
- "num-traits",
- "rand 0.8.5",
- "rand_distr",
- "simba",
- "typenum",
-]
-
-[[package]]
-name = "nalgebra-macros"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01fcc0b8149b4632adc89ac3b7b31a12fb6099a0317a4eb2ebff574ef7de7218"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -4949,15 +4800,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-complex"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ba157ca0885411de85d6ca030ba7e2a83a28636056c7c699b07c8b6f7383214"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "num-integer"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4972,17 +4814,6 @@ name = "num-iter"
 version = "0.1.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d03e6c028c5dc5cac6e2dec0efda81fc887605bb3d884578bb6d6bf7514e252"
-dependencies = [
- "autocfg",
- "num-integer",
- "num-traits",
-]
-
-[[package]]
-name = "num-rational"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0638a1c9d0a3c0914158145bc76cff373a75a627e6ecbfb71cbe6f453a5a19b0"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -5554,8 +5385,8 @@ name = "produce"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-std",
  "fluvio",
+ "tokio",
 ]
 
 [[package]]
@@ -5563,8 +5394,8 @@ name = "produce-batch"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-std",
  "fluvio",
+ "tokio",
 ]
 
 [[package]]
@@ -5572,8 +5403,8 @@ name = "produce-key-value"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-std",
  "fluvio",
+ "tokio",
  "tracing-subscriber",
 ]
 
@@ -5675,16 +5506,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rand_distr"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32cb0b9bc82b0a0876c2dd994a7e7a2683d3e7390ca40e6886785ef0c7e3ee31"
-dependencies = [
- "num-traits",
- "rand 0.8.5",
-]
-
-[[package]]
 name = "rand_hc"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5692,12 +5513,6 @@ checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
  "rand_core 0.5.1",
 ]
-
-[[package]]
-name = "rawpointer"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
 
 [[package]]
 name = "rayon"
@@ -6050,15 +5865,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ad4cc8da4ef723ed60bced201181d83791ad433213d8c24efffda1eec85d741"
 
 [[package]]
-name = "safe_arch"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f398075ce1e6a179b46f51bd88d0598b92b00d3551f1a2d4ac49e771b56ac354"
-dependencies = [
- "bytemuck",
-]
-
-[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6268,18 +6074,6 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef8099d3df28273c99a1728190c7a9f19d444c941044f64adf986bee7ec53051"
-dependencies = [
- "dtoa",
- "linked-hash-map",
- "serde",
- "yaml-rust",
-]
-
-[[package]]
-name = "serde_yaml"
 version = "0.9.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a49e178e4452f45cb61d0cd8cebc1b0fafd3e41929e996cef79aa3aca91f574"
@@ -6402,32 +6196,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "simba"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0b7840f121a46d63066ee7a99fc81dcabbc6105e437cae43528cea199b5a05f"
-dependencies = [
- "approx",
- "num-complex",
- "num-traits",
- "paste",
- "wide",
-]
-
-[[package]]
-name = "sink-test-connector"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-std",
- "async-trait",
- "fluvio",
- "fluvio-connector-common",
- "futures 0.3.28",
- "serde",
-]
-
-[[package]]
 name = "siphasher"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6491,6 +6259,7 @@ dependencies = [
  "lib-cargo-crate",
  "tempfile",
  "thiserror",
+ "tokio",
  "toml 0.8.2",
  "tracing",
 ]
@@ -6606,19 +6375,6 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
-name = "statrs"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d08e5e1748192713cc281da8b16924fb46be7b0c2431854eadc785823e5696e"
-dependencies = [
- "approx",
- "lazy_static",
- "nalgebra",
- "num-traits",
- "rand 0.8.5",
-]
 
 [[package]]
 name = "strsim"
@@ -6899,6 +6655,15 @@ dependencies = [
  "socket2 0.5.4",
  "tokio-macros",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "tokio-condvar"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7233b09174540ef9bf9fc8326bcad6ccebc631e7c9a1e2e48d956a133056f9d"
+dependencies = [
+ "tokio",
 ]
 
 [[package]]
@@ -7936,16 +7701,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wide"
-version = "0.7.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebecebefc38ff1860b4bc47550bbfa63af5746061cf0d29fcd7fa63171602598"
-dependencies = [
- "bytemuck",
- "safe_arch",
-]
-
-[[package]]
 name = "wiggle"
 version = "13.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8286,15 +8041,6 @@ dependencies = [
  "rusticata-macros",
  "thiserror",
  "time",
-]
-
-[[package]]
-name = "yaml-rust"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
-dependencies = [
- "linked-hash-map",
 ]
 
 [[package]]

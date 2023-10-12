@@ -26,7 +26,7 @@ use tokio::select;
 use tracing::{info, warn};
 use tracing::{debug, error, trace, instrument};
 
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use futures_util::ready;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
@@ -376,7 +376,7 @@ impl MultiPlexingResponseDispatcher {
         terminate: Arc<Event>,
         stale: Arc<AtomicBool>,
     ) {
-        use fluvio_future::task::spawn;
+        use tokio::spawn;
 
         let dispatcher = Self {
             id,
@@ -541,8 +541,8 @@ mod tests {
 
     use fluvio_future::net::TcpListener;
     use fluvio_future::net::TcpStream;
-    use fluvio_future::task::spawn;
-    use fluvio_future::timer::sleep;
+    use tokio::spawn;
+    use tokio::time::sleep;
     use fluvio_protocol::api::RequestMessage;
 
     use super::MultiplexerSocket;
@@ -845,7 +845,8 @@ mod tests {
         debug!("client: socket was timeout");
     }
 
-    #[fluvio_future::test(ignore)]
+    #[ignore]
+    #[tokio::test]
     async fn test_multiplexing() {
         debug!("start testing");
         let addr = "127.0.0.1:6000";
@@ -857,7 +858,8 @@ mod tests {
         .await;
     }
 
-    #[fluvio_future::test(ignore)]
+    #[ignore]
+    #[tokio::test]
     async fn test_multiplexing_close_socket() {
         debug!("start test_multiplexing_close_socket");
         let addr = "127.0.0.1:6000";
@@ -869,7 +871,8 @@ mod tests {
         .await;
     }
 
-    #[fluvio_future::test(ignore)]
+    #[ignore]
+    #[tokio::test]
     async fn test_multiplexing_time_out() {
         debug!("start test_multiplexing_timeout");
         let addr = "127.0.0.1:6000";
@@ -962,7 +965,8 @@ mod tests {
             }
         }
 
-        #[fluvio_future::test(ignore)]
+        #[ignore]
+        #[tokio::test]
         async fn test_multiplexing_native_tls() {
             debug!("start testing");
             let addr = "127.0.0.1:6001";

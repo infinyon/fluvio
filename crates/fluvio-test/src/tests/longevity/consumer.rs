@@ -1,3 +1,4 @@
+use std::pin::pin;
 use std::time::SystemTime;
 use std::time::Duration;
 
@@ -11,7 +12,7 @@ use tracing::info;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::Offset;
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 use fluvio_future::io::Stream;
 use fluvio_protocol::record::ConsumerRecord;
 use fluvio_protocol::link::ErrorCode;
@@ -65,7 +66,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: MyTestCase, consum
     // Note, we're going to give the consumer some buffer
     // to give it a better chance to read all records
     let consumer_buffer_time = Duration::from_millis(25);
-    let mut test_timer = sleep(option.environment.timeout + consumer_buffer_time);
+    let mut test_timer = pin!(sleep(option.environment.timeout + consumer_buffer_time));
     let mut records_recvd: i32 = 0;
 
     let start_consume = SystemTime::now();

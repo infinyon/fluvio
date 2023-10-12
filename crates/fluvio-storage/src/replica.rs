@@ -438,7 +438,7 @@ fn replica_dir_name<S: AsRef<str>>(topic_name: S, partition_index: Size) -> Stri
 mod tests {
 
     use fluvio_future::fs::remove_dir_all;
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
     use futures_lite::AsyncWriteExt;
     use tracing::debug;
     use tracing::info;
@@ -507,7 +507,7 @@ mod tests {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_simple() {
         let option = base_option("test_simple");
 
@@ -554,7 +554,7 @@ mod tests {
 
     const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_uncommitted_fetch() {
         let option = base_option(TEST_UNCOMMIT_DIR);
 
@@ -621,7 +621,7 @@ mod tests {
 
     const TEST_OFFSET_DIR: &str = "test_offset";
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_end_offset() {
         let option = base_option(TEST_OFFSET_DIR);
 
@@ -645,7 +645,7 @@ mod tests {
 
     // you can show log by:  RUST_LOG=commit_log=debug cargo test roll_over
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_rep_log_roll_over() {
         let option = rollover_option(TEST_REPLICA_DIR);
 
@@ -693,7 +693,7 @@ mod tests {
         assert_eq!(seg1_metadata.len(), 8);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_commit() {
         let option = base_option("test_commit");
         let mut replica = create_replica("test", 0, option.clone()).await;
@@ -717,7 +717,7 @@ mod tests {
 
     const TEST_STORAGE_SIZE_DIR: &str = "test_storage_size";
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_storage_size() {
         let option = base_option(TEST_STORAGE_SIZE_DIR);
         let mut replica = create_replica("test", 0, option.clone()).await;
@@ -743,7 +743,7 @@ mod tests {
         assert_eq!(size, 79 * 2);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_storage_size_delete_log() {
         let option = base_option("test_storage_size_deleted");
         let mut replica = create_replica("test", 0, option.clone()).await;
@@ -769,7 +769,7 @@ mod tests {
     }
 
     /// test fetch only committed records
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_committed_fetch() {
         let option = base_option("test_commit_fetch");
 
@@ -828,7 +828,7 @@ mod tests {
         assert_eq!(slice.file_slice.unwrap().len() as usize, batch_len);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_delete() {
         let mut option = base_option("test_delete");
         option.max_batch_size = 50; // enforce 50 length
@@ -844,7 +844,7 @@ mod tests {
         assert!(!test_file.exists());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_limit_batch() {
         let mut option = base_option("test_batch_limit");
         option.max_batch_size = 100;
@@ -876,7 +876,7 @@ mod tests {
     }
 
     /// create replicat with multiple segments
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_multiple_segment() {
         let mut option = base_option("test_find_segment");
         // enough for 2 batch (2 records per batch)
@@ -940,7 +940,7 @@ mod tests {
     }
 
     /// test replica with purging segments
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_segment_purge() {
         let storage_config = StorageConfig::builder()
             .cleaning_interval_ms(200)
@@ -1009,7 +1009,7 @@ mod tests {
         assert_eq!(Arc::strong_count(&segments), 1);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_size_enforced() {
         //given
         let storage_config = StorageConfig::builder()
@@ -1057,7 +1057,7 @@ mod tests {
     }
 
     /// fix bad segment
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_replica_repair_bad_header() {
         let option = base_option("test_replica_repair_bad_header");
 

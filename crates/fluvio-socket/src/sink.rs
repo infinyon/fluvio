@@ -109,7 +109,7 @@ mod file {
     use std::os::fd::BorrowedFd;
 
     use bytes::BytesMut;
-    use fluvio_future::task::spawn_blocking;
+    use tokio::task::spawn_blocking;
     use futures_util::AsyncWriteExt;
     use nix::sys::uio::pread;
 
@@ -205,7 +205,8 @@ mod file {
                                     });
                                     (read_size, buf)
                                 })
-                                .await;
+                                .await
+                                .expect("Buffer writing should only panic");
 
                                 let read = read_result?;
                                 buf.resize(read, 0);
@@ -255,7 +256,7 @@ mod file {
         use fluvio_protocol::store::StoreValue;
         use fluvio_future::fs::util;
         use fluvio_future::fs::AsyncFileExtension;
-        use fluvio_future::timer::sleep;
+        use tokio::time::sleep;
         use fluvio_protocol::{Decoder, Encoder};
         use fluvio_types::event::StickyEvent;
 
@@ -391,7 +392,7 @@ mod file {
             Ok(())
         }
 
-        #[fluvio_future::test]
+        #[tokio::test]
         async fn test_sink_zero_copy() {
             let port = portpicker::pick_unused_port().expect("No free ports left");
             let addr = format!("127.0.0.1:{port}");
@@ -404,7 +405,7 @@ mod file {
             .await;
         }
 
-        #[fluvio_future::test]
+        #[tokio::test]
         async fn test_sink_buffer_copy() {
             let port = portpicker::pick_unused_port().expect("No free ports left");
             let addr = format!("127.0.0.1:{port}");

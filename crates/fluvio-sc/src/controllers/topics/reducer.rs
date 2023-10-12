@@ -189,7 +189,7 @@ mod test2 {
     type TopicWSAction = WSAction<TopicSpec, K8MetaItem>;
 
     // if topic are just created, it should transitioned to pending state if config are valid
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_topic_reducer_init_to_pending() {
         let topic_reducer = TopicReducer::new(
             TopicLocalStore::new_shared(),

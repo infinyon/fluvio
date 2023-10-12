@@ -35,15 +35,11 @@ serde_yaml = { workspace = true, optional = true }
 derive_builder = { workspace = true }
 
 # External Fluvio dependencies
-fluvio-future = { workspace = true }
 flv-util = { workspace = true }
 
 fluvio-types = { workspace = true }
 fluvio-stream-model = { workspace = true }
 fluvio-protocol = { workspace = true, features = [ "record",] }
 
-
 [dev-dependencies]
-fluvio-future = { workspace = true, features = ["fixture"] }
 serde_json = { workspace = true }
-

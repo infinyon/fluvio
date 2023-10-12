@@ -117,7 +117,7 @@ where
         header: RequestHeader,
         summary: bool,
     ) {
-        use fluvio_future::task::spawn;
+        use tokio::spawn;
 
         let controller = Self {
             response_sink,

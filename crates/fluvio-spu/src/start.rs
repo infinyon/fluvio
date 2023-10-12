@@ -18,8 +18,7 @@ pub fn main_loop(opt: SpuOpt) {
     use sysinfo::{System, SystemExt};
     use tracing::info;
 
-    use fluvio_future::task::run_block_on;
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
 
     use crate::monitoring::init_monitoring;
 
@@ -40,25 +39,28 @@ pub fn main_loop(opt: SpuOpt) {
     info!(available_memory = sys.available_memory(), "System");
     info!(uptime = sys.uptime(), "Uptime in secs");
 
-    run_block_on(async move {
-        let (ctx, internal_server, public_server) = create_services(spu_config.clone(), true, true);
+    tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async move {
+            let (ctx, internal_server, public_server) =
+                create_services(spu_config.clone(), true, true);
 
-        let _public_shutdown = internal_server.unwrap().run();
-        let _private_shutdown = public_server.unwrap().run();
+            let _public_shutdown = internal_server.unwrap().run();
+            let _private_shutdown = public_server.unwrap().run();
 
-        init_monitoring(ctx);
+            init_monitoring(ctx);
 
-        if let Some(tls_config) = tls_acceptor_option {
-            proxy::start_proxy(spu_config, tls_config).await;
-        }
+            if let Some(tls_config) = tls_acceptor_option {
+                proxy::start_proxy(spu_config, tls_config).await;
+            }
 
-        println!("SPU Version: {VERSION} started successfully");
+            println!("SPU Version: {VERSION} started successfully");
 
-        // infinite loop
-        loop {
-            sleep(Duration::from_secs(60)).await;
-        }
-    });
+            // infinite loop
+            loop {
+                sleep(Duration::from_secs(60)).await;
+            }
+        });
 }
 
 /// create server and spin up services, but don't run server

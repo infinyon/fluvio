@@ -46,7 +46,9 @@ pub async fn read_to_end(response: Response<AsyncBody>) -> std::io::Result<Vec<u
 mod tests {
     use super::*;
 
-    #[fluvio_future::test]
+    use tokio;
+
+    #[tokio::test]
     async fn test_web_request() {
         use fluvio_index::HttpAgent;
         use http::StatusCode;
@@ -56,7 +58,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_https_required() {
         //given
         let request = Request::get("http://fluvio.io")
@@ -76,7 +78,7 @@ mod tests {
         }
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_read_empty_body() {
         //given
         let body = AsyncBody::empty();
@@ -89,7 +91,7 @@ mod tests {
         assert!(result.is_empty());
     }
 
-    #[fluvio_future::test]
+    #[tokio::test]
     async fn test_read_body() {
         //given
         let body = AsyncBody::from("content");

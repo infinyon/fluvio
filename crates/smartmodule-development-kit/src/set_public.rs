@@ -7,7 +7,7 @@ use clap::Parser;
 use fluvio_controlplane_metadata::smartmodule as smpkg;
 use smpkg::SmartModuleVisibility;
 
-// use fluvio_future::task::run_block_on;
+// use tokio::task::spawn_blocking;
 // use fluvio_hub_util as hubutil;
 // use hubutil::{DEF_HUB_INIT_DIR, HubAccess, PackageMeta, PkgVisibility};
 

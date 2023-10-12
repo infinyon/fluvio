@@ -26,10 +26,10 @@ pub fn main_loop(opt: ScOpt) {
 
         info!("initializing metadata from read only configuration");
         let client = Arc::new(
-            fluvio_future::task::run_block_on(
-                async move { create_memory_client(read_only_path).await },
-            )
-            .expect("failed to initialize metadata from read only configuration"),
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(async { create_memory_client(read_only_path).await })
+                .expect("failed to initialize metadata from read only configuration"),
         );
         inner_main_loop(is_local, sc_config, client, auth_policy, tls_option)
     } else {
@@ -70,10 +70,9 @@ fn inner_main_loop<C>(
 {
     use std::time::Duration;
 
-    use fluvio_future::task::run_block_on;
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
 
-    run_block_on(async move {
+    tokio::runtime::Runtime::new().unwrap().block_on(async {
         info!("initializing client");
         // init k8 service
 

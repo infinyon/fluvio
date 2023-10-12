@@ -12,9 +12,8 @@ publish = false
 async-trait = { workspace = true }
 futures = { workspace = true }
 anyhow = { workspace = true }
-async-std = { features = ["attributes"], workspace = true }
 serde = { default-features = false, features = ["derive"], workspace = true }
+tokio = { workspace = true }
 
 fluvio = { path = "../../crates/fluvio/", features = ["smartengine"]}
 fluvio-connector-common = { path = "../../crates/fluvio-connector-common/", features = ["derive"] }
-

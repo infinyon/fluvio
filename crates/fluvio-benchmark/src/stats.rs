@@ -2,9 +2,8 @@ use std::{
     time::{Instant, Duration},
     collections::{HashMap, BTreeMap},
     fmt::{Formatter, Display},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
-use fluvio_future::sync::Mutex;
 use hdrhistogram::Histogram;
 use madato::yaml::mk_md_table_from_yaml;
 use tracing::{trace, debug};

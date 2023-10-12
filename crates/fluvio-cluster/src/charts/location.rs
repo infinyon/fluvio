@@ -177,7 +177,7 @@ mod inline {
     #[cfg(test)]
     mod test {
 
-        #[fluvio_future::test]
+        #[tokio::test]
         async fn test_unpack() {
             use super::InlineChart;
             use super::super::SYS_CHART_DIR;

@@ -3,6 +3,7 @@ use std::fmt;
 use std::fmt::{Debug, Display};
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::pin::pin;
 
 use futures_lite::stream::StreamExt;
 use tracing::debug;
@@ -13,9 +14,9 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use once_cell::sync::Lazy;
 
-use fluvio_future::task::spawn;
-use fluvio_future::task::JoinHandle;
-use fluvio_future::timer::sleep;
+use tokio::spawn;
+use tokio::task::JoinHandle;
+use tokio::time::sleep;
 
 use k8_metadata_client::{MetadataClient, SharedClient, NameSpace};
 
@@ -127,7 +128,7 @@ where
 
         let client = self.client.clone();
 
-        let mut reconcile_timer = sleep(Duration::from_secs(*SC_RECONCILIATION_INTERVAL_SEC));
+        let mut reconcile_timer = pin!(sleep(Duration::from_secs(*SC_RECONCILIATION_INTERVAL_SEC)));
 
         // create watch streams
         let mut k8_stream =

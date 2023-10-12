@@ -9,6 +9,7 @@
 //! Assigned Topics allow the users to apply their custom-defined replica assignment.
 //!
 
+use std::pin::pin;
 use tracing::{info, debug, trace, instrument};
 use anyhow::{anyhow, Result};
 
@@ -185,7 +186,7 @@ async fn process_topic_request<AC: AuthContext, C: MetadataItem>(
     use std::time::Duration;
     use once_cell::sync::Lazy;
     use tokio::select;
-    use fluvio_future::timer::sleep;
+    use tokio::time::sleep;
 
     static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
         use std::env;
@@ -221,7 +222,7 @@ async fn process_topic_request<AC: AuthContext, C: MetadataItem>(
 
     let partition_ctx = auth_ctx.global_ctx.partitions();
     let mut partition_listener = partition_ctx.change_listener();
-    let mut timer = sleep(Duration::from_secs(*MAX_WAIT_TIME));
+    let mut timer = pin!(sleep(Duration::from_secs(*MAX_WAIT_TIME)));
 
     loop {
         let _ = partition_listener.sync_status_changes().await;

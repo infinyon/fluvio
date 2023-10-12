@@ -65,11 +65,11 @@ fluvio-types = { workspace = true,  optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
 trybuild = "1.0.64"
+
 fluvio-future = { workspace = true, features = [
-    "fixture",
     "subscriber",
-    "timer",
     "net",
 ] }
-futures = { workspace = true }

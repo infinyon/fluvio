@@ -71,7 +71,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 semver = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true,  features = ["macros"] }
+tokio = { workspace = true,  features = ["macros", "rt"] }
 tracing = { workspace = true }
 which = { workspace = true }
 url = { workspace = true }
@@ -100,7 +100,3 @@ fluvio-types = { workspace = true,  optional = true }
 fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
 fluvio-sc-schema = { workspace = true,  features = ["use_serde"], optional = true }
 fluvio-spu-schema = { workspace = true, optional = true }
-
-
-[dev-dependencies]
-fluvio-future = { workspace = true, features = ["fixture"] }

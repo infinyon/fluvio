@@ -69,7 +69,6 @@ k8-client = { workspace = true }
 k8-metadata-client = { workspace = true }
 k8-types = { workspace = true, features = ["app"] }
 fluvio-command = { workspace = true }
-fluvio-future = { workspace = true }
 
 fluvio = { workspace = true  }
 fluvio-extension-common = { workspace = true,  optional = true }
@@ -77,6 +76,3 @@ fluvio-controlplane-metadata = { workspace = true,  features = ["k8",] }
 fluvio-sc-schema = { workspace = true  }
 fluvio-types = { workspace = true  }
 fluvio-channel = { workspace = true  }
-
-[dev-dependencies]
-fluvio-future = { workspace = true, features = ["task", "fixture"] }

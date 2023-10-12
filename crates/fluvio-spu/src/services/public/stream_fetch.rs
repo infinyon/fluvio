@@ -6,7 +6,7 @@ use tokio::select;
 
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
-use fluvio_future::task::spawn;
+use tokio::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
 use fluvio_protocol::{
     api::{RequestMessage, RequestHeader},

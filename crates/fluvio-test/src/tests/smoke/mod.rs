@@ -18,7 +18,7 @@ use fluvio_test_util::async_process;
 use fluvio_cli::TableFormatConfig;
 use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 
-use fluvio_future::timer::sleep;
+use tokio::time::sleep;
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
