@@ -26,6 +26,11 @@ setup_file() {
     export VERSIONS_DIR
     debug_msg "Versions Directory: $VERSIONS_DIR"
 
+    # The path to the Settings Toml file
+    SETTINGS_TOML_PATH="$HOME/.fvm/settings.toml"
+    export SETTINGS_TOML_PATH
+    debug_msg "Settings Toml Path: $SETTINGS_TOML_PATH"
+
     STATIC_VERSION="0.10.15"
     export STATIC_VERSION
     debug_msg "Static Version: $STATIC_VERSION"
@@ -207,34 +212,87 @@ setup_file() {
     run bash -c '! test -d $FLUVIO_HOME_DIR'
     assert_success
 
-    # Installs Stable Fluvio
-    run bash -c 'fvm install stable'
-    assert_success
-
-    # Switch version to use Stable Fluvio
-    run bash -c 'fvm switch stable'
-    assert_success
-
-    # Expected binaries
-    declare -a binaries=(
-        fluvio
-        fluvio-run
-        fluvio-cloud
-        cdk
-        smdk
+    declare -a versions=(
+        stable
+        $STATIC_VERSION
     )
 
-    for binary in "${binaries[@]}"
+    for version in "${versions[@]}"
     do
-        export FVM_BIN_PATH="$VERSIONS_DIR/stable/$binary"
-        echo "Checking binary: $BINARY_PATH"
-        run bash -c 'test -f $FVM_BIN_PATH'
+        export VERSION="$version"
+
+        # Installs Fluvio Version
+        run bash -c 'fvm install $VERSION'
         assert_success
 
-        export FLV_BIN_PATH="$FLUVIO_BINARIES_DIR/$binary"
-        echo "Checking binary: $FLV_BIN_PATH"
-        run bash -c 'test -f $FLV_BIN_PATH'
+        # Switch version to use
+        run bash -c 'fvm switch $VERSION'
         assert_success
+
+        # Checks version is set
+        if [ "$VERSION" == "stable" ]; then
+            run bash -c 'fluvio version > flv_version_$version.out && cat flv_version_$version.out | head -n 1 | grep "$STABLE_VERSION"'
+            assert_output --partial "$STABLE_VERSION"
+            assert_success
+        fi
+
+        if [ "$VERSION" == "$STATIC_VERSION" ]; then
+            run bash -c 'fluvio version > flv_version_$version.out && cat flv_version_$version.out | head -n 1 | grep "$STATIC_VERSION"'
+            assert_output --partial "$STATIC_VERSION"
+            assert_success
+        fi
+
+        # Checks Settings File's Version is updated
+        if [ "$VERSION" == "stable" ]; then
+            run bash -c 'yq -oy '.version' "$SETTINGS_TOML_PATH"'
+            assert_output --partial "$STABLE_VERSION"
+            assert_success
+        fi
+
+        if [ "$VERSION" == "$STATIC_VERSION" ]; then
+            run bash -c 'yq -oy '.version' "$SETTINGS_TOML_PATH"'
+            assert_output --partial "$STATIC_VERSION"
+            assert_success
+        fi
+
+        # Checks Settings File's Channel is updated
+        if [ "$VERSION" == "stable" ]; then
+            run bash -c 'yq -oy '.channel' "$SETTINGS_TOML_PATH"'
+            assert_output --partial "stable"
+            assert_success
+        fi
+
+        if [ "$VERSION" == "$STATIC_VERSION" ]; then
+            run bash -c 'yq -oy '.channel.tag' "$SETTINGS_TOML_PATH"'
+            assert_output --partial "$STATIC_VERSION"
+            assert_success
+        fi
+
+        # Expected binaries
+        declare -a binaries=(
+            fluvio
+            fluvio-run
+            fluvio-cloud
+            cdk
+            smdk
+        )
+
+        for binary in "${binaries[@]}"
+        do
+            export FVM_BIN_PATH="$VERSIONS_DIR/$VERSION/$binary"
+            echo "Checking binary: $BINARY_PATH"
+            run bash -c 'test -f $FVM_BIN_PATH'
+            assert_success
+
+            export FLV_BIN_PATH="$FLUVIO_BINARIES_DIR/$binary"
+            echo "Checking binary: $FLV_BIN_PATH"
+            run bash -c 'test -f $FLV_BIN_PATH'
+            assert_success
+
+            export SHASUM_A=$(sha256sum $FVM_BIN_PATH | awk '{ print $1 }')
+            export SHASUM_B=$(sha256sum $FLV_BIN_PATH | awk '{ print $1 }')
+            assert_equal "$SHASUM_A" "$SHASUM_B"
+        done
     done
 
     # Removes FVM
