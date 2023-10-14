@@ -1,28 +1,35 @@
 use colored::Colorize;
 
-pub trait Notify {
-    fn is_quiet(&self) -> bool;
+pub struct Notify {
+    /// Whether to suppress all output
+    quiet: bool,
+}
 
-    fn notify_info(&self, message: impl AsRef<str>) {
-        if !self.is_quiet() {
+impl Notify {
+    pub fn new(quiet: bool) -> Self {
+        Self { quiet }
+    }
+
+    pub fn info(&self, message: impl AsRef<str>) {
+        if !self.quiet {
             println!("{}: {}", "info".blue().bold(), message.as_ref());
         }
     }
 
-    fn notify_done(&self, message: impl AsRef<str>) {
-        if !self.is_quiet() {
+    pub fn done(&self, message: impl AsRef<str>) {
+        if !self.quiet {
             println!("{}: {}", "done".green().bold(), message.as_ref());
         }
     }
 
-    fn notify_warn(&self, message: impl AsRef<str>) {
-        if !self.is_quiet() {
+    pub fn warn(&self, message: impl AsRef<str>) {
+        if !self.quiet {
             println!("{}: {}", "warn".yellow().bold(), message.as_ref());
         }
     }
 
-    fn notify_help(&self, message: impl AsRef<str>) {
-        if !self.is_quiet() {
+    pub fn help(&self, message: impl AsRef<str>) {
+        if !self.quiet {
             println!("{}: {}", "help".purple().bold(), message.as_ref());
         }
     }

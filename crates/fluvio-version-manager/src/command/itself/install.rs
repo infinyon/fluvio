@@ -5,8 +5,6 @@ use std::path::PathBuf;
 use clap::Parser;
 use anyhow::Result;
 
-use crate::GlobalOptions;
-
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
 use crate::common::workdir::{fvm_bin_path, fvm_workdir_path, fvm_versions_path};
@@ -23,18 +21,15 @@ esac
 "#;
 
 #[derive(Clone, Debug, Parser)]
-pub struct SelfInstallOpt {
-    #[command(flatten)]
-    global_opts: GlobalOptions,
-}
+pub struct SelfInstallOpt;
 
 impl SelfInstallOpt {
-    pub async fn process(&self) -> Result<()> {
+    pub async fn process(&self, notify: Notify) -> Result<()> {
         // Checks if FVM is already installed
         let bin_path = fvm_bin_path()?;
 
         if bin_path.exists() {
-            self.notify_info(format!(
+            notify.info(format!(
                 "FVM is already installed at {}",
                 bin_path.display()
             ));
@@ -44,11 +39,11 @@ impl SelfInstallOpt {
         let fvm_installation_path = self.install_fvm()?;
         Settings::init()?;
 
-        self.notify_done(format!(
+        notify.done(format!(
             "FVM installed successfully at {}",
             fvm_installation_path.display()
         ));
-        self.notify_help(format!("Add FVM to PATH using {}", "source $HOME/.fvm/env"));
+        notify.help(format!("Add FVM to PATH using {}", "source $HOME/.fvm/env"));
 
         Ok(())
     }
@@ -88,11 +83,5 @@ impl SelfInstallOpt {
         write(fvm_env_file_path, FVM_ENV_FILE_CONTENTS)?;
 
         Ok(fvm_dir)
-    }
-}
-
-impl Notify for SelfInstallOpt {
-    fn is_quiet(&self) -> bool {
-        self.global_opts.quiet
     }
 }

@@ -9,12 +9,11 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Parser;
-
 use tempfile::TempDir;
+use url::Url;
 
+use fluvio_hub_util::HUB_REMOTE;
 use fluvio_hub_util::fvm::{Client, Download, PackageSet, DEFAULT_PKGSET, Channel};
-
-use crate::GlobalOptions;
 
 use crate::common::TARGET;
 use crate::common::manifest::VersionManifest;
@@ -24,15 +23,16 @@ use crate::common::workdir::fvm_versions_path;
 /// The `install` command is responsible of installing the desired Package Set
 #[derive(Debug, Parser)]
 pub struct InstallOpt {
-    #[command(flatten)]
-    global_opts: GlobalOptions,
+    /// Registry used to fetch Fluvio Versions
+    #[arg(long, env = "HUB_REGISTRY_URL", default_value = HUB_REMOTE)]
+    registry: Url,
     /// Version to install
     #[arg(index = 1, default_value_t = Channel::Stable)]
     version: Channel,
 }
 
 impl InstallOpt {
-    pub async fn process(&self) -> Result<()> {
+    pub async fn process(&self, notify: Notify) -> Result<()> {
         let versions_path = fvm_versions_path()?;
 
         if !versions_path.exists() {
@@ -44,13 +44,13 @@ impl InstallOpt {
         // destination directory. By dropping `tmp_dir` the directory will be
         // deleted from the filesystem.
         let tmp_dir = TempDir::new()?;
-        let client = Client::new(self.global_opts.registry.as_str())?;
+        let client = Client::new(self.registry.as_str())?;
         let pkgset = client
             .fetch_package_set(DEFAULT_PKGSET, &self.version, TARGET)
             .await?;
 
         for (idx, artf) in pkgset.artifacts.iter().enumerate() {
-            self.notify_info(format!(
+            notify.info(format!(
                 "Downloading ({}/{}): {}@{}",
                 idx + 1,
                 pkgset.artifacts.len(),
@@ -66,7 +66,7 @@ impl InstallOpt {
 
         VersionManifest::new(self.version.to_owned(), pkgset.version.clone())
             .write(version_path)?;
-        self.notify_done(format!("Installed fluvio version {}", self.version));
+        notify.done(format!("Installed fluvio version {}", self.version));
 
         Ok(())
     }
@@ -114,12 +114,6 @@ impl InstallOpt {
     #[cfg(not(unix))]
     fn set_executable_mode(path: PathBuf) -> Result<()> {
         Ok(())
-    }
-}
-
-impl Notify for InstallOpt {
-    fn is_quiet(&self) -> bool {
-        self.global_opts.quiet
     }
 }
 

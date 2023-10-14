@@ -417,4 +417,39 @@ setup_file() {
     assert_line --index 0 "help: You can use fvm show to see installed versions"
     assert_line --index 1 "Error: No version provided"
     assert_failure
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+}
+
+@test "Supress output with '-q' optional argument" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Expect no output if `-q` is passed
+    run bash -c 'fvm -q install stable'
+    assert_output ""
+    assert_success
+
+    # Expect output if `-q` is not passed
+    run bash -c 'fvm install 0.10.14'
+    assert_line --index 0 "info: Downloading (1/5): fluvio@0.10.14"
+    assert_line --index 1 "info: Downloading (2/5): fluvio-run@0.10.14"
+    assert_line --index 2 "info: Downloading (3/5): fluvio-cloud@0.2.15"
+    assert_line --index 3 "info: Downloading (4/5): cdk@0.10.14"
+    assert_line --index 4 "info: Downloading (5/5): smdk@0.10.14"
+    assert_line --index 5 "done: Installed fluvio version 0.10.14"
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
 }

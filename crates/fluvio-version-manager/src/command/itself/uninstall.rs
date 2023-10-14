@@ -5,22 +5,18 @@ use clap::Parser;
 use dialoguer::Confirm;
 use dialoguer::theme::ColorfulTheme;
 
-use crate::GlobalOptions;
-
 use crate::common::notify::Notify;
 use crate::common::workdir::fvm_workdir_path;
 
 #[derive(Clone, Debug, Parser)]
 pub struct SelfUninstallOpt {
-    #[command(flatten)]
-    global_opts: GlobalOptions,
     /// Skip the confirmation prompt and uninstall FVM
     #[clap(long)]
     yes: bool,
 }
 
 impl SelfUninstallOpt {
-    pub async fn process(&self) -> Result<()> {
+    pub async fn process(&self, notify: Notify) -> Result<()> {
         // Checks if FVM is already installed
         let workdir_path = fvm_workdir_path()?;
 
@@ -34,7 +30,7 @@ impl SelfUninstallOpt {
                     .interact()?
             {
                 remove_dir_all(&workdir_path)?;
-                self.notify_done(format!(
+                notify.done(format!(
                     "Fluvio Version Manager was removed from {}",
                     workdir_path.display()
                 ));
@@ -43,16 +39,10 @@ impl SelfUninstallOpt {
             return Ok(());
         }
 
-        self.notify_warn(format!(
+        notify.warn(format!(
             "Aborting uninstallation, no FVM installation found at {}",
             workdir_path.display()
         ));
         Ok(())
-    }
-}
-
-impl Notify for SelfUninstallOpt {
-    fn is_quiet(&self) -> bool {
-        self.global_opts.quiet
     }
 }

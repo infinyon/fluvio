@@ -10,8 +10,6 @@ use colored::Colorize;
 
 use fluvio_hub_util::fvm::Channel;
 
-use crate::GlobalOptions;
-
 use crate::common::workdir::fvm_versions_path;
 use crate::common::notify::Notify;
 
@@ -19,17 +17,15 @@ use self::version_directory::VersionDirectory;
 
 #[derive(Debug, Parser)]
 pub struct SwitchOpt {
-    #[command(flatten)]
-    global_opts: GlobalOptions,
     /// Version to set as active
     #[arg(index = 1)]
     version: Option<Channel>,
 }
 
 impl SwitchOpt {
-    pub async fn process(&self) -> Result<()> {
+    pub async fn process(&self, notify: Notify) -> Result<()> {
         let Some(version) = &self.version else {
-            self.notify_help(format!(
+            notify.help(format!(
                 "You can use {} to see installed versions",
                 "fvm show".bold()
             ));
@@ -43,8 +39,8 @@ impl SwitchOpt {
         let versions_path = fvm_versions_path()?;
 
         if !versions_path.exists() {
-            self.notify_warn("No local Fluvio versions found.");
-            self.notify_help(format!(
+            notify.warn("No local Fluvio versions found.");
+            notify.help(format!(
                 "Try installing a version with {}, and then retry this command.",
                 "fvm install".bold()
             ));
@@ -57,14 +53,14 @@ impl SwitchOpt {
         let pkgset_path = versions_path.join(version.to_string());
 
         if !pkgset_path.exists() {
-            self.notify_warn(format!(
+            notify.warn(format!(
                 "Fluvio version {} is not installed",
                 version.to_string().bold()
             ));
 
             let help = format!("fvm install {}", version);
 
-            self.notify_help(format!(
+            notify.help(format!(
                 "Install the desired version using {}, and then retry this command.",
                 help.bold()
             ));
@@ -76,17 +72,11 @@ impl SwitchOpt {
 
         version_dir.set_active()?;
 
-        self.notify_done(format!(
+        notify.done(format!(
             "Now using Fluvio version {}",
             version.to_string().bold(),
         ));
 
         Ok(())
-    }
-}
-
-impl Notify for SwitchOpt {
-    fn is_quiet(&self) -> bool {
-        self.global_opts.quiet
     }
 }
