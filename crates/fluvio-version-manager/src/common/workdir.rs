@@ -8,6 +8,9 @@ use anyhow::Result;
 
 use super::home_dir;
 
+/// Home Directory for Fluvio
+pub const FLUVIO_HOME_DIR: &str = ".fluvio";
+
 /// Home Directory for the Fluvio Version Manager (FVM) CLI
 pub const FVM_HOME_DIR: &str = ".fvm";
 
@@ -45,6 +48,16 @@ pub fn fvm_versions_path() -> Result<PathBuf> {
     Ok(fvm_workdir_path()?.join(FVM_VERSIONS_DIR))
 }
 
+/// Retrieves the path to the `~/.fluvio` directory in the host system.
+pub fn fluvio_path() -> Result<PathBuf> {
+    Ok(home_dir()?.join(FLUVIO_HOME_DIR))
+}
+
+/// Retrieves the path to the `~/.fluvio/bin` directory in the host system.
+pub fn fluvio_binaries_path() -> Result<PathBuf> {
+    Ok(fluvio_path()?.join("bin"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,5 +84,22 @@ mod tests {
         let fvm_path = fvm_workdir_path().expect("Failed to get fvm path");
 
         assert_eq!(fvm_version_path, fvm_path.join(FVM_VERSIONS_DIR));
+    }
+
+    #[test]
+    fn test_fluvio_path() {
+        let fluvio_path = fluvio_path().expect("Failed to get fluvio path");
+        let home = home_dir().expect("Failed to get home directory");
+
+        assert_eq!(fluvio_path, home.join(FLUVIO_HOME_DIR));
+    }
+
+    #[test]
+    fn test_fluvio_binaries_path() {
+        let fluvio_binaries_path =
+            fluvio_binaries_path().expect("Failed to get fluvio binaries path");
+        let fluvio_path = fluvio_path().expect("Failed to get fluvio path");
+
+        assert_eq!(fluvio_binaries_path, fluvio_path.join("bin"));
     }
 }

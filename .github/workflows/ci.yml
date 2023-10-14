@@ -1396,7 +1396,7 @@ jobs:
           - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
-        artifact: [fluvio, fluvio-channel, smdk, fbm, cdk]
+        artifact: [fluvio, fluvio-channel, smdk, fbm, cdk, fvm]
         exclude:
           - rust-target: armv7-unknown-linux-gnueabihf
             artifact: smdk

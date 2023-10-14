@@ -1,4 +1,4 @@
-use std::fs::write;
+use std::fs::{write, read_to_string};
 use std::path::PathBuf;
 
 use anyhow::{Error, Result};
@@ -7,6 +7,7 @@ use semver::Version;
 
 use fluvio_hub_util::fvm::Channel;
 
+use super::manifest::VersionManifest;
 use super::workdir::fvm_workdir_path;
 
 pub const SETTINGS_TOML_FILENAME: &str = "settings.toml";
@@ -46,6 +47,31 @@ impl Settings {
         Ok(initial)
     }
 
+    /// Opens the `settings.toml` file and parses it into a `Settings` struct.
+    ///
+    /// If the file doesn't exist, it will be created.
+    pub fn open() -> Result<Self> {
+        let settings_path = Self::settings_file_path()?;
+
+        if !settings_path.exists() {
+            Self::init()?;
+        }
+
+        let contents = read_to_string(settings_path)?;
+        let settings: Settings = toml::from_str(&contents)?;
+
+        Ok(settings)
+    }
+
+    /// Update settings file to keep track of active Fluvio Version
+    pub fn update_from_manifest(&mut self, manifest: &VersionManifest) -> Result<()> {
+        self.channel = Some(manifest.channel.to_owned());
+        self.version = Some(manifest.version.to_owned());
+        self.save()?;
+
+        Ok(())
+    }
+
     /// Saves the `settings.toml` file to disk, overwriting the previous version
     fn save(&self) -> Result<()> {
         let settings_path = Self::settings_file_path()?;
@@ -66,14 +92,14 @@ impl Settings {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::fs::{remove_file, read_to_string, create_dir, remove_dir_all};
 
-    use crate::common::home_dir;
+    use crate::common::{home_dir, manifest::VersionManifest};
 
     use super::*;
 
-    fn create_fvm_dir() {
+    pub fn create_fvm_dir() {
         let fvm_dir = fvm_workdir_path().unwrap();
 
         if !fvm_dir.exists() {
@@ -81,7 +107,7 @@ mod tests {
         }
     }
 
-    fn delete_fvm_dir() {
+    pub fn delete_fvm_dir() {
         let fvm_dir = fvm_workdir_path().unwrap();
 
         if fvm_dir.exists() {
@@ -118,7 +144,11 @@ mod tests {
     }
 
     #[test]
-    fn update_settings_file() {
+    fn save_settings_file() {
+        const WANT: &str = r#"channel = "stable"
+version = "0.11.0"
+"#;
+
         create_fvm_dir();
 
         let settings_path =
@@ -131,12 +161,92 @@ mod tests {
         settings.save().expect("Failed to save settings.toml file");
 
         let settings_str =
+            read_to_string(settings_path).expect("Failed to read settings.toml file");
+
+        assert_eq!(settings_str, WANT);
+        delete_fvm_dir();
+    }
+
+    #[test]
+    fn updates_settings_file_contents() {
+        const EXPECT_FIRST: &str = r#"channel = "stable"
+version = "0.11.0"
+"#;
+        const EXPECT_SECOND: &str = r#"channel = "latest"
+version = "0.12.0"
+"#;
+        create_fvm_dir();
+
+        let settings_path =
+            Settings::settings_file_path().expect("Failed to get settings.toml path");
+        let mut settings = Settings::init().expect("Failed to create settings.toml file");
+
+        settings.channel = Some(Channel::Stable);
+        settings.version = Some(Version::new(0, 11, 0));
+        settings.save().expect("Failed to save settings.toml file");
+
+        let settings_str =
             read_to_string(&settings_path).expect("Failed to read settings.toml file");
 
-        assert!(settings_str.contains("channel = \"stable\""));
-        assert!(settings_str.contains("version = \"0.11.0\""));
+        assert_eq!(settings_str, EXPECT_FIRST);
 
-        remove_file(&settings_path).expect("Failed to remove settings.toml file");
+        settings.channel = Some(Channel::Latest);
+        settings.version = Some(Version::new(0, 12, 0));
+        settings.save().expect("Failed to save settings.toml file");
+
+        let settings_str =
+            read_to_string(&settings_path).expect("Failed to read settings.toml file");
+
+        assert_eq!(settings_str, EXPECT_SECOND);
+
+        delete_fvm_dir();
+    }
+
+    #[test]
+    fn creates_settings_file_if_not_exists_on_open() {
+        create_fvm_dir();
+
+        let settings_path =
+            Settings::settings_file_path().expect("Failed to get settings.toml path");
+
+        assert!(
+            !settings_path.exists(),
+            "the settings file should not exist at this point"
+        );
+
+        let settings = Settings::open().expect("Failed to create settings.toml file");
+
+        assert!(
+            settings_path.exists(),
+            "the settings file should exist at this point"
+        );
+
+        // The `settings` file wont have any values set after fresh creation
+        assert!(settings.channel.is_none());
+        assert!(settings.version.is_none());
+
+        delete_fvm_dir();
+    }
+
+    #[test]
+    fn updates_settings_toml_with_manifest_contents() {
+        create_fvm_dir();
+
+        let manifest = VersionManifest {
+            channel: Channel::Stable,
+            version: Version::parse("0.10.0").unwrap(),
+        };
+
+        let mut settings = Settings::open().unwrap();
+        assert_eq!(settings.channel, None);
+        assert_eq!(settings.version, None);
+
+        settings.update_from_manifest(&manifest).unwrap();
+
+        let settings = Settings::open().unwrap();
+        assert_eq!(settings.channel, Some(Channel::Stable));
+        assert_eq!(settings.version, Some(Version::parse("0.10.0").unwrap()));
+
         delete_fvm_dir();
     }
 }
