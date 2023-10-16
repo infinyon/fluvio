@@ -3,6 +3,7 @@ mod common;
 
 use anyhow::Result;
 use clap::Parser;
+use command::show::ShowOpt;
 
 use self::command::install::InstallOpt;
 use self::command::itself::SelfOpt;
@@ -41,6 +42,9 @@ pub enum Command {
     /// Install a Fluvio Version
     #[command(name = "install")]
     Install(InstallOpt),
+    /// List installed Fluvio Versions
+    #[command(name = "show")]
+    Show(ShowOpt),
     /// Set a installed Fluvio Version as active
     #[command(name = "switch")]
     Switch(SwitchOpt),
@@ -55,6 +59,7 @@ impl Cli {
         match command {
             Command::Itself(cmd) => cmd.process(notify).await,
             Command::Install(cmd) => cmd.process(notify).await,
+            Command::Show(cmd) => cmd.process(notify).await,
             Command::Switch(cmd) => cmd.process(notify).await,
         }
     }

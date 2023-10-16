@@ -369,13 +369,20 @@ setup_file() {
     run bash -c 'fvm install 0.10.14'
     assert_success
 
-    # Switch version to use Fluvio at 0.10.15
+    # Switch version to use Fluvio at Stable
     run bash -c 'fvm switch stable'
     assert_success
 
     # Checks channel is set
     run bash -c 'cat ~/.fvm/settings.toml | grep "channel = \"stable\""'
     assert_output --partial "channel = \"stable\""
+    assert_success
+
+    # Checks the version is set as active in show list
+    run bash -c 'fvm show'
+    assert_line --index 0 --partial "    CHANNEL  VERSION"
+    assert_line --index 1 --partial " ✓  stable   $STABLE_VERSION"
+    assert_line --index 2 --partial "    0.10.14  0.10.14"
     assert_success
 
     # Checks version is set
@@ -395,6 +402,13 @@ setup_file() {
     # Checks channel is tag
     run bash -c 'cat ~/.fvm/settings.toml | grep "tag = \"0.10.14\""'
     assert_output --partial "tag = \"0.10.14\""
+    assert_success
+
+    # Checks the version is set as active in show list
+    run bash -c 'fvm show'
+    assert_line --index 0 --partial "    CHANNEL  VERSION"
+    assert_line --index 1 --partial " ✓  0.10.14  0.10.14"
+    assert_line --index 2 --partial "    stable   $STABLE_VERSION"
     assert_success
 
     # Removes FVM

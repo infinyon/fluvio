@@ -2,18 +2,15 @@
 //!
 //! The `switch` command is responsible of changing the active Fluvio Version
 
-mod version_directory;
-
 use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 
 use fluvio_hub_util::fvm::Channel;
 
-use crate::common::workdir::fvm_versions_path;
 use crate::common::notify::Notify;
-
-use self::version_directory::VersionDirectory;
+use crate::common::version_directory::VersionDirectory;
+use crate::common::workdir::fvm_versions_path;
 
 #[derive(Debug, Parser)]
 pub struct SwitchOpt {

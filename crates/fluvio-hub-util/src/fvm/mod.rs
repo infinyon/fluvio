@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn performs_comparisons_between_tags() {
         let ver_a = Channel::parse("0.10.10").unwrap();
-        let ver_b = Channel::parse("0.10.13").unwrap();
+        let ver_b = Channel::parse("0.10.13-mirroring347239873+20231016").unwrap();
 
         assert!(ver_b > ver_a);
     }
