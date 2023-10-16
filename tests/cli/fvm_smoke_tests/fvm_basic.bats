@@ -112,6 +112,12 @@ setup_file() {
     # Sets `fvm` in the PATH using the "env" file included in the installation
     source ~/.fvm/env
 
+    # Renders warn if attempts to use `fvm show` and no versions are installed
+    run bash -c 'fvm show'
+    assert_line --index 0 "warn: No installed versions found"
+    assert_line --index 1 "help: You can install a Fluvio version using the command fvm install"
+    assert_success
+
     # Verify the directory is now present
     run bash -c 'test -d $VERSIONS_DIR'
     assert_success

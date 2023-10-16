@@ -38,6 +38,16 @@ impl ShowOpt {
         let (manifests, maybe_active) =
             Self::scan_versions_manifests(versions_path, settings.channel)?;
 
+        if manifests.is_empty() && maybe_active.is_none() {
+            notify.warn("No installed versions found");
+            notify.help(format!(
+                "You can install a Fluvio version using the command {}",
+                "fvm install".bold()
+            ));
+
+            return Ok(());
+        }
+
         Self::render_table(manifests, maybe_active);
 
         Ok(())

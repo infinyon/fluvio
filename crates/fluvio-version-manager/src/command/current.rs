@@ -25,7 +25,7 @@ impl CurrentOpt {
             }
         } else {
             notify.warn("No active version set");
-            notify.help(&format!(
+            notify.help(format!(
                 "You can use {} to set the active version",
                 "fvm switch".bold()
             ));
