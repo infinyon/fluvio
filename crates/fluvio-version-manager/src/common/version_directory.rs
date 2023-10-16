@@ -3,6 +3,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
+use fluvio_hub_util::fvm::Channel;
+
 use crate::common::manifest::{PACKAGE_SET_MANIFEST_FILENAME, VersionManifest};
 use crate::common::settings::Settings;
 use crate::common::workdir::fluvio_binaries_path;
@@ -80,6 +82,41 @@ impl VersionDirectory {
 
         Ok(())
     }
+
+    /// Retrieves the sorted list of installed versions [`VersionManifest`]
+    /// instances. In parallel, it also retrieves the active version if any.
+    ///
+    /// If theres any Active Version, the [`VersionManifest`] is not included
+    /// as part of the first tuple value, instead it is returned as the second
+    /// tuple value.
+    pub fn scan_versions_manifests(
+        versions_path: PathBuf,
+        maybe_active: Option<Channel>,
+    ) -> Result<(Vec<VersionManifest>, Option<VersionManifest>)> {
+        let dir_entries = versions_path.read_dir()?;
+        let mut manifests: Vec<VersionManifest> = Vec::new();
+        let mut active_version: Option<VersionManifest> = None;
+
+        for entry in dir_entries {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                let version_dir = VersionDirectory::open(path.to_path_buf())?;
+
+                if let Some(ref active_channel) = maybe_active {
+                    if *active_channel == version_dir.manifest.channel {
+                        active_version = Some(version_dir.manifest);
+                        continue;
+                    }
+                }
+
+                manifests.push(version_dir.manifest);
+            }
+        }
+
+        Ok((manifests, active_version))
+    }
 }
 
 #[cfg(test)]
@@ -88,7 +125,7 @@ mod tests {
     use std::path::Path;
 
     use anyhow::Result;
-
+    use fs_extra::dir::{copy as copy_dir, CopyOptions};
     use tempfile::TempDir;
 
     use fluvio_hub_util::sha256_digest;
@@ -125,6 +162,19 @@ mod tests {
 
             copy(&entry_path, &target_path)?;
         }
+
+        Ok(tmp)
+    }
+
+    /// Creates a Temporal Directory with the contents of `fixtures/version`
+    /// directory
+    fn make_versions_directory() -> Result<TempDir> {
+        let fixtures_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("fixtures")
+            .join("version");
+        let tmp = TempDir::new()?;
+
+        copy_dir(fixtures_path, tmp.path(), &CopyOptions::default())?;
 
         Ok(tmp)
     }
@@ -223,5 +273,35 @@ mod tests {
         assert_eq!(settings.channel.unwrap(), version_dir.manifest.channel);
 
         delete_fvm_dir();
+    }
+
+    #[test]
+    fn lists_versions_in_dir() {
+        let tmpdir = make_versions_directory().unwrap();
+        let (manifests, _) = VersionDirectory::scan_versions_manifests(
+            tmpdir.path().to_path_buf().join("version"),
+            None,
+        )
+        .unwrap();
+        let expected_versions = vec!["0.10.14", "0.10.15", "stable"];
+
+        for ver in expected_versions {
+            assert!(
+                manifests.iter().any(|m| m.channel.to_string() == ver),
+                "version {ver} not found",
+            );
+        }
+    }
+
+    #[test]
+    fn determines_active_version() {
+        let tmpdir = make_versions_directory().unwrap();
+        let (_, active) = VersionDirectory::scan_versions_manifests(
+            tmpdir.path().to_path_buf().join("version"),
+            Some(Channel::Stable),
+        )
+        .unwrap();
+
+        assert_eq!(active.unwrap().channel, Channel::Stable);
     }
 }
