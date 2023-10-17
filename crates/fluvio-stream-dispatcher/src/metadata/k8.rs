@@ -95,7 +95,7 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
             .expect("finalizer")
         });
 
-        debug!("final deleting {:#?}", meta);
+        debug!(?meta, "final deleting");
 
         K8MetadataClient::patch::<S::K8Spec, _>(
             self,
