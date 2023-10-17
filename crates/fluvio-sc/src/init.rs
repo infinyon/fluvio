@@ -17,7 +17,7 @@ use crate::controllers::spus::SpuController;
 use crate::controllers::topics::controller::TopicController;
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
-use crate::dispatcher::dispatcher::ClusterStateDispatcher;
+use crate::dispatcher::dispatcher::MetadataDispatcher;
 use crate::services::auth::basic::BasicRbacPolicy;
 
 pub async fn start_main_loop<C>(
@@ -39,37 +39,37 @@ where
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
 
-    ClusterStateDispatcher::<SpuSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<SpuSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.spus().clone(),
     );
 
-    ClusterStateDispatcher::<TopicSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<TopicSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.topics().clone(),
     );
 
-    ClusterStateDispatcher::<PartitionSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<PartitionSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.partitions().clone(),
     );
 
-    ClusterStateDispatcher::<SpuGroupSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<SpuGroupSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.spgs().clone(),
     );
 
-    ClusterStateDispatcher::<TableFormatSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<TableFormatSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.tableformats().clone(),
     );
 
-    ClusterStateDispatcher::<SmartModuleSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<SmartModuleSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.smartmodules().clone(),

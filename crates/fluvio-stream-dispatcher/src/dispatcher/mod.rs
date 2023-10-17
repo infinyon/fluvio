@@ -1,6 +1,6 @@
-mod k8_dispatcher;
+mod dispatcher;
 
-pub use k8_dispatcher::*;
+pub use dispatcher::*;
 
 pub mod memory {
 

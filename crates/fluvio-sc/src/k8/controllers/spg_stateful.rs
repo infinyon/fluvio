@@ -223,7 +223,7 @@ mod test {
     use tracing::debug;
 
     use fluvio_stream_dispatcher::actions::WSAction;
-    use fluvio_stream_dispatcher::dispatcher::ClusterStateDispatcher;
+    use fluvio_stream_dispatcher::dispatcher::MetadataDispatcher;
 
     use crate::k8::fixture::TestEnv;
     use super::*;
@@ -247,20 +247,20 @@ mod test {
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
 
         // start statefullset dispatcher
-        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
+        MetadataDispatcher::<_, _, K8MetaItem>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
             statefulset_ctx.clone(),
         );
 
         // start spg service dispatcher
-        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
+        MetadataDispatcher::<_, _, K8MetaItem>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
             spg_service_ctx.clone(),
         );
 
-        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
+        MetadataDispatcher::<_, _, K8MetaItem>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
             global_ctx.spgs().clone(),

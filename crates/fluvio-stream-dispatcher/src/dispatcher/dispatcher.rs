@@ -33,8 +33,8 @@ static SC_RECONCILIATION_INTERVAL_SEC: Lazy<u64> = Lazy::new(|| {
     wait_time
 });
 
-/// For each spec, process updates from Kubernetes metadata
-pub struct ClusterStateDispatcher<S, C, M>
+/// For each spec, process updates from metadata client
+pub struct MetadataDispatcher<S, C, M>
 where
     S: K8ExtendedSpec,
     <S as Spec>::Owner: K8ExtendedSpec,
@@ -45,7 +45,7 @@ where
     ctx: StoreContext<S, M>,
 }
 
-impl<S, C, M> Debug for ClusterStateDispatcher<S, C, M>
+impl<S, C, M> Debug for MetadataDispatcher<S, C, M>
 where
     S: K8ExtendedSpec,
     <S as Spec>::Owner: K8ExtendedSpec,
@@ -56,7 +56,7 @@ where
     }
 }
 
-impl<S, C, M> ClusterStateDispatcher<S, C, M>
+impl<S, C, M> MetadataDispatcher<S, C, M>
 where
     S: K8ExtendedSpec,
     <S as Spec>::Owner: K8ExtendedSpec,
@@ -80,7 +80,7 @@ where
     }
 
     #[instrument(
-        name = "K8StateDispatcher",
+        name = "MetadataDispatcher",
         skip(self),
         fields(
             spec = S::LABEL,

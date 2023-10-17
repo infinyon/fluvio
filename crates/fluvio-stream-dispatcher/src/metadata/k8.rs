@@ -112,7 +112,7 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
         S: K8ExtendedSpec,
         <S as Spec>::Owner: K8ExtendedSpec,
     {
-        debug!("K8 Applying {}:{:?}", S::LABEL, value.key());
+        debug!(label = S::LABEL, key = ?value.key(), "K8 applying");
         trace!("adding KV {:#?} to k8 kv", value);
 
         let (key, spec, _status, ctx) = value.parts();
@@ -205,7 +205,7 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
             status
         );
         trace!("status update: {:#?}", status);
-        let k8_status: <S::K8Spec as K8Spec>::Status = S::convert_status_from_k8(&status);
+        let k8_status: <S::K8Spec as K8Spec>::Status = S::convert_status_from_k8(status);
 
         let k8_input: UpdateK8ObjStatus<S::K8Spec> = UpdateK8ObjStatus {
             api_version: S::K8Spec::api_version(),

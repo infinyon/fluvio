@@ -165,7 +165,7 @@ pub trait K8ExtendedSpec: Spec {
         multi_namespace_context: bool,
     ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>;
 
-    fn convert_status_from_k8(status: &Self::Status) -> <Self::K8Spec as K8Spec>::Status;
+    fn convert_status_from_k8(status: Self::Status) -> <Self::K8Spec as K8Spec>::Status;
 
     fn into_k8(self) -> Self::K8Spec;
 }

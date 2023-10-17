@@ -13,7 +13,7 @@ mod k8_operator {
     use crate::cli::TlsConfig;
     use crate::core::K8SharedContext;
     use crate::stores::StoreContext;
-    use crate::dispatcher::dispatcher::ClusterStateDispatcher;
+    use crate::dispatcher::dispatcher::MetadataDispatcher;
     use crate::k8::objects::spu_service::SpuServiceSpec;
     use crate::k8::objects::statefulset::StatefulsetSpec;
     use crate::k8::objects::spg_service::SpgServiceSpec;
@@ -39,25 +39,25 @@ mod k8_operator {
 
         info!("starting k8 cluster operators");
 
-        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
+        MetadataDispatcher::<_, _, K8MetaItem>::start(
             namespace.clone(),
             client.clone(),
             spu_service_ctx.clone(),
         );
 
-        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
+        MetadataDispatcher::<_, _, K8MetaItem>::start(
             namespace.clone(),
             client.clone(),
             statefulset_ctx.clone(),
         );
 
-        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
+        MetadataDispatcher::<_, _, K8MetaItem>::start(
             namespace.clone(),
             client.clone(),
             spg_service_ctx.clone(),
         );
 
-        ClusterStateDispatcher::<_, _, K8MetaItem>::start(
+        MetadataDispatcher::<_, _, K8MetaItem>::start(
             namespace.clone(),
             client,
             config_ctx.clone(),

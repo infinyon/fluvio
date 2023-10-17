@@ -102,8 +102,8 @@ mod extended {
             }
         }
 
-        fn convert_status_from_k8(status: &Self::Status) -> <ServiceSpec as K8Spec>::Status {
-            status.clone().into()
+        fn convert_status_from_k8(status: Self::Status) -> <ServiceSpec as K8Spec>::Status {
+            status.into()
         }
 
         fn into_k8(self) -> Self::K8Spec {
