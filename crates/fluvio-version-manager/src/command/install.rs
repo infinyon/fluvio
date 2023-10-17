@@ -18,6 +18,7 @@ use fluvio_hub_util::fvm::{Client, Download, PackageSet, DEFAULT_PKGSET, Channel
 use crate::common::TARGET;
 use crate::common::manifest::VersionManifest;
 use crate::common::notify::Notify;
+use crate::common::version_directory::VersionDirectory;
 use crate::common::workdir::fvm_versions_path;
 
 /// The `install` command is responsible of installing the desired Package Set
@@ -63,10 +64,16 @@ impl InstallOpt {
         }
 
         let version_path = self.store_artifacts(&tmp_dir, &pkgset).await?;
+        let manifest = VersionManifest::new(self.version.to_owned(), pkgset.version.clone());
 
-        VersionManifest::new(self.version.to_owned(), pkgset.version.clone())
-            .write(version_path)?;
+        manifest.write(&version_path)?;
         notify.done(format!("Installed fluvio version {}", self.version));
+
+        let version_dir = VersionDirectory::open(version_path)?;
+
+        version_dir.set_active()?;
+
+        notify.done(format!("Now using fluvio version {}", manifest.version,));
 
         Ok(())
     }
