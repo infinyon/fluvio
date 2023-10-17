@@ -1,6 +1,6 @@
-mod dispatcher;
+mod metadata;
 
-pub use dispatcher::*;
+pub use metadata::*;
 
 pub mod memory {
 
