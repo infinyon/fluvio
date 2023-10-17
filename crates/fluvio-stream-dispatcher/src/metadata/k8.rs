@@ -319,3 +319,260 @@ fn to_k8_namespace(ns: &NameSpace) -> K8NameSpace {
         NameSpace::Named(s) => K8NameSpace::Named(s.clone()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{fmt::Display, time::Duration};
+
+    use fluvio_stream_model::{
+        core::Status,
+        k8_types::{Status as K8Status, DefaultHeader, Crd, CrdNames},
+        store::k8::default_convert_from_k8,
+    };
+    use k8_client::memory::MemoryClient;
+    use serde::{Serialize, Deserialize};
+
+    use super::*;
+
+    #[fluvio_future::test]
+    async fn test_retrieve_insert_delete_items() {
+        //given
+        let k8_client = MemoryClient::default();
+        let meta_object: MetadataStoreObject<TestSpec, K8MetaItem> = MetadataStoreObject::new(
+            "spec1".to_string(),
+            TestSpec,
+            TestSpecStatus("ok".to_string()),
+        );
+
+        //when
+        let empty = MetadataClient::retrieve_items::<TestSpec>(&k8_client, &NameSpace::All)
+            .await
+            .expect("retrieved");
+        MetadataClient::apply::<TestSpec>(&k8_client, meta_object.clone())
+            .await
+            .expect("applied");
+        let non_empty = MetadataClient::retrieve_items::<TestSpec>(&k8_client, &NameSpace::All)
+            .await
+            .expect("retrieved");
+        MetadataClient::delete_item::<TestSpec>(&k8_client, meta_object.ctx().item().clone())
+            .await
+            .expect("deleted");
+        let after_delete = MetadataClient::retrieve_items::<TestSpec>(&k8_client, &NameSpace::All)
+            .await
+            .expect("retrieved");
+
+        //then
+        assert!(empty.items.is_empty());
+        assert_eq!(non_empty.items.len(), 1);
+        assert!(after_delete.items.is_empty());
+    }
+
+    #[fluvio_future::test]
+    async fn test_update_status() {
+        //given
+        let k8_client = MemoryClient::default();
+        let namespace = NameSpace::Named("ns1".to_string());
+        let key = "key".to_string();
+        let meta = K8MetaItem::new(key.clone(), namespace.to_string());
+        let meta_object: MetadataStoreObject<TestSpec, K8MetaItem> =
+            MetadataStoreObject::new_with_context(key.clone(), TestSpec, meta.clone().into());
+
+        //when
+        MetadataClient::apply(&k8_client, meta_object)
+            .await
+            .expect("applied");
+        MetadataClient::update_status::<TestSpec>(
+            &k8_client,
+            meta,
+            TestSpecStatus("new status".to_string()),
+            &namespace,
+        )
+        .await
+        .expect("updated status");
+
+        let items = MetadataClient::retrieve_items::<TestSpec>(&k8_client, &namespace)
+            .await
+            .unwrap();
+
+        //then
+        assert_eq!(items.items.len(), 1);
+        assert_eq!(items.items[0].status().to_string(), "new status");
+        assert_eq!(items.items[0].ctx().item().revision(), 1);
+        assert_eq!(items.items[0].ctx().item().namespace(), "ns1");
+    }
+
+    #[fluvio_future::test]
+    async fn test_watch_stream_since_start() {
+        //given
+        let k8_client = MemoryClient::default();
+        let namespace = NameSpace::Named("ns1".to_string());
+        let stream = MetadataClient::watch_stream_since::<TestSpec>(&k8_client, &namespace, None);
+        let key = "key".to_string();
+        let meta = K8MetaItem::new(key.clone(), namespace.to_string());
+        let meta_object: MetadataStoreObject<TestSpec, K8MetaItem> =
+            MetadataStoreObject::new_with_context(key.clone(), TestSpec, meta.clone().into());
+
+        //when
+        MetadataClient::apply(&k8_client, meta_object.clone())
+            .await
+            .expect("applied");
+        MetadataClient::update_status::<TestSpec>(
+            &k8_client,
+            meta_object.ctx().item().clone(),
+            TestSpecStatus("new status".to_string()),
+            &namespace,
+        )
+        .await
+        .expect("updated status");
+        MetadataClient::delete_item::<TestSpec>(&k8_client, meta_object.ctx().item().clone())
+            .await
+            .expect("deleted");
+
+        let updates = stream
+            .take_until(fluvio_future::timer::sleep(Duration::from_secs(2)))
+            .collect::<Vec<Result<Vec<LSUpdate<TestSpec, K8MetaItem>>>>>()
+            .await;
+
+        //then
+
+        let updates: Vec<_> = updates.into_iter().flatten().flatten().collect();
+        assert_eq!(updates.len(), 3);
+
+        assert!(
+            matches!(updates.get(0), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
+        );
+        assert!(
+            matches!(updates.get(1), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status"))
+        );
+        assert!(matches!(updates.get(2), Some(LSUpdate::Delete(obj)) if obj.to_string().eq(&key)));
+    }
+
+    #[fluvio_future::test]
+    async fn test_apply_with_parent() {
+        //given
+        let k8_client = MemoryClient::default();
+        let namespace = NameSpace::Named("ns1".to_string());
+        let key = "child".to_string();
+        let parent_key = "parent".to_string();
+        let meta = K8MetaItem::new(key.clone(), namespace.to_string());
+        let parent_meta = K8MetaItem::new(parent_key.clone(), namespace.to_string());
+
+        let ctx = fluvio_stream_model::store::k8::K8MetadataContext::new(meta, Some(parent_meta));
+
+        let obj = MetadataStoreObject::new_with_context(key.clone(), TestSpec, ctx);
+
+        //when
+        MetadataClient::apply(&k8_client, obj.clone())
+            .await
+            .expect("applied");
+        let items = MetadataClient::retrieve_items::<TestSpec>(&k8_client, &namespace)
+            .await
+            .expect("retrieved");
+
+        dbg!(&items);
+        assert_eq!(items.items.len(), 1);
+        assert_eq!(
+            items.items[0]
+                .ctx()
+                .item()
+                .inner()
+                .owner_references
+                .get(0)
+                .unwrap()
+                .name,
+            "parent"
+        );
+        assert!(items.items[0]
+            .ctx()
+            .item()
+            .inner()
+            .finalizers
+            .contains(&"FINALIZER1".to_string()));
+    }
+
+    #[derive(Debug, Default, Clone, PartialEq, Eq)]
+    struct TestSpec;
+
+    #[derive(Debug, Default, Clone, PartialEq, Eq)]
+    struct TestSpecStatus(String);
+
+    impl Spec for TestSpec {
+        const LABEL: &'static str = "TEST_SPEC";
+        type Status = TestSpecStatus;
+        type Owner = Self;
+        type IndexKey = String;
+    }
+
+    impl Status for TestSpecStatus {}
+
+    impl K8ExtendedSpec for TestSpec {
+        type K8Spec = TestK8Spec;
+
+        const FINALIZER: Option<&'static str> = Some("FINALIZER1");
+
+        fn convert_from_k8(
+            k8_obj: fluvio_stream_model::k8_types::K8Obj<Self::K8Spec>,
+            multi_namespace_context: bool,
+        ) -> std::result::Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>
+        {
+            default_convert_from_k8(k8_obj, multi_namespace_context)
+        }
+
+        fn convert_status_from_k8(status: Self::Status) -> <Self::K8Spec as K8Spec>::Status {
+            TestK8SpecStatus(status.0)
+        }
+
+        fn into_k8(self) -> Self::K8Spec {
+            TestK8Spec
+        }
+    }
+
+    impl Display for TestSpecStatus {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    struct TestK8Spec;
+
+    #[derive(Default, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+    pub struct TestK8SpecStatus(String);
+
+    impl K8Status for TestK8SpecStatus {}
+
+    impl Display for TestK8SpecStatus {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    impl K8Spec for TestK8Spec {
+        type Status = TestK8SpecStatus;
+        type Header = DefaultHeader;
+
+        fn metadata() -> &'static Crd {
+            &Crd {
+                group: "test.fluvio",
+                version: "v1",
+                names: CrdNames {
+                    kind: "myspec",
+                    plural: "myspecs",
+                    singular: "myspec",
+                },
+            }
+        }
+    }
+
+    impl From<TestK8Spec> for TestSpec {
+        fn from(_value: TestK8Spec) -> Self {
+            Self
+        }
+    }
+
+    impl From<TestK8SpecStatus> for TestSpecStatus {
+        fn from(value: TestK8SpecStatus) -> Self {
+            Self(value.0)
+        }
+    }
+}

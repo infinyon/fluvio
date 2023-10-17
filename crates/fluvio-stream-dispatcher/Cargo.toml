@@ -31,7 +31,7 @@ tracing = { workspace = true }
 # Fluvio dependencies
 fluvio-types = { workspace = true }
 fluvio-stream-model = { workspace = true, features = [ "k8"]  }
-k8-client = { workspace = true, optional = true }
+k8-client = { workspace = true, optional = true, features = ["memory_client"] }
 fluvio-future = { workspace = true, features = ["task", "timer"] }
 
 [dev-dependencies]
