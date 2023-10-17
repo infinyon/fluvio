@@ -3,6 +3,8 @@ mod common;
 
 use anyhow::Result;
 use clap::Parser;
+use command::current::CurrentOpt;
+use command::show::ShowOpt;
 
 use self::command::install::InstallOpt;
 use self::command::itself::SelfOpt;
@@ -35,12 +37,18 @@ pub struct Cli {
 
 #[derive(Debug, Parser)]
 pub enum Command {
+    /// Print the current active Fluvio Version
+    #[command(name = "current")]
+    Current(CurrentOpt),
     /// Manage FVM
     #[command(name = "self")]
     Itself(SelfOpt),
     /// Install a Fluvio Version
     #[command(name = "install")]
     Install(InstallOpt),
+    /// List installed Fluvio Versions
+    #[command(name = "show")]
+    Show(ShowOpt),
     /// Set a installed Fluvio Version as active
     #[command(name = "switch")]
     Switch(SwitchOpt),
@@ -53,8 +61,10 @@ impl Cli {
         let notify = Notify::new(self.quiet);
 
         match command {
+            Command::Current(cmd) => cmd.process(notify).await,
             Command::Itself(cmd) => cmd.process(notify).await,
             Command::Install(cmd) => cmd.process(notify).await,
+            Command::Show(cmd) => cmd.process(notify).await,
             Command::Switch(cmd) => cmd.process(notify).await,
         }
     }

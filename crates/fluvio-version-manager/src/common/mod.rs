@@ -1,6 +1,7 @@
 pub mod manifest;
 pub mod notify;
 pub mod settings;
+pub mod version_directory;
 pub mod workdir;
 
 use std::path::PathBuf;

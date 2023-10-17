@@ -112,6 +112,12 @@ setup_file() {
     # Sets `fvm` in the PATH using the "env" file included in the installation
     source ~/.fvm/env
 
+    # Renders warn if attempts to use `fvm show` and no versions are installed
+    run bash -c 'fvm show'
+    assert_line --index 0 "warn: No installed versions found"
+    assert_line --index 1 "help: You can install a Fluvio version using the command fvm install"
+    assert_success
+
     # Verify the directory is now present
     run bash -c 'test -d $VERSIONS_DIR'
     assert_success
@@ -369,13 +375,25 @@ setup_file() {
     run bash -c 'fvm install 0.10.14'
     assert_success
 
-    # Switch version to use Fluvio at 0.10.15
+    # Switch version to use Fluvio at Stable
     run bash -c 'fvm switch stable'
     assert_success
 
     # Checks channel is set
     run bash -c 'cat ~/.fvm/settings.toml | grep "channel = \"stable\""'
     assert_output --partial "channel = \"stable\""
+    assert_success
+
+    # Checks the version is set as active in show list
+    run bash -c 'fvm show'
+    assert_line --index 0 --partial "    CHANNEL  VERSION"
+    assert_line --index 1 --partial " ✓  stable   $STABLE_VERSION"
+    assert_line --index 2 --partial "    0.10.14  0.10.14"
+    assert_success
+
+    # Checks current command output
+    run bash -c 'fvm current'
+    assert_line --index 0 "$STABLE_VERSION (stable)"
     assert_success
 
     # Checks version is set
@@ -395,6 +413,18 @@ setup_file() {
     # Checks channel is tag
     run bash -c 'cat ~/.fvm/settings.toml | grep "tag = \"0.10.14\""'
     assert_output --partial "tag = \"0.10.14\""
+    assert_success
+
+    # Checks the version is set as active in show list
+    run bash -c 'fvm show'
+    assert_line --index 0 --partial "    CHANNEL  VERSION"
+    assert_line --index 1 --partial " ✓  0.10.14  0.10.14"
+    assert_line --index 2 --partial "    stable   $STABLE_VERSION"
+    assert_success
+
+    # Checks current command output
+    run bash -c 'fvm current'
+    assert_line --index 0 "0.10.14"
     assert_success
 
     # Removes FVM
@@ -443,6 +473,27 @@ setup_file() {
     assert_line --index 3 "info: Downloading (4/5): cdk@0.10.14"
     assert_line --index 4 "info: Downloading (5/5): smdk@0.10.14"
     assert_line --index 5 "done: Installed fluvio version 0.10.14"
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Renders help text on current command if none active" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    run bash -c 'fvm current'
+    assert_line --index 0 "warn: No active version set"
+    assert_line --index 1 "help: You can use fvm switch to set the active version"
     assert_success
 
     # Removes FVM

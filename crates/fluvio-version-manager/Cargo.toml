@@ -19,6 +19,7 @@ anyhow = { workspace = true }
 async-std = { workspace = true, features = ["attributes"] }
 clap = { workspace = true, features = ["std", "color", "derive", "env", "help"] }
 colored = { workspace = true }
+comfy-table = { workspace = true }
 dialoguer = { workspace = true }
 dirs = { workspace = true }
 hex = { workspace = true }
@@ -36,3 +37,6 @@ url = { workspace = true }
 # Workspace Crates
 fluvio-hub-util = { workspace = true }
 fluvio-future = { workspace = true, features = ["subscriber"] }
+
+[dev-dependencies]
+fs_extra = "1.3.0"
