@@ -7,12 +7,14 @@ use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::core::MetadataContext;
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
-use k8_types::Env;
-use k8_types::core::pod::{
+use fluvio_stream_model::k8_types::Env;
+use fluvio_stream_model::k8_types::core::pod::{
     ResourceRequirements, PodSecurityContext, ContainerSpec, VolumeMount, VolumeSpec,
 };
-use k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
-use k8_types::core::service::{ServicePort, ServiceSpec, TargetPort, LoadBalancerType};
+use fluvio_stream_model::k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
+use fluvio_stream_model::k8_types::core::service::{
+    ServicePort, ServiceSpec, TargetPort, LoadBalancerType,
+};
 
 use crate::dispatcher::core::{Spec, Status};
 
@@ -186,8 +188,9 @@ mod extended {
     use tracing::debug;
     use tracing::trace;
 
-    use k8_types::K8Obj;
-    use k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
+    use fluvio_stream_model::k8_types::K8Obj;
+    use fluvio_stream_model::k8_types::core::config_map::ConfigMapSpec;
+    use fluvio_stream_model::k8_types::Spec as K8Spec;
 
     use crate::stores::k8::K8ConvertError;
     use crate::stores::k8::K8ExtendedSpec;
@@ -198,7 +201,6 @@ mod extended {
 
     impl K8ExtendedSpec for ScK8Config {
         type K8Spec = ConfigMapSpec;
-        type K8Status = ConfigMapStatus;
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
@@ -234,6 +236,13 @@ mod extended {
                     "skipping non spu service");
                 Err(K8ConvertError::Skip(Box::new(k8_obj)))
             }
+        }
+
+        fn convert_status_from_k8(status: Self::Status) -> <ConfigMapSpec as K8Spec>::Status {
+            status.into()
+        }
+        fn into_k8(self) -> Self::K8Spec {
+            self.into()
         }
     }
 }

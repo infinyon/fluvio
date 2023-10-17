@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use tracing::trace;
 
@@ -20,6 +20,22 @@ where
     pub status: S::Status,
     pub key: S::IndexKey,
     pub ctx: MetadataContext<C>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MetadataStoreList<S, C>
+where
+    S: Spec,
+    C: MetadataItem,
+{
+    pub version: String,
+    pub items: Vec<MetadataStoreObject<S, C>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum NameSpace {
+    All,
+    Named(String),
 }
 
 impl<S, C> MetadataStoreObject<S, C>
@@ -178,5 +194,32 @@ where
 {
     fn from(it: MetadataStoreObject<S, C>) -> Self {
         (it.key, it.spec, it.status)
+    }
+}
+
+impl NameSpace {
+    pub fn as_str(&self) -> &str {
+        match self {
+            NameSpace::All => "all",
+            NameSpace::Named(s) => s.as_str(),
+        }
+    }
+}
+
+impl Display for NameSpace {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl From<String> for NameSpace {
+    fn from(namespace: String) -> Self {
+        NameSpace::Named(namespace)
+    }
+}
+
+impl From<&str> for NameSpace {
+    fn from(namespace: &str) -> Self {
+        NameSpace::Named(namespace.to_owned())
     }
 }

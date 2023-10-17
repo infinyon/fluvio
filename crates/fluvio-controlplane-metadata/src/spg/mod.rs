@@ -52,7 +52,6 @@ mod convert {
 
         impl K8ExtendedSpec for SpuGroupSpec {
             type K8Spec = K8SpuGroupSpec;
-            type K8Status = Self::Status;
 
             fn convert_from_k8(
                 k8_obj: K8Obj<Self::K8Spec>,
@@ -60,6 +59,14 @@ mod convert {
             ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>
             {
                 default_convert_from_k8(k8_obj, multi_namespace_context)
+            }
+
+            fn convert_status_from_k8(status: Self::Status) -> Self::Status {
+                status
+            }
+
+            fn into_k8(self) -> Self::K8Spec {
+                self.into()
             }
         }
     }

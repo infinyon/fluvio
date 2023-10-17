@@ -66,7 +66,6 @@ fluvio-helm = { workspace = true }
 flv-util = { workspace = true }
 k8-config = { workspace = true }
 k8-client = { workspace = true }
-k8-metadata-client = { workspace = true }
 k8-types = { workspace = true, features = ["app"] }
 fluvio-command = { workspace = true }
 fluvio-future = { workspace = true }

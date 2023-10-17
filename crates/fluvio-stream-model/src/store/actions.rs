@@ -7,6 +7,7 @@ use crate::store::*;
 
 /// changes that will be applied to store
 /// add/update has same effect
+#[derive(Debug)]
 pub enum LSUpdate<S, C>
 where
     S: Spec,

@@ -7,8 +7,8 @@ use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
 use crate::stores::spg::SpuGroupSpec;
 
-pub use k8_types::app::stateful::StatefulSetSpec as K8StatefulSetSpec;
-pub use k8_types::app::stateful::StatefulSetStatus as K8StatefulSetStatus;
+pub use fluvio_stream_model::k8_types::app::stateful::StatefulSetSpec as K8StatefulSetSpec;
+pub use fluvio_stream_model::k8_types::app::stateful::StatefulSetStatus as K8StatefulSetStatus;
 
 /// Statefulset Spec
 #[derive(Deserialize, Serialize, Debug, Default, Clone, Eq, PartialEq)]
@@ -61,7 +61,8 @@ impl From<StatefulsetStatus> for K8StatefulSetStatus {
 
 mod extended {
 
-    use k8_types::K8Obj;
+    use fluvio_stream_model::k8_types::K8Obj;
+    use fluvio_stream_model::k8_types::Spec as K8Spec;
 
     use crate::stores::k8::K8ConvertError;
     use crate::stores::k8::K8ExtendedSpec;
@@ -73,13 +74,19 @@ mod extended {
 
     impl K8ExtendedSpec for StatefulsetSpec {
         type K8Spec = K8StatefulSetSpec;
-        type K8Status = K8StatefulSetStatus;
 
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
             multi_namespace_context: bool,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
             default_convert_from_k8(k8_obj, multi_namespace_context)
+        }
+
+        fn convert_status_from_k8(status: Self::Status) -> <K8StatefulSetSpec as K8Spec>::Status {
+            status.into()
+        }
+        fn into_k8(self) -> Self::K8Spec {
+            self.into()
         }
     }
 }

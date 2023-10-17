@@ -13,6 +13,7 @@ use std::time::SystemTime;
 
 use anyhow::{anyhow, Result};
 use derive_builder::Builder;
+use k8_client::meta_client::NameSpace;
 use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
@@ -25,7 +26,6 @@ use fluvio_types::defaults::TLS_CLIENT_SECRET_NAME;
 use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
-use k8_metadata_client::NameSpace;
 use k8_types::K8Obj;
 use k8_types::app::deployment::DeploymentSpec;
 use fluvio::{Fluvio, FluvioConfig};

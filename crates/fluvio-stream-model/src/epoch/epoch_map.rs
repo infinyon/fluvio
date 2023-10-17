@@ -348,6 +348,8 @@ mod old_map {
 #[cfg(test)]
 mod test {
 
+    use std::fmt::Display;
+
     use crate::core::{Spec, Status};
     use crate::store::DefaultMetadataObject;
 
@@ -372,6 +374,12 @@ mod test {
     }
 
     impl Status for TestStatus {}
+
+    impl Display for TestStatus {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{self:?}")
+        }
+    }
 
     type DefaultTest = DefaultMetadataObject<TestSpec>;
 

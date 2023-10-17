@@ -156,7 +156,6 @@ flv-tls-proxy = { version = "0.8" }
 flv-util = { version = "0.5.2", default-features = false }
 k8-client = { version = "12.0.0" }
 k8-config = { version = "2.2.0" }
-k8-metadata-client = { version = "7.0.0" }
 k8-types =  { version = "0.8.5" }
 k8-diff = { version = "0.1.2" }
 trybuild = { branch = "check_option", git = "https://github.com/infinyon/trybuild" }
@@ -169,7 +168,7 @@ fluvio-cli-common = { path = "crates/fluvio-cli-common"}
 fluvio-compression = { version = "0.3", path = "crates/fluvio-compression" }
 fluvio-connector-package = { path = "crates/fluvio-connector-package/" }
 fluvio-controlplane = { path = "crates/fluvio-controlplane" }
-fluvio-controlplane-metadata = { version = "0.24.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-controlplane-metadata = { version = "0.25.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-package-index = { version = "0.7.0", path = "crates/fluvio-package-index", default-features = false }
@@ -181,8 +180,8 @@ fluvio-smartmodule = { version = "0.7.0", path = "crates/fluvio-smartmodule", de
 fluvio-socket = { version = "0.14.3", path = "crates/fluvio-socket", default-features = false }
 fluvio-spu-schema = { version = "0.14.5", path = "crates/fluvio-spu-schema", default-features  = false }
 fluvio-storage = { path = "crates/fluvio-storage" }
-fluvio-stream-dispatcher = { version = "0.11.0", path = "crates/fluvio-stream-dispatcher" }
-fluvio-stream-model = { version = "0.9.3", path = "crates/fluvio-stream-model", default-features = false }
+fluvio-stream-dispatcher = { version = "0.12.0", path = "crates/fluvio-stream-dispatcher" }
+fluvio-stream-model = { version = "0.10.0", path = "crates/fluvio-stream-model", default-features = false }
 fluvio-types = { version = "0.4.4", path = "crates/fluvio-types", default-features = false }
 
 # Used to make eyre faster on debug builds

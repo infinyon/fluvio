@@ -9,7 +9,9 @@ mod context {
 
     pub type DefaultMetadataContext = MetadataContext<String>;
 
-    pub trait MetadataItem: Clone + Default + fmt::Debug + PartialEq + Send + Sync {
+    pub trait MetadataItem:
+        Clone + Default + fmt::Debug + PartialEq + Send + Sync + 'static
+    {
         type UId: PartialEq;
 
         fn uid(&self) -> &Self::UId;
@@ -139,7 +141,7 @@ mod context {
 
 mod core_model {
 
-    use std::fmt::Debug;
+    use std::fmt::{Debug, Display};
     use std::hash::Hash;
 
     /// metadata driver
@@ -147,14 +149,17 @@ mod core_model {
         type Metadata;
     }
 
-    pub trait Spec: Default + Debug + Clone + PartialEq {
+    pub trait Spec: Default + Debug + Clone + PartialEq + Send + Sync + 'static {
         const LABEL: &'static str;
         type Status: Status;
         type Owner: Spec;
-        type IndexKey: Debug + Eq + Hash + Clone + ToString;
+        type IndexKey: Debug + Eq + Hash + Clone + ToString + Display + Send + Sync;
     }
 
-    pub trait Status: Default + Debug + Clone + PartialEq {}
+    pub trait Status:
+        Default + Debug + Clone + ToString + Display + PartialEq + Send + Sync
+    {
+    }
 
     /// for deleting objects
     pub trait Removable {

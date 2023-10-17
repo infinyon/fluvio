@@ -2667,7 +2667,6 @@ dependencies = [
  "indicatif",
  "k8-client",
  "k8-config",
- "k8-metadata-client",
  "k8-types",
  "once_cell",
  "portpicker",
@@ -2784,7 +2783,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3020,8 +3019,6 @@ dependencies = [
  "flv-util",
  "futures-util",
  "k8-client",
- "k8-metadata-client",
- "k8-types",
  "once_cell",
  "rand 0.8.5",
  "regex",
@@ -3240,7 +3237,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -3250,11 +3247,8 @@ dependencies = [
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
- "futures-lite",
  "futures-util",
- "k8-diff",
- "k8-metadata-client",
- "k8-types",
+ "k8-client",
  "once_cell",
  "serde",
  "serde_json",
@@ -3265,7 +3259,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.9.3"
+version = "0.10.0"
 dependencies = [
  "async-rwlock",
  "async-std",

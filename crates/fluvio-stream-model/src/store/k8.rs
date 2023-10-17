@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 use tracing::error;
 
-use crate::k8_types::{Spec as K8Spec, Status as K8Status, ObjectMeta, K8Obj};
+use crate::k8_types::{Spec as K8Spec, ObjectMeta, K8Obj};
 use crate::store::MetadataStoreObject;
 use crate::core::{Spec, MetadataItem, MetadataContext};
 
@@ -154,8 +154,7 @@ where
 
 /// trait to convert type object to our spec
 pub trait K8ExtendedSpec: Spec {
-    type K8Spec: K8Spec;
-    type K8Status: K8Status;
+    type K8Spec: K8Spec + Send + Sync;
 
     // if true, use foreground delete
     const DELETE_WAIT_DEPENDENTS: bool = false;
@@ -165,6 +164,10 @@ pub trait K8ExtendedSpec: Spec {
         k8_obj: K8Obj<Self::K8Spec>,
         multi_namespace_context: bool,
     ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>;
+
+    fn convert_status_from_k8(status: Self::Status) -> <Self::K8Spec as K8Spec>::Status;
+
+    fn into_k8(self) -> Self::K8Spec;
 }
 
 /// converts typical K8 objects into metadata store objects

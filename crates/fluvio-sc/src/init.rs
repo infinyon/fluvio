@@ -6,8 +6,9 @@
 //!
 use std::sync::Arc;
 
+use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
 use fluvio_stream_model::core::MetadataItem;
-use k8_metadata_client::{MetadataClient, SharedClient};
+use fluvio_stream_model::store::k8::K8MetaItem;
 
 use crate::core::Context;
 use crate::core::SharedContext;
@@ -16,7 +17,7 @@ use crate::controllers::spus::SpuController;
 use crate::controllers::topics::controller::TopicController;
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
-use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
+use crate::dispatcher::dispatcher::MetadataDispatcher;
 use crate::services::auth::basic::BasicRbacPolicy;
 
 pub async fn start_main_loop<C>(
@@ -24,7 +25,7 @@ pub async fn start_main_loop<C>(
     metadata_client: SharedClient<C>,
 ) -> crate::core::K8SharedContext
 where
-    C: MetadataClient + 'static,
+    C: MetadataClient<K8MetaItem> + 'static,
 {
     use crate::stores::spu::SpuSpec;
     use crate::stores::topic::TopicSpec;
@@ -38,37 +39,37 @@ where
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
 
-    K8ClusterStateDispatcher::<SpuSpec, C>::start(
+    MetadataDispatcher::<SpuSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.spus().clone(),
     );
 
-    K8ClusterStateDispatcher::<TopicSpec, C>::start(
+    MetadataDispatcher::<TopicSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.topics().clone(),
     );
 
-    K8ClusterStateDispatcher::<PartitionSpec, C>::start(
+    MetadataDispatcher::<PartitionSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.partitions().clone(),
     );
 
-    K8ClusterStateDispatcher::<SpuGroupSpec, C>::start(
+    MetadataDispatcher::<SpuGroupSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.spgs().clone(),
     );
 
-    K8ClusterStateDispatcher::<TableFormatSpec, C>::start(
+    MetadataDispatcher::<TableFormatSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.tableformats().clone(),
     );
 
-    K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
+    MetadataDispatcher::<SmartModuleSpec, C, K8MetaItem>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.smartmodules().clone(),

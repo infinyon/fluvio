@@ -89,7 +89,7 @@ pub async fn try_connect_to_sc(
 
 // hack
 pub async fn check_crd(client: SharedK8Client) -> anyhow::Result<()> {
-    use k8_metadata_client::MetadataClient;
+    use k8_client::meta_client::MetadataClient;
 
     for i in 0..100 {
         debug!("checking fluvio crd attempt: {}", i);

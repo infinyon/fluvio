@@ -209,10 +209,8 @@ impl SyncStatus {
 
 impl<S, C> LocalStore<S, C>
 where
-    S: Spec + PartialEq,
-    S::Status: PartialEq,
-    S::IndexKey: Display,
-    C: MetadataItem + PartialEq,
+    S: Spec,
+    C: MetadataItem,
 {
     /// sync with incoming changes as source of truth.
     /// any objects not in incoming list will be deleted

@@ -1,8 +1,6 @@
-mod k8_dispatcher;
-mod k8_ws_service;
+mod metadata;
 
-pub use k8_dispatcher::*;
-pub use k8_ws_service::*;
+pub use metadata::*;
 
 pub mod memory {
 
