@@ -513,6 +513,8 @@ setup_file() {
 }
 
 @test "Sets the desired version after installing it" {
+    export VERSION="0.10.14"
+
     run bash -c '$FVM_BIN self install'
     assert_success
 
@@ -524,15 +526,15 @@ setup_file() {
     assert_line --index 1 "help: You can use fvm switch to set the active version"
     assert_success
 
-    run bash -c 'fvm install 0.10.14'
+    run bash -c 'fvm install $VERSION'
     assert_success
 
     run bash -c 'fvm current'
-    assert_line --index 0 "0.10.14"
+    assert_line --index 0 "$VERSION"
     assert_success
 
-    run bash -c 'fluvio version > flv_version_$version.out && cat flv_version_$version.out | head -n 1 | grep "0.10.14"'
-    assert_output --partial "0.10.14"
+    run bash -c 'fluvio version > flv_version_$version.out && cat flv_version_$version.out | head -n 1 | grep "$VERSION"'
+    assert_output --partial "$VERSION"
     assert_success
 
     # Removes FVM
