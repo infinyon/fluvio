@@ -23,12 +23,10 @@ comfy-table = { workspace = true }
 dialoguer = { workspace = true }
 dirs = { workspace = true }
 hex = { workspace = true }
-http-client = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
-surf = { workspace = true }
 tempfile = { workspace = true }
 tracing = { workspace = true }
 toml = { workspace = true }
