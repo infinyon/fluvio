@@ -93,6 +93,10 @@ mod context {
             self.item
         }
 
+        pub fn into_parts(self) -> (C, Option<C>) {
+            (self.item, self.owner)
+        }
+
         pub fn owner(&self) -> Option<&C> {
             self.owner.as_ref()
         }
@@ -143,17 +147,23 @@ mod core_model {
 
     use std::fmt::{Debug, Display};
     use std::hash::Hash;
+    use std::str::FromStr;
+
+    use serde::Serialize;
+    use serde::de::DeserializeOwned;
 
     /// metadata driver
     pub trait MetadataStoreDriver {
         type Metadata;
     }
 
-    pub trait Spec: Default + Debug + Clone + PartialEq + Send + Sync + 'static {
+    pub trait Spec:
+        Default + Debug + Clone + PartialEq + Serialize + DeserializeOwned + Send + Sync + 'static
+    {
         const LABEL: &'static str;
-        type Status: Status;
+        type Status: Status + Serialize + DeserializeOwned;
         type Owner: Spec;
-        type IndexKey: Debug + Eq + Hash + Clone + ToString + Display + Send + Sync;
+        type IndexKey: Debug + Eq + Hash + Clone + ToString + FromStr + Display + Send + Sync;
     }
 
     pub trait Status:

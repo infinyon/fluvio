@@ -12,15 +12,14 @@ name = "fluvio_stream_model"
 path = "src/lib.rs"
 
 [features]
-use_serde = ["serde"]
-k8 = ["use_serde", "k8-types"]
+k8 = ["k8-types"]
 fixture = []
 
 [dependencies]
 async-rwlock = { workspace = true }
 event-listener = { workspace = true }
 once_cell = { workspace = true }
-serde = { workspace = true, features = ['derive'], optional = true }
+serde = { workspace = true, features = ['derive'] }
 tracing = { workspace = true }
 
 # Fluvio dependencies

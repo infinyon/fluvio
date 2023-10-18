@@ -24,13 +24,15 @@ futures-util = { workspace = true, features = ["alloc"] }
 once_cell = { workspace = true }
 serde = { workspace = true,  features = ['derive'] }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true }
+tempfile = { workspace = true }
 
 # Fluvio dependencies
 fluvio-types = { workspace = true }
-fluvio-stream-model = { workspace = true, features = [ "k8"]  }
+fluvio-stream-model = { workspace = true, features = ["k8", "fixture"]  }
 k8-client = { workspace = true, optional = true, features = ["memory_client"] }
 fluvio-future = { workspace = true, features = ["task", "timer"] }
 

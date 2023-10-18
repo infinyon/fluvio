@@ -20,6 +20,7 @@ use super::DYN_OBJ;
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
+    serde(bound(deserialize = "S: serde::de::DeserializeOwned")),
     serde(rename_all = "camelCase")
 )]
 pub struct Metadata<S>

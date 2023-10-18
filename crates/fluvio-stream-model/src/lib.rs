@@ -11,12 +11,14 @@ pub mod fixture {
 
     use std::fmt::Display;
 
+    use serde::{Serialize, Deserialize};
+
     use crate::core::{Spec, Status, MetadataItem, MetadataContext, MetadataRevExtension};
     use crate::store::MetadataStoreObject;
     use crate::epoch::DualEpochMap;
 
     // define test spec and status
-    #[derive(Debug, Default, Clone, Eq, PartialEq)]
+    #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
     pub struct TestSpec {
         pub replica: u16,
     }
@@ -28,7 +30,7 @@ pub mod fixture {
         type Status = TestStatus;
     }
 
-    #[derive(Debug, Default, Clone, Eq, PartialEq)]
+    #[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
     pub struct TestStatus {
         pub up: bool,
     }
@@ -37,7 +39,7 @@ pub mod fixture {
 
     impl Display for TestStatus {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "test_status")
+            write!(f, "{}", self.up)
         }
     }
 
