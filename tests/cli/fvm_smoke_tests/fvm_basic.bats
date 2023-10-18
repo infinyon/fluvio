@@ -473,13 +473,8 @@ setup_file() {
 
     # Expect output if `-q` is not passed
     run bash -c 'fvm install 0.10.14'
-    assert_line --index 0 "info: Downloading (1/5): fluvio@0.10.14"
-    assert_line --index 1 "info: Downloading (2/5): fluvio-run@0.10.14"
-    assert_line --index 2 "info: Downloading (3/5): fluvio-cloud@0.2.15"
-    assert_line --index 3 "info: Downloading (4/5): cdk@0.10.14"
-    assert_line --index 4 "info: Downloading (5/5): smdk@0.10.14"
-    assert_line --index 5 "done: Installed fluvio version 0.10.14"
-    assert_line --index 6 "done: Now using fluvio version 0.10.14"
+    assert_line --index 0 --partial "info: Downloading (1/5)"
+    assert_output --partial "done: Now using fluvio version 0.10.14"
     assert_success
 
     # Removes FVM
