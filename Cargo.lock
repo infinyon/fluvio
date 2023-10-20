@@ -994,6 +994,7 @@ dependencies = [
  "fluvio-cli-common",
  "fluvio-connector-deployer",
  "fluvio-connector-package",
+ "fluvio-extension-common",
  "fluvio-future",
  "fluvio-hub-util",
  "include_dir",

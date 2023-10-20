@@ -9,6 +9,7 @@ use crate::deploy::DeployCmd;
 use crate::test::TestCmd;
 use crate::publish::PublishCmd;
 use crate::set_public::SetPublicCmd;
+use crate::hub::HubCmd;
 
 /// Connector Development Kit
 #[derive(Debug, Parser)]
@@ -19,6 +20,8 @@ pub enum CdkCommand {
     Deploy(DeployCmd),
     Publish(PublishCmd),
     Version(BasicVersionCmd),
+    #[command(subcommand)]
+    Hub(HubCmd),
 
     #[command(name = "set-public")]
     SetPublic(SetPublicCmd),
@@ -34,6 +37,7 @@ impl CdkCommand {
             CdkCommand::SetPublic(opt) => opt.process(),
             CdkCommand::Generate(opt) => opt.process(),
             CdkCommand::Version(opt) => opt.process("CDK"),
+            CdkCommand::Hub(opt) => opt.process(),
         }
     }
 }
