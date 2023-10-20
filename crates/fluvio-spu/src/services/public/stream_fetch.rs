@@ -4,16 +4,18 @@ use std::time::Instant;
 use tracing::{debug, error, instrument, trace, warn};
 use tokio::select;
 
+use fluvio_compression::CompressionError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
-use fluvio_socket::{ExclusiveFlvSink, SocketError};
 use fluvio_protocol::{
     api::{RequestMessage, RequestHeader},
     record::{RecordSet, Offset, RawRecords},
 };
 use fluvio_protocol::link::{ErrorCode, smartmodule::SmartModuleTransformRuntimeError};
-use fluvio_compression::CompressionError;
+use fluvio_protocol::record::Batch;
+use fluvio_socket::{ExclusiveFlvSink, SocketError};
+use fluvio_storage::iterators::FileBatchIterator;
 use fluvio_spu_schema::{
     server::stream_fetch::{
         DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
@@ -23,7 +25,6 @@ use fluvio_spu_schema::{
     file::FileRecordSet,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
-use fluvio_protocol::record::Batch;
 
 use crate::core::{DefaultSharedGlobalContext, metrics::IncreaseValue};
 use crate::replication::leader::SharedFileLeaderState;
@@ -31,7 +32,6 @@ use crate::services::public::conn_context::ConnectionContext;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::batch::process_batch;
-use crate::smartengine::file_batch::FileBatchIterator;
 use crate::core::metrics::SpuMetrics;
 use crate::traffic::TrafficType;
 
