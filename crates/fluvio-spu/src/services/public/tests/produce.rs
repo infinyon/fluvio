@@ -3,7 +3,7 @@ use std::{env::temp_dir, time::Duration};
 use fluvio::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind};
 use fluvio_controlplane::replica::Replica;
 use fluvio_smartmodule::{Record, dataplane::smartmodule::Lookback};
-use fluvio_storage::FileReplica;
+use fluvio_storage::{FileReplica, iterators::FileBatchIterator};
 use tracing::debug;
 
 use fluvio_protocol::{
@@ -34,7 +34,6 @@ use crate::{
         },
     },
     replication::leader::LeaderReplicaState,
-    smartengine::file_batch::FileBatchIterator,
 };
 
 #[fluvio_future::test(ignore)]

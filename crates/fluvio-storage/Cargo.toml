@@ -15,7 +15,9 @@ doc = false
 required-features = ["cli", "fluvio-future/subscriber"]
 
 [features]
+default = ["iterators"]
 cli = ["clap"]
+iterators = []
 fixture = []
 
 
@@ -56,6 +58,7 @@ fluvio-future = { workspace = true, features = ["fixture"] }
 flv-util = { workspace = true, features = ["fixture"] }
 fluvio-socket = { workspace = true,  features = ["file"] }
 fluvio-protocol = { workspace = true,  features = ["fixture"] }
+fluvio-compression = { workspace = true, features = ["compress"] }
 
 [package.metadata.cargo-udeps.ignore]
 development = ["fluvio-socket"]

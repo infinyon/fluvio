@@ -51,7 +51,7 @@ chrono = { workspace = true }
 # Fluvio dependencies
 fluvio = { workspace = true }
 fluvio-types = { workspace = true, features = ["events"] }
-fluvio-storage = { workspace = true }
+fluvio-storage = { workspace = true, features = ["iterators"] }
 fluvio-compression = { workspace = true }
 fluvio-controlplane = { workspace = true }
 fluvio-controlplane-metadata = { workspace = true }

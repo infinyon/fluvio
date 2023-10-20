@@ -7,7 +7,7 @@ use blocking::unblock;
 use bytes::{BytesMut, Bytes};
 use fluvio_protocol::record::Size;
 
-use libc::{c_void};
+use libc::c_void;
 use nix::errno::Errno;
 use nix::Result as NixResult;
 use tracing::{debug, instrument, trace};
@@ -328,7 +328,7 @@ mod tests {
 
     use futures_lite::AsyncWriteExt;
 
-    use fluvio_future::{fs::File};
+    use fluvio_future::fs::File;
 
     use super::*;
 

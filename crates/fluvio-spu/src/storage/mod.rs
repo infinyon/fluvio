@@ -7,13 +7,13 @@ use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use anyhow::Result;
 
 use fluvio_protocol::record::BatchRecords;
-use fluvio_controlplane_metadata::partition::{ReplicaKey};
+use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_spu_schema::Isolation;
 use fluvio_protocol::Encoder;
 use fluvio_protocol::record::{Offset, RecordSet};
 use fluvio_protocol::link::ErrorCode;
 use fluvio_storage::{ReplicaStorage, StorageError, OffsetInfo, ReplicaSlice};
-use fluvio_types::{event::offsets::OffsetChangeListener};
+use fluvio_types::event::offsets::OffsetChangeListener;
 use fluvio_types::event::offsets::OffsetPublisher;
 
 pub const REMOVAL_START: Offset = -1000; // indicate that storage about to be removed

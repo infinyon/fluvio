@@ -7,6 +7,7 @@ use fluvio_protocol::link::ErrorCode;
 use fluvio_smartmodule::Record;
 use fluvio_spu_schema::server::smartmodule::{SmartModuleInvocation, SmartModuleInvocationWasm};
 use fluvio_storage::ReplicaStorage;
+use fluvio_storage::iterators::{FileBatch, FileBatchIterator, FileRecordIterator, RecordItem};
 use fluvio_types::Timestamp;
 use tracing::{debug, trace, error};
 
@@ -15,13 +16,10 @@ use crate::core::metrics::SpuMetrics;
 use crate::replication::leader::LeaderReplicaState;
 
 use crate::smartengine::chain;
-use crate::smartengine::file_batch::{FileRecordIterator, FileBatchIterator};
 use crate::smartengine::Lookback;
 use crate::smartengine::SmartModuleChainBuilder;
 use crate::smartengine::SmartModuleChainInstance;
 use crate::smartengine::Version;
-
-use super::file_batch::{FileBatch, RecordItem};
 
 #[derive(Debug)]
 pub struct SmartModuleContext {

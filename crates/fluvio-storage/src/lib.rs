@@ -13,6 +13,8 @@ mod util;
 mod validator;
 mod file;
 pub mod config;
+#[cfg(feature = "iterators")]
+pub mod iterators;
 
 #[cfg(feature = "fixture")]
 pub mod fixture;
