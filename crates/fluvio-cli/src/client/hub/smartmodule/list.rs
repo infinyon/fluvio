@@ -6,10 +6,9 @@ use anyhow::Result;
 
 use fluvio_extension_common::Terminal;
 use fluvio_hub_util::HUB_API_LIST_META;
+use fluvio_hub_util::cmd::get_pkg_list;
 
 use crate::common::OutputFormat;
-
-use super::get_pkg_list;
 
 /// List available SmartModules in the hub
 #[derive(Debug, Parser)]

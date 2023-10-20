@@ -5,12 +5,12 @@ use clap::Parser;
 use anyhow::Result;
 
 use fluvio_extension_common::Terminal;
-use fluvio_hub_util::HUB_API_CONN_LIST;
-
-use crate::common::OutputFormat;
+use fluvio_extension_common::OutputFormat;
+use crate::HUB_API_CONN_LIST;
 
 use super::get_pkg_list;
 
+/// List all available SmartConnectors
 #[derive(Debug, Parser)]
 pub struct ConnectorHubListOpts {
     #[clap(flatten)]
@@ -28,10 +28,7 @@ impl ConnectorHubListOpts {
     }
 }
 
-// #[allow(dead_code)]
 mod output {
-
-    //!
     //! # Fluvio hub list - output processing
     //!
     //! Format SmartModules response based on output type
@@ -45,7 +42,7 @@ mod output {
     use fluvio_extension_common::Terminal;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
-    use fluvio_hub_util::PackageMeta;
+    use crate::PackageMeta;
 
     #[derive(Serialize)]
     struct ListConnectors(Vec<PackageMeta>);
