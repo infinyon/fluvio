@@ -26,7 +26,6 @@ use fluvio_spu_schema::{
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
-
 use crate::core::{DefaultSharedGlobalContext, metrics::IncreaseValue};
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::conn_context::ConnectionContext;
