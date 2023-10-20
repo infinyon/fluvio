@@ -17,9 +17,9 @@ use crate::k8::objects::spu_service::SpuServiceSpec;
 
 /// Sync individual SPU services from SPU Group
 pub struct SpuServiceController {
-    services: StoreContext<SpuServiceSpec>,
-    groups: StoreContext<SpuGroupSpec>,
-    configs: StoreContext<ScK8Config>,
+    services: StoreContext<SpuServiceSpec, K8MetaItem>,
+    groups: StoreContext<SpuGroupSpec, K8MetaItem>,
+    configs: StoreContext<ScK8Config, K8MetaItem>,
 }
 
 impl fmt::Display for SpuServiceController {
@@ -36,9 +36,9 @@ impl fmt::Debug for SpuServiceController {
 
 impl SpuServiceController {
     pub fn start(
-        configs: StoreContext<ScK8Config>,
-        services: StoreContext<SpuServiceSpec>,
-        groups: StoreContext<SpuGroupSpec>,
+        configs: StoreContext<ScK8Config, K8MetaItem>,
+        services: StoreContext<SpuServiceSpec, K8MetaItem>,
+        groups: StoreContext<SpuGroupSpec, K8MetaItem>,
     ) {
         let controller = Self {
             configs,

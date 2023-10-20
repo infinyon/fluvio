@@ -9,15 +9,16 @@ use std::{
 use anyhow::{Result, anyhow};
 use async_channel::{Sender, Receiver, bounded};
 use async_lock::{RwLock, RwLockUpgradableReadGuard};
+use futures_util::{stream::BoxStream, StreamExt};
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use tracing::{warn, debug};
+
 use fluvio_stream_model::{
     core::{MetadataItem, Spec, MetadataContext},
     store::{
         k8::K8ExtendedSpec, NameSpace, MetadataStoreList, MetadataStoreObject, actions::LSUpdate,
     },
 };
-use futures_util::{stream::BoxStream, StreamExt};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
-use tracing::{warn, debug};
 
 use super::MetadataClient;
 
@@ -92,6 +93,7 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     {
         let store = self.get_store::<S>().await?;
         let mut item = store.retrieve_item::<S>(&metadata).await?;
+        item.ctx_mut().set_item(metadata);
         item.set_spec(spec);
         store.apply(item).await?;
         Ok(())
@@ -110,7 +112,10 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
             id: key.to_string(),
             revision: Default::default(),
         };
-        self.update_spec(metadata, spec).await
+        let store = self.get_store::<S>().await?;
+        let mut item = store.retrieve_item::<S>(&metadata).await?;
+        item.set_spec(spec);
+        store.apply(item).await
     }
 
     async fn update_status<S>(
@@ -124,6 +129,7 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     {
         let store = self.get_store::<S>().await?;
         let mut item = store.retrieve_item::<S>(&metadata).await?;
+        item.ctx_mut().set_item(metadata.clone());
         item.set_status(status);
         store.apply(item).await?;
         store.retrieve_item::<S>(&metadata).await
@@ -272,8 +278,13 @@ impl SpecStore {
         let id = value.ctx().item().uid().to_owned();
         let mut write = self.data.write().await;
         if let Some(prev) = write.get(&id) {
-            value.ctx_mut().item_mut().revision =
-                prev.downcast_ref::<S>()?.ctx().item().revision + 1;
+            let prev_meta = prev.downcast_ref::<S>()?.ctx().item();
+            let prev_rev = prev_meta.revision;
+            if prev_meta.is_newer(value.ctx().item()) {
+                let new_rev = value.ctx().item().revision;
+                anyhow::bail!("attempt to update by stale value: current version: {prev_rev}, proposed: {new_rev}");
+            }
+            value.ctx_mut().item_mut().revision = prev_rev + 1;
         };
         let pointer = SpecPointer::new(self.spec_file_name(&id), value);
         write.insert(id, pointer.clone());
@@ -473,7 +484,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{
+        time::Duration,
+        ops::{AddAssign, SubAssign},
+    };
 
     use crate::metadata::fixture::{TestSpec, TestStatus};
 
@@ -697,10 +711,114 @@ spec:
     }
 
     #[fluvio_future::test]
-    async fn test_watch_stream_since_version() {
+    async fn test_stale_apply_not_allowed() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let mut obj = default_test_store_obj();
+        obj.ctx_mut().item_mut().revision.add_assign(1);
+        meta_store.apply(obj.clone()).await.expect("applied");
+
+        //when
+        obj.ctx_mut().item_mut().revision.sub_assign(1);
+        let res = meta_store.apply(obj.clone()).await;
+
+        //then
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "attempt to update by stale value: current version: 1, proposed: 0"
+        );
+    }
+
+    #[fluvio_future::test]
+    async fn test_stale_update_status_not_allowed() {
+        //given
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj = default_test_store_obj();
+        meta_store.apply(obj.clone()).await.expect("applied");
+        meta_store
+            .update_status::<TestSpec>(
+                obj.ctx().item().clone(),
+                TestStatus("new status".to_string()),
+                &NameSpace::All,
+            )
+            .await
+            .expect("updated status");
+
+        //when
+        let res = meta_store
+            .update_status::<TestSpec>(
+                obj.ctx().item().clone(),
+                TestStatus("new status".to_string()),
+                &NameSpace::All,
+            )
+            .await;
+
+        //then
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "attempt to update by stale value: current version: 1, proposed: 0"
+        );
+    }
+
+    #[fluvio_future::test]
+    async fn test_stale_update_spec_not_allowed() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let obj = default_test_store_obj();
+        let spec = TestSpec { replica: 5 };
+
+        meta_store.apply(obj.clone()).await.expect("applied");
+        meta_store
+            .update_spec(obj.ctx_owned().item_owned(), spec.clone())
+            .await
+            .expect("updated status");
+
+        //when
+        let res = meta_store
+            .update_spec(obj.ctx_owned().item_owned(), spec)
+            .await;
+
+        //then
+        assert!(res.is_err());
+        assert_eq!(
+            res.unwrap_err().to_string(),
+            "attempt to update by stale value: current version: 1, proposed: 0"
+        );
+    }
+
+    #[fluvio_future::test]
+    async fn test_stale_update_spec_by_key_overwrites() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let obj = default_test_store_obj();
+        let spec = TestSpec { replica: 5 };
+
+        meta_store.apply(obj.clone()).await.expect("applied");
+        meta_store
+            .update_spec_by_key(obj.key.clone(), &NameSpace::All, spec.clone())
+            .await
+            .expect("updated status");
+
+        //when
+        let res = meta_store
+            .update_spec_by_key(obj.key.clone(), &NameSpace::All, spec)
+            .await;
+
+        //then
+        assert!(res.is_ok());
+    }
+
+    #[fluvio_future::test]
+    async fn test_watch_stream_since_version() {
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let mut obj = default_test_store_obj();
         let stream =
             meta_store.watch_stream_since::<TestSpec>(&NameSpace::All, Some("2".to_string()));
 
@@ -714,6 +832,8 @@ spec:
             )
             .await
             .expect("updated status");
+
+        obj.ctx_mut().item_mut().revision.add_assign(1);
         meta_store
             .update_status::<TestSpec>(
                 obj.ctx().item().clone(),
@@ -722,7 +842,6 @@ spec:
             )
             .await
             .expect("updated status");
-
         meta_store
             .delete_item::<TestSpec>(obj.ctx_owned().item_owned())
             .await

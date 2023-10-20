@@ -1,5 +1,6 @@
 #[cfg(feature = "k8")]
 pub mod k8;
+#[cfg(feature = "local")]
 pub mod local;
 
 use anyhow::Result;

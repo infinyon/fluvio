@@ -71,7 +71,7 @@ impl SpuGroupObj {
         namespace: &str,
         spu_k8_config: &ScK8Config,
         tls: Option<&TlsConfig>,
-    ) -> (String, WSAction<StatefulsetSpec>) {
+    ) -> (String, WSAction<StatefulsetSpec, K8MetaItem>) {
         let statefulset_name = format!("fluvio-spg-{}", self.key());
         let k8_spec = k8_convert::generate_k8_stateful(
             &self.spec,
@@ -154,7 +154,7 @@ impl SpuGroupObj {
         )
     }
 
-    pub fn as_service(&self) -> (String, WSAction<SpgServiceSpec>) {
+    pub fn as_service(&self) -> (String, WSAction<SpgServiceSpec, K8MetaItem>) {
         let svc_name = self.svc_name.to_owned();
         let k8_service = k8_convert::generate_service(self.spec(), self.key());
 

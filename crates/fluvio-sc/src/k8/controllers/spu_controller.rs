@@ -24,9 +24,9 @@ use crate::stores::spg::SpuGroupSpec;
 /// This is only place where we make changes to SPU
 /// For each SPU Group, we map to children SPUs so it's 1:M parent-child relationship
 pub struct K8SpuController {
-    services: StoreContext<SpuServiceSpec>,
-    groups: StoreContext<SpuGroupSpec>,
-    spus: StoreContext<SpuSpec>,
+    services: StoreContext<SpuServiceSpec, K8MetaItem>,
+    groups: StoreContext<SpuGroupSpec, K8MetaItem>,
+    spus: StoreContext<SpuSpec, K8MetaItem>,
 }
 
 impl fmt::Display for K8SpuController {
@@ -43,9 +43,9 @@ impl fmt::Debug for K8SpuController {
 
 impl K8SpuController {
     pub fn start(
-        spus: StoreContext<SpuSpec>,
-        services: StoreContext<SpuServiceSpec>,
-        groups: StoreContext<SpuGroupSpec>,
+        spus: StoreContext<SpuSpec, K8MetaItem>,
+        services: StoreContext<SpuServiceSpec, K8MetaItem>,
+        groups: StoreContext<SpuGroupSpec, K8MetaItem>,
     ) {
         let controller = Self {
             services,

@@ -12,7 +12,6 @@ name = "fluvio_controlplane_metadata"
 path = "src/lib.rs"
 
 [features]
-default = ["use_serde"]
 smartmodule = ["flate2","toml","use_serde"]
 use_serde = ["serde","semver/serde", "bytesize/serde", "humantime-serde", "serde_yaml"]
 k8 = ["use_serde", "fluvio-stream-model/k8"]

@@ -81,12 +81,15 @@ impl TestEnv {
         &self.client
     }
 
-    pub async fn create_global_ctx(&self) -> (K8SharedContext, StoreContext<ScK8Config>) {
+    pub async fn create_global_ctx(
+        &self,
+    ) -> (K8SharedContext, StoreContext<ScK8Config, K8MetaItem>) {
         let config_map = ScConfigMetadata::with_spec("fluvio", ScK8Config::default());
         let config_store = LocalStore::new_shared();
         config_store.sync_all(vec![config_map]).await;
 
-        let config_ctx: StoreContext<ScK8Config> = StoreContext::new_with_store(config_store);
+        let config_ctx: StoreContext<ScK8Config, K8MetaItem> =
+            StoreContext::new_with_store(config_store);
         assert!(config_ctx.store().value("fluvio").await.is_some());
 
         (Context::shared_metadata(ScConfig::default()), config_ctx)

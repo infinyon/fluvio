@@ -22,15 +22,15 @@ mod context {
     use fluvio_future::timer::sleep;
 
     use crate::actions::WSAction;
-    use crate::store::k8::K8MetaItem;
     use crate::core::Spec;
 
     use super::MetadataStoreObject;
     use super::{LocalStore, ChangeListener, MetadataChanges};
 
-    pub type K8ChangeListener<S> = ChangeListener<S, K8MetaItem>;
+    #[cfg(feature = "k8")]
+    pub type K8ChangeListener<S> = ChangeListener<S, crate::store::k8::K8MetaItem>;
 
-    pub type StoreChanges<S, MetaContext = K8MetaItem> = MetadataChanges<S, MetaContext>;
+    pub type StoreChanges<S, MetaContext> = MetadataChanges<S, MetaContext>;
 
     static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
         use std::env;
@@ -41,7 +41,7 @@ mod context {
     });
 
     #[derive(Debug, Clone)]
-    pub struct StoreContext<S, MetaContext = K8MetaItem>
+    pub struct StoreContext<S, MetaContext>
     where
         S: Spec,
         MetaContext: MetadataItem + Debug,

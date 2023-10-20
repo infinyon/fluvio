@@ -89,6 +89,10 @@ mod context {
             &mut self.item
         }
 
+        pub fn set_item(&mut self, item: C) {
+            self.item = item;
+        }
+
         pub fn item_owned(self) -> C {
             self.item
         }
@@ -149,19 +153,33 @@ mod core_model {
     use std::hash::Hash;
     use std::str::FromStr;
 
-    use serde::Serialize;
-    use serde::de::DeserializeOwned;
-
     /// metadata driver
     pub trait MetadataStoreDriver {
         type Metadata;
     }
 
+    #[cfg(not(feature = "use_serde"))]
+    pub trait Spec: Default + Debug + Clone + PartialEq + Send + Sync + 'static {
+        const LABEL: &'static str;
+        type Status: Status;
+        type Owner: Spec;
+        type IndexKey: Debug + Eq + Hash + Clone + ToString + FromStr + Display + Send + Sync;
+    }
+
+    #[cfg(feature = "use_serde")]
     pub trait Spec:
-        Default + Debug + Clone + PartialEq + Serialize + DeserializeOwned + Send + Sync + 'static
+        Default
+        + Debug
+        + Clone
+        + PartialEq
+        + serde::Serialize
+        + serde::de::DeserializeOwned
+        + Send
+        + Sync
+        + 'static
     {
         const LABEL: &'static str;
-        type Status: Status + Serialize + DeserializeOwned;
+        type Status: Status + serde::Serialize + serde::de::DeserializeOwned;
         type Owner: Spec;
         type IndexKey: Debug + Eq + Hash + Clone + ToString + FromStr + Display + Send + Sync;
     }
