@@ -63,7 +63,9 @@ impl ConnectorHubDownloadOpts {
         let data = fluvio_hub_util::get_package(&url, &access)
             .await
             .map_err(|err| {
-                CliError::HubError(format!("downloading {package_name} failed\nServer: {err}"))
+                CliError::HubError(format!(
+                    "downloading {package_name} failed\nHub error: {err}"
+                ))
             })?;
 
         std::fs::write(file_path, data).map_err(|err| {

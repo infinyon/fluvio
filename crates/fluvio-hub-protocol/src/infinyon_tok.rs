@@ -20,7 +20,7 @@ type InfinyonRemote = String;
 
 #[derive(thiserror::Error, Debug)]
 pub enum InfinyonCredentialError {
-    #[error("Read error {0}")]
+    #[error("{0}")]
     Read(String),
 
     #[error("unable to parse credentials")]
@@ -69,9 +69,10 @@ impl Credentials {
     /// Try to load credentials from disk
     fn try_load<P: AsRef<Path>>(base_path: P) -> Result<Self, InfinyonCredentialError> {
         let current_login_path = base_path.as_ref().join(CURRENT_LOGIN_FILE_NAME);
-        let cfg_path = fs::read_to_string(&current_login_path).map_err(|_| {
-            let strpath = current_login_path.to_string_lossy().to_string();
-            InfinyonCredentialError::Read(strpath)
+        let cfg_path = fs::read_to_string(current_login_path).map_err(|_| {
+            InfinyonCredentialError::Read(
+                "no access credentials, try 'fluvio cloud login'".to_owned(),
+            )
         })?;
         let cred_path = base_path.as_ref().join(cfg_path);
         Self::load(&cred_path)
@@ -79,8 +80,9 @@ impl Credentials {
 
     fn load(cred_path: &Path) -> Result<Self, InfinyonCredentialError> {
         let file_str = fs::read_to_string(cred_path).map_err(|_| {
-            let strpath = cred_path.to_string_lossy().to_string();
-            InfinyonCredentialError::Read(strpath)
+            InfinyonCredentialError::Read(
+                "no access credentials, try 'fluvio cloud login'".to_owned(),
+            )
         })?;
         let creds: Credentials = toml::from_str(&file_str)
             .map_err(|_| InfinyonCredentialError::UnableToParseCredentials)?;
