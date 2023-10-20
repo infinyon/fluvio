@@ -38,7 +38,7 @@ pub fn fvm_workdir_path() -> Result<PathBuf> {
     }
 }
 
-/// Retrieves the path to the `~/.fvm/bin/fvm` directory in the host system
+/// Retrieves the path to the `~/.fvm/bin/fvm` binary in the host system
 pub fn fvm_bin_path() -> Result<PathBuf> {
     Ok(fvm_workdir_path()?.join("bin").join(FVM_BINARY_NAME))
 }

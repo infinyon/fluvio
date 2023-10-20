@@ -21,13 +21,18 @@ setup_file() {
     export STABLE_VERSION
     debug_msg "Stable Version: $STABLE_VERSION"
 
+    # The directory where FVM files live
+    FVM_HOME_DIR="$HOME/.fvm"
+    export FVM_HOME_DIR
+    debug_msg "FVM Home Directory: $FVM_HOME_DIR"
+
     # The directory where FVM stores the downloaded versions
-    VERSIONS_DIR="$HOME/.fvm/versions"
+    VERSIONS_DIR="$FVM_HOME_DIR/versions"
     export VERSIONS_DIR
     debug_msg "Versions Directory: $VERSIONS_DIR"
 
     # The path to the Settings Toml file
-    SETTINGS_TOML_PATH="$HOME/.fvm/settings.toml"
+    SETTINGS_TOML_PATH="$FVM_HOME_DIR/settings.toml"
     export SETTINGS_TOML_PATH
     debug_msg "Settings Toml Path: $SETTINGS_TOML_PATH"
 
@@ -531,6 +536,104 @@ setup_file() {
     run bash -c 'fluvio version > flv_version_$version.out && cat flv_version_$version.out | head -n 1 | grep "$VERSION"'
     assert_output --partial "$VERSION"
     assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Replaces binary on installs" {
+    # Checks the presence of the binary in the versions directory
+    run bash -c '! test -f "$FVM_HOME_DIR/bin/fvm"'
+    assert_success
+
+    # Create FVM Binaries directory
+    mkdir -p "$FVM_HOME_DIR/bin"
+
+    # Create bash file to check if the binary is present
+    run bash -c 'echo "echo \"Hello World!\"" > "$FVM_HOME_DIR/bin/fvm"'
+    assert_success
+
+    # Store this file Sha256 Checksum
+    export SHASUM_TEST_FILE=$(sha256sum "$FVM_HOME_DIR/bin/fvm" | awk '{ print $1 }')
+
+    # Install FVM using `self install`
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Store FVM Binary Sha256 Checksum
+    export SHASUM_FVM_BIN=$(sha256sum "$FVM_HOME_DIR/bin/fvm" | awk '{ print $1 }')
+
+    # Ensure the checksums are different
+    [[ "$SHASUM_TEST_FILE" != "$SHASUM_FVM_BIN" ]]
+    assert_success
+
+    # Ensure file is not corrupted on updates
+    run bash -c 'fvm --help'
+    assert_output --partial "Fluvio Version Manager (FVM)"
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+}
+
+@test "Updating keeps settings files integrity" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Store Settings File Checksum
+    export SHASUM_SETTINGS_BEFORE=$(sha256sum "$FVM_HOME_DIR/settings.toml" | awk '{ print $1 }')
+
+    # We cannot use `fvm self install` so use other copy of FVM to test binary
+    # replacement
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Store Settings File Checksum
+    export SHASUM_SETTINGS_AFTER=$(sha256sum "$FVM_HOME_DIR/settings.toml" | awk '{ print $1 }')
+
+    assert_equal "$SHASUM_SETTINGS_BEFORE" "$SHASUM_SETTINGS_AFTER"
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Fails when using 'fvm self install' on itself" {
+    skip "Ubuntu CI does not support this test due to mounted virtual volume path mismatch"
+
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # We cannot use `fvm self install` so use other copy of FVM to test binary
+    # replacement
+    run bash -c 'fvm self install'
+    assert_output --partial "Error: FVM is already installed"
+    assert_failure
 
     # Removes FVM
     run bash -c 'fvm self uninstall --yes'

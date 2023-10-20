@@ -1,5 +1,5 @@
 use std::env::current_exe;
-use std::fs::{create_dir, copy, write};
+use std::fs::{copy, write, create_dir_all};
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -25,19 +25,9 @@ pub struct SelfInstallOpt;
 
 impl SelfInstallOpt {
     pub async fn process(&self, notify: Notify) -> Result<()> {
-        // Checks if FVM is already installed
-        let bin_path = fvm_bin_path()?;
-
-        if bin_path.exists() {
-            notify.info(format!(
-                "FVM is already installed at {}",
-                bin_path.display()
-            ));
-            return Ok(());
-        }
-
         let fvm_installation_path = self.install_fvm()?;
-        Settings::init()?;
+
+        Settings::open()?;
 
         notify.done(format!(
             "FVM installed successfully at {}",
@@ -50,24 +40,46 @@ impl SelfInstallOpt {
 
     /// Creates the `~/.fvm` directory and copies the current binary to this
     /// directory.
+    ///
+    /// # Usage of `create_dir` over `create_dir_all`
+    ///
+    /// Given that on updates the directories may be present, to avoid failing
+    /// on `create_dir`, `create_dir_all` is used instead.
+    ///
+    /// Something similar happens on `mkdir` command, even though underlaying
+    /// syscalls may differ.
+    ///
+    /// Consider the existent directory `~/.fvm/versions`, executing `create_dir`
+    /// will fail with error:
+    ///
+    /// ```ignore
+    /// ~/.fvm/versions: File exists
+    /// ```
+    ///
+    /// Instead by doing `create_dir_all` the error will not happen.
+    ///
+    /// ```ignore
+    /// mkdir -p ~/.fvm/versions
+    /// ```
+    ///
     fn install_fvm(&self) -> Result<PathBuf> {
         // Creates the directory `~/.fvm` if doesn't exists
         let fvm_dir = fvm_workdir_path()?;
 
-        if !fvm_dir.exists() {
-            create_dir(&fvm_dir)?;
-            tracing::debug!(?fvm_dir, "Created FVM home directory with success");
+        // Creates the binaries directory
+        let bin_dir = fvm_dir.join("bin");
+        create_dir_all(bin_dir)?;
+
+        let fvm_binary_path = fvm_bin_path()?;
+        let current_binary_path = current_exe()?;
+
+        if fvm_binary_path == current_binary_path {
+            // We cant replace ourselves, user is running `fvm self install`
+            // from the binary itself and not from the installer script.
+            return Err(anyhow::anyhow!("FVM is already installed"));
         }
 
-        // Attempts to create the binary crate
-        let fvm_binary_dir = fvm_dir.join("bin");
-        create_dir(&fvm_binary_dir)?;
-        tracing::debug!(?fvm_binary_dir, "Created FVM bin directory with success");
-
         // Copies "this" binary to the FVM binary directory
-        let current_binary_path = current_exe()?;
-        let fvm_binary_path = fvm_bin_path()?;
-
         copy(current_binary_path, fvm_binary_path)?;
         tracing::debug!(
             ?fvm_dir,
@@ -76,7 +88,7 @@ impl SelfInstallOpt {
 
         // Creates the package set directory
         let fvm_pkgset_dir = fvm_versions_path()?;
-        create_dir(fvm_pkgset_dir)?;
+        create_dir_all(fvm_pkgset_dir)?;
 
         // Creates the `env` file
         let fvm_env_file_path = fvm_dir.join("env");
