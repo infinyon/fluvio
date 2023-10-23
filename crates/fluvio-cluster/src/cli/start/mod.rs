@@ -149,10 +149,6 @@ pub struct StartOpt {
     /// installing/upgrade sys only
     sys_only: bool,
 
-    /// install local spu/sc(custom)
-    #[arg(long)]
-    local: bool,
-
     #[clap(flatten)]
     pub tls: TlsOpt,
 
@@ -174,8 +170,20 @@ pub struct StartOpt {
     #[arg(long)]
     pub service_type: Option<String>,
 
-    /// Start SC in read only mode
+    /// install local spu/sc
+    #[arg(long, conflicts_with_all = &["k8", "local_k8", "read_only"])]
+    local: bool,
+
+    /// install local spu/sc with metadata stored in K8s
     #[arg(long)]
+    local_k8: bool,
+
+    /// install on K8s
+    #[arg(long, default_value = "true", conflicts_with_all = &["local", "local_k8", "read_only"])]
+    k8: bool,
+
+    /// Start SC in read only mode
+    #[arg(long, conflicts_with_all = &["k8", "local", "local_k8"], value_name = "config path")]
     read_only: Option<PathBuf>,
 }
 
@@ -187,7 +195,7 @@ impl StartOpt {
 
         if self.sys_only {
             process_sys(&self, upgrade)?;
-        } else if self.local || self.read_only.is_some() {
+        } else if self.local || self.local_k8 || self.read_only.is_some() {
             process_local(self, platform_version).await?;
         } else {
             process_k8(self, platform_version, upgrade).await?;

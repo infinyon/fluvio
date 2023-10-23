@@ -16,7 +16,14 @@ pub struct ScProcess {
     pub launcher: Option<PathBuf>,
     pub tls_policy: TlsPolicy,
     pub rust_log: String,
-    pub read_only: Option<PathBuf>,
+    pub mode: ScMode,
+}
+
+#[derive(Debug)]
+pub enum ScMode {
+    Local(PathBuf),
+    ReadOnly(PathBuf),
+    K8s,
 }
 
 impl FluvioLocalProcess for ScProcess {}
@@ -30,13 +37,19 @@ impl ScProcess {
         let mut binary = {
             let base = launcher.ok_or(LocalRuntimeError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
-            cmd.arg("run").arg("sc").arg("--local");
+            cmd.arg("run").arg("sc");
             cmd
         };
 
-        if let Some(path) = &self.read_only {
-            binary.arg("--read-only").arg(path);
-        }
+        match &self.mode {
+            ScMode::Local(path) => {
+                binary.arg("--local").arg(path);
+            }
+            ScMode::ReadOnly(path) => {
+                binary.arg("--read-only").arg(path);
+            }
+            ScMode::K8s => {}
+        };
 
         if let TlsPolicy::Verified(tls) = &self.tls_policy {
             self.set_server_tls(&mut binary, tls, 9005)?;

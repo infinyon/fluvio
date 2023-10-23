@@ -5,6 +5,7 @@ use fluvio::config::TlsPolicy;
 
 use crate::check::ClusterCheckError;
 use crate::cli::ClusterCliError;
+use crate::start::local::LocalMode;
 use crate::{LocalInstaller, LocalConfig, LocalInstallError};
 
 use super::StartOpt;
@@ -40,7 +41,13 @@ pub async fn process_local(
         builder.skip_checks(true);
     }
 
-    builder.read_only(opt.read_only);
+    let mode = match (opt.local, opt.local_k8, opt.read_only) {
+        (_, _, Some(path)) => LocalMode::ReadOnly(path),
+        (_, true, _) => LocalMode::LocalK8,
+        _ => LocalMode::Local,
+    };
+
+    builder.mode(mode);
 
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
