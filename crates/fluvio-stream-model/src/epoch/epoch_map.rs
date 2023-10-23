@@ -350,13 +350,15 @@ mod test {
 
     use std::fmt::Display;
 
+    use serde::{Serialize, Deserialize};
+
     use crate::core::{Spec, Status};
     use crate::store::DefaultMetadataObject;
 
     use super::EpochMap;
 
     // define test spec and status
-    #[derive(Debug, Default, Clone, PartialEq)]
+    #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
     struct TestSpec {
         replica: u16,
     }
@@ -368,7 +370,7 @@ mod test {
         type Status = TestStatus;
     }
 
-    #[derive(Debug, Default, Clone, PartialEq)]
+    #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
     struct TestStatus {
         up: bool,
     }

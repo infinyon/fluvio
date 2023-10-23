@@ -14,7 +14,7 @@ path = "src/lib.rs"
 [features]
 use_serde = ["serde"]
 k8 = ["use_serde", "k8-types"]
-fixture = []
+fixture = ["serde"]
 
 [dependencies]
 async-rwlock = { workspace = true }

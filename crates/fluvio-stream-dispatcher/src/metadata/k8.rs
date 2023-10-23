@@ -322,15 +322,11 @@ fn to_k8_namespace(ns: &NameSpace) -> K8NameSpace {
 
 #[cfg(test)]
 mod tests {
-    use std::{fmt::Display, time::Duration};
+    use std::time::Duration;
 
-    use fluvio_stream_model::{
-        core::Status,
-        k8_types::{Status as K8Status, DefaultHeader, Crd, CrdNames},
-        store::k8::default_convert_from_k8,
-    };
     use k8_client::memory::MemoryClient;
-    use serde::{Serialize, Deserialize};
+
+    use crate::metadata::fixture::{TestSpec, TestStatus};
 
     use super::*;
 
@@ -340,8 +336,8 @@ mod tests {
         let k8_client = MemoryClient::default();
         let meta_object: MetadataStoreObject<TestSpec, K8MetaItem> = MetadataStoreObject::new(
             "spec1".to_string(),
-            TestSpec,
-            TestSpecStatus("ok".to_string()),
+            TestSpec::default(),
+            TestStatus("ok".to_string()),
         );
 
         //when
@@ -375,7 +371,11 @@ mod tests {
         let key = "key".to_string();
         let meta = K8MetaItem::new(key.clone(), namespace.to_string());
         let meta_object: MetadataStoreObject<TestSpec, K8MetaItem> =
-            MetadataStoreObject::new_with_context(key.clone(), TestSpec, meta.clone().into());
+            MetadataStoreObject::new_with_context(
+                key.clone(),
+                TestSpec::default(),
+                meta.clone().into(),
+            );
 
         //when
         MetadataClient::apply(&k8_client, meta_object)
@@ -384,7 +384,7 @@ mod tests {
         MetadataClient::update_status::<TestSpec>(
             &k8_client,
             meta,
-            TestSpecStatus("new status".to_string()),
+            TestStatus("new status".to_string()),
             &namespace,
         )
         .await
@@ -410,7 +410,11 @@ mod tests {
         let key = "key".to_string();
         let meta = K8MetaItem::new(key.clone(), namespace.to_string());
         let meta_object: MetadataStoreObject<TestSpec, K8MetaItem> =
-            MetadataStoreObject::new_with_context(key.clone(), TestSpec, meta.clone().into());
+            MetadataStoreObject::new_with_context(
+                key.clone(),
+                TestSpec::default(),
+                meta.clone().into(),
+            );
 
         //when
         MetadataClient::apply(&k8_client, meta_object.clone())
@@ -419,7 +423,7 @@ mod tests {
         MetadataClient::update_status::<TestSpec>(
             &k8_client,
             meta_object.ctx().item().clone(),
-            TestSpecStatus("new status".to_string()),
+            TestStatus("new status".to_string()),
             &namespace,
         )
         .await
@@ -459,7 +463,7 @@ mod tests {
 
         let ctx = fluvio_stream_model::store::k8::K8MetadataContext::new(meta, Some(parent_meta));
 
-        let obj = MetadataStoreObject::new_with_context(key.clone(), TestSpec, ctx);
+        let obj = MetadataStoreObject::new_with_context(key.clone(), TestSpec::default(), ctx);
 
         //when
         MetadataClient::apply(&k8_client, obj.clone())
@@ -469,7 +473,6 @@ mod tests {
             .await
             .expect("retrieved");
 
-        dbg!(&items);
         assert_eq!(items.items.len(), 1);
         assert_eq!(
             items.items[0]
@@ -488,91 +491,5 @@ mod tests {
             .inner()
             .finalizers
             .contains(&"FINALIZER1".to_string()));
-    }
-
-    #[derive(Debug, Default, Clone, PartialEq, Eq)]
-    struct TestSpec;
-
-    #[derive(Debug, Default, Clone, PartialEq, Eq)]
-    struct TestSpecStatus(String);
-
-    impl Spec for TestSpec {
-        const LABEL: &'static str = "TEST_SPEC";
-        type Status = TestSpecStatus;
-        type Owner = Self;
-        type IndexKey = String;
-    }
-
-    impl Status for TestSpecStatus {}
-
-    impl K8ExtendedSpec for TestSpec {
-        type K8Spec = TestK8Spec;
-
-        const FINALIZER: Option<&'static str> = Some("FINALIZER1");
-
-        fn convert_from_k8(
-            k8_obj: fluvio_stream_model::k8_types::K8Obj<Self::K8Spec>,
-            multi_namespace_context: bool,
-        ) -> std::result::Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>>
-        {
-            default_convert_from_k8(k8_obj, multi_namespace_context)
-        }
-
-        fn convert_status_from_k8(status: Self::Status) -> <Self::K8Spec as K8Spec>::Status {
-            TestK8SpecStatus(status.0)
-        }
-
-        fn into_k8(self) -> Self::K8Spec {
-            TestK8Spec
-        }
-    }
-
-    impl Display for TestSpecStatus {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self.0)
-        }
-    }
-
-    #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
-    struct TestK8Spec;
-
-    #[derive(Default, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-    pub struct TestK8SpecStatus(String);
-
-    impl K8Status for TestK8SpecStatus {}
-
-    impl Display for TestK8SpecStatus {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self.0)
-        }
-    }
-
-    impl K8Spec for TestK8Spec {
-        type Status = TestK8SpecStatus;
-        type Header = DefaultHeader;
-
-        fn metadata() -> &'static Crd {
-            &Crd {
-                group: "test.fluvio",
-                version: "v1",
-                names: CrdNames {
-                    kind: "myspec",
-                    plural: "myspecs",
-                    singular: "myspec",
-                },
-            }
-        }
-    }
-
-    impl From<TestK8Spec> for TestSpec {
-        fn from(_value: TestK8Spec) -> Self {
-            Self
-        }
-    }
-
-    impl From<TestK8SpecStatus> for TestSpecStatus {
-        fn from(value: TestK8SpecStatus) -> Self {
-            Self(value.0)
-        }
     }
 }

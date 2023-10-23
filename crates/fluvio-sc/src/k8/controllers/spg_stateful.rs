@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use fluvio_stream_dispatcher::store::K8ChangeListener;
+use fluvio_stream_model::store::k8::K8MetaItem;
 use tracing::debug;
 use tracing::error;
 use tracing::trace;
@@ -24,22 +25,22 @@ use crate::k8::objects::spg_service::SpgServiceSpec;
 /// Update Statefulset and Service from SPG
 pub struct SpgStatefulSetController {
     namespace: String,
-    groups: StoreContext<SpuGroupSpec>,
-    spus: StoreContext<SpuSpec>,
-    statefulsets: StoreContext<StatefulsetSpec>,
-    spg_services: StoreContext<SpgServiceSpec>,
-    configs: StoreContext<ScK8Config>,
+    groups: StoreContext<SpuGroupSpec, K8MetaItem>,
+    spus: StoreContext<SpuSpec, K8MetaItem>,
+    statefulsets: StoreContext<StatefulsetSpec, K8MetaItem>,
+    spg_services: StoreContext<SpgServiceSpec, K8MetaItem>,
+    configs: StoreContext<ScK8Config, K8MetaItem>,
     tls: Option<TlsConfig>,
 }
 
 impl SpgStatefulSetController {
     pub fn start(
         namespace: String,
-        configs: StoreContext<ScK8Config>,
-        groups: StoreContext<SpuGroupSpec>,
-        statefulsets: StoreContext<StatefulsetSpec>,
-        spus: StoreContext<SpuSpec>,
-        spg_services: StoreContext<SpgServiceSpec>,
+        configs: StoreContext<ScK8Config, K8MetaItem>,
+        groups: StoreContext<SpuGroupSpec, K8MetaItem>,
+        statefulsets: StoreContext<StatefulsetSpec, K8MetaItem>,
+        spus: StoreContext<SpuSpec, K8MetaItem>,
+        spg_services: StoreContext<SpgServiceSpec, K8MetaItem>,
         tls: Option<TlsConfig>,
     ) {
         let controller = Self {
@@ -243,8 +244,8 @@ mod test {
         let test_env = TestEnv::create().await;
         let (global_ctx, config_ctx) = test_env.create_global_ctx().await;
 
-        let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
-        let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
+        let statefulset_ctx: StoreContext<StatefulsetSpec, K8MetaItem> = StoreContext::new();
+        let spg_service_ctx: StoreContext<SpgServiceSpec, K8MetaItem> = StoreContext::new();
 
         // start statefullset dispatcher
         MetadataDispatcher::<_, _, K8MetaItem>::start(

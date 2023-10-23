@@ -31,11 +31,11 @@ mod k8_operator {
     ) {
         let config = global_ctx.config();
 
-        let spu_service_ctx: StoreContext<SpuServiceSpec> = StoreContext::new();
-        let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
-        let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
+        let spu_service_ctx: StoreContext<SpuServiceSpec, K8MetaItem> = StoreContext::new();
+        let statefulset_ctx: StoreContext<StatefulsetSpec, K8MetaItem> = StoreContext::new();
+        let spg_service_ctx: StoreContext<SpgServiceSpec, K8MetaItem> = StoreContext::new();
 
-        let config_ctx: StoreContext<ScK8Config> = StoreContext::new();
+        let config_ctx: StoreContext<ScK8Config, K8MetaItem> = StoreContext::new();
 
         info!("starting k8 cluster operators");
 

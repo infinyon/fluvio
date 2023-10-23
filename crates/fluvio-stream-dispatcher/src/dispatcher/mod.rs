@@ -1,5 +1,7 @@
+#[cfg(feature = "k8")]
 mod metadata;
 
+#[cfg(feature = "k8")]
 pub use metadata::*;
 
 pub mod memory {

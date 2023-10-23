@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::{convert::TryFrom, str::FromStr};
 use std::fmt;
 
 use fluvio_types::PartitionId;
@@ -53,7 +53,15 @@ impl TryFrom<String> for ReplicaKey {
     type Error = PartitionError;
 
     fn try_from(value: String) -> Result<Self, PartitionError> {
-        let (topic, partition) = decompose_partition_name(&value)?;
+        value.parse()
+    }
+}
+
+impl FromStr for ReplicaKey {
+    type Err = PartitionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (topic, partition) = decompose_partition_name(s)?;
         Ok(ReplicaKey::new(topic, partition))
     }
 }

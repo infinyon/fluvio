@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
 use anyhow::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
 use fluvio_controlplane_metadata::core::MetadataContext;
@@ -21,7 +21,7 @@ use crate::dispatcher::core::{Spec, Status};
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
 // this is same struct as in helm config
-#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PodConfig {
     #[serde(default)]
@@ -39,7 +39,7 @@ pub struct PodConfig {
     pub extra_volumes: Vec<VolumeSpec>,
 }
 
-#[derive(Debug, Eq, PartialEq, Default, Clone)]
+#[derive(Debug, Eq, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct ScK8Config {
     pub image: String,
     pub pod_security_context: Option<PodSecurityContext>,
@@ -156,7 +156,7 @@ impl From<ScK8Config> for ConfigMapSpec {
     }
 }
 
-#[derive(Deserialize, Debug, Eq, PartialEq, Default, Clone)]
+#[derive(Debug, Eq, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct FluvioConfigStatus();
 
 impl Status for FluvioConfigStatus {}

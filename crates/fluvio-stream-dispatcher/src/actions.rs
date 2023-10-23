@@ -3,10 +3,9 @@ use std::fmt::Display;
 
 use crate::core::*;
 use crate::store::*;
-use crate::store::k8::K8MetaItem;
 
 #[derive(PartialEq, Clone)]
-pub enum WSAction<S, MetaContext = K8MetaItem>
+pub enum WSAction<S, MetaContext>
 where
     S: Spec + PartialEq,
     MetaContext: MetadataItem,

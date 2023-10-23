@@ -2943,7 +2943,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.6"
+version = "0.10.7"
 dependencies = [
  "bytes 1.5.0",
  "content_inspector",
@@ -3034,7 +3034,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.21.0"
+version = "0.21.1"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
@@ -3253,6 +3253,8 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
+ "serde_yaml 0.9.25",
+ "tempfile",
  "thiserror",
  "tokio",
  "tracing",
