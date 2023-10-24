@@ -141,9 +141,9 @@ tui = { version = "0.19.0", default-features = false }
 url = "2.1.1"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
-wasmtime = { version = "13.0.0" }
-wasmtime-wasi = { version = "13.0.0" }
-wasmparser = "0.113.1"
+wasmtime = { version = "14.0.1" }
+wasmtime-wasi = { version = "14.0.1" }
+wasmparser = "0.115.0"
 which = "4.1.0"
 x509-parser = "0.15.0"
 
