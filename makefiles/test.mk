@@ -202,6 +202,7 @@ cli-partition-test-multiple-partitions:
 cli-fluvio-smoke:
 	bats $(shell ls -1 ./tests/cli/fluvio_smoke_tests/*.bats | sort -R)
 	bats ./tests/cli/fluvio_smoke_tests/non-concurrent/cluster-delete.bats
+	bats ./tests/cli/fluvio_smoke_tests/non-concurrent/cluster-profile.bats
 
 cli-fluvio-read-only-smoke:
 	bats $(shell ls -1 ./tests/cli/fluvio_read_only/*.bats | sort -R)
