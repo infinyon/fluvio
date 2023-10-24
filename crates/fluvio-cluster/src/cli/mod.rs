@@ -2,6 +2,9 @@ use std::sync::Arc;
 
 use clap::ValueEnum;
 use clap::Parser;
+use fluvio::config::CLOUD_PROFILE;
+use fluvio::config::ConfigFile;
+use fluvio::config::LOCAL_PROFILE;
 use semver::Version;
 use tracing::debug;
 
@@ -97,6 +100,7 @@ impl ClusterCmd {
         platform_version: Version,
         target: ClusterTarget,
     ) -> Result<()> {
+        self.ensure_command_is_available_for_current_profile()?;
         match self {
             Self::Start(mut start) => {
                 if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
@@ -162,5 +166,37 @@ impl ClusterCmd {
         }
 
         Ok(())
+    }
+
+    fn ensure_command_is_available_for_current_profile(&self) -> Result<()> {
+        use anyhow::anyhow;
+
+        match self {
+            // starting a new local cluster is ok regardless of the current profile
+            Self::Start(_) => Ok(()),
+            // other commands should only be available for non-cloud profile
+            command => {
+                let config = ConfigFile::load(None)?;
+
+                let current_cluster = &config.config().current_profile().map_err(|_| {
+                    anyhow!(
+                        "no profile available, create a local cluster or log in to InfinyOn Cloud"
+                    )
+                })?;
+                let profile = &current_cluster.cluster;
+
+                debug!(profile, ?command, "attempting to run `cluster` command");
+
+                if profile != CLOUD_PROFILE {
+                    Ok(())
+                } else {
+                    let error = anyhow!(
+                        "Invalid command on `{profile}` profile. \
+                        Switch to `{LOCAL_PROFILE}` or start a `{LOCAL_PROFILE}` cluster with and try again"
+                    );
+                    Err(error)
+                }
+            }
+        }
     }
 }

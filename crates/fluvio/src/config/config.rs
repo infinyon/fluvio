@@ -188,6 +188,7 @@ impl ConfigFile {
     }
 }
 
+pub const CLOUD_PROFILE: &str = "cloud";
 pub const LOCAL_PROFILE: &str = "local";
 const CONFIG_VERSION: &str = "2.0";
 
@@ -250,7 +251,7 @@ impl Config {
 
     /// current profile
     pub fn current_profile_name(&self) -> Option<&str> {
-        self.current_profile.as_ref().map(|c| c.as_ref())
+        self.current_profile.as_deref()
     }
 
     /// set current profile, if profile doesn't exists return false
