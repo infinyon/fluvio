@@ -611,7 +611,7 @@ jobs:
         run: cargo test -p ${{ matrix.crate }}
 
   local_cluster_test:
-    name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
+    name: Local cluster (mode ${{ matrix.run-mode }}) test run (${{ matrix.run }})-${{ matrix.test }}
     runs-on: ${{ matrix.os }}
     needs:
       - build_primary_binaries
@@ -640,6 +640,7 @@ jobs:
             batch-failure,
             batch,
           ]
+        run-mode: [local, local-k8]
     steps:
       - uses: actions/checkout@v4
       - name: Download artifact - fluvio
@@ -665,18 +666,23 @@ jobs:
           echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
       - name: Print version
         run: fluvio version
+      - name: Set up cluster
+        if: matrix.run-mode == 'local-k8'
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
       - name: Start fluvio cluster
-        timeout-minutes: 5
+        timeout-minutes: 10
         if: matrix.test != 'smoke-test-tls'
-        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
+        run: fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
       - name: Start fluvio cluster TLS
         if: matrix.test == 'smoke-test-tls'
-        timeout-minutes: 5
+        timeout-minutes: 10
         # note that Local config doesn't not support auth and scopes in the argument for now
         run: >
           AUTH_POLICY=${{ env.AUTH_FILE }}
           X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
-          fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
+          fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
       - name: sleep
         run: sleep 15
       - name: Validate test harness
@@ -743,81 +749,6 @@ jobs:
           name: local-${{ matrix.run }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
           retention-days: 1
-
-  local_k8_cluster_test:
-    name: Local K8s cluster test run (${{ matrix.run }})-${{ matrix.test }}
-    runs-on: ${{ matrix.os }}
-    needs:
-      - build_primary_binaries
-      - config
-    env:
-      UNINSTALL: noclean
-      FLUVIO_BIN: ~/bin/fluvio
-      TEST_BIN: ~/bin/fluvio-test
-      SERVER_LOG: fluvio=info
-    strategy:
- #     fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        rust-target: [x86_64-unknown-linux-musl]
-        run: [r1]
-        spu: [2]
-        test:
-          [
-            smoke-test,
-          ]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download artifact - fluvio
-        uses: actions/download-artifact@v3
-        with:
-          name: fluvio-${{ matrix.rust-target }}
-          path: ~/bin
-      - name: Download artifact - fluvio-run
-        uses: actions/download-artifact@v3
-        with:
-          name: fluvio-run-${{ matrix.rust-target }}
-          path: ~/.fluvio/extensions
-      - name: Download artifact - fluvio-test
-        uses: actions/download-artifact@v3
-        with:
-          name: fluvio-test-${{ matrix.rust-target }}
-          path: ~/bin
-      - name: Set up Fluvio binaries
-        run: |
-          chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
-          echo "~/bin" >> $GITHUB_PATH
-          echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
-          echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
-      - name: Print version
-        run: fluvio version
-      - name: Set up cluster
-        run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-          ./k8-util/cluster/reset-k3d.sh
-      - name: Start fluvio cluster
-        timeout-minutes: 15
-        run: fluvio cluster start --local-k8 --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
-      - name: sleep
-        run: sleep 15
-      - name: Run smoke-test
-        if: matrix.test == 'smoke-test'
-        timeout-minutes: 15
-        run: |
-          make smoke-test-local
-      - name: Run diagnostics
-        if: ${{ !success() }}
-        timeout-minutes: 5
-        run: fluvio cluster diagnostics --local
-      - name: Upload diagnostics
-        uses: actions/upload-artifact@v3
-        timeout-minutes: 5
-        if: ${{ !success() }}
-        with:
-          name: local-${{ matrix.run }}-${{ matrix.test }}-diag
-          path: diagnostics*.gz
-          retention-days: 1
-
 
   build_image:
     name: Build Fluvio Docker image

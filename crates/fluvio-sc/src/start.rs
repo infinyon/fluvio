@@ -81,33 +81,22 @@ fn k8_main_loop<C>(
     C: MetadataClient<K8MetaItem> + 'static,
 {
     run_block_on(async move {
-        info!("initializing client");
-        // init k8 service
+        info!("starting k8 main loop");
 
-        let namespace = sc_config.namespace.clone();
-
-        info!("starting main loop");
-
-        let ctx: crate::core::K8SharedContext =
+        let ctx =
             crate::init::start_main_loop((sc_config.clone(), auth_policy), client.clone()).await;
 
         crate::k8::controllers::run_k8_operators(
-            namespace.clone(),
+            sc_config.namespace.clone(),
             client,
-            ctx.clone(),
+            ctx,
             tls_option.clone().map(|(_, config)| config),
         )
         .await;
 
-        if let Some((proxy_port, tls_config)) = tls_option {
-            let tls_acceptor = tls_config
-                .try_build_tls_acceptor()
-                .expect("can't build tls acceptor");
-            proxy::start_proxy(sc_config, (tls_acceptor, proxy_port)).await;
-        }
+        proxy::start_if(sc_config, tls_option).await;
 
         println!("Streaming Controller started successfully");
-
         // do infinite loop
         loop {
             sleep(Duration::from_secs(60)).await;
@@ -129,16 +118,9 @@ fn local_main_loop<C, M>(
         info!("starting local main loop");
 
         crate::init::start_main_loop((sc_config.clone(), auth_policy), client).await;
-
-        if let Some((proxy_port, tls_config)) = tls_option {
-            let tls_acceptor = tls_config
-                .try_build_tls_acceptor()
-                .expect("can't build tls acceptor");
-            proxy::start_proxy(sc_config, (tls_acceptor, proxy_port)).await;
-        }
+        proxy::start_if(sc_config, tls_option).await;
 
         println!("Streaming Controller started successfully");
-
         // do infinite loop
         loop {
             sleep(Duration::from_secs(60)).await;
@@ -158,9 +140,18 @@ mod proxy {
         start as proxy_start, start_with_authenticator as proxy_start_with_authenticator,
     };
 
-    use crate::config::ScConfig;
+    use crate::{config::ScConfig, cli::TlsConfig};
 
-    pub async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {
+    pub async fn start_if(sc_config: ScConfig, tls_option: Option<(String, TlsConfig)>) {
+        if let Some((proxy_port, tls_config)) = tls_option {
+            let tls_acceptor = tls_config
+                .try_build_tls_acceptor()
+                .expect("can't build tls acceptor");
+            start_proxy(sc_config, (tls_acceptor, proxy_port)).await;
+        }
+    }
+
+    async fn start_proxy(config: ScConfig, acceptor: (TlsAcceptor, String)) {
         let (tls_acceptor, proxy_addr) = acceptor;
         let target = config.public_endpoint;
         info!("starting TLS proxy: {}", proxy_addr);
