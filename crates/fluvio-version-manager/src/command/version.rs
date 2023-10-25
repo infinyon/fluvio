@@ -9,25 +9,19 @@ use sysinfo::SystemExt;
 use crate::{BINARY_NAME, BINARY_VERSION};
 
 #[derive(Debug, Args)]
-pub struct VersionOpt {
-    #[clap(long, help = "Print extra binary information")]
-    verbose: bool,
-}
+pub struct VersionOpt;
 
 impl VersionOpt {
     pub fn process(self) -> Result<()> {
-        println!("{BINARY_NAME} {BINARY_VERSION}");
+        println!("{BINARY_NAME} CLI: {BINARY_VERSION}");
+        println!("{BINARY_NAME} CLI Arch: {CURRENT_PLATFORM}");
 
-        if self.verbose {
-            println!("arch: {CURRENT_PLATFORM}");
+        if let Some(sha) = self.format_cli_sha() {
+            println!("{BINARY_NAME} CLI SHA256: {}", sha);
+        }
 
-            if let Some(sha) = self.format_cli_sha() {
-                println!("checksum (sha256): {}", sha);
-            }
-
-            if let Some(info) = os_info() {
-                println!("OS Details: {info}");
-            }
+        if let Some(info) = os_info() {
+            println!("OS Details: {info}");
         }
 
         Ok(())

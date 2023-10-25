@@ -648,7 +648,7 @@ setup_file() {
     assert_success
 }
 
-@test "Prints version with and without details on fvm version" {
+@test "Prints version with details on fvm version" {
     run bash -c '$FVM_BIN self install'
     assert_success
 
@@ -656,13 +656,9 @@ setup_file() {
     source ~/.fvm/env
 
     run bash -c 'fvm version'
-    assert_line --index 0 "fvm $FVM_CARGO_TOML_VERSION"
-    assert_success
-
-    run bash -c 'fvm version --verbose'
-    assert_line --index 0 "fvm $FVM_CARGO_TOML_VERSION"
-    assert_line --index 1 --partial "arch: "
-    assert_line --index 2 --partial "checksum (sha256): "
+    assert_line --index 0 "fvm CLI: $FVM_CARGO_TOML_VERSION"
+    assert_line --index 1 --partial "fvm CLI Arch: "
+    assert_line --index 2 --partial "fvm CLI SHA256: "
     assert_line --index 3 --partial "OS Details: "
     assert_success
 
