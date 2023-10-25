@@ -2,7 +2,42 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.00 - UNRELEASED
+## Platform Version 0.10.17-dev-1 - 2023-10-24
+
+### Added
+
+* Add `version` command to `smdk` and `cdk` ([#3571](https://github.com/infinyon/fluvio/issues/3571))
+* Make consumer config public ([#3595](https://github.com/infinyon/fluvio/issues/3595))
+* Install fluvio versions ([#3576](https://github.com/infinyon/fluvio/issues/3576))
+* Fvm switch command ([#3597](https://github.com/infinyon/fluvio/issues/3597))
+* Feat/move-specs-traits-to-fluvio ([#3598](https://github.com/infinyon/fluvio/issues/3598))
+* Added local metadata store impl ([#3610](https://github.com/infinyon/fluvio/issues/3610))
+
+### CI
+
+* Post-release 0.10.16 ([#3590](https://github.com/infinyon/fluvio/issues/3590))
+* Improve hub credential error message ([#3614](https://github.com/infinyon/fluvio/issues/3614))
+* Set prelease version 0.10.17-dev-1
+
+### Changed
+
+* Update fluvio-socket repo metadata ([#3592](https://github.com/infinyon/fluvio/issues/3592))
+* Update rust-toolchain.toml ([#3594](https://github.com/infinyon/fluvio/issues/3594))
+
+### Fixed
+
+* Partially assert on cli output ([#3608](https://github.com/infinyon/fluvio/issues/3608))
+* Replace `fvm` binary on `fvm self install` ([#3616](https://github.com/infinyon/fluvio/issues/3616))
+
+### Other
+
+* `fvm show` and `fvm current` command ([#3601](https://github.com/infinyon/fluvio/issues/3601))
+* Set version as active after install ([#3604](https://github.com/infinyon/fluvio/issues/3604))
+* Move file iterators to fluvio_storage crate ([#3613](https://github.com/infinyon/fluvio/issues/3613))
+
+### Removed
+
+* Remove unused deps on fvm ([#3606](https://github.com/infinyon/fluvio/issues/3606))
 
 ## Platform Version 0.10.16 - 2023-10-06
 
