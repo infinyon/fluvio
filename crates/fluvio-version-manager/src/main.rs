@@ -3,13 +3,20 @@ mod common;
 
 use anyhow::Result;
 use clap::Parser;
-use command::current::CurrentOpt;
-use command::show::ShowOpt;
 
+use self::command::current::CurrentOpt;
 use self::command::install::InstallOpt;
 use self::command::itself::SelfOpt;
+use self::command::show::ShowOpt;
 use self::command::switch::SwitchOpt;
+use self::command::version::VersionOpt;
 use self::common::notify::Notify;
+
+/// Binary name is read from `Cargo.toml` `[[bin]]` section
+pub const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
+
+/// Binary version is read from `Cargo.toml` `version` field
+pub const BINARY_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[async_std::main]
 async fn main() -> Result<()> {
@@ -23,10 +30,9 @@ async fn main() -> Result<()> {
 
 #[derive(Debug, Parser)]
 #[command(
+    name = BINARY_NAME,
     about = "Fluvio Version Manager (FVM)",
-    name = "fvm",
     max_term_width = 100,
-    version = env!("CARGO_PKG_VERSION")
 )]
 pub struct Cli {
     #[clap(long, short = 'q', help = "Suppress all output")]
@@ -52,6 +58,8 @@ pub enum Command {
     /// Set a installed Fluvio Version as active
     #[command(name = "switch")]
     Switch(SwitchOpt),
+    /// Prints version information
+    Version(VersionOpt),
 }
 
 impl Cli {
@@ -66,6 +74,7 @@ impl Cli {
             Command::Install(cmd) => cmd.process(notify).await,
             Command::Show(cmd) => cmd.process(notify).await,
             Command::Switch(cmd) => cmd.process(notify).await,
+            Command::Version(cmd) => cmd.process(),
         }
     }
 }
