@@ -48,7 +48,7 @@ setup_file() {
     export FLUVIO_BINARIES_DIR
     debug_msg "Fluvio Binaries Directory: $FLUVIO_BINARIES_DIR"
 
-    FVM_CARGO_TOML_VERSION="$(yq -oy '.package.version' ../../../crates/fluvio-version-manager/Cargo.toml)"
+    FVM_CARGO_TOML_VERSION="$(yq -oy '.package.version' ./crates/fluvio-version-manager/Cargo.toml)"
     export FVM_CARGO_TOML_VERSION
     debug_msg "Version File Value: $FVM_CARGO_TOML_VERSION"
 }
