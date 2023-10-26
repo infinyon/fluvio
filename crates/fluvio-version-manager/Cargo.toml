@@ -17,7 +17,7 @@ path = "src/main.rs"
 # Workspace Dependencies
 anyhow = { workspace = true }
 async-std = { workspace = true, features = ["attributes"] }
-clap = { workspace = true, features = ["std", "color", "derive", "env", "help"] }
+clap = { workspace = true, features = ["std", "color", "help", "usage", "derive", "env"] }
 colored = { workspace = true }
 comfy-table = { workspace = true }
 current_platform = { workspace = true }
