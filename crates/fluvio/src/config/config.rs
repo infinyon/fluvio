@@ -559,14 +559,6 @@ pub mod test {
         );
     }
 
-    /*
-    #[test]
-    fn test_topic_config() {
-        let conf_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned())).expect("parse failed");
-        let config = conf_file.config().resolve_replica_config("test3",0);
-    }
-    */
-
     #[test]
     fn test_local_cluster() {
         let config = Config::new_with_local_cluster("localhost:9003".to_owned());
@@ -574,5 +566,34 @@ pub mod test {
         assert_eq!(config.current_profile_name().unwrap(), "local");
         let cluster = config.current_cluster().expect("cluster should exists");
         assert_eq!(cluster.endpoint, "localhost:9003");
+    }
+
+    #[test]
+    fn test_cluster_with_custom_annotations() {
+        let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.config();
+
+        let cluster = config
+            .cluster("with_annotations")
+            .expect("could not find `with_annotations` cluster in test file");
+
+        assert_eq!(
+            cluster.annotations.get("custom"),
+            Some(&"annotation".to_owned())
+        );
+    }
+
+    #[test]
+    fn test_cluster_without_annotations() {
+        let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.config();
+
+        let cluster = config
+            .cluster("no_annotations")
+            .expect("could not find `with_annotations` cluster in test file");
+
+        assert_eq!(cluster.annotations.len(), 0);
     }
 }
