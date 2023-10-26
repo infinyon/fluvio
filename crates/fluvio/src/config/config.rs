@@ -559,14 +559,6 @@ pub mod test {
         );
     }
 
-    /*
-    #[test]
-    fn test_topic_config() {
-        let conf_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned())).expect("parse failed");
-        let config = conf_file.config().resolve_replica_config("test3",0);
-    }
-    */
-
     #[test]
     fn test_local_cluster() {
         let config = Config::new_with_local_cluster("localhost:9003".to_owned());
@@ -574,5 +566,36 @@ pub mod test {
         assert_eq!(config.current_profile_name().unwrap(), "local");
         let cluster = config.current_cluster().expect("cluster should exists");
         assert_eq!(cluster.endpoint, "localhost:9003");
+    }
+
+    #[test]
+    fn test_profile_with_metadata() {
+        let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.config();
+
+        let cluster = config
+            .cluster("extra")
+            .expect("could not find `extra` cluster in test file");
+
+        // Table({"key": String("custom field")})
+        let key = BTreeMap::from_iter([("key", "custom field")]);
+        let key = toml::Value::from(key);
+
+        // Table({"example": Table({"key": String("custom field")})})
+        let example = BTreeMap::from_iter([("example", key)]);
+        let example = toml::Value::from(example);
+
+        // Table({"nesting": Table({"example": Table({"key": String("custom field")})})})
+        let nesting = BTreeMap::from_iter([("nesting", example)]);
+        let nesting = toml::Value::from(nesting);
+
+        // Table({"type": String("local")}
+        let cluster_type = BTreeMap::from_iter([("type", "local")]);
+        let cluster_type = toml::Value::from(cluster_type);
+
+        let metadata = BTreeMap::from_iter([("installation", cluster_type), ("deep", nesting)]);
+        let metadata = toml::Value::from(metadata);
+        assert_eq!(cluster.metadata, Some(metadata));
     }
 }

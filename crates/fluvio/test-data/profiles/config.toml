@@ -40,3 +40,13 @@ isolation = "read_committed"
 # only for topic test=3,replication=2
 [topic.test4.2]
 isolation = "uncommitted"
+
+# cluster annotations
+[cluster.with_annotations]
+endpoint = "127.0.0.1:9003"
+
+[cluster.with_annotations.annotations]
+custom = "annotation"
+
+[cluster.no_annotations]
+endpoint = "127.0.0.1:9003"

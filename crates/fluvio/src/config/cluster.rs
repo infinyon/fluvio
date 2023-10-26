@@ -3,6 +3,8 @@
 //!
 //! Stores configuration parameter retrieved from the default or custom profile file.
 //!
+use std::collections::HashMap;
+
 use serde::{Serialize, Deserialize};
 
 use crate::{config::TlsPolicy, FluvioError};
@@ -29,6 +31,10 @@ pub struct FluvioConfig {
     #[serde(default)]
     pub tls: TlsPolicy,
 
+    /// Custom annotations attached to clusters
+    #[serde(default)]
+    pub annotations: HashMap<String, String>,
+
     /// This is not part of profile and doesn't persist.
     /// It is purely to override client id when creating ClientConfig
     #[serde(skip)]
@@ -49,6 +55,7 @@ impl FluvioConfig {
             endpoint: addr.into(),
             use_spu_local_address: false,
             tls: TlsPolicy::Disabled,
+            annotations: HashMap::new(),
             client_id: None,
         }
     }
