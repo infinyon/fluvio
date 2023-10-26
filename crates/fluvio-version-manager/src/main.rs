@@ -33,6 +33,7 @@ async fn main() -> Result<()> {
     name = BINARY_NAME,
     about = "Fluvio Version Manager (FVM)",
     max_term_width = 100,
+    arg_required_else_help = true,
 )]
 pub struct Cli {
     #[clap(long, short = 'q', help = "Suppress all output")]
