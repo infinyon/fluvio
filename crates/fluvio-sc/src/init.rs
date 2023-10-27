@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
 use fluvio_stream_model::core::MetadataItem;
-use fluvio_stream_model::store::k8::K8MetaItem;
 
 use crate::core::Context;
 use crate::core::SharedContext;
@@ -20,12 +19,14 @@ use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::MetadataDispatcher;
 use crate::services::auth::basic::BasicRbacPolicy;
 
-pub async fn start_main_loop<C>(
+pub async fn start_main_loop<C, M>(
     sc_config_policy: (ScConfig, Option<BasicRbacPolicy>),
     metadata_client: SharedClient<C>,
-) -> crate::core::K8SharedContext
+) -> crate::core::SharedContext<M>
 where
-    C: MetadataClient<K8MetaItem> + 'static,
+    C: MetadataClient<M> + 'static,
+    M: MetadataItem,
+    M::UId: Send + Sync,
 {
     use crate::stores::spu::SpuSpec;
     use crate::stores::topic::TopicSpec;
@@ -39,37 +40,37 @@ where
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
 
-    MetadataDispatcher::<SpuSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<SpuSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.spus().clone(),
     );
 
-    MetadataDispatcher::<TopicSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<TopicSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.topics().clone(),
     );
 
-    MetadataDispatcher::<PartitionSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<PartitionSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.partitions().clone(),
     );
 
-    MetadataDispatcher::<SpuGroupSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<SpuGroupSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.spgs().clone(),
     );
 
-    MetadataDispatcher::<TableFormatSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<TableFormatSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.tableformats().clone(),
     );
 
-    MetadataDispatcher::<SmartModuleSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<SmartModuleSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.smartmodules().clone(),

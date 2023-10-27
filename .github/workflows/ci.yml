@@ -611,7 +611,7 @@ jobs:
         run: cargo test -p ${{ matrix.crate }}
 
   local_cluster_test:
-    name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
+    name: Local cluster (mode ${{ matrix.run-mode }}) test run (${{ matrix.run }})-${{ matrix.test }}
     runs-on: ${{ matrix.os }}
     needs:
       - build_primary_binaries
@@ -640,6 +640,7 @@ jobs:
             batch-failure,
             batch,
           ]
+        run-mode: [local, local-k8]
     steps:
       - uses: actions/checkout@v4
       - name: Download artifact - fluvio
@@ -666,13 +667,14 @@ jobs:
       - name: Print version
         run: fluvio version
       - name: Set up cluster
+        if: matrix.run-mode == 'local-k8'
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Start fluvio cluster
         timeout-minutes: 10
         if: matrix.test != 'smoke-test-tls'
-        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
+        run: fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
       - name: Start fluvio cluster TLS
         if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 10
@@ -680,7 +682,7 @@ jobs:
         run: >
           AUTH_POLICY=${{ env.AUTH_FILE }}
           X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
-          fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
+          fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
       - name: sleep
         run: sleep 15
       - name: Validate test harness

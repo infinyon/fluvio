@@ -21,7 +21,7 @@ use crate::render::{ProgressRenderedText, ProgressRenderer};
 use crate::{ClusterChecker, LocalInstallError, StartStatus, UserChartLocation};
 use crate::charts::ChartConfig;
 use crate::check::{SysChartCheck, ClusterCheckError};
-use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
+use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess, ScMode};
 use crate::progress::{InstallProgressMessage, ProgressBarFactory};
 
 use super::constants::MAX_PROVISION_TIME_SEC;
@@ -32,6 +32,7 @@ pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
 
 const DEFAULT_LOG_DIR: &str = "/tmp";
 const DEFAULT_RUST_LOG: &str = "info";
+const DEFAULT_METADATA_SUB_DIR: &str = "metadata";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
@@ -168,7 +169,15 @@ pub struct LocalConfig {
     hide_spinner: bool,
 
     #[builder(default)]
-    read_only: Option<PathBuf>,
+    mode: LocalMode,
+}
+
+#[derive(Debug, Default, Clone)]
+pub enum LocalMode {
+    Local,
+    #[default]
+    LocalK8,
+    ReadOnly(PathBuf),
 }
 
 impl LocalConfig {
@@ -352,38 +361,41 @@ impl LocalInstaller {
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
     pub async fn preflight_check(&self, fix: bool) -> Result<(), ClusterCheckError> {
-        if self.config.read_only.is_some() {
-            self.pb_factory
-                .println(InstallProgressMessage::PreFlightCheck.msg());
+        match &self.config.mode {
+            LocalMode::Local | LocalMode::ReadOnly(_) => {
+                self.pb_factory
+                    .println(InstallProgressMessage::PreFlightCheck.msg());
 
-            ClusterChecker::empty()
-                .with_no_k8_checks()
-                .run(&self.pb_factory, fix)
-                .await?;
+                ClusterChecker::empty()
+                    .with_no_k8_checks()
+                    .run(&self.pb_factory, fix)
+                    .await?;
 
-            return Ok(());
+                Ok(())
+            }
+            LocalMode::LocalK8 => {
+                let mut sys_config: ChartConfig = ChartConfig::sys_builder()
+                    .version(self.config.chart_version.clone())
+                    .build()
+                    .expect("should build config since all required arguments are given");
+
+                if let Some(location) = &self.config.chart_location {
+                    sys_config.location = location.to_owned().into();
+                }
+
+                self.pb_factory
+                    .println(InstallProgressMessage::PreFlightCheck.msg());
+                ClusterChecker::empty()
+                    .with_local_checks()
+                    .with_check(SysChartCheck::new(
+                        sys_config,
+                        self.config.platform_version.clone(),
+                    ))
+                    .run(&self.pb_factory, fix)
+                    .await?;
+                Ok(())
+            }
         }
-
-        let mut sys_config: ChartConfig = ChartConfig::sys_builder()
-            .version(self.config.chart_version.clone())
-            .build()
-            .expect("should build config since all required arguments are given");
-
-        if let Some(location) = &self.config.chart_location {
-            sys_config.location = location.to_owned().into();
-        }
-
-        self.pb_factory
-            .println(InstallProgressMessage::PreFlightCheck.msg());
-        ClusterChecker::empty()
-            .with_local_checks()
-            .with_check(SysChartCheck::new(
-                sys_config,
-                self.config.platform_version.clone(),
-            ))
-            .run(&self.pb_factory, fix)
-            .await?;
-        Ok(())
     }
 
     /// Install fluvio locally
@@ -406,7 +418,7 @@ impl LocalInstaller {
             })?;
         }
 
-        let maybe_k8_client = if self.config.read_only.is_none() {
+        let maybe_k8_client = if let LocalMode::LocalK8 = self.config.mode {
             use k8_client::load_and_share;
             Some(load_and_share()?)
         } else {
@@ -476,12 +488,18 @@ impl LocalInstaller {
 
         pb.set_message(InstallProgressMessage::LaunchingSC.msg());
 
+        let mode = match &self.config.mode {
+            LocalMode::Local => ScMode::Local(self.config.data_dir.join(DEFAULT_METADATA_SUB_DIR)),
+            LocalMode::LocalK8 => ScMode::K8s,
+            LocalMode::ReadOnly(path) => ScMode::ReadOnly(path.clone()),
+        };
+
         let sc_process = ScProcess {
             log_dir: self.config.log_dir.clone(),
             launcher: self.config.launcher.clone(),
             tls_policy: self.config.server_tls_policy.clone(),
             rust_log: self.config.rust_log.clone(),
-            read_only: self.config.read_only.clone(),
+            mode,
         };
 
         sc_process.start()?;

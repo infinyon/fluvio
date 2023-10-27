@@ -214,7 +214,7 @@ where
                         .update_spec_by_key(key, &self.namespace, spec)
                         .await
                     {
-                        error!("error: {:#?}, update spec {:#?}", S::LABEL, err);
+                        error!("error: {:#?}, update spec by key {:#?}", S::LABEL, err);
                     }
                 };
             }

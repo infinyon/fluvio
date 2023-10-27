@@ -78,12 +78,13 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
         self.delete_item::<S>(metadata).await
     }
 
-    async fn apply<S>(&self, value: LocalStoreObject<S>) -> Result<()>
+    async fn apply<S>(&self, mut value: LocalStoreObject<S>) -> Result<()>
     where
         S: K8ExtendedSpec,
         <S as Spec>::Owner: K8ExtendedSpec,
     {
         let store = self.get_store::<S>().await?;
+        value.ctx_mut().item_mut().id = value.key().to_string();
         store.apply(value).await
     }
 
@@ -91,10 +92,23 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     where
         S: K8ExtendedSpec,
     {
+        use std::str::FromStr;
+
         let store = self.get_store::<S>().await?;
-        let mut item = store.retrieve_item::<S>(&metadata).await?;
-        item.ctx_mut().set_item(metadata);
-        item.set_spec(spec);
+        let item = match store.try_retrieve_item::<S>(&metadata).await? {
+            Some(mut item) => {
+                item.ctx_mut().set_item(metadata);
+                item.set_spec(spec);
+                item
+            }
+            None => LocalStoreObject::new_with_context(
+                S::IndexKey::from_str(metadata.uid()).map_err(|_| {
+                    anyhow!("failed to parse key from a string: {}", metadata.uid())
+                })?,
+                spec,
+                MetadataContext::new(metadata, None),
+            ),
+        };
         store.apply(item).await?;
         Ok(())
     }
@@ -113,8 +127,15 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
             revision: Default::default(),
         };
         let store = self.get_store::<S>().await?;
-        let mut item = store.retrieve_item::<S>(&metadata).await?;
-        item.set_spec(spec);
+        let item = match store.try_retrieve_item::<S>(&metadata).await? {
+            Some(mut item) => {
+                item.set_spec(spec);
+                item
+            }
+            None => {
+                LocalStoreObject::new_with_context(key, spec, MetadataContext::new(metadata, None))
+            }
+        };
         store.apply(item).await
     }
 
@@ -247,14 +268,26 @@ impl SpecStore {
         Ok(MetadataStoreList { version, items })
     }
 
-    async fn retrieve_item<S>(&self, metadata: &LocalMetadataItem) -> Result<LocalStoreObject<S>>
+    async fn try_retrieve_item<S>(
+        &self,
+        metadata: &LocalMetadataItem,
+    ) -> Result<Option<LocalStoreObject<S>>>
     where
         S: Spec,
     {
         let read = self.data.read().await;
         read.get(metadata.uid())
+            .map(SpecPointer::downcast)
+            .transpose()
+    }
+
+    async fn retrieve_item<S>(&self, metadata: &LocalMetadataItem) -> Result<LocalStoreObject<S>>
+    where
+        S: Spec,
+    {
+        self.try_retrieve_item::<S>(metadata)
+            .await?
             .ok_or_else(|| anyhow!("{} not found", metadata.uid()))
-            .map(SpecPointer::downcast)?
     }
 
     async fn delete_item(&self, metadata: LocalMetadataItem) -> Result<()> {
@@ -534,8 +567,7 @@ spec:
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj1 = default_test_store_obj();
-        let mut obj2 = default_test_store_obj();
-        obj2.ctx_mut().item_mut().id = "obj2".to_string();
+        let obj2 = test_store_obj("meta2");
         meta_store.apply(obj1.clone()).await.expect("applied");
         meta_store.apply(obj2.clone()).await.expect("applied");
         drop(meta_store);
@@ -612,6 +644,29 @@ spec:
     }
 
     #[fluvio_future::test]
+    async fn test_update_status_if_not_existed() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let obj = default_test_store_obj();
+
+        //when
+        let res = meta_store
+            .update_status::<TestSpec>(
+                obj.ctx_owned().item_owned(),
+                TestStatus("new status".to_string()),
+                &NameSpace::All,
+            )
+            .await;
+
+        //then
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "meta not found");
+
+        drop(meta_folder)
+    }
+
+    #[fluvio_future::test]
     async fn test_update_spec() {
         //given
         let meta_folder = tempfile::tempdir().expect("temp dir created");
@@ -641,6 +696,34 @@ spec:
     }
 
     #[fluvio_future::test]
+    async fn test_update_spec_upsert() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let obj = default_test_store_obj();
+        let spec = TestSpec { replica: 5 };
+
+        //when
+        meta_store
+            .update_spec(obj.ctx_owned().item_owned(), spec)
+            .await
+            .expect("updated status");
+
+        let items = meta_store
+            .retrieve_items::<TestSpec>(&NameSpace::All)
+            .await
+            .expect("retrieved");
+
+        //then
+        assert_eq!(items.items.len(), 1);
+        assert_eq!(items.version, "1");
+        assert_eq!(items.items[0].spec().replica, 5);
+        assert_eq!(items.items[0].ctx().item().revision, 0);
+
+        drop(meta_folder)
+    }
+
+    #[fluvio_future::test]
     async fn test_update_spec_by_key() {
         //given
         let meta_folder = tempfile::tempdir().expect("temp dir created");
@@ -665,6 +748,34 @@ spec:
         assert_eq!(items.version, "2");
         assert_eq!(items.items[0].spec().replica, 6);
         assert_eq!(items.items[0].ctx().item().revision, 1);
+
+        drop(meta_folder)
+    }
+
+    #[fluvio_future::test]
+    async fn test_update_spec_by_key_upsert() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let obj = default_test_store_obj();
+        let spec = TestSpec { replica: 6 };
+
+        //when
+        meta_store
+            .update_spec_by_key(obj.key_owned(), &NameSpace::All, spec)
+            .await
+            .expect("updated status");
+
+        let items = meta_store
+            .retrieve_items::<TestSpec>(&NameSpace::All)
+            .await
+            .expect("retrieved");
+
+        //then
+        assert_eq!(items.items.len(), 1);
+        assert_eq!(items.version, "1");
+        assert_eq!(items.items[0].spec().replica, 6);
+        assert_eq!(items.items[0].ctx().item().revision, 0);
 
         drop(meta_folder)
     }
@@ -993,8 +1104,12 @@ spec:
     }
 
     fn default_test_store_obj() -> LocalStoreObject<TestSpec> {
+        test_store_obj("meta")
+    }
+
+    fn test_store_obj(key: &str) -> LocalStoreObject<TestSpec> {
         let meta = LocalMetadataItem {
-            id: "meta".to_string(),
+            id: key.to_string(),
             revision: 0,
         };
         let parent = Some(LocalMetadataItem {

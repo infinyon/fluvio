@@ -8,6 +8,7 @@
 //!     3) cli parameters
 //!
 
+use std::path::Path;
 use std::process;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
@@ -34,13 +35,13 @@ type Config = (ScConfig, Option<BasicRbacPolicy>);
 #[derive(Debug, Parser, Default)]
 #[command(name = "sc-server", about = "Streaming Controller")]
 pub struct ScOpt {
-    #[arg(long)]
-    /// running in local mode only
-    local: bool,
+    /// run in local mode
+    #[arg(long, conflicts_with_all = &["k8", "read_only"], value_name = "metadata path")]
+    local: Option<PathBuf>,
 
     /// run on k8
     #[arg(long)]
-    no_k8: bool,
+    k8: bool,
 
     #[arg(long)]
     /// Address for external service
@@ -80,18 +81,20 @@ pub struct ScOpt {
     read_only: Option<PathBuf>,
 }
 
+#[derive(Debug)]
+pub enum RunMode<'a> {
+    Local(&'a Path),
+    ReadOnly(&'a Path),
+    K8s,
+}
+
 impl ScOpt {
-    /// override local flag
-    pub fn set_local(&mut self) {
-        self.local = true;
-    }
-
-    pub fn is_local(&self) -> bool {
-        self.local
-    }
-
-    pub fn read_only(&self) -> &Option<PathBuf> {
-        &self.read_only
+    pub fn mode(&self) -> RunMode<'_> {
+        match (&self.local, &self.read_only, self.k8) {
+            (Some(metadata), _, _) => RunMode::Local(metadata),
+            (_, Some(path), _) => RunMode::ReadOnly(path),
+            _ => RunMode::K8s,
+        }
     }
 
     #[allow(clippy::type_complexity)]
@@ -126,10 +129,6 @@ impl ScOpt {
 
         if let Some(private_addr) = self.bind_private {
             config.private_endpoint = private_addr;
-        }
-
-        if self.read_only.is_none() {
-            config.namespace = self.namespace.expect("no namespace defined");
         }
 
         config.x509_auth_scopes = self.x509_auth_scopes;
@@ -170,7 +169,7 @@ impl ScOpt {
         }
     }
 
-    pub fn parse_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
+    pub fn parse_k8s_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
             Err(err) => {
                 print_cli_err!(err);
@@ -180,7 +179,7 @@ impl ScOpt {
         }
     }
 
-    pub fn parse_cli_or_exit_read_only(self) -> (Config, Option<(String, TlsConfig)>) {
+    pub fn parse_cli_or_exit(self) -> (Config, Option<(String, TlsConfig)>) {
         match self.as_sc_config() {
             Err(err) => {
                 print_cli_err!(err);
