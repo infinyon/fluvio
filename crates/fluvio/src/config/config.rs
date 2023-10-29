@@ -569,31 +569,33 @@ pub mod test {
     }
 
     #[test]
-    fn test_cluster_with_custom_annotations() {
+    fn test_profile_with_metadata() {
         let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
             .expect("could not parse config file");
         let config = config_file.config();
 
         let cluster = config
-            .cluster("with_annotations")
-            .expect("could not find `with_annotations` cluster in test file");
+            .cluster("extra")
+            .expect("could not find `extra` cluster in test file");
 
-        assert_eq!(
-            cluster.annotations.get("custom"),
-            Some(&"annotation".to_owned())
-        );
-    }
+        // Table({"key": String("custom field")})
+        let key = BTreeMap::from_iter([("key", "custom field")]);
+        let key = toml::Value::from(key);
 
-    #[test]
-    fn test_cluster_without_annotations() {
-        let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
-            .expect("could not parse config file");
-        let config = config_file.config();
+        // Table({"example": Table({"key": String("custom field")})})
+        let example = BTreeMap::from_iter([("example", key)]);
+        let example = toml::Value::from(example);
 
-        let cluster = config
-            .cluster("no_annotations")
-            .expect("could not find `with_annotations` cluster in test file");
+        // Table({"nesting": Table({"example": Table({"key": String("custom field")})})})
+        let nesting = BTreeMap::from_iter([("nesting", example)]);
+        let nesting = toml::Value::from(nesting);
 
-        assert_eq!(cluster.annotations.len(), 0);
+        // Table({"type": String("local")}
+        let cluster_type = BTreeMap::from_iter([("type", "local")]);
+        let cluster_type = toml::Value::from(cluster_type);
+
+        let metadata = BTreeMap::from_iter([("installation", cluster_type), ("deep", nesting)]);
+        let metadata = toml::Value::from(metadata);
+        assert_eq!(cluster.metadata, Some(metadata));
     }
 }
