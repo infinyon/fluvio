@@ -1207,12 +1207,12 @@ jobs:
 
       - name: Shutdown Fluvio cluster
         timeout-minutes: 10
-        run: fluvio cluster shutdown --${{ matrix.run-mode }} 
+        run: fluvio cluster shutdown --local
 
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: fluvio cluster diagnostics --${{ matrix.run-mode }} 
+        run: fluvio cluster diagnostics --local
 
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
