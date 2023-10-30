@@ -391,10 +391,14 @@ jobs:
           key: ${{ matrix.rust-target }}-${{ matrix.check }}
       - name: Fmt
         if: matrix.check == 'fmt'
-        run: make check-fmt
+        run: |
+          rustup component add rustfmt
+          make check-fmt
       - name: Clippy
         if: matrix.check == 'clippy'
-        run: make check-clippy
+        run: |
+          rustup component add clippy
+          make check-clippy
       - name: Doc
         if: matrix.check == 'doc'
         run: make check-docs
