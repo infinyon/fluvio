@@ -69,12 +69,10 @@ jobs:
         rust-target:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
-        rust: [stable]
         binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk, fvm]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/release
       RELEASE_NAME: release
@@ -85,11 +83,10 @@ jobs:
       - name: Print env
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install rust target 
+        run: rustup target add ${{ matrix.rust-target }}
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
@@ -153,47 +150,37 @@ jobs:
         include:
           # fluvio
           - os: ubuntu-latest
-            rust: stable
             rust-target: arm-unknown-linux-gnueabihf
             binary: fluvio
           - os: ubuntu-latest
-            rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
           - os: ubuntu-latest
-            rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio-run
           - os: ubuntu-latest
-            rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio.exe
           - os: macos-12
-            rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio
           - os: macos-12
-            rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio
 
           # fluvio-run
           - os: macos-12
-            rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-run
           - os: macos-12
-            rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-run
 
           # fluvio-channel
           - os: ubuntu-latest
-            rust: stable
             rust-target: arm-unknown-linux-gnueabihf
             binary: fluvio-channel
           - os: ubuntu-latest
-            rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio-channel
           - os: ubuntu-latest
@@ -201,81 +188,64 @@ jobs:
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio-channel.exe
           - os: macos-12
-            rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-channel
           - os: macos-12
-            rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
 
           # smdk
           - os: macos-12
-            rust: stable
             rust-target: x86_64-apple-darwin
             binary: smdk
           - os: macos-12
-            rust: stable
             rust-target: aarch64-apple-darwin
             binary: smdk
 
           # cdk
           - os: macos-12
-            rust: stable
             rust-target: x86_64-apple-darwin
             binary: cdk
           - os: macos-12
-            rust: stable
             rust-target: aarch64-apple-darwin
             binary: cdk
 
           # fbm
           - os: ubuntu-latest
-            rust: stable
             rust-target: arm-unknown-linux-gnueabihf
             binary: fbm
           - os: ubuntu-latest
-            rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fbm
           - os: ubuntu-latest
-            rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fbm.exe
           - os: macos-12
-            rust: stable
             rust-target: x86_64-apple-darwin
             binary: fbm
           - os: macos-12
-            rust: stable
             rust-target: aarch64-apple-darwin
             binary: fbm
 
           # fvm
           - os: ubuntu-latest
-            rust: stable
             rust-target: arm-unknown-linux-gnueabihf
             binary: fvm
           - os: ubuntu-latest
-            rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fvm
           - os: ubuntu-latest
-            rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fvm.exe
           - os: macos-12
-            rust: stable
             rust-target: x86_64-apple-darwin
             binary: fvm
           - os: macos-12
-            rust: stable
             rust-target: aarch64-apple-darwin
             binary: fvm
 
     env:
       RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
@@ -295,12 +265,10 @@ jobs:
       - name: Print env
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install Rust target 
+        run: rustup target add ${{ matrix.rust-target }}
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
@@ -389,7 +357,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
         check:
           [
@@ -404,16 +371,11 @@ jobs:
           ]
     env:
       RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
 
@@ -460,22 +422,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
     env:
       RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
       RELEASE: true
       RELEASE_NAME: release
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         timeout-minutes: 10
         with:
@@ -489,20 +445,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
     env:
       RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          target: wasm32-unknown-unknown
-
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install wasm target 
+        run: rustup target add wasm32-unknown-unknown
       - name: Build Regex SmartModule
         run: make -C smartmodule/regex-filter
 
@@ -514,7 +464,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
         wasm-crate:
           - fluvio
           - fluvio-socket
@@ -524,17 +473,12 @@ jobs:
           - fluvio-types
     env:
       RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          target: wasm32-unknown-unknown
-
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install wasm target 
+        run: rustup target add wasm32-unknown-unknown
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
@@ -546,7 +490,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
         wasm-crate:
           - fluvio
           - fluvio-socket
@@ -560,15 +503,10 @@ jobs:
           - all-features
     env:
       RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: check for ${{ matrix.wasm-crate }} with ${{matrix.features}}
         run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --${{matrix.features}}
@@ -581,7 +519,6 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        rust: [stable]
         crate:
           - fluvio
           - fluvio-cli
@@ -592,11 +529,8 @@ jobs:
       RUSTV: ${{ matrix.rust }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
       - name: Rust version
         run: rustc --version
       - uses: Swatinem/rust-cache@v2
@@ -992,12 +926,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
@@ -1218,6 +1148,7 @@ jobs:
           - 6
         replication:
           - 1
+        run-mode: [local-k8]
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -1255,7 +1186,7 @@ jobs:
 
       - name: Start fluvio cluster
         timeout-minutes: 10
-        run: fluvio cluster start --local --spu ${{ matrix.spu }}
+        run: fluvio cluster start --${{ matrix.run-mode }}  --spu ${{ matrix.spu }}
 
       - name: Await Cluster Startup
         run: sleep 15
@@ -1288,7 +1219,7 @@ jobs:
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
-          name: fluvio-components-${{ matrix.run }}-${{ matrix.test }}-diag
+          name: fluvio-components-${{ matrix.run-mode }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
           retention-days: 1
 

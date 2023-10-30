@@ -28,6 +28,8 @@ members = [
     "filter_map",
 ]
 
+resolver = "2"
+
 [workspace.dependencies]
 fluvio-smartmodule = { path = "../../crates/fluvio-smartmodule" }
 
