@@ -1152,7 +1152,7 @@ jobs:
           - 6
         replication:
           - 1
-        run-mode: [local-k8]
+        run-mode: [local, local-k8]
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -1171,11 +1171,13 @@ jobs:
           path: ~/.fluvio/extensions
 
       - name: Setup K8s Cluster
+        if: matrix.run-mode == 'local-k8'
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
 
       - name: Wait 15s for K3D Reset
+        if: matrix.run-mode == 'local-k8'
         run: sleep 15
 
       - name: Set up Fluvio Binaries

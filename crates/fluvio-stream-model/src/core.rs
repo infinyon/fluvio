@@ -3,6 +3,7 @@ pub use context::*;
 
 mod context {
 
+    use std::collections::hash_map::Entry;
     use std::fmt;
     use std::fmt::Display;
     use std::collections::HashMap;
@@ -68,17 +69,26 @@ mod context {
     pub struct MetadataContext<C> {
         item: C,
         owner: Option<C>,
+        children: HashMap<String, Vec<C>>,
     }
 
     impl<C> From<C> for MetadataContext<C> {
         fn from(item: C) -> Self {
-            Self { item, owner: None }
+            Self {
+                item,
+                owner: None,
+                children: Default::default(),
+            }
         }
     }
 
     impl<C> MetadataContext<C> {
         pub fn new(item: C, owner: Option<C>) -> Self {
-            Self { item, owner }
+            Self {
+                item,
+                owner,
+                children: Default::default(),
+            }
         }
 
         pub fn item(&self) -> &C {
@@ -97,8 +107,8 @@ mod context {
             self.item
         }
 
-        pub fn into_parts(self) -> (C, Option<C>) {
-            (self.item, self.owner)
+        pub fn into_parts(self) -> (C, Option<C>, HashMap<String, Vec<C>>) {
+            (self.item, self.owner, self.children)
         }
 
         pub fn owner(&self) -> Option<&C> {
@@ -106,6 +116,12 @@ mod context {
         }
         pub fn set_owner(&mut self, ctx: C) {
             self.owner = Some(ctx);
+        }
+        pub fn children(&self) -> &HashMap<String, Vec<C>> {
+            &self.children
+        }
+        pub fn set_children(&mut self, children: HashMap<String, Vec<C>>) {
+            self.children = children;
         }
     }
 
@@ -117,6 +133,7 @@ mod context {
             Self {
                 item: C::default(),
                 owner: Some(self.item.clone()),
+                children: Default::default(),
             }
         }
 
@@ -124,6 +141,32 @@ mod context {
             Self {
                 item: self.item.set_labels(labels),
                 owner: self.owner,
+                children: Default::default(),
+            }
+        }
+
+        pub fn put_child<S: Into<String>>(&mut self, kind: S, child: C) {
+            match self.children.entry(kind.into()) {
+                Entry::Occupied(mut entry) => {
+                    let vec = entry.get_mut();
+                    if !vec.contains(&child) {
+                        vec.push(child);
+                    }
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(vec![child]);
+                }
+            }
+        }
+        pub fn remove_child<S: Into<String>>(&mut self, kind: S, child: &C) {
+            match self.children.entry(kind.into()) {
+                Entry::Occupied(mut entry) => {
+                    entry.get_mut().retain(|i| !i.eq(child));
+                    if entry.get().is_empty() {
+                        entry.remove_entry();
+                    }
+                }
+                Entry::Vacant(_) => {}
             }
         }
     }
