@@ -191,7 +191,7 @@ impl ConfigFile {
 pub const LOCAL_PROFILE: &str = "local";
 const CONFIG_VERSION: &str = "2.0";
 
-#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
     version: String,
     current_profile: Option<String>,
@@ -570,6 +570,8 @@ pub mod test {
 
     #[test]
     fn test_profile_with_metadata() {
+        use std::collections::BTreeMap;
+
         let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
             .expect("could not parse config file");
         let config = config_file.config();

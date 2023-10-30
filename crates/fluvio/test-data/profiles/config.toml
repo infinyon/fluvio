@@ -41,12 +41,12 @@ isolation = "read_committed"
 [topic.test4.2]
 isolation = "uncommitted"
 
-# cluster annotations
-[cluster.with_annotations]
+# cluster metadata
+[cluster.extra]
 endpoint = "127.0.0.1:9003"
 
-[cluster.with_annotations.annotations]
-custom = "annotation"
+[cluster.extra.metadata.deep.nesting.example]
+key = "custom field"
 
-[cluster.no_annotations]
-endpoint = "127.0.0.1:9003"
+[cluster.extra.metadata.installation]
+type = "local"
