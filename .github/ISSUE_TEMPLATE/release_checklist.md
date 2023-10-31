@@ -19,8 +19,6 @@ For more detail, refer to [`RELEASE.md`](https://github.com/infinyon/fluvio/blob
 - [ ] Ensure no merges are in flight
 - [ ] Create a PR for release
   - [ ] Update `VERSION` and `CHANGELOG.md` files (do not place a \n in the VERSION file, it breaks the CI)
-  - [ ] Update [`CHANGELOG`](https://github.com/infinyon/fluvio/blob/master/CHANGELOG.md) with replacement of the `UNRELEASED` date
-  - [ ] Update dependency in connector [template](https://github.com/infinyon/fluvio/blob/master/connector/cargo_template/Cargo.toml)
   - [ ] Merge the PR
 - [ ] Run the [`Release` workflow in Github Actions](https://github.com/infinyon/fluvio/actions/workflows/release.yml) (Retry at least once if failure)  
 
@@ -35,11 +33,15 @@ If you are doing a prelease stop here before publishing crates. Only run publish
 
 ### Generating Release notes
 
-To get a starting point for generating release notes. A git ref, or last release tag can also be used.
+To get a starting point for generating release notes the view-changelog script can be used.
+git cliff is used to generate a changelog update. The view-changelog script can be used to view
+the new entries or modifty the CHANGELOG.md file.
 
-```bash
-git cliff 673e60c0..HEAD > changes.md
+To view the changelog updates:
 
-# or use the previous release tag
-git cliff v0.10.6..HEAD > changes.md
-```
+`actions/view-changelog.sh`
+
+or to prepend the updates (some post editing is still usually required):
+
+`actions/view-changelog.sh modify`
+
