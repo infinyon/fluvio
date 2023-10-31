@@ -50,6 +50,10 @@ setup_file() {
 
     FVM_CARGO_TOML_VERSION="$(yq -oy '.package.version' ./crates/fluvio-version-manager/Cargo.toml)"
     export FVM_CARGO_TOML_VERSION
+    debug_msg "FVM Cargo.toml Version: $FVM_CARGO_TOML_VERSION"
+
+    VERSION_FILE="$(cat ./VERSION)"
+    export VERSION_FILE
     debug_msg "Version File Value: $FVM_CARGO_TOML_VERSION"
 }
 
@@ -660,6 +664,98 @@ setup_file() {
     assert_line --index 1 --partial "fvm CLI Arch: "
     assert_line --index 2 --partial "fvm CLI SHA256: "
     assert_line --index 3 --partial "OS Details: "
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Updates version in channel" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Installs the stable version
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Changes the version set as `stable` channel to $STATIC_VERSION in order to
+    # force an update. $STATIC_VERSION just to reuse the variable to improve
+    # readability, it could be any version tag (but stable of course!)
+    #
+    # This wont work in macOS because the sed command is different there
+    sed -i "s/$STABLE_VERSION/$STATIC_VERSION/g" $FVM_HOME_DIR/settings.toml
+
+    # Checks active version
+    run bash -c 'fvm current'
+    assert_line --index 0 "$STATIC_VERSION (stable)"
+    assert_success
+
+    # Attempts to update Fluvio
+    run bash -c 'fvm update'
+    assert_line --index 0 "info: Updating fluvio stable to version $STABLE_VERSION. Current version is $STATIC_VERSION."
+    assert_success
+
+    # Checks active version
+    run bash -c 'fvm current'
+    assert_line --index 0 "$STABLE_VERSION (stable)"
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Do not updates version in static tag" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Installs the stable version
+    run bash -c 'fvm install $STATIC_VERSION'
+    assert_success
+
+    # Attempts to update Fluvio
+    run bash -c 'fvm update'
+    assert_line --index 0 "info: Cannot update a static version tag. You must use a channel."
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Renders message when already up-to-date" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Installs the stable version
+    run bash -c 'fvm install'
+    assert_success
+
+    # Attempts to update Fluvio
+    run bash -c 'fvm update'
+    assert_line --index 0 "done: You are already up to date"
     assert_success
 
     # Removes FVM

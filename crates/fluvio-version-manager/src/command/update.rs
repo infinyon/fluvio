@@ -3,7 +3,6 @@
 use anyhow::{Result, Error};
 use clap::Args;
 use colored::Colorize;
-use semver::Version;
 use url::Url;
 
 use fluvio_hub_util::HUB_REMOTE;
@@ -32,7 +31,7 @@ impl UpdateOpt {
         if channel.is_version_tag() {
             // Abort early if the user is not using a Channel and instead has
             // a static tag set as active
-            notify.info("Cannot update a static version tag. You must use a Channel.");
+            notify.info("Cannot update a static version tag. You must use a channel.");
             return Ok(());
         }
 
@@ -91,7 +90,7 @@ impl UpdateOpt {
     async fn fetch_latest_version(&self, channel: &Channel) -> Result<PackageSet> {
         if channel.is_version_tag() {
             return Err(Error::msg(
-                "Cannot update a static version tag. You must use a Channel.",
+                "Cannot update a static version tag. You must use a channel.",
             ));
         }
 
