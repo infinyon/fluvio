@@ -160,7 +160,9 @@ setup_file() {
     assert_output --partial "Connector runs with process id"
 }
 
-@test "List connectors from hub" {
-    run timeout 15s $CDK_BIN hub list
-    assert_success
-}
+# fix CI authentication to hub service first:
+# https://github.com/infinyon/fluvio/issues/3634
+# @test "List connectors from hub" {
+#     run timeout 15s $CDK_BIN hub list
+#     assert_success
+# }
