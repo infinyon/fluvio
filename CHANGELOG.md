@@ -2,7 +2,23 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.10.17-dev-1 - 2023-10-24
+## Platform Version 0.10.17 - 2023-10-30
+
+### CI
+
+* Release 0.10.17
+
+### Other
+
+* Fvm version command ([#3626](https://github.com/infinyon/fluvio/issues/3626))
+* Fvm install help command with usage example ([#3629](https://github.com/infinyon/fluvio/issues/3629))
+* Use local metadata for local clusters ([#3617](https://github.com/infinyon/fluvio/issues/3617))
+
+### Removed
+
+* Clean up GitHub action ([#3631](https://github.com/infinyon/fluvio/issues/3631))
+
+## Platform Version 0.10.17-dev-1 - 2023-10-25
 
 ### Added
 
@@ -17,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Post-release 0.10.16 ([#3590](https://github.com/infinyon/fluvio/issues/3590))
 * Improve hub credential error message ([#3614](https://github.com/infinyon/fluvio/issues/3614))
-* Set prelease version 0.10.17-dev-1
+* Set prelease version 0.10.17-dev-1 ([#3624](https://github.com/infinyon/fluvio/issues/3624))
 
 ### Changed
 
