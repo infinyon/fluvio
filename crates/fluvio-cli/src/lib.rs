@@ -3,16 +3,20 @@
 //! CLI configurations at the top of the tree
 
 mod error;
-pub mod client;
-pub mod install;
-mod profile;
-mod version;
 mod metadata;
+mod profile;
 mod render;
+mod version;
+
+pub mod client;
+
 pub(crate) mod monitoring;
 
+// Re-exported
 pub(crate) use error::CliError;
+
 use fluvio_extension_common as common;
+
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
 
 // list of public export
@@ -52,10 +56,9 @@ mod root {
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
     use fluvio_cli_common::install::fluvio_extensions_dir;
-    use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, LATEST_CHANNEL_NAME};
+    use fluvio_channel::FLUVIO_RELEASE_CHANNEL;
 
     use crate::profile::ProfileOpt;
-    use crate::install::plugins::InstallOpt;
     use crate::client::FluvioCmd;
     use crate::metadata::{MetadataOpt, subcommand_metadata};
     use crate::version::VersionOpt;
@@ -118,16 +121,6 @@ mod root {
         #[command(subcommand, name = "cluster")]
         Cluster(Box<ClusterCmd>),
 
-        /// Install Fluvio plugins
-        ///
-        /// The Fluvio CLI considers any executable with the prefix `fluvio-` to be a
-        /// CLI plugin. For example, an executable named `fluvio-foo` in your PATH may
-        /// be invoked by running `fluvio foo`.
-        ///
-        /// This command allows you to install plugins from Fluvio's package registry.
-        #[command(name = "install")]
-        Install(InstallOpt),
-
         /// Print Fluvio version information
         #[command(name = "version")]
         Version(VersionOpt),
@@ -170,17 +163,6 @@ mod root {
 
                     let version = semver::Version::parse(crate::VERSION).unwrap();
                     cluster.process(out, version, root.target).await?;
-                }
-                Self::Install(mut install) => {
-                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
-                        println!("Current channel: {}", &channel_name);
-
-                        if channel_name == LATEST_CHANNEL_NAME {
-                            install.develop = true;
-                        }
-                    };
-
-                    install.process().await?;
                 }
                 Self::Version(version) => {
                     version.process(root.target).await?;
