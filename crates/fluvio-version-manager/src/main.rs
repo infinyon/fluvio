@@ -9,6 +9,7 @@ use self::command::install::InstallOpt;
 use self::command::itself::SelfOpt;
 use self::command::show::ShowOpt;
 use self::command::switch::SwitchOpt;
+use self::command::update::UpdateOpt;
 use self::command::version::VersionOpt;
 use self::common::notify::Notify;
 
@@ -59,6 +60,9 @@ pub enum Command {
     /// Set a installed Fluvio Version as active
     #[command(name = "switch")]
     Switch(SwitchOpt),
+    /// Updates the current channel version to the most recent
+    #[command(name = "update")]
+    Update(UpdateOpt),
     /// Prints version information
     Version(VersionOpt),
 }
@@ -75,6 +79,7 @@ impl Cli {
             Command::Install(cmd) => cmd.process(notify).await,
             Command::Show(cmd) => cmd.process(notify).await,
             Command::Switch(cmd) => cmd.process(notify).await,
+            Command::Update(cmd) => cmd.process(notify).await,
             Command::Version(cmd) => cmd.process(),
         }
     }
