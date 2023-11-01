@@ -3,6 +3,9 @@ mod package;
 mod package_meta_ext;
 mod utils;
 
+#[cfg(feature = "connector-cmds")]
+pub mod cmd;
+
 pub mod keymgmt;
 pub mod fvm;
 

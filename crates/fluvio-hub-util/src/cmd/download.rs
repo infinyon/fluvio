@@ -3,15 +3,17 @@ use std::sync::Arc;
 use std::fmt::Debug;
 
 use clap::Parser;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 use fluvio_extension_common::Terminal;
 
-use crate::error::CliError;
+use crate::{cli_pkgname_to_filename, cli_conn_pkgname_to_url, get_package};
 
 use super::get_hub_access;
 
+/// Download SmartConnector to the local folder
 #[derive(Debug, Parser)]
+#[command(arg_required_else_help = true)]
 pub struct ConnectorHubDownloadOpts {
     /// SmartConnector name: e.g. infinyon/http-sink@vX.Y.Z
     #[arg(value_name = "name", required = true)]
@@ -37,10 +39,8 @@ impl ConnectorHubDownloadOpts {
         let access = get_hub_access(&self.remote)?;
 
         let package_name = self.package_name;
-        let file_name = fluvio_hub_util::cli_pkgname_to_filename(&package_name).map_err(|_| {
-            CliError::HubError(format!(
-                "invalid package name format {package_name}, is it the form infinyon/json-sql@0.1.0"
-            ))
+        let file_name = cli_pkgname_to_filename(&package_name).map_err(|_| {
+            anyhow!("invalid package name format {package_name}, is it the form infinyon/json-sql@0.1.0")
         })?;
 
         let file_path = if let Some(mut output) = self.output {
@@ -51,28 +51,18 @@ impl ConnectorHubDownloadOpts {
         } else {
             PathBuf::from(file_name)
         };
-        println!(
-            "downloading {package_name} to {}",
-            file_path.to_string_lossy()
-        );
+        let path = file_path.to_string_lossy();
+        println!("downloading {package_name} to {path}");
 
-        let url =
-            fluvio_hub_util::cli_conn_pkgname_to_url(&package_name, &access.remote, &self.target)
-                .map_err(|_| CliError::HubError(format!("invalid pkgname {package_name}")))?;
+        let url = cli_conn_pkgname_to_url(&package_name, &access.remote, &self.target)
+            .map_err(|_| anyhow!("invalid pkgname {package_name}"))?;
 
-        let data = fluvio_hub_util::get_package(&url, &access)
+        let data = get_package(&url, &access)
             .await
-            .map_err(|err| {
-                CliError::HubError(format!(
-                    "downloading {package_name} failed\nHub error: {err}"
-                ))
-            })?;
+            .map_err(|err| anyhow!("downloading {package_name} failed\nServer: {err}"))?;
 
-        std::fs::write(file_path, data).map_err(|err| {
-            CliError::Other(format!(
-                "unable to write downloaded package to the disk: {err}"
-            ))
-        })?;
+        std::fs::write(file_path, data)
+            .map_err(|err| anyhow!("unable to write downloaded package to the disk: {err}"))?;
         println!("... downloading complete");
         Ok(())
     }

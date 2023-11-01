@@ -14,8 +14,6 @@ use fluvio::Fluvio;
 
 use crate::client::ClientCmd;
 
-use super::get_pkg_list;
-
 /// List available SmartModules in the hub
 #[derive(Debug, Parser)]
 pub enum SmartModuleHubSubCmd {
