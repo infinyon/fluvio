@@ -53,7 +53,7 @@ pub fn main_loop(opt: ScOpt) {
             let k8_config = K8Config::load().expect("no k8 config founded");
             info!(?k8_config, "k8 config");
 
-            // if name space is specified, use one from k8 config
+            // if namespace is default, use one from k8 config
             if sc_config.namespace == DEFAULT_NAMESPACE {
                 let k8_namespace = k8_config.namespace().to_owned();
                 info!("using {} as namespace from kubernetes config", k8_namespace);

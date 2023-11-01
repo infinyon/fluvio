@@ -284,4 +284,8 @@ pub struct EnvironmentSetup {
     /// Expect a test to fail. (fail-> pass. pass or timeout -> fail)
     #[arg(long, conflicts_with = "expect_timeout")]
     pub expect_fail: bool,
+
+    /// K8 namespace
+    #[arg(long)]
+    pub namespace: Option<String>,
 }

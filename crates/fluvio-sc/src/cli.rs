@@ -15,6 +15,7 @@ use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::convert::TryFrom;
 
+use clap::Args;
 use tracing::info;
 use tracing::debug;
 use clap::Parser;
@@ -30,16 +31,11 @@ use crate::config::ScConfig;
 type Config = (ScConfig, Option<BasicRbacPolicy>);
 
 /// cli options
-#[derive(Debug, Parser, Default)]
+#[derive(Debug, Parser)]
 #[command(name = "sc-server", about = "Streaming Controller")]
 pub struct ScOpt {
-    /// run in local mode
-    #[arg(long, conflicts_with_all = &["k8", "read_only"], value_name = "metadata path")]
-    local: Option<PathBuf>,
-
-    /// run on k8
-    #[arg(long)]
-    k8: bool,
+    #[command(flatten)]
+    run_mode: ScOptRunMode,
 
     #[arg(long)]
     /// Address for external service
@@ -73,10 +69,22 @@ pub struct ScOpt {
     /// only allow white list of controllers
     #[arg(long)]
     white_list: Vec<String>,
+}
 
-    /// run SC in read only mode
-    #[arg(long, hide = true, conflicts_with_all = &["auth_policy"])]
-    read_only: Option<PathBuf>,
+#[derive(Debug, Args)]
+#[group(required = true, multiple = false)]
+pub struct ScOptRunMode {
+        /// run in local mode
+        #[arg(long, value_name = "metadata path")]
+        local: Option<PathBuf>,
+    
+        /// run on k8
+        #[arg(long)]
+        k8: bool,
+
+        /// run SC in read only mode
+        #[arg(long, hide = true)]
+        read_only: Option<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -88,7 +96,7 @@ pub enum RunMode<'a> {
 
 impl ScOpt {
     pub fn mode(&self) -> RunMode<'_> {
-        match (&self.local, &self.read_only, self.k8) {
+        match (&self.run_mode.local, &self.run_mode.read_only, self.run_mode.k8) {
             (Some(metadata), None, false) => RunMode::Local(metadata),
             (None, Some(path), false) => RunMode::ReadOnly(path),
             (None, None, true) => RunMode::K8s,
@@ -117,7 +125,7 @@ impl ScOpt {
 
         config.x509_auth_scopes = self.x509_auth_scopes;
         config.white_list = self.white_list.into_iter().collect();
-        config.read_only_metadata = self.read_only.is_some();
+        config.read_only_metadata = self.run_mode.read_only.is_some();
 
         // Set Configuration Authorization Policy
 

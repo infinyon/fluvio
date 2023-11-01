@@ -48,7 +48,9 @@ impl ScProcess {
             ScMode::ReadOnly(path) => {
                 binary.arg("--read-only").arg(path);
             }
-            ScMode::K8s => {}
+            ScMode::K8s => {
+                binary.arg("--k8");
+            }
         };
 
         if let TlsPolicy::Verified(tls) = &self.tls_policy {
