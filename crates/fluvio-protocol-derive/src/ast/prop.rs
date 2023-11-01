@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Attribute, Error, Field, Lit, Meta, Type, Token, Expr};
+use syn::{Attribute, Error, Expr, Field, Lit, Meta, Token, Type};
 
 use crate::util::{get_lit_int, get_lit_str};
 
@@ -198,25 +198,28 @@ impl PropAttrs {
                 prop_attrs.varint = true;
             } else if attribute.path().is_ident("fluvio") {
                 if let Meta::List(list) = &attribute.meta {
-                    if let Ok(list_args) = list
-                        .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                    if let Ok(list_args) =
+                        list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
                     {
                         for args_meta in list_args.iter() {
                             if let Meta::NameValue(args_data) = args_meta {
                                 let lit_expr = &args_data.value;
-                                
+
                                 if let Some(args_name) = args_data.path.get_ident() {
                                     if args_name == "min_version" {
                                         if let Expr::Lit(lit_expr) = &lit_expr {
                                             if let Lit::Int(lit_int) = &lit_expr.lit {
-                                                prop_attrs.min_version = lit_int.base10_parse::<i16>()?;
+                                                prop_attrs.min_version =
+                                                    lit_int.base10_parse::<i16>()?;
                                             }
                                         }
                                     } else if args_name == "max_version" {
-                                        let value = get_lit_int(String::from("max_version"), &lit_expr)?;
+                                        let value =
+                                            get_lit_int(String::from("max_version"), &lit_expr)?;
                                         prop_attrs.max_version = Some(value.base10_parse::<i16>()?);
                                     } else if args_name == "default" {
-                                        let value = get_lit_str(String::from("default"), &lit_expr)?;
+                                        let value =
+                                            get_lit_str(String::from("default"), &lit_expr)?;
                                         prop_attrs.default_value = Some(value.value());
                                     } else {
                                         tracing::warn!(

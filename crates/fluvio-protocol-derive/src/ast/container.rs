@@ -28,22 +28,39 @@ impl ContainerAttributes {
                 } else if ident == "fluvio" {
                     match &attr.meta {
                         Meta::List(list) => {
-                            if let Ok(list_args) = list .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated) {
+                            if let Ok(list_args) = list
+                                .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                            {
                                 for args_meta in list_args.iter() {
                                     if let Meta::NameValue(args_data) = args_meta {
                                         let lit_expr = &args_data.value;
                                         if let Some(args_name) = args_data.path.get_ident() {
                                             if args_name == "api_min_version" {
-                                                let value = get_lit_int(String::from("api_min_version"), &lit_expr)?;
-                                                cont_attr.api_min_version = value.base10_parse::<u16>()?;
+                                                let value = get_lit_int(
+                                                    String::from("api_min_version"),
+                                                    &lit_expr,
+                                                )?;
+                                                cont_attr.api_min_version =
+                                                    value.base10_parse::<u16>()?;
                                             } else if args_name == "api_max_version" {
-                                                let value = get_lit_int(String::from("api_max_version"), &lit_expr)?;
-                                                cont_attr.api_max_version = Some(value.base10_parse::<u16>()?);
+                                                let value = get_lit_int(
+                                                    String::from("api_max_version"),
+                                                    &lit_expr,
+                                                )?;
+                                                cont_attr.api_max_version =
+                                                    Some(value.base10_parse::<u16>()?);
                                             } else if args_name == "api_key" {
-                                                let value = get_lit_int(String::from("api_key"), &lit_expr)?;
-                                                cont_attr.api_key = Some(value.base10_parse::<u8>()?);
+                                                let value = get_lit_int(
+                                                    String::from("api_key"),
+                                                    &lit_expr,
+                                                )?;
+                                                cont_attr.api_key =
+                                                    Some(value.base10_parse::<u8>()?);
                                             } else if args_name == "response" {
-                                                let value = get_lit_str(String::from("response"), &lit_expr)?;
+                                                let value = get_lit_str(
+                                                    String::from("response"),
+                                                    &lit_expr,
+                                                )?;
                                                 cont_attr.response = Some(value.value());
                                             } else {
                                                 tracing::warn!(
@@ -52,7 +69,7 @@ impl ContainerAttributes {
                                                 )
                                             }
                                         }
-                                    } else if let Meta::Path(path) = args_meta { 
+                                    } else if let Meta::Path(path) = args_meta {
                                         if let Some(nested_ident) = path.get_ident() {
                                             if nested_ident == "default" {
                                                 cont_attr.default = true;
@@ -77,13 +94,15 @@ impl ContainerAttributes {
                     }
                 } else if ident == "repr" {
                     if let Meta::List(list) = &attr.meta {
-                        if let Ok(list_args) = list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated) {
+                        if let Ok(list_args) =
+                            list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                        {
                             for args_meta in list_args.iter() {
                                 if let Meta::Path(path) = args_meta {
                                     if let Some(int_type) = path.get_ident() {
                                         cont_attr.repr_type_name = Some(int_type.to_string());
                                     }
-                                } 
+                                }
                             }
                         }
                     }
