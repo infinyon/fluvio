@@ -3,11 +3,11 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
 use syn::{
-    Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum,
-    Lit, Meta, NestedMeta, Variant,
+    Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum, Variant,
 };
 
 use super::container::ContainerAttributes;
+use crate::util::{find_name_value_from_meta, get_lit_int};
 
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
@@ -67,18 +67,11 @@ impl EnumProp {
         let variant_ident = &variant.ident;
         prop.variant_name = variant_ident.to_string();
         // Find all supported field level attributes in one go.
-        for attribute in &variant.attrs {
-            if attribute.path.is_ident("fluvio") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for kf_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
-                            if name_value.path.is_ident("tag") {
-                                if let Lit::Int(lit_int) = name_value.lit {
-                                    prop.tag = Some(lit_int.base10_digits().to_owned());
-                                }
-                            }
-                        }
-                    }
+        for attr in &variant.attrs {
+            if attr.path().is_ident("fluvio") {
+                if let Some(meta_name_value) = find_name_value_from_meta(&attr.meta, "tag") {
+                    let value = get_lit_int(String::from("tag"), &meta_name_value.value)?;
+                    prop.tag = Some(value.base10_digits().to_owned());
                 }
             }
         }

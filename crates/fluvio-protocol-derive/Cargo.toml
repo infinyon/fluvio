@@ -13,12 +13,8 @@ proc-macro = true
 doctest = false
 
 [dependencies]
+syn = { workspace = true, features = ["full"] }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 tracing = { workspace = true }
-
-[dependencies.syn]
-version = "1.0.0"
-features = ["full"]
-
 

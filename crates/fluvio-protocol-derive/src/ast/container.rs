@@ -1,5 +1,7 @@
 use quote::ToTokens;
-use syn::{Attribute, Lit, Meta, NestedMeta, Result};
+use syn::{punctuated::Punctuated, Attribute, Meta, Result, Token};
+
+use crate::util::{get_lit_int, get_lit_str};
 
 #[derive(Debug, Default)]
 pub struct ContainerAttributes {
@@ -18,65 +20,77 @@ pub struct ContainerAttributes {
 impl ContainerAttributes {
     pub fn from_ast(attributes: &[Attribute]) -> Result<ContainerAttributes> {
         let mut cont_attr = ContainerAttributes::default();
-        // Find all supported container level attributes in one go
-        for attribute in attributes {
-            if attribute.path.is_ident("varint") {
-                cont_attr.varint = true;
-            } else if attribute.path.is_ident("fluvio") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for kf_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
-                            if name_value.path.is_ident("api_min_version") {
-                                if let Lit::Int(lit_int) = &name_value.lit {
-                                    cont_attr.api_min_version = lit_int.base10_parse::<u16>()?;
+
+        for attr in attributes {
+            if let Some(ident) = attr.path().get_ident() {
+                if ident == "varint" {
+                    cont_attr.varint = true;
+                } else if ident == "fluvio" {
+                    match &attr.meta {
+                        Meta::List(list) => {
+                            if let Ok(list_args) = list .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated) {
+                                for args_meta in list_args.iter() {
+                                    if let Meta::NameValue(args_data) = args_meta {
+                                        let lit_expr = &args_data.value;
+                                        if let Some(args_name) = args_data.path.get_ident() {
+                                            if args_name == "api_min_version" {
+                                                let value = get_lit_int(String::from("api_min_version"), &lit_expr)?;
+                                                cont_attr.api_min_version = value.base10_parse::<u16>()?;
+                                            } else if args_name == "api_max_version" {
+                                                let value = get_lit_int(String::from("api_max_version"), &lit_expr)?;
+                                                cont_attr.api_max_version = Some(value.base10_parse::<u16>()?);
+                                            } else if args_name == "api_key" {
+                                                let value = get_lit_int(String::from("api_key"), &lit_expr)?;
+                                                cont_attr.api_key = Some(value.base10_parse::<u8>()?);
+                                            } else if args_name == "response" {
+                                                let value = get_lit_str(String::from("response"), &lit_expr)?;
+                                                cont_attr.response = Some(value.value());
+                                            } else {
+                                                tracing::warn!(
+                                                    "#[fluvio({})] does nothing on the container.",
+                                                    args_data.to_token_stream().to_string()
+                                                )
+                                            }
+                                        }
+                                    } else if let Meta::Path(path) = args_meta { 
+                                        if let Some(nested_ident) = path.get_ident() {
+                                            if nested_ident == "default" {
+                                                cont_attr.default = true;
+                                            } else if nested_ident == "trace" {
+                                                cont_attr.trace = true;
+                                            } else if nested_ident == "encode_discriminant" {
+                                                cont_attr.encode_discriminant = true;
+                                            } else {
+                                                tracing::warn!(
+                                                    "#[fluvio({})] does nothing on the container.",
+                                                    nested_ident.to_token_stream().to_string()
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
-                            } else if name_value.path.is_ident("api_max_version") {
-                                if let Lit::Int(lit_int) = &name_value.lit {
-                                    cont_attr.api_max_version =
-                                        Some(lit_int.base10_parse::<u16>()?);
-                                }
-                            } else if name_value.path.is_ident("api_key") {
-                                if let Lit::Int(lit_int) = &name_value.lit {
-                                    cont_attr.api_key = Some(lit_int.base10_parse::<u8>()?);
-                                }
-                            } else if name_value.path.is_ident("response") {
-                                if let Lit::Str(lit_str) = &name_value.lit {
-                                    cont_attr.response = Some(lit_str.value());
-                                }
-                            } else {
-                                tracing::warn!(
-                                    "#[fluvio({})] does nothing on the container.",
-                                    name_value.to_token_stream().to_string()
-                                )
-                            }
-                        } else if let NestedMeta::Meta(Meta::Path(path)) = kf_attr {
-                            if path.is_ident("default") {
-                                cont_attr.default = true;
-                            } else if path.is_ident("trace") {
-                                cont_attr.trace = true;
-                            } else if path.is_ident("encode_discriminant") {
-                                cont_attr.encode_discriminant = true;
-                            } else {
-                                tracing::warn!(
-                                    "#[fluvio({})] does nothing on the container.",
-                                    path.to_token_stream().to_string()
-                                )
                             }
                         }
+                        _ => {
+                            unimplemented!()
+                        }
                     }
-                }
-            } else if attribute.path.is_ident("repr") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for repr_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::Path(path)) = repr_attr {
-                            if let Some(int_type) = path.get_ident() {
-                                cont_attr.repr_type_name = Some(int_type.to_string());
+                } else if ident == "repr" {
+                    if let Meta::List(list) = &attr.meta {
+                        if let Ok(list_args) = list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated) {
+                            for args_meta in list_args.iter() {
+                                if let Meta::Path(path) = args_meta {
+                                    if let Some(int_type) = path.get_ident() {
+                                        cont_attr.repr_type_name = Some(int_type.to_string());
+                                    }
+                                } 
                             }
                         }
                     }
                 }
             }
         }
+
         Ok(cont_attr)
     }
 }
