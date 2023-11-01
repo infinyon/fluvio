@@ -19,14 +19,12 @@ use tracing::info;
 use tracing::debug;
 use clap::Parser;
 
-use k8_client::K8Config;
 use fluvio_types::print_cli_err;
 use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
 use fluvio_future::openssl::TlsAcceptor;
 use fluvio_future::openssl::SslVerifyMode;
 
 use crate::services::auth::basic::BasicRbacPolicy;
-use crate::error::ScError;
 use crate::config::ScConfig;
 
 type Config = (ScConfig, Option<BasicRbacPolicy>);
@@ -91,29 +89,11 @@ pub enum RunMode<'a> {
 impl ScOpt {
     pub fn mode(&self) -> RunMode<'_> {
         match (&self.local, &self.read_only, self.k8) {
-            (Some(metadata), _, _) => RunMode::Local(metadata),
-            (_, Some(path), _) => RunMode::ReadOnly(path),
-            _ => RunMode::K8s,
+            (Some(metadata), None, false) => RunMode::Local(metadata),
+            (None, Some(path), false) => RunMode::ReadOnly(path),
+            (None, None, true) => RunMode::K8s,
+            _ => panic!("Params do not satisfy defined run modes"),
         }
-    }
-
-    #[allow(clippy::type_complexity)]
-    fn get_sc_and_k8_config(
-        mut self,
-    ) -> Result<(Config, K8Config, Option<(String, TlsConfig)>), ScError> {
-        let k8_config = K8Config::load().expect("no k8 config founded");
-        info!(?k8_config, "k8 config");
-
-        // if name space is specified, use one from k8 config
-        if self.namespace.is_none() {
-            let k8_namespace = k8_config.namespace().to_owned();
-            info!("using {} as namespace from kubernetes config", k8_namespace);
-            self.namespace = Some(k8_namespace);
-        }
-
-        let (sc_config, tls_option) = self.as_sc_config()?;
-
-        Ok((sc_config, k8_config, tls_option))
     }
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
@@ -129,6 +109,10 @@ impl ScOpt {
 
         if let Some(private_addr) = self.bind_private {
             config.private_endpoint = private_addr;
+        }
+
+        if let Some(namespace) = self.namespace {
+            config.namespace = namespace
         }
 
         config.x509_auth_scopes = self.x509_auth_scopes;
@@ -166,16 +150,6 @@ impl ScOpt {
             Ok(((config, policy), Some((proxy_addr, tls))))
         } else {
             Ok(((config, policy), None))
-        }
-    }
-
-    pub fn parse_k8s_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
-        match self.get_sc_and_k8_config() {
-            Err(err) => {
-                print_cli_err!(err);
-                process::exit(-1);
-            }
-            Ok(config) => config,
         }
     }
 

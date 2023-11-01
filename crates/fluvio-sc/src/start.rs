@@ -16,6 +16,7 @@ use crate::{
     cli::{ScOpt, TlsConfig, RunMode},
     services::auth::basic::BasicRbacPolicy,
     config::ScConfig,
+    config::DEFAULT_NAMESPACE,
 };
 
 pub fn main_loop(opt: ScOpt) {
@@ -47,7 +48,18 @@ pub fn main_loop(opt: ScOpt) {
         RunMode::K8s => {
             info!("Running with K8");
 
-            let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_k8s_cli_or_exit();
+            let ((mut sc_config, auth_policy), tls_option) = opt.parse_cli_or_exit();
+
+            let k8_config = K8Config::load().expect("no k8 config founded");
+            info!(?k8_config, "k8 config");
+
+            // if name space is specified, use one from k8 config
+            if sc_config.namespace == DEFAULT_NAMESPACE {
+                let k8_namespace = k8_config.namespace().to_owned();
+                info!("using {} as namespace from kubernetes config", k8_namespace);
+                sc_config.namespace = k8_namespace;
+            }
+
             let client = create_k8_client(k8_config).expect("failed to create k8 client");
             k8_main_loop(sc_config, client, auth_policy, tls_option)
         }
