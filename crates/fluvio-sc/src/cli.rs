@@ -74,17 +74,17 @@ pub struct ScOpt {
 #[derive(Debug, Args)]
 #[group(required = true, multiple = false)]
 pub struct ScOptRunMode {
-        /// run in local mode
-        #[arg(long, value_name = "metadata path")]
-        local: Option<PathBuf>,
-    
-        /// run on k8
-        #[arg(long)]
-        k8: bool,
+    /// run in local mode
+    #[arg(long, value_name = "metadata path")]
+    local: Option<PathBuf>,
 
-        /// run SC in read only mode
-        #[arg(long, hide = true)]
-        read_only: Option<PathBuf>,
+    /// run on k8
+    #[arg(long)]
+    k8: bool,
+
+    /// run SC in read only mode
+    #[arg(long, hide = true)]
+    read_only: Option<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -96,7 +96,11 @@ pub enum RunMode<'a> {
 
 impl ScOpt {
     pub fn mode(&self) -> RunMode<'_> {
-        match (&self.run_mode.local, &self.run_mode.read_only, self.run_mode.k8) {
+        match (
+            &self.run_mode.local,
+            &self.run_mode.read_only,
+            self.run_mode.k8,
+        ) {
             (Some(metadata), None, false) => RunMode::Local(metadata),
             (None, Some(path), false) => RunMode::ReadOnly(path),
             (None, None, true) => RunMode::K8s,
