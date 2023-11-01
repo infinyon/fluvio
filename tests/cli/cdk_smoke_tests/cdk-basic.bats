@@ -117,6 +117,9 @@ setup_file() {
     # Ensure the correct path is added
     cat ./.hub/package-meta.yaml | grep '../../testing/README.md'
     assert_success
+
+    # clean up
+    rm -r ../testing
 }
 
 @test "Run connector with --ipkg" {
@@ -157,3 +160,9 @@ setup_file() {
     assert_output --partial "Connector runs with process id"
 }
 
+# fix CI authentication to hub service first:
+# https://github.com/infinyon/fluvio/issues/3634
+# @test "List connectors from hub" {
+#     run timeout 15s $CDK_BIN hub list
+#     assert_success
+# }
