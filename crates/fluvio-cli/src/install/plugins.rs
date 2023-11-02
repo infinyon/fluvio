@@ -52,6 +52,9 @@ pub struct InstallOpt {
 
 impl InstallOpt {
     pub async fn process(self) -> Result<()> {
+        println!("warning: `fluvio install` is deprecated, use `fvm install` instead.");
+        println!("Refer to https://www.fluvio.io/docs/get-started/linux/#install-fluvio-cli");
+
         if self.hub {
             debug!("Using the hub to install");
 

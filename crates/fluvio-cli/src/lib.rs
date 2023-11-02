@@ -125,7 +125,7 @@ mod root {
         /// be invoked by running `fluvio foo`.
         ///
         /// This command allows you to install plugins from Fluvio's package registry.
-        #[command(name = "install")]
+        #[command(name = "install", hide = true)]
         Install(InstallOpt),
 
         /// Print Fluvio version information
