@@ -71,7 +71,7 @@ impl EnumProp {
         for attr in &variant.attrs {
             if attr.path().is_ident("fluvio") {
                 if let Some(meta_name_value) = find_name_value_from_meta(&attr.meta, "tag") {
-                    let value = get_lit_int(String::from("tag"), &meta_name_value.value)?;
+                    let value = get_lit_int("tag", &meta_name_value.value)?;
                     prop.tag = Some(value.base10_digits().to_owned());
                 }
             }

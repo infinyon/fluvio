@@ -26,70 +26,52 @@ impl ContainerAttributes {
                 if ident == "varint" {
                     cont_attr.varint = true;
                 } else if ident == "fluvio" {
-                    match &attr.meta {
-                        Meta::List(list) => {
-                            if let Ok(list_args) = list
-                                .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
-                            {
-                                for args_meta in list_args.iter() {
-                                    if let Meta::NameValue(args_data) = args_meta {
-                                        let lit_expr = &args_data.value;
-                                        if let Some(args_name) = args_data.path.get_ident() {
-                                            if args_name == "api_min_version" {
-                                                let value = get_lit_int(
-                                                    String::from("api_min_version"),
-                                                    &lit_expr,
-                                                )?;
-                                                cont_attr.api_min_version =
-                                                    value.base10_parse::<u16>()?;
-                                            } else if args_name == "api_max_version" {
-                                                let value = get_lit_int(
-                                                    String::from("api_max_version"),
-                                                    &lit_expr,
-                                                )?;
-                                                cont_attr.api_max_version =
-                                                    Some(value.base10_parse::<u16>()?);
-                                            } else if args_name == "api_key" {
-                                                let value = get_lit_int(
-                                                    String::from("api_key"),
-                                                    &lit_expr,
-                                                )?;
-                                                cont_attr.api_key =
-                                                    Some(value.base10_parse::<u8>()?);
-                                            } else if args_name == "response" {
-                                                let value = get_lit_str(
-                                                    String::from("response"),
-                                                    &lit_expr,
-                                                )?;
-                                                cont_attr.response = Some(value.value());
-                                            } else {
-                                                tracing::warn!(
-                                                    "#[fluvio({})] does nothing on the container.",
-                                                    args_data.to_token_stream().to_string()
-                                                )
-                                            }
+                    if let Meta::List(list) = &attr.meta {
+                        if let Ok(list_args) =
+                            list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                        {
+                            for args_meta in list_args.iter() {
+                                if let Meta::NameValue(args_data) = args_meta {
+                                    let lit_expr = &args_data.value;
+                                    if let Some(args_name) = args_data.path.get_ident() {
+                                        if args_name == "api_min_version" {
+                                            let value = get_lit_int("api_min_version", &lit_expr)?;
+                                            cont_attr.api_min_version =
+                                                value.base10_parse::<u16>()?;
+                                        } else if args_name == "api_max_version" {
+                                            let value = get_lit_int("api_max_version", &lit_expr)?;
+                                            cont_attr.api_max_version =
+                                                Some(value.base10_parse::<u16>()?);
+                                        } else if args_name == "api_key" {
+                                            let value = get_lit_int("api_key", &lit_expr)?;
+                                            cont_attr.api_key = Some(value.base10_parse::<u8>()?);
+                                        } else if args_name == "response" {
+                                            let value = get_lit_str("response", &lit_expr)?;
+                                            cont_attr.response = Some(value.value());
+                                        } else {
+                                            tracing::warn!(
+                                                "#[fluvio({})] does nothing on the container.",
+                                                args_data.to_token_stream().to_string()
+                                            )
                                         }
-                                    } else if let Meta::Path(path) = args_meta {
-                                        if let Some(nested_ident) = path.get_ident() {
-                                            if nested_ident == "default" {
-                                                cont_attr.default = true;
-                                            } else if nested_ident == "trace" {
-                                                cont_attr.trace = true;
-                                            } else if nested_ident == "encode_discriminant" {
-                                                cont_attr.encode_discriminant = true;
-                                            } else {
-                                                tracing::warn!(
-                                                    "#[fluvio({})] does nothing on the container.",
-                                                    nested_ident.to_token_stream().to_string()
-                                                )
-                                            }
+                                    }
+                                } else if let Meta::Path(path) = args_meta {
+                                    if let Some(nested_ident) = path.get_ident() {
+                                        if nested_ident == "default" {
+                                            cont_attr.default = true;
+                                        } else if nested_ident == "trace" {
+                                            cont_attr.trace = true;
+                                        } else if nested_ident == "encode_discriminant" {
+                                            cont_attr.encode_discriminant = true;
+                                        } else {
+                                            tracing::warn!(
+                                                "#[fluvio({})] does nothing on the container.",
+                                                nested_ident.to_token_stream().to_string()
+                                            )
                                         }
                                     }
                                 }
                             }
-                        }
-                        _ => {
-                            unimplemented!()
                         }
                     }
                 } else if ident == "repr" {
