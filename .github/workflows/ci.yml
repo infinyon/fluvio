@@ -559,6 +559,7 @@ jobs:
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
       SERVER_LOG: fluvio=info
+      K8_NAMESPACE: fluvio-test
     strategy:
  #     fail-fast: false
       matrix:
@@ -609,10 +610,14 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
+      - name: Create k8 namespace
+        if: matrix.run-mode == 'local-k8'
+        run: |
+          kubectl create ns ${K8_NAMESPACE}
       - name: Start fluvio cluster
         timeout-minutes: 10
         if: matrix.test != 'smoke-test-tls'
-        run: fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
+        run: fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} --namespace ${K8_NAMESPACE}
       - name: Start fluvio cluster TLS
         if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 10
@@ -620,7 +625,7 @@ jobs:
         run: >
           AUTH_POLICY=${{ env.AUTH_FILE }}
           X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
-          fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
+          fluvio cluster start --${{ matrix.run-mode }} --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} --namespace ${K8_NAMESPACE} ${{ env.TLS_ARGS }}
       - name: sleep
         run: sleep 15
       - name: Validate test harness
@@ -734,6 +739,7 @@ jobs:
       TEST_BIN: ~/bin/fluvio-test
       UNINSTALL: noclean
       SERVER_LOG: fluvio=debug
+      K8_NAMESPACE: fluvio-test
     strategy:
  #     fail-fast: true
       matrix:
@@ -811,22 +817,25 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
+      - name: Create k8 namespace
+        run: |
+          kubectl create ns fluvio-test
       - name: Start fluvio cluster
         if: matrix.test == 'smoke-test-k8' || matrix.test == 'stats-test'
         timeout-minutes: 10
         run: |
-          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}  --namespace ${K8_NAMESPACE}
       - name: Start fluvio cluster TLS
         timeout-minutes: 10
         if: matrix.test == 'smoke-test-k8-tls'
         run: |
-          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE}
       - name: Start fluvio cluster TLS with root
         timeout-minutes: 10
         if: matrix.test == 'smoke-test-k8-tls-root-unclean'
         run: |
           make smoke-test-k8-tls-policy-setup
-          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }} --authorization-config-map authorization
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE} --authorization-config-map authorization
       - name: Run ${{ matrix.test }}
         timeout-minutes: 10
         run: |

@@ -32,8 +32,9 @@ spec:
             {{- toYaml .Values.scPod.extraEnv | nindent 12 }}
             {{ end }}
           command: ["/fluvio-run", "sc"]
-        {{ if .Values.tls }}
           args:
+            - --k8
+        {{ if .Values.tls }}
             - --tls
             - --enable-client-cert
             - --ca-cert
