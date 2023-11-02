@@ -1,0 +1,15 @@
+[package]
+name = "hub-fvm"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wiremock = "0.5"
+
+# Workspace dependencies
+async-std = { workspace = true }
+surf = { workspace = true }

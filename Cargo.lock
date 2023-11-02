@@ -280,6 +280,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "assert-json-diff"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47e4f2b81832e72834d7518d8487a0396a28cc408186a2e8854c0f98011faf12"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "assert_cmd"
 version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1909,6 +1919,25 @@ dependencies = [
  "serde",
  "tokio",
 ]
+
+[[package]]
+name = "deadpool"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "421fe0f90f2ab22016f32a9881be5134fdd71c65298917084b0c7477cbc3856e"
+dependencies = [
+ "async-trait",
+ "deadpool-runtime",
+ "num_cpus",
+ "retain_mut",
+ "tokio",
+]
+
+[[package]]
+name = "deadpool-runtime"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63dfa964fe2a66f3fde91fc70b267fe193d822c7e603e2a675a49a7f46ad3f49"
 
 [[package]]
 name = "debugid"
@@ -3690,6 +3719,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "efd193069b0ddadc69c46389b740bbccdd97203899b48d09c5f7969591d6bae2"
 
 [[package]]
+name = "futures-timer"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e64b03909df88034c26dc1547e8970b91f98bdb65165d6a4e9110d94263dbb2c"
+
+[[package]]
 name = "futures-util"
 version = "0.3.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4243,8 +4278,8 @@ dependencies = [
  "async-trait",
  "cfg-if",
  "dashmap",
- "deadpool",
- "futures 0.3.29",
+ "deadpool 0.7.0",
+ "futures 0.3.28",
  "http-types",
  "log",
  "rustls 0.18.1",
@@ -4262,6 +4297,7 @@ dependencies = [
  "base64 0.13.1",
  "cookie",
  "futures-lite",
+ "http",
  "infer",
  "pin-project-lite",
  "rand 0.7.3",
@@ -4283,6 +4319,15 @@ name = "httpdate"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
+
+[[package]]
+name = "hub-fvm"
+version = "0.0.0"
+dependencies = [
+ "async-std",
+ "surf",
+ "wiremock",
+]
 
 [[package]]
 name = "humantime"
@@ -6275,6 +6320,12 @@ dependencies = [
  "webpki-roots 0.25.2",
  "winreg",
 ]
+
+[[package]]
+name = "retain_mut"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 
 [[package]]
 name = "rfc6979"
@@ -8874,6 +8925,28 @@ checksum = "357bb8e2932df531f83b052264b050b81ba0df90ee5a59b2d1d3949f344f81e5"
 dependencies = [
  "bitflags 2.4.1",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "wiremock"
+version = "0.5.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6f71803d3a1c80377a06221e0530be02035d5b3e854af56c6ece7ac20ac441d"
+dependencies = [
+ "assert-json-diff",
+ "async-trait",
+ "base64 0.21.4",
+ "deadpool 0.9.5",
+ "futures 0.3.28",
+ "futures-timer",
+ "http-types",
+ "hyper",
+ "log",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

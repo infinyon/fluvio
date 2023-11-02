@@ -54,6 +54,7 @@ members = [
     "crates/cargo-builder",
     "connector/json-test-connector",
     "connector/sink-test-connector",
+    "tests/mocks/hub-fvm"
 ]
 resolver = "2"
 
