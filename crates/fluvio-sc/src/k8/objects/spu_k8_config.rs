@@ -214,7 +214,7 @@ mod extended {
                 match ScK8Config::from(k8_obj.header.data) {
                     Ok(config) => match k8_obj.metadata.try_into() {
                         Ok(ctx_item) => {
-                            let ctx = MetadataContext::new(ctx_item, None);
+                            let ctx = MetadataContext::new(ctx_item);
                             Ok(
                                 MetadataStoreObject::new("fluvio", config, FluvioConfigStatus {})
                                     .with_context(ctx),

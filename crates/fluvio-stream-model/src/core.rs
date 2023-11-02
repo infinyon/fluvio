@@ -3,7 +3,6 @@ pub use context::*;
 
 mod context {
 
-    use std::collections::hash_map::Entry;
     use std::fmt;
     use std::fmt::Display;
     use std::collections::HashMap;
@@ -34,6 +33,18 @@ mod context {
         fn get_labels(&self) -> HashMap<String, String> {
             HashMap::new()
         }
+
+        fn owner(&self) -> Option<&Self> {
+            Default::default()
+        }
+
+        fn set_owner(&mut self, _owner: Self) {}
+
+        fn children(&self) -> Option<&HashMap<String, Vec<Self>>> {
+            Default::default()
+        }
+
+        fn set_children(&mut self, _children: HashMap<String, Vec<Self>>) {}
     }
 
     pub trait MetadataRevExtension: MetadataItem {
@@ -68,27 +79,17 @@ mod context {
     #[derive(Default, Debug, Clone, Eq, PartialEq)]
     pub struct MetadataContext<C> {
         item: C,
-        owner: Option<C>,
-        children: HashMap<String, Vec<C>>,
     }
 
     impl<C> From<C> for MetadataContext<C> {
         fn from(item: C) -> Self {
-            Self {
-                item,
-                owner: None,
-                children: Default::default(),
-            }
+            Self { item }
         }
     }
 
     impl<C> MetadataContext<C> {
-        pub fn new(item: C, owner: Option<C>) -> Self {
-            Self {
-                item,
-                owner,
-                children: Default::default(),
-            }
+        pub fn new(item: C) -> Self {
+            Self::from(item)
         }
 
         pub fn item(&self) -> &C {
@@ -107,21 +108,8 @@ mod context {
             self.item
         }
 
-        pub fn into_parts(self) -> (C, Option<C>, HashMap<String, Vec<C>>) {
-            (self.item, self.owner, self.children)
-        }
-
-        pub fn owner(&self) -> Option<&C> {
-            self.owner.as_ref()
-        }
-        pub fn set_owner(&mut self, ctx: C) {
-            self.owner = Some(ctx);
-        }
-        pub fn children(&self) -> &HashMap<String, Vec<C>> {
-            &self.children
-        }
-        pub fn set_children(&mut self, children: HashMap<String, Vec<C>>) {
-            self.children = children;
+        pub fn into_inner(self) -> C {
+            self.item
         }
     }
 
@@ -130,44 +118,15 @@ mod context {
         C: MetadataItem,
     {
         pub fn create_child(&self) -> Self {
-            Self {
-                item: C::default(),
-                owner: Some(self.item.clone()),
-                children: Default::default(),
-            }
+            let mut item = C::default();
+            item.set_owner(self.item().clone());
+            Self { item }
         }
 
-        pub fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
-            Self {
-                item: self.item.set_labels(labels),
-                owner: self.owner,
-                children: Default::default(),
-            }
-        }
-
-        pub fn put_child<S: Into<String>>(&mut self, kind: S, child: C) {
-            match self.children.entry(kind.into()) {
-                Entry::Occupied(mut entry) => {
-                    let vec = entry.get_mut();
-                    if !vec.contains(&child) {
-                        vec.push(child);
-                    }
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(vec![child]);
-                }
-            }
-        }
-        pub fn remove_child<S: Into<String>>(&mut self, kind: S, child: &C) {
-            match self.children.entry(kind.into()) {
-                Entry::Occupied(mut entry) => {
-                    entry.get_mut().retain(|i| !i.eq(child));
-                    if entry.get().is_empty() {
-                        entry.remove_entry();
-                    }
-                }
-                Entry::Vacant(_) => {}
-            }
+        pub fn set_labels<T: Into<String>>(mut self, labels: Vec<(T, T)>) -> Self {
+            let item = self.item.set_labels(labels);
+            self.item = item;
+            self
         }
     }
 
@@ -176,7 +135,7 @@ mod context {
         C: MetadataRevExtension,
     {
         pub fn next_rev(&self) -> Self {
-            Self::new(self.item.next_rev(), None)
+            Self::new(self.item.next_rev())
         }
     }
 

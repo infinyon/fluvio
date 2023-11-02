@@ -118,7 +118,7 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
         let (key, spec, _status, ctx) = value.parts();
         let k8_spec: S::K8Spec = spec.into_k8();
 
-        let mut input_metadata = if let Some(parent_metadata) = ctx.owner() {
+        let mut input_metadata = if let Some(parent_metadata) = ctx.item().owner() {
             debug!("owner exists");
             let item_name = key.to_string();
 
@@ -458,10 +458,11 @@ mod tests {
         let namespace = NameSpace::Named("ns1".to_string());
         let key = "child".to_string();
         let parent_key = "parent".to_string();
-        let meta = K8MetaItem::new(key.clone(), namespace.to_string());
+        let mut meta = K8MetaItem::new(key.clone(), namespace.to_string());
         let parent_meta = K8MetaItem::new(parent_key.clone(), namespace.to_string());
+        meta.set_owner(parent_meta);
 
-        let ctx = fluvio_stream_model::store::k8::K8MetadataContext::new(meta, Some(parent_meta));
+        let ctx = fluvio_stream_model::store::k8::K8MetadataContext::new(meta);
 
         let obj = MetadataStoreObject::new_with_context(key.clone(), TestSpec::default(), ctx);
 
