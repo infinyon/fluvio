@@ -17,6 +17,11 @@ use hubutil::{HubAccess, HUB_API_BPKG_AUTH, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROF
 use hubutil::http::{self, StatusCode};
 
 use crate::error::CliError;
+use crate::install::update::{
+    check_update_required, prompt_required_update, check_update_available, prompt_available_update,
+};
+
+use super::update::should_always_print_available_update;
 
 #[derive(Parser, Debug)]
 pub struct InstallOpt {
@@ -95,6 +100,14 @@ impl InstallOpt {
                 None => HttpAgent::default(),
             };
 
+            // Before any "install" type command, check if the CLI needs updating.
+            // This may be the case if the index schema has updated.
+            let require_update = check_update_required(&agent).await?;
+            if require_update {
+                prompt_required_update(&agent).await?;
+                return Ok(());
+            }
+
             let result = self.install_plugin(&agent).await;
             match result {
                 Ok(_) => (),
@@ -120,8 +133,17 @@ impl InstallOpt {
                     _ => return Err(err),
                 },
             }
-        }
 
+            // After any "install" command, check if the CLI has an available update,
+            // i.e. one that is not required, but present.
+            // Sometimes this is printed at the beginning, so we don't print it again here
+            if !should_always_print_available_update() {
+                let update_result = check_update_available(&agent, false).await;
+                if let Ok(Some(latest_version)) = update_result {
+                    prompt_available_update(&latest_version);
+                }
+            }
+        }
         Ok(())
     }
 
