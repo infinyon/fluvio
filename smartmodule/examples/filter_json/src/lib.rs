@@ -45,7 +45,7 @@
 //! {"level":"error","message":"Unable to connect to database"}
 //! ```
 
-use fluvio_smartmodule::{smartmodule, Record, Result};
+use fluvio_smartmodule::{smartmodule, SmartModuleRecord, Result};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -64,7 +64,7 @@ struct StructuredLog {
 }
 
 #[smartmodule(filter)]
-pub fn filter_log_level(record: &Record) -> Result<bool> {
+pub fn filter_log_level(record: &SmartModuleRecord) -> Result<bool> {
     let log = serde_json::from_slice::<StructuredLog>(record.value.as_ref())?;
     Ok(log.level > LogLevel::Debug)
 }

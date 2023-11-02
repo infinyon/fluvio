@@ -7,19 +7,19 @@ use std::{
 };
 
 use fluvio_smartmodule::{
-    smartmodule, Record, Result, dataplane::smartmodule::SmartModuleExtraParams, eyre,
+    smartmodule, SmartModuleRecord, Result, dataplane::smartmodule::SmartModuleExtraParams, eyre,
 };
 
 static SET: OnceLock<BoundedHashSet<String>> = OnceLock::new();
 
 #[smartmodule(filter)]
-pub fn filter(record: &Record) -> Result<bool> {
+pub fn filter(record: &SmartModuleRecord) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     Ok(get_mut_set()?.insert(string.to_owned()))
 }
 
 #[smartmodule(look_back)]
-pub fn look_back(record: &Record) -> Result<()> {
+pub fn look_back(record: &SmartModuleRecord) -> Result<()> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     get_mut_set()?.insert(string.to_owned());
     Ok(())

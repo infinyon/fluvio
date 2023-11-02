@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
 use fluvio_smartmodule::{
-    dataplane::smartmodule::SmartModuleExtraParams, smartmodule, Record, RecordData, Result,
+    dataplane::smartmodule::SmartModuleExtraParams, smartmodule, SmartModuleRecord, RecordData, Result,
 };
 
 static INITIAL_VALUE: OnceLock<UseOnce<RecordData>> = OnceLock::new();
@@ -10,7 +10,7 @@ static INITIAL_VALUE: OnceLock<UseOnce<RecordData>> = OnceLock::new();
 const PARAM_NAME: &str = "initial_value";
 
 #[smartmodule(aggregate)]
-pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
+pub fn aggregate(accumulator: RecordData, current: &SmartModuleRecord) -> Result<RecordData> {
     let accumulator = if let Some(initial_value) = INITIAL_VALUE.get() {
         initial_value.get_or(&accumulator)
     } else {

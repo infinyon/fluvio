@@ -1,7 +1,7 @@
 use std::sync::OnceLock;
 
 use fluvio_smartmodule::{
-    smartmodule, Record, Result, eyre,
+    smartmodule, SmartModuleRecord, Result, eyre,
     dataplane::smartmodule::{SmartModuleExtraParams},
 };
 
@@ -22,7 +22,7 @@ fn init(params: SmartModuleExtraParams) -> Result<()> {
 }
 
 #[smartmodule(filter)]
-pub fn filter(record: &Record) -> Result<bool> {
+pub fn filter(record: &SmartModuleRecord) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     Ok(string.contains(CRITERIA.get().unwrap()))
 }

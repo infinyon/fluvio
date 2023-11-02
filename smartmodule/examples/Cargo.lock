@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.3.0"
+version = "0.3.2"
 dependencies = [
  "serde",
  "thiserror",
@@ -192,15 +192,15 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.5"
+version = "0.10.7"
 dependencies = [
  "bytes",
  "content_inspector",
  "crc32c",
  "eyre",
- "fluvio-compression 0.3.0",
+ "fluvio-compression 0.3.2",
  "fluvio-protocol-derive 0.5.4",
- "fluvio-types 0.4.3",
+ "fluvio-types 0.4.4",
  "flv-util",
  "once_cell",
  "semver",
@@ -246,7 +246,7 @@ name = "fluvio-smartmodule"
 version = "0.7.3"
 dependencies = [
  "eyre",
- "fluvio-protocol 0.10.5",
+ "fluvio-protocol 0.10.7",
  "fluvio-smartmodule-derive 0.6.2",
  "thiserror",
  "tracing",
@@ -388,7 +388,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "thiserror",
  "tracing",
