@@ -8,8 +8,6 @@ use fluvio::config::ConfigFile;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_channel::FLUVIO_RELEASE_CHANNEL;
 
-use crate::metadata::subcommand_metadata;
-
 #[derive(Debug, Parser)]
 pub struct VersionOpt {}
 
@@ -26,22 +24,14 @@ impl VersionOpt {
         if let Some(sha) = self.format_cli_sha() {
             self.print("Fluvio CLI SHA256", &sha);
         }
-        if let Some(sha) = self.format_frontend_sha() {
-            self.print("Fluvio channel frontend SHA256", &sha);
-        }
+
         let platform = self.format_platform_version(target).await;
-        self.print("Fluvio Platform", &platform);
+        self.print("Fluvio Cluster", &platform);
 
         self.print("Git Commit", env!("GIT_HASH"));
+
         if let Some(os_info) = os_info() {
             self.print("OS Details", &os_info);
-        }
-
-        if let Some(metadata) = self.format_subcommand_metadata() {
-            println!("=== Plugin Versions ===");
-            for (name, version) in metadata {
-                self.print_width(&name, &version, 30);
-            }
         }
 
         Ok(())
@@ -65,20 +55,6 @@ impl VersionOpt {
         Some(format!("{:x}", &fluvio_bin_sha256))
     }
 
-    // Read fluvio frontend (fluvio-channel)
-    // (assuming it is named `fluvio` alongside a CLI named with its channel name (i.e. fluvio-stable))
-    fn format_frontend_sha(&self) -> Option<String> {
-        let fluvio_cli = std::env::current_exe().ok()?;
-        let mut fluvio_frontend_path = fluvio_cli;
-        fluvio_frontend_path.set_file_name("fluvio");
-
-        let fluvio_cli_bin = std::fs::read(fluvio_frontend_path).ok()?;
-        let mut hasher = Sha256::new();
-        hasher.update(fluvio_cli_bin);
-        let fluvio_cli_bin_sha256 = hasher.finalize();
-        Some(format!("{:x}", &fluvio_cli_bin_sha256))
-    }
-
     async fn format_platform_version(&self, target: ClusterTarget) -> String {
         // Attempt to connect to a Fluvio cluster to get platform version
         // Even if we fail to connect, we should not fail the other printouts
@@ -100,21 +76,6 @@ impl VersionOpt {
             .map(|name| format!(" ({name})"))
             .unwrap_or_default();
         format!("{platform_version}{profile_name}")
-    }
-
-    fn format_subcommand_metadata(&self) -> Option<Vec<(String, String)>> {
-        let metadata = subcommand_metadata().ok()?;
-        let mut formats = Vec::new();
-        for cmd in metadata {
-            let filename = match cmd.path.file_name() {
-                Some(f) => f.to_string_lossy().to_string(),
-                None => continue,
-            };
-            let left = format!("{} ({})", cmd.meta.title, filename);
-            formats.push((left, cmd.meta.version.to_string()));
-        }
-
-        Some(formats)
     }
 }
 
