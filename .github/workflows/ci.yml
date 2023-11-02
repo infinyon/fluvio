@@ -609,6 +609,10 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
+      - name: Create k8 namespace
+        if: matrix.run-mode == 'local-k8'
+        run: |
+          kubectl create ns fluvio-test
       - name: Start fluvio cluster
         timeout-minutes: 10
         if: matrix.test != 'smoke-test-tls'
@@ -811,6 +815,9 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
+      - name: Create k8 namespace
+        run: |
+          kubectl create ns fluvio-test
       - name: Start fluvio cluster
         if: matrix.test == 'smoke-test-k8' || matrix.test == 'stats-test'
         timeout-minutes: 10

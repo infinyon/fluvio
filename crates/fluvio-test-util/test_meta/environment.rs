@@ -286,6 +286,6 @@ pub struct EnvironmentSetup {
     pub expect_fail: bool,
 
     /// K8 namespace
-    #[arg(long)]
-    pub namespace: Option<String>,
+    #[arg(long, default_value = "fluvio-test")]
+    pub namespace: String,
 }
