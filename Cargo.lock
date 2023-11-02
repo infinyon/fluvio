@@ -4384,6 +4384,7 @@ name = "hub-fvm"
 version = "0.0.0"
 dependencies = [
  "async-std",
+ "fluvio-hub-util",
  "serde",
  "tide",
 ]

@@ -13,3 +13,6 @@ tide = { version = "0.16" }
 
 # Workspace dependencies
 async-std = { workspace = true }
+
+# Fluvio dependencies
+fluvio-hub-util = { workspace = true }
