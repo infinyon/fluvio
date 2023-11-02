@@ -181,6 +181,9 @@ setup_file() {
         run bash -c 'fvm install "$VERSION"'
         assert_success
 
+        # Sleeps to avoid hiting rate limits
+        sleep 30
+
         for binary in "${binaries[@]}"
         do
             export BINARY_PATH="$VERSIONS_DIR/$VERSION/$binary"
@@ -244,6 +247,9 @@ setup_file() {
         # Installs Fluvio Version
         run bash -c 'fvm install $VERSION'
         assert_success
+
+        # Sleeps to avoid hiting rate limits
+        sleep 30
     done
 
     for version in "${versions[@]}"
@@ -344,9 +350,15 @@ setup_file() {
     run bash -c 'fvm install 0.10.15'
     assert_success
 
+    # Sleeps to avoid hiting rate limits
+    sleep 30
+
     # Installs Fluvio at 0.10.14
     run bash -c 'fvm install 0.10.14'
     assert_success
+
+    # Sleeps to avoid hiting rate limits
+    sleep 30
 
     # Switch version to use Fluvio at 0.10.15
     run bash -c 'fvm switch 0.10.15'
@@ -389,6 +401,9 @@ setup_file() {
     # Installs Fluvio Stable
     run bash -c 'fvm install stable'
     assert_success
+
+    # Sleeps to avoid hiting rate limits
+    sleep 30
 
     # Installs Fluvio at 0.10.14
     run bash -c 'fvm install 0.10.14'
@@ -483,6 +498,9 @@ setup_file() {
     run bash -c 'fvm -q install stable'
     assert_output ""
     assert_success
+
+    # Sleeps to avoid hiting rate limits
+    sleep 30
 
     # Expect output if `-q` is not passed
     run bash -c 'fvm install 0.10.14'
@@ -752,6 +770,9 @@ setup_file() {
     # Installs the stable version
     run bash -c 'fvm install'
     assert_success
+
+    # Sleeps to avoid hiting rate limits
+    sleep 30
 
     # Attempts to update Fluvio
     run bash -c 'fvm update'
