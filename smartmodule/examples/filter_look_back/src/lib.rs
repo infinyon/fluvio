@@ -1,11 +1,11 @@
 use std::sync::atomic::{AtomicI32, Ordering::SeqCst};
 
-use fluvio_smartmodule::{smartmodule, Record, Result};
+use fluvio_smartmodule::{smartmodule, SmartModuleRecord, Result};
 
 static PREV: AtomicI32 = AtomicI32::new(0);
 
 #[smartmodule(filter)]
-pub fn filter(record: &Record) -> Result<bool> {
+pub fn filter(record: &SmartModuleRecord) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     let current: i32 = string.parse()?;
     let last = PREV.load(SeqCst);
@@ -18,7 +18,7 @@ pub fn filter(record: &Record) -> Result<bool> {
 }
 
 #[smartmodule(look_back)]
-pub fn look_back(record: &Record) -> Result<()> {
+pub fn look_back(record: &SmartModuleRecord) -> Result<()> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     let last: i32 = string.parse()?;
     PREV.store(last, SeqCst);

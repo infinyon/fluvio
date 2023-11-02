@@ -51,11 +51,11 @@
 //! [c] "Cranberry"
 //! ```
 
-use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, SmartModuleRecord, RecordData, Result};
 use serde_json::{Map, Value};
 
 #[smartmodule(array_map)]
-pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
+pub fn array_map(record: &SmartModuleRecord) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Deserialize a JSON object (Map) with any kind of values inside
     let object: Map<String, Value> = serde_json::from_slice(record.value.as_ref())?;
 

@@ -22,7 +22,7 @@
 //!           filter_odd/src/lib.rs:45:38
 //! ```
 
-use fluvio_smartmodule::{smartmodule, Record, Result};
+use fluvio_smartmodule::{smartmodule, SmartModuleRecord, Result};
 
 #[derive(Debug, thiserror::Error)]
 pub enum SecondErrorWrapper {
@@ -37,7 +37,7 @@ pub enum FirstErrorWrapper {
 }
 
 #[smartmodule(filter)]
-pub fn filter(record: &Record) -> Result<bool> {
+pub fn filter(record: &SmartModuleRecord) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     let int = string
         .parse::<i32>()

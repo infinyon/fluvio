@@ -4,7 +4,7 @@
 //! zero or many output records. This example showcases taking a stream of Reddit API
 //! responses and converting it into a stream of the individual posts.
 
-use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, SmartModuleRecord, RecordData, Result};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,7 +33,7 @@ struct RedditPostData {
 }
 
 #[smartmodule(array_map)]
-pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
+pub fn array_map(record: &SmartModuleRecord) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Deserialize a RedditListing from JSON
     let listing: RedditListing = serde_json::from_slice(record.value.as_ref())?;
 
