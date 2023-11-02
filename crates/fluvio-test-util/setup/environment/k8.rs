@@ -48,8 +48,6 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             .save_profile(true)
             .hide_spinner(false);
 
-        builder.namespace(self.option.namespace.clone());
-
         if self.option.tls {
             let (client, server) = load_tls(&self.option.tls_user());
             builder.tls(client, server);
