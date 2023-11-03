@@ -6994,7 +6994,6 @@ dependencies = [
  "include_dir",
  "lib-cargo-crate",
  "tempfile",
- "thiserror",
  "toml 0.8.6",
  "tracing",
 ]

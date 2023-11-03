@@ -89,7 +89,7 @@ fluvio-package-index = { workspace = true }
 fluvio-extension-common = { workspace = true,  features = ["target"] }
 fluvio-channel = { workspace = true }
 fluvio-hub-util = { workspace = true, features = ["connector-cmds"] }
-fluvio-cli-common = { workspace = true, features = ["smartmodule-test"] }
+fluvio-cli-common = { workspace = true }
 fluvio-smartengine = { workspace = true,  features = ["transformation"]}
 fluvio-protocol = { workspace = true, features=["record","api"] }
 fluvio-smartmodule = { workspace = true  }
@@ -101,6 +101,9 @@ fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "nativ
 fluvio-sc-schema = { workspace = true,  features = ["use_serde"], optional = true }
 fluvio-spu-schema = { workspace = true, optional = true }
 
+# smartmodule depends on cranelift, which is not available for `arm`
+[target.'cfg(not(target_arch = "arm"))'.dependencies]
+fluvio-cli-common = { workspace = true, features = ["smartmodule-test"] }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture"] }
