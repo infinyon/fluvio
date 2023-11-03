@@ -13,6 +13,11 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 # Add at least one of each type of resource into the cluster
 setup_file() {
+  
+    FLUVIO_METADATA_DIR="$HOME/.fluvio/data/metadata"
+    export FLUVIO_METADATA_DIR
+    debug_msg "Fluvio Metadata Directory: $FLUVIO_METADATA_DIR"
+
     # topic
     run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)"
     run timeout 15s "$FLUVIO_BIN" smartmodule create "$(random_string)" --wasm-file "$(mktemp)"
@@ -22,48 +27,31 @@ setup_file() {
     TABLE_FORMAT_CONFIG="$TEST_HELPER_DIR/test-table-format-config.yml"
     export TABLE_FORMAT_CONFIG
     run timeout 15s "$FLUVIO_BIN" table-format create --config "$TABLE_FORMAT_CONFIG"
-    # TODO: derived-streams
 }
 
 # Delete the cluster
-@test "Delete the cluster" {
-    run "$FLUVIO_BIN" cluster delete
+@test "Delete the local cluster" {
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+    run "$FLUVIO_BIN" cluster delete --local
     assert_success
 }
 
 
-@test "SPU Groups deleted" {
-    run kubectl get spugroups
-#    assert_failure
+@test "Local metadata deleted" {
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+    run test -d $FLUVIO_METADATA_DIR
+    assert_failure
 }
 
-@test "Topics deleted" {
-    run kubectl get topics
-#    assert_failure
+@test "Delete the cluster" {
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "dev" ]; then
+        skip "don't run on cluster dev version"
+    fi
+    run "$FLUVIO_BIN" cluster delete
+    assert_success
 }
 
-@test "SmartModules deleted" {
-    run kubectl get smartmodules
-#    assert_failure
-}
-
-@test "Partitions deleted" {
-    run kubectl get partitions
-#    assert_failure
-}
-
-@test "DerivedStreams deleted" {
-    run kubectl get derivedstreams
-#    assert_failure
-}
-
-@test "SPUs deleted" {
-    run kubectl get spus
-#    assert_failure
-}
-
-@test "TableFormats deleted" {
-    skip "table-format deletion isn't working: https://github.com/infinyon/fluvio/issues/2004"
-    run kubectl get tableformats
-#    assert_failure
-}

@@ -315,15 +315,15 @@ mod root {
 
     /// Search for a Fluvio plugin in the following places:
     ///
-    /// - In the system PATH
     /// - In the directory where the `fluvio` executable is located
+    /// - In the system PATH
     /// - In the `~/.fluvio/extensions/` directory
     fn find_plugin(name: &str) -> Option<PathBuf> {
         let ext_dir = fluvio_extensions_dir().ok();
         let self_exe = std::env::current_exe().ok();
         let self_dir = self_exe.as_ref().and_then(|it| it.parent());
-        which::which(name)
-            .or_else(|_| which::which_in(name, self_dir, "."))
+        which::which_in(name, self_dir, ".")
+            .or_else(|_| which::which(name))
             .or_else(|_| which::which_in(name, ext_dir, "."))
             .ok()
     }

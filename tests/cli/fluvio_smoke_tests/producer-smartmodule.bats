@@ -249,6 +249,7 @@ setup_file() {
     echo "transforms:" > "$INPUT_FILE"
     echo "  - uses: uppercase" >> "$INPUT_FILE"
 
+    sleep 15s # wait for SPU to get sm from SC
     # Produce to topic with transforms file
     TEST_MESSAGE="Banana"
     export TEST_MESSAGE
@@ -293,12 +294,7 @@ setup_file() {
     echo "cmd: $BATS_RUN_COMMAND" >&2
     assert_output "topic \"$TOPIC_NAME\" created"
 
-    # create a transforms yaml
-    INPUT_FILE="$(mktemp -t producer_aggregate_test_input.XXXXXX)"
-    export INPUT_FILE
-    echo "transforms:" > "$INPUT_FILE"
-    echo "  - uses: uppercase" >> "$INPUT_FILE"
-
+    sleep 15s # wait for SPU to get sm from SC
     # Produce to topic with transforms file
     TEST_MESSAGE="Banana"
     export TEST_MESSAGE
