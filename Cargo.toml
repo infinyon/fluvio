@@ -143,7 +143,7 @@ uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
 wasmtime = { version = "14.0.3" }
 wasmtime-wasi = { version = "14.0.3" }
-wasmparser = "0.115.0"
+wasmparser = "0.116.0"
 which = "4.1.0"
 x509-parser = "0.15.0"
 
