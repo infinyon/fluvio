@@ -27,7 +27,7 @@
 "CLI:fluvio":
   - "crates/fluvio-cli/**"
 
-"fluvio-cli-common":
+"CLI:misc":
   - "crates/fluvio-cli-common/**"
 
 "fluvio-cluster":
@@ -103,6 +103,9 @@
 "CLI:smdk":
   - "crates/smartmodule-development-kit/**"
 
+"CLI:fvm":
+  - "crates/fluvio-version-manager/**"
+
 # Additional groups
 
 "Smartmodule":
@@ -117,6 +120,7 @@
   - "install.sh"
   - "crates/fluvio-cli-common/src/install.rs"
   - "crates/fluvio-cli/src/install/**"
+  - "crates/fluvio-version-manager/**"
 
 "CI":
   - ".github/**"
@@ -145,6 +149,7 @@
   - "RELEASE.md"
   - "examples/**"
   - "dev-tools/**"
+  - "rust-toolchain.toml"
 
 "Repo-related":
   - "LICENSE"
@@ -154,3 +159,4 @@
   - ".cargo/**"
   - ".github/ISSUE_TEMPLATE"
   - ".github/PULL_REQUEST_TEMPLATE"
+  - ".gitignore"
