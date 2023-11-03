@@ -137,7 +137,7 @@ impl ConfigFile {
         &mut self.config
     }
 
-    // save to file
+    /// Save to file
     pub fn save(&self) -> Result<(), FluvioError> {
         create_dir_all(self.path.parent().unwrap())
             .map_err(|e| config_file_error(&format!("parent {:?}", self.path), e))?;
@@ -250,7 +250,7 @@ impl Config {
 
     /// current profile
     pub fn current_profile_name(&self) -> Option<&str> {
-        self.current_profile.as_ref().map(|c| c.as_ref())
+        self.current_profile.as_deref()
     }
 
     /// set current profile, if profile doesn't exists return false
@@ -570,8 +570,6 @@ pub mod test {
 
     #[test]
     fn test_profile_with_metadata() {
-        use std::collections::BTreeMap;
-
         let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
             .expect("could not parse config file");
         let config = config_file.config();
@@ -580,24 +578,55 @@ pub mod test {
             .cluster("extra")
             .expect("could not find `extra` cluster in test file");
 
-        // Table({"key": String("custom field")})
-        let key = BTreeMap::from_iter([("key", "custom field")]);
-        let key = toml::Value::from(key);
+        let table = toml::toml! {
+            [deep.nesting.example]
+            key = "custom field"
 
-        // Table({"example": Table({"key": String("custom field")})})
-        let example = BTreeMap::from_iter([("example", key)]);
-        let example = toml::Value::from(example);
+            [installation]
+            type = "local"
+        }
+        .into();
 
-        // Table({"nesting": Table({"example": Table({"key": String("custom field")})})})
-        let nesting = BTreeMap::from_iter([("nesting", example)]);
-        let nesting = toml::Value::from(nesting);
+        assert_eq!(cluster.metadata, Some(table));
+    }
 
-        // Table({"type": String("local")}
-        let cluster_type = BTreeMap::from_iter([("type", "local")]);
-        let cluster_type = toml::Value::from(cluster_type);
+    #[test]
+    fn test_save_updated_metadata() {
+        let mut config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.mut_config();
 
-        let metadata = BTreeMap::from_iter([("installation", cluster_type), ("deep", nesting)]);
-        let metadata = toml::Value::from(metadata);
-        assert_eq!(cluster.metadata, Some(metadata));
+        let cluster = config
+            .cluster_mut("updated")
+            .expect("could not find `updated` cluster in test file");
+
+        let table: toml::Value = toml::toml! {
+            [installation]
+            type = "local"
+        }
+        .into();
+        assert_eq!(cluster.metadata, Some(table));
+
+        cluster
+            .update_metadata_path("installation[type]", "cloud")
+            .expect("should have updated key");
+
+        let updated_table: toml::Value = toml::toml! {
+            [installation]
+            type = "cloud"
+        }
+        .into();
+
+        assert_eq!(cluster.metadata, Some(updated_table.clone()));
+
+        config_file.save().unwrap();
+
+        let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.config();
+        let cluster = config
+            .cluster("updated")
+            .expect("could not find `updated` cluster in test file");
+        assert_eq!(cluster.metadata, Some(updated_table));
     }
 }

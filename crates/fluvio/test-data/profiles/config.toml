@@ -1,52 +1,51 @@
 version = "1.0"
-
 current_profile = "local"
 
-[cluster.local]
-endpoint = "127.0.0.1:9003"
-
-
-[cluster.ec2]
-endpoint = "sandbox.xxxx.eksctl.io:9003"
-
-
-# no default topic
-[profile.local]
-cluster = "local"
-
-# use topic test3 as default
 [profile.local2]
 cluster = "local"
 topic = "test3"
 
-# use topic test3 and partition 3
 [profile.local3]
 cluster = "local"
 topic = "test3"
 partition = 3
-client_id = "local"
 
+[profile.local]
+cluster = "local"
 
-# default for all topics, this has lowest precedent
-[topic."*"]
-isolation = "uncommitted"
-fetch_max_bytes = 10000
+[cluster.updated]
+endpoint = "127.0.0.1"
+use_spu_local_address = false
 
-# apply for all partition of test3
-[topic.test3]
-isolation = "read_committed"
+[cluster.updated.tls]
+tls_policy = "disabled"
 
+[cluster.updated.metadata.installation]
+type = "local"
 
-# only for topic test=3,replication=2
-[topic.test4.2]
-isolation = "uncommitted"
-
-# cluster metadata
 [cluster.extra]
 endpoint = "127.0.0.1:9003"
+use_spu_local_address = false
+
+[cluster.extra.tls]
+tls_policy = "disabled"
 
 [cluster.extra.metadata.deep.nesting.example]
 key = "custom field"
 
 [cluster.extra.metadata.installation]
 type = "local"
+
+[cluster.local]
+endpoint = "127.0.0.1:9003"
+use_spu_local_address = false
+
+[cluster.local.tls]
+tls_policy = "disabled"
+
+[cluster.ec2]
+endpoint = "sandbox.xxxx.eksctl.io:9003"
+use_spu_local_address = false
+
+[cluster.ec2.tls]
+tls_policy = "disabled"
