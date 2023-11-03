@@ -137,7 +137,7 @@ impl ConfigFile {
         &mut self.config
     }
 
-    // save to file
+    /// Save to file
     pub fn save(&self) -> Result<(), FluvioError> {
         create_dir_all(self.path.parent().unwrap())
             .map_err(|e| config_file_error(&format!("parent {:?}", self.path), e))?;
@@ -191,7 +191,7 @@ impl ConfigFile {
 pub const LOCAL_PROFILE: &str = "local";
 const CONFIG_VERSION: &str = "2.0";
 
-#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
     version: String,
     current_profile: Option<String>,
@@ -250,7 +250,7 @@ impl Config {
 
     /// current profile
     pub fn current_profile_name(&self) -> Option<&str> {
-        self.current_profile.as_ref().map(|c| c.as_ref())
+        self.current_profile.as_deref()
     }
 
     /// set current profile, if profile doesn't exists return false
@@ -559,14 +559,6 @@ pub mod test {
         );
     }
 
-    /*
-    #[test]
-    fn test_topic_config() {
-        let conf_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned())).expect("parse failed");
-        let config = conf_file.config().resolve_replica_config("test3",0);
-    }
-    */
-
     #[test]
     fn test_local_cluster() {
         let config = Config::new_with_local_cluster("localhost:9003".to_owned());
@@ -574,5 +566,67 @@ pub mod test {
         assert_eq!(config.current_profile_name().unwrap(), "local");
         let cluster = config.current_cluster().expect("cluster should exists");
         assert_eq!(cluster.endpoint, "localhost:9003");
+    }
+
+    #[test]
+    fn test_profile_with_metadata() {
+        let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.config();
+
+        let cluster = config
+            .cluster("extra")
+            .expect("could not find `extra` cluster in test file");
+
+        let table = toml::toml! {
+            [deep.nesting.example]
+            key = "custom field"
+
+            [installation]
+            type = "local"
+        }
+        .into();
+
+        assert_eq!(cluster.metadata, Some(table));
+    }
+
+    #[test]
+    fn test_save_updated_metadata() {
+        let mut config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.mut_config();
+
+        let cluster = config
+            .cluster_mut("updated")
+            .expect("could not find `updated` cluster in test file");
+
+        let table: toml::Value = toml::toml! {
+            [installation]
+            type = "local"
+        }
+        .into();
+        assert_eq!(cluster.metadata, Some(table));
+
+        cluster
+            .update_metadata_path("installation[type]", "cloud")
+            .expect("should have updated key");
+
+        let updated_table: toml::Value = toml::toml! {
+            [installation]
+            type = "cloud"
+        }
+        .into();
+
+        assert_eq!(cluster.metadata, Some(updated_table.clone()));
+
+        config_file.save().unwrap();
+
+        let config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
+            .expect("could not parse config file");
+        let config = config_file.config();
+        let cluster = config
+            .cluster("updated")
+            .expect("could not find `updated` cluster in test file");
+        assert_eq!(cluster.metadata, Some(updated_table));
     }
 }
