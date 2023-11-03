@@ -169,6 +169,7 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     where
         S: K8ExtendedSpec,
     {
+        trace!(label = S::LABEL, ?resource_version, "watch stream");
         futures_util::stream::once(self.get_store::<S>())
             .flat_map(move |store| match store {
                 Ok(store) => store.watch_stream_since(resource_version.as_ref()),
@@ -268,9 +269,11 @@ struct SpecStore {
 struct SpecPointer {
     inner: Arc<dyn Any + Send + Sync>,
     revision: u64,
+    store_revision: u64,
     path: PathBuf,
 }
 
+#[derive(Debug)]
 enum SpecUpdate {
     Mod(SpecPointer),
     Delete(SpecPointer),
@@ -433,11 +436,7 @@ impl SpecStore {
         if let Some(removed) = write.remove(metadata.uid()) {
             removed.delete();
             drop(write);
-            if let Err(err) = self.sender.send(SpecUpdate::Delete(removed)).await {
-                warn!("store sender failed: {err}");
-            }
-            self.version
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            self.send_update(SpecUpdate::Delete(removed)).await;
         }
     }
 
@@ -460,27 +459,23 @@ impl SpecStore {
         write.insert(id, pointer.clone());
         pointer.flush::<S>()?;
         drop(write);
-        if let Err(err) = self.sender.send(SpecUpdate::Mod(pointer)).await {
-            warn!("store sender failed: {err}");
-        }
-        self.version
-            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        self.send_update(SpecUpdate::Mod(pointer)).await;
         Ok(())
     }
 
     fn watch_stream_since<'a, S>(
         &self,
-        resource_version: Option<&String>,
+        resources_version: Option<&String>,
     ) -> BoxStream<'a, Result<Vec<LSUpdate<S, LocalMetadataItem>>>>
     where
         S: Spec,
     {
-        match resource_version.map(|rv| rv.parse::<u64>()) {
+        match resources_version.map(|rv| rv.parse::<u64>()) {
             Some(Ok(version)) => self
                 .receiver
                 .clone()
                 .filter(move |update| {
-                    let res = update.revision() >= version;
+                    let res = update.store_revision() >= version;
                     async move { res }
                 })
                 .map(|update| Ok(vec![update.into_ls_update()?]))
@@ -514,6 +509,17 @@ impl SpecStore {
             anyhow::bail!("'{key}' not found");
         }
     }
+
+    async fn send_update(&self, mut update: SpecUpdate) {
+        let store_revision = self
+            .version
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        update.set_store_revision(store_revision);
+        trace!(?update, "spec update sending");
+        if let Err(err) = self.sender.send(update).await {
+            warn!("store sender failed: {err}");
+        }
+    }
 }
 
 impl SpecPointer {
@@ -521,10 +527,12 @@ impl SpecPointer {
         let revision = obj.ctx().item().revision;
         let inner = Arc::new(obj);
         let path = path.as_ref().to_path_buf();
+        let store_revision = Default::default();
         Self {
             inner,
             path,
             revision,
+            store_revision,
         }
     }
 
@@ -572,10 +580,17 @@ impl SpecUpdate {
         })
     }
 
-    fn revision(&self) -> u64 {
+    fn store_revision(&self) -> u64 {
         match self {
-            SpecUpdate::Mod(p) => p.revision,
-            SpecUpdate::Delete(p) => p.revision,
+            SpecUpdate::Mod(p) => p.store_revision,
+            SpecUpdate::Delete(p) => p.store_revision,
+        }
+    }
+
+    fn set_store_revision(&mut self, store_revision: u64) {
+        match self {
+            SpecUpdate::Mod(p) => p.store_revision = store_revision,
+            SpecUpdate::Delete(p) => p.store_revision = store_revision,
         }
     }
 }
@@ -1103,9 +1118,14 @@ spec:
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let mut obj = default_test_store_obj();
         let stream =
-            meta_store.watch_stream_since::<TestSpec>(&NameSpace::All, Some("2".to_string()));
+            meta_store.watch_stream_since::<TestSpec>(&NameSpace::All, Some("4".to_string()));
 
         //when
+        meta_store.apply(obj.clone()).await.expect("applied");
+        meta_store
+            .delete_item::<TestSpec>(obj.ctx_owned().item_owned())
+            .await
+            .expect("deleted");
         meta_store.apply(obj.clone()).await.expect("applied");
         meta_store
             .update_status::<TestSpec>(
