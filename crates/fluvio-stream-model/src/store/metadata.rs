@@ -129,7 +129,7 @@ where
 
     /// check if metadata is owned by other
     pub fn is_owned(&self, uid: &C::UId) -> bool {
-        match self.ctx().owner() {
+        match self.ctx().item().owner() {
             Some(parent) => parent.uid() == uid,
             None => false,
         }

@@ -21,6 +21,7 @@ pub type K8MetadataContext = MetadataContext<K8MetaItem>;
 pub struct K8MetaItem {
     revision: u64,
     inner: ObjectMeta,
+    owner: Option<Box<K8MetaItem>>,
 }
 
 /// for sake of comparison, we only care about couple of fields in the metadata
@@ -44,6 +45,7 @@ impl K8MetaItem {
         Self {
             revision: 0,
             inner: ObjectMeta::new(name, name_space),
+            owner: Default::default(),
         }
     }
 
@@ -53,29 +55,6 @@ impl K8MetaItem {
 
     pub fn revision(&self) -> u64 {
         self.revision
-    }
-
-    /// create owner if exists, only worry about first references
-    pub fn owner_owned(&self) -> Option<Self> {
-        if self.inner.owner_references.is_empty() {
-            None
-        } else {
-            if self.inner.owner_references.len() > 1 {
-                error!("too many owners: {:#?}", self.inner);
-            }
-
-            let owner = &self.inner.owner_references[0];
-
-            Some(Self {
-                revision: 0,
-                inner: ObjectMeta {
-                    name: owner.name.to_owned(),
-                    namespace: self.namespace.to_owned(),
-                    uid: owner.uid.to_owned(),
-                    ..Default::default()
-                },
-            })
-        }
     }
 }
 
@@ -108,16 +87,23 @@ impl MetadataItem for K8MetaItem {
         self.inner.deletion_grace_period_seconds.is_some()
     }
 
-    fn set_labels<T: Into<String>>(self, labels: Vec<(T, T)>) -> Self {
-        Self {
-            revision: self.revision,
-            inner: self.inner.set_labels(labels),
-        }
+    fn set_labels<T: Into<String>>(mut self, labels: Vec<(T, T)>) -> Self {
+        let inner = self.inner.set_labels(labels);
+        self.inner = inner;
+        self
     }
 
     /// get string labels
     fn get_labels(&self) -> HashMap<String, String> {
         self.inner.labels.clone()
+    }
+
+    fn owner(&self) -> Option<&Self> {
+        self.owner.as_ref().map(|w| w.as_ref())
+    }
+
+    fn set_owner(&mut self, owner: Self) {
+        self.owner = Some(Box::new(owner))
     }
 }
 
@@ -129,13 +115,32 @@ impl TryFrom<ObjectMeta> for K8MetaItem {
             return Ok(Self {
                 revision: 0,
                 inner: value,
+                ..Default::default()
             });
         }
         let revision: u64 = value.resource_version.parse()?;
+        if value.owner_references.len() > 1 {
+            error!("too many owners: {value:#?}");
+        }
+        let owner = if let Some(owner_ref) = value.owner_references.get(0) {
+            let inner = ObjectMeta {
+                name: owner_ref.name.to_owned(),
+                namespace: value.namespace.to_owned(),
+                uid: owner_ref.uid.to_owned(),
+                ..Default::default()
+            };
+            Some(Box::new(Self {
+                inner,
+                ..Default::default()
+            }))
+        } else {
+            None
+        };
 
         Ok(Self {
             revision,
             inner: value,
+            owner,
         })
     }
 }
@@ -200,9 +205,8 @@ where
             match ctx_item_result {
                 Ok(ctx_item) => {
                     //   trace!("k8 revision: {}, meta revision: {}",ctx_item.revision(),ctx_item.inner().resource_version);
-                    let owner = ctx_item.owner_owned();
                     Ok(MetadataStoreObject::new(key, local_spec, local_status)
-                        .with_context(MetadataContext::new(ctx_item, owner)))
+                        .with_context(MetadataContext::new(ctx_item)))
                 }
                 Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
                     ErrorKind::InvalidData,

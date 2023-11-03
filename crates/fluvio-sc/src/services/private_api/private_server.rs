@@ -19,6 +19,7 @@ use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
 use fluvio_controlplane_metadata::message::Message;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::ChangeListener;
+use tracing::warn;
 use tracing::{debug, info, trace, instrument, error};
 use async_trait::async_trait;
 use futures_util::stream::Stream;
@@ -267,7 +268,7 @@ where
             None
         }
     } else {
-        error!("replica doesn't exist");
+        warn!("replica doesn't exist");
         None
     };
 

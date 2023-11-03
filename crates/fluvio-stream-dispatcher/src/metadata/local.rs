@@ -1,17 +1,17 @@
 use std::{
     path::{Path, PathBuf},
-    collections::HashMap,
+    collections::{HashMap, hash_map::Entry},
     sync::{Arc, atomic::AtomicU64},
     any::Any,
     ffi::OsStr,
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, Context};
 use async_channel::{Sender, Receiver, bounded};
 use async_lock::{RwLock, RwLockUpgradableReadGuard};
 use futures_util::{stream::BoxStream, StreamExt};
 use serde::{Serialize, Deserialize, de::DeserializeOwned};
-use tracing::{warn, debug};
+use tracing::{warn, debug, trace};
 
 use fluvio_stream_model::{
     core::{MetadataItem, Spec, MetadataContext},
@@ -34,21 +34,13 @@ pub struct LocalMetadataStorage {
 pub struct LocalMetadataItem {
     id: String,
     revision: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    parent: Option<Box<LocalMetadataItem>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    children: Option<HashMap<String, Vec<LocalMetadataItem>>>,
 }
 
 pub type LocalStoreObject<S> = MetadataStoreObject<S, LocalMetadataItem>;
-
-impl MetadataItem for LocalMetadataItem {
-    type UId = String;
-
-    fn uid(&self) -> &Self::UId {
-        &self.id
-    }
-
-    fn is_newer(&self, another: &Self) -> bool {
-        self.revision > another.revision
-    }
-}
 
 #[async_trait::async_trait]
 impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
@@ -67,8 +59,16 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     where
         S: K8ExtendedSpec,
     {
+        trace!(?metadata, "delete item");
         let store = self.get_store::<S>().await?;
-        store.delete_item(metadata).await
+        if let Some(item) = store.try_retrieve_item::<S>(&metadata).await? {
+            if let Some(owner) = item.ctx().item().owner() {
+                self.unlink_parent::<S>(owner, item.ctx().item()).await?;
+            }
+            self.delete_children(item).await?;
+            store.delete_item(&metadata).await
+        };
+        Ok(())
     }
 
     async fn finalize_delete_item<S>(&self, metadata: LocalMetadataItem) -> Result<()>
@@ -83,8 +83,12 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
         S: K8ExtendedSpec,
         <S as Spec>::Owner: K8ExtendedSpec,
     {
+        trace!(?value, "apply");
         let store = self.get_store::<S>().await?;
         value.ctx_mut().item_mut().id = value.key().to_string();
+        if let Some(owner) = value.ctx().item().owner() {
+            self.link_parent::<S>(owner, value.ctx().item()).await?;
+        }
         store.apply(value).await
     }
 
@@ -94,6 +98,7 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     {
         use std::str::FromStr;
 
+        trace!(?metadata, ?spec, "update spec");
         let store = self.get_store::<S>().await?;
         let item = match store.try_retrieve_item::<S>(&metadata).await? {
             Some(mut item) => {
@@ -106,7 +111,7 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
                     anyhow!("failed to parse key from a string: {}", metadata.uid())
                 })?,
                 spec,
-                MetadataContext::new(metadata, None),
+                MetadataContext::new(metadata),
             ),
         };
         store.apply(item).await?;
@@ -122,9 +127,10 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     where
         S: K8ExtendedSpec,
     {
+        trace!(?key, ?spec, "update spec by key");
         let metadata = LocalMetadataItem {
             id: key.to_string(),
-            revision: Default::default(),
+            ..Default::default()
         };
         let store = self.get_store::<S>().await?;
         let item = match store.try_retrieve_item::<S>(&metadata).await? {
@@ -132,9 +138,7 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
                 item.set_spec(spec);
                 item
             }
-            None => {
-                LocalStoreObject::new_with_context(key, spec, MetadataContext::new(metadata, None))
-            }
+            None => LocalStoreObject::new_with_context(key, spec, MetadataContext::new(metadata)),
         };
         store.apply(item).await
     }
@@ -148,6 +152,7 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
     where
         S: K8ExtendedSpec,
     {
+        trace!(?metadata, ?status, "update status");
         let store = self.get_store::<S>().await?;
         let mut item = store.retrieve_item::<S>(&metadata).await?;
         item.ctx_mut().set_item(metadata.clone());
@@ -170,6 +175,83 @@ impl MetadataClient<LocalMetadataItem> for LocalMetadataStorage {
                 Err(err) => futures_util::stream::once(async { Result::<_>::Err(err) }).boxed(),
             })
             .boxed()
+    }
+}
+
+impl MetadataItem for LocalMetadataItem {
+    type UId = String;
+
+    fn uid(&self) -> &Self::UId {
+        &self.id
+    }
+
+    fn is_newer(&self, another: &Self) -> bool {
+        self.revision > another.revision
+    }
+
+    fn owner(&self) -> Option<&Self> {
+        self.parent.as_ref().map(|p| p.as_ref())
+    }
+
+    fn set_owner(&mut self, owner: Self) {
+        self.parent = Some(Box::new(owner));
+    }
+
+    fn children(&self) -> Option<&HashMap<String, Vec<Self>>> {
+        self.children.as_ref()
+    }
+
+    fn set_children(&mut self, children: HashMap<String, Vec<Self>>) {
+        self.children = Some(children);
+    }
+}
+
+impl LocalMetadataItem {
+    pub fn new<S: Into<String>>(id: S) -> Self {
+        Self {
+            id: id.into(),
+            ..Default::default()
+        }
+    }
+
+    pub fn with_parent<S: Into<String>>(id: S, parent: LocalMetadataItem) -> Self {
+        Self {
+            id: id.into(),
+            parent: Some(Box::new(parent)),
+            ..Default::default()
+        }
+    }
+
+    pub fn with_revision(mut self, revision: u64) -> Self {
+        self.revision = revision;
+        self
+    }
+
+    pub fn put_child<S: Into<String>>(&mut self, kind: S, child: LocalMetadataItem) {
+        let children = self.children.get_or_insert(Default::default());
+        match children.entry(kind.into()) {
+            Entry::Occupied(mut entry) => {
+                let vec = entry.get_mut();
+                if !vec.contains(&child) {
+                    vec.push(child);
+                }
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(vec![child]);
+            }
+        }
+    }
+    pub fn remove_child<S: Into<String>>(&mut self, kind: S, child: &LocalMetadataItem) {
+        let children = self.children.get_or_insert(Default::default());
+        match children.entry(kind.into()) {
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().retain(|i| !i.eq(child));
+                if entry.get().is_empty() {
+                    entry.remove_entry();
+                }
+            }
+            Entry::Vacant(_) => {}
+        }
     }
 }
 
@@ -214,6 +296,64 @@ impl LocalMetadataStorage {
             }
         })
     }
+
+    async fn delete_children<S: Spec>(&self, item: LocalStoreObject<S>) -> Result<()> {
+        if let Some(all) = item.ctx().item().children() {
+            for (kind, children) in all {
+                let child_store = self.get_store_by_key(kind).await?;
+                for child in children {
+                    trace!(?item, ?child, "delete child");
+                    child_store.delete_item(child).await;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn link_parent<S: Spec>(
+        &self,
+        parent: &LocalMetadataItem,
+        child: &LocalMetadataItem,
+    ) -> Result<()> {
+        trace!(?parent, ?child, "link parent");
+        let parent_store = self.get_store::<S::Owner>().await?;
+        parent_store
+            .mut_in_place::<S::Owner, _>(parent.uid(), |parent_obj| {
+                parent_obj
+                    .ctx_mut()
+                    .item_mut()
+                    .put_child(S::LABEL, child.clone());
+            })
+            .await?;
+        Ok(())
+    }
+
+    async fn unlink_parent<S: Spec>(
+        &self,
+        parent: &LocalMetadataItem,
+        child: &LocalMetadataItem,
+    ) -> Result<()> {
+        trace!(?parent, ?child, "link parent");
+        let parent_store = self.get_store::<S::Owner>().await?;
+        parent_store
+            .mut_in_place::<S::Owner, _>(parent.uid(), |parent_obj| {
+                parent_obj
+                    .ctx_mut()
+                    .item_mut()
+                    .remove_child(S::LABEL, child);
+            })
+            .await?;
+        Ok(())
+    }
+
+    async fn get_store_by_key(&self, key: &str) -> Result<Arc<SpecStore>> {
+        self.stores
+            .read()
+            .await
+            .get(key)
+            .cloned()
+            .ok_or_else(|| anyhow!("store not found for key {key}"))
+    }
 }
 
 impl SpecStore {
@@ -229,15 +369,13 @@ impl SpecStore {
             if !path.extension().eq(&Some(OsStr::new("yaml"))) {
                 continue;
             }
-            match SpecPointer::load::<S, _>(path) {
-                Ok((name, item)) => {
-                    debug!(kind = S::LABEL, name, "loaded");
-                    data.insert(name, item);
-                }
-                Err(err) => {
-                    warn!("skipped spec file: {err}");
-                }
-            };
+            let (name, item) = SpecPointer::load::<S, _>(&path).context(format!(
+                "loading metadata '{}' from {}",
+                S::LABEL,
+                path.display()
+            ))?;
+            debug!(kind = S::LABEL, name, "loaded");
+            data.insert(name, item);
         }
 
         let (sender, receiver) = bounded(MAX_UPDATES_CAPACITY);
@@ -287,10 +425,10 @@ impl SpecStore {
     {
         self.try_retrieve_item::<S>(metadata)
             .await?
-            .ok_or_else(|| anyhow!("{} not found", metadata.uid()))
+            .ok_or_else(|| anyhow!("'{}' not found", metadata.uid()))
     }
 
-    async fn delete_item(&self, metadata: LocalMetadataItem) -> Result<()> {
+    async fn delete_item(&self, metadata: &LocalMetadataItem) {
         let mut write = self.data.write().await;
         if let Some(removed) = write.remove(metadata.uid()) {
             removed.delete();
@@ -301,7 +439,6 @@ impl SpecStore {
             self.version
                 .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         }
-        Ok(())
     }
 
     async fn apply<S>(&self, mut value: LocalStoreObject<S>) -> Result<()>
@@ -362,6 +499,21 @@ impl SpecStore {
     fn spec_file_name(&self, name: &str) -> PathBuf {
         self.path.join(format!("{name}.yaml"))
     }
+
+    async fn mut_in_place<S: Spec, F>(&self, key: &str, func: F) -> Result<()>
+    where
+        F: Fn(&mut LocalStoreObject<S>),
+    {
+        if let Some(spec) = self.data.write().await.get_mut(key) {
+            let mut obj = spec.downcast::<S>()?;
+            func(&mut obj);
+            spec.set(obj);
+            spec.flush::<S>()?;
+            Ok(())
+        } else {
+            anyhow::bail!("'{key}' not found");
+        }
+    }
 }
 
 impl SpecPointer {
@@ -387,13 +539,7 @@ impl SpecPointer {
     fn downcast_ref<S: Spec>(&self) -> Result<&LocalStoreObject<S>> {
         self.inner
             .downcast_ref::<LocalStoreObject<S>>()
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "incompatible type {:?} for spec kind {}",
-                    self.inner.type_id(),
-                    S::LABEL,
-                )
-            })
+            .ok_or_else(|| anyhow::anyhow!("incompatible type for spec kind {}", S::LABEL,))
     }
 
     fn downcast<S: Spec>(&self) -> Result<LocalStoreObject<S>> {
@@ -410,6 +556,11 @@ impl SpecPointer {
         let storage: VersionedSpecStorage<S> = self.try_into()?;
         serde_yaml::to_writer(std::fs::File::create(&self.path)?, &storage)?;
         Ok(())
+    }
+
+    fn set<S: Spec>(&mut self, obj: LocalStoreObject<S>) {
+        self.revision = obj.ctx().item().revision;
+        self.inner = Arc::new(obj);
     }
 }
 
@@ -430,7 +581,6 @@ impl SpecUpdate {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "api-version")]
 #[serde(bound(deserialize = "S: DeserializeOwned"))]
 enum VersionedSpecStorage<S>
 where
@@ -439,6 +589,7 @@ where
     #[serde(rename = "1.0.0")]
     V1(SpecStorageV1<S>),
 }
+
 impl<S: Spec> VersionedSpecStorage<S> {
     fn meta(&self) -> &LocalMetadataItem {
         match self {
@@ -453,10 +604,7 @@ struct SpecStorageV1<S>
 where
     S: Spec,
 {
-    #[serde(flatten)]
     meta: LocalMetadataItem,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    parent: Option<LocalMetadataItem>,
     key: String,
     status: S::Status,
     spec: S,
@@ -473,11 +621,10 @@ impl<S: Spec> TryFrom<&SpecPointer> for VersionedSpecStorage<S> {
             ctx,
         } = value.downcast::<S>()?;
 
-        let (meta, parent) = ctx.into_parts();
+        let meta = ctx.into_inner();
 
         Ok(Self::V1(SpecStorageV1 {
             meta,
-            parent,
             key: key.to_string(),
             status,
             spec,
@@ -498,12 +645,11 @@ where
             VersionedSpecStorage::V1(storage) => {
                 let SpecStorageV1 {
                     meta,
-                    parent,
                     key,
                     status,
                     spec,
                 } = storage;
-                let ctx = MetadataContext::new(meta, parent);
+                let ctx = MetadataContext::new(meta);
                 let key: S::IndexKey = key
                     .parse()
                     .map_err(|_| anyhow!("failed to parse key from '{key}'"))?;
@@ -522,7 +668,10 @@ mod tests {
         ops::{AddAssign, SubAssign},
     };
 
-    use crate::metadata::fixture::{TestSpec, TestStatus};
+    use crate::metadata::fixture::{
+        TestSpec, TestStatus,
+        parent::{ParentSpec, ParentStatus},
+    };
 
     use super::*;
 
@@ -545,16 +694,16 @@ mod tests {
 
         assert_eq!(
             spec_file_content,
-            r#"api-version: 1.0.0
-id: meta
-revision: 0
-parent:
-  id: parent
+            r#"!1.0.0
+meta:
+  id: meta
   revision: 0
 key: meta
 status: ''
 spec:
   replica: 1
+  replica_spec: !Computed
+    count: 1
 "#
         );
 
@@ -661,7 +810,7 @@ spec:
 
         //then
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "meta not found");
+        assert_eq!(res.unwrap_err().to_string(), "'meta' not found");
 
         drop(meta_folder)
     }
@@ -672,7 +821,10 @@ spec:
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj = default_test_store_obj();
-        let spec = TestSpec { replica: 5 };
+        let spec = TestSpec {
+            replica: 5,
+            ..Default::default()
+        };
 
         //when
         meta_store.apply(obj.clone()).await.expect("applied");
@@ -701,7 +853,10 @@ spec:
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj = default_test_store_obj();
-        let spec = TestSpec { replica: 5 };
+        let spec = TestSpec {
+            replica: 5,
+            ..Default::default()
+        };
 
         //when
         meta_store
@@ -729,7 +884,10 @@ spec:
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj = default_test_store_obj();
-        let spec = TestSpec { replica: 6 };
+        let spec = TestSpec {
+            replica: 6,
+            ..Default::default()
+        };
 
         //when
         meta_store.apply(obj.clone()).await.expect("applied");
@@ -758,7 +916,10 @@ spec:
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj = default_test_store_obj();
-        let spec = TestSpec { replica: 6 };
+        let spec = TestSpec {
+            replica: 6,
+            ..Default::default()
+        };
 
         //when
         meta_store
@@ -819,6 +980,7 @@ spec:
             matches!(updates.get(1), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status"))
         );
         assert!(matches!(updates.get(2), Some(LSUpdate::Delete(deleted)) if deleted.eq(&obj.key)));
+        drop(meta_folder)
     }
 
     #[fluvio_future::test]
@@ -840,6 +1002,7 @@ spec:
             res.unwrap_err().to_string(),
             "attempt to update by stale value: current version: 1, proposed: 0"
         );
+        drop(meta_folder)
     }
 
     #[fluvio_future::test]
@@ -873,6 +1036,7 @@ spec:
             res.unwrap_err().to_string(),
             "attempt to update by stale value: current version: 1, proposed: 0"
         );
+        drop(meta_folder)
     }
 
     #[fluvio_future::test]
@@ -881,7 +1045,10 @@ spec:
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj = default_test_store_obj();
-        let spec = TestSpec { replica: 5 };
+        let spec = TestSpec {
+            replica: 5,
+            ..Default::default()
+        };
 
         meta_store.apply(obj.clone()).await.expect("applied");
         meta_store
@@ -900,6 +1067,7 @@ spec:
             res.unwrap_err().to_string(),
             "attempt to update by stale value: current version: 1, proposed: 0"
         );
+        drop(meta_folder)
     }
 
     #[fluvio_future::test]
@@ -908,7 +1076,10 @@ spec:
         let meta_folder = tempfile::tempdir().expect("temp dir created");
         let meta_store = LocalMetadataStorage::new(&meta_folder);
         let obj = default_test_store_obj();
-        let spec = TestSpec { replica: 5 };
+        let spec = TestSpec {
+            replica: 5,
+            ..Default::default()
+        };
 
         meta_store.apply(obj.clone()).await.expect("applied");
         meta_store
@@ -923,6 +1094,7 @@ spec:
 
         //then
         assert!(res.is_ok());
+        drop(meta_folder)
     }
 
     #[fluvio_future::test]
@@ -972,6 +1144,7 @@ spec:
             matches!(updates.get(0), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status2"))
         );
         assert!(matches!(updates.get(1), Some(LSUpdate::Delete(deleted)) if deleted.eq(&obj.key)));
+        drop(meta_folder)
     }
 
     #[fluvio_future::test]
@@ -1022,27 +1195,140 @@ spec:
 
         let updates2: Vec<_> = updates2.into_iter().flatten().flatten().collect();
         assert_eq!(updates2.len(), 0);
+        drop(meta_folder)
+    }
+
+    #[fluvio_future::test]
+    async fn test_cascade_children_deletion() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let (parent, children) = test_parent_with_children(2);
+        meta_store
+            .apply(parent.clone())
+            .await
+            .expect("applied parent");
+        for child in children {
+            meta_store.apply(child).await.expect("applied child");
+        }
+        //when
+        let before = meta_store
+            .retrieve_items::<TestSpec>(&NameSpace::All)
+            .await
+            .expect("items");
+
+        meta_store
+            .delete_item::<ParentSpec>(parent.ctx().item().clone())
+            .await
+            .expect("deleted parent");
+
+        let after = meta_store
+            .retrieve_items::<TestSpec>(&NameSpace::All)
+            .await
+            .expect("items");
+
+        //then
+        assert_eq!(before.items.len(), 2);
+        assert!(after.items.is_empty());
+        drop(meta_folder)
+    }
+
+    #[fluvio_future::test]
+    async fn test_parent_linking() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let (mut parent, mut children) = test_parent_with_children(1);
+        let child = children.remove(0);
+        parent.ctx_mut().item_mut().set_children(Default::default());
+        meta_store
+            .apply(parent.clone())
+            .await
+            .expect("applied parent");
+
+        //when
+        meta_store
+            .apply(child.clone())
+            .await
+            .expect("applied child");
+
+        let parent_meta = meta_store
+            .retrieve_items::<ParentSpec>(&NameSpace::All)
+            .await
+            .expect("items")
+            .items
+            .remove(0)
+            .ctx_owned()
+            .into_inner();
+
+        assert_eq!(parent_meta.children().unwrap().len(), 1);
+        assert_eq!(
+            parent_meta
+                .children()
+                .unwrap()
+                .get(TestSpec::LABEL)
+                .expect("test spec children")
+                .len(),
+            1
+        );
+
+        assert!(parent_meta
+            .children()
+            .unwrap()
+            .get(TestSpec::LABEL)
+            .expect("test spec children")
+            .contains(child.ctx().item()),);
+
+        meta_store
+            .delete_item::<TestSpec>(child.ctx().item().clone())
+            .await
+            .expect("deleted child");
+
+        //then
+        let parent_meta = meta_store
+            .retrieve_items::<ParentSpec>(&NameSpace::All)
+            .await
+            .expect("items")
+            .items
+            .remove(0)
+            .ctx_owned()
+            .into_inner();
+
+        assert!(parent_meta.children().unwrap().is_empty());
+        drop(meta_folder)
+    }
+
+    #[fluvio_future::test]
+    async fn test_parent_is_not_existed() {
+        //given
+        let meta_folder = tempfile::tempdir().expect("temp dir created");
+        let meta_store = LocalMetadataStorage::new(&meta_folder);
+        let (_, mut children) = test_parent_with_children(1);
+        let child = children.remove(0);
+
+        //when
+        let res = meta_store.apply(child).await;
+
+        //then
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "'parent' not found");
+        drop(meta_folder)
     }
 
     #[test]
     fn test_ser() {
         //given
-        let spec = TestSpec { replica: 1 };
-        let meta = LocalMetadataItem {
-            id: "meta1".to_string(),
-            revision: 1,
+        let spec = TestSpec {
+            replica: 1,
+            ..Default::default()
         };
-        let parent = Some(LocalMetadataItem {
-            id: "parent1".to_string(),
-            revision: 2,
-        });
+        let meta = meta_with_parent();
 
         let spec_storage = SpecStorageV1 {
             key: "key1".to_string(),
             status: TestStatus("status1".to_string()),
             spec,
             meta,
-            parent,
         };
 
         //when
@@ -1052,16 +1338,19 @@ spec:
         //then
         assert_eq!(
             str,
-            r#"api-version: 1.0.0
-id: meta1
-revision: 1
-parent:
-  id: parent1
-  revision: 2
+            r#"!1.0.0
+meta:
+  id: meta1
+  revision: 1
+  parent:
+    id: parent1
+    revision: 2
 key: key1
 status: status1
 spec:
   replica: 1
+  replica_spec: !Computed
+    count: 1
 "#
         );
     }
@@ -1069,16 +1358,19 @@ spec:
     #[test]
     fn test_deser() {
         //given
-        let input = r#"api-version: 1.0.0
-id: meta
-revision: 2
-parent:
-  id: parent1
-  revision: 3
+        let input = r#"!1.0.0
+meta:
+  id: meta
+  revision: 2
+  parent:
+    id: parent1
+    revision: 0
 key: key1
 status: status3
 spec:
   replica: 2
+  replica_spec: !Computed
+    count: 1
 "#;
         //when
         let parsed: VersionedSpecStorage<TestSpec> =
@@ -1088,19 +1380,117 @@ spec:
         assert_eq!(
             parsed,
             VersionedSpecStorage::V1(SpecStorageV1 {
-                meta: LocalMetadataItem {
-                    id: "meta".to_string(),
-                    revision: 2,
-                },
-                parent: Some(LocalMetadataItem {
-                    id: "parent1".to_string(),
-                    revision: 3,
-                }),
+                meta: LocalMetadataItem::with_parent("meta", LocalMetadataItem::new("parent1"))
+                    .with_revision(2),
                 key: "key1".to_string(),
                 status: TestStatus("status3".to_string()),
-                spec: TestSpec { replica: 2 }
+                spec: TestSpec {
+                    replica: 2,
+                    ..Default::default()
+                },
             })
         )
+    }
+
+    #[test]
+    fn test_serde_parent() {
+        //given
+        let spec = ParentSpec { replica: 1 };
+        let mut meta = LocalMetadataItem::new("parent").with_revision(1);
+        let child1 = LocalMetadataItem::with_parent("child1", meta.clone()).with_revision(1);
+        let child2 = LocalMetadataItem::with_parent("child2", meta.clone()).with_revision(2);
+
+        let children = [(TestSpec::LABEL.to_owned(), vec![child1, child2])].into();
+        meta.set_children(children);
+
+        let spec_storage = VersionedSpecStorage::V1(SpecStorageV1 {
+            key: "key1".to_string(),
+            status: ParentStatus("status1".to_string()),
+            spec,
+            meta,
+        });
+
+        //when
+        let str = serde_yaml::to_string(&spec_storage).expect("serialized");
+
+        //then
+        assert_eq!(
+            str,
+            r#"!1.0.0
+meta:
+  id: parent
+  revision: 1
+  children:
+    TEST_SPEC:
+    - id: child1
+      revision: 1
+      parent:
+        id: parent
+        revision: 1
+    - id: child2
+      revision: 2
+      parent:
+        id: parent
+        revision: 1
+key: key1
+status: status1
+spec:
+  replica: 1
+"#
+        );
+
+        let deser: VersionedSpecStorage<ParentSpec> =
+            serde_yaml::from_str(&str).expect("deserialized");
+        assert_eq!(spec_storage, deser);
+    }
+
+    #[test]
+    fn test_metadata_put_child() {
+        //given
+        let mut meta = LocalMetadataItem::new("parent1");
+
+        //when
+        meta.put_child("kind1", LocalMetadataItem::new("child1"));
+        meta.put_child("kind1", LocalMetadataItem::new("child1"));
+        meta.put_child("kind1", LocalMetadataItem::new("child2"));
+        meta.put_child("kind2", LocalMetadataItem::new("child1"));
+
+        //then
+        assert!(meta.children().is_some());
+        let mut chidlren = meta.children.take().unwrap();
+        assert_eq!(chidlren.len(), 2);
+
+        let kind1 = chidlren.remove("kind1").unwrap();
+        assert_eq!(kind1.len(), 2);
+        assert!(kind1.contains(&LocalMetadataItem::new("child1")));
+        assert!(kind1.contains(&LocalMetadataItem::new("child2")));
+
+        let kind2 = chidlren.remove("kind2").unwrap();
+        assert_eq!(kind2.len(), 1);
+        assert!(kind2.contains(&LocalMetadataItem::new("child1")));
+    }
+
+    #[test]
+    fn test_metadata_remove_child() {
+        //given
+        let mut meta = LocalMetadataItem::new("parent1");
+        meta.put_child("kind1", LocalMetadataItem::new("child1"));
+        meta.put_child("kind1", LocalMetadataItem::new("child2"));
+        meta.put_child("kind2", LocalMetadataItem::new("child1"));
+
+        //when
+        meta.remove_child("kind1", &LocalMetadataItem::new("child1"));
+        meta.remove_child("kind2", &LocalMetadataItem::new("child1"));
+        meta.remove_child("kind3", &LocalMetadataItem::new("child1"));
+
+        //then
+        assert!(meta.children().is_some());
+        let mut chidlren = meta.children.take().unwrap();
+        assert_eq!(chidlren.len(), 1);
+
+        let kind1 = chidlren.remove("kind1").unwrap();
+        assert_eq!(kind1.len(), 1);
+        assert!(kind1.contains(&LocalMetadataItem::new("child2")));
     }
 
     fn default_test_store_obj() -> LocalStoreObject<TestSpec> {
@@ -1111,16 +1501,55 @@ spec:
         let meta = LocalMetadataItem {
             id: key.to_string(),
             revision: 0,
+            ..Default::default()
         };
-        let parent = Some(LocalMetadataItem {
+        let spec = TestSpec {
+            replica: 1,
+            ..Default::default()
+        };
+        LocalStoreObject::new_with_context(meta.uid().to_string(), spec, MetadataContext::new(meta))
+    }
+
+    fn meta_with_parent() -> LocalMetadataItem {
+        let parent = LocalMetadataItem::new("parent1").with_revision(2);
+        LocalMetadataItem::with_parent("meta1", parent).with_revision(1)
+    }
+
+    fn test_parent_with_children(
+        children_count: usize,
+    ) -> (
+        LocalStoreObject<ParentSpec>,
+        Vec<LocalStoreObject<TestSpec>>,
+    ) {
+        let mut parent_meta = LocalMetadataItem {
             id: "parent".to_string(),
             revision: 0,
-        });
-        let spec = TestSpec { replica: 1 };
-        LocalStoreObject::new_with_context(
-            meta.uid().to_string(),
-            spec,
-            MetadataContext::new(meta, parent),
-        )
+            ..Default::default()
+        };
+        let children_meta: Vec<LocalMetadataItem> = (0..children_count)
+            .map(|i| LocalMetadataItem {
+                id: format!("child{i}"),
+                revision: 1,
+                ..Default::default()
+            })
+            .collect();
+        let parent_spec = ParentSpec { replica: 1 };
+        parent_meta.set_children([(TestSpec::LABEL.to_owned(), children_meta.clone())].into());
+        let parent_ctx = MetadataContext::new(parent_meta.clone());
+        let parent_obj =
+            LocalStoreObject::new_with_context(parent_meta.uid().clone(), parent_spec, parent_ctx);
+
+        let children_objs = children_meta
+            .into_iter()
+            .map(|mut meta| {
+                meta.set_owner(parent_meta.clone());
+                LocalStoreObject::new_with_context(
+                    meta.uid().to_string(),
+                    TestSpec::default(),
+                    MetadataContext::new(meta),
+                )
+            })
+            .collect();
+        (parent_obj, children_objs)
     }
 }
