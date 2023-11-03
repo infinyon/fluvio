@@ -67,7 +67,7 @@ impl FluvioConfig {
     where
         T: Deserialize<'de>,
     {
-        let mut metadata = self.metadata.as_ref().unwrap();
+        let mut metadata = self.metadata.as_ref()?;
 
         let (path, key) = {
             let mut split = path.split(&['[', ']']);
