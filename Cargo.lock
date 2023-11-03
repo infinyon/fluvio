@@ -3000,7 +3000,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3220,7 +3220,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.14.5"
+version = "0.14.6"
 dependencies = [
  "bytes 1.5.0",
  "derive_builder",

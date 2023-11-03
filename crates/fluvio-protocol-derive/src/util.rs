@@ -67,12 +67,10 @@ pub(crate) fn find_name_value_from_meta_list(
 }
 
 pub(crate) fn find_name_value_from_meta(meta: &Meta, attr_name: &str) -> Option<MetaNameValue> {
-    let mut result_meta: Option<MetaNameValue> = None;
     if let Meta::List(list) = meta {
-        result_meta = find_name_value_from_meta_list(list, attr_name);
+        return find_name_value_from_meta_list(list, attr_name);
     }
-
-    result_meta
+    None
 }
 
 /// find name value with str value
