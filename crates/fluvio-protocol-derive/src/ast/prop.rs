@@ -208,7 +208,7 @@ impl PropAttrs {
                                 if let Some(args_name) = args_data.path.get_ident() {
                                     if args_name == "min_version" {
                                         let value = get_lit_int("min_version", &lit_expr)?;
-                                        prop_attrs.max_version = Some(value.base10_parse::<i16>()?);
+                                        prop_attrs.min_version = value.base10_parse::<i16>()?;
                                     } else if args_name == "max_version" {
                                         let value = get_lit_int("max_version", &lit_expr)?;
                                         prop_attrs.max_version = Some(value.base10_parse::<i16>()?);
