@@ -29,7 +29,7 @@ required-features = ["fixture"]
 [dependencies]
 anyhow = { workspace = true }
 async-lock = { workspace = true }
-blocking = "1.1.0"
+blocking = "1.5.0"
 derive_builder = { workspace = true }
 bytes = { workspace = true }
 nix = { workspace = true }
