@@ -1,6 +1,8 @@
+mod fixtures;
+
 use std::str::FromStr;
 
-use tide::Request;
+use tide::{Request, Response};
 
 use fluvio_hub_util::fvm::Channel;
 
@@ -16,16 +18,17 @@ async fn main() -> tide::Result<()> {
     Ok(())
 }
 
-async fn get_pkgset(mut req: Request<()>) -> tide::Result {
-    let arch = req.param("arch")?;
-    let package = req.param("package")?;
+async fn get_pkgset(req: Request<()>) -> tide::Result {
     let version = req.param("version")?;
     let channel = Channel::from_str(version)?;
-    let mocked_pkgset = make_pkgset_mock(arch, package, channel);
-    
-    todo!()
-}
+    let body = match channel {
+        Channel::Latest => fixtures::DEFAULT_LATEST,
+        Channel::Stable => fixtures::DEFAULT_STABLE,
+        _ => fixtures::DEFAULT_0_10_14,
+    };
 
-fn make_pkgset_mock(arch: &str, package: &str, channel: Channel) {
-    
+    Ok(Response::builder(200)
+        .body(body)
+        .content_type("application/json")
+        .build())
 }

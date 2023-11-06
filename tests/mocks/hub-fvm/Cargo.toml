@@ -12,7 +12,7 @@ serde = { version = "1.0", default-features = false, features = ["derive"]}
 tide = { version = "0.16" }
 
 # Workspace dependencies
-async-std = { workspace = true }
+async-std = { workspace = true, features = ["attributes"] }
 
 # Fluvio dependencies
 fluvio-hub-util = { workspace = true }

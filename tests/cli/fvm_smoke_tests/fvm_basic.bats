@@ -15,9 +15,7 @@ setup_file() {
     # Tests in this file are executed in order and rely on the previous test
     # to be successful.
 
-    # Retrieves the latest stable version from the GitHub API and removes the
-    # `v` prefix from the tag name.
-    STABLE_VERSION=$(curl "https://api.github.com/repos/infinyon/fluvio/releases/latest" | jq -r .tag_name | cut -c2-)
+    STABLE_VERSION="0.10.17"
     export STABLE_VERSION
     debug_msg "Stable Version: $STABLE_VERSION"
 

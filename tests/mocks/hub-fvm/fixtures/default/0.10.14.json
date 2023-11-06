@@ -1,0 +1,36 @@
+{
+  "version": "0.10.14",
+  "arch": "x86_64-unknown-linux-musl",
+  "artifacts": [
+    {
+      "name": "fluvio",
+      "version": "0.10.14",
+      "download_url": "https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.10.14/x86_64-unknown-linux-musl/fluvio",
+      "sha256_url": "https://packages.fluvio.io/v1/packages/fluvio/fluvio/0.10.14/x86_64-unknown-linux-musl/fluvio.sha256"
+    },
+    {
+      "name": "fluvio-run",
+      "version": "0.10.14",
+      "download_url": "https://packages.fluvio.io/v1/packages/fluvio/fluvio-run/0.10.14/x86_64-unknown-linux-musl/fluvio-run",
+      "sha256_url": "https://packages.fluvio.io/v1/packages/fluvio/fluvio-run/0.10.14/x86_64-unknown-linux-musl/fluvio-run.sha256"
+    },
+    {
+      "name": "fluvio-cloud",
+      "version": "0.2.15",
+      "download_url": "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.15/x86_64-unknown-linux-musl/fluvio-cloud",
+      "sha256_url": "https://packages.fluvio.io/v1/packages/fluvio/fluvio-cloud/0.2.15/x86_64-unknown-linux-musl/fluvio-cloud.sha256"
+    },
+    {
+      "name": "smdk",
+      "version": "0.10.14",
+      "download_url": "https://packages.fluvio.io/v1/packages/fluvio/smdk/0.10.14/x86_64-unknown-linux-musl/smdk",
+      "sha256_url": "https://packages.fluvio.io/v1/packages/fluvio/smdk/0.10.14/x86_64-unknown-linux-musl/smdk.sha256"
+    },
+    {
+      "name": "cdk",
+      "version": "0.10.14",
+      "download_url": "https://packages.fluvio.io/v1/packages/fluvio/cdk/0.10.14/x86_64-unknown-linux-musl/cdk",
+      "sha256_url": "https://packages.fluvio.io/v1/packages/fluvio/cdk/0.10.14/x86_64-unknown-linux-musl/cdk.sha256"
+    }
+  ]
+}
