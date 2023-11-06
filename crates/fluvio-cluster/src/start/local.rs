@@ -623,10 +623,18 @@ impl LocalInstaller {
         let spec = spu_process.spec();
         let admin = fluvio.admin().await;
         let name = format!("custom-spu-{}", spu_process.id());
-        admin
-            .create::<CustomSpuSpec>(name, false, spec.to_owned().into())
-            .await?;
-
+        if admin
+            .list::<CustomSpuSpec, _>(vec![name.clone()])
+            .await?
+            .is_empty()
+        {
+            debug!(name, "create custom spu");
+            admin
+                .create::<CustomSpuSpec>(name, false, spec.to_owned().into())
+                .await?;
+        } else {
+            debug!(name, "custom spu already exists");
+        }
         spu_process.start().map_err(|err| err.into())
     }
 
