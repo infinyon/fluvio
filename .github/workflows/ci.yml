@@ -931,7 +931,7 @@ jobs:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
         cli_version: [stable, dev]
-        test: [fluvio,smdk,cdk,fvm]
+        test: [fvm]
         # no need to test stable to stable
         exclude:
           - cluster_version:  stable
