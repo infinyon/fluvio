@@ -29,6 +29,10 @@ pub struct FluvioConfig {
     #[serde(default)]
     pub tls: TlsPolicy,
 
+    /// Installation type, e.g. local, cloud
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub installation_type: Option<String>,
+
     /// This is not part of profile and doesn't persist.
     /// It is purely to override client id when creating ClientConfig
     #[serde(skip)]
@@ -49,6 +53,7 @@ impl FluvioConfig {
             endpoint: addr.into(),
             use_spu_local_address: false,
             tls: TlsPolicy::Disabled,
+            installation_type: None,
             client_id: None,
         }
     }
