@@ -5,6 +5,9 @@ main() {
     TEST_HELPER_DIR=${TEST_HELPER_DIR:-./test_helper}
     export TEST_HELPER_DIR
 
+    BATS_TEST_RETRIES=${CLI_TEST_RETRIES:-0}
+    export BATS_TEST_RETRIES
+
     check_load_bats_libraries;
     check_fluvio_bin_path;
     check_timeout_bin;

@@ -925,6 +925,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SPU: 2
+      CLI_TEST_RETRIES: 3 
     strategy:
  #     fail-fast: false
       matrix:
@@ -1022,7 +1023,7 @@ jobs:
       - name: Run Fluvio CLI smoke tests
         if: matrix.test == 'fluvio'
         timeout-minutes: 15
-        run: BATS_TEST_RETRIES=3 make cli-fluvio-smoke
+        run: make cli-fluvio-smoke
 
       # test smdk
       - name: Download artifact - smdk
