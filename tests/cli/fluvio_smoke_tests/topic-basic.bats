@@ -17,9 +17,6 @@ setup_file() {
     TOPIC_CONFIG_PATH="$TEST_DIR/$TOPIC_NAME.yaml"
     export TOPIC_CONFIG_PATH
 
-    REPLICA_CONFIG_PATH="$TEST_HELPER_DIR/replica.json"
-    export REPLICA_CONFIG_PATH
-
     TOPIC_NAME_REPLICA=$(random_string)
     export TOPIC_NAME_REPLICA
 
@@ -66,8 +63,31 @@ EOF
 # Create topic with replic assigmment
 @test "Create a topic with replica assignment" {
     debug_msg "Topic name: $TOPIC_NAME_REPLICA"
+
+    # create an replica assignment file
+    REPLICA_CONFIG_PATH="$(mktemp -t create_topic_replica_assignment.XXXXXX)"
+    export REPLICA_CONFIG_PATH
+
+    SPU_1_ID="$($FLUVIO_BIN cluster spu list -O json | jq '.[0].spec.spuId')"
+    SPU_2_ID="$($FLUVIO_BIN cluster spu list -O json | jq '.[1].spec.spuId')"
+
+    cat <<EOF >$REPLICA_CONFIG_PATH
+[
+  {
+      "id": 0,
+      "replicas": [
+          $SPU_1_ID,
+          $SPU_2_ID
+      ]
+  }
+]
+EOF
+    
+    CONFIG_CONTENT="$(cat $REPLICA_CONFIG_PATH)"
+    debug_msg "replica assignment content:\n $CONFIG_CONTENT"
+
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_REPLICA" --replica-assignment "$REPLICA_CONFIG_PATH"
-    #debug_msg "command $BATS_RUN_COMMAND" # This doesn't do anything.
+
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_success
