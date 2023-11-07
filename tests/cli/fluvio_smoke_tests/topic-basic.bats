@@ -68,8 +68,8 @@ EOF
     REPLICA_CONFIG_PATH="$(mktemp -t create_topic_replica_assignment.XXXXXX)"
     export REPLICA_CONFIG_PATH
 
-    SPU_1_ID="$($FLUVIO_BIN cluster spu list -O json | jq '.[0].spec.spuId')"
-    SPU_2_ID="$($FLUVIO_BIN cluster spu list -O json | jq '.[1].spec.spuId')"
+    SPU_1_ID="$($FLUVIO_BIN cluster spu list -O json | grep -v 'Current channel' | jq '.[0].spec.spuId')"
+    SPU_2_ID="$($FLUVIO_BIN cluster spu list -O json | grep -v 'Current channel' | jq '.[1].spec.spuId')"
 
     cat <<EOF >$REPLICA_CONFIG_PATH
 [
