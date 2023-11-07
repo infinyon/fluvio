@@ -18,7 +18,7 @@ use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::render::{ProgressRenderedText, ProgressRenderer};
-use crate::{ClusterChecker, LocalInstallError, StartStatus, UserChartLocation};
+use crate::{ClusterChecker, LocalInstallError, StartStatus, UserChartLocation, InstallationType};
 use crate::charts::ChartConfig;
 use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess, ScMode};
@@ -29,10 +29,10 @@ use super::common::check_crd;
 
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
     Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
+pub const DEFAULT_METADATA_SUB_DIR: &str = "metadata";
 
 const DEFAULT_LOG_DIR: &str = "/tmp";
 const DEFAULT_RUST_LOG: &str = "info";
-const DEFAULT_METADATA_SUB_DIR: &str = "metadata";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
 const LOCAL_SC_ADDRESS: &str = "localhost:9003";
@@ -168,16 +168,10 @@ pub struct LocalConfig {
     #[builder(default = "true")]
     hide_spinner: bool,
 
-    #[builder(default)]
-    mode: LocalMode,
-}
+    installation_type: InstallationType,
 
-#[derive(Debug, Default, Clone)]
-pub enum LocalMode {
-    Local,
-    #[default]
-    LocalK8,
-    ReadOnly(PathBuf),
+    #[builder(default)]
+    read_only_config: Option<PathBuf>,
 }
 
 impl LocalConfig {
@@ -361,8 +355,8 @@ impl LocalInstaller {
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
     pub async fn preflight_check(&self, fix: bool) -> Result<(), ClusterCheckError> {
-        match &self.config.mode {
-            LocalMode::Local | LocalMode::ReadOnly(_) => {
+        match &self.config.installation_type {
+            InstallationType::Local | InstallationType::ReadOnly => {
                 self.pb_factory
                     .println(InstallProgressMessage::PreFlightCheck.msg());
 
@@ -373,7 +367,7 @@ impl LocalInstaller {
 
                 Ok(())
             }
-            LocalMode::LocalK8 => {
+            InstallationType::LocalK8 => {
                 let mut sys_config: ChartConfig = ChartConfig::sys_builder()
                     .version(self.config.chart_version.clone())
                     .build()
@@ -395,6 +389,9 @@ impl LocalInstaller {
                     .await?;
                 Ok(())
             }
+            InstallationType::K8 => Err(ClusterCheckError::Other(
+                "Installation type K8 is not supported for local clusters".to_string(),
+            )),
         }
     }
 
@@ -418,7 +415,7 @@ impl LocalInstaller {
             })?;
         }
 
-        let maybe_k8_client = if let LocalMode::LocalK8 = self.config.mode {
+        let maybe_k8_client = if let InstallationType::LocalK8 = self.config.installation_type {
             use k8_client::load_and_share;
             Some(load_and_share()?)
         } else {
@@ -488,10 +485,14 @@ impl LocalInstaller {
 
         pb.set_message(InstallProgressMessage::LaunchingSC.msg());
 
-        let mode = match &self.config.mode {
-            LocalMode::Local => ScMode::Local(self.config.data_dir.join(DEFAULT_METADATA_SUB_DIR)),
-            LocalMode::LocalK8 => ScMode::K8s,
-            LocalMode::ReadOnly(path) => ScMode::ReadOnly(path.clone()),
+        let mode = match &self.config.installation_type {
+            InstallationType::Local => {
+                ScMode::Local(self.config.data_dir.join(DEFAULT_METADATA_SUB_DIR))
+            }
+            InstallationType::LocalK8 | InstallationType::K8 => ScMode::K8s,
+            InstallationType::ReadOnly => {
+                ScMode::ReadOnly(self.config.read_only_config.clone().unwrap_or_default())
+            }
         };
 
         let sc_process = ScProcess {
@@ -532,6 +533,9 @@ impl LocalInstaller {
             LOCAL_SC_ADDRESS,
             &self.config.client_tls_policy,
         )?;
+        let config = config_file.mut_config().current_cluster_mut()?;
+        self.config.installation_type.save_to(config)?;
+        config_file.save()?;
 
         pb.println(InstallProgressMessage::ProfileSet.msg());
 

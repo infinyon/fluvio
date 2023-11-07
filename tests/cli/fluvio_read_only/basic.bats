@@ -22,7 +22,7 @@ setup_file() {
 }
 
 teardown_file() {
-    run timeout 15s "$FLUVIO_BIN" cluster shutdown --local
+    run timeout 15s "$FLUVIO_BIN" cluster shutdown
 }
 
 @test "Cannot create a new topic" {
