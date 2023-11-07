@@ -1,8 +1,6 @@
-use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
 use tokio::select;
-use tracing::warn;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 use anyhow::{anyhow, Result};
@@ -32,7 +30,6 @@ use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::EngineError;
 use crate::smartengine::map_engine_error;
 use crate::smartengine::produce_batch::ProduceBatchIterator;
-use crate::smartengine::SmartModuleChainInstance;
 
 use crate::traffic::TrafficType;
 
@@ -117,22 +114,25 @@ async fn handle_produce_topic(
             }
         };
 
-        if let Some(mut sm_ctx) =
-            smartmodule_ctx(smartmodules.to_vec(), header.api_version(), ctx).await?
+        if let Err(err) = apply_smartmodules(
+            &mut partition_request,
+            smartmodules,
+            header.api_version(),
+            &leader_state,
+            ctx,
+        )
+        .await
         {
-            if let Err(err) = sm_ctx.look_back(&leader_state).await {
-                topic_result
-                    .partitions
-                    .push(PartitionWriteResult::error(replica_id, err));
-                continue;
-            };
-
-            apply_smartmodules_for_partition_request(
-                &mut partition_request,
-                sm_ctx.chain_mut(),
-                ctx,
-            )?;
-        }
+            error!(
+                ?replica_id,
+                api_version = header.api_version(),
+                "smartmodule engine failed: {err:#?}"
+            );
+            topic_result
+                .partitions
+                .push(PartitionWriteResult::error(replica_id, err));
+            continue;
+        };
 
         let partition_response = if partition_request.records.total_records() == 0 {
             PartitionWriteResult::filtered(replica_id)
@@ -212,48 +212,48 @@ async fn handle_produce_partition(
     }
 }
 
-async fn smartmodule_ctx(
-    sm_invocations: Vec<SmartModuleInvocation>,
-    api_version: i16,
-    ctx: &DefaultSharedGlobalContext,
-) -> Result<Option<SmartModuleContext>> {
-    SmartModuleContext::try_from(sm_invocations, api_version, ctx)
-        .await
-        .map_err(|error_code| {
-            warn!("smartmodule context init failed: {:?}", error_code);
-            anyhow!("smartmodule context init failed: {}", error_code)
-        })
-}
-
-// #[cfg(feature = "smartengine")]
-fn apply_smartmodules_for_partition_request(
+async fn apply_smartmodules(
     partition_request: &mut PartitionProduceData<RecordSet<RawRecords>>,
-    sm_chain_instance: &mut SmartModuleChainInstance,
+    smartmodules: &[SmartModuleInvocation],
+    api_version: i16,
+    leader_state: &SharedFileLeaderState,
     ctx: &DefaultSharedGlobalContext,
-) -> Result<()> {
+) -> Result<(), ErrorCode> {
+    let Some(mut sm_ctx) =
+        SmartModuleContext::try_from(smartmodules.to_vec(), api_version, ctx).await?
+    else {
+        return Ok(());
+    };
+
+    sm_ctx.look_back(leader_state).await?;
+
     let records = &partition_request.records;
     let batches = &records.batches;
 
     let mut batches = ProduceBatchIterator::new(batches);
 
     let sm_result = match process_batch(
-        sm_chain_instance,
+        sm_ctx.chain_mut(),
         &mut batches,
         std::usize::MAX,
         ctx.metrics().chain_metrics(),
     ) {
         Ok((result, sm_runtime_error)) => {
             if let Some(error) = sm_runtime_error {
-                return Err(anyhow!("smartmodule runtime error: {error}"));
+                return Err(ErrorCode::SmartModuleRuntimeError(error));
             } else {
                 result
             }
         }
-        Err(general_error) => return Err(anyhow!("smartmodule chain failed: {general_error}")),
+        Err(general_error) => {
+            return Err(ErrorCode::Other(format!(
+                "smartmodule chain failed: {general_error}"
+            )));
+        }
     };
 
     let smartmoduled_records = Batch::<RawRecords>::try_from(sm_result)
-        .map_err(|e| Error::new(ErrorKind::Other, format!("Compression Error: {:?}", e)))?;
+        .map_err(|e| ErrorCode::Other(format!("Compression Error: {:?}", e)))?;
 
     partition_request.records = RecordSet {
         batches: vec![smartmoduled_records],
