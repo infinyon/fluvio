@@ -45,11 +45,11 @@ impl UpdateOpt {
 
         match channel {
             Channel::Stable => {
-                if latest_pkgset.version > version {
+                if latest_pkgset.pkgset > version {
                     notify.info(format!(
                         "Updating fluvio {} to version {}. Current version is {}.",
                         channel.to_string().bold(),
-                        latest_pkgset.version,
+                        latest_pkgset.pkgset,
                         version
                     ));
 
@@ -64,11 +64,11 @@ impl UpdateOpt {
                 // The latest tag can be very dynamic, so we just check for this
                 // tag to be different than the current version assuming
                 // upstream is always up to date
-                if latest_pkgset.version != version {
+                if latest_pkgset.pkgset != version {
                     notify.info(format!(
                         "Updating fluvio {} to version {}. Current version is {}.",
                         channel.to_string().bold(),
-                        latest_pkgset.version,
+                        latest_pkgset.pkgset,
                         version
                     ));
 

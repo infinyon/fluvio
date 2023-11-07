@@ -13,15 +13,15 @@ use super::workdir::fvm_versions_path;
 
 pub struct VersionInstaller {
     channel: Channel,
-    pkgset: PackageSet,
+    package_set: PackageSet,
     notify: Notify,
 }
 
 impl VersionInstaller {
-    pub fn new(channel: Channel, pkgset: PackageSet, notify: Notify) -> Self {
+    pub fn new(channel: Channel, package_set: PackageSet, notify: Notify) -> Self {
         Self {
             channel,
-            pkgset,
+            package_set,
             notify,
         }
     }
@@ -32,11 +32,11 @@ impl VersionInstaller {
         // deleted from the filesystem.
         let tmp_dir = TempDir::new()?;
 
-        for (idx, artf) in self.pkgset.artifacts.iter().enumerate() {
+        for (idx, artf) in self.package_set.artifacts.iter().enumerate() {
             self.notify.info(format!(
                 "Downloading ({}/{}): {}@{}",
                 idx + 1,
-                self.pkgset.artifacts.len(),
+                self.package_set.artifacts.len(),
                 artf.name,
                 artf.version
             ));
@@ -45,12 +45,15 @@ impl VersionInstaller {
             Self::set_executable_mode(artf_path)?;
         }
 
-        let version_path = self.store_artifacts(&tmp_dir, &self.pkgset).await?;
-        let manifest = VersionManifest::new(self.channel.to_owned(), self.pkgset.version.clone());
+        let version_path = self.store_artifacts(&tmp_dir, &self.package_set).await?;
+        let manifest =
+            VersionManifest::new(self.channel.to_owned(), self.package_set.pkgset.clone());
 
         manifest.write(&version_path)?;
-        self.notify
-            .done(format!("Installed fluvio version {}", self.pkgset.version));
+        self.notify.done(format!(
+            "Installed fluvio version {}",
+            self.package_set.pkgset
+        ));
 
         let version_dir = VersionDirectory::open(version_path)?;
 
@@ -64,14 +67,18 @@ impl VersionInstaller {
 
     /// Allocates artifacts in the FVM `versions` directory for future use.
     /// Returns the path to the allocated version directory.
-    async fn store_artifacts(&self, tmp_dir: &TempDir, pkgset: &PackageSet) -> Result<PathBuf> {
+    async fn store_artifacts(
+        &self,
+        tmp_dir: &TempDir,
+        package_set: &PackageSet,
+    ) -> Result<PathBuf> {
         let version_path = fvm_versions_path()?.join(&self.channel.to_string());
 
         if !version_path.exists() {
             create_dir(&version_path)?;
         }
 
-        for artif in pkgset.artifacts.iter() {
+        for artif in package_set.artifacts.iter() {
             rename(
                 tmp_dir.path().join(&artif.name),
                 version_path.join(&artif.name),
