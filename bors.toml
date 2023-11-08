@@ -1,6 +1,0 @@
-status = [
-    "Done",
-]
-use_squash_merge = true
-delete_merged_branches = true
-timeout_sec = 3600 # 45 mins

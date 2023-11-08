@@ -74,10 +74,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # If this job is being run by Bors (it was pushed to staging),
+      # If this job is being run by merge_group,
       # then build and run in release mode
       - name: Set RELEASE mode
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        if: github.event_name == 'merge_group'
         shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
