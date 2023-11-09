@@ -276,8 +276,7 @@ type = "local"
 
             [installation]
             type = "local"
-        }
-        .into();
+        };
 
         assert_eq!(cluster.metadata, table);
     }
@@ -301,8 +300,7 @@ type = "local"
         let table: toml::Table = toml::toml! {
             [installation]
             type = "local"
-        }
-        .into();
+        };
         assert_eq!(cluster.metadata, table);
 
         cluster
@@ -317,8 +315,7 @@ type = "local"
         let updated_table: toml::Table = toml::toml! {
             [installation]
             type = "cloud"
-        }
-        .into();
+        };
 
         assert_eq!(cluster.metadata, updated_table.clone());
 
