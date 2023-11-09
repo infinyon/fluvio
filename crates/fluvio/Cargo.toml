@@ -44,7 +44,7 @@ pin-project = { workspace = true }
 siphasher = { workspace = true }
 
 
-toml = { workspace = true, features = ["display"] }
+toml = { workspace = true, features = ["display", "preserve_order"] }
 tracing = { workspace = true }
 
 # Fluvio dependencies

@@ -1,10 +1,6 @@
 version = "1.0"
 current_profile = "local"
 
-[profile.local2]
-cluster = "local"
-topic = "test3"
-
 [profile.local3]
 cluster = "local"
 topic = "test3"
@@ -12,6 +8,10 @@ partition = 3
 
 [profile.local]
 cluster = "local"
+
+[profile.local2]
+cluster = "local"
+topic = "test3"
 
 [cluster.updated]
 endpoint = "127.0.0.1"
