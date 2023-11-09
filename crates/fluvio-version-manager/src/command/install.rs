@@ -10,7 +10,7 @@ use clap::Parser;
 use url::Url;
 
 use fluvio_hub_util::HUB_REMOTE;
-use fluvio_hub_util::fvm::{Client, DEFAULT_PKGSET, Channel};
+use fluvio_hub_util::fvm::{Client, Channel};
 
 use crate::common::TARGET;
 use crate::common::notify::Notify;
@@ -39,7 +39,7 @@ impl InstallOpt {
 
         let client = Client::new(self.registry.as_str())?;
         let pkgset = client
-            .fetch_package_set(DEFAULT_PKGSET, &self.version, TARGET)
+            .fetch_package_set(&self.version, TARGET)
             .await?;
 
         VersionInstaller::new(self.version.to_owned(), pkgset, notify)

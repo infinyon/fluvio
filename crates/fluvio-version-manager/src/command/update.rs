@@ -6,7 +6,7 @@ use colored::Colorize;
 use url::Url;
 
 use fluvio_hub_util::HUB_REMOTE;
-use fluvio_hub_util::fvm::{Client, DEFAULT_PKGSET, Channel, PackageSet};
+use fluvio_hub_util::fvm::{Client, Channel, PackageSet};
 
 use crate::common::TARGET;
 use crate::common::notify::Notify;
@@ -96,7 +96,7 @@ impl UpdateOpt {
 
         let client = Client::new(self.registry.as_str())?;
         let pkgset = client
-            .fetch_package_set(DEFAULT_PKGSET, channel, TARGET)
+            .fetch_package_set(channel, TARGET)
             .await?;
 
         Ok(pkgset)
