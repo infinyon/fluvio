@@ -38,9 +38,7 @@ impl InstallOpt {
         }
 
         let client = Client::new(self.registry.as_str())?;
-        let pkgset = client
-            .fetch_package_set(&self.version, TARGET)
-            .await?;
+        let pkgset = client.fetch_package_set(&self.version, TARGET).await?;
 
         VersionInstaller::new(self.version.to_owned(), pkgset, notify)
             .install()

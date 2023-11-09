@@ -95,9 +95,7 @@ impl UpdateOpt {
         }
 
         let client = Client::new(self.registry.as_str())?;
-        let pkgset = client
-            .fetch_package_set(channel, TARGET)
-            .await?;
+        let pkgset = client.fetch_package_set(channel, TARGET).await?;
 
         Ok(pkgset)
     }
