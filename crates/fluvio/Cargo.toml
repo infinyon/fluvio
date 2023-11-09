@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.21.1"
+version = "0.21.2"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -44,7 +44,7 @@ pin-project = { workspace = true }
 siphasher = { workspace = true }
 
 
-toml = { workspace = true, features = ["display"] }
+toml = { workspace = true, features = ["display", "preserve_order"] }
 tracing = { workspace = true }
 
 # Fluvio dependencies

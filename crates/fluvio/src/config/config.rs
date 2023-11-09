@@ -137,7 +137,7 @@ impl ConfigFile {
         &mut self.config
     }
 
-    // save to file
+    /// Save to file
     pub fn save(&self) -> Result<(), FluvioError> {
         create_dir_all(self.path.parent().unwrap())
             .map_err(|e| config_file_error(&format!("parent {:?}", self.path), e))?;
@@ -191,7 +191,7 @@ impl ConfigFile {
 pub const LOCAL_PROFILE: &str = "local";
 const CONFIG_VERSION: &str = "2.0";
 
-#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Config {
     version: String,
     current_profile: Option<String>,
@@ -250,7 +250,7 @@ impl Config {
 
     /// current profile
     pub fn current_profile_name(&self) -> Option<&str> {
-        self.current_profile.as_ref().map(|c| c.as_ref())
+        self.current_profile.as_deref()
     }
 
     /// set current profile, if profile doesn't exists return false
@@ -558,14 +558,6 @@ pub mod test {
             "local3"
         );
     }
-
-    /*
-    #[test]
-    fn test_topic_config() {
-        let conf_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned())).expect("parse failed");
-        let config = conf_file.config().resolve_replica_config("test3",0);
-    }
-    */
 
     #[test]
     fn test_local_cluster() {
