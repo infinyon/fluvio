@@ -35,18 +35,18 @@ impl ContainerAttributes {
                                     let lit_expr = &args_data.value;
                                     if let Some(args_name) = args_data.path.get_ident() {
                                         if args_name == "api_min_version" {
-                                            let value = get_lit_int("api_min_version", &lit_expr)?;
+                                            let value = get_lit_int("api_min_version", lit_expr)?;
                                             cont_attr.api_min_version =
                                                 value.base10_parse::<u16>()?;
                                         } else if args_name == "api_max_version" {
-                                            let value = get_lit_int("api_max_version", &lit_expr)?;
+                                            let value = get_lit_int("api_max_version", lit_expr)?;
                                             cont_attr.api_max_version =
                                                 Some(value.base10_parse::<u16>()?);
                                         } else if args_name == "api_key" {
-                                            let value = get_lit_int("api_key", &lit_expr)?;
+                                            let value = get_lit_int("api_key", lit_expr)?;
                                             cont_attr.api_key = Some(value.base10_parse::<u8>()?);
                                         } else if args_name == "response" {
-                                            let value = get_lit_str("response", &lit_expr)?;
+                                            let value = get_lit_str("response", lit_expr)?;
                                             cont_attr.response = Some(value.value());
                                         } else {
                                             tracing::warn!(
