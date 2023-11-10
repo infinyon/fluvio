@@ -69,10 +69,18 @@ impl SwitchOpt {
 
         version_dir.set_active()?;
 
-        notify.done(format!(
-            "Now using Fluvio version {}",
-            version.to_string().bold(),
-        ));
+        if version.is_version_tag() {
+            notify.done(format!(
+                "Now using Fluvio version {}",
+                version.to_string().bold(),
+            ));
+        } else {
+            notify.done(format!(
+                "Now using Fluvio {} ({})",
+                version.to_string().bold(),
+                version_dir.manifest.version.to_string().bold(),
+            ));
+        }
 
         Ok(())
     }
