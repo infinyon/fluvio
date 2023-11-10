@@ -220,7 +220,7 @@ jobs:
       - name: Run diagnostics
         if: failure()
         timeout-minutes: 5
-        run: fluvio cluster diagnostics
+        run: fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5

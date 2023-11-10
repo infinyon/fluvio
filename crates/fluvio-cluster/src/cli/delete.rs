@@ -1,8 +1,5 @@
 use clap::Parser;
-use fluvio::config::ConfigFile;
-use tracing::debug;
 
-use crate::InstallationType;
 use crate::delete::ClusterUninstallConfig;
 use crate::cli::ClusterCliError;
 
@@ -11,13 +8,17 @@ pub struct DeleteOpt {
     #[arg(long, value_name = "Kubernetes namespace")]
     namespace: Option<String>,
 
-    /// Remove only k8 fluvio installation
-    #[arg(long = "k8", conflicts_with = "sys_only")]
-    k8_only: bool,
+    /// Remove only local spu/sc(custom) fluvio installation
+    #[arg(long, conflicts_with = "k8", conflicts_with = "sys")]
+    local: bool,
 
-    #[arg(long = "sys", conflicts_with = "k8_only")]
-    /// Remove system chart only
-    sys_only: bool,
+    /// Remove only k8 fluvio installation
+    #[arg(long, conflicts_with = "local", conflicts_with = "sys")]
+    k8: bool,
+
+    #[arg(long, conflicts_with = "k8", conflicts_with = "local")]
+    /// delete system chart
+    sys: bool,
 }
 
 impl DeleteOpt {
@@ -25,36 +26,22 @@ impl DeleteOpt {
         let mut builder = ClusterUninstallConfig::builder();
         builder.hide_spinner(false);
 
-        if self.sys_only {
+        if self.sys {
             builder.uninstall_local(false);
             builder.uninstall_k8(false);
             builder.uninstall_sys(true);
-        } else if self.k8_only {
+        } else if self.local {
+            builder.uninstall_local(true);
+            builder.uninstall_k8(false);
+            builder.uninstall_sys(false);
+        } else if self.k8 {
             builder.uninstall_local(false);
             builder.uninstall_k8(true);
             builder.uninstall_sys(false);
         } else {
-            let config_file = ConfigFile::load_default_or_new()?;
-            let installation_type =
-                InstallationType::load_or_default(config_file.config().current_cluster()?);
-            debug!(?installation_type);
-            match installation_type {
-                InstallationType::K8 => {
-                    builder.uninstall_local(false);
-                    builder.uninstall_k8(true);
-                    builder.uninstall_sys(true);
-                }
-                InstallationType::LocalK8 => {
-                    builder.uninstall_local(true);
-                    builder.uninstall_k8(true);
-                    builder.uninstall_sys(true);
-                }
-                InstallationType::Local | InstallationType::ReadOnly => {
-                    builder.uninstall_local(true);
-                    builder.uninstall_k8(false);
-                    builder.uninstall_sys(false);
-                }
-            }
+            builder.uninstall_local(true);
+            builder.uninstall_k8(true);
+            builder.uninstall_sys(true);
         }
 
         if let Some(namespace) = self.namespace {

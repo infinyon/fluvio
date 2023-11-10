@@ -81,7 +81,7 @@ pub enum ClusterCheckError {
     VersionError(#[from] semver::Error),
 
     /// local fluvio exists
-    #[error("Local Fluvio running")]
+    #[error("Loocal Fluvio running")]
     LocalClusterExists,
 
     /// Other misc
