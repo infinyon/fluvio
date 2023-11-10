@@ -5,6 +5,10 @@ main() {
     TEST_HELPER_DIR=${TEST_HELPER_DIR:-./test_helper}
     export TEST_HELPER_DIR
 
+    # BATS_TEST_RETRIES is set to default after bats started therefore we set it here
+    BATS_TEST_RETRIES=${CLI_TEST_RETRIES:-0}
+    export BATS_TEST_RETRIES
+
     check_load_bats_libraries;
     check_fluvio_bin_path;
     check_timeout_bin;
