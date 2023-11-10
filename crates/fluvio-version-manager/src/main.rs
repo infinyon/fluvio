@@ -7,7 +7,7 @@ use clap::Parser;
 use self::command::current::CurrentOpt;
 use self::command::install::InstallOpt;
 use self::command::itself::SelfOpt;
-use self::command::show::ShowOpt;
+use self::command::list::ListOpt;
 use self::command::switch::SwitchOpt;
 use self::command::update::UpdateOpt;
 use self::command::version::VersionOpt;
@@ -55,8 +55,8 @@ pub enum Command {
     #[command(name = "install")]
     Install(InstallOpt),
     /// List installed Fluvio Versions
-    #[command(name = "show")]
-    Show(ShowOpt),
+    #[command(name = "list")]
+    List(ListOpt),
     /// Set a installed Fluvio Version as active
     #[command(name = "switch")]
     Switch(SwitchOpt),
@@ -77,7 +77,7 @@ impl Cli {
             Command::Current(cmd) => cmd.process(notify).await,
             Command::Itself(cmd) => cmd.process(notify).await,
             Command::Install(cmd) => cmd.process(notify).await,
-            Command::Show(cmd) => cmd.process(notify).await,
+            Command::List(cmd) => cmd.process(notify).await,
             Command::Switch(cmd) => cmd.process(notify).await,
             Command::Update(cmd) => cmd.process(notify).await,
             Command::Version(cmd) => cmd.process(),

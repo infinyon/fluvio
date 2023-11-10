@@ -129,8 +129,8 @@ setup_file() {
     # Sets `fvm` in the PATH using the "env" file included in the installation
     source ~/.fvm/env
 
-    # Renders warn if attempts to use `fvm show` and no versions are installed
-    run bash -c 'fvm show'
+    # Renders warn if attempts to use `fvm list` and no versions are installed
+    run bash -c 'fvm list'
     assert_line --index 0 "warn: No installed versions found"
     assert_line --index 1 "help: You can install a Fluvio version using the command fvm install"
     assert_success
@@ -422,8 +422,8 @@ setup_file() {
     assert_output --partial "channel = \"stable\""
     assert_success
 
-    # Checks the version is set as active in show list
-    run bash -c 'fvm show'
+    # Checks the version is set as active in list list
+    run bash -c 'fvm list'
     assert_line --index 0 --partial "    CHANNEL  VERSION"
     assert_line --index 1 --partial " ✓  stable   $STABLE_VERSION"
     assert_line --index 2 --partial "    0.10.14  0.10.14"
@@ -453,8 +453,8 @@ setup_file() {
     assert_output --partial "tag = \"0.10.14\""
     assert_success
 
-    # Checks the version is set as active in show list
-    run bash -c 'fvm show'
+    # Checks the version is set as active in list
+    run bash -c 'fvm list'
     assert_line --index 0 --partial "    CHANNEL  VERSION"
     assert_line --index 1 --partial " ✓  0.10.14  0.10.14"
     assert_line --index 2 --partial "    stable   $STABLE_VERSION"
@@ -474,7 +474,7 @@ setup_file() {
     assert_success
 }
 
-@test "Recommends using fvm show to list available versions" {
+@test "Recommends using fvm list to list available versions" {
     run bash -c '$FVM_BIN self install'
     assert_success
 
@@ -482,7 +482,7 @@ setup_file() {
     source ~/.fvm/env
 
     run bash -c 'fvm switch'
-    assert_line --index 0 "help: You can use fvm show to see installed versions"
+    assert_line --index 0 "help: You can use fvm list to see installed versions"
     assert_line --index 1 "Error: No version provided"
     assert_failure
 
