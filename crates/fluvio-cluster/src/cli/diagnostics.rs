@@ -13,36 +13,21 @@ use fluvio::config::ConfigFile;
 use fluvio::metadata::{topic::TopicSpec, partition::PartitionSpec, spg::SpuGroupSpec, spu::SpuSpec};
 use fluvio_sc_schema::objects::Metadata;
 
+use crate::InstallationType;
 use crate::cli::ClusterCliError;
 use crate::cli::start::get_log_directory;
-use crate::start::local::DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR;
-
-#[derive(Debug)]
-enum ProfileType {
-    K8,
-    Local,
-    Cloud,
-}
+use crate::start::local::{DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR, DEFAULT_METADATA_SUB_DIR};
 
 #[derive(Parser, Debug)]
 pub struct DiagnosticsOpt {
     #[arg(long)]
     quiet: bool,
-
-    #[arg(long)]
-    k8: bool,
-
-    #[arg(long)]
-    local: bool,
-
-    #[arg(long)]
-    cloud: bool,
 }
 
 impl DiagnosticsOpt {
     pub async fn process(self) -> Result<()> {
-        let profile_ty = self.get_profile_ty()?;
-        println!("Using profile type: {profile_ty:#?}");
+        let installation_ty = self.get_installation_ty()?;
+        println!("Using installation: {installation_ty:#?}");
         let temp_dir = tempfile::Builder::new()
             .prefix("fluvio-diagnostics")
             .tempdir()?;
@@ -57,21 +42,25 @@ impl DiagnosticsOpt {
         };
 
         // write internal fluvio cluster internal state
-        match profile_ty {
+        match installation_ty {
             // Local cluster
-            ProfileType::Local => {
+            InstallationType::Local | InstallationType::ReadOnly => {
+                self.copy_local_logs(temp_path)?;
+                self.copy_local_metadata(temp_path)?;
+                for spu in spu_specs {
+                    self.spu_disk_usage(None, temp_path, &spu.spec)?;
+                }
+            }
+            // Local cluster with k8 metadata
+            InstallationType::LocalK8 => {
                 self.write_helm(temp_path)?;
                 self.copy_local_logs(temp_path)?;
                 for spu in spu_specs {
                     self.spu_disk_usage(None, temp_path, &spu.spec)?;
                 }
             }
-            // Cloud cluster
-            ProfileType::Cloud => {
-                println!("Cannot collect logs from Cloud, skipping");
-            }
-            // Guess Kubernetes cluster
-            ProfileType::K8 => {
+            // Kubernetes cluster
+            InstallationType::K8 => {
                 let kubectl = match which("kubectl") {
                     Ok(kubectl) => kubectl,
                     Err(_) => {
@@ -110,23 +99,11 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
-    // get type of profile
-    fn get_profile_ty(&self) -> Result<ProfileType> {
-        if self.k8 {
-            Ok(ProfileType::K8)
-        } else if self.local {
-            Ok(ProfileType::Local)
-        } else if self.cloud {
-            Ok(ProfileType::Cloud)
-        } else {
-            let config = ConfigFile::load_default_or_new()?;
-            match config.config().current_profile_name() {
-                Some("local") => Ok(ProfileType::Local),
-                // Cloud cluster
-                Some(other) if other.contains("cloud") => Ok(ProfileType::Cloud),
-                _ => Ok(ProfileType::K8),
-            }
-        }
+    fn get_installation_ty(&self) -> Result<InstallationType> {
+        let config = ConfigFile::load_default_or_new()?;
+        Ok(InstallationType::load_or_default(
+            config.config().current_cluster()?,
+        ))
     }
 
     fn zip_files(&self, source: &Path, output: &mut std::fs::File) -> Result<(), std::io::Error> {
@@ -154,6 +131,19 @@ impl DiagnosticsOpt {
             } else {
                 println!("skipping {file_name:?}");
             }
+        }
+        Ok(())
+    }
+
+    fn copy_local_metadata(&self, dest_dir: &Path) -> Result<()> {
+        let metadata_path = DEFAULT_LOCAL_DIR
+            .to_owned()
+            .unwrap_or_default()
+            .join(DEFAULT_METADATA_SUB_DIR);
+        if metadata_path.exists() {
+            println!("reading local metadata from {metadata_path:?}");
+            let mut metadata_file = std::fs::File::create(dest_dir.join("metadata.tar.gz"))?;
+            self.zip_files(&metadata_path, &mut metadata_file)?;
         }
         Ok(())
     }
