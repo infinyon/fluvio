@@ -80,7 +80,7 @@ jobs:
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
-      - name: install rust target 
+      - name: install rust target
         run: rustup target add ${{ matrix.rust-target }}
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
@@ -262,7 +262,7 @@ jobs:
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
-      - name: install Rust target 
+      - name: install Rust target
         run: rustup target add ${{ matrix.rust-target }}
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
@@ -450,7 +450,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
-      - name: install wasm target 
+      - name: install wasm target
         run: rustup target add wasm32-unknown-unknown
       - name: Build Regex SmartModule
         run: make -C smartmodule/regex-filter
@@ -476,7 +476,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
-      - name: install wasm target 
+      - name: install wasm target
         run: rustup target add wasm32-unknown-unknown
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
@@ -771,7 +771,6 @@ jobs:
       - name: Set up Fluvio binaries
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test
-          echo "~/bin" >> $GITHUB_PATH
           echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
           echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
       - name: Print version
@@ -1391,7 +1390,20 @@ jobs:
   done:
     name: Done
     if: github.event_name == 'merge_group'
-    needs: [publish_github_binaries, publish_github_helm_pkg]
+    needs:
+      - check
+      - check_wasm
+      - check_windows
+      - check_integration
+      - build_image
+      - local_cluster_test
+      - k8_cluster_test
+      - k8_upgrade_test
+      - cli_smoke
+      - build_binaries
+      - partition_test
+      - publish_github_binaries
+      - publish_github_helm_pkg
     runs-on: ubuntu-latest
     steps:
       - name: Done
