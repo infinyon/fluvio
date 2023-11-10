@@ -34,6 +34,7 @@ readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
 readonly USE_LATEST=${USE_LATEST:-}
 readonly FLUVIO_BIN=$(${READLINK} -f ${FLUVIO_BIN:-"$(which fluvio)"})
+readonly FVM_BIN=$(${READLINK} -f ${FVM_BIN:-"~/.fvm/bin/fvm"})
 
 # Change to this script's directory 
 pushd "$(dirname "$(${READLINK} -f "$0")")" > /dev/null
@@ -62,14 +63,16 @@ function validate_cluster_stable() {
     echo "Install (current stable) CLI"
     unset VERSION
 
-    curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.output 
-    STABLE_VERSION=$(cat /tmp/installer.output | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
+    curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+    
+    $FVM_BIN install stable | tee /tmp/installer.output 
+    STABLE_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
     # This is more for ensuring local dev will pass this test if you've changed your channel
     echo "Switch to \"stable\" channel CLI"
-    $STABLE_FLUVIO version switch stable 
+    $FVM_BIN version switch stable 
 
     echo "Installing stable fluvio cluster"
     $STABLE_FLUVIO cluster start 
@@ -135,12 +138,11 @@ function validate_upgrade_cluster_to_prerelease() {
         # Use the "latest" fluvio channel
         echo "Switch to \"latest\" channel CLI"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
-        $FLUVIO_BIN_ABS_PATH version switch latest
-        DEV_VERSION=$($FLUVIO_BIN_ABS_PATH update | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $8}' | sed 's/[+]/-/')
 
-        # This is slicing the DEV_VERSION string that is expected to look like this (including the ...):
-        # ex. 0.9.17-f7e196f3c3c5cefd0339afb85543073a12db9c5d...
-        TARGET_VERSION=${DEV_VERSION::-44}
+        $FVM_BIN install latest | tee /tmp/installer.output 
+        DEV_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-
+
+        TARGET_VERSION=${DEV_VERSION::-41}
         echo "Installed CLI version ${DEV_VERSION}"
         echo "Upgrading cluster to ${DEV_VERSION}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade
