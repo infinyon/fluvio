@@ -24,7 +24,7 @@ impl SwitchOpt {
         let Some(version) = &self.version else {
             notify.help(format!(
                 "You can use {} to see installed versions",
-                "fvm show".bold()
+                "fvm list".bold()
             ));
 
             return Err(anyhow::anyhow!("No version provided"));
