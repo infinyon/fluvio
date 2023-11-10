@@ -14,6 +14,10 @@ load "$TEST_HELPER_DIR"/bats-assert/load.bash
 setup_file() {
     # Tests in this file are executed in order and rely on the previous test
     # to be successful.
+    
+    HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud"
+    export HUB_REGISTRY_URL
+    debug_msg "Using Hub Registry URL: $HUB_REGISTRY_URL"
 
     # Retrieves the latest stable version from the GitHub API and removes the
     # `v` prefix from the tag name.
