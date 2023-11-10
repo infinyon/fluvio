@@ -66,7 +66,7 @@ function validate_cluster_stable() {
     curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
     
     $FVM_BIN install stable | tee /tmp/installer.output 
-    STABLE_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-
+    STABLE_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
@@ -140,7 +140,7 @@ function validate_upgrade_cluster_to_prerelease() {
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
 
         $FVM_BIN install latest | tee /tmp/installer.output 
-        DEV_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-
+        DEV_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
 
         TARGET_VERSION=${DEV_VERSION::-41}
         echo "Installed CLI version ${DEV_VERSION}"
