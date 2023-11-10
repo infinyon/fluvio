@@ -75,6 +75,7 @@ tokio = { workspace = true,  features = ["macros"] }
 tracing = { workspace = true }
 which = { workspace = true }
 url = { workspace = true }
+cfg-if = { workspace = true }
 
 # Fluvio dependencies
 k8-config = { workspace = true, optional = true }
