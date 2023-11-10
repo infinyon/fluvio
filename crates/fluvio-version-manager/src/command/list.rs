@@ -14,9 +14,9 @@ use crate::common::version_directory::VersionDirectory;
 use crate::common::workdir::fvm_versions_path;
 
 #[derive(Debug, Parser)]
-pub struct ShowOpt;
+pub struct ListOpt;
 
-impl ShowOpt {
+impl ListOpt {
     pub async fn process(&self, notify: Notify) -> Result<()> {
         let versions_path = fvm_versions_path()?;
 
