@@ -114,6 +114,29 @@ pub struct Artifact {
 
 /// Fluvio Version Manager Package for a specific architecture and version.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct PackageSetRecord {
+    pub pkgset: String,
+    pub arch: String,
+    pub artifacts: Vec<Artifact>,
+}
+
+impl From<PackageSetRecord> for PackageSet {
+    fn from(value: PackageSetRecord) -> Self {
+        let fluvio_artifact = value.artifacts.iter().find(|art| art.name == "fluvio");
+        let fluvio_version = fluvio_artifact
+            .map(|art| art.version.clone())
+            .unwrap_or_else(|| Version::new(0, 0, 0));
+
+        PackageSet {
+            pkgset: fluvio_version,
+            arch: value.arch,
+            artifacts: value.artifacts,
+        }
+    }
+}
+
+/// Fluvio Version Manager Package for a specific architecture and version.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct PackageSet {
     pub pkgset: Version,
     pub arch: String,
