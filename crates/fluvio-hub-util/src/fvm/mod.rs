@@ -124,7 +124,7 @@ impl From<PackageSetRecord> for PackageSet {
     fn from(value: PackageSetRecord) -> Self {
         let fluvio_artifact = value.artifacts.iter().find(|art| art.name == "fluvio");
         let fluvio_version = fluvio_artifact
-            .and_then(|art| Some(art.version.clone()))
+            .map(|art| art.version.clone())
             .unwrap_or_else(|| Version::new(0, 0, 0));
 
         PackageSet {
