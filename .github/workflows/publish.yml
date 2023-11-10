@@ -1,8 +1,10 @@
 name: Publish
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
     branches: [master]
+    types: [completed]
   workflow_dispatch:
     inputs:
       installer_version:
