@@ -2,7 +2,6 @@ use std::fs::remove_file;
 use std::process::Command;
 
 use clap::Parser;
-use fluvio::config::ConfigFile;
 use tracing::debug;
 use sysinfo::{ProcessExt, System, SystemExt};
 
@@ -12,10 +11,17 @@ use fluvio_command::CommandExt;
 use crate::render::ProgressRenderer;
 use crate::cli::ClusterCliError;
 use crate::progress::ProgressBarFactory;
-use crate::{ClusterError, UninstallError, InstallationType};
+use crate::{ClusterError, UninstallError};
 
 #[derive(Debug, Parser)]
-pub struct ShutdownOpt;
+pub struct ShutdownOpt {
+    /// shutdown local spu/sc
+    #[arg(long)]
+    local: bool,
+
+    #[arg(long)]
+    no_k8: bool,
+}
 
 impl ShutdownOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
@@ -29,27 +35,19 @@ impl ShutdownOpt {
                 ))
             }
         };
-        let config_file = ConfigFile::load_default_or_new()?;
-        let installation_type =
-            InstallationType::load_or_default(config_file.config().current_cluster()?);
-        debug!(?installation_type);
 
-        match installation_type {
-            InstallationType::Local | InstallationType::LocalK8 | InstallationType::ReadOnly => {
-                Self::kill_local_processes(&installation_type, &pb).await?;
-            }
-            _ => {
-                pb.println("❌ Shutdown is only implemented for local clusters.");
-            }
-        };
-
+        if self.local {
+            Self::kill_local_processes(&self, &pb).await?;
+        } else {
+            pb.println(concat!(
+                "❌ Shutdown is only implemented for local development.\n",
+                "   Please provide '--local' to shutdown the local cluster.",
+            ));
+        }
         Ok(())
     }
 
-    async fn kill_local_processes(
-        installation_type: &InstallationType,
-        pb: &ProgressRenderer,
-    ) -> Result<(), ClusterError> {
+    async fn kill_local_processes(&self, pb: &ProgressRenderer) -> Result<(), ClusterError> {
         pb.set_message("Uninstalling fluvio local components");
 
         let kill_proc = |name: &str, command_args: Option<&[String]>| {
@@ -81,8 +79,8 @@ impl ShutdownOpt {
         kill_proc("fluvio", Some(&["run".into()]));
         kill_proc("fluvio-run", None);
 
-        if let InstallationType::LocalK8 = installation_type {
-            let _ = Self::remove_custom_objects("spus", true);
+        if !self.no_k8 {
+            let _ = self.remove_custom_objects("spus", true);
         }
 
         // remove monitoring socket
@@ -106,7 +104,7 @@ impl ShutdownOpt {
     }
 
     /// Remove objects of specified type, namespace
-    fn remove_custom_objects(object_type: &str, force: bool) -> Result<(), UninstallError> {
+    fn remove_custom_objects(&self, object_type: &str, force: bool) -> Result<(), UninstallError> {
         let mut cmd = Command::new("kubectl");
         cmd.arg("delete");
         cmd.arg(object_type);

@@ -2,9 +2,7 @@ use async_trait::async_trait;
 
 use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
-use fluvio_cluster::{
-    LocalConfig, LocalInstaller, StartStatus, ClusterUninstallConfig, InstallationType,
-};
+use fluvio_cluster::{LocalConfig, LocalInstaller, StartStatus, ClusterUninstallConfig};
 
 use super::EnvironmentDriver;
 
@@ -47,7 +45,6 @@ impl LocalEnvDriver {
             let (client, server) = load_tls(&option.tls_user());
             builder.tls(client, server);
         }
-        builder.installation_type(InstallationType::Local);
 
         builder.build().expect("should build LocalConfig")
     }

@@ -141,7 +141,7 @@ jobs:
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: ~/.fluvio/bin/fluvio cluster diagnostics
+        run: ~/.fluvio/bin/fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
@@ -236,7 +236,7 @@ jobs:
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: fluvio cluster diagnostics
+        run: fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5

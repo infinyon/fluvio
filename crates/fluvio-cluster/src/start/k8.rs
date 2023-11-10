@@ -39,7 +39,6 @@ use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
 use fluvio_command::CommandExt;
 
-use crate::InstallationType;
 use crate::check::ClusterCheckError;
 use crate::check::{AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
@@ -1274,10 +1273,6 @@ impl ClusterInstaller {
             external_addr,
             &self.config.client_tls_policy,
         )?;
-        let config = config_file.mut_config().current_cluster_mut()?;
-        InstallationType::K8.save_to(config)?;
-        config_file.save()?;
-
         pb.println(InstallProgressMessage::ProfileSet.msg());
         pb.finish_and_clear();
         Ok(())
