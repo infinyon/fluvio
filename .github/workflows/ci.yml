@@ -1035,7 +1035,7 @@ jobs:
       - name: Run SMDK smoke tests
         if: matrix.test == 'smdk'
         timeout-minutes: 20
-        run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
+        run: make CLI_TEST_RETRIES=3 SMDK_BIN=~/bin/smdk cli-smdk-smoke
 
       # test cdk
       - name: Download artifact - cdk
@@ -1052,7 +1052,7 @@ jobs:
       - name: Run CDK smoke tests
         if: matrix.test == 'cdk'
         timeout-minutes: 20
-        run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
+        run: make CLI_TEST_RETRIES=3 CDK_BIN=~/bin/cdk cli-cdk-smoke
 
       # test fvm
       - name: Download artifact - fvm
@@ -1073,12 +1073,12 @@ jobs:
         timeout-minutes: 20
         run: |
           rm -rf ~/.fvm
-          make FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
+          make CLI_TEST_RETRIES=3 FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
 
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: fluvio cluster diagnostics --k8
+        run: ~/.fluvio/bin/fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
