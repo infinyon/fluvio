@@ -771,6 +771,7 @@ jobs:
       - name: Set up Fluvio binaries
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test
+          echo "${HOME}/bin" >> $GITHUB_PATH
           echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
           echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
       - name: Print version
@@ -857,6 +858,7 @@ jobs:
  #     fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
     steps:
       - uses: actions/checkout@v4
@@ -868,22 +870,24 @@ jobs:
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v3
         with:
-          name: fluvio-x86_64-unknown-linux-musl
+          name: fluvio-${{ matrix.rust-target }}
           path: ~/bin
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v3
         with:
-          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
           path: /tmp
-      - name: Mark xecutable
+      - name: Mark executable
         run: |
           chmod +x ~/bin/fluvio && ~/bin/fluvio version
+          echo "${HOME}/bin" >> $GITHUB_PATH
+
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
-          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
+          docker image load --input /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} infinyon/fluvio:${{ github.sha }}
           docker image ls -a
 
       - name: Export Docker Image to tarball
@@ -896,13 +900,12 @@ jobs:
         run: |
           date
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-          export PATH=~/.fluvio/bin:$PATH
           make FLUVIO_BIN=~/bin/fluvio upgrade-test
 
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: ~/bin/fluvio cluster diagnostics --k8
+        run: fluvio cluster diagnostics --k8
       - name: Upload logs
         timeout-minutes: 5
         if: ${{ !success() }}
@@ -1032,7 +1035,7 @@ jobs:
       - name: Run SMDK smoke tests
         if: matrix.test == 'smdk'
         timeout-minutes: 20
-        run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
+        run: make CLI_TEST_RETRIES=3 SMDK_BIN=~/bin/smdk cli-smdk-smoke
 
       # test cdk
       - name: Download artifact - cdk
@@ -1049,7 +1052,7 @@ jobs:
       - name: Run CDK smoke tests
         if: matrix.test == 'cdk'
         timeout-minutes: 20
-        run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
+        run: make CLI_TEST_RETRIES=3 CDK_BIN=~/bin/cdk cli-cdk-smoke
 
       # test fvm
       - name: Download artifact - fvm
@@ -1069,12 +1072,13 @@ jobs:
         if: matrix.test == 'fvm'
         timeout-minutes: 20
         run: |
-          make FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
+          rm -rf ~/.fvm
+          make CLI_TEST_RETRIES=3 FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
 
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: fluvio cluster diagnostics --k8
+        run: ~/.fluvio/bin/fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
