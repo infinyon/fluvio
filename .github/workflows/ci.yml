@@ -771,10 +771,11 @@ jobs:
       - name: Set up Fluvio binaries
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test
+          echo "${HOME}/bin" >> $GITHUB_PATH
           echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
           echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
       - name: Print version
-        run: ~/bin/fluvio version && ~/bin/fluvio-test -h
+        run: fluvio version && fluvio-test -h
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
         run: |
@@ -818,18 +819,18 @@ jobs:
         if: matrix.test == 'smoke-test-k8' || matrix.test == 'stats-test'
         timeout-minutes: 10
         run: |
-          ~/bin/fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}  --namespace ${K8_NAMESPACE}
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}  --namespace ${K8_NAMESPACE}
       - name: Start fluvio cluster TLS
         timeout-minutes: 10
         if: matrix.test == 'smoke-test-k8-tls'
         run: |
-          ~/bin/fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE}
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE}
       - name: Start fluvio cluster TLS with root
         timeout-minutes: 10
         if: matrix.test == 'smoke-test-k8-tls-root-unclean'
         run: |
           make smoke-test-k8-tls-policy-setup
-          ~/bin/fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE} --authorization-config-map authorization
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}  --namespace ${K8_NAMESPACE} --authorization-config-map authorization
       - name: Run ${{ matrix.test }}
         timeout-minutes: 10
         run: |
@@ -879,6 +880,8 @@ jobs:
       - name: Mark executable
         run: |
           chmod +x ~/bin/fluvio && ~/bin/fluvio version
+          echo "${HOME}/bin" >> $GITHUB_PATH
+
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
         run: |
@@ -897,13 +900,12 @@ jobs:
         run: |
           date
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-          export PATH=~/.fluvio/bin:$PATH
           make FLUVIO_BIN=~/bin/fluvio upgrade-test
 
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: ~/bin/fluvio cluster diagnostics --k8
+        run: fluvio cluster diagnostics --k8
       - name: Upload logs
         timeout-minutes: 5
         if: ${{ !success() }}
@@ -1076,7 +1078,7 @@ jobs:
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: ~/.fluvion/bin/fluvio cluster diagnostics --k8
+        run: fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
