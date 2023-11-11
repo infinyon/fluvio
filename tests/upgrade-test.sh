@@ -65,14 +65,14 @@ function validate_cluster_stable() {
 
     curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
     
-    $FVM_BIN install stable | tee /tmp/installer.output 
+    ~/.fvm/bin/fvm install stable | tee /tmp/installer.output 
     STABLE_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
     # This is more for ensuring local dev will pass this test if you've changed your channel
     echo "Switch to \"stable\" channel CLI"
-    $FVM_BIN version switch stable 
+    ~/.fvm/bin/fvm switch stable 
 
     echo "Installing stable fluvio cluster"
     $STABLE_FLUVIO cluster start 
@@ -139,8 +139,9 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Switch to \"latest\" channel CLI"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
 
-        $FVM_BIN install latest | tee /tmp/installer.output 
+        ~/.fvm/bin/fvm install latest | tee /tmp/installer.output 
         DEV_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
+        ~/.fvm/bin/fvm switch latest 
 
         TARGET_VERSION=${DEV_VERSION::-41}
         echo "Installed CLI version ${DEV_VERSION}"
