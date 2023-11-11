@@ -1,7 +1,7 @@
 use std::path::PathBuf;
-use std::fs::{create_dir, rename};
+use std::fs::{create_dir, copy, rename};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use tempfile::TempDir;
 
 use fluvio_hub_util::fvm::{PackageSet, Download, Channel};
@@ -79,10 +79,18 @@ impl VersionInstaller {
         }
 
         for artif in package_set.artifacts.iter() {
-            rename(
-                tmp_dir.path().join(&artif.name),
-                version_path.join(&artif.name),
-            )?;
+            let src = tmp_dir.path().join(&artif.name);
+            let dst = version_path.join(&artif.name);
+            if rename(src.clone(), dst.clone()).is_err() {
+                copy(src.clone(), dst.clone()).map_err(|e| {
+                    anyhow!(
+                        "Error copying artifact {} to {}, {} ",
+                        src.display(),
+                        dst.display(),
+                        e
+                    )
+                })?;
+            }
         }
 
         Ok(version_path)

@@ -2,8 +2,8 @@ use std::env::current_exe;
 use std::fs::{copy, write, create_dir_all};
 use std::path::PathBuf;
 
+use anyhow::{anyhow, Result};
 use clap::Parser;
-use anyhow::Result;
 
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
@@ -80,7 +80,14 @@ impl SelfInstallOpt {
         }
 
         // Copies "this" binary to the FVM binary directory
-        copy(current_binary_path, fvm_binary_path)?;
+        copy(current_binary_path.clone(), fvm_binary_path.clone()).map_err(|e| {
+            anyhow!(
+                "Couldn't copy fvm from {} to {} with error {}",
+                current_binary_path.display(),
+                fvm_binary_path.display(),
+                e
+            )
+        })?;
         tracing::debug!(
             ?fvm_dir,
             "Copied the FVM binary to the FVM home directory with success"
