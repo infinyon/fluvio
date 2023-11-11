@@ -4,7 +4,7 @@ name:  CD_Dev
 permissions:
   contents: read
 
-concurrency: 
+concurrency:
   group: cd_dev
   cancel-in-progress: true
 
@@ -31,7 +31,7 @@ env:
 jobs:
   # Perform E2E sanity checks
   verify_latest_releases:
-    name: Verify latest run ${{ matrix.run }} (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
+    name: Verify latest run ${{ matrix.run }} (${{ matrix.cluster_type }}) on (${{ matrix.os }}),
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -61,7 +61,7 @@ jobs:
           kind create cluster --config k8-util/cluster/kind.yaml
       - name: Install Fluvio CLI
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest FLV_VERSION=latest bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=latest bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Install Local Fluvio cluster
         timeout-minutes: 3
@@ -130,7 +130,7 @@ jobs:
       - name: Setup K3d
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-          ./k8-util/cluster/reset-k3d.sh 
+          ./k8-util/cluster/reset-k3d.sh
       - name: Run upgrade test
         timeout-minutes: 10
         env:
@@ -178,19 +178,18 @@ jobs:
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
 
-      - name: Curl Install - latest 
+      - name: Curl Install - latest
         if: matrix.version == 'latest'
         run: |
-          echo "VERSION=latest" | tee -a $GITHUB_ENV
-          echo "FLV_VERSION=latest" | tee -a $GITHUB_ENV
+          echo "FLUVIO_VERSION=latest" | tee -a $GITHUB_ENV
 
-        # Utilizes the env var set in the previous step 
+      # Utilizes the env var set in the previous step
       - name: Curl Install
         run: curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
-            INSTALLER_VERSION=$(cat /tmp/installer.version | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
+            INSTALLER_VERSION=$(cat /tmp/installer.version | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
             if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
               echo "✅ Installer version check passed: $EXPECTED_VERSION";
             else
@@ -201,7 +200,7 @@ jobs:
             fi
 
   cli-platform-cross-version-test:
-    name: CLI (${{ matrix.cli_version }}) x Platform (${{ matrix.cluster_version }}) version test 
+    name: CLI (${{ matrix.cli_version }}) x Platform (${{ matrix.cluster_version }}) version test
     #if: false
     runs-on: ${{ matrix.os }}
     env:
