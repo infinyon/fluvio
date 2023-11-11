@@ -32,7 +32,7 @@ jobs:
       - name: Get status of latest RELEASE_CHECK run
         id: release_check
         run: |
-          gh api /repos/{owner}/{repo}/actions/workflows/release.yml/runs | jq .workflow_runs[0] > /tmp/release_latest.txt  
+          gh api /repos/{owner}/{repo}/actions/workflows/release.yml/runs | jq .workflow_runs[0] > /tmp/release_latest.txt
           echo "Latest Release run: $(cat /tmp/release_latest.txt | jq .html_url | tr -d '"')"
           RELEASE_CHECK=$(cat /tmp/release_latest.txt | jq .conclusion | tr -d '"')
           if [[ "$RELEASE_CHECK" = "success" ]]
@@ -78,7 +78,7 @@ jobs:
 
       - name: Verify installer output
         run: |
-          INSTALLER_VERSION=$(cat /tmp/installer.version | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
+          INSTALLER_VERSION=$(cat /tmp/installer.version | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
           if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
             echo "✅ Installer version check passed: $EXPECTED_VERSION";
           else
@@ -113,7 +113,7 @@ jobs:
             echo "EXPECTED_VERSION=${{ github.event.inputs.alt_version }}" | tee -a $GITHUB_ENV
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
-          
+
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install Fluvio
         run: |
@@ -170,7 +170,7 @@ jobs:
 
       - name: Install last stable Fluvio CLI and start cluster
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=$PREV_STABLE_VERSION bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=$PREV_STABLE_VERSION bash
           ~/.fluvio/bin/fluvio cluster start
           ~/.fluvio/bin/fluvio version
 
@@ -186,8 +186,8 @@ jobs:
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install current stable Fluvio CLI and upgrade cluster
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
-          ~/.fluvio/bin/fluvio cluster upgrade 
+          ~/.fvm/bin/fvm install stable
+          ~/.fluvio/bin/fluvio cluster upgrade
           ~/.fluvio/bin/fluvio version
 
       # TODO: Verify platform version
