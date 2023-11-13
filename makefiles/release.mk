@@ -171,7 +171,7 @@ publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 			$$ARTIFACT; \
 	)
 
-publish-artifacts: PUBLIC_VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
+publish-artifacts-hub: PUBLIC_VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
 publish-artifacts-hub: unzip-gh-release-artifacts
 	@echo "Publish to hub"
 	$(foreach bin, $(PUBLISH_BINARIES_HUB), \
@@ -184,6 +184,10 @@ publish-artifacts-hub: unzip-gh-release-artifacts
 			$(DRY_RUN_ECHO) actions/upload-bpkg.sh $$ARTIFACT $$TARGET ${CHANNEL}; \
 		) \
 	)
+	export PKGSET_NAME=$(CHANNEL)
+	export FLUVIO_VERSION=$(PUBLIC_VERSION)
+	export FLUVIO_CLOUD_VERSION="0.2.15"
+	./actions/publish-pkgset.sh
 
 publish-artifacts-dev-hub: CHANNEL=latest
 publish-artifacts-dev-hub: publish-artifacts-hub

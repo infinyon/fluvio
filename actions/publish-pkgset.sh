@@ -27,6 +27,6 @@ curl -v -X "POST" "https://hub.infinyon.cloud/hub/v1/fvm/pkgset" \
       "version": "$FLUVIO_VERSION"
     }
   ],
-  "pkgset": "$FLUVIO_VERSION"
+  "pkgset": "$PKGSET_NAME"
 }
 EOF
