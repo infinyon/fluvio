@@ -277,8 +277,11 @@ jobs:
       - name: Bump Fluvio CLI
         # This should work until we support graceful failure
         continue-on-error: true
+        env:
+          BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
         run: |
           make bump-fluvio-stable
+
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()

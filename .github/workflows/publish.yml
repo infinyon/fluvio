@@ -113,6 +113,7 @@ jobs:
 
       - name: Bump latest version of Fluvio CLI with fluvio-packages
         env:
+          BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
           FLUVIO_BIN: ~/.fluvio/bin/fluvio
         run: make bump-fluvio-latest
 
