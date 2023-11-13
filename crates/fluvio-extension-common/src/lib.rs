@@ -5,6 +5,9 @@ mod common;
 #[cfg(feature = "target")]
 pub mod tls;
 
+#[cfg(feature = "installation")]
+pub mod installation;
+
 pub use common::*;
 pub use crate::output::Terminal;
 use fluvio_index::{PackageId, MaybeVersion};

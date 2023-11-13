@@ -2,6 +2,7 @@ use clap::Parser;
 use anyhow::Result;
 
 use fluvio::config::{ConfigFile, TlsPolicy};
+use fluvio_extension_common::installation::InstallationType;
 
 #[derive(Debug, Parser)]
 pub struct ManualAddOpt {
@@ -10,6 +11,9 @@ pub struct ManualAddOpt {
 
     /// address of cluster, e.g. 127.0.0.1:9003
     cluster_address: String,
+
+    /// Installation type of cluster, e.g. local, local-k8, k8
+    installation_type: Option<InstallationType>,
 }
 // todo: p2 add tls config, p1 is default disabled for manual add
 
@@ -23,14 +27,10 @@ impl ManualAddOpt {
                     &self.cluster_address,
                     &def_tls,
                 )?;
-                if config_file
-                    .mut_config()
-                    .set_current_profile(&self.profile_name)
-                {
-                    println!("Switched to profile {}", &self.profile_name);
-                } else {
-                    return Err(anyhow::anyhow!("error creating profile"));
-                }
+                let config = config_file.mut_config().current_cluster_mut()?;
+                self.installation_type.unwrap_or_default().save_to(config)?;
+                config_file.save()?;
+                println!("Switched to profile {}", &self.profile_name);
             }
             Err(_) => println!("no profile can be found"),
         }
