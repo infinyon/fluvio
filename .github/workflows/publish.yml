@@ -1,16 +1,18 @@
 name: Publish
 
 on:
+  # workflow_run only triggers for default branch (master/main)
   workflow_run:
     workflows: [CI]
-    branches: [master]
     types: [completed]
+
   workflow_dispatch:
     inputs:
       installer_version:
         required: false # Is this required if I have a default?
         description: "The version of Fluvio to download with install.sh"
         default: "stable"
+
   workflow_call:
     inputs:
       installer_version:
