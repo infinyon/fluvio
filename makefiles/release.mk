@@ -58,6 +58,9 @@ TARGET?=
 PACKAGE?=
 ARTIFACT?=
 
+# Fluvio Cloud Version used to publish pkgsets
+FLUVIO_CLOUD_VERSION="0.2.15"
+
 #### Testing only
 
 get-version:
@@ -215,7 +218,7 @@ bump-fluvio-stable: VERSION=$(REPO_VERSION)
 bump-fluvio-stable: bump-fluvio
 	export PKGSET_NAME=$(VERSION)
 	export FLUVIO_VERSION=$(VERSION)
-	export FLUVIO_CLOUD_VERSION="0.2.15"
+	export FLUVIO_CLOUD_VERSION=$(FLUVIO_CLOUD_VERSION)
 	./actions/publish-pkgset.sh
 
 bump-fluvio-latest: CHANNEL_TAG=latest
@@ -223,7 +226,7 @@ bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(DEV_
 bump-fluvio-latest: bump-fluvio
 	export PKGSET_NAME=$(VERSION)
 	export FLUVIO_VERSION=$(VERSION)
-	export FLUVIO_CLOUD_VERSION="0.2.15"
+	export FLUVIO_CLOUD_VERSION=$(FLUVIO_CLOUD_VERSION)
 	./actions/publish-pkgset.sh
 
 update-public-installer-script-s3:
