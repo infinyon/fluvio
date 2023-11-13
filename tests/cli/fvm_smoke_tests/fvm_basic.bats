@@ -791,3 +791,24 @@ setup_file() {
     rm -rf $FLUVIO_HOME_DIR
     assert_success
 }
+
+@test "Handles unexistent version error" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Attempts to install unexistent version
+    run bash -c 'fvm install 0.0.0'
+    assert_line --index 0 "Error: PackageSet 0.0.0 doest not exist"
+    assert_failure
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
