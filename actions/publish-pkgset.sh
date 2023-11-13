@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -u
 
 curl -v -X "POST" "https://hub.infinyon.cloud/hub/v1/fvm/pkgset" \
      -H "Authorization: $BPKG_TOKEN" \
