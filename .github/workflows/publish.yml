@@ -79,6 +79,15 @@ jobs:
         env:
           FLUVIO_BIN: ~/.fluvio/bin/fluvio
         run: make publish-artifacts-dev
+
+      - name: Publish PackageSet
+        env:
+          BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
+          FLUVIO_VERSION: "0.10.17"
+          FLUVIO_CLOUD_VERSION: "0.2.15"
+        run: |
+          ./actions/publish-pkgset.sh
+
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()
