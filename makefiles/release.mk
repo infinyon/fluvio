@@ -171,7 +171,7 @@ publish-artifacts: install-fluvio-package unzip-gh-release-artifacts
 			--package=$(subst .exe, ,$(subst -$(shell cat $(basename $(bin))/.target), ,$(basename $(bin)))) \
 			--version=$(PUBLIC_VERSION) \
 			--target=$$TARGET \
-			$$ARTIFACT; \
+			$$ARTIFACT || true; \
 	)
 
 publish-artifacts-hub: PUBLIC_VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(VERSION))
