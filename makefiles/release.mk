@@ -184,10 +184,6 @@ publish-artifacts-hub: unzip-gh-release-artifacts
 			$(DRY_RUN_ECHO) actions/upload-bpkg.sh $$ARTIFACT $$TARGET ${CHANNEL}; \
 		) \
 	)
-	export PKGSET_NAME=$(CHANNEL)
-	export FLUVIO_VERSION=$(PUBLIC_VERSION)
-	export FLUVIO_CLOUD_VERSION="0.2.15"
-	./actions/publish-pkgset.sh
 
 publish-artifacts-dev-hub: CHANNEL=latest
 publish-artifacts-dev-hub: publish-artifacts-hub
@@ -217,10 +213,18 @@ bump-fluvio: install-fluvio-package
 bump-fluvio-stable: CHANNEL_TAG=stable
 bump-fluvio-stable: VERSION=$(REPO_VERSION)
 bump-fluvio-stable: bump-fluvio
+	export PKGSET_NAME=$(VERSION)
+	export FLUVIO_VERSION=$(VERSION)
+	export FLUVIO_CLOUD_VERSION="0.2.15"
+	./actions/publish-pkgset.sh
 
 bump-fluvio-latest: CHANNEL_TAG=latest
 bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(DEV_VERSION_TAG))
 bump-fluvio-latest: bump-fluvio
+	export PKGSET_NAME=$(VERSION)
+	export FLUVIO_VERSION=$(VERSION)
+	export FLUVIO_CLOUD_VERSION="0.2.15"
+	./actions/publish-pkgset.sh
 
 update-public-installer-script-s3:
 	$(DRY_RUN_ECHO) aws s3 cp ./install.sh s3://packages.fluvio.io/v1/install.sh --acl public-read
