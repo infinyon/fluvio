@@ -111,14 +111,11 @@ impl TryFrom<ObjectMeta> for K8MetaItem {
     type Error = ParseIntError;
 
     fn try_from(value: ObjectMeta) -> Result<Self, Self::Error> {
-        if value.resource_version.is_empty() {
-            return Ok(Self {
-                revision: 0,
-                inner: value,
-                ..Default::default()
-            });
-        }
-        let revision: u64 = value.resource_version.parse()?;
+        let revision: u64 = if value.resource_version.is_empty() {
+            0
+        } else {
+            value.resource_version.parse()?
+        };
         if value.owner_references.len() > 1 {
             error!("too many owners: {value:#?}");
         }
@@ -218,5 +215,66 @@ where
             ErrorKind::InvalidData,
             format!("error converting key: {err:#?}"),
         ))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use k8_types::OwnerReferences;
+
+    use super::*;
+
+    #[test]
+    fn test_k8_meta_from_object_meta() {
+        //given
+        let object_meta = ObjectMeta {
+            name: "w2".to_owned(),
+            namespace: "default".to_owned(),
+            resource_version: "123".to_string(),
+            owner_references: vec![OwnerReferences {
+                kind: "Widget".to_owned(),
+                name: "w1".to_owned(),
+                uid: "13fb7d10-6f1e-4749-8e9d-7f6c4013b8a3".to_owned(),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        //when
+        let k8_meta: K8MetaItem = object_meta.try_into().expect("converted");
+
+        //then
+        assert_eq!(k8_meta.revision, 123);
+        assert_eq!(k8_meta.inner.name, "w2");
+        assert_eq!(k8_meta.inner.namespace, "default");
+        assert_eq!(k8_meta.inner.owner_references.len(), 1);
+
+        let owner = k8_meta.owner.expect("owner");
+        assert_eq!(owner.inner.uid, "13fb7d10-6f1e-4749-8e9d-7f6c4013b8a3");
+        assert_eq!(owner.inner.name, "w1");
+    }
+
+    #[test]
+    fn test_k8_meta_from_object_meta_empty_resource_version() {
+        //given
+        let object_meta = ObjectMeta {
+            name: "w2".to_owned(),
+            owner_references: vec![OwnerReferences {
+                name: "w1".to_owned(),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+
+        //when
+        let k8_meta: K8MetaItem = object_meta.try_into().expect("converted");
+
+        //then
+        assert_eq!(k8_meta.revision, 0);
+        assert_eq!(k8_meta.inner.name, "w2");
+        assert_eq!(k8_meta.inner.owner_references.len(), 1);
+
+        let owner = k8_meta.owner.expect("owner");
+        assert_eq!(owner.inner.name, "w1");
     }
 }
