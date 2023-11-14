@@ -224,7 +224,7 @@ bump-fluvio-stable: CHANNEL_TAG=stable
 bump-fluvio-stable: VERSION=$(REPO_VERSION)
 # publishes pkgset for "stable"
 bump-fluvio-stable: PKGSET_NAME=stable
-bump-fluvio-latest: FLUVIO_VERSION=${VERSION}
+bump-fluvio-stable: FLUVIO_VERSION=${VERSION}
 bump-fluvio-stable: bump-fluvio publish-pkgset-stable
 	./actions/publish-pkgset.sh
 
