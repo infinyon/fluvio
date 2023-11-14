@@ -76,6 +76,7 @@ jobs:
             else
               export PROXY=""
           fi
+          FLUVIO_IMAGE_TAG_STRATEGY=version-git \
           fluvio cluster start  --spu-storage-size 1 $PROXY
       - name: Run E2E Test
         timeout-minutes: 2
