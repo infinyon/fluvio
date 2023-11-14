@@ -72,10 +72,10 @@ function validate_cluster_stable() {
 
     # This is more for ensuring local dev will pass this test if you've changed your channel
     echo "Switch to \"stable\" channel CLI"
-    ~/.fvm/bin/fvm switch stable 
+    ~/.fvm/bin/fvm switch stable
 
     echo "Installing stable fluvio cluster"
-    $STABLE_FLUVIO cluster start 
+    $STABLE_FLUVIO cluster start
     ci_check;
 
     # Baseline: CLI version and platform version are expected to be the same
@@ -140,17 +140,20 @@ function validate_upgrade_cluster_to_prerelease() {
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
 
         ~/.fvm/bin/fvm install latest | tee /tmp/installer.output 
-        DEV_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
-        ~/.fvm/bin/fvm switch latest 
+        # expectd output fvm current => 0.11.0-dev-1+hash (latest)
+        DEV_VERSION=$(~/.fvm/bin/fvm current | awk '{print $1}')
 
-        TARGET_VERSION=${DEV_VERSION::-41}
+        TARGET_VERSION=${DEV_VERSION}
         echo "Installed CLI version ${DEV_VERSION}"
         echo "Upgrading cluster to ${DEV_VERSION}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade
+        echo "Target Version ${TARGET_VERSION}"
+        $FLUVIO_BIN_ABS_PATH cluster upgrade \
+            --image_version ${TARGET_VERSION}
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
     else
         echo "Test local image v${PRERELEASE}"
         TARGET_VERSION=${PRERELEASE::-41}
+        echo "Target Version ${TARGET_VERSION}"
         # This should use the binary that the Makefile set
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
