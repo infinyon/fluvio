@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -u
 
-echo Fluvio version: $FLUVIO_VERSION
-echo Fluvio Cloud Version: $FLUVIO_CLOUD_VERSION
-echo PackageSet Name: $PKGSET_NAME
+echo Pkgset "$PKGSET_NAME"
+echo Fluvio Version "$FLUVIO_VERSION"
+echo Fluvio Cloud Version "$FLUVIO_CLOUD_VERSION"
 
 curl -v -X "POST" "https://hub.infinyon.cloud/hub/v1/fvm/pkgset" \
      -H "Authorization: $BPKG_TOKEN" \
