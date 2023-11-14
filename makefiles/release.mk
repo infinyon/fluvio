@@ -213,20 +213,27 @@ bump-fluvio: install-fluvio-package
 		$(DRY_RUN_ECHO) $(FLUVIO_BIN) package tag $(bin):$(PUBLIC_VERSION) --allow-missing-targets --tag=$(CHANNEL_TAG) --force; \
 	)
 
+# publishes pkgset for stable e.g. 0.11.0
+# uses FLUVIO_CLOUD_VERSION
+publish-pkgset-stable: PKGSET_NAME=${REPO_VERSION}
+publish-pkgset-stable: FLUVIO_VERSION=${REPO_VERSION}
+publish-pkgset-stable:
+	./actions/publish-pkgset.sh
+
 bump-fluvio-stable: CHANNEL_TAG=stable
 bump-fluvio-stable: VERSION=$(REPO_VERSION)
-bump-fluvio-stable: bump-fluvio
-	export PKGSET_NAME=$(VERSION)
-	export FLUVIO_VERSION=$(VERSION)
-	export FLUVIO_CLOUD_VERSION=$(FLUVIO_CLOUD_VERSION)
+# publishes pkgset for "stable"
+bump-fluvio-stable: PKGSET_NAME=stable
+bump-fluvio-latest: FLUVIO_VERSION=${VERSION}
+bump-fluvio-stable: bump-fluvio publish-pkgset-stable
 	./actions/publish-pkgset.sh
 
 bump-fluvio-latest: CHANNEL_TAG=latest
 bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(DEV_VERSION_TAG))
+# publishes pkgset for "latest"
+bump-fluvio-latest: PKGSET_NAME=latest
+bump-fluvio-latest: FLUVIO_VERSION=${VERSION}
 bump-fluvio-latest: bump-fluvio
-	export PKGSET_NAME=$(VERSION)
-	export FLUVIO_VERSION=$(VERSION)
-	export FLUVIO_CLOUD_VERSION=$(FLUVIO_CLOUD_VERSION)
 	./actions/publish-pkgset.sh
 
 update-public-installer-script-s3:
