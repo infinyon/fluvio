@@ -147,8 +147,9 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Installed CLI version ${DEV_VERSION}"
         echo "Upgrading cluster to ${DEV_VERSION}"
         echo "Target Version ${TARGET_VERSION}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade \
-            --image_version ${TARGET_VERSION}
+
+        FLUVIO_IMAGE_TAG_STRATEGY=version-git \
+        $FLUVIO_BIN_ABS_PATH cluster upgrade
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
     else
         echo "Test local image v${PRERELEASE}"
