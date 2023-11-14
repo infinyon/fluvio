@@ -59,7 +59,7 @@ PACKAGE?=
 ARTIFACT?=
 
 # Fluvio Cloud Version used to publish pkgsets
-FLUVIO_CLOUD_VERSION="0.2.15"
+FLUVIO_CLOUD_VERSION=0.2.15
 
 #### Testing only
 
