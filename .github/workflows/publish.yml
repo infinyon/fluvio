@@ -1,10 +1,11 @@
 name: Publish
 
 on:
-  # workflow_run only triggers for default branch (master/main)
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  push:
+    branches: master
+
+  # repository_dispatch:
+  #   types: [ ci-success ]
 
   workflow_dispatch:
     inputs:
@@ -21,18 +22,52 @@ on:
         description: "The version of Fluvio to download with install.sh"
         default: "stable"
 
+
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   RELEASE: true # Needed so `make` targets make public changes
 
 jobs:
+  setup:
+    name: Setup inputs
+    runs-on: ubuntu-latest
+    outputs:
+      pub_ref: ${{ steps.out.outputs.pub_ref }}
+      pub_sha: ${{ steps.out.outputs.pub_sha }}
+    steps:
+      - name: Default Info
+        run: |
+          echo event_name ${{ github.event_name }}
+          echo "pub_ref=${{ env.GITHUB_REF }}" >> $GITHUB_ENV
+          echo "pub_sha=${{ env.GITHUB_SHA }}" >> $GITHUB_ENV
+      - name: Received ci-success event
+        if: github.event_name == 'repository_dispatch'
+        id: recv
+        run: |
+          echo REF ${{ github.event.client_payload.ref }}
+          echo SHA ${{ github.event.client_payload.sha }}
+          echo "pub_ref=${{ github.event.client_payload.ref }}" >> $GITHUB_ENV
+          echo "pub_sha=${{ github.event.client_payload.sha }}" >> $GITHUB_ENV
+      - name: Output Setup
+        # merge optional step output
+        id: out
+        run: |
+          echo REF ${{ env.pub_ref }}
+          echo SHA ${{ env.pub_sha }}
+          echo "pub_ref=${{ env.pub_ref }}" >> $GITHUB_OUTPUT
+          echo "pub_sha=${{ env.pub_sha }}" >> $GITHUB_OUTPUT
+
   # Re-tag the docker image for this commit as 'latest'
   docker:
     name: Publish Docker Image
+    needs: setup
     runs-on: ubuntu-latest
+    env:
+      TGT_SHA: ${{ needs.setup.outputs.github_sha }}
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ needs.setup.pub_sha }}
       - name: Publish latest development Fluvio Image
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -51,13 +86,17 @@ jobs:
   # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
   fluvio:
     name: Publish Fluvio CLI
+    needs: setup
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
+      TGT_SHA: ${{needs.setup.outputs.github_sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.pub_sha }}
       - name: Install fluvio-package
         env:
           CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
@@ -97,14 +136,17 @@ jobs:
   # If the 'latest' tag gets bumped, you can be sure the whole publish flow succeeded.
   bump_fluvio:
     name: Bump Fluvio CLI version
-    needs: [docker, fluvio]
+    needs: [setup, docker, fluvio]
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TGT_SHA: ${{ needs.setup.outputs.github_sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.pub_sha }}
       - name: Install stable Fluvio CLI
         env:
           CHANNEL_TAG: stable
@@ -116,6 +158,12 @@ jobs:
           BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
           FLUVIO_BIN: ~/.fluvio/bin/fluvio
         run: make bump-fluvio-latest
+
+      - name: Repo dispatch publish-success
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          event-type: publish-success
+          client-payload: '{"ref": "${{ needs.setup.outputs.pub_ref }}", "sha": "${{ needs.setup.outputs.pub_sha }}"}'
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
