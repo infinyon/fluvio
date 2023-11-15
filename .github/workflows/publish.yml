@@ -137,6 +137,8 @@ jobs:
   bump_fluvio:
     name: Bump Fluvio CLI version
     needs: [setup, docker, fluvio]
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
