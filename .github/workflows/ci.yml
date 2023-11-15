@@ -1393,6 +1393,8 @@ jobs:
   # Used by Bors to detect that all required jobs have completed successfully
   done:
     name: Done
+    permissions:
+      contents: write
     if: github.event_name == 'merge_group'
     needs:
       - check
