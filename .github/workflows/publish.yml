@@ -1,12 +1,11 @@
 name: Publish
 
 on:
-  # # workflow_run only triggers for default branch (master/main)
-  # workflow_run:
-  #   workflows: [CI]
-  #   types: [completed]
-  repository_dispatch:
-    types: [ ci-success ]
+  push:
+    branches: master
+
+  # repository_dispatch:
+  #   types: [ ci-success ]
 
   workflow_dispatch:
     inputs:
