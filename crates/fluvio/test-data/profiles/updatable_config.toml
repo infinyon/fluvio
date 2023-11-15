@@ -1,0 +1,15 @@
+version = "1.0"
+current_profile = "local"
+
+[profile.local]
+cluster = "updated"
+
+[cluster.updated]
+endpoint = "127.0.0.1"
+use_spu_local_address = false
+
+[cluster.updated.tls]
+tls_policy = "disabled"
+
+[cluster.updated.metadata.installation]
+type = "local"

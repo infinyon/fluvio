@@ -289,8 +289,9 @@ type = "local"
             typ: String,
         }
 
-        let mut config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
-            .expect("could not parse config file");
+        let mut config_file =
+            ConfigFile::load(Some("test-data/profiles/updatable_config.toml".to_owned()))
+                .expect("could not parse config file");
         let config = config_file.mut_config();
 
         let cluster = config
@@ -321,8 +322,9 @@ type = "local"
 
         config_file.save().expect("failed to save config file");
 
-        let mut config_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
-            .expect("could not parse config file");
+        let mut config_file =
+            ConfigFile::load(Some("test-data/profiles/updatable_config.toml".to_owned()))
+                .expect("could not parse config file");
         let config = config_file.mut_config();
         let cluster = config
             .cluster_mut("updated")
