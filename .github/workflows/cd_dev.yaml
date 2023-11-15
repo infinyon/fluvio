@@ -13,18 +13,9 @@ on:
 #    branches: [master]
 #  pull_request:
 #    branches: [master]
-  workflow_run:
-    workflows: [Publish]
-    branches: [master]
-    types: [completed]
 
   repository_dispatch:
     types: [ publish-success ]
-
-  workflow_call:
-    inputs:
-      alt_version:
-        required: false
 
   workflow_dispatch:
     inputs:
