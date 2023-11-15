@@ -163,7 +163,7 @@ impl<T: K8MetadataClient> MetadataClient<K8MetaItem> for T {
         let k8_input: InputK8Obj<S::K8Spec> = InputK8Obj {
             api_version: S::K8Spec::api_version(),
             kind: S::K8Spec::kind(),
-            metadata: metadata.inner().clone().into(),
+            metadata: metadata.inner().as_input(),
             spec: k8_spec,
             ..Default::default()
         };
