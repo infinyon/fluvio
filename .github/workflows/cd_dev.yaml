@@ -17,6 +17,15 @@ on:
     workflows: [Publish]
     branches: [master]
     types: [completed]
+
+  repository_dispatch:
+    types: [ publish-success ]
+
+  workflow_call:
+    inputs:
+      alt_version:
+        required: false
+
   workflow_dispatch:
     inputs:
       alt_version:
@@ -29,9 +38,39 @@ env:
   K3D_VERSION: v5.4.1
 
 jobs:
+  setup:
+    name: Setup inputs
+    runs-on: ubuntu-latest
+    outputs:
+      pub_ref: ${{ steps.out.outputs.pub_ref }}
+      pub_sha: ${{ steps.out.outputs.pub_sha }}
+    steps:
+      - name: Default Info
+        run: |
+          echo event_name ${{ github.event_name }}
+          echo "pub_ref=${{ env.GITHUB_REF }}" >> $GITHUB_ENV
+          echo "pub_sha=${{ env.GITHUB_SHA }}" >> $GITHUB_ENV
+      - name: Received ci-success event
+        if: github.event_name == 'repository_dispatch'
+        id: recv
+        run: |
+          echo REF ${{ github.event.client_payload.ref }}
+          echo SHA ${{ github.event.client_payload.sha }}
+          echo "pub_ref=${{ github.event.client_payload.ref }}" >> $GITHUB_ENV
+          echo "pub_sha=${{ github.event.client_payload.sha }}" >> $GITHUB_ENV
+      - name: Output Setup
+        # merge optional step output
+        id: out
+        run: |
+          echo REF ${{ env.pub_ref }}
+          echo SHA ${{ env.pub_sha }}
+          echo "pub_ref=${{ env.pub_ref }}" >> $GITHUB_OUTPUT
+          echo "pub_sha=${{ env.pub_sha }}" >> $GITHUB_OUTPUT
+
   # Perform E2E sanity checks
   verify_latest_releases:
-    name: Verify latest run ${{ matrix.run }} (${{ matrix.cluster_type }}) on (${{ matrix.os }}),
+    name: Verify latest run ${{ matrix.run }} (${{ matrix.cluster_type }}) on (${{ matrix.os }})
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -44,6 +83,8 @@ jobs:
       TOPIC: foobar
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.pub_sha }}
       - name: Set up K3d for Ubuntu
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -117,7 +158,7 @@ jobs:
   # Perform upgrade test from previous stable version to latest
   k8_cluster_upgrade:
     name: Kubernetes cluster upgrade test
-   # if: false
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -128,6 +169,8 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.pub_sha }}
       - name: Setup K3d
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
@@ -163,6 +206,7 @@ jobs:
   # Verify latest version of CLI
   installer_check:
     name: Installer check
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -170,6 +214,8 @@ jobs:
         version: [latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.pub_sha }}
       - name: Set the expected fluvio version
         run: |
           if [[ -z "${{ env.USE_VERSION }}" ]]; then
@@ -202,6 +248,7 @@ jobs:
 
   cli-platform-cross-version-test:
     name: CLI (${{ matrix.cli_version }}) x Platform (${{ matrix.cluster_version }}) version test
+    needs: setup
     #if: false
     runs-on: ${{ matrix.os }}
     env:
@@ -214,6 +261,8 @@ jobs:
         cli_version: [stable, latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.setup.pub_sha }}
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
