@@ -443,13 +443,12 @@ impl LocalInstaller {
         pb.finish_and_clear();
         drop(pb);
 
+        self.set_profile()?;
+
         let pb = self.pb_factory.create()?;
         let fluvio = self.launch_sc(&address, port, &pb).await?;
         pb.println(InstallProgressMessage::ScLaunched.msg());
         pb.finish_and_clear();
-
-        // set profile as long as sc is up
-        self.set_profile()?;
 
         let pb: ProgressRenderer = self.pb_factory.create()?;
 
