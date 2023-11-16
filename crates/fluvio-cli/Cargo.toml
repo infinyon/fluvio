@@ -86,7 +86,7 @@ fluvio = { workspace = true  }
 fluvio-socket = { workspace = true }
 fluvio-command = { workspace = true  }
 fluvio-package-index = { workspace = true }
-fluvio-extension-common = { workspace = true,  features = ["target"] }
+fluvio-extension-common = { workspace = true,  features = ["target", "installation"] }
 fluvio-channel = { workspace = true }
 fluvio-cli-common = { workspace = true  }
 fluvio-hub-util = { workspace = true, features = ["connector-cmds"] }

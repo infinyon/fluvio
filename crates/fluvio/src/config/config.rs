@@ -395,6 +395,17 @@ impl Config {
         Ok(cluster)
     }
 
+    /// Returns the mutable reference to FluvioConfig belonging to the current profile.
+    pub fn current_cluster_mut(&mut self) -> Result<&mut FluvioConfig, FluvioError> {
+        let profile = self.current_profile()?.clone();
+        let maybe_cluster = self.cluster.get_mut(&profile.cluster);
+        let cluster = maybe_cluster.ok_or_else(|| {
+            let profile = profile.cluster;
+            ConfigError::NoClusterForProfile { profile }
+        })?;
+        Ok(cluster)
+    }
+
     /// Returns the FluvioConfig belonging to the named profile.
     pub fn cluster_with_profile(&self, profile_name: &str) -> Option<&FluvioConfig> {
         self.profile

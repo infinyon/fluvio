@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Parser, Args};
 use semver::Version;
 use anyhow::Result;
 
@@ -14,6 +14,8 @@ mod sys;
 mod tls;
 
 use tls::TlsOpt;
+
+use crate::InstallationType;
 
 #[cfg(target_os = "macos")]
 pub fn get_log_directory() -> &'static str {
@@ -170,8 +172,15 @@ pub struct StartOpt {
     #[arg(long)]
     pub service_type: Option<String>,
 
+    #[command(flatten)]
+    pub installation_type: IntallationTypeOpt,
+}
+
+#[derive(Debug, Args)]
+#[group(multiple = false)]
+pub struct IntallationTypeOpt {
     /// install local spu/sc
-    #[arg(long, conflicts_with_all = &["k8", "local_k8", "read_only"])]
+    #[arg(long)]
     local: bool,
 
     /// install local spu/sc with metadata stored in K8s
@@ -179,11 +188,11 @@ pub struct StartOpt {
     local_k8: bool,
 
     /// install on K8s
-    #[arg(long, default_value = "true", conflicts_with_all = &["local", "local_k8", "read_only"])]
+    #[arg(long, default_value = "true")]
     k8: bool,
 
     /// Start SC in read only mode
-    #[arg(long, conflicts_with_all = &["k8", "local", "local_k8"], value_name = "config path")]
+    #[arg(long, value_name = "config path")]
     read_only: Option<PathBuf>,
 }
 
@@ -195,13 +204,28 @@ impl StartOpt {
 
         if self.sys_only {
             process_sys(&self, upgrade)?;
-        } else if self.local || self.local_k8 || self.read_only.is_some() {
+        } else if self.installation_type.is_local_group() {
             process_local(self, platform_version).await?;
         } else {
             process_k8(self, platform_version, upgrade).await?;
         }
 
         Ok(())
+    }
+}
+
+impl IntallationTypeOpt {
+    fn is_local_group(&self) -> bool {
+        self.local || self.local_k8 || self.read_only.is_some()
+    }
+
+    fn get(&self) -> InstallationType {
+        match (self.local, self.local_k8, &self.read_only) {
+            (true, _, _) => InstallationType::Local,
+            (_, true, _) => InstallationType::LocalK8,
+            (_, _, Some(_)) => InstallationType::ReadOnly,
+            _ => InstallationType::K8,
+        }
     }
 }
 

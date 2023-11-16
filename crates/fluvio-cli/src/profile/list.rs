@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use fluvio_extension_common::installation::InstallationType;
 use serde::Serialize;
 use comfy_table::Row;
 use clap::Parser;
@@ -50,7 +51,7 @@ fn format_tls(tls: &TlsPolicy) -> &'static str {
 
 impl TableOutputHandler for ListConfig<'_> {
     fn header(&self) -> Row {
-        Row::from(["", "PROFILE", "CLUSTER", "ADDRESS", "TLS"])
+        Row::from(["", "PROFILE", "CLUSTER", "ADDRESS", "TLS", "INSTALLATION"])
     }
 
     fn content(&self) -> Vec<Row> {
@@ -65,13 +66,20 @@ impl TableOutputHandler for ListConfig<'_> {
                     .map(|active| if active { "*" } else { "" })
                     .unwrap_or("");
 
-                let (cluster, addr, tls) = self
+                let (cluster, addr, tls, installation) = self
                     .0
                     .cluster(&profile.cluster)
-                    .map(|it| (&*profile.cluster, &*it.endpoint, format_tls(&it.tls)))
-                    .unwrap_or(("", "", ""));
+                    .map(|it| {
+                        (
+                            &*profile.cluster,
+                            &*it.endpoint,
+                            format_tls(&it.tls),
+                            InstallationType::load_or_default(it).to_string(),
+                        )
+                    })
+                    .unwrap_or(("", "", "", String::new()));
 
-                Row::from([active, profile_name, cluster, addr, tls])
+                Row::from([active, profile_name, cluster, addr, tls, &installation])
             })
             .collect()
     }

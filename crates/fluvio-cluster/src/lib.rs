@@ -48,6 +48,7 @@ pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckRe
 pub use check::{RecoverableCheck, UnrecoverableCheckStatus, CheckSuggestion};
 pub use delete::*;
 pub use fluvio::config as fluvio_config;
+pub use fluvio_extension_common::installation::InstallationType;
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 
