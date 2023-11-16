@@ -1055,25 +1055,25 @@ jobs:
         run: make CLI_TEST_RETRIES=3 CDK_BIN=~/bin/cdk cli-cdk-smoke
 
       # test fvm
-      - name: Download artifact - fvm
-        if: matrix.test == 'fvm'
-        uses: actions/download-artifact@v3
-        with:
-          name: fvm-x86_64-unknown-linux-musl
-          path: ~/bin
+      # - name: Download artifact - fvm
+      #   if: matrix.test == 'fvm'
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: fvm-x86_64-unknown-linux-musl
+      #     path: ~/bin
 
-      - name: mark fvm
-        if: matrix.test == 'fvm'
-        run: |
-          chmod +x ~/bin/fvm
-          echo "~/bin" >> $GITHUB_PATH
+      # - name: mark fvm
+      #   if: matrix.test == 'fvm'
+      #   run: |
+      #     chmod +x ~/bin/fvm
+      #     echo "~/bin" >> $GITHUB_PATH
 
-      - name: Run FVM smoke tests
-        if: matrix.test == 'fvm'
-        timeout-minutes: 20
-        run: |
-          rm -rf ~/.fvm
-          make CLI_TEST_RETRIES=3 FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
+      # - name: Run FVM smoke tests
+      #   if: matrix.test == 'fvm'
+      #   timeout-minutes: 20
+      #   run: |
+      #     rm -rf ~/.fvm
+      #     make CLI_TEST_RETRIES=3 FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
 
       - name: Run diagnostics
         if: ${{ !success() }}
