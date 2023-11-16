@@ -19,6 +19,11 @@ on:
         required: true
         description: ''
         default: true
+      hotpatch:
+        type: boolean
+        required: true
+        description: ''
+        default: false
 
   workflow_call:
     inputs:
