@@ -44,7 +44,7 @@ env:
 
 jobs:
   hotpatch:
-    name: CD_Dev check
+    name: Hotpatch
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
