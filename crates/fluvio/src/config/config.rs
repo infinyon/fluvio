@@ -489,7 +489,7 @@ pub mod test {
     fn test_config() {
         // test read & parse
         let mut conf_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
-            .expect("parse failed");
+            .expect("failed to parse file");
         let config = conf_file.mut_config();
 
         assert_eq!(config.version(), "1.0");
