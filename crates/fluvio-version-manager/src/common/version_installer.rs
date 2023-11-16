@@ -72,7 +72,7 @@ impl VersionInstaller {
         tmp_dir: &TempDir,
         package_set: &PackageSet,
     ) -> Result<PathBuf> {
-        let version_path = fvm_versions_path()?.join(&self.channel.to_string());
+        let version_path = fvm_versions_path()?.join(self.channel.to_string());
 
         if !version_path.exists() {
             create_dir(&version_path)?;
