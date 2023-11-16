@@ -2,7 +2,68 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.0 - UNRELEASED
+## Platform Version 0.11.1 - UNRELEASED
+
+## Platform Version 0.11.0 - 2023-11-16
+
+### Other
+
+* Use a different config for tests updating the file ([#3708](https://github.com/infinyon/fluvio/issues/3708))
+
+## Platform Version 0.11.0-dev-1 - 2023-11-15
+
+### Added
+
+* Add cascade deletion for local metadata ([#3638](https://github.com/infinyon/fluvio/issues/3638))
+* Add support for cluster metadata ([#3628](https://github.com/infinyon/fluvio/issues/3628))
+
+### CI
+
+* Postrelease 0.10.17 ([#3637](https://github.com/infinyon/fluvio/issues/3637))
+* Update wasmtime to v14.0.1 ([#3625](https://github.com/infinyon/fluvio/issues/3625))
+* Fvm update command ([#3645](https://github.com/infinyon/fluvio/issues/3645))
+* Add `cdk hub` command ([#3612](https://github.com/infinyon/fluvio/issues/3612))
+* Disable fvm on ci ([#3660](https://github.com/infinyon/fluvio/issues/3660))
+* Enable merge_group event in CI ([#3674](https://github.com/infinyon/fluvio/issues/3674))
+* Ci, publish.yml remove branches ([#3690](https://github.com/infinyon/fluvio/issues/3690))
+* Publish-pkgset, print inputs ([#3700](https://github.com/infinyon/fluvio/issues/3700))
+* Release.mk, quotes cause pkgset publish to fail ([#3703](https://github.com/infinyon/fluvio/issues/3703))
+* Ci, switch ci->publish->cd_dev to repo_dispatch ([#3705](https://github.com/infinyon/fluvio/issues/3705))
+
+### Changed
+
+* Update third party dep ([#3656](https://github.com/infinyon/fluvio/issues/3656))
+
+### Fixed
+
+* Sc should use namespace in k8 mode ([#3651](https://github.com/infinyon/fluvio/issues/3651))
+* Use store version on metadata stream filter ([#3664](https://github.com/infinyon/fluvio/issues/3664))
+* Check if custom spu exists on start ([#3668](https://github.com/infinyon/fluvio/issues/3668))
+* Use `pkgset` over `version` ([#3672](https://github.com/infinyon/fluvio/issues/3672))
+* Properly propagate sm errors on produce ([#3671](https://github.com/infinyon/fluvio/issues/3671))
+* Misc fixes to failing tests in CI ([#3685](https://github.com/infinyon/fluvio/issues/3685))
+* Ci fix cd_dev and cd_release ([#3687](https://github.com/infinyon/fluvio/issues/3687))
+* Fvm rename fallback ([#3689](https://github.com/infinyon/fluvio/issues/3689))
+* Skip already published instead of aborting ([#3695](https://github.com/infinyon/fluvio/issues/3695))
+* Ci fix release.mk, publish-pkgset ([#3699](https://github.com/infinyon/fluvio/issues/3699))
+* Ci, fix cd_dev upgrade-test.sh pull intended ver ([#3704](https://github.com/infinyon/fluvio/issues/3704))
+* Ci, fix publish->cd_dev perms for repo_disp ([#3706](https://github.com/infinyon/fluvio/issues/3706))
+* Properly pass owner references in conversions ([#3702](https://github.com/infinyon/fluvio/issues/3702))
+
+### Other
+
+* Move hub connector commands to fluvio-hub-util ([#3611](https://github.com/infinyon/fluvio/issues/3611))
+* Smartmodule latest interface adoption ([#3661](https://github.com/infinyon/fluvio/issues/3661))
+* Use individual cli test retries ([#3676](https://github.com/infinyon/fluvio/issues/3676))
+* Use installation type in cli commands ([#3675](https://github.com/infinyon/fluvio/issues/3675))
+* Ci, patch up workflow sequencing ([#3684](https://github.com/infinyon/fluvio/issues/3684))
+* Fvm user interface improvements ([#3683](https://github.com/infinyon/fluvio/issues/3683))
+
+### Removed
+
+* Remove `fluvio update` command ([#3643](https://github.com/infinyon/fluvio/issues/3643))
+* Deprecate `fluvio install` in place of `fvm` ([#3647](https://github.com/infinyon/fluvio/issues/3647))
+* Deprecate`fluvio install` ([#3655](https://github.com/infinyon/fluvio/issues/3655))
 
 ## Platform Version 0.10.17 - 2023-10-30
 
