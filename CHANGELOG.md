@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Use a different config for tests updating the file ([#3708](https://github.com/infinyon/fluvio/issues/3708))
 
+## Platform Version 0.11.1 - UNRELEASED
+
 ## Platform Version 0.11.0-dev-1 - 2023-11-15
 
 ### Added
