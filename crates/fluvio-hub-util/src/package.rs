@@ -69,7 +69,7 @@ fn package_assemble<P: AsRef<Path>, T: AsRef<Path>>(
         augment_arch(&mut pm_clean, target);
     }
 
-    let pkgtarname = outdir.as_ref().join(&pm.packagefile_name_unsigned());
+    let pkgtarname = outdir.as_ref().join(pm.packagefile_name_unsigned());
 
     // crate manifest blob
     //todo: create in tmpdir/tmpfile?
