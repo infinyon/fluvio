@@ -1,0 +1,28 @@
+name: Publish Package Set
+
+permissions: read-all
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to Publish"
+        required: true
+
+jobs:
+  publish_pkgset:
+    name: Publsih Package Set
+    if: github.event_name == 'merge_group'
+    needs:
+      - docker_push
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: Domnload Artifacts
+        run: |
+          mkdir -p ./artifacts
+          gh release download --dir ./artifacts -R infinyon/fluvio ${{ inputs.version }}
