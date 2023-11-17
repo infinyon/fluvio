@@ -68,6 +68,7 @@ fluvio-future = { workspace = true,features = [
 ] }
 fluvio-smartengine = { workspace = true, optional = true }
 fluvio-smartmodule = { workspace = true}
+fluvio-version = { workspace = true }
 
 [dev-dependencies]
 once_cell = { workspace = true }

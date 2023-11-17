@@ -7,8 +7,8 @@ use url::Url;
 
 use fluvio_hub_util::HUB_REMOTE;
 use fluvio_hub_util::fvm::{Client, Channel, PackageSet};
+use fluvio_version::build::TARGET;
 
-use crate::common::TARGET;
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
 use crate::common::version_installer::VersionInstaller;

@@ -11,10 +11,11 @@ use fluvio_sc_schema::objects::{
     ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
 };
 use fluvio_sc_schema::AdminPublicApiKey;
+use fluvio_version::VERSION;
 
 // Fluvi Client version 0.14.0 corresponds to Platform version 10.0.0
 
-static PLATFORM_VER: Lazy<Version> = Lazy::new(|| Version::parse(crate::VERSION).unwrap());
+static PLATFORM_VER: Lazy<Version> = Lazy::new(|| Version::parse(VERSION).unwrap());
 
 #[instrument(skip(request))]
 pub async fn handle_api_versions_request(

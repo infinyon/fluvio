@@ -7,6 +7,7 @@ use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_channel::FLUVIO_RELEASE_CHANNEL;
+use fluvio_version::{GIT_HASH, VERSION};
 
 use crate::metadata::subcommand_metadata;
 
@@ -20,7 +21,7 @@ impl VersionOpt {
             self.print("Release Channel", &channel_name);
         };
 
-        self.print("Fluvio CLI", crate::VERSION.trim());
+        self.print("Fluvio CLI", VERSION);
         self.print("Fluvio CLI Arch", CURRENT_PLATFORM);
 
         if let Some(sha) = self.format_cli_sha() {
@@ -32,7 +33,7 @@ impl VersionOpt {
         let platform = self.format_platform_version(target).await;
         self.print("Fluvio Platform", &platform);
 
-        self.print("Git Commit", env!("GIT_HASH"));
+        self.print("Git Commit", GIT_HASH);
         if let Some(os_info) = os_info() {
             self.print("OS Details", &os_info);
         }

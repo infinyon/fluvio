@@ -1,4 +1,5 @@
 use fluvio_storage::FileReplica;
+use fluvio_version::{GIT_HASH, VERSION};
 
 use crate::config::{SpuConfig, SpuOpt};
 use crate::services::create_internal_server;
@@ -9,8 +10,6 @@ use crate::core::GlobalContext;
 use crate::control_plane::ScDispatcher;
 
 type FileReplicaContext = GlobalContext<FileReplica>;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_loop(opt: SpuOpt) {
     use std::time::Duration;
@@ -30,8 +29,8 @@ pub fn main_loop(opt: SpuOpt) {
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    info!(version = crate::VERSION, "Platform");
-    info!(commit = env!("GIT_HASH"), "Git");
+    info!(version = VERSION, "Platform");
+    info!(commit = GIT_HASH, "Git");
     info!(name = ?sys.name(),"System");
     info!(kernel = ?sys.kernel_version(),"System");
     info!(os_version = ?sys.long_os_version(),"System");

@@ -6,9 +6,9 @@ pub mod test_meta;
 use once_cell::sync::Lazy;
 
 static VERSION: Lazy<String> = Lazy::new(|| {
-    let version = include_str!("../../VERSION");
+    use fluvio_version::VERSION;
     match option_env!("FLUVIO_VERSION_SUFFIX") {
-        Some(suffix) => format!("{version}-{suffix}"),
-        None => version.to_string(),
+        Some(suffix) => format!("{VERSION}-{suffix}"),
+        None => VERSION.to_string(),
     }
 });

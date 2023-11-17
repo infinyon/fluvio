@@ -76,6 +76,7 @@ fluvio-controlplane-metadata = { workspace = true,  features = ["k8",] }
 fluvio-sc-schema = { workspace = true  }
 fluvio-types = { workspace = true  }
 fluvio-channel = { workspace = true  }
+fluvio-version = { workspace = true }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["task", "fixture"] }

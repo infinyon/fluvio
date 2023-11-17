@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 use crate::Error;
 use std::borrow::Cow;
 
-const PACKAGE_TARGET: &str = env!("PACKAGE_TARGET");
+use fluvio_version::build::TARGET;
 
 /// Detects the target triple of the current build and returns
 /// the name of a compatible build target on packages.fluvio.io.
@@ -11,7 +11,7 @@ const PACKAGE_TARGET: &str = env!("PACKAGE_TARGET");
 /// Returns `Some(Target)` if there is a compatible target, or
 /// `None` if this target is unsupported or has no compatible target.
 pub fn package_target() -> Result<Target, Error> {
-    let target = PACKAGE_TARGET.parse()?;
+    let target = TARGET.parse()?;
     Ok(target)
 }
 

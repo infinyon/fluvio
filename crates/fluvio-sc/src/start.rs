@@ -9,6 +9,7 @@ use tracing::info;
 
 use fluvio_future::{task::run_block_on, timer::sleep};
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient, local::LocalMetadataStorage};
+use fluvio_version::{GIT_HASH, VERSION};
 use fluvio_stream_model::{store::k8::K8MetaItem, core::MetadataItem};
 use k8_client::{K8Client, K8Config, memory::MemoryClient};
 
@@ -24,7 +25,7 @@ pub fn main_loop(opt: ScOpt) {
     println!("CLI Option: {opt:#?}");
 
     inspect_system();
-    println!("Starting SC, platform: {}", crate::VERSION);
+    println!("Starting SC, platform: {VERSION}");
 
     match opt.mode() {
         RunMode::Local(metadata) => {
@@ -73,8 +74,8 @@ fn inspect_system() {
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    info!(version = crate::VERSION, "Platform");
-    info!(commit = env!("GIT_HASH"), "Git");
+    info!(version = VERSION, "Platform");
+    info!(commit = GIT_HASH, "Git");
     info!(name = ?sys.name(),"System");
     info!(kernel = ?sys.kernel_version(),"System");
     info!(os_version = ?sys.long_os_version(),"System");

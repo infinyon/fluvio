@@ -12,6 +12,7 @@ use fluvio_index::{PackageId, HttpAgent};
 use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 };
+use fluvio_version::VERSION;
 
 use crate::metadata::subcommand_metadata;
 
@@ -279,7 +280,7 @@ pub async fn check_update_available(
     let release = package.latest_release_for_target(&target, prerelease)?;
     let latest_version = release.version.clone();
     let current_version =
-        Version::parse(crate::VERSION).expect("Fluvio CLI 'VERSION' should be a valid semver");
+        Version::parse(VERSION).expect("Fluvio CLI 'VERSION' should be a valid semver");
 
     if current_version < latest_version {
         Ok(Some(latest_version))

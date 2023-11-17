@@ -3,8 +3,7 @@ use clap::Args;
 use current_platform::CURRENT_PLATFORM;
 use crate::FLUVIO_RELEASE_CHANNEL;
 use sha2::{Digest, Sha256};
-
-const VERSION: &str = include_str!("../../../VERSION");
+use fluvio_version::{GIT_HASH, VERSION};
 
 /// Display version information
 #[derive(Debug, Args)]
@@ -26,16 +25,14 @@ impl BasicVersionCmd {
             println!("Release Channel: {channel}");
         }
 
-        println!("{cli_name} CLI: {}", VERSION.trim());
+        println!("{cli_name} CLI: {VERSION}");
         println!("{cli_name} CLI Arch: {CURRENT_PLATFORM}");
 
         if let Some(sha) = self.format_cli_sha() {
             println!("{cli_name} CLI SHA256: {}", sha);
         }
 
-        if let Ok(git_hash) = std::env::var("GIT_HASH") {
-            println!("Git Commit: {git_hash}");
-        }
+        println!("Git Commit: {GIT_HASH}");
 
         if let Some(info) = os_info() {
             println!("OS Details: {info}");

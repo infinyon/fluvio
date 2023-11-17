@@ -1,0 +1,12 @@
+[package]
+name = "fluvio-version"
+version = "0.0.0"
+edition = "2021"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Utility for fluvio version information"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[build-dependencies]
+built = "0.7.0"

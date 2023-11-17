@@ -1036,6 +1036,7 @@ dependencies = [
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-hub-util",
+ "fluvio-version",
  "include_dir",
  "serde",
  "sysinfo",
@@ -2483,6 +2484,7 @@ dependencies = [
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
+ "fluvio-version",
  "fluvio_ws_stream_wasm",
  "futures-util",
  "once_cell",
@@ -2614,6 +2616,7 @@ dependencies = [
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
+ "fluvio-version",
  "futures 0.3.29",
  "futures-util",
  "handlebars",
@@ -2656,6 +2659,7 @@ dependencies = [
  "fluvio-smartengine",
  "fluvio-smartmodule",
  "fluvio-types",
+ "fluvio-version",
  "futures 0.3.29",
  "hex",
  "home",
@@ -2695,6 +2699,7 @@ dependencies = [
  "fluvio-helm",
  "fluvio-sc-schema",
  "fluvio-types",
+ "fluvio-version",
  "flv-util",
  "futures-channel",
  "futures-util",
@@ -2968,8 +2973,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-package-index"
-version = "0.7.6"
+version = "0.7.7"
 dependencies = [
+ "fluvio-version",
  "http",
  "once_cell",
  "semver 1.0.20",
@@ -3023,6 +3029,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",
+ "fluvio-version",
  "semver 1.0.20",
  "serde_json",
  "thiserror",
@@ -3054,6 +3061,7 @@ dependencies = [
  "fluvio-stream-dispatcher",
  "fluvio-stream-model",
  "fluvio-types",
+ "fluvio-version",
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
@@ -3151,19 +3159,19 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.6"
+version = "0.14.7"
 dependencies = [
  "async-channel",
  "async-lock",
  "async-net",
  "async-trait",
- "built",
  "bytes 1.5.0",
  "cfg-if",
  "event-listener 3.0.1",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-types",
+ "fluvio-version",
  "futures-util",
  "nix 0.27.1",
  "once_cell",
@@ -3208,6 +3216,7 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-storage",
  "fluvio-types",
+ "fluvio-version",
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
@@ -3416,6 +3425,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-future",
  "fluvio-types",
+ "fluvio-version",
  "futures-lite",
  "hdrhistogram",
  "humantime",
@@ -3444,6 +3454,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-version"
+version = "0.0.0"
+dependencies = [
+ "built",
+]
+
+[[package]]
 name = "fluvio-version-manager"
 version = "0.1.1"
 dependencies = [
@@ -3457,6 +3474,7 @@ dependencies = [
  "dirs 5.0.1",
  "fluvio-future",
  "fluvio-hub-util",
+ "fluvio-version",
  "fs_extra",
  "hex",
  "semver 1.0.20",

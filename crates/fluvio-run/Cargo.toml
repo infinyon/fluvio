@@ -35,3 +35,4 @@ fluvio-future = { workspace = true, features = ["subscriber"] }
 fluvio-extension-common = { workspace = true }
 fluvio-sc = { path = "../fluvio-sc", default-features = false }
 fluvio-spu = { path = "../fluvio-spu", default-features = false  }
+fluvio-version = { workspace = true }

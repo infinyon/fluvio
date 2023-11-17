@@ -7,8 +7,7 @@ use error::Result;
 use fluvio_spu::SpuOpt;
 use fluvio_sc::cli::ScOpt;
 use fluvio_extension_common::FluvioExtensionMetadata;
-
-const VERSION: &str = include_str!("../../../VERSION");
+use fluvio_version::{GIT_HASH, VERSION};
 
 #[derive(Debug, Parser)]
 #[command(version = crate::VERSION)]
@@ -73,7 +72,7 @@ pub struct VersionOpt {}
 
 impl VersionOpt {
     pub fn process(self) -> Result<()> {
-        println!("Git Commit: {}", env!("GIT_HASH"));
+        println!("Git Commit: {GIT_HASH}");
         println!("Platform Version: {VERSION}");
 
         Ok(())

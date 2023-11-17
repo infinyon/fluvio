@@ -37,6 +37,7 @@ fluvio-future = { workspace = true, features = ["task", "timer", "subscriber", "
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-command = { workspace = true  }
 fluvio-controlplane-metadata = { workspace = true, features = ["k8"] }
+fluvio-version = { workspace = true }
 
 [lib]
 path = "lib.rs"

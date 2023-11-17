@@ -17,8 +17,6 @@ cfg_if::cfg_if! {
 
 pub use config::SpuOpt;
 
-const VERSION: &str = include_str!("../../../VERSION");
-
 pub(crate) mod traffic {
     use fluvio_protocol::api::RequestHeader;
 

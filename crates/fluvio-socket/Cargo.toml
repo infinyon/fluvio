@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.14.6"
+version = "0.14.7"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -40,6 +40,7 @@ fluvio-protocol = { workspace = true, features = [
     "codec",
     "link",
 ] }
+fluvio-version = { workspace = true }
 
 [dev-dependencies]
 portpicker = { workspace = true }
@@ -53,8 +54,3 @@ fluvio-future = { workspace = true, features = [
     "native2_tls",
 ] }
 fluvio-types = { workspace = true, features = ["events"] }
-
-
-
-[build-dependencies]
-built = "0.7.0"

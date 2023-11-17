@@ -1,12 +1,11 @@
 [package]
 name = "fluvio-package-index"
-version = "0.7.6"
+version = "0.7.7"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Package Index"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 edition = "2021"
-build = "build.rs"
 
 [lib]
 name = "fluvio_index"
@@ -24,3 +23,5 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true, features = ["serde"] }
+
+fluvio-version = { workspace = true }

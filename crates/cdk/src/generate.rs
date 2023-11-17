@@ -7,6 +7,8 @@ use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
 use tempfile::TempDir;
 
+use fluvio_version::{GIT_HASH};
+
 static CONNECTOR_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../connector/cargo_template");
 
@@ -42,8 +44,7 @@ impl GenerateCmd {
             ..Default::default()
         };
 
-        let fluvio_dependency_version_hash =
-            format!("fluvio-cargo-dependency-hash={}", env!("GIT_HASH"));
+        let fluvio_dependency_version_hash = format!("fluvio-cargo-dependency-hash={GIT_HASH}");
 
         let args = GenerateArgs {
             name: self.name,

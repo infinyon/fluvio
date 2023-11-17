@@ -53,9 +53,9 @@ impl VersionedSocket {
         // Query for API versions
 
         let version = ApiVersionsRequest {
-            client_version: crate::built_info::PKG_VERSION.into(),
-            client_os: crate::built_info::CFG_OS.into(),
-            client_arch: crate::built_info::CFG_TARGET_ARCH.into(),
+            client_version: fluvio_version::build::PKG_VERSION.into(),
+            client_os: fluvio_version::build::CFG_OS.into(),
+            client_arch: fluvio_version::build::CFG_TARGET_ARCH.into(),
         };
 
         debug!(client_version = %version.client_version, "querying versions");

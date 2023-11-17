@@ -7,7 +7,6 @@ description = "Fluvio Stream Controller"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
 publish = false
-build = "build.rs"
 
 [lib]
 name = "fluvio_sc"
@@ -65,6 +64,7 @@ fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-service = { workspace = true  }
 flv-tls-proxy = { workspace = true }
+fluvio-version = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true }
