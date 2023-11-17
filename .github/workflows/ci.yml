@@ -918,10 +918,11 @@ jobs:
   # Smoke test across different version of fluvio
   cli_smoke:
     name: CLI smoke test (${{ matrix.test }}) CLI (${{ matrix.cli_version }}) on cluster (${{ matrix.cluster_version }})
-    needs: build_image
+    needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     env:
       SPU: 2
+      CLI_TEST_RETRIES: 3   
     strategy:
  #     fail-fast: false
       matrix:
@@ -942,10 +943,6 @@ jobs:
         uses: mig4/setup-bats@v1
         with:
           bats-version: ${{ env.BATS_VERSION }}
-      - name: Install K3d
-        run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-          ./k8-util/cluster/reset-k3d.sh
 
       # Download stable, this will load into ~/.fluvio/bin which will be in PATH
       # from now, fluvio will be stable
@@ -960,10 +957,18 @@ jobs:
         with:
           name: fluvio-x86_64-unknown-linux-musl
           path: ~/bin
-      - name: rename dev fluvio as fluvio-stable
+      - name: rename dev fluvio as fluvio-dev
         run: |
           chmod +x ~/bin/fluvio
-          mv ~/bin/fluvio ~/.fluvio/bin/fluvio-dev
+          mv ~/bin/fluvio ~/bin/fluvio-dev
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v3
+        with:
+          name: fluvio-run-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: Mark fluvio-run as executable
+        run: |
+          chmod +x ~/bin/fluvio-run
 
      # Set FLUVIO_BIN to either stable or dev, this is needed by CLI test
       - name: set DEV fluvio for as test CLI
@@ -971,7 +976,7 @@ jobs:
         run: |
           FLUVIO_CLI_RELEASE_CHANNEL=dev
           echo "FLUVIO_CLI_RELEASE_CHANNEL=${FLUVIO_CLI_RELEASE_CHANNEL}" >> $GITHUB_ENV
-          FLUVIO_BIN=~/.fluvio/bin/fluvio-dev
+          FLUVIO_BIN=~/bin/fluvio-dev
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
       - name: set stable fluvio for as test CLI
         if: matrix.cli_version == 'stable'
@@ -982,33 +987,23 @@ jobs:
           echo "FLUVIO_BIN=${FLUVIO_BIN}" >> $GITHUB_ENV
 
 
-      # Deploy stable cluster
+      # Start stable cluster
       - name: Start cluster for stable
         if: matrix.cluster_version == 'stable'
         timeout-minutes: 10
         run: |
           FLUVIO_CLUSTER_RELEASE_CHANNEL=stable
           echo "FLUVIO_CLUSTER_RELEASE_CHANNEL=${FLUVIO_CLUSTER_RELEASE_CHANNEL}" >> $GITHUB_ENV
-          fluvio cluster start --spu ${{ env.SPU }}
+          fluvio cluster start --local --spu ${{ env.SPU }}
 
-      # download and start cluster for dev
-      - name: Deploy dev cluster on k8
-        uses: actions/download-artifact@v3
+      # Start dev cluster
+      - name: Start cluster for dev
         if: matrix.cluster_version == 'dev'
-        with:
-          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          path: /tmp
-      - name: Load Fluvio Docker Image
         timeout-minutes: 10
-        if: matrix.cluster_version == 'dev'
         run: |
           FLUVIO_CLUSTER_RELEASE_CHANNEL=dev
           echo "FLUVIO_CLUSTER_RELEASE_CHANNEL=${FLUVIO_CLUSTER_RELEASE_CHANNEL}" >> $GITHUB_ENV
-          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
-          docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-          fluvio-dev cluster start --develop --spu ${{ env.SPU }}
+          ~/bin/fluvio-dev cluster start --local --spu ${{ env.SPU }}
 
       - name: Build smartmodules for E2E test
         run: |
@@ -1018,7 +1013,7 @@ jobs:
       - name: Run Fluvio CLI smoke tests
         if: matrix.test == 'fluvio'
         timeout-minutes: 15
-        run: CLI_TEST_RETRIES=3 make cli-fluvio-smoke
+        run: make cli-fluvio-smoke
 
       # test smdk
       - name: Download artifact - smdk
@@ -1035,7 +1030,7 @@ jobs:
       - name: Run SMDK smoke tests
         if: matrix.test == 'smdk'
         timeout-minutes: 20
-        run: make CLI_TEST_RETRIES=3 SMDK_BIN=~/bin/smdk cli-smdk-smoke
+        run: make SMDK_BIN=~/bin/smdk cli-smdk-smoke
 
       # test cdk
       - name: Download artifact - cdk
@@ -1052,7 +1047,7 @@ jobs:
       - name: Run CDK smoke tests
         if: matrix.test == 'cdk'
         timeout-minutes: 20
-        run: make CLI_TEST_RETRIES=3 CDK_BIN=~/bin/cdk cli-cdk-smoke
+        run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
 
       # test fvm
       - name: Download artifact - fvm
@@ -1073,12 +1068,12 @@ jobs:
         timeout-minutes: 20
         run: |
           rm -rf ~/.fvm
-          make CLI_TEST_RETRIES=3 FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
+          make FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
 
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
-        run: ~/.fluvio/bin/fluvio cluster diagnostics
+        run: ~/bin/fluvio-dev cluster diagnostics
       - name: Upload diagnostics
         uses: actions/upload-artifact@v3
         timeout-minutes: 5
