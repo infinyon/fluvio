@@ -929,7 +929,7 @@ jobs:
         os: [ubuntu-latest]
         cluster_version: [stable, dev]
         cli_version: [stable, dev]
-        test: [fluvio,smdk,cdk,fvm]
+        test: [fluvio,smdk,cdk]
         # no need to test stable to stable
         exclude:
           - cluster_version:  stable
@@ -1049,27 +1049,6 @@ jobs:
         timeout-minutes: 20
         run: make CDK_BIN=~/bin/cdk cli-cdk-smoke
 
-      # test fvm
-      - name: Download artifact - fvm
-        if: matrix.test == 'fvm'
-        uses: actions/download-artifact@v3
-        with:
-          name: fvm-x86_64-unknown-linux-musl
-          path: ~/bin
-
-      - name: mark fvm
-        if: matrix.test == 'fvm'
-        run: |
-          chmod +x ~/bin/fvm
-          echo "~/bin" >> $GITHUB_PATH
-
-      - name: Run FVM smoke tests
-        if: matrix.test == 'fvm'
-        timeout-minutes: 20
-        run: |
-          rm -rf ~/.fvm
-          make FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
-
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
@@ -1082,6 +1061,37 @@ jobs:
           name: cli-smoke_log
           path: diagnostics*.gz
           retention-days: 1
+
+  fvm_cli_smoke:
+    name: CLI smoke test (fvm)
+    needs: build_primary_binaries
+    runs-on: ${{ matrix.os }}
+    env:
+      CLI_TEST_RETRIES: 3   
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: ${{ env.BATS_VERSION }}
+      - name: Download artifact - fvm
+        uses: actions/download-artifact@v3
+        with:
+          name: fvm-x86_64-unknown-linux-musl
+          path: ~/bin
+      - name: mark fvm
+        run: |
+          chmod +x ~/bin/fvm
+          echo "~/bin" >> $GITHUB_PATH
+      - name: Run FVM smoke tests
+        timeout-minutes: 20
+        run: |
+          rm -rf ~/.fvm
+          make FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
+
 
   read_only_test:
     runs-on: ubuntu-latest
