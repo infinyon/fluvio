@@ -14,6 +14,7 @@ use self::uninstall::SelfUninstallOpt;
 #[derive(Debug, Parser)]
 pub enum ItselfCommand {
     /// Install `fvm` and setup the workspace
+    #[clap(hide = true)]
     Install(SelfInstallOpt),
     /// Uninstall `fvm` and removes the workspace
     Uninstall(SelfUninstallOpt),
