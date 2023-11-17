@@ -1,9 +1,16 @@
 //! Hub FVM API Client
 
 use anyhow::{Error, Result};
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::fvm::{Channel, PackageSet, PackageSetRecord};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ApiError {
+    pub status: u16,
+    pub message: String,
+}
 
 /// HTTP Client for interacting with the Hub FVM API
 pub struct Client {
@@ -24,17 +31,26 @@ impl Client {
         let mut res = surf::get(url)
             .await
             .map_err(|err| Error::msg(err.to_string()))?;
-        let pkgset_record = res.body_json::<PackageSetRecord>().await.map_err(|err| {
-            tracing::error!(?err, "Failed to parse PackageSet from Hub");
-            Error::msg(format!(
-                "Server responded with status code {}",
-                err.status()
-            ))
+        let res_status = res.status();
+
+        if res_status.is_success() {
+            let pkgset_record = res.body_json::<PackageSetRecord>().await.map_err(|err| {
+                tracing::debug!(?err, "Failed to parse PackageSet from Hub");
+                Error::msg("Failed to parse server's response")
+            })?;
+
+            tracing::info!(?pkgset_record, "Found PackageSet");
+            return Ok(pkgset_record.into());
+        }
+
+        let error = res.body_json::<ApiError>().await.map_err(|err| {
+            tracing::debug!(?err, "Failed to parse API Error from Hub");
+            Error::msg(format!("Server responded with status code {}", res_status))
         })?;
 
-        tracing::info!(?pkgset_record, "Found PackageSet");
+        tracing::debug!(?error, "Server responded with not successful status code");
 
-        Ok(pkgset_record.into())
+        Err(anyhow::anyhow!(error.message))
     }
 
     /// Builds the URL to the Hub API for fetching a [`PackageSet`] using the
