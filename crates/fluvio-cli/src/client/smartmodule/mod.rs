@@ -3,15 +3,19 @@ mod list;
 mod delete;
 mod watch;
 
+// testing a smartmodule depends on cranelift
+// but cranelift is not available for arm architectures
+#[cfg(not(target_arch = "arm"))]
+mod test;
+
 pub use cmd::SmartModuleCmd;
 
 mod cmd {
-
     use std::sync::Arc;
     use std::fmt::Debug;
 
     use async_trait::async_trait;
-    use clap::Parser;
+    use clap::Subcommand;
     use anyhow::Result;
 
     use fluvio::Fluvio;
@@ -25,13 +29,15 @@ mod cmd {
     use super::delete::DeleteSmartModuleOpt;
     use super::watch::WatchSmartModuleOpt;
 
-    #[derive(Debug, Parser)]
+    #[derive(Debug, Subcommand)]
     pub enum SmartModuleCmd {
         Create(CreateSmartModuleOpt),
         List(ListSmartModuleOpt),
         Watch(WatchSmartModuleOpt),
         /// Delete one or more SmartModules with the given name(s)
         Delete(DeleteSmartModuleOpt),
+        #[cfg(not(target_arch = "arm"))]
+        Test(super::test::TestSmartModuleOpt),
     }
 
     #[async_trait]
@@ -52,6 +58,10 @@ mod cmd {
                     opt.process(out, target).await?;
                 }
                 Self::Watch(opt) => {
+                    opt.process(out, target).await?;
+                }
+                #[cfg(not(target_arch = "arm"))]
+                Self::Test(opt) => {
                     opt.process(out, target).await?;
                 }
             }

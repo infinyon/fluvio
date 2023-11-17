@@ -16,17 +16,18 @@ path = "src/lib.rs"
 default = ["fluvio-types"]
 file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
 version-cmd = ["dep:current_platform", "dep:clap", "dep:sysinfo"]
+smartmodule-test = ["file-records", "dep:fluvio-sc-schema", "dep:fluvio-smartmodule", "dep:fluvio", "dep:fluvio-smartengine", "dep:clap"]
 
 [dependencies]
 anyhow = { workspace = true }
 current_platform = { workspace = true, optional = true }
 clap = { workspace = true, optional = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
 futures = { workspace = true, features = ["std", "io-compat"]}
 home = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
-
-
 semver = { workspace = true }
 sha2 = { workspace = true }
 sysinfo = { workspace = true, optional = true }
@@ -34,9 +35,13 @@ tempfile = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 
+fluvio = { path = "../fluvio", optional = true, default-features = false }
 fluvio-package-index = { workspace = true,  features = ["http_agent"] }
 fluvio-types = { workspace = true , optional = true }
 fluvio-protocol = { workspace = true,  optional = true }
+fluvio-sc-schema = { path = "../fluvio-sc-schema", optional = true }
+fluvio-smartmodule = { path = "../fluvio-smartmodule", optional = true, default-features = false }
+fluvio-smartengine = { path = "../fluvio-smartengine", optional = true, features = ["transformation"] }
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 isahc = { version = "1.7", default-features = false, features = ["static-curl"] }

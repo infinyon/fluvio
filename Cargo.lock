@@ -2644,11 +2644,17 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "bytes 1.5.0",
+ "chrono",
  "clap",
  "current_platform",
+ "fluvio",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-protocol",
+ "fluvio-sc-schema",
+ "fluvio-smartengine",
+ "fluvio-smartmodule",
  "fluvio-types",
  "futures 0.3.29",
  "hex",
@@ -6970,10 +6976,8 @@ name = "smartmodule-development-kit"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "bytes 1.5.0",
  "cargo-builder",
  "cargo-generate",
- "chrono",
  "clap",
  "current_platform",
  "dirs 5.0.1",
@@ -6987,11 +6991,9 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-smartengine",
- "fluvio-smartmodule",
  "include_dir",
  "lib-cargo-crate",
  "tempfile",
- "thiserror",
  "toml 0.8.6",
  "tracing",
 ]

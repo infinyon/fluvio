@@ -14,11 +14,8 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-chrono = { workspace = true }
 tracing = { workspace = true }
-thiserror = { workspace = true }
 anyhow = { workspace = true }
-bytes = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context", "env", "wrap_help", "suggestions"], default-features = false }
 current_platform = { workspace = true }
 dirs = { workspace = true }
@@ -36,8 +33,7 @@ fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-future = { workspace = true, features = ["subscriber"]}
 fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation"] }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
-fluvio-smartmodule = { path = "../fluvio-smartmodule",  default-features = false }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
 fluvio-sc-schema = { path = "../fluvio-sc-schema" }
-fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd"]}
+fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd", "smartmodule-test"] }
 cargo-builder = { path = "../cargo-builder"}
