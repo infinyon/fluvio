@@ -1,10 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Attribute, Error, Field, Meta, Token, Type};
-
-use crate::util::{get_lit_int, get_lit_str};
+use syn::{Attribute, Error, Field, Lit, Meta, NestedMeta, Type};
 
 #[derive(Clone)]
 pub(crate) struct NamedProp {
@@ -194,34 +191,29 @@ impl PropAttrs {
 
         // Find all supported field level attributes in one go.
         for attribute in attrs.iter() {
-            if attribute.path().is_ident("varint") {
+            if attribute.path.is_ident("varint") {
                 prop_attrs.varint = true;
-            } else if attribute.path().is_ident("fluvio") {
-                if let Meta::List(list) = &attribute.meta {
-                    if let Ok(list_args) =
-                        list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
-                    {
-                        for args_meta in list_args.iter() {
-                            if let Meta::NameValue(args_data) = args_meta {
-                                let lit_expr = &args_data.value;
-
-                                if let Some(args_name) = args_data.path.get_ident() {
-                                    if args_name == "min_version" {
-                                        let value = get_lit_int("min_version", lit_expr)?;
-                                        prop_attrs.min_version = value.base10_parse::<i16>()?;
-                                    } else if args_name == "max_version" {
-                                        let value = get_lit_int("max_version", lit_expr)?;
-                                        prop_attrs.max_version = Some(value.base10_parse::<i16>()?);
-                                    } else if args_name == "default" {
-                                        let value = get_lit_str("default", lit_expr)?;
-                                        prop_attrs.default_value = Some(value.value());
-                                    } else {
-                                        tracing::warn!(
-                                            "#[fluvio({})] does nothing here.",
-                                            args_name.to_token_stream().to_string(),
-                                        );
-                                    }
+            } else if attribute.path.is_ident("fluvio") {
+                if let Ok(Meta::List(list)) = attribute.parse_meta() {
+                    for kf_attr in list.nested {
+                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
+                            if name_value.path.is_ident("min_version") {
+                                if let Lit::Int(lit_int) = name_value.lit {
+                                    prop_attrs.min_version = lit_int.base10_parse::<i16>()?;
                                 }
+                            } else if name_value.path.is_ident("max_version") {
+                                if let Lit::Int(lit_int) = name_value.lit {
+                                    prop_attrs.max_version = Some(lit_int.base10_parse::<i16>()?);
+                                }
+                            } else if name_value.path.is_ident("default") {
+                                if let Lit::Str(lit_str) = name_value.lit {
+                                    prop_attrs.default_value = Some(lit_str.value());
+                                }
+                            } else {
+                                tracing::warn!(
+                                    "#[fluvio({})] does nothing here.",
+                                    name_value.to_token_stream().to_string(),
+                                )
                             }
                         }
                     }
