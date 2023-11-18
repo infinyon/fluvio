@@ -1,4 +1,4 @@
-use crate::ast::prop::UnnamedProp;
+use crate::ast::prop::{prop_attrs_type_value, UnnamedProp};
 use crate::ast::r#struct::FluvioStructProps;
 use crate::ast::{add_bounds, FluvioBound};
 use crate::ast::{
@@ -8,7 +8,7 @@ use crate::ast::{
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use std::str::FromStr;
+
 use syn::punctuated::Punctuated;
 use syn::{Ident, LitInt, Token};
 
@@ -303,10 +303,11 @@ fn parse_enum_variants_encoding(
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
         let field_idx = if let Some(tag) = &prop.tag {
-            match TokenStream::from_str(tag) {
-                Ok(literal) => literal,
-                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
-            }
+            // match TokenStream::from_str(tag) {
+            //     Ok(literal) => literal,
+            //     _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
+            // }
+            prop_attrs_type_value(tag, None)
         } else if attrs.encode_discriminant {
             match &prop.discriminant {
                 Some(dsc) => dsc.as_token_stream(),

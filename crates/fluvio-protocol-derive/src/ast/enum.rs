@@ -4,10 +4,12 @@ use quote::quote;
 use syn::spanned::Spanned;
 use syn::{
     Error, Expr, ExprLit, ExprUnary, Fields, FieldsNamed, FieldsUnnamed, Generics, Ident, ItemEnum,
-    Lit, Meta, NestedMeta, Variant,
+    Variant,
 };
 
 use super::container::ContainerAttributes;
+use super::prop::PropAttrsType;
+use crate::util::{get_expr_value_from_meta, parse_attributes};
 
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
@@ -57,31 +59,33 @@ impl DiscrimantExpr {
 #[derive(Default)]
 pub(crate) struct EnumProp {
     pub variant_name: String,
-    pub tag: Option<String>,
+    pub tag: Option<PropAttrsType>,
     pub discriminant: Option<DiscrimantExpr>,
     pub kind: FieldKind,
+    pub min_version: Option<PropAttrsType>,
+    pub max_version: Option<PropAttrsType>,
 }
 impl EnumProp {
     pub fn from_ast(variant: Variant) -> syn::Result<Self> {
         let mut prop = EnumProp::default();
         let variant_ident = &variant.ident;
         prop.variant_name = variant_ident.to_string();
-        // Find all supported field level attributes in one go.
-        for attribute in &variant.attrs {
-            if attribute.path.is_ident("fluvio") {
-                if let Ok(Meta::List(list)) = attribute.parse_meta() {
-                    for kf_attr in list.nested {
-                        if let NestedMeta::Meta(Meta::NameValue(name_value)) = kf_attr {
-                            if name_value.path.is_ident("tag") {
-                                if let Lit::Int(lit_int) = name_value.lit {
-                                    prop.tag = Some(lit_int.base10_digits().to_owned());
-                                }
-                            }
-                        }
-                    }
-                }
+        let attrs = &variant.attrs;
+
+        parse_attributes!(attrs.iter(), "fluvio", meta,
+            "min_version", prop.min_version => {
+                let value = get_expr_value_from_meta(&meta)?;
+                prop.min_version = Some(value);
             }
-        }
+            "max_version", prop.max_version => {
+                let value = get_expr_value_from_meta(&meta)?;
+                prop.max_version = Some(value);
+            }
+            "tag", prop.tag => {
+                let value = get_expr_value_from_meta(&meta)?;
+                prop.tag = Some(value);
+            }
+        );
 
         prop.discriminant = if let Some((_, discriminant)) = variant.discriminant.clone() {
             match discriminant {

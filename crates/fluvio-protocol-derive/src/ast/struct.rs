@@ -1,11 +1,11 @@
 use crate::ast::prop::{NamedProp, UnnamedProp};
 use syn::{Fields, Generics, Ident, ItemStruct};
-
+#[derive(Debug)]
 pub(crate) enum FluvioStruct {
     Named(FluvioNamedStruct),
     Tuple(FluvioTupleStruct),
 }
-
+#[derive(Debug)]
 pub(crate) struct FluvioNamedStruct {
     pub struct_ident: Ident,
     pub props: Vec<NamedProp>,
@@ -78,7 +78,7 @@ pub(crate) enum FluvioStructProps {
     Named(Vec<NamedProp>),
     Unnamed(Vec<UnnamedProp>),
 }
-
+#[derive(Debug)]
 pub(crate) struct FluvioTupleStruct {
     pub struct_ident: Ident,
     pub props: Vec<UnnamedProp>,

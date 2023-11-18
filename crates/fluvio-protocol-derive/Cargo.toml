@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-protocol-derive"
-version = "0.5.4"
+version = "0.5.5"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description =  "Procedure macro to encode/decode fluvio protocol"
@@ -13,12 +13,7 @@ proc-macro = true
 doctest = false
 
 [dependencies]
+syn = { workspace = true, features = ["full"] }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 tracing = { workspace = true }
-
-[dependencies.syn]
-version = "1.0.0"
-features = ["full"]
-
-
