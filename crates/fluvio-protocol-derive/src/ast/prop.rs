@@ -242,7 +242,6 @@ impl PropAttrs {
     pub fn from_ast(attrs: &[Attribute]) -> syn::Result<Self> {
         let mut prop_attrs = Self::default();
 
-        // let a: fn(expr: Option<syn::Expr>, attr_span: Span, attr_name: &str) = |expr: Option<syn::Expr>, attr_span: Span, attr_name: &str| {};
         parse_attributes!(attrs.iter(), "fluvio", meta,
             "min_version", prop_attrs.min_version => {
                 let value = get_expr_value_from_meta(&meta)?;
