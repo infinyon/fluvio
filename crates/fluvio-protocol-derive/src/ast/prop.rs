@@ -8,14 +8,14 @@ use syn::{parse_quote, Attribute, Error, Field, Type};
 
 use crate::util::{get_expr_value_from_meta, get_lit_str, parse_attributes, parse_attributes_data};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct NamedProp {
     pub field_name: String,
     pub field_type: Type,
     pub attrs: PropAttrs,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct UnnamedProp {
     pub field_type: Type,
     pub attrs: PropAttrs,
@@ -217,7 +217,7 @@ pub fn prop_attrs_type_value(
 /// ```
 ///
 /// None has a default Int value of 0 which is set in prop_attrs_type_value
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub enum PropAttrsType {
     Lit(Ident),
     Fn(Ident),
@@ -225,7 +225,7 @@ pub enum PropAttrsType {
     #[default]
     None,
 }
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub(crate) struct PropAttrs {
     pub varint: bool,
     /// Will default to 0 if not specified.
@@ -241,6 +241,14 @@ pub(crate) struct PropAttrs {
 impl PropAttrs {
     pub fn from_ast(attrs: &[Attribute]) -> syn::Result<Self> {
         let mut prop_attrs = Self::default();
+
+        for attr in attrs {
+            if let Some(ident) = attr.path().get_ident() {
+                if ident == "varint" {
+                    prop_attrs.varint = true;
+                }
+            }
+        }
 
         parse_attributes!(attrs.iter(), "fluvio", meta,
             "min_version", prop_attrs.min_version => {

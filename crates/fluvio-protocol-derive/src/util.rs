@@ -17,10 +17,7 @@ use crate::ast::prop::PropAttrsType;
 /// * `opt` - mutable variable to save data into
 /// * `block` - block of code to execute
 macro_rules! parse_attributes {
-    ($attrs:expr, $attr_ident:literal, $meta: ident, $($field:pat, $opt:expr => $block:expr)*) => {
-        const ERROR: &str = concat!("unrecognized ", $attr_ident, " attribute");
-        const ALREADY_SPECIFIED: &str = concat!($attr_ident, " attribute already specified");
-
+    ($attrs:expr, $attr_ident:expr, $meta: ident, $($field:pat, $opt:expr => $block:expr)*) => {
         for attr in $attrs {
             if !attr.path().is_ident($attr_ident) {
                 continue;
@@ -28,7 +25,7 @@ macro_rules! parse_attributes {
 
             attr.parse_nested_meta(|$meta| {
 
-                let ident = $meta.path.get_ident().ok_or_else(|| $meta.error(ERROR))?;
+                let ident = $meta.path.get_ident().ok_or_else(|| $meta.error(concat!("unrecognized ", $attr_ident, " attribute")))?;
                 let attr_name = &ident.to_string();
 
                 match attr_name.as_str() {
@@ -36,10 +33,10 @@ macro_rules! parse_attributes {
                         $field if $opt.is_none() => {
                             return Ok($block)
                         },
-                        $field => {return Err($meta.error(ALREADY_SPECIFIED))}
+                        $field => {return Err($meta.error(concat!($attr_ident, " attribute already specified")))}
                     )*
 
-                    _ => return Err($meta.error(ERROR)),
+                    _ => return Err($meta.error(concat!("unrecognized ", $attr_ident, " attribute"))),
                 }
             })?;
         }
