@@ -79,3 +79,5 @@ fluvio-channel = { workspace = true  }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["task", "fixture"] }
+toml = { workspace = true }
+fastrand = { version = "2.0.1" }
