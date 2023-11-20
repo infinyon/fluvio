@@ -392,6 +392,9 @@ impl LocalInstaller {
             InstallationType::K8 => Err(ClusterCheckError::Other(
                 "Installation type K8 is not supported for local clusters".to_string(),
             )),
+            InstallationType::Cloud => Err(ClusterCheckError::Other(
+                "Installation type Cloud is not supported for local clusters".to_owned(),
+            )),
         }
     }
 
@@ -492,6 +495,9 @@ impl LocalInstaller {
             InstallationType::LocalK8 | InstallationType::K8 => ScMode::K8s,
             InstallationType::ReadOnly => {
                 ScMode::ReadOnly(self.config.read_only_config.clone().unwrap_or_default())
+            }
+            InstallationType::Cloud => {
+                unreachable!("launching SC on local machine is uncallable on Cloud profile")
             }
         };
 

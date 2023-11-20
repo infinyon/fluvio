@@ -54,6 +54,9 @@ impl DeleteOpt {
                     builder.uninstall_k8(false);
                     builder.uninstall_sys(false);
                 }
+                InstallationType::Cloud => {
+                    unreachable!("`delete` is not callable for cloud profiles")
+                }
             }
         }
 
