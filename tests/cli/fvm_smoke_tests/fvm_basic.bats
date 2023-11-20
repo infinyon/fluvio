@@ -809,3 +809,41 @@ setup_file() {
     rm -rf $FLUVIO_HOME_DIR
     assert_success
 }
+
+@test "Disallows switching versions when there are active proccesses" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Installs Fluvio Stable
+    run bash -c 'fvm install'
+    assert_success
+
+    # Starts Fluvio Cluster
+    run bash -c 'fluvio cluster start --local' &
+    sleep 10
+    assert_success
+
+    # Attempts to switch version
+    run bash -c 'fvm install latest'
+    assert_line --index 6 "Error: Cannot switch versions while \`fluvio\` or \`fluvio-run\` are running"
+    assert_failure
+
+    # Deletes Fluvio Cluster
+    run bash -c 'fluvio cluster delete'
+    assert_success
+
+    # Attempts to switch version
+    run bash -c 'fvm install latest'
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
