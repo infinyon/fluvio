@@ -37,7 +37,7 @@ setup_file() {
     if [[ -z "$CI" ]];
     then
         echo "# Deleting cluster" >&3
-        $FLUVIO_BIN cluster delete
+        "$FLUVIO_BIN" cluster delete --local || "$FLUVIO_BIN" cluster delete
     else
         echo "# [CI MODE] Skipping initial cleanup" >&3
     fi;
@@ -60,7 +60,7 @@ teardown_file() {
     if [[ -z "$SKIP_CLEANUP" ]];
     then
         echo "# Deleting cluster" >&3
-        "$FLUVIO_BIN" cluster delete
+        "$FLUVIO_BIN" cluster delete --local || "$FLUVIO_BIN" cluster delete
     else
         echo "# Skipping cleanup" >&3
     fi

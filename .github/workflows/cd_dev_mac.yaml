@@ -45,19 +45,12 @@ jobs:
       TOPIC: foobar
     steps:
       - uses: actions/checkout@v4
-      - name: Set up K3d for Ubuntu
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-      - name: Set up K8 for ubuntu(kind)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: ./k8-util/cluster/reset-k3d.sh
       - name: Install Docker for Mac
-        if: ${{ matrix.os == 'macos-12' }}
+        if: ${{ matrix.cluster_type == 'k8' }}
         uses: docker-practice/actions-setup-docker@master
         timeout-minutes: 5
       - name: Set up Kind for Mac
-        if: ${{ matrix.os == 'macos-12' }}
+        if: ${{ matrix.cluster_type == 'k8' }}
         run: |
           brew install kind
           kind create cluster --config k8-util/cluster/kind.yaml
@@ -73,12 +66,7 @@ jobs:
         timeout-minutes: 3
         if: ${{ matrix.cluster_type == 'k8' }}
         run: |
-          if [[ ${{ matrix.os }} == 'macos-12' ]]; then
-              export PROXY="--proxy-addr  127.0.0.1"
-            else
-              export PROXY=""
-          fi
-          fluvio cluster start  --spu-storage-size 1 --image-version latest $PROXY
+          fluvio cluster start --k8 --spu-storage-size 1 --image-version latest --proxy-addr 127.0.0.1
       - name: Run E2E Test
         timeout-minutes: 2
         run: |
@@ -90,9 +78,7 @@ jobs:
             date +"%Y-%m-%dT%H:%M:%S%z"
             echo foo | fluvio produce ${{ env.TOPIC }}
             fluvio consume ${{ env.TOPIC }} --start 0 -d | grep -F -w "foo"
-            # Delete the topic afterword but this looks to not work right now.
-            # fluvio topic delete "${{ env.TOPIC }}"
-
+            fluvio topic delete "${{ env.TOPIC }}"
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
