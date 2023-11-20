@@ -234,3 +234,98 @@ pub(crate) fn get_installation_type() -> Result<InstallationType, ClusterCliErro
         config.config().current_cluster()?,
     ))
 }
+
+#[cfg(test)]
+mod test {
+    use std::{env::temp_dir, fs, io::Write};
+
+    use fluvio::config::ConfigFile;
+    use fluvio_extension_common::installation::InstallationType;
+
+    use super::try_infer_installation_type;
+
+    fn setup_config(toml: &str) -> ConfigFile {
+        // generate a random file
+        let random: String = std::iter::repeat_with(fastrand::alphanumeric)
+            .take(10)
+            .collect();
+        let path = temp_dir().join(format!("fluvio_tests/inference_test{random}.toml"));
+        fs::create_dir_all(path.parent().unwrap()).expect("failed to create temp directory");
+        let mut file =
+            fs::File::create(path.clone()).expect("failed to create file in temp directory");
+        file.write_all(toml.as_bytes())
+            .expect("failed to save file");
+
+        let mut config = ConfigFile::load(Some(path.to_string_lossy().to_string()))
+            .expect("failed to load config file");
+        *config.mut_config() = toml::from_str(toml).expect("invalid toml");
+        config
+            .save()
+            .expect("failed to save temp configuration file");
+
+        config
+    }
+
+    #[test]
+    fn test_infer_local_installation_type() {
+        let mut config = setup_config(
+            r#"version = "2.0"
+current_profile = "local"
+
+[profile.local]
+cluster = "local"
+
+[cluster.local]
+endpoint = "localhost:9003"
+
+[cluster.local.tls]
+tls_policy = "disabled"
+"#,
+        );
+
+        let installation = try_infer_installation_type(&mut config);
+        assert_eq!(installation, Some(InstallationType::Local));
+    }
+
+    #[test]
+    fn test_infer_cloud_installation_type() {
+        let mut config = setup_config(
+            r#"version = "2.0"
+current_profile = "cloud"
+
+[profile.cloud]
+cluster = "cloud"
+
+[cluster.cloud]
+endpoint = "endpoint.cloud"
+
+[cluster.cloud.tls]
+tls_policy = "disabled"
+"#,
+        );
+
+        let installation = try_infer_installation_type(&mut config);
+        assert_eq!(installation, Some(InstallationType::Cloud));
+    }
+
+    #[test]
+    fn test_infer_local_k8_installation_type() {
+        let mut config = setup_config(
+            r#"version = "2.0"
+current_profile = "minikube"
+
+[profile.minikube]
+cluster = "minikube"
+
+[cluster.minikube]
+endpoint = "192.168.0.1:30003"
+
+[cluster.minikube.tls]
+tls_policy = "disabled"
+"#,
+        );
+
+        let installation = try_infer_installation_type(&mut config);
+        assert_eq!(installation, Some(InstallationType::LocalK8));
+    }
+}
