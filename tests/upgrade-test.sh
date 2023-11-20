@@ -75,7 +75,7 @@ function validate_cluster_stable() {
     ~/.fvm/bin/fvm switch stable
 
     echo "Installing stable fluvio cluster"
-    $STABLE_FLUVIO cluster start
+    $STABLE_FLUVIO cluster start --k8
     ci_check;
 
     # Baseline: CLI version and platform version are expected to be the same
