@@ -2,8 +2,10 @@ use std::sync::Arc;
 
 use clap::ValueEnum;
 use clap::Parser;
+use common::installation::INSTALLATION_METADATA_NAME;
 use common::installation::InstallationType;
 use fluvio::config::ConfigFile;
+use fluvio::config::LOCAL_PROFILE;
 use semver::Version;
 use tracing::debug;
 
@@ -98,6 +100,8 @@ impl ClusterCmd {
         platform_version: Version,
         target: ClusterTarget,
     ) -> Result<()> {
+        self.ensure_command_is_available_for_current_profile()?;
+
         match self {
             Self::Start(mut start) => {
                 if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
@@ -164,7 +168,65 @@ impl ClusterCmd {
 
         Ok(())
     }
+
+    fn ensure_command_is_available_for_current_profile(&self) -> Result<()> {
+        use anyhow::anyhow;
+
+        if let ClusterCmd::Start(_) = self {
+            // starting a new local cluster is  ok regardless of the current profile
+            return Ok(());
+        }
+
+        let mut config_file = ConfigFile::load_default_or_new()?;
+
+        let config = config_file.config().current_cluster().map_err(|e| {
+            anyhow!("{e}\nStart a new `{LOCAL_PROFILE}` cluster with `fluvio cluster start`")
+        })?;
+
+        let installation = config
+            .query_metadata_by_name::<InstallationType>(INSTALLATION_METADATA_NAME)
+            .or_else(|| try_infer_installation_type(&mut config_file))
+            .ok_or_else(|| anyhow!("could not infer the current cluster installation type"))?;
+
+        // other commands should only be available for local clusters
+        if installation.is_local_group() {
+            Ok(())
+        } else {
+            let profile = config_file.config().current_profile_name().unwrap();
+            let error = anyhow!(
+                "Invalid command on `{profile}` profile. \
+                 Switch to `{LOCAL_PROFILE}` or start a new `{LOCAL_PROFILE}` cluster with `fluvio cluster start` and try again"
+            );
+            Err(error)
+        }
+    }
 }
+
+/// Try to infer the installation type based on the current profile name
+fn try_infer_installation_type(config: &mut ConfigFile) -> Option<InstallationType> {
+    println!("unknown installation type, trying to infer based on config file");
+
+    let profile_name = config.config().current_profile_name()?;
+
+    let inferred_type = match profile_name {
+        "cloud" => InstallationType::Cloud,
+        local if local == LOCAL_PROFILE => InstallationType::Local,
+        _ => InstallationType::LocalK8,
+    };
+
+    println!("installation type inferred as `{inferred_type}`");
+
+    config
+        .mut_config()
+        .current_cluster_mut()
+        .ok()?
+        .update_metadata_by_name(INSTALLATION_METADATA_NAME, inferred_type.clone())
+        .ok()?;
+    config.save().ok()?;
+
+    Some(inferred_type)
+}
+
 
 pub(crate) fn get_installation_type() -> Result<InstallationType, ClusterCliError> {
     let config = ConfigFile::load_default_or_new()?;

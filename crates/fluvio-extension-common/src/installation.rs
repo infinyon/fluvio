@@ -3,7 +3,7 @@ use std::str::FromStr;
 use fluvio::FluvioConfig;
 use serde::{Serialize, Deserialize};
 
-const INSTALLATION_METADATA_NAME: &str = "installation";
+pub const INSTALLATION_METADATA_NAME: &str = "installation";
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -13,6 +13,7 @@ pub enum InstallationType {
     Local,
     LocalK8,
     ReadOnly,
+    Cloud,
 }
 
 impl FromStr for InstallationType {
@@ -43,7 +44,10 @@ impl FromStr for InstallationType {
         if s.eq_ignore_ascii_case("readonly") {
             return Ok(Self::ReadOnly);
         }
-        Err(format!("unsupported instalaltion type '{s}'"))
+        if s.eq_ignore_ascii_case("cloud") {
+            return Ok(Self::Cloud);
+        }
+        Err(format!("unsupported installation type '{s}'"))
     }
 }
 
@@ -54,6 +58,10 @@ impl std::fmt::Display for InstallationType {
 }
 
 impl InstallationType {
+    pub fn is_local_group(&self) -> bool {
+        matches!(self, Self::Local | Self::LocalK8 | Self::ReadOnly)
+    }
+
     pub fn load_or_default(config: &FluvioConfig) -> Self {
         config
             .query_metadata_by_name(INSTALLATION_METADATA_NAME)
