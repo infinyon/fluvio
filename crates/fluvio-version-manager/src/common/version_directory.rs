@@ -1,7 +1,7 @@
 use std::fs::{read_dir, copy, create_dir_all};
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use sysinfo::{System, SystemExt};
 
 use fluvio_hub_util::fvm::Channel;
@@ -127,9 +127,7 @@ impl VersionDirectory {
         let fluvio_run_running = system.processes_by_exact_name("fluvio-run").count();
 
         if fluvio_running > 0 || fluvio_run_running > 0 {
-            return Err(anyhow::anyhow!(
-                "Cannot uninstall fluvio while fluvio or fluvio-run are running"
-            ));
+            bail!("Cannot switch versions while `fluvio` or `fluvio-run` are running");
         }
 
         Ok(())
