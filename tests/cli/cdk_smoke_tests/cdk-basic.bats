@@ -1,8 +1,5 @@
 #!/usr/bin/env bats
 
-SKIP_CLUSTER_START=true
-export SKIP_CLUSTER_START
-
 TEST_HELPER_DIR="$BATS_TEST_DIRNAME/../test_helper"
 export TEST_HELPER_DIR
 
