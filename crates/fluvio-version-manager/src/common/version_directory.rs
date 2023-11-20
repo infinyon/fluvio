@@ -2,6 +2,7 @@ use std::fs::{read_dir, copy, create_dir_all};
 use std::path::PathBuf;
 
 use anyhow::Result;
+use sysinfo::{System, SystemExt};
 
 use fluvio_hub_util::fvm::Channel;
 
@@ -59,6 +60,8 @@ impl VersionDirectory {
 
     /// Sets this version as the active Fluvio Version
     pub fn set_active(&self) -> Result<()> {
+        Self::check_running_processes()?;
+
         // Verify `~/.fluvio/bin` exists and create it if it doesn't
         let fluvio_bin_dir = fluvio_binaries_path()?;
 
@@ -116,6 +119,20 @@ impl VersionDirectory {
         }
 
         Ok((manifests, active_version))
+    }
+
+    pub fn check_running_processes() -> Result<()> {
+        let system = System::new_all();
+        let fluvio_running = system.processes_by_exact_name("fluvio").count();
+        let fluvio_run_running = system.processes_by_exact_name("fluvio-run").count();
+
+        if fluvio_running > 0 || fluvio_run_running > 0 {
+            return Err(anyhow::anyhow!(
+                "Cannot uninstall fluvio while fluvio or fluvio-run are running"
+            ));
+        }
+
+        Ok(())
     }
 }
 
