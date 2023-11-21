@@ -818,7 +818,7 @@ setup_file() {
     source ~/.fvm/env
 
     # Starts Fluvio Cluster
-    fluvio cluster delete || true
+    fluvio cluster delete --local || true
 
     # Installs Fluvio Stable
     run bash -c 'fvm install'
