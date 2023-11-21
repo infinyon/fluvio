@@ -188,7 +188,7 @@ pub struct IntallationTypeOpt {
     local_k8: bool,
 
     /// install on K8s
-    #[arg(long, default_value = "true")]
+    #[arg(long)]
     k8: bool,
 
     /// Start SC in read only mode
@@ -216,15 +216,64 @@ impl StartOpt {
 
 impl IntallationTypeOpt {
     fn is_local_group(&self) -> bool {
-        self.local || self.local_k8 || self.read_only.is_some()
+        !matches!(self.get_or_default(), InstallationType::K8)
     }
 
-    pub fn get(&self) -> InstallationType {
-        match (self.local, self.local_k8, &self.read_only) {
-            (true, _, _) => InstallationType::Local,
-            (_, true, _) => InstallationType::LocalK8,
-            (_, _, Some(_)) => InstallationType::ReadOnly,
-            _ => InstallationType::K8,
+    pub fn get(&self) -> Option<InstallationType> {
+        match (self.local, self.local_k8, &self.read_only, &self.k8) {
+            (true, _, _, _) => Some(InstallationType::Local),
+            (_, true, _, _) => Some(InstallationType::LocalK8),
+            (_, _, Some(_), _) => Some(InstallationType::ReadOnly),
+            (_, _, _, true) => Some(InstallationType::K8),
+            _ => None,
         }
+    }
+
+    pub fn set(&mut self, installation_type: InstallationType) {
+        let (local, local_k8, k8, read_only) = match installation_type {
+            InstallationType::K8 => (false, false, true, None),
+            InstallationType::Local => (true, false, false, None),
+            InstallationType::LocalK8 => (false, true, false, None),
+            InstallationType::ReadOnly => (false, false, false, Some(Default::default())),
+        };
+        self.local = local;
+        self.local_k8 = local_k8;
+        self.k8 = k8;
+        self.read_only = read_only;
+    }
+
+    pub fn get_or_default(&self) -> InstallationType {
+        self.get().unwrap_or(InstallationType::Local)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_installation_type_set() {
+        //given
+        let mut opt = IntallationTypeOpt {
+            local: Default::default(),
+            local_k8: Default::default(),
+            k8: Default::default(),
+            read_only: Default::default(),
+        };
+
+        //when
+        assert_eq!(opt.get(), None);
+
+        opt.set(InstallationType::K8);
+        assert_eq!(opt.get(), Some(InstallationType::K8));
+
+        opt.set(InstallationType::Local);
+        assert_eq!(opt.get(), Some(InstallationType::Local));
+
+        opt.set(InstallationType::LocalK8);
+        assert_eq!(opt.get(), Some(InstallationType::LocalK8));
+
+        opt.set(InstallationType::ReadOnly);
+        assert_eq!(opt.get(), Some(InstallationType::ReadOnly));
     }
 }

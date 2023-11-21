@@ -40,7 +40,7 @@ pub async fn process_local(
         builder.skip_checks(true);
     }
 
-    builder.installation_type(opt.installation_type.get());
+    builder.installation_type(opt.installation_type.get_or_default());
 
     builder.read_only_config(opt.installation_type.read_only);
 
