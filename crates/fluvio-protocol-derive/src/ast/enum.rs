@@ -9,7 +9,9 @@ use syn::{
 
 use super::container::ContainerAttributes;
 use super::prop::PropAttrsType;
-use crate::util::{get_expr_value_from_meta, get_lit_int, parse_attributes, parse_attributes_data};
+use crate::util::{
+    get_expr_value_from_meta, get_lit_int_value, parse_attributes, parse_attributes_data,
+};
 
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
@@ -83,11 +85,12 @@ impl EnumProp {
             }
             "tag", prop.tag => {
                 let (expr, attr_span, attr_name) = parse_attributes_data(&meta);
-                let value = get_lit_int(&attr_name, &expr, attr_span)?;
-                prop.tag = Some(value.base10_digits().to_owned());
+                let value = get_lit_int_value(&attr_name, &expr, attr_span)?;
+                prop.tag = Some(value.to_string());
             }
         );
 
+        dbg!(&prop.tag);
         prop.discriminant = if let Some((_, discriminant)) = variant.discriminant.clone() {
             match discriminant {
                 Expr::Lit(elit) => Some(DiscrimantExpr::Lit(elit)),

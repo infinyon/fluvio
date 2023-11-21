@@ -1,9 +1,7 @@
-use std::ops::Deref;
-
 use proc_macro2::Span;
 use syn::{
-    meta::ParseNestedMeta, punctuated::Punctuated, Attribute, Expr, ExprPath, ExprUnary, Lit,
-    LitStr, Meta, MetaList, MetaNameValue, Token,
+    meta::ParseNestedMeta, punctuated::Punctuated, Attribute, Expr, ExprLit, ExprPath, ExprUnary,
+    Lit, LitStr, Meta, MetaList, MetaNameValue, Token, UnOp,
 };
 
 use crate::ast::prop::PropAttrsType;
@@ -105,16 +103,7 @@ pub fn get_expr_value<'a>(
             // So to handle that we are checking if it's Unary Lit and continue as usual
             // If needed this can be extended to handle the Unary operators
             // But it doesn't seem that is necessary currently
-            if let Expr::Lit(lit_expr) = expr.deref() {
-                if let Lit::Int(lit) = &lit_expr.lit {
-                    return Ok(PropAttrsType::Int(lit.base10_parse::<i16>()?));
-                }
-            }
-
-            Err(syn::Error::new(
-                span,
-                format!("Expected {attr_name} to be valid Int: `{attr_name} = \"...\"`"),
-            ))
+            Ok(PropAttrsType::Int(parse_int_expr(attr_name, expr, span)?))
         }
         Some(Expr::Path(ExprPath { path, .. })) => {
             // For now we only need Path just to handle cases where CONSTANTS are being passed without "" quotes
@@ -139,6 +128,37 @@ pub fn get_expr_value<'a>(
     }
 }
 
+fn parse_int_expr<'a>(attr_name: &'a str, expr: &'a Expr, span: Span) -> syn::Result<i16> {
+    match expr {
+        Expr::Unary(ExprUnary {
+            op: UnOp::Neg(_),
+            expr,
+            ..
+        }) => parse_int_expr(attr_name, expr, span).map(|int| -int),
+        Expr::Lit(ExprLit {
+            lit: Lit::Int(int), ..
+        }) => int.base10_parse(),
+        _ => Err(syn::Error::new(
+            span,
+            format!("Expected {attr_name} to be Int: `{attr_name} = \"...\"`"),
+        )),
+    }
+}
+
+pub fn get_lit_int_value<'a>(
+    attr_name: &'a str,
+    value: &'a Option<Expr>,
+    span: Span,
+) -> syn::Result<i16> {
+    if let Some(value_expr) = value {
+        parse_int_expr(attr_name, value_expr, span)
+    } else {
+        Err(syn::Error::new(
+            span,
+            format!("Expected {attr_name} to be valid Expr: `{attr_name} = \"...\"`"),
+        ))
+    }
+}
 pub fn get_lit_int<'a>(
     attr_name: &'a str,
     value: &'a Option<Expr>,
@@ -154,23 +174,6 @@ pub fn get_lit_int<'a>(
                     format!("Expected {attr_name} attribute to be an int: `{attr_name} = \"...\"`"),
                 ))
             }
-        }
-
-        Some(Expr::Unary(ExprUnary { expr, .. })) => {
-            // When passing -1 as a value it is returned as type Unary
-            // So to handle that we are checking if it's Unary Lit and continue as usual
-            // If needed this can be extended to handle the Unary operators
-            // But it doesn't seem that is necessary currently
-            if let Expr::Lit(lit_expr) = expr.deref() {
-                if let Lit::Int(lit) = &lit_expr.lit {
-                    return Ok(lit);
-                }
-            }
-
-            Err(syn::Error::new(
-                span,
-                format!("Expected {attr_name} to be valid Int: `{attr_name} = \"...\"`"),
-            ))
         }
         _ => Err(syn::Error::new(
             span,
