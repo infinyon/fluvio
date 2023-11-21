@@ -50,46 +50,42 @@ impl NamedProp {
         trace: bool,
     ) -> TokenStream {
         let field_name = &self.field_name;
+        let min_version = &self.attrs.min_version;
+        let min = prop_attrs_type_value(min_version, None);
 
-        if let Some(min_version) = &self.attrs.min_version {
-            let min = prop_attrs_type_value(min_version, None);
-
-            if let Some(max_version) = &self.attrs.max_version {
-                let max = prop_attrs_type_value(max_version, None);
-                let trace = if trace {
-                    quote! {
-                        else {
-                            tracing::trace!("Field: <{}> is skipped because version: {} is outside min: {}, max: {}",stringify!(#field_name),version,#min,#max);
-                        }
-                    }
-                } else {
-                    quote! {}
-                };
+        if *&self.attrs.max_version.is_some() {
+            let max = prop_attrs_type_value(&self.attrs.max_version, None);
+            let trace = if trace {
                 quote! {
-                    if (#min..=#max).contains(&version) {
-                        #field_stream
+                    else {
+                        tracing::trace!("Field: <{}> is skipped because version: {} is outside min: {}, max: {}",stringify!(#field_name),version,#min,#max);
                     }
-                    #trace
                 }
             } else {
-                let trace = if trace {
-                    quote! {
-                        else {
-                            tracing::trace!("Field: <{}> is skipped because version: {} is less than min: {}",stringify!(#field_name),version,#min);
-                        }
-                    }
-                } else {
-                    quote! {}
-                };
-                quote! {
-                    if version >= #min {
-                        #field_stream
-                    }
-                    #trace
+                quote! {}
+            };
+            quote! {
+                if (#min..=#max).contains(&version) {
+                    #field_stream
                 }
+                #trace
             }
         } else {
-            quote! {}
+            let trace = if trace {
+                quote! {
+                    else {
+                        tracing::trace!("Field: <{}> is skipped because version: {} is less than min: {}",stringify!(#field_name),version,#min);
+                    }
+                }
+            } else {
+                quote! {}
+            };
+            quote! {
+                if version >= #min {
+                    #field_stream
+                }
+                #trace
+            }
         }
     }
 }
@@ -108,46 +104,42 @@ impl UnnamedProp {
         field_stream: TokenStream,
         trace: bool,
     ) -> TokenStream {
-        if let Some(min_version) = &self.attrs.min_version {
-            let min = prop_attrs_type_value(min_version, None);
-            if let Some(max_version) = &self.attrs.max_version {
-                let max = prop_attrs_type_value(max_version, None);
-                let trace = if trace {
-                    quote! {
-                        else {
-                            tracing::trace!("Field from tuple struct:is skipped because version: {} is outside min: {}, max: {}",version,#min,#max);
-                        }
-                    }
-                } else {
-                    quote! {}
-                };
-
+        let min = prop_attrs_type_value(&self.attrs.min_version, None);
+        if *&self.attrs.max_version.is_some() {
+            let max = prop_attrs_type_value(&self.attrs.max_version , None);
+            let trace = if trace {
                 quote! {
-                    if (#min..=#max).contains(&version) {
-                        #field_stream
+                    else {
+                        tracing::trace!("Field from tuple struct:is skipped because version: {} is outside min: {}, max: {}",version,#min,#max);
                     }
-                    #trace
                 }
             } else {
-                let trace = if trace {
-                    quote! {
-                        else {
-                            tracing::trace!("Field from tuple struct: is skipped because version: {} is less than min: {}",version,#min);
-                        }
-                    }
-                } else {
-                    quote! {}
-                };
+                quote! {}
+            };
 
-                quote! {
-                    if version >= #min {
-                        #field_stream
-                    }
-                    #trace
+            quote! {
+                if (#min..=#max).contains(&version) {
+                    #field_stream
                 }
+                #trace
             }
         } else {
-            quote! {}
+            let trace = if trace {
+                quote! {
+                    else {
+                        tracing::trace!("Field from tuple struct: is skipped because version: {} is less than min: {}",version,#min);
+                    }
+                }
+            } else {
+                quote! {}
+            };
+
+            quote! {
+                if version >= #min {
+                    #field_stream
+                }
+                #trace
+            }
         }
     }
 }
@@ -170,21 +162,25 @@ impl UnnamedProp {
 /// ````
 ///
 pub fn prop_attrs_type_value(
-    attrs_type: &PropAttrsType,
+    attrs_type: &Option<PropAttrsType>,
     ident_type: Option<&Ident>,
 ) -> TokenStream {
-    match &attrs_type {
-        PropAttrsType::Lit(data) => parse_quote!(#data),
-        PropAttrsType::Fn(data) => parse_quote!(#data()),
-        PropAttrsType::Int(data) => {
-            if let Some(itype) = ident_type {
-                TokenStream::from_str(&format!("{}_{}", data, itype)).unwrap()
-            } else {
-                // By default it's i16, because most places use it
-                parse_quote!(#data)
+    if let Some(attr) = attrs_type {
+        match &attr {
+            PropAttrsType::Lit(data) => parse_quote!(#data),
+            PropAttrsType::Fn(data) => parse_quote!(#data()),
+            PropAttrsType::Int(data) => {
+                if let Some(itype) = ident_type {
+                    TokenStream::from_str(&format!("{}_{}", data, itype)).unwrap()
+                } else {
+                    // By default it's i16, because most places use it
+                    parse_quote!(#data)
+                }
             }
+            PropAttrsType::None => parse_quote!(0),
         }
-        PropAttrsType::None => parse_quote!(0),
+    } else {
+        parse_quote!(0)
     }
 }
 /// A type that will handle the values passed in properties
