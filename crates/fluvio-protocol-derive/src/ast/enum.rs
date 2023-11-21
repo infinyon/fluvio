@@ -90,7 +90,6 @@ impl EnumProp {
             }
         );
 
-        dbg!(&prop.tag);
         prop.discriminant = if let Some((_, discriminant)) = variant.discriminant.clone() {
             match discriminant {
                 Expr::Lit(elit) => Some(DiscrimantExpr::Lit(elit)),
