@@ -9,11 +9,10 @@ use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt, PidExt};
 use which::which;
 use anyhow::Result;
 
-use fluvio::config::ConfigFile;
 use fluvio::metadata::{topic::TopicSpec, partition::PartitionSpec, spg::SpuGroupSpec, spu::SpuSpec};
 use fluvio_sc_schema::objects::Metadata;
 
-use crate::InstallationType;
+use crate::{InstallationType, cli::get_installation_type};
 use crate::cli::ClusterCliError;
 use crate::cli::start::get_log_directory;
 use crate::start::local::{DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR, DEFAULT_METADATA_SUB_DIR};
@@ -26,7 +25,7 @@ pub struct DiagnosticsOpt {
 
 impl DiagnosticsOpt {
     pub async fn process(self) -> Result<()> {
-        let installation_ty = self.get_installation_ty()?;
+        let installation_ty = get_installation_type()?;
         println!("Using installation: {installation_ty:#?}");
         let temp_dir = tempfile::Builder::new()
             .prefix("fluvio-diagnostics")
@@ -97,13 +96,6 @@ impl DiagnosticsOpt {
 
         println!("Wrote diagnostics to {}", diagnostic_path.display());
         Ok(())
-    }
-
-    fn get_installation_ty(&self) -> Result<InstallationType> {
-        let config = ConfigFile::load_default_or_new()?;
-        Ok(InstallationType::load_or_default(
-            config.config().current_cluster()?,
-        ))
     }
 
     fn zip_files(&self, source: &Path, output: &mut std::fs::File) -> Result<(), std::io::Error> {

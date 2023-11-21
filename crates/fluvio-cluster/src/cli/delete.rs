@@ -1,8 +1,7 @@
 use clap::Parser;
-use fluvio::config::ConfigFile;
 use tracing::debug;
 
-use crate::InstallationType;
+use crate::{InstallationType, cli::get_installation_type};
 use crate::delete::ClusterUninstallConfig;
 use crate::cli::ClusterCliError;
 
@@ -34,9 +33,7 @@ impl DeleteOpt {
             builder.uninstall_k8(true);
             builder.uninstall_sys(false);
         } else {
-            let config_file = ConfigFile::load_default_or_new()?;
-            let installation_type =
-                InstallationType::load_or_default(config_file.config().current_cluster()?);
+            let installation_type = get_installation_type()?;
             debug!(?installation_type);
             match installation_type {
                 InstallationType::K8 => {

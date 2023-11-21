@@ -219,25 +219,12 @@ impl IntallationTypeOpt {
         self.local || self.local_k8 || self.read_only.is_some()
     }
 
-    fn get(&self) -> InstallationType {
+    pub fn get(&self) -> InstallationType {
         match (self.local, self.local_k8, &self.read_only) {
             (true, _, _) => InstallationType::Local,
             (_, true, _) => InstallationType::LocalK8,
             (_, _, Some(_)) => InstallationType::ReadOnly,
             _ => InstallationType::K8,
         }
-    }
-}
-
-#[derive(Debug, Parser)]
-pub struct UpgradeOpt {
-    #[clap(flatten)]
-    pub start: StartOpt,
-}
-
-impl UpgradeOpt {
-    pub async fn process(self, platform_version: Version) -> Result<()> {
-        self.start.process(platform_version, true).await?;
-        Ok(())
     }
 }

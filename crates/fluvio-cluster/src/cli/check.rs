@@ -1,8 +1,10 @@
+use fluvio_extension_common::installation::InstallationType;
 use semver::Version;
 use clap::Parser;
+use tracing::debug;
 
 use crate::progress::ProgressBarFactory;
-use crate::ClusterChecker;
+use crate::{ClusterChecker, cli::get_installation_type};
 use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::charts::ChartConfig;
 
@@ -23,15 +25,28 @@ impl CheckOpt {
                 .bold()
                 .yellow()
         );
-        let sys_config: ChartConfig = ChartConfig::sys_builder()
-            .build()
-            .map_err(|err| ClusterCheckError::Other(format!("chart config error: {err:#?}")))?;
+        let installation_ty = get_installation_type().ok().unwrap_or_default();
+        debug!(?installation_ty);
+
+        let checker = match installation_ty {
+            InstallationType::K8 => {
+                let sys_config: ChartConfig =
+                    ChartConfig::sys_builder().build().map_err(|err| {
+                        ClusterCheckError::Other(format!("chart config error: {err:#?}"))
+                    })?;
+                ClusterChecker::empty()
+                    .with_preflight_checks()
+                    .with_check(SysChartCheck::new(sys_config, platform_version))
+            }
+            InstallationType::Local | InstallationType::ReadOnly => {
+                ClusterChecker::empty().with_no_k8_checks()
+            }
+            InstallationType::LocalK8 => ClusterChecker::empty().with_local_checks(),
+        };
+
         let pb = ProgressBarFactory::new(false);
-        ClusterChecker::empty()
-            .with_preflight_checks()
-            .with_check(SysChartCheck::new(sys_config, platform_version))
-            .run(&pb, self.fix)
-            .await?;
+
+        checker.run(&pb, self.fix).await?;
 
         Ok(())
     }
