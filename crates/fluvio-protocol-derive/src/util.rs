@@ -155,6 +155,23 @@ pub fn get_lit_int<'a>(
                 ))
             }
         }
+
+        Some(Expr::Unary(ExprUnary { expr, .. })) => {
+            // When passing -1 as a value it is returned as type Unary
+            // So to handle that we are checking if it's Unary Lit and continue as usual
+            // If needed this can be extended to handle the Unary operators
+            // But it doesn't seem that is necessary currently
+            if let Expr::Lit(lit_expr) = expr.deref() {
+                if let Lit::Int(lit) = &lit_expr.lit {
+                    return Ok(lit);
+                }
+            }
+
+            Err(syn::Error::new(
+                span,
+                format!("Expected {attr_name} to be valid Int: `{attr_name} = \"...\"`"),
+            ))
+        }
         _ => Err(syn::Error::new(
             span,
             format!("Expected {attr_name} attribute to be a Lit: `{attr_name} = \"...\"`"),

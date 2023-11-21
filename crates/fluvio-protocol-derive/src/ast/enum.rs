@@ -9,7 +9,7 @@ use syn::{
 
 use super::container::ContainerAttributes;
 use super::prop::PropAttrsType;
-use crate::util::{get_expr_value_from_meta, parse_attributes};
+use crate::util::{get_expr_value_from_meta, get_lit_int, parse_attributes, parse_attributes_data};
 
 pub(crate) struct FluvioEnum {
     pub enum_ident: Ident,
@@ -59,7 +59,7 @@ impl DiscrimantExpr {
 #[derive(Default)]
 pub(crate) struct EnumProp {
     pub variant_name: String,
-    pub tag: Option<PropAttrsType>,
+    pub tag: Option<String>,
     pub discriminant: Option<DiscrimantExpr>,
     pub kind: FieldKind,
     pub min_version: Option<PropAttrsType>,
@@ -82,8 +82,9 @@ impl EnumProp {
                 prop.max_version = Some(value);
             }
             "tag", prop.tag => {
-                let value = get_expr_value_from_meta(&meta)?;
-                prop.tag = Some(value);
+                let (expr, attr_span, attr_name) = parse_attributes_data(&meta);
+                let value = get_lit_int(&attr_name, &expr, attr_span)?;
+                prop.tag = Some(value.base10_digits().to_owned());
             }
         );
 
