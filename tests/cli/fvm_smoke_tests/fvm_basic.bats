@@ -822,8 +822,7 @@ setup_file() {
     assert_success
 
     # Starts Fluvio Cluster
-    run bash -c 'fluvio cluster start --local' &
-    sleep 10
+    run bash -c 'fluvio cluster start --local'
     assert_success
 
     # Attempts to switch version
