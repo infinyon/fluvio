@@ -817,6 +817,9 @@ setup_file() {
     # Sets `fvm` in the PATH using the "env" file included in the installation
     source ~/.fvm/env
 
+    # Starts Fluvio Cluster
+    fluvio cluster delete || true
+
     # Installs Fluvio Stable
     run bash -c 'fvm install'
     assert_success
