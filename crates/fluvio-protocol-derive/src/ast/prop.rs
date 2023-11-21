@@ -174,13 +174,13 @@ pub fn prop_attrs_type_value(
                     TokenStream::from_str(&format!("{}_{}", data, itype)).unwrap()
                 } else {
                     // By default it's i16, because most places use it
-                    parse_quote!(#data)
+                    TokenStream::from_str(&format!("{}_i16", data)).unwrap()
                 }
             }
-            PropAttrsType::None => parse_quote!(0),
+            PropAttrsType::None => parse_quote!(0i16),
         }
     } else {
-        parse_quote!(0)
+        parse_quote!(0i16)
     }
 }
 /// A type that will handle the values passed in properties
