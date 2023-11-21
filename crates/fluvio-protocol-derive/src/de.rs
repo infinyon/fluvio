@@ -187,7 +187,7 @@ fn generate_decode_enum_impl(
     let mut arm_branches = vec![];
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
-        let field_idx = if *&prop.tag.is_some() {
+        let field_idx = if prop.tag.is_some() {
             prop_attrs_type_value(&prop.tag, Some(int_type))
         } else if attrs.encode_discriminant {
             match &prop.discriminant {
@@ -295,7 +295,7 @@ fn generate_try_enum_from_kf_enum(
     let mut variant_expr = vec![];
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
-        let field_idx = if *&prop.tag.is_some() {
+        let field_idx = if prop.tag.is_some() {
             prop_attrs_type_value(&prop.tag, Some(int_type))
         } else if attrs.encode_discriminant {
             match &prop.discriminant {

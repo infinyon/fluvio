@@ -53,7 +53,7 @@ impl NamedProp {
         let min_version = &self.attrs.min_version;
         let min = prop_attrs_type_value(min_version, None);
 
-        if *&self.attrs.max_version.is_some() {
+        if self.attrs.max_version.is_some() {
             let max = prop_attrs_type_value(&self.attrs.max_version, None);
             let trace = if trace {
                 quote! {
@@ -105,8 +105,8 @@ impl UnnamedProp {
         trace: bool,
     ) -> TokenStream {
         let min = prop_attrs_type_value(&self.attrs.min_version, None);
-        if *&self.attrs.max_version.is_some() {
-            let max = prop_attrs_type_value(&self.attrs.max_version , None);
+        if self.attrs.max_version.is_some() {
+            let max = prop_attrs_type_value(&self.attrs.max_version, None);
             let trace = if trace {
                 quote! {
                     else {
