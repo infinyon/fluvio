@@ -362,7 +362,7 @@ jobs:
         if: ${{ matrix.k8 == 'kind' }}
         timeout-minutes: 3
         run: |
-          fluvio cluster start  --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
+          fluvio cluster start --k8 --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
       # run a simpler configuration to run in a constraint mac
       - name: Run smoke-test-k8
         timeout-minutes: 3

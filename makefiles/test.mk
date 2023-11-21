@@ -168,7 +168,7 @@ smoke-test-k8-tls-root: smoke-test-k8-tls-policy-setup smoke-test-k8-tls-policy 
 
 install-test-k8-port-forwarding: build_k8_image
 install-test-k8-port-forwarding:
-	$(FLUVIO_BIN) cluster start --develop --use-k8-port-forwarding
+	$(FLUVIO_BIN) cluster start --k8 --develop --use-k8-port-forwarding
 
 ifeq (${CI},true)
 # In CI, we expect all artifacts to already be built and loaded for the script
