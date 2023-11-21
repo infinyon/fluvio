@@ -146,17 +146,17 @@ impl UnnamedProp {
 /// Convert the values to TokenStream which will be ready to use variable value
 ///
 /// #Example
-/// ````
+/// ````no_run
 /// // Function as a literal
 /// fn test() -> i16 { 1 }
 /// #[fluvio(min_version = "test()")]
 /// ````
 /// To use the value from the test() function:
-/// ````
+/// ````no_run
 /// let func_value = prop_attrs_type_value(prop_attr_type, None)
 /// ````
 /// To set a specific type you can do this:
-/// ````
+/// ````no_run
 /// let ident_type = Ident::new("u8", Span::call_site());
 /// let func_value = prop_attrs_type_value(prop_attr_type, Some(&ident_type))
 /// ````
@@ -189,25 +189,25 @@ pub fn prop_attrs_type_value(
 /// Using this type allows you to pass values multiple ways:
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// // Constant as a path
 /// const TEST: i16 = 1;
 /// #[fluvio(min_version = TEST)]
 /// ```
 ///
-/// ```
+/// ```no_run
 /// // Constant as a literal
 /// const TEST: i16 = 1;
 /// #[fluvio(min_version = "TEST")]
 /// ```
 ///
-/// ```
+/// ```no_run
 /// // Function as a literal
 /// fn test() -> i16 { 1 }
 /// #[fluvio(min_version = "test()")]
 /// ```
 ///
-/// ```
+/// ```no_run
 /// // Int
 /// #[fluvio(min_version = 1)]
 /// ```
