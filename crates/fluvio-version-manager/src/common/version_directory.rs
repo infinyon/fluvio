@@ -1,4 +1,8 @@
 use std::fs::{read_dir, copy, create_dir_all};
+
+#[cfg(target_os = "macos")]
+use std::fs::remove_file;
+
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -73,6 +77,18 @@ impl VersionDirectory {
                 entry.display()
             ))?;
             let target_path = fluvio_bin_dir.join(filename);
+
+            //remove for macos to sync w/ downloaded bin restrictions
+            #[cfg(target_os = "macos")]
+            if let Err(err) = remove_file(&target_path) {
+                use tracing::debug;
+                match err.kind() {
+                    std::io::ErrorKind::NotFound => {}
+                    _ => {
+                        debug!("ioerr: {}", err);
+                    }
+                }
+            }
 
             copy(entry, &target_path)?;
             tracing::info!(?target_path, "Copied binary");
