@@ -15,12 +15,15 @@ pub struct UpgradeOpt {
 }
 
 impl UpgradeOpt {
-    pub async fn process(self, platform_version: Version) -> Result<()> {
+    pub async fn process(mut self, platform_version: Version) -> Result<()> {
         let installation_type = get_installation_type()?;
         debug!(?installation_type);
-        let requested_installtion_type = self.start.installation_type.get();
-        if installation_type != requested_installtion_type {
-            bail!("It is not allowed to change installation type during cluster upgrade. Current: {installation_type}, requested: {requested_installtion_type}");
+        if let Some(requested) = self.start.installation_type.get() {
+            if installation_type != requested {
+                bail!("It is not allowed to change installation type during cluster upgrade. Current: {installation_type}, requested: {requested}");
+            }
+        } else {
+            self.start.installation_type.set(installation_type.clone());
         }
         match installation_type {
             InstallationType::K8 => {
