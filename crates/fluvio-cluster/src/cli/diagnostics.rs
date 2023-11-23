@@ -14,7 +14,7 @@ use fluvio_sc_schema::objects::Metadata;
 
 use crate::{InstallationType, cli::get_installation_type};
 use crate::cli::ClusterCliError;
-use crate::cli::start::get_log_directory;
+use crate::cli::start::default_log_directory;
 use crate::start::local::{DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR, DEFAULT_METADATA_SUB_DIR};
 
 #[derive(Parser, Debug)]
@@ -112,7 +112,7 @@ impl DiagnosticsOpt {
 
     // copy logs from spu
     fn copy_local_logs(&self, dest_dir: &Path) -> Result<()> {
-        let logs_dir = std::fs::read_dir(get_log_directory())?;
+        let logs_dir = std::fs::read_dir(default_log_directory())?;
         println!("reading local logs from {logs_dir:?}");
         for entry in logs_dir.flat_map(|it| it.ok()) {
             let to = dest_dir.join(entry.file_name());

@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::ops::Deref;
 use semver::Version;
 
 use fluvio::config::TlsPolicy;
@@ -19,7 +20,7 @@ pub async fn process_local(
 ) -> Result<(), ClusterCliError> {
     let mut builder = LocalConfig::builder(platform_version);
     builder
-        .log_dir(opt.log_dir.to_string())
+        .log_dir(opt.log_dir.deref())
         .spu_replicas(opt.spu)
         .hide_spinner(false);
 

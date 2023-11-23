@@ -20,6 +20,7 @@ cli = [
     "tar",
     "flate2",
     "fluvio-extension-common/target",
+    "fluvio-cli-common",
     "fluvio-sc-schema/use_serde",
 ]
 
@@ -72,6 +73,7 @@ fluvio-future = { workspace = true }
 
 fluvio = { workspace = true  }
 fluvio-extension-common = { workspace = true,  features = ["installation"] }
+fluvio-cli-common = { workspace = true, optional = true }
 fluvio-controlplane-metadata = { workspace = true,  features = ["k8",] }
 fluvio-sc-schema = { workspace = true  }
 fluvio-types = { workspace = true  }
