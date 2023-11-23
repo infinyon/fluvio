@@ -9,7 +9,7 @@ concurrency:
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 */2 * * *"
   # pull_request:
   #   branches: [master]
   workflow_dispatch:
@@ -96,6 +96,7 @@ jobs:
         topic: [1, 10]
         topic_segment_bytes: [500000] # 500KB
         topic_retention: [15s]
+        cluster_type: [local,k8]
     env:
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
 
@@ -145,8 +146,10 @@ jobs:
       # If they don't match, then let's run the test
 
       - name: Setup K3d
+        if: ${{ matrix.cluster_type == 'k8' }}
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Create K3d cluster
+        if: ${{ matrix.cluster_type == 'k8' }}
         run: |
           ./k8-util/cluster/reset-k3d.sh
       - name: Install Fluvio CLI and start cluster
@@ -156,7 +159,7 @@ jobs:
       - name: Start Fluvio Cluster
         run: |
           fluvio version
-          fluvio cluster start
+          fluvio cluster start --${{ matrix.cluster_type}}
 
       # Disabled for now bc data load is unstable in CI
       #- name: Look for longevity data

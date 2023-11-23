@@ -77,20 +77,12 @@ jobs:
         with:
           ref: ${{ needs.setup.pub_sha }}
       - name: Set up K3d for Ubuntu
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.cluster_type == 'k8' }}
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Set up K8 for ubuntu(kind)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.cluster_type == 'k8' }}
         run: ./k8-util/cluster/reset-k3d.sh
-      - name: Install Docker for Mac
-        if: ${{ matrix.os == 'macos-12' }}
-        uses: docker-practice/actions-setup-docker@master
-      - name: Set up Kind for Mac
-        if: ${{ matrix.os == 'macos-12' }}
-        run: |
-          brew install kind
-          kind create cluster --config k8-util/cluster/kind.yaml
       - name: Install Fluvio CLI
         run: |
           curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=latest bash
@@ -103,13 +95,8 @@ jobs:
         timeout-minutes: 3
         if: ${{ matrix.cluster_type == 'k8' }}
         run: |
-          if [[ ${{ matrix.os }} == 'macos-12' ]]; then
-              export PROXY="--proxy-addr  127.0.0.1"
-            else
-              export PROXY=""
-          fi
           FLUVIO_IMAGE_TAG_STRATEGY=version-git \
-          fluvio cluster start  --spu-storage-size 1 $PROXY
+          fluvio cluster start --k8 --spu-storage-size 1 
       - name: Run E2E Test
         timeout-minutes: 2
         run: |
@@ -121,9 +108,7 @@ jobs:
             date +"%Y-%m-%dT%H:%M:%S%z"
             echo foo | fluvio produce ${{ env.TOPIC }}
             fluvio consume ${{ env.TOPIC }} --start 0 -d | grep -F -w "foo"
-            # Delete the topic afterword but this looks to not work right now.
-            # fluvio topic delete "${{ env.TOPIC }}"
-
+            fluvio topic delete "${{ env.TOPIC }}"
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
@@ -258,18 +243,13 @@ jobs:
         uses: mig4/setup-bats@v1
         with:
           bats-version: 1.2.1
-      - name: Setup K3d
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-      - name: Create K3d cluster
-        run: |
-          ./k8-util/cluster/reset-k3d.sh
       - name: Setup bin path
         run:  echo "~/.fluvio/bin" >> $GITHUB_PATH
       - name: Install stable CLI and start Fluvio cluster
         timeout-minutes: 10
         run: |
           curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=${{ matrix.cluster_version }} bash
-          fluvio cluster start
+          fluvio cluster start --local
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |
           make FLUVIO_BIN=~/.fluvio/bin/fluvio SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test

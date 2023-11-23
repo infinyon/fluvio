@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use clap::ValueEnum;
 use clap::Parser;
+use common::installation::InstallationType;
+use fluvio::config::ConfigFile;
 use semver::Version;
 use tracing::debug;
 
@@ -15,9 +17,9 @@ mod error;
 mod diagnostics;
 mod status;
 mod shutdown;
+mod upgrade;
 
 use start::StartOpt;
-use start::UpgradeOpt;
 use delete::DeleteOpt;
 use check::CheckOpt;
 use group::SpuGroupCmd;
@@ -25,6 +27,7 @@ use spu::SpuCmd;
 use diagnostics::DiagnosticsOpt;
 use status::StatusOpt;
 use shutdown::ShutdownOpt;
+use upgrade::UpgradeOpt;
 
 pub use self::error::ClusterCliError;
 
@@ -54,9 +57,7 @@ pub enum ClusterCmd {
     /// Check that all requirements for cluster startup are met.
     ///
     /// This command is useful to check if user has all the required dependencies and permissions to run
-    /// fluvio on the current Kubernetes context.
-    ///
-    /// It is not intended to be used in scenarios where user does not have access to Kubernetes resources (eg. Cloud)
+    /// fluvio cluster.
     #[command(name = "check")]
     Check(CheckOpt),
 
@@ -162,4 +163,11 @@ impl ClusterCmd {
 
         Ok(())
     }
+}
+
+pub(crate) fn get_installation_type() -> Result<InstallationType, ClusterCliError> {
+    let config = ConfigFile::load_default_or_new()?;
+    Ok(InstallationType::load_or_default(
+        config.config().current_cluster()?,
+    ))
 }

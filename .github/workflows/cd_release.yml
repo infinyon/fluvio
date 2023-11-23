@@ -94,14 +94,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cluster_type: [local, k8s]
+        cluster_type: [local, k8]
     env:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v4
       - name: Setup K3d
+        if: ${{ matrix.cluster_type == 'k8' }}
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Create K3d cluster
+        if: ${{ matrix.cluster_type == 'k8' }}
         run: |
           ./k8-util/cluster/reset-k3d.sh
 
@@ -119,17 +121,11 @@ jobs:
         run: |
           curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
-      - name: Pre-Start - local cluster
-        if: matrix.cluster_type == 'local'
-        run: echo "IF_LOCAL=--local" | tee -a $GITHUB_ENV
-      - name: Pre-Start - Kubernetes cluster
-        if: matrix.cluster_type == 'k8s'
-        run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
       - name: Start cluster
-        timeout-minutes: 3
+        timeout-minutes: 10
         run: |
           fluvio version
-          fluvio cluster start ${IF_LOCAL}
+          fluvio cluster start --${{ matrix.cluster_type }}
       - name: Run diagnostics
         if: failure()
         timeout-minutes: 5
@@ -171,7 +167,7 @@ jobs:
       - name: Install last stable Fluvio CLI and start cluster
         run: |
           curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=$PREV_STABLE_VERSION bash
-          ~/.fluvio/bin/fluvio cluster start
+          ~/.fluvio/bin/fluvio cluster start --k8
           ~/.fluvio/bin/fluvio version
 
       - name: Set the expected fluvio version for upgrade

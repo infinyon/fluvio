@@ -660,6 +660,10 @@ impl ClusterInstaller {
             self.discover_sc_external_host_and_port(&sc_service).await?;
         let external_host_and_port = format!("{external_host}:{external_port}");
 
+        if self.config.save_profile {
+            self.update_profile(&external_host_and_port)?;
+        }
+
         self.wait_for_sc_availability().await?;
 
         let (install_host_and_port, pf_process) = if self.config.use_k8_port_forwarding {
@@ -682,10 +686,6 @@ impl ClusterInstaller {
         pb.println(format!("✅ Connected to SC: {install_host_and_port}"));
         pb.finish_and_clear();
         drop(pb);
-
-        if self.config.save_profile {
-            self.update_profile(&external_host_and_port)?;
-        }
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;

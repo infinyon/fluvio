@@ -2,7 +2,6 @@ use std::fs::remove_file;
 use std::process::Command;
 
 use clap::Parser;
-use fluvio::config::ConfigFile;
 use tracing::debug;
 use sysinfo::{ProcessExt, System, SystemExt};
 
@@ -12,7 +11,7 @@ use fluvio_command::CommandExt;
 use crate::render::ProgressRenderer;
 use crate::cli::ClusterCliError;
 use crate::progress::ProgressBarFactory;
-use crate::{ClusterError, UninstallError, InstallationType};
+use crate::{ClusterError, UninstallError, InstallationType, cli::get_installation_type};
 
 #[derive(Debug, Parser)]
 pub struct ShutdownOpt;
@@ -29,9 +28,7 @@ impl ShutdownOpt {
                 ))
             }
         };
-        let config_file = ConfigFile::load_default_or_new()?;
-        let installation_type =
-            InstallationType::load_or_default(config_file.config().current_cluster()?);
+        let installation_type = get_installation_type()?;
         debug!(?installation_type);
 
         match installation_type {

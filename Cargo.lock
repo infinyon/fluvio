@@ -476,7 +476,7 @@ dependencies = [
  "async-signal",
  "blocking",
  "cfg-if",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "futures-lite",
  "rustix 0.38.21",
  "windows-sys 0.48.0",
@@ -2351,9 +2351,9 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "event-listener"
-version = "3.0.1"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01cec0252c2afff729ee6f00e903d479fba81784c8e2bd77447673471fdfaea1"
+checksum = "d93877bcde0eb80ca09131a08d23f0a5c18a620b01db137dba666d18cd9b30c2"
 dependencies = [
  "concurrent-queue",
  "parking",
@@ -2474,7 +2474,7 @@ dependencies = [
  "chrono",
  "derive_builder",
  "dirs 5.0.1",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "fluvio-compression",
  "fluvio-future",
  "fluvio-protocol",
@@ -3049,7 +3049,7 @@ dependencies = [
  "base64 0.21.5",
  "cfg-if",
  "clap",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "fluvio-auth",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
@@ -3167,7 +3167,7 @@ dependencies = [
  "async-trait",
  "bytes 1.5.0",
  "cfg-if",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-types",
@@ -3201,7 +3201,7 @@ dependencies = [
  "chrono",
  "clap",
  "derive_builder",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "flate2",
  "fluvio",
  "fluvio-compression",
@@ -3292,7 +3292,7 @@ dependencies = [
  "async-channel",
  "async-lock",
  "async-trait",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
@@ -3314,7 +3314,7 @@ version = "0.11.0"
 dependencies = [
  "async-rwlock",
  "async-std",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "fluvio-future",
  "k8-types",
  "once_cell",
@@ -3446,7 +3446,7 @@ dependencies = [
 name = "fluvio-types"
 version = "0.4.4"
 dependencies = [
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "fluvio-future",
  "thiserror",
  "tokio",

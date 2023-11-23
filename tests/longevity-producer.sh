@@ -50,7 +50,7 @@ function setup() {
 
 
     # Start a cluster
-    $FLUVIO_BIN cluster start --image-version latest
+    $FLUVIO_BIN cluster start --k8 --image-version latest
 
     # Create a topic to delete at the end
     #$FLUVIO_BIN topic create $NEW_TOPIC_NAME || true

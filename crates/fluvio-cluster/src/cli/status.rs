@@ -6,6 +6,7 @@ use fluvio::{Fluvio, FluvioAdmin, FluvioConfig};
 use fluvio::config::ConfigFile;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::{spu::SpuSpec, topic::TopicSpec};
+use fluvio_extension_common::installation::InstallationType;
 use fluvio_sc_schema::objects::Metadata;
 use tracing::debug;
 
@@ -16,11 +17,7 @@ use crate::{cli::ClusterCliError, cli::ClusterTarget};
 use crate::progress::ProgressBarFactory;
 
 #[derive(Debug, Parser)]
-pub struct StatusOpt {
-    /// Skip Kubernetes cluster checks
-    #[clap(long)]
-    no_k8: bool,
-}
+pub struct StatusOpt;
 
 macro_rules! pad_format {
     ( $e:expr ) => {
@@ -39,13 +36,16 @@ impl StatusOpt {
 
         let fluvio_config = target.load()?;
         let config_file = ConfigFile::load_default_or_new()?;
+        let installation_type =
+            InstallationType::load_or_default(config_file.config().current_cluster()?);
+        debug!(?installation_type);
 
         pb_factory.println(format!(
             "📝 Running cluster status checks with profile {}",
             Self::profile_name(&config_file).italic()
         ));
 
-        if !self.no_k8 {
+        if let InstallationType::K8 | InstallationType::LocalK8 = installation_type {
             let _ = Self::check_k8s_cluster(&pb).await;
         }
         Self::check_sc(&pb, &fluvio_config, &config_file).await?;
