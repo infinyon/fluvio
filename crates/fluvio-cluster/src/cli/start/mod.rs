@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::{fmt, str::FromStr};
 use std::path::PathBuf;
 
@@ -17,28 +18,23 @@ use tls::TlsOpt;
 
 use crate::InstallationType;
 
-#[cfg(target_os = "macos")]
-pub fn get_log_directory() -> &'static str {
-    "/usr/local/var/log/fluvio"
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn get_log_directory() -> &'static str {
-    "/tmp"
+pub fn default_log_directory() -> PathBuf {
+    let base = fluvio_cli_common::install::fluvio_base_dir().unwrap_or(std::env::temp_dir());
+    base.join("log")
 }
 
 #[derive(Debug, Clone)]
-pub struct DefaultLogDirectory(String);
+pub struct DefaultLogDirectory(PathBuf);
 
 impl Default for DefaultLogDirectory {
     fn default() -> Self {
-        Self(get_log_directory().to_string())
+        Self(default_log_directory())
     }
 }
 
 impl fmt::Display for DefaultLogDirectory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.0.display())
     }
 }
 
@@ -46,7 +42,15 @@ impl FromStr for DefaultLogDirectory {
     type Err = std::io::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.to_string()))
+        Ok(Self(s.into()))
+    }
+}
+
+impl Deref for DefaultLogDirectory {
+    type Target = PathBuf;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
