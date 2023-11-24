@@ -297,7 +297,7 @@ mod tests {
             get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
-        let expected_result = TokenStream::from_str(&format!("{}", value))?;
+        let expected_result = TokenStream::from_str(value)?;
         assert_eq!(
             expected_result.to_string(),
             prop_attrs_token_stream.to_string()
@@ -368,7 +368,7 @@ mod tests {
             get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
-        let expected_result = TokenStream::from_str(&format!("{}", value))?;
+        let expected_result = TokenStream::from_str(value)?;
         assert_eq!(
             expected_result.to_string(),
             prop_attrs_token_stream.to_string()
@@ -392,7 +392,7 @@ mod tests {
             get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
-        let expected_result = TokenStream::from_str(&format!("{}", value))?;
+        let expected_result = TokenStream::from_str(value)?;
         assert_eq!(
             expected_result.to_string(),
             prop_attrs_token_stream.to_string()
