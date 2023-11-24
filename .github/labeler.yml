@@ -1,0 +1,185 @@
+# All crates
+# Group up where it makes sense
+# Labels to help PR reviewers see scope before looking at code
+"cargo-builder":
+  - "crates/cargo-builder/**"
+
+"CLI:cdk":
+  - "crates/cdk"
+  - "crates/fluvio-connector-common/**"
+  - "crates/fluvio-connector-deployer/**"
+  - "crates/fluvio-connector-derive/**"
+  - "crates/fluvio-connector-package/**"
+
+"fluvio":
+  - "crates/fluvio/**"
+
+"fluvio-auth":
+  - "crates/fluvio-auth/**"
+
+"fluvio-benchmark":
+  - "crates/fluvio-benchmark/**"
+
+"fluvio-channel":
+  - "crates/fluvio-channel/**"
+  - "crates/fluvio-channel-cli/**"
+
+"fluvio-cli":
+  - "crates/fluvio-cli/**"
+
+"CLI:misc":
+  - "crates/fluvio-cli-common/**"
+  - "crates/fluvio-extension-common/**"
+
+"fluvio-cluster":
+  - "crates/fluvio-cluster/**"
+
+"fluvio-compression":
+  - "crates/fluvio-compression/**"
+
+"fluvio-controlplane":
+  - "crates/fluvio-controlplane/**"
+
+"fluvio-controlplane-metadata":
+  - "crates/fluvio-controlplane-metadata/**"
+
+"fluvio-hub":
+  - "crates/fluvio-hub-protocol/**"
+  - "crates/fluvio-hub-util/**"
+
+"fluvio-package-index":
+  - "crates/fluvio-package-index/**"
+
+"fluvio-protocol":
+  - "crates/fluvio-protocol/**"
+
+"fluvio-protocol-derive":
+  - "crates/fluvio-protocol-derive/**"
+
+"fluvio-run":
+  - "crates/fluvio-run/**"
+
+"fluvio-sc":
+  - "crates/fluvio-sc/**"
+  - "crates/fluvio-sc-schema/**"
+
+"fluvio-service":
+  - "crates/fluvio-service/**"
+
+"fluvio-smartengine":
+  - "crates/fluvio-smartengine/**"
+
+"fluvio-smartmodule":
+  - "crates/fluvio-smartmodule/**"
+  - "crates/fluvio-smartmodule-derive/**"
+
+"fluvio-socket":
+  - "crates/fluvio-socket/**"
+
+"fluvio-spu":
+  - "crates/fluvio-spu/**"
+  - "crates/fluvio-spu-schema/**"
+
+"fluvio-storage":
+  - "crates/fluvio-storage/**"
+
+"fluvio-stream-dispatcher":
+  - "crates/fluvio-stream-dispatcher/**"
+
+"fluvio-stream-model":
+  - "crates/fluvio-stream-model/**"
+
+"fluvio-test":
+  - "crates/fluvio-test/**"
+  - "crates/fluvio-test-case-derive/**"
+  - "crates/fluvio-test-derive/**"
+  - "crates/fluvio-test-util/**"
+
+"fluvio-types":
+  - "crates/fluvio-types/**"
+
+"smartmodule-development-kit":
+  - "crates/smartmodule-development-kit/**"
+
+"fluvio-version-manager":
+  - "crates/fluvio-version-manager/**"
+
+# Additional groups
+
+"CLI":
+  - "crates/fluvio/**"
+  - "crates/fluvio-cli-common/**"
+  - "crates/smartmodule-development-kit/**"
+  - "crates/fluvio-run/**"
+  - "crates/cdk"
+  - "crates/fluvio-connector-common/**"
+  - "crates/fluvio-connector-deployer/**"
+  - "crates/fluvio-connector-derive/**"
+  - "crates/fluvio-connector-package/**"
+  - "crates/fluvio-version-manager/**"
+  - "crates/fluvio-benchmark/**"
+  - "crates/fluvio-test/**"
+  - "crates/fluvio-test-case-derive/**"
+  - "crates/fluvio-test-derive/**"
+  - "crates/fluvio-test-util/**"
+  - "crates/fluvio-channel/**"
+  - "crates/fluvio-channel-cli/**"
+  - "crates/fluvio-cluster/src/cli/**"
+  - "crates/fluvio-hub-util/src/cmd/**"
+  - "crates/fluvio/src/config"
+  - "crates/fluvio-extension-common/**"
+  - "crates/fluvio-smartengine/src/transformation.rs"
+  - "crates/fluvio-controlplane-metadata/src/tableformat/spec.rs"
+  
+"Smartmodule":
+  - "smartmodule/**"
+  - "crates/fluvio-smartmodule/**"
+  - "crates/fluvio-smartmodule-derive/**"
+
+"Connector":
+  - "connectors/**"
+
+"Installation":
+  - "install.sh"
+  - "crates/fluvio-cli-common/src/install.rs"
+  - "crates/fluvio-cli/src/install/**"
+  - "crates/fluvio-version-manager/**"
+
+"CI":
+  - ".github/**"
+  - "bors.toml"
+  - "Makefile"
+  - "makefiles/**"
+  - "deny.toml"
+  - "actions/**"
+  - "build-scripts/**"
+  - "k8-util"
+  - "tls"
+  - "tests"
+  - "action.yaml"
+
+"Release":
+  - "VERSION"
+  - "CHANGELOG.md"
+  - "release-tools/**"
+  - "./github/workflows/publish.yml"
+  - "./github/workflows/release.yml"
+  - "cliff.toml"
+
+"Dev-docs:":
+  - "DEVELOPER.md"
+  - "README.md"
+  - "RELEASE.md"
+  - "examples/**"
+  - "dev-tools/**"
+  - "rust-toolchain.toml"
+
+"Repo-related":
+  - "LICENSE"
+  - "CODE-OF-CONDUCT.md"
+  - "CONTRIBUTING.md"
+  - "rustfmt.toml"
+  - ".cargo/**"
+  - ".github/ISSUE_TEMPLATE"
+  - ".github/PULL_REQUEST_TEMPLATE"
+  - ".gitignore"
