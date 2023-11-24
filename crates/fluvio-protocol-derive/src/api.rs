@@ -109,43 +109,38 @@ fn generate_request_trait_impl(name: &Ident, attrs: &[Attribute]) -> TokenStream
     } else {
         return quote! {};
     };
-
-    let api_key = if let Some(version) = find_int_name_value(&version_meta, "api_key") {
-        version
-    } else {
-        return quote! {};
+    let api_key = match find_int_name_value(&version_meta, "api_key") {
+        Ok(data) => data,
+        Err(err) => return err.to_compile_error(),
+    };
+    let min_version = match find_int_name_value(&version_meta, "api_min_version") {
+        Ok(data) => data,
+        Err(err) => return err.to_compile_error(),
     };
 
-    let min_version = if let Some(version) = find_int_name_value(&version_meta, "api_min_version") {
-        version
-    } else {
-        return syn::Error::new(version_meta.span(), "no min version found").to_compile_error();
-    };
-
-    let response = if let Some(version) = find_string_name_value(&version_meta, "response") {
-        version
-    } else {
-        return syn::Error::new(version_meta.span(), "no response found").to_compile_error();
+    let response = match find_string_name_value(&version_meta, "response") {
+        Ok(data) => data,
+        Err(err) => return err.to_compile_error(),
     };
 
     let response_type = Ident::new(&response.value(), Span::call_site());
 
-    let max_version =
-        if let Some(max_version) = find_int_name_value(&version_meta, "api_max_version") {
-            if max_version < min_version {
-                syn::Error::new(
-                    version_meta.span(),
-                    "max version must be greater than or equal to min version",
-                )
-                .to_compile_error()
-            } else {
-                quote! {
-                    const MAX_API_VERSION: i16 = #max_version as i16;
-                }
-            }
+    let max_version = if let Ok(max_version) = find_int_name_value(&version_meta, "api_max_version")
+    {
+        if max_version < min_version {
+            syn::Error::new(
+                version_meta.span(),
+                "max version must be greater than or equal to min version",
+            )
+            .to_compile_error()
         } else {
-            quote! {}
-        };
+            quote! {
+                const MAX_API_VERSION: i16 = #max_version as i16;
+            }
+        }
+    } else {
+        quote! {}
+    };
 
     quote! {
 

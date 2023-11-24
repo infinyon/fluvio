@@ -10,7 +10,7 @@ use syn::{
 use super::container::ContainerAttributes;
 use super::prop::PropAttrsType;
 use crate::util::{
-    get_expr_value_from_meta, get_lit_int_value, parse_attributes, parse_attributes_data,
+    get_attr_type_from_meta, get_expr_int_value, parse_attributes, parse_attributes_data,
 };
 
 pub(crate) struct FluvioEnum {
@@ -76,16 +76,16 @@ impl EnumProp {
 
         parse_attributes!(attrs.iter(), "fluvio", meta,
             "min_version", prop.min_version => {
-                let value = get_expr_value_from_meta(&meta)?;
+                let value = get_attr_type_from_meta(&meta)?;
                 prop.min_version = Some(value);
             }
             "max_version", prop.max_version => {
-                let value = get_expr_value_from_meta(&meta)?;
+                let value = get_attr_type_from_meta(&meta)?;
                 prop.max_version = Some(value);
             }
             "tag", prop.tag => {
-                let (expr, attr_span, attr_name) = parse_attributes_data(&meta);
-                let value = get_lit_int_value(&attr_name, &expr, attr_span)?;
+                let (expr, attr_span, attr_name) = parse_attributes_data(&meta)?;
+                let value = get_expr_int_value::<i16>(&attr_name, expr.as_ref(), attr_span)?;
                 prop.tag = Some(value.to_string());
             }
         );

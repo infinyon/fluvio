@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use proc_macro2::Span;
 use syn::{
-    meta::ParseNestedMeta, punctuated::Punctuated, Attribute, Expr, ExprLit, ExprPath, ExprUnary,
-    Lit, LitStr, Meta, MetaList, MetaNameValue, Token, UnOp,
+    meta::ParseNestedMeta, punctuated::Punctuated, spanned::Spanned, Attribute, Expr, ExprLit,
+    ExprPath, ExprUnary, Lit, LitStr, Meta, Token, UnOp,
 };
 
 use crate::ast::prop::PropAttrsType;
@@ -12,7 +14,7 @@ use crate::ast::prop::PropAttrsType;
 /// * `attr_ident` - The path ident to search for
 /// * `meta` - a return variable that will give us the parse_nested_meta of each element
 /// * `field` - nested path to search for
-/// * `opt` - mutable variable to save data into
+/// * `opt` - check if attribute is already specified
 /// * `block` - block of code to execute
 macro_rules! parse_attributes {
     ($attrs:expr, $attr_ident:expr, $meta: ident, $($field:pat, $opt:expr => $block:expr)*) => {
@@ -47,9 +49,18 @@ macro_rules! parse_attributes {
 // Here is how this can be fixed if used in macro: https://stackoverflow.com/questions/76989679/how-to-call-a-closure-from-a-macro
 // So to do this in a less work around way we use a separate function like so:
 // We return $meta variable like shown here: https://github.com/rust-lang/rust-clippy/issues/1553
-pub fn parse_attributes_data(meta: &ParseNestedMeta) -> (Option<syn::Expr>, Span, String) {
+pub fn parse_attributes_data(
+    meta: &ParseNestedMeta,
+) -> syn::Result<(Option<syn::Expr>, Span, String)> {
     // we can safely unwarp as this is already checked from the parse_attributes macro
-    let ident = meta.path.get_ident().unwrap();
+    let ident = match meta.path.get_ident() {
+        Some(value) => Ok(value),
+        None => Err(syn::Error::new(
+            meta.input.span(),
+            "Path ident not found".to_string(),
+        )),
+    }?;
+
     // to_string so we can return the name of the ident
     // helps to reduce the repetitiveness of attribute names
     let attr_name = ident.to_string();
@@ -57,22 +68,22 @@ pub fn parse_attributes_data(meta: &ParseNestedMeta) -> (Option<syn::Expr>, Span
 
     if let Ok(value) = meta.value() {
         if let Ok(expr) = value.parse() {
-            return (Some(expr), attr_span, attr_name);
+            return Ok((Some(expr), attr_span, attr_name));
         }
     }
 
-    (None, attr_span, attr_name)
+    Ok((None, attr_span, attr_name))
 }
 
 pub(crate) use parse_attributes;
 
-pub fn get_expr_value_from_meta(meta: &ParseNestedMeta) -> syn::Result<PropAttrsType> {
-    let (expr, attr_span, attr_name) = parse_attributes_data(meta);
-    get_expr_value(&attr_name, &expr, attr_span)
+pub fn get_attr_type_from_meta(meta: &ParseNestedMeta) -> syn::Result<PropAttrsType> {
+    let (expr, attr_span, attr_name) = parse_attributes_data(meta)?;
+    get_expr_value(&attr_name, expr.as_ref(), attr_span)
 }
 pub fn get_expr_value<'a>(
     attr_name: &'a str,
-    field: &'a Option<Expr>,
+    field: Option<&'a Expr>,
     span: Span,
 ) -> syn::Result<PropAttrsType> {
     match &field {
@@ -86,7 +97,8 @@ pub fn get_expr_value<'a>(
                 // And strip it when creating the new Ident so we can use it later on
                 if value.contains('(') && value.contains(')') {
                     if let Some(value) = &lit.value().strip_suffix("()") {
-                        return Ok(PropAttrsType::Fn(syn::Ident::new(value, lit.span())));
+                        dbg!(value);
+                        return Ok(PropAttrsType::Fn(syn::Ident::new(value.trim(), lit.span())));
                     }
                 }
 
@@ -128,13 +140,17 @@ pub fn get_expr_value<'a>(
     }
 }
 
-fn parse_int_expr<'a>(attr_name: &'a str, expr: &'a Expr, span: Span) -> syn::Result<i16> {
+fn parse_int_expr<'a, T>(attr_name: &'a str, expr: &'a Expr, span: Span) -> syn::Result<T>
+where
+    T: std::ops::Neg<Output = T> + FromStr,
+    <T as FromStr>::Err: std::fmt::Display,
+{
     match expr {
         Expr::Unary(ExprUnary {
             op: UnOp::Neg(_),
             expr,
             ..
-        }) => parse_int_expr(attr_name, expr, span).map(|int| -int),
+        }) => parse_int_expr::<T>(attr_name, expr, span).map(|int| -int),
         Expr::Lit(ExprLit {
             lit: Lit::Int(int), ..
         }) => int.base10_parse(),
@@ -145,13 +161,17 @@ fn parse_int_expr<'a>(attr_name: &'a str, expr: &'a Expr, span: Span) -> syn::Re
     }
 }
 
-pub fn get_lit_int_value<'a>(
+pub fn get_expr_int_value<'a, T>(
     attr_name: &'a str,
-    value: &'a Option<Expr>,
+    value: Option<&'a Expr>,
     span: Span,
-) -> syn::Result<i16> {
+) -> syn::Result<T>
+where
+    T: std::ops::Neg<Output = T> + FromStr,
+    <T as FromStr>::Err: std::fmt::Display,
+{
     if let Some(value_expr) = value {
-        parse_int_expr(attr_name, value_expr, span)
+        parse_int_expr::<T>(attr_name, value_expr, span)
     } else {
         Err(syn::Error::new(
             span,
@@ -161,7 +181,7 @@ pub fn get_lit_int_value<'a>(
 }
 pub fn get_lit_int<'a>(
     attr_name: &'a str,
-    value: &'a Option<Expr>,
+    value: Option<&'a Expr>,
     span: Span,
 ) -> syn::Result<&'a syn::LitInt> {
     match &value {
@@ -183,7 +203,7 @@ pub fn get_lit_int<'a>(
 }
 pub fn get_lit_str<'a>(
     attr_name: &'a str,
-    value: &'a Option<Expr>,
+    value: Option<&'a Expr>,
     span: Span,
 ) -> syn::Result<&'a syn::LitStr> {
     match &value {
@@ -215,42 +235,43 @@ pub(crate) fn find_attr(attrs: &[Attribute], name: &str) -> Option<Meta> {
         }
     })
 }
-pub(crate) fn find_name_value_from_meta_list(
-    meta_list: &MetaList,
-    attr_name: &str,
-) -> Option<MetaNameValue> {
-    for item in meta_list
-        .parse_args_with(Punctuated::<syn::Meta, Token![,]>::parse_terminated)
-        .unwrap_or_else(|err| panic!("Invalid #[new] attribute: {}", err))
-    {
-        if let Meta::NameValue(kv) = &item {
-            if kv.path.is_ident(attr_name) {
-                return Some(kv.clone());
+pub(crate) fn find_expr_from_meta(meta: &Meta, attr_name: &str) -> syn::Result<Expr> {
+    if let Meta::List(ref list) = &meta {
+        for item in list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)? {
+            if let Meta::NameValue(kv) = &item {
+                if kv.path.is_ident(attr_name) {
+                    return Ok(kv.value.clone());
+                }
             }
-        };
+        }
     }
-    None
-}
 
-pub(crate) fn find_name_value_from_meta(meta: &Meta, attr_name: &str) -> Option<MetaNameValue> {
-    if let Meta::List(list) = meta {
-        return find_name_value_from_meta_list(list, attr_name);
-    }
-    None
+    Err(syn::Error::new(
+        meta.span(),
+        format!("{attr_name} not found!"),
+    ))
 }
-
 /// find name value with str value
-pub(crate) fn find_string_name_value(meta: &Meta, attr_name: &str) -> Option<LitStr> {
-    let meta_name_value = find_name_value_from_meta(meta, attr_name)?;
-    get_lit_str(attr_name, &Some(meta_name_value.value), Span::call_site())
-        .ok()
-        .cloned()
+pub(crate) fn find_string_name_value<'a>(
+    meta: &'a Meta,
+    attr_name: &'a str,
+) -> syn::Result<LitStr> {
+    match find_expr_from_meta(meta, attr_name) {
+        Ok(ref value) => {
+            let lit_str = get_lit_str(attr_name, Some(value), meta.span())?;
+            Ok(lit_str.clone())
+        }
+        Err(err) => Err(err),
+    }
 }
 
-pub(crate) fn find_int_name_value(meta: &Meta, attr_name: &str) -> Option<u64> {
-    let meta_name_value = find_name_value_from_meta(meta, attr_name)?;
-    let value = get_lit_int(attr_name, &Some(meta_name_value.value), Span::call_site())
-        .ok()
-        .cloned()?;
-    value.base10_parse::<u64>().ok()
+pub(crate) fn find_int_name_value(meta: &Meta, attr_name: &str) -> syn::Result<u64> {
+    match find_expr_from_meta(meta, attr_name) {
+        Ok(ref value) => {
+            let value = get_lit_int(attr_name, Some(value), meta.span())?;
+
+            value.base10_parse::<u64>()
+        }
+        Err(err) => Err(err),
+    }
 }

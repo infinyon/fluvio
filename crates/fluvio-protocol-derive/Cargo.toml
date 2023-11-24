@@ -17,3 +17,4 @@ syn = { workspace = true, features = ["full"] }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 tracing = { workspace = true }
+anyhow = { workspace = true }
