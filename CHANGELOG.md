@@ -2,6 +2,34 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version 0.11.1 - 2023-11-24
+
+### Added
+
+* Support cluster upgrade/check/status for local cluster ([#3719](https://github.com/infinyon/fluvio/issues/3719))
+
+### Changed
+
+* Clone `smdk test` to `fluvio sm test` ([#3559](https://github.com/infinyon/fluvio/issues/3559))
+* Hide `fvm self install` from and help introduce `fvm self update` ([#3724](https://github.com/infinyon/fluvio/issues/3724))
+* Make local cluster as default in cli ([#3733](https://github.com/infinyon/fluvio/issues/3733))
+* Use installation type in cli commands ([#3691](https://github.com/infinyon/fluvio/issues/3691))
+
+### Fixed
+
+* Parse `ApiError` from Hub and bubble up ([#3692](https://github.com/infinyon/fluvio/issues/3692))
+* Macos remove binaries before replacing ([#3735](https://github.com/infinyon/fluvio/issues/3735))
+
+### CI
+
+* Put logs under $FLUVIO_HOME dir ([#3737](https://github.com/infinyon/fluvio/issues/3737))
+* `0.11.0` post release ([#3711](https://github.com/infinyon/fluvio/issues/3711))
+* Fvm_basic.bats, smoke test adjustment ([#3717](https://github.com/infinyon/fluvio/issues/3717))
+* Update local clusters setup on CD and Hourly ([#3727](https://github.com/infinyon/fluvio/issues/3727))
+* Explicitly set cluster type in CI/CD ([#3732](https://github.com/infinyon/fluvio/issues/3732))
+* Remove implicit cluster start from tests ([#3726](https://github.com/infinyon/fluvio/issues/3726))
+* Switch cli tests to local fluvio cluster ([#3720](https://github.com/infinyon/fluvio/issues/3720))
+
 ## Platform Version 0.11.0 - 2023-11-16
 
 ### Other
