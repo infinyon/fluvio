@@ -9,9 +9,10 @@ use syn::DeriveInput;
 use syn::Fields;
 use syn::Ident;
 
+use crate::util::find_int_from_meta;
+use crate::util::find_string_from_meta;
+
 use super::util::find_attr;
-use super::util::find_int_name_value;
-use super::util::find_string_name_value;
 
 pub(crate) fn generate_request_traits(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
@@ -109,23 +110,23 @@ fn generate_request_trait_impl(name: &Ident, attrs: &[Attribute]) -> TokenStream
     } else {
         return quote! {};
     };
-    let api_key = match find_int_name_value(&version_meta, "api_key") {
+    let api_key = match find_int_from_meta(&version_meta, "api_key") {
         Ok(data) => data,
         Err(err) => return err.to_compile_error(),
     };
-    let min_version = match find_int_name_value(&version_meta, "api_min_version") {
+    let min_version = match find_int_from_meta(&version_meta, "api_min_version") {
         Ok(data) => data,
         Err(err) => return err.to_compile_error(),
     };
 
-    let response = match find_string_name_value(&version_meta, "response") {
+    let response = match find_string_from_meta(&version_meta, "response") {
         Ok(data) => data,
         Err(err) => return err.to_compile_error(),
     };
 
     let response_type = Ident::new(&response.value(), Span::call_site());
 
-    let max_version = if let Ok(max_version) = find_int_name_value(&version_meta, "api_max_version")
+    let max_version = if let Ok(max_version) = find_int_from_meta(&version_meta, "api_max_version")
     {
         if max_version < min_version {
             syn::Error::new(

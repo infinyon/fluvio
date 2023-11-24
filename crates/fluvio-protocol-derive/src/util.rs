@@ -252,7 +252,7 @@ pub(crate) fn find_expr_from_meta(meta: &Meta, attr_name: &str) -> syn::Result<E
     ))
 }
 /// find name value with str value
-pub(crate) fn find_string_name_value<'a>(
+pub(crate) fn find_string_from_meta<'a>(
     meta: &'a Meta,
     attr_name: &'a str,
 ) -> syn::Result<LitStr> {
@@ -265,7 +265,7 @@ pub(crate) fn find_string_name_value<'a>(
     }
 }
 
-pub(crate) fn find_int_name_value(meta: &Meta, attr_name: &str) -> syn::Result<u64> {
+pub(crate) fn find_int_from_meta(meta: &Meta, attr_name: &str) -> syn::Result<u64> {
     match find_expr_from_meta(meta, attr_name) {
         Ok(ref value) => {
             let value = get_lit_int(attr_name, Some(value), meta.span())?;
