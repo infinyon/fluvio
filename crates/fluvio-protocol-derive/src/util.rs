@@ -252,10 +252,7 @@ pub(crate) fn find_expr_from_meta(meta: &Meta, attr_name: &str) -> syn::Result<E
     ))
 }
 /// find name value with str value
-pub(crate) fn find_string_from_meta<'a>(
-    meta: &'a Meta,
-    attr_name: &'a str,
-) -> syn::Result<LitStr> {
+pub(crate) fn find_string_from_meta<'a>(meta: &'a Meta, attr_name: &'a str) -> syn::Result<LitStr> {
     match find_expr_from_meta(meta, attr_name) {
         Ok(ref value) => {
             let lit_str = get_lit_str(attr_name, Some(value), meta.span())?;
