@@ -403,7 +403,10 @@ mod tests {
 
     #[test]
     fn test_props_attr_value_with_unary() -> Result<(), syn::Error> {
-        let value = "-1";
+        // This value should be positive literal
+        // Because we specify that the value is negative with the Unary operator
+        let value = "1";
+        let result_value = "-1";
 
         let lit_str = LitInt::new(value, Span::call_site());
         let expr_lit = Expr::Lit(syn::ExprLit {
@@ -420,7 +423,7 @@ mod tests {
             get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
-        let expected_result = TokenStream::from_str(&format!("{}_i16", value))?;
+        let expected_result = TokenStream::from_str(&format!("{}_i16", result_value))?;
         assert_eq!(
             expected_result.to_string(),
             prop_attrs_token_stream.to_string()

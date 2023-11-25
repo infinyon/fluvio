@@ -97,7 +97,6 @@ pub fn get_expr_value<'a>(
                 // And strip it when creating the new Ident so we can use it later on
                 if value.contains('(') && value.contains(')') {
                     if let Some(value) = &lit.value().strip_suffix("()") {
-                        dbg!(value);
                         return Ok(PropAttrsType::Fn(syn::Ident::new(value.trim(), lit.span())));
                     }
                 }
@@ -115,7 +114,7 @@ pub fn get_expr_value<'a>(
             // So to handle that we are checking if it's Unary Lit and continue as usual
             // If needed this can be extended to handle the Unary operators
             // But it doesn't seem that is necessary currently
-            Ok(PropAttrsType::Int(parse_int_expr(attr_name, expr, span)?))
+            Ok(PropAttrsType::Int(-parse_int_expr(attr_name, expr, span)?))
         }
         Some(Expr::Path(ExprPath { path, .. })) => {
             // For now we only need Path just to handle cases where CONSTANTS are being passed without "" quotes
@@ -236,7 +235,7 @@ pub(crate) fn find_attr(attrs: &[Attribute], name: &str) -> Option<Meta> {
     })
 }
 pub(crate) fn find_expr_from_meta(meta: &Meta, attr_name: &str) -> syn::Result<Expr> {
-    if let Meta::List(ref list) = &meta {
+    if let Meta::List(list) = &meta {
         for item in list.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)? {
             if let Meta::NameValue(kv) = &item {
                 if kv.path.is_ident(attr_name) {
