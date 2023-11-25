@@ -39,15 +39,14 @@ impl AsContextMut for WasmState {
 impl WasmState {
     // If current fuel is less than DEFAULT_FUEL, tops up fuel to DEFAULT_FUEL
     pub fn top_up_fuel(&mut self) {
-        if let Ok(current_fuel) = self.0.consume_fuel(0) {
-            let amount_to_add = max(DEFAULT_FUEL - current_fuel, 0);
-            let _ = self.0.add_fuel(amount_to_add);
+        if let Ok(current_fuel) = self.0.get_fuel() {
+            let _ = self.0.set_fuel(max(DEFAULT_FUEL, current_fuel));
         }
     }
 
     // Get amount of fuel used since last top up
     pub fn get_used_fuel(&mut self) -> u64 {
-        if let Ok(current_fuel) = self.0.consume_fuel(0) {
+        if let Ok(current_fuel) = self.0.get_fuel() {
             max(DEFAULT_FUEL - current_fuel, 0)
         } else {
             0
