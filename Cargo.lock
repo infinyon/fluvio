@@ -1018,9 +1018,9 @@ dependencies = [
 
 [[package]]
 name = "cargo_toml"
-version = "0.16.3"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3f9629bc6c4388ea699781dc988c2b99766d7679b151c81990b4fa1208fafd3"
+checksum = "4d1ece59890e746567b467253aea0adbe8a21784d0b025d8a306f66c391c2957"
 dependencies = [
  "serde",
  "toml 0.8.8",
@@ -2958,7 +2958,7 @@ dependencies = [
 name = "fluvio-hub-protocol"
 version = "0.0.0"
 dependencies = [
- "cargo_toml 0.16.3",
+ "cargo_toml 0.17.1",
  "const_format",
  "dirs 5.0.1",
  "fluvio-controlplane-metadata",
@@ -2976,7 +2976,7 @@ name = "fluvio-hub-util"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "cargo_toml 0.16.3",
+ "cargo_toml 0.17.1",
  "clap",
  "comfy-table",
  "const_format",
@@ -8695,14 +8695,15 @@ checksum = "1778a42e8b3b90bff8d0f5032bf22250792889a5cdc752aa0020c84abe3aaf10"
 
 [[package]]
 name = "which"
-version = "4.4.2"
+version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87ba24419a2078cd2b0f2ede2691b6c66d8e47836da3b6db8265ebad47afbfc7"
+checksum = "9bf3ea8596f3a0dd5980b46430f2058dfe2c36a27ccfbb1845d6fbfcd9ba6e14"
 dependencies = [
  "either",
  "home",
  "once_cell",
  "rustix 0.38.25",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
