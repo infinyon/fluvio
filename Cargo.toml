@@ -71,7 +71,7 @@ atty = { version = "0.2.14" }
 base64 = "0.21.0"
 bytes = "1.1.0"
 bytesize = "1.1.0"
-cargo_toml = "0.16.2"
+cargo_toml = "0.17.1"
 cargo-generate = { version = "0.18.2", default-features = false }
 cfg-if = "1.0.0"
 chrono = { version = "0.4.23", default-features = false }
@@ -141,10 +141,10 @@ tui = { version = "0.19.0", default-features = false }
 url = "2.1.1"
 uuid = { version = "1.1", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
-wasmtime = { version = "14.0.3" }
-wasmtime-wasi = { version = "14.0.3" }
-wasmparser = "0.116.0"
-which = "4.1.0"
+wasmtime = { version = "15.0.0" }
+wasmtime-wasi = { version = "15.0.0" }
+wasmparser = "0.118.0"
+which = "5.0.0"
 x509-parser = "0.15.0"
 
 # External fluvio dependencies
