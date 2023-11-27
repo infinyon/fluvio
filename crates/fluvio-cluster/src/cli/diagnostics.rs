@@ -84,9 +84,6 @@ impl DiagnosticsOpt {
                     self.spu_disk_usage(Some(&kubectl), temp_path, &spu.spec)?;
                 }
             }
-            InstallationType::Cloud => {
-                unreachable!("`diagnostic` is restricted for Cloud profiles")
-            }
         }
 
         self.write_system_info(temp_path)?;
