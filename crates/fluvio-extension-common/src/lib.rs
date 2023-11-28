@@ -8,6 +8,9 @@ pub mod tls;
 #[cfg(feature = "installation")]
 pub mod installation;
 
+#[cfg(feature = "pcreate")]
+pub mod pcreate;
+
 pub use common::*;
 pub use crate::output::Terminal;
 use fluvio_index::{PackageId, MaybeVersion};

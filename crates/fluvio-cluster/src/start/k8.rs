@@ -21,6 +21,7 @@ use semver::Version;
 
 use fluvio::FluvioAdmin;
 use fluvio_controlplane_metadata::spg::SpuConfig;
+use fluvio_extension_common::pcreate::PCreateType;
 use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_types::defaults::TLS_CLIENT_SECRET_NAME;
 use fluvio_types::defaults::TLS_SERVER_SECRET_NAME;
@@ -675,8 +676,10 @@ impl ClusterInstaller {
             (external_host_and_port.clone(), None)
         };
 
-        let cluster_config = FluvioConfig::new(install_host_and_port.clone())
+        let mut cluster_config = FluvioConfig::new(install_host_and_port.clone())
             .with_tls(self.config.client_tls_policy.clone());
+        PCreateType::Local.save_to(&mut cluster_config)?;
+
         pb.set_message("🔎 Discovering Fluvio SC");
         let fluvio =
             match try_connect_to_sc(&cluster_config, &self.config.platform_version, &pb).await {

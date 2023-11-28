@@ -14,6 +14,7 @@ path = "src/lib.rs"
 [features]
 target = ["fluvio"]
 installation = ["fluvio"]
+pcreate = ["fluvio"]
 
 [dependencies]
 anyhow = { workspace = true }
