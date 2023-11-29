@@ -1,12 +1,11 @@
 use std::str::FromStr;
 
+use crate::ast::prop::PropAttrsType;
 use proc_macro2::Span;
 use syn::{
     meta::ParseNestedMeta, punctuated::Punctuated, spanned::Spanned, Attribute, Expr, ExprLit,
     ExprPath, ExprUnary, Lit, LitStr, Meta, Token, UnOp,
 };
-
-use crate::ast::prop::PropAttrsType;
 
 /// Parses the specified attributes from a `syn::Attribute` iterator.
 /// # Arguments

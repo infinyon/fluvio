@@ -20,6 +20,49 @@ pub(crate) struct UnnamedProp {
     pub field_type: Type,
     pub attrs: PropAttrs,
 }
+pub fn validate_versions_tokens(
+    min_prop: Option<&PropAttrsType>,
+    max_props: Option<&PropAttrsType>,
+    field: Option<&str>,
+) -> TokenStream {
+    let min = prop_attrs_type_value(min_prop);
+    let max = prop_attrs_type_value(max_props);
+
+    match (max_props, field) {
+        //Print name in named fields
+        (Some(_), Some(field_name)) => {
+            quote! {
+                if #min > #max {
+                    panic!(
+                        "On {}, max version({}) is less than min({}).", #field_name, #max, #min
+                    );
+                }
+            }
+        }
+        // No name to print in unnamed fields
+        (Some(_), None) => {
+            quote! {
+                if #min > #max {
+                    panic!("Max v`ersion({}) is less than min({}).", #max, #min);
+                }
+            }
+        }
+        (None, Some(field_name)) => {
+            quote! {
+                if #min < 0 {
+                    panic!("On {} min version({}) must be positive.", #field_name, #min);
+                }
+            }
+        }
+        (None, None) => {
+            quote! {
+             if #min < 0 {
+                panic!("Min version({}) must be positive.", #min);
+             }
+            }
+        }
+    }
+}
 
 impl NamedProp {
     pub fn from_ast(field: &Field) -> syn::Result<Self> {
@@ -53,7 +96,7 @@ impl NamedProp {
         let min_version = &self.attrs.min_version;
         let min = prop_attrs_type_value(min_version.as_ref());
 
-        if self.attrs.max_version.is_some() {
+        let field_token_stream = if self.attrs.max_version.is_some() {
             let max = prop_attrs_type_value(self.attrs.max_version.as_ref());
             let trace = if trace {
                 quote! {
@@ -86,6 +129,18 @@ impl NamedProp {
                 }
                 #trace
             }
+        };
+
+        let validate_versions_token_stream = validate_versions_tokens(
+            self.attrs.min_version.as_ref(),
+            self.attrs.max_version.as_ref(),
+            Some(field_name),
+        );
+
+        quote! {
+            #validate_versions_token_stream
+
+            #field_token_stream
         }
     }
 }
@@ -105,7 +160,7 @@ impl UnnamedProp {
         trace: bool,
     ) -> TokenStream {
         let min = prop_attrs_type_value(self.attrs.min_version.as_ref());
-        if self.attrs.max_version.is_some() {
+        let field_token_stream = if self.attrs.max_version.is_some() {
             let max = prop_attrs_type_value(self.attrs.max_version.as_ref());
             let trace = if trace {
                 quote! {
@@ -140,6 +195,17 @@ impl UnnamedProp {
                 }
                 #trace
             }
+        };
+
+        let validate_versions_token_stream = validate_versions_tokens(
+            self.attrs.min_version.as_ref(),
+            self.attrs.max_version.as_ref(),
+            None,
+        );
+
+        quote! {
+            #validate_versions_token_stream
+            #field_token_stream
         }
     }
 }
@@ -168,9 +234,6 @@ pub fn prop_attrs_type_value(attrs_type: Option<&PropAttrsType>) -> TokenStream 
             PropAttrsType::Fn(data) => TokenStream::from_str(&format!("{}()", data)).unwrap(),
             // By default it's i16, because most places use it
             PropAttrsType::Int(data) => TokenStream::from_str(&format!("{}_i16", data)).unwrap(),
-            PropAttrsType::IntParse(data, typ) => {
-                TokenStream::from_str(&format!("{}_{}", data, typ)).unwrap()
-            }
         }
     } else {
         parse_quote!(0_i16)
@@ -210,7 +273,6 @@ pub enum PropAttrsType {
     Lit(Ident),
     Fn(Ident),
     Int(i16),
-    IntParse(i16, Ident),
 }
 
 #[derive(Default, Clone)]
@@ -265,7 +327,7 @@ impl PropAttrs {
 mod tests {
     use std::str::FromStr;
 
-    use proc_macro2::{Ident, Span, TokenStream};
+    use proc_macro2::{Span, TokenStream};
     use syn::{Expr, LitInt, LitStr, Token};
 
     use crate::util::get_attr_type_from_expr;
@@ -313,23 +375,6 @@ mod tests {
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
 
         let expected_result = TokenStream::from_str(&format!("{}_i16", value))?;
-        assert_eq!(
-            expected_result.to_string(),
-            prop_attrs_token_stream.to_string()
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_props_attr_value_with_lit_int_u8() -> Result<(), syn::Error> {
-        let value = 4;
-        let ident_type = Ident::new("u8", Span::call_site());
-
-        let props_attr_value: PropAttrsType = PropAttrsType::IntParse(value, ident_type);
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
-
-        let expected_result = TokenStream::from_str(&format!("{}_u8", value))?;
         assert_eq!(
             expected_result.to_string(),
             prop_attrs_token_stream.to_string()
