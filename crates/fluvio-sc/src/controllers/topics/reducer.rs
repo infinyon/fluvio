@@ -67,7 +67,7 @@ impl<C: MetadataItem> TopicReducer<C> {
         &self.spu_store
     }
 
-    fn partition_store(&self) -> &PartitionLocalStore<C> {
+    fn partition_store(&self) -> &Arc<PartitionLocalStore<C>> {
         &self.partition_store
     }
 
@@ -104,6 +104,9 @@ impl<C: MetadataItem> TopicReducer<C> {
         topic: &TopicMetadata<C>,
         actions: &mut TopicActions<C>,
     ) {
+        // wait for partition store to be initially loaded
+        self.partition_store().wait_for_first_change().await;
+
         // if foregroundDeletion is the finalizer, then we can mark it as delete
         if topic.ctx().item().is_being_deleted() {
             // set to delete if not it set
@@ -191,16 +194,18 @@ mod test2 {
     // if topic are just created, it should transitioned to pending state if config are valid
     #[fluvio_future::test]
     async fn test_topic_reducer_init_to_pending() {
+        let partition_store = PartitionLocalStore::new_shared();
         let topic_reducer = TopicReducer::new(
             TopicLocalStore::new_shared(),
             SpuLocalStore::new_shared(),
-            PartitionLocalStore::new_shared(),
+            partition_store.clone(),
         );
         let topic_requests = vec![
             TopicAdminMd::with_spec("topic1", (1, 1).into()),
             TopicAdminMd::with_spec("topic2", (2, 2).into()),
         ];
 
+        partition_store.sync_all(vec![]).await;
         let actions = topic_reducer.process_requests(topic_requests).await;
 
         // topic key/value store actions
