@@ -51,10 +51,10 @@ impl NamedProp {
     ) -> TokenStream {
         let field_name = &self.field_name;
         let min_version = &self.attrs.min_version;
-        let min = prop_attrs_type_value(min_version.as_ref(), None);
+        let min = prop_attrs_type_value(min_version.as_ref());
 
         if self.attrs.max_version.is_some() {
-            let max = prop_attrs_type_value(self.attrs.max_version.as_ref(), None);
+            let max = prop_attrs_type_value(self.attrs.max_version.as_ref());
             let trace = if trace {
                 quote! {
                     else {
@@ -104,9 +104,9 @@ impl UnnamedProp {
         field_stream: TokenStream,
         trace: bool,
     ) -> TokenStream {
-        let min = prop_attrs_type_value(self.attrs.min_version.as_ref(), None);
+        let min = prop_attrs_type_value(self.attrs.min_version.as_ref());
         if self.attrs.max_version.is_some() {
-            let max = prop_attrs_type_value(self.attrs.max_version.as_ref(), None);
+            let max = prop_attrs_type_value(self.attrs.max_version.as_ref());
             let trace = if trace {
                 quote! {
                     else {
@@ -161,21 +161,15 @@ impl UnnamedProp {
 /// let func_value = prop_attrs_type_value(prop_attr_type, Some(&ident_type))
 /// ````
 ///
-pub fn prop_attrs_type_value(
-    attrs_type: Option<&PropAttrsType>,
-    ident_type: Option<&Ident>,
-) -> TokenStream {
+pub fn prop_attrs_type_value(attrs_type: Option<&PropAttrsType>) -> TokenStream {
     if let Some(attr) = attrs_type {
         match &attr {
             PropAttrsType::Lit(data) => parse_quote!(#data),
             PropAttrsType::Fn(data) => TokenStream::from_str(&format!("{}()", data)).unwrap(),
-            PropAttrsType::Int(data) => {
-                if let Some(itype) = ident_type {
-                    TokenStream::from_str(&format!("{}_{}", data, itype)).unwrap()
-                } else {
-                    // By default it's i16, because most places use it
-                    TokenStream::from_str(&format!("{}_i16", data)).unwrap()
-                }
+            // By default it's i16, because most places use it
+            PropAttrsType::Int(data) => TokenStream::from_str(&format!("{}_i16", data)).unwrap(),
+            PropAttrsType::IntParse(data, typ) => {
+                TokenStream::from_str(&format!("{}_{}", data, typ)).unwrap()
             }
         }
     } else {
@@ -211,18 +205,14 @@ pub fn prop_attrs_type_value(
 /// #[fluvio(min_version = 1)]
 /// ```
 ///
-/// None has a default Int value of 0 which is set in prop_attrs_type_value
 #[derive(Clone)]
 pub enum PropAttrsType {
     Lit(Ident),
     Fn(Ident),
     Int(i16),
+    IntParse(i16, Ident),
 }
-impl Default for PropAttrsType {
-    fn default() -> Self {
-        PropAttrsType::Int(0)
-    }
-}
+
 #[derive(Default, Clone)]
 pub(crate) struct PropAttrs {
     pub varint: bool,
@@ -297,7 +287,7 @@ mod tests {
 
         let props_attr_value: PropAttrsType =
             get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
+        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
 
         let expected_result = TokenStream::from_str(value)?;
         assert_eq!(
@@ -320,7 +310,7 @@ mod tests {
 
         let props_attr_value: PropAttrsType =
             get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
+        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
 
         let expected_result = TokenStream::from_str(&format!("{}_i16", value))?;
         assert_eq!(
@@ -333,19 +323,11 @@ mod tests {
 
     #[test]
     fn test_props_attr_value_with_lit_int_u8() -> Result<(), syn::Error> {
-        let value = "4";
+        let value = 4;
         let ident_type = Ident::new("u8", Span::call_site());
 
-        let lit_str = LitInt::new(value, Span::call_site());
-        let expr = Expr::Lit(syn::ExprLit {
-            attrs: vec![],
-            lit: syn::Lit::Int(lit_str),
-        });
-
-        let props_attr_value: PropAttrsType =
-            get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
-        let prop_attrs_token_stream =
-            prop_attrs_type_value(Some(&props_attr_value), Some(&ident_type));
+        let props_attr_value: PropAttrsType = PropAttrsType::IntParse(value, ident_type);
+        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
 
         let expected_result = TokenStream::from_str(&format!("{}_u8", value))?;
         assert_eq!(
@@ -368,7 +350,7 @@ mod tests {
 
         let props_attr_value: PropAttrsType =
             get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
+        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
 
         let expected_result = TokenStream::from_str(value)?;
         assert_eq!(
@@ -392,7 +374,7 @@ mod tests {
 
         let props_attr_value: PropAttrsType =
             get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
+        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
 
         let expected_result = TokenStream::from_str(value)?;
         assert_eq!(
@@ -423,24 +405,9 @@ mod tests {
 
         let props_attr_value: PropAttrsType =
             get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
+        let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value));
 
         let expected_result = TokenStream::from_str(&format!("{}_i16", result_value))?;
-        assert_eq!(
-            expected_result.to_string(),
-            prop_attrs_token_stream.to_string()
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_props_attr_value_none() -> Result<(), syn::Error> {
-        let value = "0";
-
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&PropAttrsType::default()), None);
-
-        let expected_result = TokenStream::from_str(&format!("{}_i16", value))?;
         assert_eq!(
             expected_result.to_string(),
             prop_attrs_token_stream.to_string()
@@ -453,7 +420,7 @@ mod tests {
     fn test_props_attr_value_default() -> Result<(), syn::Error> {
         let value = "0";
 
-        let prop_attrs_token_stream = prop_attrs_type_value(None, None);
+        let prop_attrs_token_stream = prop_attrs_type_value(None);
 
         let expected_result = TokenStream::from_str(&format!("{}_i16", value))?;
         assert_eq!(
