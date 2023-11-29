@@ -177,7 +177,6 @@ pub fn prop_attrs_type_value(
                     TokenStream::from_str(&format!("{}_i16", data)).unwrap()
                 }
             }
-            PropAttrsType::None => parse_quote!(0_i16),
         }
     } else {
         parse_quote!(0_i16)
@@ -213,13 +212,16 @@ pub fn prop_attrs_type_value(
 /// ```
 ///
 /// None has a default Int value of 0 which is set in prop_attrs_type_value
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub enum PropAttrsType {
     Lit(Ident),
     Fn(Ident),
     Int(i16),
-    #[default]
-    None,
+}
+impl Default for PropAttrsType {
+    fn default() -> Self {
+        PropAttrsType::Int(0)
+    }
 }
 #[derive(Default, Clone)]
 pub(crate) struct PropAttrs {
@@ -257,7 +259,7 @@ impl PropAttrs {
             }
             "default", prop_attrs.default_value =>  {
                 let (expr, attr_span, attr_name) = parse_attributes_data(&meta)?;
-                let value = get_lit_str(&attr_name, expr.as_ref(), attr_span)?;
+                let value = get_lit_str(&attr_name, &expr, attr_span)?;
                 prop_attrs.default_value = Some(value.value());
             }
             "ignorable", prop_attrs.ignorable => {
@@ -276,7 +278,7 @@ mod tests {
     use proc_macro2::{Ident, Span, TokenStream};
     use syn::{Expr, LitInt, LitStr, Token};
 
-    use crate::util::get_expr_value;
+    use crate::util::get_attr_type_from_expr;
 
     use super::{prop_attrs_type_value, PropAttrsType};
     use anyhow::Result;
@@ -294,7 +296,7 @@ mod tests {
         });
 
         let props_attr_value: PropAttrsType =
-            get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
+            get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
         let expected_result = TokenStream::from_str(value)?;
@@ -317,7 +319,7 @@ mod tests {
         });
 
         let props_attr_value: PropAttrsType =
-            get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
+            get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
         let expected_result = TokenStream::from_str(&format!("{}_i16", value))?;
@@ -341,7 +343,7 @@ mod tests {
         });
 
         let props_attr_value: PropAttrsType =
-            get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
+            get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
         let prop_attrs_token_stream =
             prop_attrs_type_value(Some(&props_attr_value), Some(&ident_type));
 
@@ -365,7 +367,7 @@ mod tests {
         });
 
         let props_attr_value: PropAttrsType =
-            get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
+            get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
         let expected_result = TokenStream::from_str(value)?;
@@ -389,7 +391,7 @@ mod tests {
         });
 
         let props_attr_value: PropAttrsType =
-            get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
+            get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
         let expected_result = TokenStream::from_str(value)?;
@@ -420,7 +422,7 @@ mod tests {
         });
 
         let props_attr_value: PropAttrsType =
-            get_expr_value(ATTR_NAME, Some(&expr), Span::call_site())?;
+            get_attr_type_from_expr(ATTR_NAME, &expr, Span::call_site())?;
         let prop_attrs_token_stream = prop_attrs_type_value(Some(&props_attr_value), None);
 
         let expected_result = TokenStream::from_str(&format!("{}_i16", result_value))?;
@@ -436,7 +438,7 @@ mod tests {
     fn test_props_attr_value_none() -> Result<(), syn::Error> {
         let value = "0";
 
-        let prop_attrs_token_stream = prop_attrs_type_value(Some(&PropAttrsType::None), None);
+        let prop_attrs_token_stream = prop_attrs_type_value(Some(&PropAttrsType::default()), None);
 
         let expected_result = TokenStream::from_str(&format!("{}_i16", value))?;
         assert_eq!(

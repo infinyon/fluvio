@@ -49,10 +49,7 @@ macro_rules! parse_attributes {
 // Here is how this can be fixed if used in macro: https://stackoverflow.com/questions/76989679/how-to-call-a-closure-from-a-macro
 // So to do this in a less work around way we use a separate function like so:
 // We return $meta variable like shown here: https://github.com/rust-lang/rust-clippy/issues/1553
-pub fn parse_attributes_data(
-    meta: &ParseNestedMeta,
-) -> syn::Result<(Option<syn::Expr>, Span, String)> {
-    // we can safely unwarp as this is already checked from the parse_attributes macro
+pub fn parse_attributes_data(meta: &ParseNestedMeta) -> syn::Result<(syn::Expr, Span, String)> {
     let ident = match meta.path.get_ident() {
         Some(value) => Ok(value),
         None => Err(syn::Error::new(
@@ -66,28 +63,23 @@ pub fn parse_attributes_data(
     let attr_name = ident.to_string();
     let attr_span = ident.span();
 
-    if let Ok(value) = meta.value() {
-        if let Ok(expr) = value.parse() {
-            return Ok((Some(expr), attr_span, attr_name));
-        }
-    }
-
-    Ok((None, attr_span, attr_name))
+    let expr: Expr = meta.value()?.parse()?;
+    Ok((expr, attr_span, attr_name))
 }
 
 pub(crate) use parse_attributes;
 
 pub fn get_attr_type_from_meta(meta: &ParseNestedMeta) -> syn::Result<PropAttrsType> {
     let (expr, attr_span, attr_name) = parse_attributes_data(meta)?;
-    get_expr_value(&attr_name, expr.as_ref(), attr_span)
+    get_attr_type_from_expr(&attr_name, &expr, attr_span)
 }
-pub fn get_expr_value<'a>(
+pub fn get_attr_type_from_expr<'a>(
     attr_name: &'a str,
-    field: Option<&'a Expr>,
+    field: &'a Expr,
     span: Span,
 ) -> syn::Result<PropAttrsType> {
     match &field {
-        Some(Expr::Lit(lit_expr)) => {
+        Expr::Lit(lit_expr) => {
             if let Lit::Int(lit) = &lit_expr.lit {
                 Ok(PropAttrsType::Int(lit.base10_parse::<i16>()?))
             } else if let Lit::Str(lit) = &lit_expr.lit {
@@ -109,14 +101,14 @@ pub fn get_expr_value<'a>(
                 ))
             }
         }
-        Some(Expr::Unary(ExprUnary { expr, .. })) => {
+        Expr::Unary(ExprUnary { expr, .. }) => {
             // When passing -1 as a value it is returned as type Unary
             // So to handle that we are checking if it's Unary Lit and continue as usual
             // If needed this can be extended to handle the Unary operators
             // But it doesn't seem that is necessary currently
             Ok(PropAttrsType::Int(-parse_int_expr(attr_name, expr, span)?))
         }
-        Some(Expr::Path(ExprPath { path, .. })) => {
+        Expr::Path(ExprPath { path, .. }) => {
             // For now we only need Path just to handle cases where CONSTANTS are being passed without "" quotes
             if let Some(path_ident) = path.get_ident() {
                 return Ok(PropAttrsType::Lit(syn::Ident::new(
@@ -139,7 +131,7 @@ pub fn get_expr_value<'a>(
     }
 }
 
-fn parse_int_expr<'a, T>(attr_name: &'a str, expr: &'a Expr, span: Span) -> syn::Result<T>
+pub fn parse_int_expr<'a, T>(attr_name: &'a str, expr: &'a Expr, span: Span) -> syn::Result<T>
 where
     T: std::ops::Neg<Output = T> + FromStr,
     <T as FromStr>::Err: std::fmt::Display,
@@ -160,31 +152,13 @@ where
     }
 }
 
-pub fn get_expr_int_value<'a, T>(
-    attr_name: &'a str,
-    value: Option<&'a Expr>,
-    span: Span,
-) -> syn::Result<T>
-where
-    T: std::ops::Neg<Output = T> + FromStr,
-    <T as FromStr>::Err: std::fmt::Display,
-{
-    if let Some(value_expr) = value {
-        parse_int_expr::<T>(attr_name, value_expr, span)
-    } else {
-        Err(syn::Error::new(
-            span,
-            format!("Expected {attr_name} to be valid Expr: `{attr_name} = \"...\"`"),
-        ))
-    }
-}
 pub fn get_lit_int<'a>(
     attr_name: &'a str,
-    value: Option<&'a Expr>,
+    value: &'a Expr,
     span: Span,
 ) -> syn::Result<&'a syn::LitInt> {
     match &value {
-        Some(Expr::Lit(lit_expr)) => {
+        Expr::Lit(lit_expr) => {
             if let Lit::Int(lit) = &lit_expr.lit {
                 Ok(lit)
             } else {
@@ -202,11 +176,11 @@ pub fn get_lit_int<'a>(
 }
 pub fn get_lit_str<'a>(
     attr_name: &'a str,
-    value: Option<&'a Expr>,
+    value: &'a Expr,
     span: Span,
 ) -> syn::Result<&'a syn::LitStr> {
     match &value {
-        Some(Expr::Lit(lit_expr)) => {
+        Expr::Lit(lit_expr) => {
             if let Lit::Str(lit) = &lit_expr.lit {
                 Ok(lit)
             } else {
@@ -252,22 +226,15 @@ pub(crate) fn find_expr_from_meta(meta: &Meta, attr_name: &str) -> syn::Result<E
 }
 /// find name value with str value
 pub(crate) fn find_string_from_meta<'a>(meta: &'a Meta, attr_name: &'a str) -> syn::Result<LitStr> {
-    match find_expr_from_meta(meta, attr_name) {
-        Ok(ref value) => {
-            let lit_str = get_lit_str(attr_name, Some(value), meta.span())?;
-            Ok(lit_str.clone())
-        }
-        Err(err) => Err(err),
-    }
+    let expr_value = find_expr_from_meta(meta, attr_name)?;
+    let lit_str = get_lit_str(attr_name, &expr_value, meta.span())?;
+
+    Ok(lit_str.clone())
 }
 
 pub(crate) fn find_int_from_meta(meta: &Meta, attr_name: &str) -> syn::Result<u64> {
-    match find_expr_from_meta(meta, attr_name) {
-        Ok(ref value) => {
-            let value = get_lit_int(attr_name, Some(value), meta.span())?;
+    let expr_value = find_expr_from_meta(meta, attr_name)?;
+    let value = get_lit_int(attr_name, &expr_value, meta.span())?;
 
-            value.base10_parse::<u64>()
-        }
-        Err(err) => Err(err),
-    }
+    value.base10_parse::<u64>()
 }
