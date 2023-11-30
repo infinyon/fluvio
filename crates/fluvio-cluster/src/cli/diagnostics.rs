@@ -84,6 +84,7 @@ impl DiagnosticsOpt {
                     self.spu_disk_usage(Some(&kubectl), temp_path, &spu.spec)?;
                 }
             }
+            _other => {}
         }
 
         self.write_system_info(temp_path)?;

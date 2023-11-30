@@ -33,6 +33,7 @@ impl UpgradeOpt {
                 ShutdownOpt.process().await?;
                 self.start.process(platform_version, true).await?;
             }
+            other => bail!("upgrade command is not supported for {other} installation type"),
         };
 
         Ok(())

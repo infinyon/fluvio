@@ -51,6 +51,11 @@ impl DeleteOpt {
                     builder.uninstall_k8(false);
                     builder.uninstall_sys(false);
                 }
+                other => {
+                    return Err(ClusterCliError::Other(format!(
+                        "delete command is not supported for {other} installation type"
+                    )))
+                }
             }
         }
 

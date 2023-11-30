@@ -42,6 +42,7 @@ impl CheckOpt {
                 ClusterChecker::empty().with_no_k8_checks()
             }
             InstallationType::LocalK8 => ClusterChecker::empty().with_local_checks(),
+            _other => ClusterChecker::empty(),
         };
 
         let pb = ProgressBarFactory::new(false);
