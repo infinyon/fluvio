@@ -49,13 +49,9 @@ setup_file() {
     export FLUVIO_BINARIES_DIR
     debug_msg "Fluvio Binaries Directory: $FLUVIO_BINARIES_DIR"
 
-    FVM_CARGO_TOML_VERSION="$(yq -oy '.package.version' ./crates/fluvio-version-manager/Cargo.toml)"
-    export FVM_CARGO_TOML_VERSION
-    debug_msg "FVM Cargo.toml Version: $FVM_CARGO_TOML_VERSION"
-
     VERSION_FILE="$(cat ./VERSION)"
     export VERSION_FILE
-    debug_msg "Version File Value: $FVM_CARGO_TOML_VERSION"
+    debug_msg "Version File Value: $VERSION_FILE"
 }
 
 @test "Install fvm and setup a settings.toml file" {
@@ -679,7 +675,7 @@ setup_file() {
     source ~/.fvm/env
 
     run bash -c 'fvm version'
-    assert_line --index 0 "fvm CLI: $FVM_CARGO_TOML_VERSION"
+    assert_line --index 0 "fvm CLI: $VERSION_FILE"
     assert_line --index 1 --partial "fvm CLI Arch: "
     assert_line --index 2 --partial "fvm CLI SHA256: "
     assert_line --index 3 --partial "OS Details: "
@@ -800,6 +796,42 @@ setup_file() {
     run bash -c 'fvm install 0.0.0'
     assert_line --index 0 "Error: PackageSet 0.0.0 doest not exist"
     assert_failure
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
+
+@test "Uninstall Versions" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Ensure `~/.fvm/versions/stable` is not present
+    run bash -c '! test -d $FVM_HOME_DIR/versions/stable'
+    assert_success
+
+    # Install stable version
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable` is present
+    run bash -c 'test -d $FVM_HOME_DIR/versions/stable'
+    assert_success
+
+    # Uninstall stable version
+    run bash -c 'fvm uninstall stable'
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable` is present
+    run bash -c '! test -d $FVM_HOME_DIR/versions/stable'
+    assert_success
 
     # Removes FVM
     run bash -c 'fvm self uninstall --yes'

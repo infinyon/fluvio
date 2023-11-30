@@ -3,6 +3,7 @@ mod common;
 
 use anyhow::Result;
 use clap::Parser;
+use command::uninstall::UninstallOpt;
 
 use self::command::current::CurrentOpt;
 use self::command::install::InstallOpt;
@@ -16,8 +17,8 @@ use self::common::notify::Notify;
 /// Binary name is read from `Cargo.toml` `[[bin]]` section
 pub const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
 
-/// Binary version is read from `Cargo.toml` `version` field
-pub const BINARY_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Binary version is read from `VERSION` file, which is the same as Fluvio version
+pub const VERSION: &str = include_str!("../../../VERSION");
 
 #[async_std::main]
 async fn main() -> Result<()> {
@@ -60,6 +61,9 @@ pub enum Command {
     /// Set a installed Fluvio Version as active
     #[command(name = "switch")]
     Switch(SwitchOpt),
+    /// Uninstalls a Fluvio Version
+    #[command(name = "uninstall")]
+    Uninstall(UninstallOpt),
     /// Updates the current channel version to the most recent
     #[command(name = "update")]
     Update(UpdateOpt),
@@ -79,6 +83,7 @@ impl Cli {
             Command::Install(cmd) => cmd.process(notify).await,
             Command::List(cmd) => cmd.process(notify).await,
             Command::Switch(cmd) => cmd.process(notify).await,
+            Command::Uninstall(cmd) => cmd.process(notify).await,
             Command::Update(cmd) => cmd.process(notify).await,
             Command::Version(cmd) => cmd.process(),
         }

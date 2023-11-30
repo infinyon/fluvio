@@ -1,4 +1,4 @@
-use std::fs::{read_dir, copy, create_dir_all};
+use std::fs::{read_dir, copy, create_dir_all, remove_dir_all};
 
 #[cfg(target_os = "macos")]
 use std::fs::remove_file;
@@ -22,7 +22,11 @@ use crate::common::workdir::fluvio_binaries_path;
 /// - `contents`: Every file in the directory except for the manifest
 /// - `manifest`: The manifest file
 pub struct VersionDirectory {
+    /// The Path to this [`VersionDirectory`]
+    pub path: PathBuf,
+    /// Every file in the directory except for the manifest
     pub contents: Vec<PathBuf>,
+    /// Manifest containing metadata on PackageSet
     pub manifest: VersionManifest,
 }
 
@@ -32,7 +36,7 @@ impl VersionDirectory {
         let mut contents: Vec<PathBuf> = Vec::new();
         let mut manifest: Option<VersionManifest> = None;
 
-        for entry in read_dir(path)? {
+        for entry in read_dir(&path)? {
             let entry = entry?;
 
             if entry.metadata()?.is_dir() {
@@ -58,7 +62,21 @@ impl VersionDirectory {
             ));
         };
 
-        Ok(Self { contents, manifest })
+        Ok(Self {
+            path,
+            contents,
+            manifest,
+        })
+    }
+
+    /// Deletes this [`VersionDirectory`] directory
+    pub fn remove(&self) -> Result<()> {
+        if self.path.exists() {
+            tracing::info!(?self.path, "Removing version directory");
+            remove_dir_all(&self.path)?;
+        }
+
+        Ok(())
     }
 
     /// Sets this version as the active Fluvio Version
