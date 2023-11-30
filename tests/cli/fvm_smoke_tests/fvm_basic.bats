@@ -809,3 +809,51 @@ setup_file() {
     rm -rf $FLUVIO_HOME_DIR
     assert_success
 }
+
+@test "Uninstall Versions" {
+    run bash -c '$FVM_BIN self install'
+    assert_success
+
+    # Sets `fvm` in the PATH using the "env" file included in the installation
+    source ~/.fvm/env
+
+    # Install stable version
+    run bash -c 'fvm install stable'
+    assert_success
+
+    # Install specific 0.11.0 version
+    run bash -c 'fvm install 0.11.0'
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable` is present
+    run bash -c 'test -d $FLUVIO_HOME_DIR/versions/stable'
+    assert_success
+
+    # Ensure `~/.fvm/versions/0.11.0` is present
+    run bash -c 'test -d $FLUVIO_HOME_DIR/versions/0.11.0'
+    assert_success
+
+    # Uninstall stable version
+    run bash -c 'fvm uninstall stable'
+    assert_success
+
+    # Uninstall specific 0.11.0 version
+    run bash -c 'fvm uninstall 0.11.0'
+    assert_success
+
+    # Ensure `~/.fvm/versions/stable` is present
+    run bash -c '!test -d $FLUVIO_HOME_DIR/versions/stable'
+    assert_success
+
+    # Ensure `~/.fvm/versions/0.11.0` is present
+    run bash -c '!test -d $FLUVIO_HOME_DIR/versions/0.11.0'
+    assert_success
+
+    # Removes FVM
+    run bash -c 'fvm self uninstall --yes'
+    assert_success
+
+    # Removes Fluvio
+    rm -rf $FLUVIO_HOME_DIR
+    assert_success
+}
