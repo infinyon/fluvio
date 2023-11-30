@@ -20,6 +20,7 @@ pub(crate) struct UnnamedProp {
     pub field_type: Type,
     pub attrs: PropAttrs,
 }
+
 pub fn validate_versions_tokens(
     min_prop: Option<&PropAttrsType>,
     max_props: Option<&PropAttrsType>,
@@ -29,36 +30,24 @@ pub fn validate_versions_tokens(
     let max = prop_attrs_type_value(max_props);
 
     match (max_props, field) {
-        //Print name in named fields
-        (Some(_), Some(field_name)) => {
+        (Some(_), Some(_)) => {
             quote! {
-                if #min > #max {
-                    panic!(
-                        "On {}, max version({}) is less than min({}).", #field_name, #max, #min
-                    );
-                }
+                const _: () = assert!(!(#min>#max), concat!("Max version is less than min version"));
             }
         }
-        // No name to print in unnamed fields
         (Some(_), None) => {
             quote! {
-                if #min > #max {
-                    panic!("Max v`ersion({}) is less than min({}).", #max, #min);
-                }
+                const _: () = assert!(!(#min>#max), concat!("Max version is less than min version"));
             }
         }
-        (None, Some(field_name)) => {
+        (None, Some(_)) => {
             quote! {
-                if #min < 0 {
-                    panic!("On {} min version({}) must be positive.", #field_name, #min);
-                }
+                const _: () = assert!(!(#min < 0), concat!("Min version must be positive"));
             }
         }
         (None, None) => {
             quote! {
-             if #min < 0 {
-                panic!("Min version({}) must be positive.", #min);
-             }
+                const _: () = assert!(!(#min < 0), concat!("Min version must be positive"));
             }
         }
     }
