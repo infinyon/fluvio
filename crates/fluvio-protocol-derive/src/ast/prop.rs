@@ -248,7 +248,7 @@ pub fn prop_attrs_type_value(attrs_type: Option<&PropAttrsType>) -> TokenStream 
 ///
 /// ```ignore
 /// // Function as a literal
-/// fn test() -> i16 { 1 }
+/// const fn test() -> i16 { 1 }
 /// #[fluvio(min_version = "test()")]
 /// ```
 ///

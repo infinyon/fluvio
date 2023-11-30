@@ -4,7 +4,7 @@ use fluvio_protocol::{Decoder, Encoder};
 
 const TEST_VERSION: i16 = 1;
 
-fn test_version() -> i16 {
+const fn test_version() -> i16 {
     1
 }
 #[derive(Encoder, Decoder, Default, Debug)]
