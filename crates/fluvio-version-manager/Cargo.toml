@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-version-manager"
-version = "0.1.2"
+version = "0.0.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Version Manager"

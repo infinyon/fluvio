@@ -6,14 +6,14 @@ use current_platform::CURRENT_PLATFORM;
 use sha2::{Digest, Sha256};
 use sysinfo::SystemExt;
 
-use crate::{BINARY_NAME, BINARY_VERSION};
+use crate::{BINARY_NAME, VERSION};
 
 #[derive(Debug, Args)]
 pub struct VersionOpt;
 
 impl VersionOpt {
     pub fn process(self) -> Result<()> {
-        println!("{BINARY_NAME} CLI: {BINARY_VERSION}");
+        println!("{BINARY_NAME} CLI: {VERSION}");
         println!("{BINARY_NAME} CLI Arch: {CURRENT_PLATFORM}");
 
         if let Some(sha) = self.format_cli_sha() {

@@ -17,8 +17,8 @@ use self::common::notify::Notify;
 /// Binary name is read from `Cargo.toml` `[[bin]]` section
 pub const BINARY_NAME: &str = env!("CARGO_BIN_NAME");
 
-/// Binary version is read from `Cargo.toml` `version` field
-pub const BINARY_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Binary version is read from `VERSION` file, which is the same as Fluvio version
+pub const VERSION: &str = include_str!("../../../VERSION");
 
 #[async_std::main]
 async fn main() -> Result<()> {
