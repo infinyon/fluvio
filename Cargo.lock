@@ -3053,7 +3053,6 @@ dependencies = [
 name = "fluvio-protocol-derive"
 version = "0.5.5"
 dependencies = [
- "anyhow",
  "proc-macro2",
  "quote",
  "syn 2.0.39",

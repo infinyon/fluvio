@@ -32,22 +32,22 @@ pub fn validate_versions_tokens(
     match (max_props, field) {
         (Some(_), Some(_)) => {
             quote! {
-                const _: () = assert!(!(#min>#max), concat!("Max version is less than min version"));
+                const _: () = assert!(!(#min>#max), "Max version is less than min version");
             }
         }
         (Some(_), None) => {
             quote! {
-                const _: () = assert!(!(#min>#max), concat!("Max version is less than min version"));
+                const _: () = assert!(!(#min>#max), "Max version is less than min version");
             }
         }
         (None, Some(_)) => {
             quote! {
-                const _: () = assert!(!(#min < 0), concat!("Min version must be positive"));
+                const _: () = assert!(!(#min < 0), "Min version must be positive");
             }
         }
         (None, None) => {
             quote! {
-                const _: () = assert!(!(#min < 0), concat!("Min version must be positive"));
+                const _: () = assert!(!(#min < 0), "Min version must be positive");
             }
         }
     }
@@ -322,7 +322,6 @@ mod tests {
     use crate::util::get_attr_type_from_expr;
 
     use super::{prop_attrs_type_value, PropAttrsType};
-    use anyhow::Result;
 
     const ATTR_NAME: &str = "test_attr_name";
 
