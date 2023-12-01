@@ -389,9 +389,9 @@ impl LocalInstaller {
                     .await?;
                 Ok(())
             }
-            InstallationType::K8 => Err(ClusterCheckError::Other(
-                "Installation type K8 is not supported for local clusters".to_string(),
-            )),
+            other => Err(ClusterCheckError::Other(format!(
+                "Installation type {other} is not supported for local clusters"
+            ))),
         }
     }
 
@@ -491,6 +491,11 @@ impl LocalInstaller {
             InstallationType::LocalK8 | InstallationType::K8 => ScMode::K8s,
             InstallationType::ReadOnly => {
                 ScMode::ReadOnly(self.config.read_only_config.clone().unwrap_or_default())
+            }
+            other => {
+                return Err(LocalInstallError::Other(format!(
+                    "Installation type {other} is not supported for local clusters"
+                )))
             }
         };
 

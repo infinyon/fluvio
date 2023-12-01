@@ -13,6 +13,7 @@ pub enum InstallationType {
     Local,
     LocalK8,
     ReadOnly,
+    Docker,
 }
 
 impl FromStr for InstallationType {
@@ -42,6 +43,9 @@ impl FromStr for InstallationType {
         }
         if s.eq_ignore_ascii_case("readonly") {
             return Ok(Self::ReadOnly);
+        }
+        if s.eq_ignore_ascii_case("docker") {
+            return Ok(Self::Docker);
         }
         Err(format!("unsupported instalaltion type '{s}'"))
     }

@@ -239,6 +239,7 @@ impl IntallationTypeOpt {
             InstallationType::Local => (true, false, false, None),
             InstallationType::LocalK8 => (false, true, false, None),
             InstallationType::ReadOnly => (false, false, false, Some(Default::default())),
+            InstallationType::Docker => (false, false, false, None),
         };
         self.local = local;
         self.local_k8 = local_k8;
