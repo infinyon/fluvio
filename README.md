@@ -1,12 +1,12 @@
 <div align="center">
   <h1>Fluvio</h1>
   <a href="https://fluvio.io" target="_blank">
-    <strong>The programmable data streaming platform</strong>
+    <strong>Composable, Declarative, Stateful Data Streaming System</strong>
   </a>
   <br>
   <br>
 
-  [![CI Status](https://github.com/infinyon/fluvio/workflows/CI/badge.svg?branch=staging)](https://github.com/infinyon/fluvio/actions/workflows/ci.yml)
+[![CI Status](https://github.com/infinyon/fluvio/workflows/CI/badge.svg?branch=staging)](https://github.com/infinyon/fluvio/actions/workflows/ci.yml)
   [![CD Status](https://github.com/infinyon/fluvio/workflows/CD_Dev/badge.svg)](https://github.com/infinyon/fluvio/actions/workflows/cd_dev.yaml)
   [![fluvio Crates.io version](https://img.shields.io/crates/v/fluvio?style=flat)](https://crates.io/crates/fluvio)
   [![Fluvio Rust documentation](https://docs.rs/fluvio/badge.svg)](https://docs.rs/fluvio)
@@ -21,8 +21,7 @@
   <br>
 </div>
 
-Fluvio is a high-performance distributed data streaming platform that's written
-in Rust, built to make it easy to run real-time applications.
+Fluvio is a lightweight high-performance distributed data streaming system written in Rust and Web Assembly.
 
 ## Quick Links
 
@@ -37,6 +36,11 @@ in Rust, built to make it easy to run real-time applications.
 
 If you'd like to contribute to the project, please read our
 [Contributing guide](CONTRIBUTING.md).
+
+### Contributors are awesome
+<a href="https://github.com/infinyon/fluvio/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=infinyon/fluvio" />
+</a>
 
 ## License
 
