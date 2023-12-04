@@ -120,7 +120,9 @@ jobs:
 
       - name: Build fbm
         if: matrix.binary == 'fbm'
-        run: make build-fbm
+        run: |
+          cargo tree -p fluvio-benchmark
+          make build-fbm
 
       - name: Build fvm
         if: matrix.binary == 'fvm'
