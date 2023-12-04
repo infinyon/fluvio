@@ -30,9 +30,10 @@ pub fn validate_versions_tokens(
     let max = prop_attrs_type_value(max_props);
 
     match (max_props, field) {
-        (Some(_), Some(_)) => {
+        (Some(_), Some(field)) => {
+            let message = format!("On {field}, max version is less than min version");
             quote! {
-                const _: () = assert!(!(#min>#max), "Max version is less than min version");
+                const _: () = assert!(!(#min>#max), #message);
             }
         }
         (Some(_), None) => {
@@ -40,9 +41,10 @@ pub fn validate_versions_tokens(
                 const _: () = assert!(!(#min>#max), "Max version is less than min version");
             }
         }
-        (None, Some(_)) => {
+        (None, Some(field)) => {
+            let message = format!("On {field}, min version must be positive");
             quote! {
-                const _: () = assert!(!(#min < 0), "Min version must be positive");
+                const _: () = assert!(!(#min < 0), #message);
             }
         }
         (None, None) => {
