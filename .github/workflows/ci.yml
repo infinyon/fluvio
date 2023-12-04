@@ -47,10 +47,10 @@ jobs:
       TEST_RUNS: "[r1]" # default runs
     outputs:
       check: ${{ steps.check.outputs.check }}
-      runs: ${{ steps.runs.outputs.runs }}
+      # runs: ${{ steps.runs.outputs.runs }}
     steps:
       - id: check
-        run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
+        run: echo "check=${{ env.ENABLE_CHECK }} >> $GITHUB_OUTPUT"
       #- name: Set Staging runs
       ##  if: github.event_name == 'merge_group'
       #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
@@ -64,7 +64,7 @@ jobs:
         rust-target:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
-        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel, smdk, fbm, cdk, fvm]
+        binary: [fluvio, fluvio-run, fluvio-test, smdk, fbm, cdk, fvm]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -171,23 +171,23 @@ jobs:
             rust-target: aarch64-apple-darwin
             binary: fluvio-run
 
-          # fluvio-channel
-          - os: ubuntu-latest
-            rust-target: arm-unknown-linux-gnueabihf
-            binary: fluvio-channel
-          - os: ubuntu-latest
-            rust-target: armv7-unknown-linux-gnueabihf
-            binary: fluvio-channel
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-pc-windows-gnu
-            binary: fluvio-channel.exe
-          - os: macos-12
-            rust-target: x86_64-apple-darwin
-            binary: fluvio-channel
-          - os: macos-12
-            rust-target: aarch64-apple-darwin
-            binary: fluvio-channel
+          # # fluvio-channel
+          # - os: ubuntu-latest
+          #   rust-target: arm-unknown-linux-gnueabihf
+          #   binary: fluvio-channel
+          # - os: ubuntu-latest
+          #   rust-target: armv7-unknown-linux-gnueabihf
+          #   binary: fluvio-channel
+          # - os: ubuntu-latest
+          #   rust: stable
+          #   rust-target: x86_64-pc-windows-gnu
+          #   binary: fluvio-channel.exe
+          # - os: macos-12
+          #   rust-target: x86_64-apple-darwin
+          #   binary: fluvio-channel
+          # - os: macos-12
+          #   rust-target: aarch64-apple-darwin
+          #   binary: fluvio-channel
 
           # smdk
           - os: macos-12
@@ -521,7 +521,7 @@ jobs:
         crate:
           - fluvio
           - fluvio-cli
-          - fluvio-channel
+          # - fluvio-channel
           #- smartmodule-development-kit
     env:
       RUST_BACKTRACE: full
@@ -922,7 +922,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SPU: 2
-      CLI_TEST_RETRIES: 3   
+      CLI_TEST_RETRIES: 3
     strategy:
  #     fail-fast: false
       matrix:
@@ -1067,7 +1067,7 @@ jobs:
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     env:
-      CLI_TEST_RETRIES: 3   
+      CLI_TEST_RETRIES: 3
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -1139,7 +1139,7 @@ jobs:
 
   # Runs tests on `tests/cli/partition_test`
   partition_test:
-    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs, ${{ matrix.partitions }} Partitions and ${{ matrix.replication }} Replicas), Run Mode ${{ matrix.run-mode }} 
+    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs, ${{ matrix.partitions }} Partitions and ${{ matrix.replication }} Replicas), Run Mode ${{ matrix.run-mode }}
     runs-on: ${{ matrix.os }}
     env:
       FLUVIO_BIN: "~/bin/fluvio"
@@ -1346,7 +1346,7 @@ jobs:
           - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
-        artifact: [fluvio, fluvio-channel, smdk, fbm, cdk, fvm]
+        artifact: [fluvio, smdk, fbm, cdk, fvm]
         exclude:
           - rust-target: armv7-unknown-linux-gnueabihf
             artifact: smdk
@@ -1373,8 +1373,8 @@ jobs:
             artifact: fluvio-run
           - rust-target: x86_64-pc-windows-gnu
             artifact: fluvio.exe
-          - rust-target: x86_64-pc-windows-gnu
-            artifact: fluvio-channel.exe
+          # - rust-target: x86_64-pc-windows-gnu
+          #   artifact: fluvio-channel.exe
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-test
           - rust-target: x86_64-pc-windows-gnu

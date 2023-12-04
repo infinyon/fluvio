@@ -10,8 +10,6 @@ members = [
     "crates/fluvio",
     "crates/fluvio-auth",
     "crates/fluvio-benchmark",
-    "crates/fluvio-channel",
-    "crates/fluvio-channel-cli",
     "crates/fluvio-cli",
     "crates/fluvio-cli-common",
     "crates/fluvio-cluster",
