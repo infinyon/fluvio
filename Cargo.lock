@@ -2642,7 +2642,6 @@ dependencies = [
  "eyre",
  "flate2",
  "fluvio",
- "fluvio-channel",
  "fluvio-cli-common",
  "fluvio-cluster",
  "fluvio-command",

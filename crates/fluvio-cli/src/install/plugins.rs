@@ -11,17 +11,11 @@ use fluvio_cli_common::install::{
 };
 
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
-use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_hub_util as hubutil;
 use hubutil::{HubAccess, HUB_API_BPKG_AUTH, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
 use hubutil::http::{self, StatusCode};
 
 use crate::error::CliError;
-use crate::install::update::{
-    check_update_required, prompt_required_update, check_update_available, prompt_available_update,
-};
-
-use super::update::should_always_print_available_update;
 
 #[derive(Parser, Debug)]
 pub struct InstallOpt {
@@ -46,7 +40,7 @@ pub struct InstallOpt {
     #[arg(long, hide_short_help = true)]
     pub use_hub_defaults: bool,
 
-    /// When this flag is provided, use the hub. Dev-only
+    /// Channel option. Dev-only
     #[arg(long, hide_short_help = true)]
     pub channel: Option<String>,
 
@@ -100,14 +94,6 @@ impl InstallOpt {
                 None => HttpAgent::default(),
             };
 
-            // Before any "install" type command, check if the CLI needs updating.
-            // This may be the case if the index schema has updated.
-            let require_update = check_update_required(&agent).await?;
-            if require_update {
-                prompt_required_update(&agent).await?;
-                return Ok(());
-            }
-
             let result = self.install_plugin(&agent).await;
             match result {
                 Ok(_) => (),
@@ -132,16 +118,6 @@ impl InstallOpt {
                     }
                     _ => return Err(err),
                 },
-            }
-
-            // After any "install" command, check if the CLI has an available update,
-            // i.e. one that is not required, but present.
-            // Sometimes this is printed at the beginning, so we don't print it again here
-            if !should_always_print_available_update() {
-                let update_result = check_update_available(&agent, false).await;
-                if let Ok(Some(latest_version)) = update_result {
-                    prompt_available_update(&latest_version);
-                }
             }
         }
         Ok(())
@@ -235,16 +211,6 @@ impl InstallOpt {
         Ok(())
     }
 
-    fn get_channel(&self) -> String {
-        if let Some(user_override) = &self.channel {
-            user_override.to_string()
-        } else if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
-            channel_name
-        } else {
-            LATEST_CHANNEL_NAME.to_string()
-        }
-    }
-
     fn get_target(&self) -> String {
         if let Some(user_override) = &self.target {
             user_override.to_string()
@@ -258,11 +224,13 @@ impl InstallOpt {
             .get_bpkg_get_token()
             .await
             .map_err(|_| HttpError::InvalidInput("authorization error".into()))?;
-
+        let channel = match &self.channel {
+            None => "latest".to_string(),
+            Some(channel) => channel.clone(),
+        };
         let binurl = format!(
             "{}/{HUB_API_BPKG_AUTH}/{channel}/{systuple}/{bin_name}",
             access.remote,
-            channel = self.get_channel(),
             systuple = self.get_target(),
         );
         debug!("Downloading binary from hub: {binurl}");

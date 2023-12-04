@@ -6,7 +6,6 @@ use current_platform::CURRENT_PLATFORM;
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
 use fluvio_extension_common::target::ClusterTarget;
-use fluvio_channel::FLUVIO_RELEASE_CHANNEL;
 
 use crate::metadata::subcommand_metadata;
 
@@ -15,11 +14,6 @@ pub struct VersionOpt {}
 
 impl VersionOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        // IF FLUVIO_RELEASE_CHANNEL defined
-        if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
-            self.print("Release Channel", &channel_name);
-        };
-
         self.print("Fluvio CLI", crate::VERSION.trim());
         self.print("Fluvio CLI Arch", CURRENT_PLATFORM);
 
