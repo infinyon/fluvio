@@ -30,7 +30,7 @@ anyhow = { workspace = true }
 
 fluvio-cli-common = { workspace = true  }
 fluvio-channel = { workspace = true  }
-fluvio-future = { workspace = true, features = ["task", "subscriber", "native2_tls"], optional = true }
+fluvio-future = { workspace = true, features = ["task", "subscriber", "tls"], optional = true }
 fluvio-types = { workspace = true,  default-features = false, optional = true }
 fluvio-package-index = { workspace = true  }
 

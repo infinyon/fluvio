@@ -52,4 +52,4 @@ isahc = { version = "1.7", default-features = false, features = ["static-curl"] 
 isahc = { version = "1.7", default-features = false }
 
 [dev-dependencies]
-fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "native2_tls", "fixture"] }
+fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "tls", "fixture"] }

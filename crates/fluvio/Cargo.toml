@@ -15,7 +15,7 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = ["openssl"]
+default = ["rustls"]
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 openssl = ["fluvio-future/openssl_tls"]
@@ -27,7 +27,7 @@ async-channel = { workspace = true }
 async-lock = { workspace = true }
 async-rwlock = { workspace = true }
 async-trait = { workspace = true }
-anyhow = { workspace = true } 
+anyhow = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
 cfg-if = { workspace = true }
