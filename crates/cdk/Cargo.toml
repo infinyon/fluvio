@@ -26,7 +26,7 @@ serde = { workspace = true,  features = ["derive"] }
 toml = { workspace = true, features = ["parse", "display", "preserve_order"] }
 comfy-table = { workspace = true  }
 sysinfo = { workspace = true, default-features = false }
-cargo-generate = { workspace = true }
+cargo-generate = { workspace = true, features = ["vendored-openssl"] }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
 current_platform = { workspace = true }

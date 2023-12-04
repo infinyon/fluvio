@@ -954,6 +954,7 @@ dependencies = [
  "liquid-lib",
  "log",
  "names",
+ "openssl",
  "paste",
  "path-absolutize",
  "regex",
