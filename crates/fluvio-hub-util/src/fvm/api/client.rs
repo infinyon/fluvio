@@ -27,14 +27,16 @@ impl Client {
 
     /// Fetches a [`PackageSet`] from the Hub with the specific [`Channel`]
     pub async fn fetch_package_set(&self, channel: &Channel, arch: &str) -> Result<PackageSet> {
+        use crate::htclient::ResponseExt;
+
         let url = self.make_fetch_package_set_url(channel, arch)?;
-        let mut res = surf::get(url)
+        let res = crate::htclient::get(url)
             .await
             .map_err(|err| Error::msg(err.to_string()))?;
         let res_status = res.status();
 
         if res_status.is_success() {
-            let pkgset_record = res.body_json::<PackageSetRecord>().await.map_err(|err| {
+            let pkgset_record = res.json::<PackageSetRecord>().await.map_err(|err| {
                 tracing::debug!(?err, "Failed to parse PackageSet from Hub");
                 Error::msg("Failed to parse server's response")
             })?;
@@ -43,7 +45,7 @@ impl Client {
             return Ok(pkgset_record.into());
         }
 
-        let error = res.body_json::<ApiError>().await.map_err(|err| {
+        let error = res.json::<ApiError>().await.map_err(|err| {
             tracing::debug!(?err, "Failed to parse API Error from Hub");
             Error::msg(format!("Server responded with status code {}", res_status))
         })?;

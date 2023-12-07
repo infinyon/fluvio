@@ -6,6 +6,7 @@ mod utils;
 #[cfg(feature = "connector-cmds")]
 pub mod cmd;
 
+pub mod htclient;
 pub mod keymgmt;
 pub mod fvm;
 
@@ -15,7 +16,6 @@ pub use hubaccess::*;
 pub use package::*;
 pub use package_meta_ext::*;
 pub use utils::*;
-pub use surf as http;
 pub use utils::sha256_digest;
 
 pub use fluvio_hub_protocol::*;
