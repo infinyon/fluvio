@@ -88,19 +88,10 @@ pub async fn fetch_latest_version<T>(
     prerelease: bool,
 ) -> Result<Version> {
     let request = agent.request_package(id)?;
-    debug!(
-        uri = %request.uri(),
-        "Requesting package manifest:",
-    );
-    let response = crate::http::execute(request).await?;
-    let body = crate::http::read_to_end(response).await?;
-    let package = agent.package_from_response(&body).await?;
-    let latest_release = package.latest_release_for_target(target, prerelease)?;
-    debug!(release = ?latest_release, "Latest release for package:");
-    if !latest_release.target_exists(target) {
-        return Err(fluvio_index::Error::MissingTarget(target.clone()).into());
-    }
-    Ok(latest_release.version.clone())
+    let uri = request.uri().to_string();
+    let body = crate::http::get_simple(&uri).await?;
+    let ver = Version::parse(&body)?;
+    Ok(ver)
 }
 
 /// Downloads and verifies a package file via it's versioned ID and target
@@ -117,40 +108,39 @@ pub async fn fetch_package_file(
     let version = match id.version() {
         PackageVersion::Semver(version) => version.clone(),
         PackageVersion::Tag(tag) => {
-            let tag_request = agent.request_tag(id, tag)?;
-            let tag_response = crate::http::execute(tag_request).await?;
-            let body = crate::http::read_to_end(tag_response).await?;
-            agent.tag_version_from_response(tag, &body).await?
+            let req = agent.request_tag(id, tag)?;
+            let tag_response = crate::http::get_bytes_req(&req).await?;
+            agent.tag_version_from_response(tag, &tag_response).await?
         }
         _ => return Err(anyhow!("unknown PackageVersion type")),
     };
 
     // Download the package file from the package registry
     let download_request = agent.request_release_download(id, &version, target)?;
-    debug!(uri = %download_request.uri(), "Requesting package download:");
-    let response = crate::http::execute(download_request).await?;
-    if !response.status().is_success() {
-        return Err(PackageNotFound {
-            package: id.clone().into_unversioned(),
-            version: version.clone(),
-            target: target.clone(),
-        }
-        .into());
-    }
-
-    let package_file = crate::http::read_to_end(response).await?;
+    debug!(uri = ?download_request.uri(), "Requesting package download:");
+    let package_file = crate::http::get_bytes_req(&download_request)
+        .await
+        .map_err(|e| {
+            debug!("returning PackageNotFound due to err {e}");
+            PackageNotFound {
+                package: id.clone().into_unversioned(),
+                version: version.clone(),
+                target: target.clone(),
+            }
+        })?;
 
     // Download the package checksum from the package registry
-    let checksum_request = agent.request_release_checksum(id, &version, target)?;
-    let response = crate::http::execute(checksum_request).await?;
-    let body = crate::http::read_to_end(response).await?;
-    let package_checksum = String::from_utf8_lossy(&body);
+    let checksum_request = agent
+        .request_release_checksum(id, &version, target)?
+        .uri()
+        .to_string();
+    let package_checksum = crate::http::get_simple(&checksum_request).await?;
 
     if !verify_checksum(&package_file, &package_checksum) {
         return Err(fluvio_index::Error::ChecksumError.into());
     }
     debug!(hex = %package_checksum, "Verified checksum");
-    Ok(package_file)
+    Ok(package_file.to_vec())
 }
 
 fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {

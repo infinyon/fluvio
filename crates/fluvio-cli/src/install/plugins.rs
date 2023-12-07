@@ -1,7 +1,8 @@
 use std::str::FromStr;
+
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use tracing::debug;
-use anyhow::Result;
 use current_platform::CURRENT_PLATFORM;
 
 use fluvio_cli_common::error::{HttpError, PackageNotFound};
@@ -14,7 +15,8 @@ use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_hub_util as hubutil;
 use hubutil::{HubAccess, HUB_API_BPKG_AUTH, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
-use hubutil::http::{self, StatusCode};
+use hubutil::htclient;
+// use hubutil::http::{self, StatusCode};
 
 use crate::error::CliError;
 use crate::install::update::{
@@ -254,6 +256,10 @@ impl InstallOpt {
     }
 
     async fn get_binary(&self, bin_name: &str, access: &HubAccess) -> Result<Vec<u8>> {
+        use htclient::StatusCode;
+        use htclient::ResponseExt;
+        use htclient::http;
+
         let actiontoken = access
             .get_bpkg_get_token()
             .await
@@ -266,13 +272,17 @@ impl InstallOpt {
             systuple = self.get_target(),
         );
         debug!("Downloading binary from hub: {binurl}");
-        let mut resp = http::get(binurl)
+        let req = http::Request::get(binurl)
             .header("Authorization", actiontoken)
+            .body("")
+            .map_err(|_| anyhow!("auth request error"))?;
+
+        let resp = htclient::send(req)
             .await
-            .map_err(|_| HttpError::InvalidInput("authorization error".into()))?;
+            .map_err(|e| anyhow!("Binary download failed {e}"))?;
 
         match resp.status() {
-            StatusCode::Ok => {}
+            StatusCode::OK => {}
             code => {
                 let body_err_message = resp
                     .body_string()
@@ -283,9 +293,10 @@ impl InstallOpt {
             }
         }
         let data = resp
-            .body_bytes()
+            .bytes()
             .await
-            .map_err(|_| crate::CliError::HubError("Data unpack failure".into()))?;
+            .map_err(|_| crate::CliError::HubError("Data unpack failure".into()))?
+            .to_vec();
         Ok(data)
     }
 }
