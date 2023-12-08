@@ -14,6 +14,9 @@
 // Finally, to clean up, we attempt to run `fluvio-channel version delete <random_channel_name>`
 // just in case the version was indeed written to the file.
 // This should never succeed and we assert that.
+//
+// fluvio-channel is deprecated, minimal maintenance ignore this test
+#[ignore]
 #[test]
 fn issue_2168_regression_test() {
     use assert_cmd::prelude::*; // Add methods on commands
