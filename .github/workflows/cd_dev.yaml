@@ -85,7 +85,7 @@ jobs:
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Install Fluvio CLI
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=latest bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | FLUVIO_VERSION=latest bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Install Local Fluvio cluster
         timeout-minutes: 3
@@ -208,7 +208,7 @@ jobs:
 
       # Utilizes the env var set in the previous step
       - name: Curl Install
-        run: curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.version
+        run: curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash | tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
@@ -248,7 +248,7 @@ jobs:
       - name: Install stable CLI and start Fluvio cluster
         timeout-minutes: 10
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=${{ matrix.cluster_version }} bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=${{ matrix.cluster_version }} bash
           fluvio cluster start --local
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |

@@ -5,7 +5,7 @@
 set -eu -o pipefail
 echo "Installing Fluvio Local Cluster"
 
-curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
 echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
 . $HOME/.bash_profile
 

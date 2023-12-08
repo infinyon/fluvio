@@ -10,7 +10,7 @@ readonly FLUVIO_COMMIT_CHECK=${2?Pass in expected commit in pos 2}
 # This function should always run first
 function validate_installer_output() {
     # Validate the installer output returns the expected version
-    curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.output
+    curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash | tee /tmp/installer.output
 
     INSTALLED_FLUVIO_VERSION=$(cat /tmp/installer.output | grep "Downloading Fluvio" | awk '{print $5}' | tr -d '[:space:]')
     EXPECTED_FLUVIO_VERSION=$FLUVIO_VERSION_CHECK
