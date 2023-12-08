@@ -63,7 +63,7 @@ function validate_cluster_stable() {
     echo "Install (current stable) CLI"
     unset VERSION
 
-    curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+    curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
     
     ~/.fvm/bin/fvm install stable | tee /tmp/installer.output 
     STABLE_VERSION=$(cat /tmp/installer.output | grep "fluvio@" | awk '{print $4}' | cut -b 8-)

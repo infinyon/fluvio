@@ -948,7 +948,7 @@ jobs:
       # from now, fluvio will be stable
       - name: Install stable CLI and start Fluvio cluster
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
           echo "~/.fluvio/bin" >> $GITHUB_PATH
 
       # Download artifacts from development build

@@ -50,7 +50,7 @@ jobs:
     steps:
       - name: Install Fluvio
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop
@@ -88,7 +88,7 @@ jobs:
     steps:
       - name: Install Fluvio
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop

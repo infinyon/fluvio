@@ -74,7 +74,7 @@ jobs:
 
         # Utilizes the env var set in the previous step
       - name: Curl Install
-        run: curl -fsS https://hub.infinyon.cloud/install/install.sh | bash | tee /tmp/installer.version
+        run: curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash | tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
@@ -119,7 +119,7 @@ jobs:
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Install Fluvio
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Start cluster
         timeout-minutes: 10

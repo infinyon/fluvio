@@ -56,7 +56,7 @@ jobs:
           kind create cluster --config k8-util/cluster/kind.yaml
       - name: Install Fluvio CLI
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | VERSION=latest bash
+          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=latest bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Install Local Fluvio cluster
         timeout-minutes: 3

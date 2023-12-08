@@ -43,7 +43,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN source "$HOME/.cargo/env"
 
 # setup fluvio
-RUN curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
+RUN curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
 
 # add Fluvio smartmodule deps
 # source cargo/env is a little bit of a workaround
