@@ -2,7 +2,23 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.2 - UNRELEASED
+## Platform Version 0.11.2 - 2023-12-08
+
+### CI
+
+* Use `ctx` ci for installations ([#3767](https://github.com/infinyon/fluvio/issues/3767))
+
+## Platform Version 0.11.2-dev-1 - 2023-12-04
+
+### Added
+
+* Added minimal support for docker inst type ([#3755](https://github.com/infinyon/fluvio/issues/3755))
+* Update README.md to show Fluvio Diagram ([#3757](https://github.com/infinyon/fluvio/issues/3757))
+* FVM uninstall command ([#3756](https://github.com/infinyon/fluvio/issues/3756))
+
+### Fixed
+
+* Topic reducer should wait for partitions sync ([#3752](https://github.com/infinyon/fluvio/issues/3752))
 
 ## Platform Version 0.11.1 - 2023-11-24
 
