@@ -1,4 +1,4 @@
-name: Publish crates to crates.io 
+name: Publish crates to crates.io
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
   #    - name: Get status of latest CD_Dev run
   #      id: cd_dev_check
   #      run: |
-  #        gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt  
+  #        gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt
   #        echo "Latest CD_Dev run: $(cat /tmp/cd_dev_latest.txt | jq .html_url | tr -d '"')"
   #        CD_DEV_CHECK=$(cat /tmp/cd_dev_latest.txt | jq .conclusion | tr -d '"')
   #        if [[ "$CD_DEV_CHECK" = "success" ]]
@@ -45,19 +45,17 @@ jobs:
   #          exit 1;
   #        fi
   publish_crates:
-    name: Publish crates to crates.io 
+    name: Publish crates to crates.io
     strategy:
       matrix:
         rust: [stable]
     runs-on: ubuntu-latest
     #permissions: write-all
     steps:
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust ${{ matrix.rust }} toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
 
       - uses: actions/checkout@v4
         with:
