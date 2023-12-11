@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
-use surf::http::mime;
-use surf::StatusCode;
+use http::StatusCode;
 use tracing::{debug, info};
 
 use fluvio_future::task::run_block_on;
@@ -14,6 +14,8 @@ use fluvio_hub_protocol::constants::{HUB_API_ACT, HUB_API_HUBID, HUB_REMOTE, CLI
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 use crate::keymgmt::Keypair;
+use crate::htclient;
+use crate::htclient::ResponseExt;
 
 // in .fluvio/hub/hcurrent
 const ACCESS_FILE_PTR: &str = "hcurrent";
@@ -64,26 +66,30 @@ impl HubAccess {
         let host = &self.remote;
         let api_url = format!("{host}/{HUB_API_HUBID}");
         debug!("Sending Action token {action_token}");
-        let req = surf::put(api_url)
-            .content_type(mime::JSON)
-            .body_bytes(msg_json)
-            .header("Authorization", &action_token);
-        let res = req
+
+        let req = http::Request::put(&api_url)
+            .header("Authorization", &action_token)
+            .header(http::header::CONTENT_TYPE, mime::JSON.as_str())
+            .body(msg_json)
+            .map_err(|e| HubError::HubAccess(format!("request formatting error {e}")))?;
+
+        let res = crate::htclient::send(req)
             .await
             .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
+
         let status = res.status();
         match status {
-            StatusCode::Created => {
+            StatusCode::CREATED => {
                 println!("hub: hubid {hubid} created");
             }
-            StatusCode::Ok => {
+            StatusCode::OK => {
                 println!("hub: hubid {hubid} is set");
             }
-            StatusCode::Forbidden => {
+            StatusCode::FORBIDDEN => {
                 let msg = format!("hub: hubid {hubid} already taken");
                 return Err(HubError::HubAccess(msg));
             }
-            StatusCode::Unauthorized => {
+            StatusCode::UNAUTHORIZED => {
                 let msg = "hub: authorization error, try 'fluvio cloud login'".to_string();
                 return Err(HubError::HubAccess(msg));
             }
@@ -135,27 +141,31 @@ impl HubAccess {
         };
         let msg_action_token = serde_json::to_string(&mat)
             .map_err(|_e| HubError::HubAccess("Failed access setup".to_string()))?;
-        let req = surf::get(api_url)
-            .content_type(mime::JSON)
-            .body_bytes(msg_action_token)
-            .header("Authorization", &authn_token);
-        let mut res = req
+
+        let req = http::Request::get(&api_url)
+            .header("Authorization", &authn_token)
+            .header(http::header::CONTENT_TYPE, mime::JSON.as_str())
+            .body(msg_action_token)
+            .map_err(|e| HubError::HubAccess(format!("request formatting error {e}")))?;
+
+        let resp = crate::htclient::send(req)
             .await
             .map_err(|e| HubError::HubAccess(format!("Failed to connect {e}")))?;
-        let status_code = res.status();
+
+        let status_code = resp.status();
         match status_code {
-            StatusCode::Ok => {
-                let action_token = res.body_string().await.map_err(|e| {
-                    debug!("err {e} {res:?}");
+            StatusCode::OK => {
+                let action_token = resp.body_string().await.map_err(|e| {
+                    debug!("err {e}");
                     HubError::HubAccess("Failed to parse reply".to_string())
                 })?;
                 Ok(action_token)
             }
-            StatusCode::Unauthorized => Err(HubError::HubAccess(
+            StatusCode::UNAUTHORIZED => Err(HubError::HubAccess(
                 "Unauthorized, please log in with 'fluvio cloud login'".into(),
             )),
             _ => {
-                let msg = format!("Unknown error: {}", res.status());
+                let msg = format!("Unknown error: {}", resp.status());
                 Err(HubError::HubAccess(msg))
             }
         }
@@ -307,10 +317,15 @@ fn get_hubref() -> Option<String> {
         return None; // use default
     }
     let hubref_url = format!("{fcremote}/api/v1/hubref");
-    let reply: std::result::Result<String, surf::Error> = run_block_on(async {
-        let req = surf::get(hubref_url);
-        let mut res = req.await?;
-        let reply: ReplyHubref = res.body_json().await?;
+    let reply: anyhow::Result<String> = run_block_on(async {
+        let resp = htclient::get(&hubref_url)
+            .await
+            .map_err(|e| anyhow!("hubref error {e}"))?;
+        let reply = resp
+            .json::<ReplyHubref>()
+            .await
+            .map_err(|e| anyhow!("hubref parse error {e}"))?;
+
         // fluvio profile switch does not switch the cloud login
         // so hub remote can be pointed to the cloud login different that the profile
         // this will only be printed when using a nonstd hub

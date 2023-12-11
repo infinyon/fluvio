@@ -9,7 +9,6 @@ use std::str::FromStr;
 use thiserror::Error;
 use serde::{Deserialize, Serialize};
 use semver::Version;
-use url::Url;
 
 pub use api::{Client, Download};
 
@@ -108,8 +107,8 @@ impl FromStr for Channel {
 pub struct Artifact {
     pub name: String,
     pub version: Version,
-    pub download_url: Url,
-    pub sha256_url: Url,
+    pub download_url: String,
+    pub sha256_url: String,
 }
 
 /// Fluvio Version Manager Package for a specific architecture and version.
