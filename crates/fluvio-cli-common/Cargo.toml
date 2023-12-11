@@ -42,4 +42,7 @@ fluvio-protocol = { workspace = true,  optional = true }
 fluvio-sc-schema = { path = "../fluvio-sc-schema", optional = true }
 fluvio-smartmodule = { path = "../fluvio-smartmodule", optional = true, default-features = false }
 fluvio-smartengine = { path = "../fluvio-smartengine", optional = true, features = ["transformation"] }
-fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "http-client", "tls"] }
+fluvio-future = { workspace = true, features = ["http-client", "tls"] }
+
+[dev-dependencies]
+fluvio-future = { workspace = true, features = ["fs", "io", "subscriber", "fixture"] }
