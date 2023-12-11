@@ -1,14 +1,7 @@
-// use std::fmt::Debug;
-
-// use http::{Request, Response};
 use http::Request;
-// use http::uri::Scheme;
-// use isahc::{AsyncBody, Request, Response};
-// use tracing::{debug, error, instrument};
 use tracing::instrument;
 use anyhow::Result;
 
-// use crate::error::HttpError;
 use fluvio_future::http_client;
 use fluvio_future::http_client::ResponseExt;
 

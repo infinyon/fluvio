@@ -16,7 +16,6 @@ use fluvio_channel::{LATEST_CHANNEL_NAME, FLUVIO_RELEASE_CHANNEL};
 use fluvio_hub_util as hubutil;
 use hubutil::{HubAccess, HUB_API_BPKG_AUTH, INFINYON_HUB_REMOTE, FLUVIO_HUB_PROFILE_ENV};
 use hubutil::htclient;
-// use hubutil::http::{self, StatusCode};
 
 use crate::error::CliError;
 use crate::install::update::{
