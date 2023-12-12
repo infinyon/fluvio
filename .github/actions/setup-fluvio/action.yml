@@ -11,6 +11,7 @@ runs:
   steps:
     - name: Check Platform Compatibility
       if: runner.os != 'Linux' && runner.os != 'macOS'
+      shell: bash
       run: |
         echo "Current platform $env:RUNNER_OS, is not supported by Fluvio CLI Installer."
         echo "Please use a Linux or macOS runner."
@@ -18,6 +19,7 @@ runs:
         exit 1
 
     - name: Install Fluvio
+      shell: bash
       run: |
         curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=${{ inputs.version }} bash
         echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
