@@ -21,5 +21,5 @@ runs:
     - name: Install Fluvio
       shell: bash
       run: |
-        curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=${{ inputs.version }} bash
+        curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | FLUVIO_VERSION=${{ inputs.version }} bash
         echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
