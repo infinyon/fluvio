@@ -1,0 +1,21 @@
+name: Setup Fluvio
+description: "Download and install Fluvio CLI via FVM"
+inputs:
+  version:
+    description: "Fluvio version to install"
+    required: false
+    default: "stable"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check Platform Compatibility
+      if: runner.os != 'Linux' && runner.os != 'macOS'
+      run: |
+        echo "Current platform $env:RUNNER_OS, is not supported by Fluvio CLI Installer."
+        exit 1
+
+    - name: Install Fluvio
+      run: |
+        curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=${{ inputs.version }} bash
+        echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
