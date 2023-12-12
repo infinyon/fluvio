@@ -946,10 +946,15 @@ jobs:
 
       # Download stable, this will load into ~/.fluvio/bin which will be in PATH
       # from now, fluvio will be stable
-      - name: Install stable CLI and start Fluvio cluster
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
-          echo "~/.fluvio/bin" >> $GITHUB_PATH
+      # - name: Install stable CLI and start Fluvio cluster
+      #   run: |
+      #     curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
+      #     echo "~/.fluvio/bin" >> $GITHUB_PATH
+
+      - name: Setup Fluvio
+        uses: EstebanBorai/fluvio/.github/actions/setup-fluvio@3772-create-a-github-actions-installer-for-fluvio
+        with:
+          version: 0.11.0
 
       # Download artifacts from development build
       - name: Download artifact - fluvio
