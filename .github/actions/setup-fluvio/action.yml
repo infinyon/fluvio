@@ -13,10 +13,9 @@ runs:
       if: runner.os != 'Linux' && runner.os != 'macOS'
       shell: bash
       run: |
-        echo "Current platform $env:RUNNER_OS, is not supported by Fluvio CLI Installer."
-        echo "Please use a Linux or macOS runner."
-        echo "For further details on Fluvio Installation, please visit https://fluvio.io/docs/install/"
-        exit 1
+        echo "::warning Current platform $env:RUNNER_OS, is not supported by Fluvio CLI Installer."
+        echo "::warning Please use a Linux or macOS runner."
+        echo "::warning For further details on Fluvio Installation, please visit https://fluvio.io/docs/install/"
 
     - name: Install Fluvio
       shell: bash
