@@ -157,9 +157,10 @@ jobs:
           curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=latest bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Start Fluvio Cluster
+        # --image-version is only used in the k8 cluster_type
         run: |
           fluvio version
-          fluvio cluster start --${{ matrix.cluster_type}}
+          fluvio cluster start --${{ matrix.cluster_type}} --image-version latest
 
       # Disabled for now bc data load is unstable in CI
       #- name: Look for longevity data
