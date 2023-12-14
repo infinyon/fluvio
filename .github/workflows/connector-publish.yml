@@ -49,7 +49,7 @@ jobs:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     steps:
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop
       - name: Fluvio Login
@@ -85,7 +85,7 @@ jobs:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     steps:
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop
       - name: Fluvio Login

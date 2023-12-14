@@ -32,7 +32,7 @@ jobs:
       CLOUD_LOGIN_PW:  ${{ !inputs.target_prod && secrets.ORG_HUB_SA_PASSWD_DEV || secrets.ORG_HUB_SA_PASSWD_PROD }}
     steps:
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
       - name: Install Fluvio SMDK
         run: fluvio install smdk
       - name: Fluvio Login

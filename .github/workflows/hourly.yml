@@ -152,7 +152,7 @@ jobs:
         run: |
           ./k8-util/cluster/reset-k3d.sh
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: latest
       - name: Start Fluvio Cluster

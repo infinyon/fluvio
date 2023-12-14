@@ -72,7 +72,7 @@ jobs:
         if: matrix.version == 'semver'
         run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: ${{ env.VERSION }}
       - name: Verify installer output
@@ -117,7 +117,7 @@ jobs:
 
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
       - name: Start cluster
         timeout-minutes: 10
         run: |
@@ -162,7 +162,7 @@ jobs:
           PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' |  grep "v" | sed 's/^v//' | head -2 | tail -1)
 
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: ${{ env.PREV_STABLE_VERSION }}
 

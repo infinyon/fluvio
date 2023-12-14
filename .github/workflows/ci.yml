@@ -947,7 +947,7 @@ jobs:
       # Download stable, this will load into ~/.fluvio/bin which will be in PATH
       # from now, fluvio will be stable
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
 
       # Download artifacts from development build
       - name: Download artifact - fluvio

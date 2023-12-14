@@ -55,7 +55,7 @@ jobs:
           brew install kind
           kind create cluster --config k8-util/cluster/kind.yaml
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: latest
       - name: Install Local Fluvio cluster

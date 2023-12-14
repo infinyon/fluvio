@@ -84,7 +84,7 @@ jobs:
         if: ${{ matrix.cluster_type == 'k8' }}
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: latest
       - name: Install Local Fluvio cluster
@@ -207,7 +207,7 @@ jobs:
           echo "FLUVIO_VERSION=latest" | tee -a $GITHUB_ENV
 
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: ${{ env.FLUVIO_VERSION }}
 
@@ -247,7 +247,7 @@ jobs:
       - name: Setup bin path
         run:  echo "~/.fluvio/bin" >> $GITHUB_PATH
       - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: ${{ matrix.cluster_version }}
       - name: Start Fluvio Cluster
