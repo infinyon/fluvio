@@ -48,10 +48,8 @@ jobs:
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     steps:
-      - name: Install Fluvio
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
-          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop
       - name: Fluvio Login
@@ -86,10 +84,8 @@ jobs:
     env:
       CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
     steps:
-      - name: Install Fluvio
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
-          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio
       - name: Install Fluvio CDK
         run: fluvio install cdk --develop
       - name: Fluvio Login
