@@ -83,10 +83,10 @@ jobs:
       - name: Set up K8 for ubuntu(kind)
         if: ${{ matrix.cluster_type == 'k8' }}
         run: ./k8-util/cluster/reset-k3d.sh
-      - name: Install Fluvio CLI
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | FLUVIO_VERSION=latest bash
-          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
+        with:
+          version: latest
       - name: Install Local Fluvio cluster
         timeout-minutes: 3
         if: ${{ matrix.cluster_type == 'local' }}
@@ -206,9 +206,10 @@ jobs:
         run: |
           echo "FLUVIO_VERSION=latest" | tee -a $GITHUB_ENV
 
-      # Utilizes the env var set in the previous step
-      - name: Curl Install
-        run: curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash | tee /tmp/installer.version
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
+        with:
+          version: ${{ env.FLUVIO_VERSION }}
 
       - name: Verify installer output
         run: |
@@ -245,11 +246,13 @@ jobs:
           bats-version: 1.2.1
       - name: Setup bin path
         run:  echo "~/.fluvio/bin" >> $GITHUB_PATH
-      - name: Install stable CLI and start Fluvio cluster
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
+        with:
+          version: ${{ matrix.cluster_version }}
+      - name: Start Fluvio Cluster
         timeout-minutes: 10
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=${{ matrix.cluster_version }} bash
-          fluvio cluster start --local
+        run: fluvio cluster start --local
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |
           make FLUVIO_BIN=~/.fluvio/bin/fluvio SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
