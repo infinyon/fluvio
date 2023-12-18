@@ -24,7 +24,6 @@ current_platform = { workspace = true, optional = true }
 clap = { workspace = true, optional = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
-futures = { workspace = true, features = ["std", "io-compat"]}
 home = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
