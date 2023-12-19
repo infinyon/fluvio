@@ -33,7 +33,7 @@ version = "0.0.0"
 dependencies = [
  "async-std",
  "fluvio",
- "futures 0.3.29",
+ "futures",
 ]
 
 [[package]]
@@ -506,7 +506,7 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6d7b9decdf35d8908a7e3ef02f64c5e9b1695e230154c0e8de3969142d9b94c"
 dependencies = [
- "futures 0.3.29",
+ "futures",
  "pharos",
  "rustc_version 0.4.0",
 ]
@@ -701,16 +701,6 @@ name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
-
-[[package]]
-name = "bytes"
-version = "0.4.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "206fdffcfa2df7cbe15601ef46c813fce0965eb3286db6b56c583b814b51c81c"
-dependencies = [
- "byteorder",
- "iovec",
-]
 
 [[package]]
 name = "bytes"
@@ -1393,7 +1383,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0346712abc6ffc5b287637815c838f6126ff62df37f12806fa029e66c0ec285c"
 dependencies = [
  "chrono",
- "futures 0.3.29",
+ "futures",
  "reqwest",
  "serde",
  "serde_derive",
@@ -1943,7 +1933,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "fluvio",
- "futures 0.3.29",
+ "futures",
 ]
 
 [[package]]
@@ -2253,7 +2243,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "base64 0.21.5",
- "bytes 1.5.0",
+ "bytes",
  "cfg-if",
  "chrono",
  "derive_builder",
@@ -2399,7 +2389,7 @@ dependencies = [
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",
- "futures 0.3.29",
+ "futures",
  "futures-util",
  "handlebars",
  "hex",
@@ -2429,7 +2419,7 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "bytes 1.5.0",
+ "bytes",
  "chrono",
  "clap",
  "current_platform",
@@ -2441,7 +2431,6 @@ dependencies = [
  "fluvio-smartengine",
  "fluvio-smartmodule",
  "fluvio-types",
- "futures 0.3.29",
  "hex",
  "home",
  "http",
@@ -2519,7 +2508,7 @@ dependencies = [
 name = "fluvio-compression"
 version = "0.3.2"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "flate2",
  "lz4_flex",
  "serde",
@@ -2541,7 +2530,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-sc-schema",
  "fluvio-smartengine",
- "futures 0.3.29",
+ "futures",
  "futures-util",
  "serde",
  "serde_json",
@@ -2608,7 +2597,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "base64 0.21.5",
- "bytes 1.5.0",
+ "bytes",
  "bytesize",
  "derive_builder",
  "flate2",
@@ -2661,7 +2650,7 @@ dependencies = [
  "async-rustls",
  "async-std",
  "async-trait",
- "bytes 1.5.0",
+ "bytes",
  "cfg-if",
  "fluvio-test-derive 0.1.1",
  "fluvio-wasm-timer",
@@ -2779,7 +2768,7 @@ dependencies = [
 name = "fluvio-protocol"
 version = "0.10.7"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "content_inspector",
  "crc32c",
  "criterion",
@@ -2790,7 +2779,7 @@ dependencies = [
  "fluvio-protocol-derive",
  "fluvio-types",
  "flv-util",
- "futures 0.3.29",
+ "futures",
  "once_cell",
  "semver 1.0.20",
  "thiserror",
@@ -2953,7 +2942,7 @@ dependencies = [
  "async-net",
  "async-trait",
  "built",
- "bytes 1.5.0",
+ "bytes",
  "cfg-if",
  "event-listener 3.1.0",
  "fluvio-future",
@@ -2983,7 +2972,7 @@ dependencies = [
  "async-net",
  "async-rwlock",
  "async-trait",
- "bytes 1.5.0",
+ "bytes",
  "cfg-if",
  "chrono",
  "clap",
@@ -3023,7 +3012,7 @@ dependencies = [
 name = "fluvio-spu-schema"
 version = "0.14.5"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "derive_builder",
  "educe",
  "flate2",
@@ -3048,7 +3037,7 @@ dependencies = [
  "async-lock 2.8.0",
  "async-trait",
  "blocking",
- "bytes 1.5.0",
+ "bytes",
  "clap",
  "derive_builder",
  "fluvio-compression",
@@ -3117,7 +3106,7 @@ dependencies = [
  "async-channel 1.9.0",
  "async-std",
  "async-trait",
- "bytes 1.5.0",
+ "bytes",
  "clap",
  "comfy-table",
  "crc",
@@ -3135,7 +3124,7 @@ dependencies = [
  "fluvio-test-util",
  "fluvio-types",
  "fork",
- "futures 0.3.29",
+ "futures",
  "futures-lite 1.13.0",
  "hdrhistogram",
  "indicatif",
@@ -3201,7 +3190,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bytes 1.5.0",
+ "bytes",
  "clap",
  "comfy-table",
  "dyn-clone",
@@ -3271,7 +3260,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b768c170dc045fa587a8f948c91f9bcfb87f774930477c6215addf54317f137f"
 dependencies = [
- "futures 0.3.29",
+ "futures",
  "js-sys",
  "parking_lot 0.11.2",
  "pin-utils",
@@ -3287,7 +3276,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9875a7ffd1467f052ee51d936dc916f3b040ee3989d6abc875a10f0d2b204cdf"
 dependencies = [
  "async_io_stream",
- "futures 0.3.29",
+ "futures",
  "js-sys",
  "pharos",
  "rustc_version 0.3.3",
@@ -3409,12 +3398,6 @@ checksum = "42703706b716c37f96a77aea830392ad231f44c9e9a67872fa5548707e11b11c"
 
 [[package]]
 name = "futures"
-version = "0.1.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a471a38ef8ed83cd6e40aa59c1ffe17db6855c18e3604d9c4ed8c08ebc28678"
-
-[[package]]
-name = "futures"
 version = "0.3.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da0290714b38af9b4a7b094b8a37086d1b4e61f2df9122c3cad2577669145335"
@@ -3519,7 +3502,6 @@ version = "0.3.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a19526d624e703a3179b3d322efec918b6246ea0fa51d41124525f00f1cc8104"
 dependencies = [
- "futures 0.1.31",
  "futures-channel",
  "futures-core",
  "futures-io",
@@ -3530,7 +3512,6 @@ dependencies = [
  "pin-project-lite",
  "pin-utils",
  "slab",
- "tokio-io",
 ]
 
 [[package]]
@@ -3881,7 +3862,7 @@ version = "0.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d6250322ef6e60f93f9a2162799302cd6f68f79f6e5d85c8c16f14d1d958178"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "fnv",
  "futures-core",
  "futures-sink",
@@ -4009,7 +3990,7 @@ version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8947b1a6fad4393052c7ba1f4cd97bed3e953a95c79c92ad9b051a04611d9fbb"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "fnv",
  "itoa",
 ]
@@ -4020,7 +4001,7 @@ version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5f38f16d184e36f2408a55281cd658ecbd3ca05cce6d6510a176eca393e26d1"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "http",
  "pin-project-lite",
 ]
@@ -4059,7 +4040,7 @@ version = "0.14.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffb1cfd654a8219eaef89881fdb3bb3b1cdc5fa75ded05d6933b2b382e395468"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "futures-channel",
  "futures-core",
  "futures-util",
@@ -4097,7 +4078,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "hyper",
  "native-tls",
  "tokio",
@@ -4287,15 +4268,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bffb4def18c48926ccac55c1223e02865ce1a821751a95920448662696e7472c"
 
 [[package]]
-name = "iovec"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2b3ea6ff95e175473f8ffe6a7eb7c00d054240321b84c57051175fe3c1e075e"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "ipnet"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4383,7 +4355,7 @@ dependencies = [
  "async-trait",
  "fluvio",
  "fluvio-connector-common",
- "futures 0.3.29",
+ "futures",
  "serde",
  "tokio",
 ]
@@ -4399,7 +4371,7 @@ dependencies = [
  "async-lock 2.8.0",
  "async-trait",
  "base64 0.13.1",
- "bytes 1.5.0",
+ "bytes",
  "cfg-if",
  "fluvio-future",
  "futures-util",
@@ -5429,7 +5401,7 @@ version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9567389417feee6ce15dd6527a8a1ecac205ef62c2932bcf3d9f6fc5b78b414"
 dependencies = [
- "futures 0.3.29",
+ "futures",
  "rustc_version 0.4.0",
 ]
 
@@ -5936,7 +5908,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "046cd98826c46c2ac8ddecae268eb5c2e58628688a5fc7a2643704a73faba95b"
 dependencies = [
  "base64 0.21.5",
- "bytes 1.5.0",
+ "bytes",
  "encoding_rs",
  "futures-core",
  "futures-util",
@@ -6529,7 +6501,7 @@ dependencies = [
  "async-trait",
  "fluvio",
  "fluvio-connector-common",
- "futures 0.3.29",
+ "futures",
  "serde",
 ]
 
@@ -7001,7 +6973,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0c014766411e834f7af5b8f4cf46257aab4036ca95e9d2c144a10f59ad6f5b9"
 dependencies = [
  "backtrace",
- "bytes 1.5.0",
+ "bytes",
  "libc",
  "mio",
  "num_cpus",
@@ -7009,17 +6981,6 @@ dependencies = [
  "socket2 0.5.5",
  "tokio-macros",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "tokio-io"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57fc868aae093479e3131e3d165c93b1c7474109d13c90ec0dda2a1bbfff0674"
-dependencies = [
- "bytes 0.4.12",
- "futures 0.1.31",
- "log",
 ]
 
 [[package]]
@@ -7059,7 +7020,7 @@ version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5419f34732d9eb6ee4c3578b7989078579b7f039cbbb9ca2c4da015749371e15"
 dependencies = [
- "bytes 1.5.0",
+ "bytes",
  "futures-core",
  "futures-io",
  "futures-sink",
@@ -7907,14 +7868,14 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bitflags 2.4.1",
- "bytes 1.5.0",
+ "bytes",
  "cap-fs-ext",
  "cap-net-ext",
  "cap-rand",
  "cap-std",
  "cap-time-ext",
  "fs-set-times",
- "futures 0.3.29",
+ "futures",
  "io-extras",
  "io-lifetimes 2.0.2",
  "libc",
@@ -8407,7 +8368,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7999f5f4217fe3818726b66257a4475f71e74ffd190776ad053fa159e50737f5"
 dependencies = [
  "async_io_stream",
- "futures 0.3.29",
+ "futures",
  "js-sys",
  "log",
  "pharos",
