@@ -93,7 +93,7 @@ dialoguer = "0.11.0"
 directories = "5.0.0"
 dirs = "5.0.0"
 duct = { version = "0.13", default-features = false }
-event-listener = "3.1.0"
+event-listener = "4.0.0"
 eyre = { version = "0.6", default-features = false }
 flate2 = { version = "1.0.25" }
 futures = { version = "0.3.1" }
