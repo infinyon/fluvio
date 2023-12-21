@@ -201,7 +201,7 @@ mod cmd {
             short,
             long,
             conflicts_with = "smartmodule_group",
-            alias = "transforms_file"
+            alias = "transforms-file"
         )]
         pub transforms: Option<PathBuf>,
 

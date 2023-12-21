@@ -60,7 +60,7 @@ pub struct BaseTestCmd {
     pub params: Vec<(String, String)>,
 
     /// (Optional) File path to transformation specification.
-    #[arg(short, long, group = "TestSmartModule", alias = "transforms_file")]
+    #[arg(short, long, group = "TestSmartModule", alias = "transforms-file")]
     pub transforms: Option<PathBuf>,
 
     /// (Optional) Pass transformation specification as JSON formatted string.
