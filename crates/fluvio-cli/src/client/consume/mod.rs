@@ -197,13 +197,18 @@ mod cmd {
         pub params: Option<Vec<(String, String)>>,
 
         /// (Optional) Path to a file with transformation specification.
-        #[arg(long, conflicts_with = "smartmodule_group")]
-        pub transforms_file: Option<PathBuf>,
+        #[arg(
+            short,
+            long,
+            conflicts_with = "smartmodule_group",
+            alias = "transforms_file"
+        )]
+        pub transforms: Option<PathBuf>,
 
         /// (Optional) Transformation specification as JSON formatted string.
-        /// E.g. fluvio consume topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
-        #[arg(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
-        pub transform: Vec<String>,
+        /// E.g. fluvio consume topic-name --transforms-line='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
+        #[arg(long, conflicts_with_all = &["smartmodule_group", "transforms"], alias = "transform")]
+        pub transforms_line: Vec<String>,
 
         /// Truncate the output to one line
         #[arg(long, conflicts_with_all = &["output", "format"])]
@@ -327,17 +332,16 @@ mod cmd {
                     self.smart_module_ctx(),
                     initial_param,
                 )?]
-            } else if !self.transform.is_empty() {
-                let config =
-                    TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
+            } else if !self.transforms_line.is_empty() {
+                let config = TransformationConfig::try_from(self.transforms_line.clone()).map_err(
+                    |err| {
                         CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
-                    })?;
+                    },
+                )?;
                 create_smartmodule_list(config)?
-            } else if let Some(transforms_file) = &self.transforms_file {
-                let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
-                    CliError::InvalidArg(format!(
-                        "unable to process `transforms_file` argument: {err}"
-                    ))
+            } else if let Some(transforms) = &self.transforms {
+                let config = TransformationConfig::from_file(transforms).map_err(|err| {
+                    CliError::InvalidArg(format!("unable to process `transforms` argument: {err}"))
                 })?;
                 create_smartmodule_list(config)?
             } else {
@@ -775,8 +779,8 @@ mod cmd {
                 params: Default::default(),
                 isolation: Default::default(),
                 beginning: Default::default(),
-                transforms_file: Default::default(),
-                transform: Default::default(),
+                transforms: Default::default(),
+                transforms_line: Default::default(),
                 truncate: Default::default(),
             }
         }

@@ -55,18 +55,18 @@ pub struct BaseTestCmd {
         long= "params",
         value_parser=parse_key_val,
         num_args = 1,
-        conflicts_with_all = ["transforms_file", "transform"]
+        conflicts_with_all = ["transforms", "transforms_line"]
     )]
     pub params: Vec<(String, String)>,
 
     /// (Optional) File path to transformation specification.
-    #[arg(long, group = "TestSmartModule")]
-    pub transforms_file: Option<PathBuf>,
+    #[arg(short, long, group = "TestSmartModule", alias = "transforms_file")]
+    pub transforms: Option<PathBuf>,
 
     /// (Optional) Pass transformation specification as JSON formatted string.
-    /// E.g. smdk test --text '{}' --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
-    #[arg(long, short, group = "TestSmartModule")]
-    pub transform: Vec<String>,
+    /// E.g. smdk test --text '{}' --transforms-line='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
+    #[arg(long, group = "TestSmartModule", alias = "transform")]
+    pub transforms_line: Vec<String>,
 
     /// verbose output
     #[arg(short = 'v', long = "verbose")]
@@ -99,8 +99,8 @@ impl BaseTestCmd {
         let chain_builder = with_chain_builder
             .build(
                 self.lookback_last,
-                self.transforms_file,
-                self.transform,
+                self.transforms,
+                self.transforms_line,
                 self.params,
             )
             .await?;
@@ -218,13 +218,13 @@ where
     async fn build(
         self,
         lookback_last: Option<u64>,
-        transforms_file: Option<PathBuf>,
+        transforms: Option<PathBuf>,
         transform: Vec<String>,
         params: Vec<(String, String)>,
     ) -> Result<SmartModuleChainBuilder> {
         let lookback = lookback_last.map(Lookback::Last);
-        if let Some(transforms_file) = transforms_file {
-            let config = TransformationConfig::from_file(transforms_file)
+        if let Some(transforms) = transforms {
+            let config = TransformationConfig::from_file(transforms)
                 .context("unable to read transformation config")?;
             build_chain(config, lookback).await
         } else if !transform.is_empty() {
