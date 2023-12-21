@@ -35,7 +35,7 @@ const DEFAULT_LOG_DIR: &str = "/tmp";
 const DEFAULT_RUST_LOG: &str = "info";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_TLS_POLICY: TlsPolicy = TlsPolicy::Disabled;
-const LOCAL_SC_ADDRESS: &str = "localhost:9003";
+const LOCAL_SC_ADDRESS: &str = "127.0.0.1:9003";
 const LOCAL_SC_PORT: u16 = 9003;
 
 static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::current_exe().ok());
