@@ -161,13 +161,18 @@ mod cmd {
 
         #[cfg(feature = "producer-file-io")]
         /// (Optional) Path to a file with transformation specification.
-        #[arg(long, conflicts_with = "smartmodule_group")]
-        pub transforms_file: Option<PathBuf>,
+        #[arg(
+            short,
+            long,
+            conflicts_with = "smartmodule_group",
+            alias = "transforms-file"
+        )]
+        pub transforms: Option<PathBuf>,
 
         /// (Optional) Transformation specification as JSON formatted string.
-        /// E.g. fluvio produce topic-name --transform='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
-        #[arg(long, short, conflicts_with_all = &["smartmodule_group", "transforms_file"])]
-        pub transform: Vec<String>,
+        /// E.g. fluvio produce topic-name --transforms-line='{"uses":"infinyon/jolt@0.1.0","with":{"spec":"[{\"operation\":\"default\",\"spec\":{\"source\":\"test\"}}]"}}'
+        #[arg(long, conflicts_with_all = &["smartmodule_group", "transforms"], alias = "transform")]
+        pub transforms_line: Vec<String>,
         /*
         #[cfg(feature = "stats")]
         /// Experimental: Collect basic producer session statistics and print in stats bar
@@ -625,20 +630,19 @@ mod cmd {
                 )?]);
             }
 
-            if !self.transform.is_empty() {
-                let config =
-                    TransformationConfig::try_from(self.transform.clone()).map_err(|err| {
+            if !self.transforms_line.is_empty() {
+                let config = TransformationConfig::try_from(self.transforms_line.clone()).map_err(
+                    |err| {
                         CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
-                    })?;
+                    },
+                )?;
                 return create_smartmodule_list(config);
             }
 
             #[cfg(feature = "producer-file-io")]
-            if let Some(transforms_file) = &self.transforms_file {
-                let config = TransformationConfig::from_file(transforms_file).map_err(|err| {
-                    CliError::InvalidArg(format!(
-                        "unable to process `transforms_file` argument: {err}"
-                    ))
+            if let Some(transforms) = &self.transforms {
+                let config = TransformationConfig::from_file(transforms).map_err(|err| {
+                    CliError::InvalidArg(format!("unable to process `transforms` argument: {err}"))
                 })?;
 
                 return create_smartmodule_list(config);
