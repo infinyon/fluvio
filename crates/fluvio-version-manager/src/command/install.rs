@@ -21,7 +21,7 @@ use crate::common::workdir::fvm_versions_path;
 #[derive(Debug, Parser)]
 pub struct InstallOpt {
     /// Registry used to fetch Fluvio Versions
-    #[arg(long, env = "HUB_REGISTRY_URL", default_value = HUB_REMOTE)]
+    #[arg(long, env = "INFINYON_HUB_REMOTE", default_value = HUB_REMOTE)]
     registry: Url,
     /// Version to install: stable, latest, or named-version x.y.z
     #[arg(index = 1, default_value_t = Channel::Stable)]

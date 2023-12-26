@@ -1088,7 +1088,7 @@ jobs:
         timeout-minutes: 20
         run: |
           rm -rf ~/.fvm
-          make FVM_BIN=~/bin/fvm HUB_REGISTRY_URL="https://hub-dev.infinyon.cloud" cli-fvm-smoke
+          make FVM_BIN=~/bin/fvm INFINYON_HUB_REMOTE="https://hub-dev.infinyon.cloud" cli-fvm-smoke
 
 
   read_only_test:

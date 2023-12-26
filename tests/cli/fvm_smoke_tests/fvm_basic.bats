@@ -12,9 +12,9 @@ setup_file() {
     # Tests in this file are executed in order and rely on the previous test
     # to be successful.
 
-    HUB_REGISTRY_URL="https://hub.infinyon.cloud"
-    export HUB_REGISTRY_URL
-    debug_msg "Using Hub Registry URL: $HUB_REGISTRY_URL"
+    INFINYON_HUB_REMOTE="https://hub.infinyon.cloud"
+    export INFINYON_HUB_REMOTE
+    debug_msg "Using Hub Registry URL: $INFINYON_HUB_REMOTE"
 
     # Retrieves the latest stable version from the GitHub API and removes the
     # `v` prefix from the tag name.
