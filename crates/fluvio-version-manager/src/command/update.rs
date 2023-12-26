@@ -16,7 +16,7 @@ use crate::common::version_installer::VersionInstaller;
 #[derive(Debug, Args)]
 pub struct UpdateOpt {
     /// Registry used to fetch Fluvio Versions
-    #[arg(long, env = "HUB_REGISTRY_URL", default_value = HUB_REMOTE)]
+    #[arg(long, env = "INFINYON_HUB_REMOTE", default_value = HUB_REMOTE)]
     registry: Url,
 }
 
