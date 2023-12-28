@@ -156,7 +156,7 @@ mod test {
         let record = Record::from(("key", "value"));
         assert!(mb.push_record(record).is_some());
 
-        let batch: Batch<MemoryRecords> = mb.try_into().expect("failed to convert");
+        let batch: Batch<MemoryRecords> = mb.into();
         assert!(
             batch.header.first_timestamp > 0,
             "first_timestamp is {}",

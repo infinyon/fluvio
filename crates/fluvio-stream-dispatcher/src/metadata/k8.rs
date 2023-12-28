@@ -443,7 +443,7 @@ mod tests {
         assert_eq!(updates.len(), 3);
 
         assert!(
-            matches!(updates.get(0), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
+            matches!(updates.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
         );
         assert!(
             matches!(updates.get(1), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status"))
@@ -481,7 +481,7 @@ mod tests {
                 .item()
                 .inner()
                 .owner_references
-                .get(0)
+                .first()
                 .unwrap()
                 .name,
             "parent"

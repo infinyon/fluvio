@@ -368,7 +368,7 @@ mod test {
 
         let batches = accumulator
             .batches()
-            .get(0)
+            .first()
             .expect("failed to get batch info")
             .0
             .clone();

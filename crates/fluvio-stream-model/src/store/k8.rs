@@ -119,7 +119,7 @@ impl TryFrom<ObjectMeta> for K8MetaItem {
         if value.owner_references.len() > 1 {
             error!("too many owners: {value:#?}");
         }
-        let owner = if let Some(owner_ref) = value.owner_references.get(0) {
+        let owner = if let Some(owner_ref) = value.owner_references.first() {
             let inner = ObjectMeta {
                 name: owner_ref.name.to_owned(),
                 namespace: value.namespace.to_owned(),
