@@ -124,7 +124,7 @@ impl PackageInfo {
     pub fn target_name(&self) -> anyhow::Result<&str> {
         self.package
             .targets
-            .get(0)
+            .first()
             .map(|target| target.name.as_str())
             .ok_or_else(|| anyhow!("package does not have any targets"))
     }

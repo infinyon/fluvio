@@ -127,13 +127,13 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
         .status
         .load_balancer
         .ingress
-        .get(0)
+        .first()
         .and_then(|ingress| ingress.host_or_ip());
 
     let target_port = svc
         .spec
         .ports
-        .get(0)
+        .first()
         .and_then(|port| port.target_port.as_ref());
 
     let address = match (ingress_addr, target_port) {

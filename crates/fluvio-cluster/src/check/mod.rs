@@ -498,7 +498,7 @@ impl ClusterCheck for SysChartCheck {
                 UnrecoverableCheckStatus::MultipleSystemCharts,
             ))
         } else {
-            let install_chart = sys_charts.get(0).unwrap();
+            let install_chart = sys_charts.first().unwrap();
             debug!(app_version = %install_chart.app_version,"Sys Chart Version");
             let existing_platform_version = Version::parse(&install_chart.app_version)?;
             if existing_platform_version == self.platform_version {

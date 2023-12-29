@@ -42,7 +42,7 @@ pub(crate) fn copy_memory_to_instance(
     )?;
 
     let guest_ptr_offset = match alloc_result
-        .get(0)
+        .first()
         .ok_or_else(|| anyhow!("missing alloc"))?
     {
         Val::I32(val) => *val as isize,
