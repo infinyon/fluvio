@@ -33,46 +33,46 @@ On your terminal run
 curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
 ```
 
+Follow the instruction and copy/paste the path to the `bin` directory to you startup script file.
+
 Fluvio version manager will give you the ability to download different versions of Fluvio:
 - Including our read only edge cluster with built in compression, caching, and mirroring to never lose data even with extended downtimes.
 - Or our Developer Preview of Stateful Streaming which we are building using the web assembly component model to support all web assembly compatible languages.
 
-### Step 2. Add the install directory to path:
-
-Copy paste the last line of the installer log that looks like this on MacOS:
-```bash
-echo 'export PATH="${HOME}/.fvm/bin:${HOME}/.fluvio/bin:${PATH}"' >> ~/.zshrc
-```
-
-It will look different on Linux -
-```bash
-echo 'export PATH="${HOME}/.fvm/bin:${HOME}/.fluvio/bin:${PATH}"' >> ~/.bashrc
-```
-
-### Step 3. Start local cluster:
+### Step 2. Start local cluster:
 
 The following command will start a local cluster by default:
+
 ```bash
 fluvio cluster start
 ```
-Step 4. Create Topic:
+
+### Step 3. Create Topic:
 
 The following command will create a topic called hello-fluvio:
+
 ```bash
 fluvio topic create hello-fluvio
 ```
-Step 5. Produce to Topic, Consume From Topic:
+
+### Step 4. Produce to Topic, Consume From Topic:
 
 Produce data to your topic. Run the command first and then type some messages:
+
 ```bash
 fluvio produce hello-fluvio
 > hello fluvio
+Ok!
 > test message
+Ok!
 ```
+
 Consume data from the topic, Run the following command in a different terminal:
+
 ```bash
 fluvio consume hello-fluvio -B -d
 ```
+
 Just like that! You have a local cluster running.
 
 ## Next Steps
