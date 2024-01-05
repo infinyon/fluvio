@@ -24,6 +24,7 @@ current_platform = { workspace = true, optional = true }
 clap = { workspace = true, optional = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
+comfy-table = { workspace = true }
 home = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
