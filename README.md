@@ -33,10 +33,10 @@ On your terminal run
 curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
 ```
 
-Follow the instruction and copy/paste the path to the `bin` directory to you startup script file.
+Follow the instructions and copy/paste the path to the `bin` directory to your startup script file.
 
 Fluvio version manager will give you the ability to download different versions of Fluvio:
-- Including our read only edge cluster with built in compression, caching, and mirroring to never lose data even with extended downtimes.
+- Including our read-only edge cluster with built-in compression, caching, and mirroring to never lose data even with extended downtimes.
 - Or our Developer Preview of Stateful Streaming which we are building using the web assembly component model to support all web assembly compatible languages.
 
 ### Step 2. Start local cluster:
@@ -96,7 +96,7 @@ Using Connector Development Kit, we built our existing connectors in a matter of
 - [Connector Development Kit docs](https://www.fluvio.io/connectors/cdk/overview/)
 
 #### Learn how to build custom smart modules
-Fluvio applies wasm based stream processing and data transformations. We call these reusable transformation functions smart modules. Reusable Smart modules are built using Smart Module Development Kit and can be distrubited using InfinyOn Cloud hub. 
+Fluvio applies wasm based stream processing and data transformations. We call these reusable transformation functions smart modules. Reusable Smart modules are built using Smart Module Development Kit and can be distributed using InfinyOn Cloud hub. 
 
 - [Smart Modules docs](https://www.fluvio.io/smartmodules/)
 - [Smart Modules Development Kit docs](https://www.fluvio.io/smartmodules/)
@@ -106,7 +106,7 @@ There are some limitations on the amount of polyglot development interface suppo
 - Stateful Service Development Kit docs- *Coming Soon* [Request Developer Preview Invite](https://infinyon.com/request/ss-early-access/)
 
 #### Try workflows on InfinyOn Cloud
-InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3000 worth credits to build data flows on InfinyOn Cloud.
+InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3000 worth of credits to build data flows on InfinyOn Cloud.
 - [Check InfinyOn Cloud Guides](https://infinyon.com/docs/guides/)
 - [Check out experimental data flows on InfinyOn Labs Repo](https://github.com/infinyon/labs-projects)
 
