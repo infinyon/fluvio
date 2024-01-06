@@ -18,12 +18,12 @@ use sysinfo::SystemExt;
 /// ```
 ///
 #[inline]
-pub(super) fn current_platform() -> &'static str {
+pub fn current_platform() -> &'static str {
     CURRENT_PLATFORM
 }
 
 /// Read CLI and compute its sha256
-pub(super) fn calc_sha256() -> Option<String> {
+pub fn calc_sha256() -> Option<String> {
     let path = std::env::current_exe().ok()?;
     let bin = std::fs::read(path).ok()?;
     let mut hasher = Sha256::new();
@@ -35,7 +35,7 @@ pub(super) fn calc_sha256() -> Option<String> {
 }
 
 /// Retrieves OS details
-pub(super) fn os_info() -> Option<String> {
+pub fn os_info() -> Option<String> {
     let sys = sysinfo::System::new_all();
 
     let info = format!(
