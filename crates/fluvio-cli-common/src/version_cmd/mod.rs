@@ -63,6 +63,7 @@ pub fn os_info() -> Option<String> {
 /// ```
 ///
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FluvioVersionPrinter {
     name: String,
     version: String,
@@ -89,6 +90,13 @@ impl FluvioVersionPrinter {
     pub fn append_extra(&mut self, key: impl AsRef<str>, value: impl AsRef<str>) {
         self.extra
             .push((key.as_ref().to_string(), value.as_ref().to_string()));
+    }
+}
+
+#[cfg(feature = "serde")]
+impl FluvioVersionPrinter {
+    pub fn to_json(&self) -> String {
+        serde_json::to_json(&self)
     }
 }
 

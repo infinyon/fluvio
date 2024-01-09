@@ -17,6 +17,7 @@ default = ["fluvio-types"]
 file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
 version-cmd = ["dep:current_platform", "dep:clap", "dep:sysinfo"]
 smartmodule-test = ["file-records", "dep:fluvio-sc-schema", "dep:fluvio-smartmodule", "dep:fluvio", "dep:fluvio-smartengine", "dep:clap"]
+serde = ["dep:serde", "dep:serde_json"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -28,6 +29,8 @@ comfy-table = { workspace = true }
 home = { workspace = true }
 hex = { workspace = true }
 http = { workspace = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 semver = { workspace = true }
 sha2 = { workspace = true }
 sysinfo = { workspace = true, optional = true }
