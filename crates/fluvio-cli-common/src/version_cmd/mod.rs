@@ -99,16 +99,35 @@ impl FluvioVersionPrinter {
 
     #[cfg(feature = "serde")]
     pub fn to_json(&self) -> Result<String> {
-        serde_json::to_string(&self).map_err(|err| {
+        let with_extras = self.with_dynamic_extras();
+
+        serde_json::to_string(&with_extras).map_err(|err| {
             anyhow::anyhow!("Failed to serialize FluvioVersionPrinter to JSON: {}", err)
         })
     }
 
     #[cfg(feature = "serde")]
     pub fn to_json_pretty(&self) -> Result<String> {
-        serde_json::to_string_pretty(&self).map_err(|err| {
+        let with_extras = self.with_dynamic_extras();
+
+        serde_json::to_string_pretty(&with_extras).map_err(|err| {
             anyhow::anyhow!("Failed to serialize FluvioVersionPrinter to JSON: {}", err)
         })
+    }
+
+    /// Appends dynamically computed values such as `arch` and `sha256` to the
+    /// `extra` field in a new copy of this [`FluvioVersionPrinter`].
+    #[cfg(feature = "serde")]
+    fn with_dynamic_extras(&self) -> Self {
+        let mut printer = self.clone();
+
+        printer.append_extra(format!("{} Arch", self.name), self.arch());
+
+        if let Some(sha256) = self.sha256() {
+            printer.append_extra(format!("{} SHA256", self.name), sha256);
+        }
+
+        printer
     }
 }
 
