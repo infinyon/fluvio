@@ -1,14 +1,17 @@
 mod basic;
 
 use std::fmt::Display;
+use std::collections::HashMap;
 
 pub use basic::BasicVersionCmd;
 
-use anyhow::Result;
 use current_platform::CURRENT_PLATFORM;
 use comfy_table::Table;
 use sha2::{Digest, Sha256};
 use sysinfo::SystemExt;
+
+#[cfg(feature = "serde")]
+use anyhow::Result;
 
 /// Retrieves target platform details
 ///
@@ -68,7 +71,8 @@ pub fn os_info() -> Option<String> {
 pub struct FluvioVersionPrinter {
     name: String,
     version: String,
-    extra: Vec<(String, String)>,
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    extra: HashMap<String, String>,
 }
 
 impl FluvioVersionPrinter {
@@ -76,7 +80,7 @@ impl FluvioVersionPrinter {
         Self {
             name: name.to_string(),
             version: version.to_string(),
-            extra: vec![],
+            extra: HashMap::new(),
         }
     }
 
@@ -90,12 +94,19 @@ impl FluvioVersionPrinter {
 
     pub fn append_extra(&mut self, key: impl AsRef<str>, value: impl AsRef<str>) {
         self.extra
-            .push((key.as_ref().to_string(), value.as_ref().to_string()));
+            .insert(key.as_ref().to_string(), value.as_ref().to_string());
     }
 
     #[cfg(feature = "serde")]
     pub fn to_json(&self) -> Result<String> {
         serde_json::to_string(&self).map_err(|err| {
+            anyhow::anyhow!("Failed to serialize FluvioVersionPrinter to JSON: {}", err)
+        })
+    }
+
+    #[cfg(feature = "serde")]
+    pub fn to_json_pretty(&self) -> Result<String> {
+        serde_json::to_string_pretty(&self).map_err(|err| {
             anyhow::anyhow!("Failed to serialize FluvioVersionPrinter to JSON: {}", err)
         })
     }
@@ -168,9 +179,35 @@ mod test {
 
         let output = version_printer.to_json().unwrap();
 
-        assert_eq!(
-            output,
-            r#"{"name":"Unicorn CLI","version":"0.11.0","extra":[["Color","Pink & Blue"],["Rainbow","Yes"]]}"#
-        );
+        // HashMaps are not guaranteed to be ordered, so we need to check for
+        // the presence of the keys and values instead of the exact output
+        //
+        // Static Keys (struct fields) are guaranteed to be in the same order always
+        assert!(output.starts_with(r#"{"name":"Unicorn CLI","version":"0.11.0","#),);
+
+        // Extras are not guaranteed to be in the same order always
+        assert!(output.contains(r#""Rainbow":"Yes""#));
+        assert!(output.contains(r#""Color":"Pink & Blue""#));
+    }
+
+    #[test]
+    fn creates_json_prretty_output() {
+        let mut version_printer = FluvioVersionPrinter::new("Unicorn CLI", "0.11.0");
+
+        version_printer.append_extra("Color", "Pink & Blue");
+        version_printer.append_extra("Rainbow", "Yes");
+
+        let output = version_printer.to_json_pretty().unwrap();
+
+        // Spacing is relevant here, don't trim it
+        assert!(output.starts_with(
+            r#"{
+  "name": "Unicorn CLI",
+  "version": "0.11.0","#
+        ));
+
+        // Extras are not guaranteed to be in the same order always
+        assert!(output.contains(r#""Rainbow": "Yes""#));
+        assert!(output.contains(r#""Color": "Pink & Blue""#));
     }
 }
