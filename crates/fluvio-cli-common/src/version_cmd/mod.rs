@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 pub use basic::BasicVersionCmd;
 
+use anyhow::Result;
 use current_platform::CURRENT_PLATFORM;
 use comfy_table::Table;
 use sha2::{Digest, Sha256};
@@ -91,12 +92,12 @@ impl FluvioVersionPrinter {
         self.extra
             .push((key.as_ref().to_string(), value.as_ref().to_string()));
     }
-}
 
-#[cfg(feature = "serde")]
-impl FluvioVersionPrinter {
-    pub fn to_json(&self) -> String {
-        serde_json::to_json(&self)
+    #[cfg(feature = "serde")]
+    pub fn to_json(&self) -> Result<String> {
+        serde_json::to_string(&self).map_err(|err| {
+            anyhow::anyhow!("Failed to serialize FluvioVersionPrinter to JSON: {}", err)
+        })
     }
 }
 
@@ -156,5 +157,20 @@ mod test {
 
         assert!(lines[5].contains("OS Details"));
         assert!(lines[5].contains("Linux 5.4.0-42-generic (kernel 4.19.76-linuxkit)"));
+    }
+
+    #[test]
+    fn creates_json_output() {
+        let mut version_printer = FluvioVersionPrinter::new("Unicorn CLI", "0.11.0");
+
+        version_printer.append_extra("Color", "Pink & Blue");
+        version_printer.append_extra("Rainbow", "Yes");
+
+        let output = version_printer.to_json().unwrap();
+
+        assert_eq!(
+            output,
+            r#"{"name":"Unicorn CLI","version":"0.11.0","extra":[["Color","Pink & Blue"],["Rainbow","Yes"]]}"#
+        );
     }
 }

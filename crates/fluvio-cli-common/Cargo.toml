@@ -22,7 +22,7 @@ serde = ["dep:serde", "dep:serde_json"]
 [dependencies]
 anyhow = { workspace = true }
 current_platform = { workspace = true, optional = true }
-clap = { workspace = true, optional = true }
+clap = { workspace = true, optional = true, features = ["derive", "std"] }
 bytes = { workspace = true }
 chrono = { workspace = true }
 comfy-table = { workspace = true }
