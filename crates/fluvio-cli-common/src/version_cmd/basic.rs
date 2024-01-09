@@ -10,7 +10,12 @@ const VERSION: &str = include_str!("../../../../VERSION");
 /// Display version information for local Fluvio CLIs using this build of
 /// Fluvio details such as `VERSION`, `GIT_HASH`, and `FLUVIO_RELEASE_CHANNEL`.
 #[derive(Debug, Args)]
-pub struct BasicVersionCmd;
+pub struct BasicVersionCmd {
+    #[cfg(feature = "serde")]
+    #[clap(short, long)]
+    /// Output in JSON format
+    pub json: bool,
+}
 
 impl BasicVersionCmd {
     /// Display basic information about the current fluvio installation
@@ -35,6 +40,14 @@ impl BasicVersionCmd {
 
         if let Some(info) = os_info() {
             fluvio_version_printer.append_extra("OS Details", info);
+        }
+
+        #[cfg(feature = "serde")]
+        {
+            if self.json {
+                println!("{}", fluvio_version_printer.to_json_pretty()?);
+                return Ok(());
+            }
         }
 
         println!("{}", fluvio_version_printer);

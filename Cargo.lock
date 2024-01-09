@@ -2436,6 +2436,8 @@ dependencies = [
  "home",
  "http",
  "semver 1.0.20",
+ "serde",
+ "serde_json",
  "sha2 0.10.8",
  "sysinfo",
  "tempfile",
