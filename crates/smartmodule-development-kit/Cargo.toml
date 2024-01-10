@@ -35,5 +35,5 @@ fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformati
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
 fluvio-sc-schema = { path = "../fluvio-sc-schema" }
-fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd", "smartmodule-test"] }
+fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd", "serde", "smartmodule-test"] }
 cargo-builder = { path = "../cargo-builder"}
