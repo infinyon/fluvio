@@ -8,6 +8,8 @@ inputs:
 
 runs:
   using: "composite"
+  outputs:
+    fluvio_version: ${{ steps.flv_install_task.outputs.version }}
   steps:
     - name: Check Platform Compatibility
       if: runner.os != 'Linux' && runner.os != 'macOS'
@@ -17,8 +19,10 @@ runs:
         echo "::warning::Please use a Linux or macOS runner."
         echo "::warning::For further details on Fluvio Installation, please visit https://fluvio.io/docs/install/"
 
-    - name: Install Fluvio
+    - id: flv_install_task
+      name: Install Fluvio
       shell: bash
       run: |
         curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | FLUVIO_VERSION=${{ inputs.version }} bash
         echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+        echo "version=$($HOME/.fluvio/bin/fluvio version --json | jq '.version')" >> "$GITHUB_OUTPUT"
