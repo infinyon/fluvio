@@ -214,7 +214,7 @@ jobs:
 
       - name: Verify installer output
         run: |
-            INSTALLER_VERSION=${{ steps.setup_fluvio.outputs.fluvio_version }}
+            INSTALLER_VERSION=$(fluvio version --json | jq '.version')
             if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
               echo "✅ Installer version check passed: $EXPECTED_VERSION";
             else
