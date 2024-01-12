@@ -70,7 +70,7 @@ pub fn os_info() -> Option<String> {
 pub struct FluvioVersionPrinter {
     name: String,
     version: String,
-    #[cfg_attr(feature = "serde", serde(with = "tuple_vec_map"))]
+    #[cfg_attr(feature = "serde", serde(flatten, with = "tuple_vec_map"))]
     extra: Vec<(String, String)>,
 }
 
