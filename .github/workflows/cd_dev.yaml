@@ -96,7 +96,7 @@ jobs:
         if: ${{ matrix.cluster_type == 'k8' }}
         run: |
           FLUVIO_IMAGE_TAG_STRATEGY=version-git \
-          fluvio cluster start --k8 --spu-storage-size 1 
+          fluvio cluster start --k8 --spu-storage-size 1
       - name: Run E2E Test
         timeout-minutes: 2
         run: |
@@ -202,14 +202,10 @@ jobs:
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
 
       - name: Curl Install - latest
-        if: matrix.version == 'latest'
         run: |
-          echo "FLUVIO_VERSION=latest" | tee -a $GITHUB_ENV
-
-      - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
-        with:
-          version: ${{ env.FLUVIO_VERSION }}
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | \
+            FLUVIO_VERSION=${{ matrix.version }} bash | \
+            tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
