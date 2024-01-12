@@ -1,7 +1,6 @@
 mod basic;
 
 use std::fmt::Display;
-use std::collections::HashMap;
 
 pub use basic::BasicVersionCmd;
 
@@ -71,8 +70,8 @@ pub fn os_info() -> Option<String> {
 pub struct FluvioVersionPrinter {
     name: String,
     version: String,
-    #[cfg_attr(feature = "serde", serde(flatten))]
-    extra: HashMap<String, String>,
+    #[cfg_attr(feature = "serde", serde(flatten, with = "tuple_vec_map"))]
+    extra: Vec<(String, String)>,
 }
 
 impl FluvioVersionPrinter {
@@ -80,7 +79,7 @@ impl FluvioVersionPrinter {
         Self {
             name: name.to_string(),
             version: version.to_string(),
-            extra: HashMap::new(),
+            extra: Vec::new(),
         }
     }
 
@@ -94,7 +93,7 @@ impl FluvioVersionPrinter {
 
     pub fn append_extra(&mut self, key: impl AsRef<str>, value: impl AsRef<str>) {
         self.extra
-            .insert(key.as_ref().to_string(), value.as_ref().to_string());
+            .push((key.as_ref().to_string(), value.as_ref().to_string()));
     }
 
     #[cfg(feature = "serde")]

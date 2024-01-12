@@ -1,68 +1,65 @@
 use sha2::{Digest, Sha256};
 use clap::Parser;
 use anyhow::Result;
-use current_platform::CURRENT_PLATFORM;
 
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
+use fluvio_cli_common::version_cmd::{FluvioVersionPrinter, os_info};
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_channel::FLUVIO_RELEASE_CHANNEL;
 
 use crate::metadata::subcommand_metadata;
 
 #[derive(Debug, Parser)]
-pub struct VersionOpt {}
+pub struct VersionOpt {
+    #[clap(short, long)]
+    /// Output in JSON format
+    pub json: bool,
+}
 
 impl VersionOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        // IF FLUVIO_RELEASE_CHANNEL defined
+        let mut version_printer = FluvioVersionPrinter::new("Fluvio CLI", crate::VERSION.trim());
+
         if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
-            self.print("Release Channel", &channel_name);
+            version_printer.append_extra("Release Channel", channel_name);
         };
 
-        self.print("Fluvio CLI", crate::VERSION.trim());
-        self.print("Fluvio CLI Arch", CURRENT_PLATFORM);
-
-        if let Some(sha) = self.format_cli_sha() {
-            self.print("Fluvio CLI SHA256", &sha);
-        }
         if let Some(sha) = self.format_frontend_sha() {
-            self.print("Fluvio channel frontend SHA256", &sha);
+            version_printer.append_extra("Fluvio Channel Frontend SHA256", sha);
         }
-        let platform = self.format_platform_version(target).await;
-        self.print("Fluvio Platform", &platform);
 
-        self.print("Git Commit", env!("GIT_HASH"));
-        if let Some(os_info) = os_info() {
-            self.print("OS Details", &os_info);
+        let platform = self.format_platform_version(target).await;
+        version_printer.append_extra("Fluvio Platform", platform);
+
+        version_printer.append_extra("Git Commit", env!("GIT_HASH"));
+
+        if let Some(info) = os_info() {
+            version_printer.append_extra("OS Details", info);
         }
+
+        if self.json {
+            println!("{}", version_printer.to_json_pretty()?);
+            return Ok(());
+        }
+
+        println!("{}", version_printer);
 
         if let Some(metadata) = self.format_subcommand_metadata() {
-            println!("=== Plugin Versions ===");
-            for (name, version) in metadata {
-                self.print_width(&name, &version, 30);
+            if !metadata.is_empty() {
+                println!("=== Plugin Versions ===");
+
+                for (name, version) in metadata {
+                    self.print_width(&name, &version, 30);
+                }
             }
         }
 
         Ok(())
     }
 
-    fn print(&self, name: &str, version: &str) {
-        self.print_width(name, version, 20);
-    }
-
     fn print_width(&self, name: &str, version: &str, width: usize) {
         println!("{name:width$} : {version}");
-    }
-
-    /// Read CLI and compute its sha256
-    fn format_cli_sha(&self) -> Option<String> {
-        let path = std::env::current_exe().ok()?;
-        let fluvio_bin = std::fs::read(path).ok()?;
-        let mut hasher = Sha256::new();
-        hasher.update(fluvio_bin);
-        let fluvio_bin_sha256 = hasher.finalize();
-        Some(format!("{:x}", &fluvio_bin_sha256))
     }
 
     // Read fluvio frontend (fluvio-channel)
@@ -116,19 +113,4 @@ impl VersionOpt {
 
         Some(formats)
     }
-}
-
-/// Fetch OS information
-fn os_info() -> Option<String> {
-    use sysinfo::SystemExt;
-    let sys = sysinfo::System::new_all();
-
-    let info = format!(
-        "{} {} (kernel {})",
-        sys.name()?,
-        sys.os_version()?,
-        sys.kernel_version()?,
-    );
-
-    Some(info)
 }
