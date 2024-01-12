@@ -206,14 +206,15 @@ jobs:
         run: |
           echo "FLUVIO_VERSION=latest" | tee -a $GITHUB_ENV
 
-      - name: Setup Fluvio
+      - id: setup_fluvio
+        name: Setup Fluvio
         uses: infinyon/fluvio/.github/actions/setup-fluvio@master
         with:
           version: ${{ env.FLUVIO_VERSION }}
 
       - name: Verify installer output
         run: |
-            INSTALLER_VERSION=$(cat /tmp/installer.version | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
+            INSTALLER_VERSION=${{ steps.setup_fluvio.outputs.fluvio_version }}
             if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
               echo "✅ Installer version check passed: $EXPECTED_VERSION";
             else
