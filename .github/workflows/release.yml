@@ -241,6 +241,21 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
+  # stable and latest channels are handled by bump-fluvio-stable and bump-fluvio-latest
+  # this is only intended to handle pre-release pkgsets
+  prerelease_pkgset:
+    name: Prerelease pkgset
+    needs: [release_fluvio]
+    runs-on: ubuntu-latest
+    if: ${{ inputs.pre_release }}
+    env:
+      BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prerelease pkgset ${{ env.FLUVIO_VERSION }}
+        run: |
+          make publish-pkgset
+
   publish_crates:
     name: Publish Crates
     if: ${{ !inputs.pre_release }}

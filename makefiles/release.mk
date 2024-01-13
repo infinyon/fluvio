@@ -59,7 +59,7 @@ PACKAGE?=
 ARTIFACT?=
 
 # Fluvio Cloud Version used to publish pkgsets
-FLUVIO_CLOUD_VERSION=0.2.15
+FLUVIO_CLOUD_VERSION?=stable
 
 #### Testing only
 
@@ -70,7 +70,7 @@ get-tag:
 	echo $(DEV_VERSION_TAG)
 
 clean-publish:
-	rm -vf *.zip *.tgz *.exe 
+	rm -vf *.zip *.tgz *.exe
 	rm -vrf fluvio-* fluvio.* smdk-*
 	rm -vf /tmp/release_notes /tmp/cd_dev_latest.txt
 
@@ -215,9 +215,9 @@ bump-fluvio: install-fluvio-package
 
 # publishes pkgset for stable e.g. 0.11.0
 # uses FLUVIO_CLOUD_VERSION
-publish-pkgset-stable: PKGSET_NAME=${REPO_VERSION}
-publish-pkgset-stable: FLUVIO_VERSION=${REPO_VERSION}
-publish-pkgset-stable:
+publish-pkgset: PKGSET_NAME=${REPO_VERSION}
+publish-pkgset: FLUVIO_VERSION=${REPO_VERSION}
+publish-pkgset:
 	./actions/publish-pkgset.sh
 
 bump-fluvio-stable: CHANNEL_TAG=stable
@@ -225,7 +225,7 @@ bump-fluvio-stable: VERSION=$(REPO_VERSION)
 # publishes pkgset for "stable"
 bump-fluvio-stable: PKGSET_NAME=stable
 bump-fluvio-stable: FLUVIO_VERSION=${VERSION}
-bump-fluvio-stable: bump-fluvio publish-pkgset-stable
+bump-fluvio-stable: bump-fluvio publish-pkgset
 	./actions/publish-pkgset.sh
 
 bump-fluvio-latest: CHANNEL_TAG=latest
