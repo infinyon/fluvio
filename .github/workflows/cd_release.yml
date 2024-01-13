@@ -50,7 +50,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        version: [none, stable, semver]
+        version: [semver]
+        # version: [none, stable, semver]
     steps:
       - uses: actions/checkout@v4
       - name: Set the expected fluvio version
@@ -71,10 +72,11 @@ jobs:
       - name: Curl Install - Version number
         if: matrix.version == 'semver'
         run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
-      - name: Setup Fluvio
-        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
-        with:
-          version: ${{ env.VERSION }}
+      - name: Curl Install - FLUVIO_VERSION=${{ env.VERSION }}
+        run: |
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | \
+            FLUVIO_VERSION=${{ env.VERSION }} bash | \
+            tee /tmp/installer.version
       - name: Verify installer output
         run: |
           INSTALLER_VERSION=$(cat /tmp/installer.version | grep "fluvio@" | awk '{print $4}' | cut -b 8-)

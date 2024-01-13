@@ -63,20 +63,20 @@ jobs:
           if [[ -z "${{ github.event.inputs.commit }}" ]]; then
             export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)
             echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
-            echo "::set-output name=VERSION::${GITHUB_VERSION}"
+            echo "VERSION=${GITHUB_VERSION}" >> $GITHUB_OUTPUT
             echo "GIT_SHA=${{ github.sha }}" | tee -a $GITHUB_ENV
-            echo "::set-output name=GIT_SHA::${{ github.sha }}"
+            echo "GIT_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
             export GITHUB_VERSION=$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.event.inputs.commit }}/VERSION)
             echo "VERSION=${GITHUB_VERSION}" | tee -a $GITHUB_ENV
-            echo "::set-output name=VERSION::${GITHUB_VERSION}"
+            echo "VERSION=${GITHUB_VERSION}" >> $GITHUB_OUTPUT
             echo "GIT_SHA=${{ github.event.inputs.commit }}" | tee -a $GITHUB_ENV
-            echo "::set-output name=GIT_SHA::${{ github.event.inputs.commit }}"
+            echo "GIT_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
       - name: Set Installer URL
         id: installer_step
         run: |
-          echo "::set-output name=INSTALLER_URL::https://raw.githubusercontent.com/infinyon/fluvio/${{ steps.version_step.outputs.GIT_SHA }}/install.sh"
+          echo "INSTALLER_URL=https://raw.githubusercontent.com/infinyon/fluvio/${{ steps.version_step.outputs.GIT_SHA }}/install.sh" >> $GITHUB_OUTPUT
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
@@ -240,6 +240,21 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
+
+  # stable and latest channels are handled by bump-fluvio-stable and bump-fluvio-latest
+  # this is only intended to handle pre-release pkgsets
+  prerelease_pkgset:
+    name: Prerelease pkgset
+    needs: [release_fluvio]
+    runs-on: ubuntu-latest
+    if: ${{ inputs.pre_release }}
+    env:
+      BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prerelease pkgset ${{ env.FLUVIO_VERSION }}
+        run: |
+          make publish-pkgset
 
   publish_crates:
     name: Publish Crates
