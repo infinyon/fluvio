@@ -6,7 +6,7 @@ spec:
   spuId: 5001
   spuType: "Custom"
   publicEndpoint:
-    port: 9005
+    port: 9010
     ingress:
       - hostname: localhost 
     encryption: PLAINTEXT

@@ -4,6 +4,7 @@ use std::{fs::File, path::PathBuf};
 use anyhow::{Result as AnyResult, anyhow};
 use tracing::{debug, info, instrument};
 
+use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
 
 use fluvio_command::CommandExt;
@@ -79,7 +80,6 @@ impl SpuTarget for LocalSpuProcess {
     }
 }
 
-const BASE_PORT: u16 = 9010;
 const BASE_SPU: u16 = 5001;
 /// manage spu process cluster
 
@@ -98,7 +98,7 @@ impl SpuClusterManager for LocalSpuProcessClusterManager {
 
     fn create_spu_absolute(&self, id: u16) -> Box<dyn SpuTarget> {
         let spu_index = id - BASE_SPU;
-        let public_port = BASE_PORT + spu_index * 10;
+        let public_port = SPU_PUBLIC_PORT + spu_index * 10;
         let private_port = public_port + 1;
         let spu_spec = SpuSpec {
             id: id as i32,
