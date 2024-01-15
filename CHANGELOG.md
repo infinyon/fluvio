@@ -2,7 +2,46 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.3 - UNRELEASED
+## Platform Version 0.11.3 - 2024-01-15
+
+### Fixed
+* Setup fluvio gh action ([#3775](https://github.com/infinyon/fluvio/issues/3775))
+* Address some typos and grammar issues in README ([#3804](https://github.com/infinyon/fluvio/issues/3804))
+* `FluvioVersionPrinter` support for json output ([#3807](https://github.com/infinyon/fluvio/issues/3807))
+
+### CI
+* Post release `v0.11.2` ([#3770](https://github.com/infinyon/fluvio/issues/3770))
+* Ci, update outdated rust toolchain install ([#3771](https://github.com/infinyon/fluvio/issues/3771))
+* Don't require git to build fluvio ([#3789](https://github.com/infinyon/fluvio/issues/3789))
+* Ci, fixup release for pre-release, use stable fluvio cloud ver ([#3814](https://github.com/infinyon/fluvio/issues/3814))
+
+### Changed
+
+* Use `setup-fluvio` action ([#3779](https://github.com/infinyon/fluvio/issues/3779))
+* Update rust 1.75 ([#3801](https://github.com/infinyon/fluvio/issues/3801))
+* Update README.md ([#3802](https://github.com/infinyon/fluvio/issues/3802))
+
+### Fixed
+
+* Ci, fix hourly k8 test ([#3774](https://github.com/infinyon/fluvio/issues/3774))
+* Use `INFINYON_HUB_REMOTE`  over `HUB_REGISTRY_URL` for FVM ([#3796](https://github.com/infinyon/fluvio/issues/3796))
+* Default connector sink template compilation error ([#3797](https://github.com/infinyon/fluvio/issues/3797))
+* Cd_dev fixup ([#3812](https://github.com/infinyon/fluvio/issues/3812))
+
+### Other
+
+* Fluvio-futures/http client integration ([#3761](https://github.com/infinyon/fluvio/issues/3761))
+* Use ip in local profile ([#3791](https://github.com/infinyon/fluvio/issues/3791))
+* Rename `transform` and `transforms-file` args ([#3792](https://github.com/infinyon/fluvio/issues/3792))
+* Standardized version output with table format ([#3803](https://github.com/infinyon/fluvio/issues/3803))
+* Export utility functions from version printing ([#3805](https://github.com/infinyon/fluvio/issues/3805))
+* Use new version api on smdk and fluvio cli ([#3809](https://github.com/infinyon/fluvio/issues/3809))
+
+### Removed
+
+* Fluvio-cli-common, remove unused dep ([#3786](https://github.com/infinyon/fluvio/issues/3786))
+
+
 
 ## Platform Version 0.11.2 - 2023-12-08
 
