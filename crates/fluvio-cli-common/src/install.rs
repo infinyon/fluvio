@@ -6,7 +6,7 @@ use tracing::{debug, instrument};
 use semver::Version;
 use anyhow::{anyhow, Result};
 
-use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
+use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, Package, PackageVersion};
 
 use crate::FLUVIO_EXTENSIONS_DIR;
 use crate::error::PackageNotFound;
@@ -90,7 +90,10 @@ pub async fn fetch_latest_version<T>(
     let request = agent.request_package(id)?;
     let uri = request.uri().to_string();
     let body = crate::http::get_simple(&uri).await?;
-    let ver = Version::parse(&body)?;
+    debug!(%uri, %body, "uri parsing version");
+    let package: Package = serde_json::from_str(&body)?;
+    let rel = package.latest_release_for_target(target, false)?;
+    let ver = rel.version.clone();
     Ok(ver)
 }
 

@@ -1,2 +1,2 @@
+pub mod opts;
 pub mod update;
-pub mod plugins;
