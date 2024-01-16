@@ -74,8 +74,7 @@ mod root {
     use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, LATEST_CHANNEL_NAME};
 
     use crate::profile::ProfileOpt;
-    use crate::install::update::UpdateOpt;
-    use crate::install::plugins::InstallOpt;
+    use crate::install::opts::InstallOpt;
     use crate::client::FluvioCmd;
     use crate::metadata::{MetadataOpt, subcommand_metadata};
     use crate::version::VersionOpt;
@@ -153,10 +152,6 @@ mod root {
         #[command(name = "install", hide = true)]
         Install(InstallOpt),
 
-        /// Update the Fluvio CLI
-        #[command(name = "update")]
-        Update(UpdateOpt),
-
         /// Print Fluvio version information
         #[command(name = "version")]
         Version(VersionOpt),
@@ -210,17 +205,6 @@ mod root {
                     };
 
                     install.process().await?;
-                }
-                Self::Update(mut update) => {
-                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
-                        println!("Current channel: {}", &channel_name);
-
-                        if channel_name == LATEST_CHANNEL_NAME {
-                            update.develop = true;
-                        }
-                    };
-
-                    update.process().await?;
                 }
                 Self::Version(version) => {
                     version.process(root.target).await?;
@@ -390,11 +374,10 @@ mod root {
     ///
     /// Commands that must trigger update checks are:
     ///
-    /// - `fluvio update`
     /// - `fluvio version`
     #[inline]
     fn command_triggers_update_check(cmd: &RootCmd) -> bool {
-        matches!(cmd, RootCmd::Version(_)) || matches!(cmd, RootCmd::Update(_))
+        matches!(cmd, RootCmd::Version(_))
     }
 
     #[cfg(test)]
@@ -410,7 +393,7 @@ mod root {
             ));
 
             assert!(command_triggers_update_check(
-                &parse("fluvio update").unwrap().command
+                &parse("fvm update").unwrap().command
             ));
         }
 
