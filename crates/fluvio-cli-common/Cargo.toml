@@ -13,7 +13,7 @@ name = "fluvio_cli_common"
 path = "src/lib.rs"
 
 [features]
-default = ["fluvio-types"]
+default = ["fluvio-types", "serde"]
 file-records = ["fluvio-protocol/record", "fluvio-protocol/api"]
 version-cmd = ["dep:current_platform", "dep:clap", "dep:sysinfo"]
 smartmodule-test = ["file-records", "dep:fluvio-sc-schema", "dep:fluvio-smartmodule", "dep:fluvio", "dep:fluvio-smartengine", "dep:clap"]

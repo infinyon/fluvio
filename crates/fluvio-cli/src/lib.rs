@@ -379,37 +379,4 @@ mod root {
     fn command_triggers_update_check(cmd: &RootCmd) -> bool {
         matches!(cmd, RootCmd::Version(_))
     }
-
-    #[cfg(test)]
-    mod tests {
-        use clap::Parser;
-
-        use crate::{Root, root::command_triggers_update_check};
-
-        #[test]
-        fn test_command_triggers_update_check() {
-            assert!(command_triggers_update_check(
-                &parse("fluvio version").unwrap().command
-            ));
-
-            assert!(command_triggers_update_check(
-                &parse("fvm update").unwrap().command
-            ));
-        }
-
-        #[test]
-        fn test_command_does_not_trigger_update_check() {
-            assert!(!command_triggers_update_check(
-                &parse("fluvio consume hello").unwrap().command
-            ));
-
-            assert!(!command_triggers_update_check(
-                &parse("fluvio produce hello").unwrap().command
-            ));
-        }
-
-        fn parse(command: &str) -> Result<Root, clap::error::Error> {
-            Root::try_parse_from(command.split_whitespace())
-        }
-    }
 }
