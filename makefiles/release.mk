@@ -124,6 +124,7 @@ install-fluvio-package: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
 install-fluvio-package:
 	# temporarily remove deadlock on fluvio-package install
 	# $(FLUVIO_BIN) install fluvio-package
+	mkdir -p ${HOME}/.fluvio/extensions
 	curl https://packages.fluvio.io/v1/packages/fluvio/fluvio-package/0.1.9/x86_64-unknown-linux-musl/fluvio-package \
 	-o ${HOME}/.fluvio/extensions/fluvio-package
 
