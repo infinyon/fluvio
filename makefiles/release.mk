@@ -125,7 +125,7 @@ install-fluvio-package:
 	# temporarily remove deadlock on fluvio-package install
 	# $(FLUVIO_BIN) install fluvio-package
 	curl https://packages.fluvio.io/v1/packages/fluvio/fluvio-package/0.1.9/x86_64-unknown-linux-musl/fluvio-package \
-	-o ${HOME}/.fluvio/bin/fluvio-packages
+	-o ${HOME}/.fluvio/extensions/fluvio-package
 
 # Requires GH_TOKEN set or `gh auth login`
 download-fluvio-release:
