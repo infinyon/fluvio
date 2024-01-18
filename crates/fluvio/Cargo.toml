@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.21.4"
+version = "0.21.5"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -27,7 +27,7 @@ async-channel = { workspace = true }
 async-lock = { workspace = true }
 async-rwlock = { workspace = true }
 async-trait = { workspace = true }
-anyhow = { workspace = true } 
+anyhow = { workspace = true }
 base64 = { workspace = true }
 bytes = { workspace = true }
 cfg-if = { workspace = true }

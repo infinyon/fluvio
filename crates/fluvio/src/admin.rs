@@ -185,7 +185,21 @@ impl FluvioAdmin {
     }
 
     /// Delete object by key
-    /// key is depend on spec, most are string but some allow multiple types
+    /// key is dependent on spec, most are string but some allow multiple types
+    ///
+    /// For example, to delete a topic:
+    ///
+    /// ```edition2021
+    /// use fluvio::Fluvio;
+    /// use fluvio::metadata::topic::TopicSpec;
+    ///
+    /// async fn delete_topic(name: String) -> anyhow::Result<()> {
+    ///     let fluvio = Fluvio::connect().await?;
+    ///     let admin = fluvio.admin().await;
+    ///     admin.delete::<TopicSpec>(name).await?;
+    ///     Ok(())
+    /// }
+    /// ```
     #[instrument(skip(self, key))]
     pub async fn delete<S>(&self, key: impl Into<S::DeleteKey>) -> Result<()>
     where

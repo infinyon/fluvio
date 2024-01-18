@@ -2234,7 +2234,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.21.4"
+version = "0.21.5"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -2340,7 +2340,6 @@ dependencies = [
  "assert_cmd",
  "cfg-if",
  "clap",
- "colored",
  "dirs 5.0.1",
  "fluvio-channel",
  "fluvio-cli-common",

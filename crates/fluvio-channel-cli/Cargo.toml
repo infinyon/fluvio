@@ -21,7 +21,6 @@ path = "src/lib.rs"
 default = ["fluvio-future", "fluvio-types"]
 
 [dependencies]
-colored = { workspace = true }
 clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-context"], default-features = false }
 tracing = { workspace = true }
 cfg-if = { workspace = true }
