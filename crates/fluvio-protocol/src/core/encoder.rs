@@ -296,6 +296,26 @@ impl Encoder for u32 {
     }
 }
 
+impl Encoder for f32 {
+    fn write_size(&self, _version: Version) -> usize {
+        4
+    }
+
+    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        if dest.remaining_mut() < 4 {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                "not enough capacity for f32",
+            ));
+        }
+        dest.put_f32(*self);
+        Ok(())
+    }
+}
+
 impl Encoder for u64 {
     fn write_size(&self, _version: Version) -> usize {
         8
@@ -346,6 +366,26 @@ impl EncoderVarInt for i64 {
         T: BufMut,
     {
         variant_encode(dest, *self)?;
+        Ok(())
+    }
+}
+
+impl Encoder for f64 {
+    fn write_size(&self, _version: Version) -> usize {
+        8
+    }
+
+    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        if dest.remaining_mut() < 8 {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                "not enough capacity for f64",
+            ));
+        }
+        dest.put_f64(*self);
         Ok(())
     }
 }
