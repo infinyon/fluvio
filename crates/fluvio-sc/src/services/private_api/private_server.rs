@@ -29,21 +29,15 @@ use fluvio_controlplane::spu_api::update_upstream_cluster::UpdateUpstreamCluster
 use fluvio_controlplane::spu_api::update_upstream_cluster::UpstreamClusterMsg;
 use fluvio_controlplane::upstream_cluster::UpstreamClusterSpec;
 use fluvio_controlplane_metadata::message::Message;
-use fluvio_stream_model::core::MetadataItem;
-use fluvio_stream_model::store::ChangeListener;
-
-use tracing::{debug, info, trace, warn, instrument, error};
-use async_trait::async_trait;
-use futures_util::stream::Stream;
-use anyhow::Result;
-
 use fluvio_future::timer::sleep;
-use fluvio_service::ConnectInfo;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
-use fluvio_types::SpuId;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_service::{FluvioService, wait_for_request};
+use fluvio_service::ConnectInfo;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
+use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::store::ChangeListener;
+use fluvio_types::SpuId;
 
 use crate::core::SharedContext;
 use crate::stores::partition::PartitonStatusExtension;
