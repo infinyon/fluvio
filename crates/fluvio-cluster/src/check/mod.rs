@@ -226,7 +226,7 @@ pub enum UnrecoverableCheckStatus {
     #[error("Unhandled K8 client error: {0}")]
     UnhandledK8ClientError(String),
 
-    #[error("Local Fluvio component still exists")]
+    #[error("Local Fluvio cluster still running")]
     ExistingLocalCluster,
 
     #[error("Helm client error")]
@@ -675,7 +675,7 @@ impl ClusterCheck for LocalClusterCheck {
         sys.refresh_processes(); // Only load what we need.
         let proc_count = sys
             .processes_by_exact_name("fluvio-run")
-            .map(|x| debug!("Found existing fluvio-run process. pid: {}", x.pid()))
+            .map(|x| println!("       found existing fluvio-run process. pid: {}", x.pid()))
             .count();
         if proc_count > 0 {
             return Ok(CheckStatus::Unrecoverable(
