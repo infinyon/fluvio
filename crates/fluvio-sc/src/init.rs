@@ -78,13 +78,13 @@ where
         ctx.smartmodules().clone(),
     );
 
-    MetadataDispatcher::<UpstreamClusterSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<UpstreamClusterSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.upstream_clusters().clone(),
     );
 
-    MetadataDispatcher::<RemoteClusterSpec, C, K8MetaItem>::start(
+    MetadataDispatcher::<RemoteClusterSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
         ctx.remote_clusters().clone(),
