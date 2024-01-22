@@ -137,7 +137,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    pub async fn send_receive_admin<R, I>(&self, request: I) -> Result<R::Response>
+    async fn send_receive_admin<R, I>(&self, request: I) -> Result<R::Response>
     where
         R: Request + Send + Sync,
         R: TryEncodableFrom<I>,
