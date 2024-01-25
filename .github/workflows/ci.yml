@@ -1418,7 +1418,7 @@ jobs:
       - name: Done
         run: echo "Done!"
       - name: Repo dispatch ci-success
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           event-type: ci-success
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
