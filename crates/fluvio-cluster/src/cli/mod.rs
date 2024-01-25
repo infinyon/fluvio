@@ -25,14 +25,9 @@ use delete::DeleteOpt;
 use diagnostics::DiagnosticsOpt;
 use group::SpuGroupCmd;
 use shutdown::ShutdownOpt;
-use start::StartOpt;
-use start::UpgradeOpt;
-use delete::DeleteOpt;
-use check::CheckOpt;
-use group::SpuGroupCmd;
 use spu::SpuCmd;
+use start::StartOpt;
 use status::StatusOpt;
-use shutdown::ShutdownOpt;
 
 pub use self::error::ClusterCliError;
 
@@ -51,10 +46,6 @@ pub enum ClusterCmd {
     /// Install Fluvio cluster
     #[command(name = "start")]
     Start(Box<StartOpt>),
-
-    /// Upgrades an already-started Fluvio cluster
-    #[command(name = "upgrade")]
-    Upgrade(Box<UpgradeOpt>),
 
     /// Uninstall a Fluvio cluster
     #[command(name = "delete")]

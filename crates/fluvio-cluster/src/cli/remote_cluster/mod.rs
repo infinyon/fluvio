@@ -23,7 +23,7 @@ mod common {
     pub use fluvio_extension_common::target::ClusterTarget;
     pub use fluvio_extension_common::output::Terminal;
 
-    pub use super::get_admin;
+    // pub use super::get_admin;
     pub use super::send_request;
 }
 use common::*;
