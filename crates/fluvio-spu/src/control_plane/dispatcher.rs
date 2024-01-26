@@ -41,6 +41,7 @@ pub(crate) struct ScDispatcherMetrics {
     smartmodule: AtomicU64,     // number of sm updates from sc
 }
 
+#[allow(dead_code)]
 impl ScDispatcherMetrics {
     fn increase_loop_count(&self) {
         self.loop_count.fetch_add(1, Ordering::Relaxed);
@@ -161,7 +162,7 @@ impl ScDispatcher<FileReplica> {
         use async_io::Timer;
 
         /// Interval between each send to SC
-        /// SC status are not source of truth, it is delayed derived data.  
+        /// SC status are not source of truth, it is delayed derived data.
         const MIN_SC_SINK_TIME: Duration = Duration::from_millis(400);
 
         let (mut sink, mut stream) = socket.split();

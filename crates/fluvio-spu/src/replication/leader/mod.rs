@@ -14,6 +14,5 @@ pub use self::api_key::LeaderPeerApiEnum;
 pub use self::peer_api::LeaderPeerRequest;
 pub use self::update_offsets::UpdateOffsetRequest;
 pub use self::update_offsets::ReplicaOffsetRequest;
-pub use self::actions::FollowerOffsetUpdate;
 
 pub use self::spu::*;
