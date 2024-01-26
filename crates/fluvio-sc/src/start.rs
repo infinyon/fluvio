@@ -102,7 +102,7 @@ fn k8_main_loop<C>(
         crate::k8::controllers::run_k8_operators(
             sc_config.namespace.clone(),
             client,
-            ctx,
+            ctx.clone(),
             tls_option.clone().map(|(_, config)| config),
         )
         .await;
@@ -110,7 +110,6 @@ fn k8_main_loop<C>(
         proxy::start_if(sc_config, tls_option).await;
 
         init_monitoring(ctx.clone());
-
 
         println!("Streaming Controller started successfully");
         // do infinite loop

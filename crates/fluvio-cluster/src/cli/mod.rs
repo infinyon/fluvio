@@ -18,18 +18,20 @@ mod start;
 mod status;
 mod remote_cluster;
 mod util;
-mod upgrade;
 
 use check::CheckOpt;
 use delete::DeleteOpt;
 use diagnostics::DiagnosticsOpt;
 use group::SpuGroupCmd;
+use remote_cluster::RemoteClusterOpt;
 use shutdown::ShutdownOpt;
 use spu::SpuCmd;
 use start::StartOpt;
 use status::StatusOpt;
 
+
 pub use self::error::ClusterCliError;
+
 
 use anyhow::Result;
 
@@ -125,22 +127,6 @@ impl ClusterCmd {
                 };
 
                 start.process(platform_version, false).await?;
-            }
-            Self::Upgrade(mut upgrade) => {
-                if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
-                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value, true)
-                        .unwrap_or(ImageTagStrategy::Version);
-                    match tag_strategy {
-                        ImageTagStrategy::Version => {}
-                        ImageTagStrategy::VersionGit => {
-                            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
-                            upgrade.start.k8_config.image_version = Some(image_version);
-                        }
-                        ImageTagStrategy::Git => upgrade.start.develop = true,
-                    }
-                };
-
-                upgrade.process(platform_version).await?;
             }
             Self::Delete(uninstall) => {
                 uninstall.process().await?;
