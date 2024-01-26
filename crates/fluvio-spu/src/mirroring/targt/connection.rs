@@ -159,8 +159,7 @@ impl MirrorTargetHandler {
         };
 
         debug!("sending offset info: {:#?}", offset_request);
-        let req_msg =
-            RequestMessage::new_request(offset_request).set_client_id(format!("mirror target"));
+        let req_msg = RequestMessage::new_request(offset_request).set_client_id("mirror target");
 
         sink.send_request(&req_msg).await?;
 

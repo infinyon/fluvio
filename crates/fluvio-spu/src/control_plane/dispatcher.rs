@@ -117,38 +117,41 @@ impl ScDispatcher<FileReplica> {
     async fn dispatch_loop(mut self) {
         let mut backoff = create_backoff();
 
-        loop {
-            debug!(loop_count = self.metrics.get_loop_count(), "starting loop");
+        // clippy: this loop never loops due to final match break/break
+        // loop {
+        debug!(loop_count = self.metrics.get_loop_count(), "starting loop");
 
-            let mut socket = self.create_socket_to_sc(&mut backoff).await;
-            info!(
-                local_spu_id=%self.ctx.local_spu_id(),
-                "established connection to sc for spu",
-            );
+        let mut socket = self.create_socket_to_sc(&mut backoff).await;
+        info!(
+            local_spu_id=%self.ctx.local_spu_id(),
+            "established connection to sc for spu",
+        );
 
-            // register and exit on error
-            let _ = match self.send_spu_registration(&mut socket).await {
-                Ok(status) => status,
-                Err(err) => {
-                    print_cli_err!(format!(
-                        "spu registration failed with sc due to error: {err}"
-                    ));
-                    break;
-                }
-            };
+        // register and exit on error
+        let _ = match self.send_spu_registration(&mut socket).await {
+            Ok(status) => status,
+            Err(err) => {
+                print_cli_err!(format!(
+                    "spu registration failed with sc due to error: {err}"
+                ));
+                warn!("spu registration failed with sc due to error: {err}");
+                return;
+                // break;
+            }
+        };
 
-            // continuously process updates from and send back status to SC
-            info!("starting sc request loop");
-            match self.request_loop(socket).await {
-                Ok(_) => {
-                    break;
-                }
-                Err(err) => {
-                    warn!(?err, "error connecting to sc, waiting before reconnecting",);
-                    break;
-                }
+        // continuously process updates from and send back status to SC
+        info!("starting sc request loop");
+        match self.request_loop(socket).await {
+            Ok(_) => {
+                // break;
+            }
+            Err(err) => {
+                warn!(?err, "error connecting to sc, waiting before reconnecting",);
+                // break;
             }
         }
+        // }
     }
 
     #[instrument(

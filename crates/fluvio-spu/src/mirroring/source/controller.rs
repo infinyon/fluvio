@@ -1,10 +1,10 @@
 use std::{
     fmt,
-    time::Duration,
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering, AtomicI64},
     },
+    time::Duration,
 };
 
 use futures_util::StreamExt;
@@ -322,26 +322,31 @@ where
             debug!(new_target_leo, "updating target leo from uninitialized");
             self.state.metrics.update_target_leo(new_target_leo);
         }
-        if new_target_leo > leader_leo {
-            // target leo should never be greater than leader's leo
-            warn!(
-                leader_leo,
-                new_target_leo, "target has more records, this should not happen, this is error"
-            );
-            return Err(anyhow!("target's leo: {new_target_leo} > leader's leo: {leader_leo} this should not happen, this is error"));
-        } else if new_target_leo < leader_leo {
-            debug!(
-                new_target_leo,
-                leader_leo, "target has less records, need to refresh target"
-            );
-            self.state.metrics.update_target_leo(new_target_leo);
-            Ok(true)
-        } else {
-            debug!(
-                new_target_leo,
-                "target has same records, no need to refresh target"
-            );
-            Ok(false)
+        match new_target_leo.cmp(&leader_leo) {
+            std::cmp::Ordering::Greater => {
+                // target leo should never be greater than leader's leo
+                warn!(
+                    leader_leo,
+                    new_target_leo,
+                    "target has more records, this should not happen, this is error"
+                );
+                return Err(anyhow!("target's leo: {new_target_leo} > leader's leo: {leader_leo} this should not happen, this is error"));
+            }
+            std::cmp::Ordering::Less => {
+                debug!(
+                    new_target_leo,
+                    leader_leo, "target has less records, need to refresh target"
+                );
+                self.state.metrics.update_target_leo(new_target_leo);
+                Ok(true)
+            }
+            std::cmp::Ordering::Equal => {
+                debug!(
+                    new_target_leo,
+                    "target has same records, no need to refresh target"
+                );
+                Ok(false)
+            }
         }
     }
 
@@ -431,7 +436,7 @@ where
         backoff: &mut ExponentialBackoff,
         upstream_cluster: &UpstreamClusterSpec,
     ) -> (FluvioSocket, bool) {
-        let tlspolicy = option_tlspolicy(&upstream_cluster);
+        let tlspolicy = option_tlspolicy(upstream_cluster);
 
         loop {
             self.state.metrics.increase_conn_count();
@@ -447,7 +452,7 @@ where
                 match DomainConnector::try_from(tlspolicy.clone()) {
                     Ok(connector) => {
                         // box connector?
-                        FluvioSocket::connect_with_connector(&endpoint, &(*connector)).await
+                        FluvioSocket::connect_with_connector(endpoint, &(*connector)).await
                     }
                     Err(err) => {
                         error!(
@@ -460,7 +465,7 @@ where
                 }
                 // FluvioSocket::connect(&endpoint)
             } else {
-                FluvioSocket::connect(&endpoint).await
+                FluvioSocket::connect(endpoint).await
             };
             match res {
                 Ok(socket) => {

@@ -29,9 +29,7 @@ use spu::SpuCmd;
 use start::StartOpt;
 use status::StatusOpt;
 
-
 pub use self::error::ClusterCliError;
-
 
 use anyhow::Result;
 

@@ -98,7 +98,6 @@ pub(crate) async fn update_replica_map_for_assigned_topic<C: MetadataItem>(
     }
 }
 
-
 /// values for next state
 #[derive(Default, Debug)]
 pub(crate) struct TopicNextState<C: MetadataItem> {
@@ -255,7 +254,6 @@ impl<C: MetadataItem> TopicNextState<C> {
                     validate_mirror_topic_parameter(mirror_config)
                 }
                 TopicResolution::Pending | TopicResolution::InsufficientResources => {
-
                     let partitions = mirror_config.partition_count();
                     // create pseudo normal replica map
                     let computed_param = TopicReplicaParam {
@@ -264,7 +262,9 @@ impl<C: MetadataItem> TopicNextState<C> {
                         ..Default::default()
                     };
 
-                    let replica_map = scheduler.generate_replica_map_for_topic(&computed_param).await;
+                    let replica_map = scheduler
+                        .generate_replica_map_for_topic(&computed_param)
+                        .await;
                     if replica_map.scheduled() {
                         debug!(
                             topic = %topic.key(),

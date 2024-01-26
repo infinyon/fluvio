@@ -138,7 +138,7 @@ impl ReplicaConfig {
 
         replica.mirror = Some(PartitionMirrorConfig::Target(TargetPartitionConfig {
             remote_cluster: remote_cluster_name.to_string(),
-            source_replica: ReplicaKey::new(self.source_topic.clone(), 0 as u32).to_string(),
+            source_replica: ReplicaKey::new(self.source_topic.clone(), 0u32).to_string(),
         }));
 
         replica
@@ -225,7 +225,7 @@ impl ReplicaConfig {
         let mut remote_clusters = vec![];
 
         for (partition_id, remote_cluster) in self.remote_clusters.iter().enumerate() {
-            let replica = self.target_replica(&remote_cluster, partition_id as PartitionId);
+            let replica = self.target_replica(remote_cluster, partition_id as PartitionId);
 
             let remote_cluster = RemoteCluster {
                 name: remote_cluster.clone(),

@@ -59,7 +59,7 @@ impl ExportOpt {
             let partition = mirror_config
                 .partitions()
                 .iter()
-                .position(|rc| &rc.remote_cluster == &self.mirror);
+                .position(|rc| rc.remote_cluster == self.mirror);
 
             if partition.is_none() {
                 return Err(anyhow::anyhow!(
