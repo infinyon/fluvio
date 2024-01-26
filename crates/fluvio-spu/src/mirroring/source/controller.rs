@@ -51,6 +51,7 @@ pub(crate) struct MirrorControllerMetrics {
     target_leo: AtomicI64,
 }
 
+#[allow(dead_code)]
 impl MirrorControllerMetrics {
     fn update_target_leo(&self, leo: Offset) {
         self.target_leo.store(leo, Ordering::SeqCst);
@@ -89,6 +90,8 @@ impl MirrorControllerMetrics {
 #[derive(Debug)]
 pub(crate) struct MirrorControllerState {
     metrics: MirrorControllerMetrics,
+
+    #[allow(dead_code)]
     shutdown: Arc<StickyEvent>,
 }
 
@@ -105,6 +108,7 @@ impl MirrorControllerState {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn get_metrics(&self) -> &MirrorControllerMetrics {
         &self.metrics
     }
@@ -234,6 +238,8 @@ where
         // this flag is set to true, target need to be refreshed leader's offsets and any recordset.
         let mut target_updated_needed = false;
 
+        // target_updated_needed triggers warning, despite being used in loop
+        #[allow(unused)]
         loop {
             let target_leo = self.state.metrics.get_target_leo();
 

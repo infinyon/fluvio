@@ -248,14 +248,14 @@ impl ReplicaConfig {
         gctx
     }
 
-    // add upstream cluster
-    pub(crate) fn add_remote_clusters(
-        &self,
-        gctx: &DefaultSharedGlobalContext,
-        remote_clusters: Vec<RemoteCluster>,
-    ) {
-        gctx.remote_cluster_localstore().sync_all(remote_clusters);
-    }
+    // // add upstream cluster
+    // pub(crate) fn add_remote_clusters(
+    //     &self,
+    //     gctx: &DefaultSharedGlobalContext,
+    //     remote_clusters: Vec<RemoteCluster>,
+    // ) {
+    //     gctx.remote_cluster_localstore().sync_all(remote_clusters);
+    // }
 }
 
 impl ReplicaConfigBuilder {
