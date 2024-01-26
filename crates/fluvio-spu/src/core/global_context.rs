@@ -115,6 +115,7 @@ where
         &self.remote_cluster_localstore
     }
 
+    #[allow(dead_code)]
     pub fn remote_cluster_localstore_owned(&self) -> SharedRemoteClusterLocalStore {
         self.remote_cluster_localstore.clone()
     }
