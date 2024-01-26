@@ -22,7 +22,7 @@ async fn test_mirroring_new_records() {
     let target_gctx = target_builder.init_mirror_target().await;
     let target_replica0 = target_gctx
         .leaders_state()
-        .get(&ReplicaKey::new("temp", 0 as u32))
+        .get(&ReplicaKey::new("temp", 0u32))
         .await
         .expect("leader");
     assert_eq!(
@@ -58,7 +58,7 @@ async fn test_mirroring_new_records() {
     // check 2nd target replica
     let target_replica1 = target_gctx
         .leaders_state()
-        .get(&ReplicaKey::new("temp", 1 as u32))
+        .get(&ReplicaKey::new("temp", 1u32))
         .await
         .expect("2nd targert");
 

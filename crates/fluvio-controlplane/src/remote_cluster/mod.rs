@@ -49,11 +49,11 @@ mod metadata {
             fn convert_status_from_k8(
                 status: Self::Status,
             ) -> <Self::K8Spec as fluvio_stream_model::k8_types::Spec>::Status {
-                status.into()
+                status
             }
 
             fn into_k8(self) -> Self::K8Spec {
-                self.into()
+                self
             }
         }
     }
