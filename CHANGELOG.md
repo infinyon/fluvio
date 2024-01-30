@@ -2,7 +2,24 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.4 - UNRELEASED
+## Platform Version 0.11.4 - 2024-01-27
+
+### Added
+
+* Small updates to admin::delete and consumer docs ([#3827](https://github.com/infinyon/fluvio/issues/3827))
+* Add Encoder and Decoder impl to float rust types ([#3834](https://github.com/infinyon/fluvio/issues/3834))
+
+### Changed
+
+* Update README.md ([#3835](https://github.com/infinyon/fluvio/issues/3835))
+
+### Fixed
+
+* Fluvio cluster start, improve message when cluster still running ([#3832](https://github.com/infinyon/fluvio/issues/3832))
+
+### Removed
+
+* Remove separate `cdk` installation ([#3833](https://github.com/infinyon/fluvio/issues/3833))
 
 ## Platform Version 0.11.3 - 2024-01-15
 
