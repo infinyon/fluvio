@@ -168,7 +168,9 @@ jobs:
           make docker-hub-check-image-exists
 
       # if the check fails, then continue
-      - name: Tag and push release image
+
+      # push both the versioned image, and update the stable tag
+      - name: Tag and push release images
         if: ${{ steps.docker_check.outcome == 'failure' }}
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -178,6 +180,7 @@ jobs:
           DEV_VERSION_TAG: ${{ env.VERSION }}-${{ env.TARGET_SHA }}
         run: |
           make docker-push-manifest
+          DOCKER_IMAGE_TAG=stable make docker-push-manifest
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
