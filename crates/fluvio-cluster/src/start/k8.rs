@@ -3,6 +3,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::collections::BTreeMap;
 use std::io::Read;
+use std::io::Write;
 use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Child;
@@ -11,7 +12,7 @@ use std::time::Duration;
 use std::env;
 use std::time::SystemTime;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use derive_builder::Builder;
 use k8_client::meta_client::NameSpace;
 use tracing::{info, warn, debug, instrument};
@@ -801,7 +802,14 @@ impl ClusterInstaller {
 
             debug!(?helm_lb_config, "helm_lb_config");
 
-            serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)?;
+            let helm_values: String = serde_yaml::to_string(&helm_lb_config)
+                .with_context(|| {
+                    format!("couldn't serialize helm yaml {:?}", &helm_lb_config)
+                })?;
+            info!(%helm_values, "helm_values");
+            write!(&np_addr_fd, "{helm_values}")
+                .with_context(|| "Error writing helm file")?;
+
             Some((np_addr_fd, np_conf_path))
         } else {
             None
