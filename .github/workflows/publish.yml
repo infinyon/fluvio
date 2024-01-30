@@ -1,11 +1,11 @@
 name: Publish
 
 on:
-  push:
-    branches: master
+  # push:
+  #   branches: master
 
-  # repository_dispatch:
-  #   types: [ ci-success ]
+  repository_dispatch:
+    types: [ ci-success ]
 
   workflow_dispatch:
     inputs:
