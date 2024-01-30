@@ -2,6 +2,17 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Platform Version VERSION - UNRELEASED
+
+### CI
+
+* Release fluvio v0.11.4 ([#3839](https://github.com/infinyon/fluvio/issues/3839))
+
+### Fixed
+
+* Regenerate certificates ([#3841](https://github.com/infinyon/fluvio/issues/3841))
+* Ci, fix release ([#3844](https://github.com/infinyon/fluvio/issues/3844))
+
 ## Platform Version 0.11.4 - 2024-01-27
 
 ### Added
