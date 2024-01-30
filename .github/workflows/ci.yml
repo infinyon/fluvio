@@ -50,7 +50,7 @@ jobs:
       runs: ${{ steps.runs.outputs.runs }}
     steps:
       - id: check
-        run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
+        run: echo "check=${{ env.ENABLE_CHECK }}" >> "$GITHUB_OUTPUT"
       #- name: Set Staging runs
       ##  if: github.event_name == 'merge_group'
       #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
@@ -922,7 +922,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SPU: 2
-      CLI_TEST_RETRIES: 3   
+      CLI_TEST_RETRIES: 3
     strategy:
  #     fail-fast: false
       matrix:
@@ -1065,7 +1065,7 @@ jobs:
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     env:
-      CLI_TEST_RETRIES: 3   
+      CLI_TEST_RETRIES: 3
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -1137,7 +1137,7 @@ jobs:
 
   # Runs tests on `tests/cli/partition_test`
   partition_test:
-    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs, ${{ matrix.partitions }} Partitions and ${{ matrix.replication }} Replicas), Run Mode ${{ matrix.run-mode }} 
+    name: Partitions Test (${{ matrix.test }} with ${{ matrix.spu }} SPUs, ${{ matrix.partitions }} Partitions and ${{ matrix.replication }} Replicas), Run Mode ${{ matrix.run-mode }}
     runs-on: ${{ matrix.os }}
     env:
       FLUVIO_BIN: "~/bin/fluvio"
@@ -1418,7 +1418,7 @@ jobs:
       - name: Done
         run: echo "Done!"
       - name: Repo dispatch ci-success
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           event-type: ci-success
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'

@@ -162,7 +162,7 @@ jobs:
         run: make bump-fluvio-latest
 
       - name: Repo dispatch publish-success
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           event-type: publish-success
           client-payload: '{"ref": "${{ needs.setup.outputs.pub_ref }}", "sha": "${{ needs.setup.outputs.pub_sha }}"}'
