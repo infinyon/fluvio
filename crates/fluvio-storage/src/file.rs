@@ -333,7 +333,7 @@ mod tests {
 
     use super::*;
 
-    async fn write_hello_world (fname: &PathBuf) {
+    async fn write_hello_world(fname: &PathBuf) {
         let mut file = File::create(fname).await.expect("file creation");
         file.write_all(b"hello world").await.expect("write");
         file.flush().await.expect("flush");

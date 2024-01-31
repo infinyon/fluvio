@@ -582,11 +582,17 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self> {
-        let kube_client = load_and_share()
-            .context("unable to load kubectl context to access k8 cluster")?;
+        let load_result =
+            load_and_share().context("unable to load kubectl context to access k8 cluster");
+
+        if let Err(ref k8_err) = load_result {
+            info!(target: "kubectl", "Error: {k8_err:?}\n");
+        }
+
+        let kube_client = load_result?;
 
         Ok(Self {
-            kube_client:,
+            kube_client,
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
         })
@@ -806,12 +812,9 @@ impl ClusterInstaller {
             debug!(?helm_lb_config, "helm_lb_config");
 
             let helm_values: String = serde_yaml::to_string(&helm_lb_config)
-                .with_context(|| {
-                    format!("couldn't serialize helm yaml {:?}", &helm_lb_config)
-                })?;
+                .with_context(|| format!("couldn't serialize helm yaml {:?}", &helm_lb_config))?;
             info!(%helm_values, "helm_values");
-            write!(&np_addr_fd, "{helm_values}")
-                .with_context(|| "Error writing helm file")?;
+            write!(&np_addr_fd, "{helm_values}").with_context(|| "Error writing helm file")?;
 
             Some((np_addr_fd, np_conf_path))
         } else {

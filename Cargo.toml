@@ -156,7 +156,7 @@ fluvio-future = { version = "0.6.2", default-features = false }
 fluvio-helm = { version = "0.4.1" }
 flv-tls-proxy = { version = "0.8.1" }
 flv-util = { version = "0.5.2", default-features = false }
-k8-client = { version = "12.0.0" }
+k8-client = { version = "12.0.1" }
 k8-config = { version = "2.2.0" }
 k8-types =  { version = "0.8.5" }
 k8-diff = { version = "0.1.2" }
