@@ -582,8 +582,11 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self> {
+        let kube_client = load_and_share()
+            .context("unable to load kubectl context to access k8 cluster")?;
+
         Ok(Self {
-            kube_client: load_and_share()?,
+            kube_client:,
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
         })
