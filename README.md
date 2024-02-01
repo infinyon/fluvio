@@ -121,7 +121,7 @@ InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3
 
 **Community Maintained:**
 - [Go API docs](https://github.com/avinassh/fluvio-go)
-- [Java AIP docs](https://github.com/infinyon/fluvio-client-java)
+- [Java API docs](https://github.com/infinyon/fluvio-client-java)
 - [Elixir API docs](https://github.com/viniarck/fluvio-ex)
 
 ## Contributing
