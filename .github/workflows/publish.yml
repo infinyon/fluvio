@@ -38,8 +38,8 @@ jobs:
       - name: Default Info
         run: |
           echo event_name ${{ github.event_name }}
-          echo "pub_ref=${{ env.GITHUB_REF }}" >> $GITHUB_ENV
-          echo "pub_sha=${{ env.GITHUB_SHA }}" >> $GITHUB_ENV
+          echo "pub_ref=${{ github.ref }}" >> $GITHUB_ENV
+          echo "pub_sha=${{ github.sha }}" >> $GITHUB_ENV
       - name: Received ci-success event
         if: github.event_name == 'repository_dispatch'
         id: recv
@@ -63,11 +63,11 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     env:
-      TGT_SHA: ${{ needs.setup.outputs.github_sha }}
+      TGT_SHA: ${{ needs.setup.outputs.pub_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.pub_sha }}
+          ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Publish latest development Fluvio Image
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -92,11 +92,11 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
-      TGT_SHA: ${{needs.setup.outputs.github_sha }}
+      TGT_SHA: ${{needs.setup.outputs.pub_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.pub_sha }}
+          ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Install fluvio-package
         env:
           CHANNEL_TAG: stable # We want to ensure we install the stable version of CLI
@@ -143,7 +143,7 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      TGT_SHA: ${{ needs.setup.outputs.github_sha }}
+      TGT_SHA: ${{ needs.setup.outputs.pub_sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -162,7 +162,7 @@ jobs:
         run: make bump-fluvio-latest
 
       - name: Repo dispatch publish-success
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           event-type: publish-success
           client-payload: '{"ref": "${{ needs.setup.outputs.pub_ref }}", "sha": "${{ needs.setup.outputs.pub_sha }}"}'

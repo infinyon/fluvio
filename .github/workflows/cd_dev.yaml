@@ -39,8 +39,8 @@ jobs:
       - name: Default Info
         run: |
           echo event_name ${{ github.event_name }}
-          echo "pub_ref=${{ env.GITHUB_REF }}" >> $GITHUB_ENV
-          echo "pub_sha=${{ env.GITHUB_SHA }}" >> $GITHUB_ENV
+          echo "pub_ref=${{ github.ref }}" >> $GITHUB_ENV
+          echo "pub_sha=${{ github.sha }}" >> $GITHUB_ENV
       - name: Received ci-success event
         if: github.event_name == 'repository_dispatch'
         id: recv
@@ -73,9 +73,10 @@ jobs:
       SLEEP: 10
       TOPIC: foobar
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout ${{ needs.setup.outputs.pub_sha }}
+        uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.pub_sha }}
+          ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Set up K3d for Ubuntu
         if: ${{ matrix.cluster_type == 'k8' }}
         run: |
@@ -144,9 +145,10 @@ jobs:
     env:
       FLV_SOCKET_WAIT: 600
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout ${{ needs.setup.outputs.pub_sha }}
+        uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.pub_sha }}
+          ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Setup K3d
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
@@ -189,9 +191,10 @@ jobs:
         os: [ubuntu-latest]
         version: [latest]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout ${{ needs.setup.outputs.pub_sha }}
+        uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.pub_sha }}
+          ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Set the expected fluvio version
         run: |
           if [[ -z "${{ env.USE_VERSION }}" ]]; then
@@ -233,9 +236,10 @@ jobs:
         cluster_version: [stable, latest]
         cli_version: [stable, latest]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout ${{ needs.setup.outputs.pub_sha }}
+        uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.pub_sha }}
+          ref: ${{ needs.setup.outputs.pub_sha }}
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
