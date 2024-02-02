@@ -130,7 +130,8 @@ impl HubAccess {
     }
 
     async fn get_action_auth(&self, action: &str) -> Result<String> {
-        self.make_action_token(action, read_infinyon_token()?).await
+        let cloud_token = read_infinyon_token().unwrap_or_default();
+        self.make_action_token(action, cloud_token).await
     }
 
     async fn make_action_token(&self, action: &str, authn_token: String) -> Result<String> {
@@ -142,8 +143,11 @@ impl HubAccess {
         let msg_action_token = serde_json::to_string(&mat)
             .map_err(|_e| HubError::HubAccess("Failed access setup".to_string()))?;
 
-        let req = http::Request::get(&api_url)
-            .header("Authorization", &authn_token)
+        let mut builder = http::Request::get(&api_url);
+        if !authn_token.is_empty() {
+            builder = builder.header("Authorization", &authn_token);
+        }
+        let req = builder
             .header(http::header::CONTENT_TYPE, mime::JSON.as_str())
             .body(msg_action_token)
             .map_err(|e| HubError::HubAccess(format!("request formatting error {e}")))?;
