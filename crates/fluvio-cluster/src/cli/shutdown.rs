@@ -1,6 +1,7 @@
 use std::fs::remove_file;
 use std::process::Command;
 
+use anyhow::Result;
 use clap::Parser;
 use tracing::debug;
 use sysinfo::{ProcessExt, System, SystemExt};
@@ -11,21 +12,21 @@ use fluvio_command::CommandExt;
 use crate::render::ProgressRenderer;
 use crate::cli::ClusterCliError;
 use crate::progress::ProgressBarFactory;
-use crate::{ClusterError, UninstallError, InstallationType, cli::get_installation_type};
+use crate::{InstallationType, cli::get_installation_type};
 
 #[derive(Debug, Parser)]
 pub struct ShutdownOpt;
 
 impl ShutdownOpt {
-    pub async fn process(self) -> Result<(), ClusterCliError> {
+    pub async fn process(self) -> Result<()> {
         let pb_factory = ProgressBarFactory::new(false);
 
         let pb = match pb_factory.create() {
             Ok(pb) => pb,
             Err(_) => {
-                return Err(ClusterCliError::Other(
-                    "Failed to create progress bar".to_string(),
-                ))
+                return Err(
+                    ClusterCliError::Other("Failed to create progress bar".to_string()).into(),
+                )
             }
         };
         let installation_type = get_installation_type()?;
@@ -46,7 +47,7 @@ impl ShutdownOpt {
     async fn kill_local_processes(
         installation_type: &InstallationType,
         pb: &ProgressRenderer,
-    ) -> Result<(), ClusterError> {
+    ) -> Result<()> {
         pb.set_message("Uninstalling fluvio local components");
 
         let kill_proc = |name: &str, command_args: Option<&[String]>| {
@@ -103,7 +104,7 @@ impl ShutdownOpt {
     }
 
     /// Remove objects of specified type, namespace
-    fn remove_custom_objects(object_type: &str, force: bool) -> Result<(), UninstallError> {
+    fn remove_custom_objects(object_type: &str, force: bool) -> Result<()> {
         let mut cmd = Command::new("kubectl");
         cmd.arg("delete");
         cmd.arg(object_type);

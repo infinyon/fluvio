@@ -1,8 +1,10 @@
 use std::{borrow::Cow, time::Duration};
 
-use indicatif::{ProgressBar, ProgressStyle, style::TemplateError};
+use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::render::{ProgressRenderedText, ProgressRenderer};
+
+use anyhow::Result;
 
 #[derive(Debug)]
 pub(crate) enum InstallProgressMessage {
@@ -46,7 +48,7 @@ impl ProgressRenderedText for InstallProgressMessage {
     }
 }
 
-fn create_spinning_indicator() -> Result<ProgressBar, TemplateError> {
+fn create_spinning_indicator() -> Result<ProgressBar> {
     let pb = ProgressBar::new(1);
     pb.set_style(
         ProgressStyle::default_bar()
@@ -72,7 +74,7 @@ impl ProgressBarFactory {
     }
 
     /// create new progress bar
-    pub fn create(&self) -> Result<ProgressRenderer, TemplateError> {
+    pub fn create(&self) -> Result<ProgressRenderer> {
         if self.hide || std::env::var("CI").is_ok() {
             Ok(Default::default())
         } else {

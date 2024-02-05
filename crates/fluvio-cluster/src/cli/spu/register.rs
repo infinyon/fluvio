@@ -12,7 +12,6 @@ use anyhow::Result;
 use fluvio::Fluvio;
 use fluvio::metadata::customspu::CustomSpuSpec;
 use flv_util::socket_helpers::ServerAddress;
-use crate::cli::ClusterCliError;
 
 #[derive(Debug, Parser)]
 pub struct RegisterCustomSpuOpt {
@@ -46,7 +45,7 @@ impl RegisterCustomSpuOpt {
     }
 
     /// Validate cli options. Generate target-server and register custom spu config.
-    fn validate(self) -> Result<(String, CustomSpuSpec), ClusterCliError> {
+    fn validate(self) -> Result<(String, CustomSpuSpec)> {
         let cfg = (
             self.name.unwrap_or(format!("custom-spu-{}", self.id)),
             CustomSpuSpec {

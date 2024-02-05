@@ -1,15 +1,14 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
+use anyhow::Result;
 use tracing::{debug, instrument};
 use include_dir::{Dir, include_dir};
 
-use fluvio_helm::{HelmClient};
+use fluvio_helm::HelmClient;
 
 pub use inline::*;
 
 use crate::UserChartLocation;
-
-use super::ChartInstallError;
 
 const SYS_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_sys");
 const APP_CHART_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../../k8-util/helm/pkg_app");
@@ -46,11 +45,7 @@ impl ChartLocation {
     }
 
     /// setup chart to be ready to be installed
-    pub fn setup(
-        &self,
-        name: &str,
-        helm_client: &HelmClient,
-    ) -> Result<ChartSetup, ChartInstallError> {
+    pub fn setup(&self, name: &str, helm_client: &HelmClient) -> Result<ChartSetup> {
         let chart_setup = match &self {
             &ChartLocation::Inline(dir) => {
                 debug!("unpacking using inline chart");
@@ -77,7 +72,7 @@ impl ChartLocation {
     }
 
     #[instrument(skip(self))]
-    fn setup_remote_chart(&self, chart_location: &str) -> Result<(), ChartInstallError> {
+    fn setup_remote_chart(&self, chart_location: &str) -> Result<()> {
         Ok(())
     }
 }
@@ -107,8 +102,9 @@ mod inline {
     use std::io::{Error as IoError, ErrorKind};
     use std::io::Write;
 
+    use anyhow::Result;
     use tracing::{debug, trace};
-    use include_dir::{Dir};
+    use include_dir::Dir;
     use tempfile::TempDir;
 
     /// Inline chart contains only a single chart
@@ -119,7 +115,7 @@ mod inline {
 
     impl InlineChart {
         /// create new inline chart
-        pub fn new(inline: &Dir<'static>) -> Result<Self, IoError> {
+        pub fn new(inline: &Dir<'static>) -> Result<Self> {
             let temp_dir = tempfile::Builder::new().prefix("chart").tempdir()?;
             let chart = Self::unpack(inline, temp_dir.path())?;
             Ok(Self {
@@ -134,18 +130,17 @@ mod inline {
         }
 
         /// find a single chart and return it's physical path
-        pub fn unpack(inline: &Dir, base_dir: &Path) -> Result<PathBuf, IoError> {
+        pub fn unpack(inline: &Dir, base_dir: &Path) -> Result<PathBuf> {
             debug!(?base_dir, "unpacking inline at base");
 
             // there should be only 1 chart file in the directory
             if inline.files().count() == 0 {
-                return Err(IoError::new(ErrorKind::InvalidData, "no chart found"));
+                return Err(IoError::new(ErrorKind::InvalidData, "no chart found").into());
             }
             if inline.files().count() > 1 {
-                return Err(IoError::new(
-                    ErrorKind::InvalidData,
-                    "more than 1 chart file found",
-                ));
+                return Err(
+                    IoError::new(ErrorKind::InvalidData, "more than 1 chart file found").into(),
+                );
             }
 
             let inline_file = inline.files().next().unwrap();

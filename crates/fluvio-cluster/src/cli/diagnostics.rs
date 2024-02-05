@@ -99,7 +99,7 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
-    fn zip_files(&self, source: &Path, output: &mut std::fs::File) -> Result<(), std::io::Error> {
+    fn zip_files(&self, source: &Path, output: &mut std::fs::File) -> Result<()> {
         use flate2::write::GzEncoder;
 
         let mut gzipper = GzEncoder::new(output, flate2::Compression::default());
