@@ -1,3 +1,4 @@
+use anyhow::Result;
 use fluvio_extension_common::installation::InstallationType;
 use semver::Version;
 use clap::Parser;
@@ -16,7 +17,7 @@ pub struct CheckOpt {
 }
 
 impl CheckOpt {
-    pub async fn process(self, platform_version: Version) -> Result<(), ClusterCheckError> {
+    pub async fn process(self, platform_version: Version) -> Result<()> {
         use colored::*;
         println!("{}", "Running pre-startup checks...".bold());
         println!(

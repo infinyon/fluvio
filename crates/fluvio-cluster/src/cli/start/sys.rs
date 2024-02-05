@@ -1,14 +1,13 @@
+use anyhow::Result;
 use crate::cli::start::StartOpt;
-use crate::cli::ClusterCliError;
-use crate::charts::{ChartConfig, ChartInstallError, ChartInstaller};
-use crate::ClusterError;
+use crate::charts::{ChartConfig, ChartInstaller};
 
-pub fn process_sys(opt: &StartOpt, upgrade: bool) -> Result<(), ClusterCliError> {
-    install_sys_impl(opt, upgrade).map_err(ClusterError::InstallSys)?;
+pub fn process_sys(opt: &StartOpt, upgrade: bool) -> Result<()> {
+    install_sys_impl(opt, upgrade)?;
     Ok(())
 }
 
-fn install_sys_impl(opt: &StartOpt, upgrade: bool) -> Result<(), ChartInstallError> {
+fn install_sys_impl(opt: &StartOpt, upgrade: bool) -> Result<()> {
     println!("installing sys chart, upgrade: {upgrade}");
 
     let config = ChartConfig::sys_builder()

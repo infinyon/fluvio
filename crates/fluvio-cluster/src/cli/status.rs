@@ -57,7 +57,7 @@ impl StatusOpt {
         Ok(())
     }
 
-    async fn check_k8s_cluster(pb: &ProgressRenderer) -> Result<(), ClusterCliError> {
+    async fn check_k8s_cluster(pb: &ProgressRenderer) -> Result<()> {
         let k8s_cluster_check = Box::new(ActiveKubernetesCluster);
 
         pb.set_message(pad_format!(format!(
@@ -80,11 +80,9 @@ impl StatusOpt {
                     k8s_cluster_check.label().italic(),
                 )));
 
-                Err(ClusterCliError::Other(err.to_string()))
+                Err(ClusterCliError::Other(err.to_string()).into())
             }
-            _ => Err(ClusterCliError::Other(
-                "Should not be reachable".to_string(),
-            )),
+            _ => Err(ClusterCliError::Other("Should not be reachable".to_string()).into()),
         }
     }
 
@@ -92,7 +90,7 @@ impl StatusOpt {
         pb: &ProgressRenderer,
         fluvio_config: &FluvioConfig,
         config_file: &ConfigFile,
-    ) -> Result<(), ClusterCliError> {
+    ) -> Result<()> {
         pb.set_message(pad_format!(format!("{} Checking {}", "📝".bold(), "SC")));
 
         match Fluvio::connect_with_config(fluvio_config).await {
@@ -107,7 +105,7 @@ impl StatusOpt {
                     Self::profile_name(config_file).italic(),
                 )));
 
-                Err(ClusterCliError::Other(err.to_string()))
+                Err(ClusterCliError::Other(err.to_string()).into())
             }
         }
     }
@@ -204,9 +202,7 @@ impl StatusOpt {
         }
     }
 
-    async fn total_cluster_storage(
-        partitions: &Vec<Metadata<PartitionSpec>>,
-    ) -> Result<i64, ClusterCliError> {
+    async fn total_cluster_storage(partitions: &Vec<Metadata<PartitionSpec>>) -> Result<i64> {
         let mut cluster_total = 0;
         for partition in partitions {
             let follower_count = partition.status.replicas.len() as i64;
@@ -220,11 +216,12 @@ impl StatusOpt {
         Ok(cluster_total)
     }
 
-    fn partition_size(partition: &Metadata<PartitionSpec>) -> Result<i64, ClusterCliError> {
+    fn partition_size(partition: &Metadata<PartitionSpec>) -> Result<i64> {
         match partition.status.size {
             size if size < 0 => Err(ClusterCliError::Other(format!(
                 "A partition has an invalid size: {size}"
-            ))),
+            ))
+            .into()),
             size => Ok(size),
         }
     }
