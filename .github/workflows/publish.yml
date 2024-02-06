@@ -145,10 +145,10 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TGT_SHA: ${{ needs.setup.outputs.pub_sha }}
     steps:
-      - name: Checkout code
+      - name: Checkout ${{needs.setup.outputs.pub_sha }}
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.setup.pub_sha }}
+          ref: ${{needs.setup.outputs.pub_sha }}
       - name: Install stable Fluvio CLI
         env:
           CHANNEL_TAG: stable
