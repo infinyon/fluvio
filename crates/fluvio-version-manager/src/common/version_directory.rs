@@ -303,7 +303,10 @@ mod tests {
 
         let settings = Settings::open().unwrap();
 
-        assert_eq!(settings.version.unwrap(), version_dir.manifest.version);
+        assert_eq!(
+            settings.version.unwrap(),
+            version_dir.manifest.version.to_string()
+        );
         assert_eq!(settings.channel.unwrap(), version_dir.manifest.channel);
 
         delete_fvm_dir();

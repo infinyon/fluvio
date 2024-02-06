@@ -42,10 +42,12 @@ impl UpdateOpt {
             );
             return Ok(());
         };
+        let ch_version = Channel::parse(&version)?; // convert to comparable Channel
+        let ps_version = Channel::parse(latest_pkgset.pkgset.to_string())?;
 
         match channel {
             Channel::Stable => {
-                if latest_pkgset.pkgset > version {
+                if ps_version > ch_version {
                     notify.info(format!(
                         "Updating fluvio {} to version {}. Current version is {}.",
                         channel.to_string().bold(),
@@ -64,7 +66,7 @@ impl UpdateOpt {
                 // The latest tag can be very dynamic, so we just check for this
                 // tag to be different than the current version assuming
                 // upstream is always up to date
-                if latest_pkgset.pkgset != version {
+                if ps_version != ch_version {
                     notify.info(format!(
                         "Updating fluvio {} to version {}. Current version is {}.",
                         channel.to_string().bold(),
@@ -79,7 +81,7 @@ impl UpdateOpt {
 
                 notify.done("You are already up to date");
             }
-            Channel::Tag(_) => {
+            Channel::Tag(_) | Channel::Other(_) => {
                 notify.warn("Static tags cannot be updated. No changes made.");
             }
         }

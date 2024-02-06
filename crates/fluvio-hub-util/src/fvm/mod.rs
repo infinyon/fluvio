@@ -29,6 +29,7 @@ pub enum Channel {
     Stable,
     Latest,
     Tag(Version),
+    Other(String),
 }
 
 impl Display for Channel {
@@ -37,6 +38,7 @@ impl Display for Channel {
             Channel::Stable => write!(f, "{}", STABLE_VERSION_CHANNEL),
             Channel::Latest => write!(f, "{}", LATEST_VERSION_CHANNEL),
             Channel::Tag(version) => write!(f, "{}", version),
+            Channel::Other(version) => write!(f, "{}", version),
         }
     }
 }
@@ -55,16 +57,25 @@ impl Ord for Channel {
                 Channel::Stable => Ordering::Equal,
                 Channel::Latest => Ordering::Greater,
                 Channel::Tag(_) => Ordering::Greater,
+                Channel::Other(_) => Ordering::Greater,
             },
             Channel::Latest => match other {
                 Channel::Stable => Ordering::Less,
                 Channel::Latest => Ordering::Equal,
                 Channel::Tag(_) => Ordering::Greater,
+                Channel::Other(_) => Ordering::Greater,
             },
             Channel::Tag(version) => match other {
                 Channel::Stable => Ordering::Less,
                 Channel::Latest => Ordering::Less,
-                Channel::Tag(other_version) => version.cmp(other_version),
+                Channel::Tag(tag_version) => version.cmp(tag_version),
+                Channel::Other(_) => Ordering::Less,
+            },
+            Channel::Other(version) => match other {
+                Channel::Stable => Ordering::Less,
+                Channel::Latest => Ordering::Less,
+                Channel::Tag(_) => Ordering::Less,
+                Channel::Other(other_version) => version.cmp(other_version),
             },
         }
     }
@@ -80,7 +91,7 @@ impl Channel {
     /// Returns `true` if the instance is a version tag instead of a channel
     /// string.
     pub fn is_version_tag(&self) -> bool {
-        matches!(self, Self::Tag(_))
+        matches!(self, Self::Tag(_) | Self::Other(_))
     }
 }
 
@@ -95,7 +106,7 @@ impl FromStr for Channel {
                 if let Ok(version) = Version::parse(s) {
                     Ok(Self::Tag(version))
                 } else {
-                    Err(Error::InvalidChannel(s.to_string()))
+                    Ok(Self::Other(s.to_string()))
                 }
             }
         }
@@ -174,5 +185,15 @@ mod tests {
         let ver_b = Channel::parse("0.10.13-mirroring347239873+20231016").unwrap();
 
         assert!(ver_b > ver_a);
+    }
+
+    #[test]
+    fn determines_otherversion_revisioning() {
+        let stable = Channel::parse("stable").unwrap();
+        let ssdkp1 = Channel::parse("ssdk-preview1").unwrap();
+        let ssdkp2 = Channel::parse("ssdk-preview2").unwrap();
+
+        assert!(stable > ssdkp1);
+        assert!(ssdkp2 > ssdkp1);
     }
 }
