@@ -18,6 +18,7 @@ _fluvio_version="${FLUVIO_VERSION:-${VERSION:-}}"
 # install fvm
 main() {
     need_cmd curl
+    need_cmd unzip
 
 	# Detect architecture and ensure it's supported
 	get_architecture || return 1
