@@ -13,9 +13,12 @@ on:
     branches: [master]
     paths:
       - "**"
-      - "!/*.md"
-      - "!/**.md"
-      - "!/rfc/**"
+    paths-ignore:
+      - "*.md"
+      - "**.md"
+      - "rfc/**"
+      - ".github/workflows/*.yml"
+
   workflow_dispatch:
     inputs:
       verbose:
