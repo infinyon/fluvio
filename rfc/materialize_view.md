@@ -1,10 +1,10 @@
 Fluvio & InfinyOn Cloud users need the ability to perform operations on a time-bound window and generate a materialized view.
 
-## Motivation 
+## Motivation
 
-Today, Fluvio supports record-by-record processing with the ability to apply transformation one record at a time. When a multi-record stream-based operation is required, Fluvio users create a Microservice that reads the records, applies an operation, and returns the result to a new stream. Unfortunately, these Microservices are managed independently of Fluvio, significantly increasing the complexity of building simple Real-Time Apps. 
+Today, Fluvio supports record-by-record processing with the ability to apply transformation one record at a time. When a multi-record stream-based operation is required, Fluvio users create a Microservice that reads the records, applies an operation, and returns the result to a new stream. Unfortunately, these Microservices are managed independently of Fluvio, significantly increasing the complexity of building simple Real-Time Apps.
 
-This PRD is a proposal to add the ability to compute aggregates inside Fluvio. This solution should eliminate the need to deploy and operate separate Microservices to perform stream-based computations. 
+This PRD is a proposal to add the ability to compute aggregates inside Fluvio. This solution should eliminate the need to deploy and operate separate Microservices to perform stream-based computations.
 
 In a larger context, time-based computations bring Fluvio closer to Flink and Spark, where our users won’t need to run multiple stacks to perform sums, averages, anomaly detections, etc.
 
@@ -114,11 +114,11 @@ $cat metrics_columns.yaml
   type: string
   validate:
   - uses: infinyon/regex@0.1.0
-    with: 
+    with:
       regex: ^[a-zA-Z]+([a-zA-Z0-9]+)*$
 - name: metric
   type: string
-  map: 
+  map:
   - uses: john/lowercase@0.1.0
 - name: count
   type: double
@@ -178,7 +178,7 @@ $ fluvio consume metrics -Bd --output table
 
 server      metric  count             ts               description
 ---------  -------  -----   ------------------------   -----------
-server-a   storage      1   2023-02-17 06:41:48.000Z   
+server-a   storage      1   2023-02-17 06:41:48.000Z
 server-a   compute      2   2023-02-17 06:41:48.000Z
 server-a   network      3   2023-02-17 06:41:48.000Z
 server-b   storage      4   2023-02-17 06:41:48.000Z
@@ -189,7 +189,7 @@ Columnar topics are identifyed by the `COLUMNS` flag:
 
 ```
 $ fluvio topic list
-NAME          COLUMNS    TYPE      PARTITIONS  REPLICAS  RETENTION  COMPRESSION  STATUS                   REASON 
+NAME          COLUMNS    TYPE      PARTITIONS  REPLICAS  RETENTION  COMPRESSION  STATUS                   REASON
 metrics         Y       computed      1           1        7days       any      provisioned
 topic-1                 computed      1           1        7days       any      provisioned
 ```
@@ -204,11 +204,11 @@ topic: metrics
 window:
   from: `datetime.today().replace(day=1, minute=0, second=0, microsecond=0).timestamp()`
   interval: 60 sec
-groupBy: 
+groupBy:
   - server
   - metric
 conditions:
-  - metric = 'storage' OR metric = 'compute' OR metric = 'network'  
+  - metric = 'storage' OR metric = 'compute' OR metric = 'network'
 output:
   - field: server
   - field: metric
@@ -237,7 +237,7 @@ _Note_: A columnar topic may have as many materialized views as desired.
 
 ### 4. Create a View and Apply the Materialized View Definition.
 
-We are introducing a new object called `view` to manage materialized views. 
+We are introducing a new object called `view` to manage materialized views.
 
 
 #### Create a View object
@@ -261,7 +261,7 @@ $ fluvio view list
 
 NAME      FROM      INTERVAL
 -----  ----------  ----------
-usage  2023-03-01  60 seconds  
+usage  2023-03-01  60 seconds
 ```
 
 
@@ -278,11 +278,11 @@ $ fluvio view consume usage
 
 SERVER     METRIC   QUANTITY
 --------   -------  --------
-server-a   storage      32.0 
-server-a   compute      34.0 
-server-a   network      36.0 
-server-b   storage      38.0 
-server-b   compute      40.0 
+server-a   storage      32.0
+server-a   compute      34.0
+server-a   network      36.0
+server-b   storage      38.0
+server-b   compute      40.0
 server-b   network      42.0
 ```
 
@@ -367,12 +367,12 @@ Consume from the pricing view:
 ```
 $ fluvio consume pricing -Bd --output table
 
-METRIC             TS              COST  
--------  ------------------------  ----  
-storage  1970-01-01 00:00:00.000Z  0.01 
-compute  1970-01-01 00:00:00.000Z  0.02 
+METRIC             TS              COST
+-------  ------------------------  ----
+storage  1970-01-01 00:00:00.000Z  0.01
+compute  1970-01-01 00:00:00.000Z  0.02
 network  1970-01-01 00:00:00.000Z  0.03
-storage  2023-02-18 01:00:00.000Z  0.04 
+storage  2023-02-18 01:00:00.000Z  0.04
 ...
 ```
 
@@ -392,7 +392,7 @@ smartmodules:
           type: timestamp
         - name: metric
           type: string
-    output: 
+    output:
       - decimal(10,2)
 output:
   - field: metric
@@ -414,11 +414,11 @@ Consume from `pricing` view:
 ```
 $ fluvio view consume pricing -d
 
-METRIC             TS         COST  
--------  -------------------  ----  
-storage  1970-01-01 00:00:00  0.01 
-compute  1970-01-01 00:00:00  0.02 
-network  1970-01-01 00:00:00  0.03 
+METRIC             TS         COST
+-------  -------------------  ----
+storage  1970-01-01 00:00:00  0.01
+compute  1970-01-01 00:00:00  0.02
+network  1970-01-01 00:00:00  0.03
 storage  2023-02-18 01:00:00  0.04
 ...
 ```
@@ -445,7 +445,7 @@ window:
 derivedColumns:
   - field: cost
     eval: `pricing.getPrice($.metric, $.ts)`
-groupBy: 
+groupBy:
   - cluster
   - metric
 output:
@@ -480,12 +480,12 @@ $ fluvio view create usage-pricing usage-pricing-view.yaml
 view created
 ```
 
-Consume from `usage-pricing`: 
+Consume from `usage-pricing`:
 
 ```
 SERVER     METRIC   QUANTITY  COST
 --------   -------  --------  ----
-server-a   storage      32.0  2.81 
+server-a   storage      32.0  2.81
 server-a   compute      34.0  3.32
 server-a   network      36.0  3.87
 server-b   storage      38.0  3.32
@@ -496,3 +496,5 @@ server-b   network      42.0  4.50
 In summary, to create a join, we need to:
 * Create a provider materialized view and expose an API
 * Create a consumer materialized view with derived columns that evaluates the provider API.
+
+Delete me: test ci trigger
