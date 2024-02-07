@@ -1,23 +1,22 @@
 ## Scope
 
-Define a minimal offset management functionality for integration into fluvio.
-
-Provide a simple minimum way to save and recover offset for the consumer.   We are not considering consumer group use case as part of this RFC
+Provide a minimal way to save and recover offset for the consumer. Offset mgt facility provides a way to set TTL for offset lifetime.
+We are not considering the consumer group use case as part of this RFC
 
 ### Use Case 1
 Automatic offset commit for given consumer id and a default pattern of
 comitting the offset of the previous record on fetching of the next record in a stream.
 
 ### Use Case 2
-An simple offset retention kind and time should be settable for a given duration and a maximum number of consumers. Offset mgt facility would provide way to set TTL for offset lifetime. The offsets are managed manually with client side API calls.
-
+Though offsets management is by default automatic. The Manual Offset api provides
+explict offset commit and flush control.
 
 ## Offset Management
 
 ### Use Case 1: Automatic Offset API
 
-The key operation of the API would be to send consumed offsets associated with a fluvio topic and id of a single
-member offset tracking group. The offset_start parameter is used to initialize the offset of the given consumer. Subsequent
+The key operation of the API would be to send consumed offsets associated with a fluvio topic and id for offset tracking.
+The offset_start parameter is used to initialize the offset of the given consumer. Subsequent
 connections of a consumer with the same `offset_consumer` id will receive offsets from the tracked offset value.
 
 The previous loops offset is automatically synced up on the next `stream.next()` call.
