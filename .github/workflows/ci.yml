@@ -11,8 +11,6 @@ on:
   merge_group:
   pull_request:
     branches: [master]
-    paths:
-      - "**"
     paths-ignore:
       - "*.md"
       - "**.md"
