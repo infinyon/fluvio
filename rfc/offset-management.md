@@ -2,20 +2,60 @@
 
 Define a minimal offset management functionality for integration into fluvio.
 
-Use Case 1:
-An simple offset retention kind and time should be settable for a given duration and a maximum number of consumers.
-The offsets are managed manually with client side API calls.
+Provide a simple minimum way to save and recover offset for the consumer.   We are not considering consumer group use case as part of this RFC
 
-Use Case 2:
-Automatic offset commit for single member consumer groups and a default pattern of
+### Use Case 1
+Automatic offset commit for given consumer id and a default pattern of
 comitting the offset of the previous record on fetching of the next record in a stream.
+
+### Use Case 2
+An simple offset retention kind and time should be settable for a given duration and a maximum number of consumers. Offset mgt facility would provide way to set TTL for offset lifetime. The offsets are managed manually with client side API calls.
+
 
 ## Offset Management
 
-### Use Case 1: Manual API
+### Use Case 1: Automatic Offset API
+
 The key operation of the API would be to send consumed offsets associated with a fluvio topic and id of a single
 member offset tracking group. The offset_start parameter is used to initialize the offset of the given consumer. Subsequent
 connections of a consumer with the same `offset_consumer` id will receive offsets from the tracked offset value.
+
+The previous loops offset is automatically synced up on the next `stream.next()` call.
+
+```rust
+use fluvio::consumer::ConsumerConfigBuilder;
+use fluvio::consumer::OffsetManagement;
+
+async fn offset_example() -> Result<()> {
+    let client = fluvio::connect();
+
+   let cfg = ConsumerConfigExtBuilder::new()
+           .topic("mytopic")
+           .partition(0) // optional, defaults to zero?
+           .offset_start(Offset::Beginnning)  // optional, defaults to (whatever was before)
+           .offset_consumer("my-consumer")    // optional, if set consumer strategy defaults to ::Auto
+           .offset_flush(3000)  // optional, defaults to ?
+           .max_bytes(12300) // optional, here as an example of other settings
+           .build()?;
+    let stream = client.consumer_with_config(cfg);
+
+    // when stream.next is called, previous offset will be sent to cluster to commit
+    while let Some(Ok(record)) = stream.next().await {
+        println!("{}", record.get_value().as_utf8_lossy_string());
+    }
+
+    // synchronous flush on stream drop?
+
+    Ok(())
+}
+
+```
+
+### Use Case 2: Manual API
+
+This api has the same behavior as the Automatic Offset API with the difference being
+that `offset_commit()` and `offset_flush()` calls are required. This allows for
+consumption patterns that may need take in more than one record before committing an offset as consumed.
 
 ```rust
 use fluvio::consumer::ConsumerConfigBuilder;
@@ -50,41 +90,6 @@ async fn offset_example() -> Result<()> {
 
     Ok(())
 }
-```
-
-### Use Case 2: Automatic Offset API
-
-This api has the same behavior as the Manual Offset API with the difference being
-that the previous loops offset is automatically synced up on the next `stream.next()` call.
-
-
-```rust
-use fluvio::consumer::ConsumerConfigBuilder;
-use fluvio::consumer::OffsetManagement;
-
-async fn offset_example() -> Result<()> {
-    let client = fluvio::connect();
-
-   let cfg = ConsumerConfigExtBuilder::new()
-           .topic("mytopic")
-           .partition(0) // optional, defaults to zero?
-           .offset_start(Offset::Beginnning)  // optional, defaults to (whatever was before)
-           .offset_consumer("my-consumer")    // optional, if set consumer strategy defaults to ::Auto
-           .offset_flush(3000)  // optional, defaults to ?
-           .max_bytes(12300) // optional, here as an example of other settings
-           .build()?;
-    let stream = client.consumer_with_config(cfg);
-
-    // when stream.next is called, previous offset will be sent to cluster to commit
-    while let Some(Ok(record)) = stream.next().await {
-        println!("{}", record.get_value().as_utf8_lossy_string());
-    }
-
-    // synchronous flush on stream drop?
-
-    Ok(())
-}
-
 ```
 
 
