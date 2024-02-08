@@ -108,7 +108,7 @@ impl TryFrom<UserInputType> for UserInputRecords {
 
                 let mut data: Vec<RecordData> = Vec::new();
 
-                for line in buf.flatten() {
+                for line in buf.map_while(Result::ok) {
                     let l = line.as_bytes();
 
                     size += l.len();
