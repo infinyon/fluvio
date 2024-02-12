@@ -26,19 +26,23 @@ Steps to reproduce the behavior:
 It helps to have logs from Fluvio's SC and SPU processes.
 Depending on your setup, here's how you can get the logs:
 
-- For a local Fluvio installation on Mac:
-  - Run `cat /usr/local/var/log/fluvio/flv_sc.log` for SC logs
-  - Run `cat /usr/local/var/log/fluvio/spu_log_XXXX.log` for each SPU
+- For a local Fluvio installation on Mac & Linux:
+  - Run `cat ~/.fluvio/log/flv_sc.log` for SC logs
+  - Run `cat ~/.fluvio/log//spu_log_XXXX.log` for each SPU
     - E.g. when running 1 SPU, there will be `spu_log_5001.log`
 - For a Fluvio installation on Minikube:
   - Run `kubectl logs fluvio-sc` for SC logs
   - Run `kubectl logs fluvio-spg-main-X` for each SPU
 
 **Environment (please complete the following information):**
- - OS: [e.g. Linux, Mac]
- - Fluvio Version [e.g. 22]
- - Minikube version (if used): use `minikube version`
- - Kubernetes version: use `kubectl version`
+- OS: [e.g. Linux, Mac]
+- Fluvio Version [e.g. 22]
+- Kubernetes version: use `kubectl version`
+- Minikube or other k8 version (if used): use `minikube version`
+
+**Optional Debugging:**
+Another trace which may be useful is re-running the command with RUST_LOG specified at a higher level
+`RUST_LOG=info fluvio ...` or `RUST_LOG=debug fluvio ...`
 
 **Additional context**
 Add any other context about the problem here.
