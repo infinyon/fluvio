@@ -72,7 +72,7 @@ base64 = "0.21.0"
 bytes = "1.1.0"
 bytesize = "1.1.0"
 cargo_toml = "0.17.1"
-cargo-generate = { version = "0.18.2", default-features = false }
+cargo-generate = { version = "0.19", default-features = false }
 cfg-if = "1.0.0"
 chrono = { version = "0.4.23", default-features = false }
 clap = { version = "4.0.10", default-features = false }
