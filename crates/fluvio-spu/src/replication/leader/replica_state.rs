@@ -7,6 +7,7 @@ use std::{
 use std::iter::FromIterator;
 use std::fmt;
 
+use async_lock::Mutex;
 use fluvio_controlplane::{replica::Replica, sc_api::update_lrs::LrsRequest};
 use tracing::{debug, error, warn};
 use tracing::instrument;
@@ -14,9 +15,12 @@ use async_rwlock::RwLock;
 use anyhow::{Result, Context};
 
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};
-use fluvio_controlplane_metadata::partition::{ReplicaStatus, PartitionStatus};
+use fluvio_controlplane_metadata::partition::{PartitionStatus, ReplicaStatus};
 use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
-use fluvio_types::SpuId;
+use fluvio_types::{
+    event::offsets::{OffsetPublisher, TOPIC_DELETED},
+    SpuId,
+};
 use fluvio_spu_schema::{Isolation, COMMON_VERSION};
 
 use crate::{
@@ -46,6 +50,7 @@ pub struct LeaderReplicaState<S> {
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
     status_update: SharedStatusUpdate,
     sm_ctx: Option<SharedSmartModuleContext>,
+    consumer_offset_publishers: Arc<Mutex<Vec<Arc<OffsetPublisher>>>>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -58,6 +63,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             in_sync_replica: self.in_sync_replica,
             status_update: self.status_update.clone(),
             sm_ctx: self.sm_ctx.clone(),
+            consumer_offset_publishers: self.consumer_offset_publishers.clone(),
         }
     }
 }
@@ -127,6 +133,7 @@ where
             in_sync_replica,
             status_update,
             sm_ctx: None,
+            consumer_offset_publishers: Arc::new(Mutex::new(Vec::new())),
         })
     }
 
@@ -383,6 +390,20 @@ where
     #[allow(unused)]
     pub async fn followers_info(&self) -> BTreeMap<SpuId, OffsetInfo> {
         self.followers.read().await.clone()
+    }
+
+    pub async fn register_offset_publisher(&self, offset_publisher: &Arc<OffsetPublisher>) {
+        self.consumer_offset_publishers
+            .lock()
+            .await
+            .push(offset_publisher.clone());
+    }
+
+    pub async fn signal_topic_deleted(&self) {
+        let offset_publishers = self.consumer_offset_publishers.lock().await;
+        for publisher in offset_publishers.iter() {
+            publisher.update(TOPIC_DELETED);
+        }
     }
 }
 

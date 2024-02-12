@@ -65,6 +65,9 @@ pub mod offsets {
 
     const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 
+    pub const INIT_OFFSET: i64 = -1;
+    pub const TOPIC_DELETED: i64 = -2;
+
     /// publish current offsets to listeners
     #[derive(Debug)]
     pub struct OffsetPublisher {
