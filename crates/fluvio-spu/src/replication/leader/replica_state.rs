@@ -18,7 +18,7 @@ use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};
 use fluvio_controlplane_metadata::partition::{PartitionStatus, ReplicaStatus};
 use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{
-    event::offsets::{OffsetPublisher, TOPIC_DELETED},
+    event::offsets::{SharedOffsetPublisher, WeakSharedOffsetPublisher, TOPIC_DELETED},
     SpuId,
 };
 use fluvio_spu_schema::{Isolation, COMMON_VERSION};
@@ -50,7 +50,7 @@ pub struct LeaderReplicaState<S> {
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
     status_update: SharedStatusUpdate,
     sm_ctx: Option<SharedSmartModuleContext>,
-    consumer_offset_publishers: Arc<Mutex<Vec<Arc<OffsetPublisher>>>>,
+    consumer_offset_publishers: Arc<Mutex<Vec<WeakSharedOffsetPublisher>>>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -392,17 +392,36 @@ where
         self.followers.read().await.clone()
     }
 
-    pub async fn register_offset_publisher(&self, offset_publisher: &Arc<OffsetPublisher>) {
-        self.consumer_offset_publishers
+    pub async fn register_offset_publisher(&self, offset_publisher: &SharedOffsetPublisher) {
+        let cleanup_frequency = 10;
+        let mut publishers = 
+            self.consumer_offset_publishers
             .lock()
-            .await
-            .push(offset_publisher.clone());
+            .await;
+
+        // Filter out any dead weak pointers every so often
+        if publishers.len() % cleanup_frequency == 0 {
+            let cleaned_publishers: Vec<WeakSharedOffsetPublisher> = 
+                publishers.iter()
+                .filter_map(|p| p.upgrade())
+                .map(|p| Arc::downgrade(&p))
+                .collect();
+            *publishers = cleaned_publishers;
+        }
+
+        let publisher = offset_publisher.clone();
+        let publisher = Arc::downgrade(&publisher);
+
+        publishers.push(publisher);
     }
 
     pub async fn signal_topic_deleted(&self) {
         let offset_publishers = self.consumer_offset_publishers.lock().await;
+
         for publisher in offset_publishers.iter() {
-            publisher.update(TOPIC_DELETED);
+            if let Some(p) = publisher.upgrade() {
+                p.update(TOPIC_DELETED);
+            }
         }
     }
 }
