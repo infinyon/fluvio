@@ -3025,3 +3025,68 @@ async fn read_records(
     }
     Ok(res)
 }
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_sends_topic_delete_error_on_topic_delete() {
+    let test_path = temp_dir().join("test_stream_fetch");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{port}");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    // perform for two versions
+    for version in 10..11 {
+        let topic = format!("test{version}");
+        let test = Replica::new((topic.clone(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica")
+            .init(&ctx)
+            .await
+            .expect("init succeeded");
+
+        ctx.leaders_state().insert(test_id, replica.clone()).await;
+
+        let stream_request = DefaultStreamFetchRequest::builder()
+            .topic(topic.clone())
+            .max_bytes(1000)
+            .build()
+            .expect("request");
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), version)
+            .await
+            .expect("create stream");
+
+        // Yield a very short time to ensure that the offset publishing registration occurs before topic delete signal,
+        // otherwise we never get a response. I suspect that this race condition should only occur when the consumer 
+        // and replica are in the same async executor and you signal a topic delete immediately after creating the stream.
+        sleep(Duration::from_millis(1)).await;
+
+        replica.signal_topic_deleted().await;
+
+        let response = stream.next().await.expect("first").expect("response");
+        debug!("response: {:#?}", response);
+        
+        debug!("received first message");
+        assert_eq!(response.topic, topic);
+
+        let partition = &response.partition;
+        assert_eq!(partition.error_code, ErrorCode::TopicDeleted);
+    }
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
