@@ -3071,7 +3071,7 @@ async fn test_stream_fetch_sends_topic_delete_error_on_topic_delete() {
             .expect("create stream");
 
         // Yield a very short time to ensure that the offset publishing registration occurs before topic delete signal,
-        // otherwise we never get a response. I suspect that this race condition should only occur when the consumer 
+        // otherwise we never get a response. I suspect that this race condition should only occur when the consumer
         // and replica are in the same async executor and you signal a topic delete immediately after creating the stream.
         sleep(Duration::from_millis(1)).await;
 
@@ -3079,7 +3079,7 @@ async fn test_stream_fetch_sends_topic_delete_error_on_topic_delete() {
 
         let response = stream.next().await.expect("first").expect("response");
         debug!("response: {:#?}", response);
-        
+
         debug!("received first message");
         assert_eq!(response.topic, topic);
 
