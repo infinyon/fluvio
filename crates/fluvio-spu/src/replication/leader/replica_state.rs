@@ -41,6 +41,8 @@ use super::FollowerNotifier;
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
+pub const CLEANUP_FREQUENCY: usize = 10;
+
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     replica: Replica,
@@ -392,17 +394,18 @@ where
         self.followers.read().await.clone()
     }
 
+    #[cfg(test)]
+    pub fn consumer_offset_publishers(&self) -> Arc<Mutex<Vec<WeakSharedOffsetPublisher>>> {
+        self.consumer_offset_publishers.clone()
+    }
+
     pub async fn register_offset_publisher(&self, offset_publisher: &SharedOffsetPublisher) {
-        let cleanup_frequency = 10;
-        let mut publishers = 
-            self.consumer_offset_publishers
-            .lock()
-            .await;
+        let mut publishers = self.consumer_offset_publishers.lock().await;
 
         // Filter out any dead weak pointers every so often
-        if publishers.len() % cleanup_frequency == 0 {
-            let cleaned_publishers: Vec<WeakSharedOffsetPublisher> = 
-                publishers.iter()
+        if publishers.len() % CLEANUP_FREQUENCY == 0 {
+            let cleaned_publishers: Vec<WeakSharedOffsetPublisher> = publishers
+                .iter()
                 .filter_map(|p| p.upgrade())
                 .map(|p| Arc::downgrade(&p))
                 .collect();
