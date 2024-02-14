@@ -58,12 +58,18 @@ pub mod offsets {
     use std::fmt;
     use std::pin::Pin;
     use std::sync::atomic::{AtomicI64, Ordering};
-    use std::sync::Arc;
+    use std::sync::{Arc, Weak};
 
     use tracing::trace;
     use event_listener::{Event, EventListener};
 
+    pub type SharedOffsetPublisher = Arc<OffsetPublisher>;
+    pub type WeakSharedOffsetPublisher = Weak<OffsetPublisher>;
+
     const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
+
+    pub const INIT_OFFSET: i64 = -1;
+    pub const TOPIC_DELETED: i64 = -2;
 
     /// publish current offsets to listeners
     #[derive(Debug)]

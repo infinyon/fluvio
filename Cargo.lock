@@ -2769,7 +2769,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.9"
+version = "0.10.10"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -3221,7 +3221,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "event-listener 3.1.0",
  "fluvio-future",
