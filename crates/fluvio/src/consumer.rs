@@ -39,12 +39,24 @@ pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 /// [`Offset`]: struct.Offset.html
 /// [`partition_consumer`]: struct.Fluvio.html#method.partition_consumer
 /// [`Fluvio`]: struct.Fluvio.html
-#[derive(Clone)]
 pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
     partition: PartitionId,
     pool: Arc<P>,
     metrics: Arc<ClientMetrics>,
+}
+
+// Manually implement Clone because the derive macro would require the
+// generic type to also be Clone, here `P`
+impl<P> Clone for PartitionConsumer<P> {
+    fn clone(&self) -> Self {
+        Self {
+            topic: self.topic.clone(),
+            partition: self.partition,
+            pool: self.pool.clone(),
+            metrics: self.metrics.clone(),
+        }
+    }
 }
 
 impl<P> PartitionConsumer<P>
