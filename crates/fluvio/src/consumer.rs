@@ -39,6 +39,7 @@ pub use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 /// [`Offset`]: struct.Offset.html
 /// [`partition_consumer`]: struct.Fluvio.html#method.partition_consumer
 /// [`Fluvio`]: struct.Fluvio.html
+#[derive(Clone)]
 pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
     partition: PartitionId,
@@ -587,6 +588,7 @@ impl ConsumerConfigBuilder {
 }
 
 /// Strategy used to select which partitions and from which topics should be streamed by the [`MultiplePartitionConsumer`]
+#[derive(Clone)]
 pub enum PartitionSelectionStrategy {
     /// Consume from all the partitions of a given topic
     All(String),
@@ -614,6 +616,7 @@ impl PartitionSelectionStrategy {
         Ok(pairs)
     }
 }
+#[derive(Clone)]
 pub struct MultiplePartitionConsumer {
     strategy: PartitionSelectionStrategy,
     pool: Arc<SpuPool>,
