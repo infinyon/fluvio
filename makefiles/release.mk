@@ -1,5 +1,5 @@
 # Use the binary name produced by cargo
-PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk
+PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk fvm
 PUBLISH_BINARIES_HUB=cdk
 
 # CI has to set RELEASE=true to run commands that update public
