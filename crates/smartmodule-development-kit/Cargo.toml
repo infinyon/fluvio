@@ -20,6 +20,7 @@ clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-
 current_platform = { workspace = true }
 dirs = { workspace = true }
 toml = { workspace = true }
+tokio = { workspace = true }
 cargo-generate = { workspace = true }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
