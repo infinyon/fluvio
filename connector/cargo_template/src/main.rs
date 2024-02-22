@@ -5,7 +5,7 @@ use config::CustomConfig;
 use fluvio::{RecordKey, TopicProducer};
 use fluvio_connector_common::{
     connector,
-    Result 
+    Result
 };
 
 #[connector(source)]
@@ -27,7 +27,8 @@ use fluvio_connector_common::{connector, consumer::ConsumerStream, Result};
 async fn start(config: CustomConfig, mut stream: impl ConsumerStream) -> Result<()> {
     println!("Starting {{project-name}} sink connector with {config:?}");
     while let Some(Ok(record)) = stream.next().await {
-        println!("{}",record.value().as_ut8_lossy_string());
+        let val = String::from_utf8_lossy(record.value());
+        println!("{val}");
     }
     Ok(())
 }

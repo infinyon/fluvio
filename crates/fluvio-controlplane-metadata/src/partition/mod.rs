@@ -7,8 +7,6 @@ pub use fluvio_protocol::record::ReplicaKey;
 
 #[cfg(feature = "k8")]
 mod k8;
-#[cfg(feature = "k8")]
-pub use k8::*;
 
 mod metadata {
 

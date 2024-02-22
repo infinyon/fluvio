@@ -7,6 +7,7 @@ use std::{
 use std::iter::FromIterator;
 use std::fmt;
 
+use async_lock::Mutex;
 use fluvio_controlplane::{replica::Replica, sc_api::update_lrs::LrsRequest};
 use tracing::{debug, error, warn};
 use tracing::instrument;
@@ -14,9 +15,12 @@ use async_rwlock::RwLock;
 use anyhow::{Result, Context};
 
 use fluvio_protocol::record::{RecordSet, Offset, ReplicaKey, RawRecords, Batch};
-use fluvio_controlplane_metadata::partition::{ReplicaStatus, PartitionStatus};
+use fluvio_controlplane_metadata::partition::{PartitionStatus, ReplicaStatus};
 use fluvio_storage::{FileReplica, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
-use fluvio_types::SpuId;
+use fluvio_types::{
+    event::offsets::{SharedOffsetPublisher, WeakSharedOffsetPublisher, TOPIC_DELETED},
+    SpuId,
+};
 use fluvio_spu_schema::{Isolation, COMMON_VERSION};
 
 use crate::{
@@ -37,6 +41,8 @@ use super::FollowerNotifier;
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
+pub const CLEANUP_FREQUENCY: usize = 10;
+
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {
     replica: Replica,
@@ -46,6 +52,7 @@ pub struct LeaderReplicaState<S> {
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
     status_update: SharedStatusUpdate,
     sm_ctx: Option<SharedSmartModuleContext>,
+    consumer_offset_publishers: Arc<Mutex<Vec<WeakSharedOffsetPublisher>>>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -58,6 +65,7 @@ impl<S> Clone for LeaderReplicaState<S> {
             in_sync_replica: self.in_sync_replica,
             status_update: self.status_update.clone(),
             sm_ctx: self.sm_ctx.clone(),
+            consumer_offset_publishers: self.consumer_offset_publishers.clone(),
         }
     }
 }
@@ -127,6 +135,7 @@ where
             in_sync_replica,
             status_update,
             sm_ctx: None,
+            consumer_offset_publishers: Arc::new(Mutex::new(Vec::new())),
         })
     }
 
@@ -383,6 +392,40 @@ where
     #[allow(unused)]
     pub async fn followers_info(&self) -> BTreeMap<SpuId, OffsetInfo> {
         self.followers.read().await.clone()
+    }
+
+    #[cfg(test)]
+    pub fn consumer_offset_publishers(&self) -> Arc<Mutex<Vec<WeakSharedOffsetPublisher>>> {
+        self.consumer_offset_publishers.clone()
+    }
+
+    pub async fn register_offset_publisher(&self, offset_publisher: &SharedOffsetPublisher) {
+        let mut publishers = self.consumer_offset_publishers.lock().await;
+
+        // Filter out any dead weak pointers every so often
+        if publishers.len() % CLEANUP_FREQUENCY == 0 {
+            let cleaned_publishers: Vec<WeakSharedOffsetPublisher> = publishers
+                .iter()
+                .filter_map(|p| p.upgrade())
+                .map(|p| Arc::downgrade(&p))
+                .collect();
+            *publishers = cleaned_publishers;
+        }
+
+        let publisher = offset_publisher.clone();
+        let publisher = Arc::downgrade(&publisher);
+
+        publishers.push(publisher);
+    }
+
+    pub async fn signal_topic_deleted(&self) {
+        let offset_publishers = self.consumer_offset_publishers.lock().await;
+
+        for publisher in offset_publishers.iter() {
+            if let Some(p) = publisher.upgrade() {
+                p.update(TOPIC_DELETED);
+            }
+        }
     }
 }
 

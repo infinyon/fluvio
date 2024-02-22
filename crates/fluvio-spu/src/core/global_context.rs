@@ -48,7 +48,7 @@ pub struct GlobalContext<S> {
 }
 
 // -----------------------------------
-// Global Contesxt - Implementation
+// Global Context - Implementation
 // -----------------------------------
 
 impl<S> GlobalContext<S>
@@ -352,6 +352,7 @@ mod file_replica {
         async fn remove_leader_replica(&self, replica: Replica) -> ReplicaRemovedRequest {
             // try to send message to leader controller if still exists
             if let Some(previous_state) = self.leaders_state().remove(&replica.id).await {
+                previous_state.signal_topic_deleted().await;
                 if let Err(err) = previous_state.remove().await {
                     error!("error: {} removing replica: {}", err, replica);
                 } else {

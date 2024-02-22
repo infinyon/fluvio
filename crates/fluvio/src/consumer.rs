@@ -46,6 +46,19 @@ pub struct PartitionConsumer<P = SpuPool> {
     metrics: Arc<ClientMetrics>,
 }
 
+// Manually implement Clone because the derive macro would require the
+// generic type to also be Clone, here `P`
+impl<P> Clone for PartitionConsumer<P> {
+    fn clone(&self) -> Self {
+        Self {
+            topic: self.topic.clone(),
+            partition: self.partition,
+            pool: self.pool.clone(),
+            metrics: self.metrics.clone(),
+        }
+    }
+}
+
 impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
@@ -587,6 +600,7 @@ impl ConsumerConfigBuilder {
 }
 
 /// Strategy used to select which partitions and from which topics should be streamed by the [`MultiplePartitionConsumer`]
+#[derive(Clone)]
 pub enum PartitionSelectionStrategy {
     /// Consume from all the partitions of a given topic
     All(String),
@@ -614,6 +628,7 @@ impl PartitionSelectionStrategy {
         Ok(pairs)
     }
 }
+#[derive(Clone)]
 pub struct MultiplePartitionConsumer {
     strategy: PartitionSelectionStrategy,
     pool: Arc<SpuPool>,

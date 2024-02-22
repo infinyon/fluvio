@@ -38,7 +38,7 @@ jobs:
       runs: ${{ steps.runs.outputs.runs }}
     steps:
       - id: check
-        run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
+        run: echo "check=${{ env.ENABLE_CHECK }}" >> "$GITHUB_OUTPUT"
 
   # Run all checks and unit test. This always run on debug mode
   build_primary_binaries:

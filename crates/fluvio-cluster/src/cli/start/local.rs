@@ -1,12 +1,11 @@
 use std::convert::TryInto;
 use std::ops::Deref;
+use anyhow::Result;
 use semver::Version;
 
 use fluvio::config::TlsPolicy;
 
-use crate::check::ClusterCheckError;
-use crate::cli::ClusterCliError;
-use crate::{LocalInstaller, LocalConfig, LocalInstallError};
+use crate::{LocalInstaller, LocalConfig};
 
 use super::StartOpt;
 
@@ -14,10 +13,7 @@ use super::StartOpt;
 ///
 /// Returns `Ok(true)` on success, `Ok(false)` if pre-checks failed and are
 /// reported, or `Err(e)` if something unexpected occurred.
-pub async fn process_local(
-    opt: StartOpt,
-    platform_version: Version,
-) -> Result<(), ClusterCliError> {
+pub async fn process_local(opt: StartOpt, platform_version: Version) -> Result<()> {
     let mut builder = LocalConfig::builder(platform_version);
     builder
         .log_dir(opt.log_dir.deref())
@@ -56,12 +52,12 @@ pub async fn process_local(
     Ok(())
 }
 
-pub async fn install_local(installer: &LocalInstaller) -> Result<(), LocalInstallError> {
+pub async fn install_local(installer: &LocalInstaller) -> Result<()> {
     installer.install().await?;
     Ok(())
 }
 
-pub async fn setup_local(installer: &LocalInstaller) -> Result<(), ClusterCheckError> {
+pub async fn setup_local(installer: &LocalInstaller) -> Result<()> {
     installer.preflight_check(false).await?;
 
     Ok(())

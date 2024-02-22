@@ -325,6 +325,7 @@ impl StorageBytesIterator for BufferedFileBytesIterator {
 mod tests {
 
     use std::env::temp_dir;
+    use std::path::PathBuf;
 
     use futures_lite::AsyncWriteExt;
 
@@ -332,14 +333,20 @@ mod tests {
 
     use super::*;
 
-    #[fluvio_future::test]
-    async fn test_file_descriptor() {
-        let test_file = temp_dir().join("simple_write");
-
-        let mut file = File::create(&test_file).await.expect("file creation");
+    async fn write_hello_world(fname: &PathBuf) {
+        let mut file = File::create(fname).await.expect("file creation");
         file.write_all(b"hello world").await.expect("write");
         file.flush().await.expect("flush");
         drop(file);
+
+        // possible CI fix for unstable readback in gh actions
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+    }
+
+    #[fluvio_future::test]
+    async fn test_file_descriptor() {
+        let test_file = temp_dir().join("simple_write");
+        write_hello_world(&test_file).await;
 
         let file = File::open(&test_file).await.expect("open");
         let fd = file.as_raw_fd();

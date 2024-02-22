@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::Parser;
 use tracing::debug;
 
@@ -20,7 +21,7 @@ pub struct DeleteOpt {
 }
 
 impl DeleteOpt {
-    pub async fn process(self) -> Result<(), ClusterCliError> {
+    pub async fn process(self) -> Result<()> {
         let mut builder = ClusterUninstallConfig::builder();
         builder.hide_spinner(false);
 
@@ -54,7 +55,8 @@ impl DeleteOpt {
                 other => {
                     return Err(ClusterCliError::Other(format!(
                         "delete command is not supported for {other} installation type"
-                    )))
+                    ))
+                    .into())
                 }
             }
         }

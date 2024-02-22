@@ -151,10 +151,10 @@ jobs:
         if: ${{ matrix.cluster_type == 'k8' }}
         run: |
           ./k8-util/cluster/reset-k3d.sh
-      - name: Install Fluvio CLI and start cluster
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | VERSION=latest bash
-          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
+        with:
+          version: latest
       - name: Start Fluvio Cluster
         # --image-version is only used in the k8 cluster_type
         run: |

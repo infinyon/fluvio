@@ -3,13 +3,13 @@
 //!
 //! Format SPU response based on output type
 //!
+use anyhow::Result;
 use comfy_table::{Row, Cell};
 use serde::Serialize;
 
 use fluvio::metadata::objects::Metadata;
 use fluvio::metadata::spu::SpuSpec;
 
-use crate::cli::ClusterCliError;
 use crate::cli::common::output::{OutputType, Terminal, TableOutputHandler};
 use crate::cli::common::t_println;
 
@@ -21,7 +21,7 @@ pub fn format_spu_response_output<O>(
     out: std::sync::Arc<O>,
     spus: Vec<Metadata<SpuSpec>>,
     output_type: OutputType,
-) -> Result<(), ClusterCliError>
+) -> Result<()>
 where
     O: Terminal,
 {

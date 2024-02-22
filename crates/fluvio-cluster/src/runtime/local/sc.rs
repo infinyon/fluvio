@@ -4,6 +4,7 @@ use std::{
     process::{Command, Stdio},
 };
 
+use anyhow::Result;
 use fluvio::config::TlsPolicy;
 use fluvio_command::CommandExt;
 use tracing::info;
@@ -29,7 +30,7 @@ pub enum ScMode {
 impl FluvioLocalProcess for ScProcess {}
 
 impl ScProcess {
-    pub fn start(&self) -> Result<(), LocalRuntimeError> {
+    pub fn start(&self) -> Result<()> {
         let outputs = File::create(format!("{}/flv_sc.log", self.log_dir.display()))?;
         let errors = outputs.try_clone()?;
 

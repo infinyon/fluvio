@@ -3,7 +3,6 @@ use std::path::PathBuf;
 
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
-use semver::Version;
 
 use fluvio_hub_util::fvm::Channel;
 
@@ -20,7 +19,7 @@ pub struct Settings {
     /// The active `channel` for the Fluvio Installation
     pub channel: Option<Channel>,
     /// The specific version in use
-    pub version: Option<Version>,
+    pub version: Option<String>,
 }
 
 impl Settings {
@@ -66,7 +65,7 @@ impl Settings {
     /// Update settings file to keep track of active Fluvio Version
     pub fn update_from_manifest(&mut self, manifest: &VersionManifest) -> Result<()> {
         self.channel = Some(manifest.channel.to_owned());
-        self.version = Some(manifest.version.to_owned());
+        self.version = Some(manifest.version.to_string());
         self.save()?;
 
         Ok(())
@@ -94,6 +93,8 @@ impl Settings {
 #[cfg(test)]
 pub mod tests {
     use std::fs::{remove_file, read_to_string, create_dir, remove_dir_all};
+
+    use semver::Version;
 
     use crate::common::{home_dir, manifest::VersionManifest};
 
@@ -156,7 +157,7 @@ version = "0.11.0"
         let mut settings = Settings::init().expect("Failed to create settings.toml file");
 
         settings.channel = Some(Channel::Stable);
-        settings.version = Some(Version::new(0, 11, 0));
+        settings.version = Some(Version::new(0, 11, 0).to_string());
 
         settings.save().expect("Failed to save settings.toml file");
 
@@ -182,7 +183,7 @@ version = "0.12.0"
         let mut settings = Settings::init().expect("Failed to create settings.toml file");
 
         settings.channel = Some(Channel::Stable);
-        settings.version = Some(Version::new(0, 11, 0));
+        settings.version = Some(Version::new(0, 11, 0).to_string());
         settings.save().expect("Failed to save settings.toml file");
 
         let settings_str =
@@ -191,7 +192,7 @@ version = "0.12.0"
         assert_eq!(settings_str, EXPECT_FIRST);
 
         settings.channel = Some(Channel::Latest);
-        settings.version = Some(Version::new(0, 12, 0));
+        settings.version = Some(Version::new(0, 12, 0).to_string());
         settings.save().expect("Failed to save settings.toml file");
 
         let settings_str =
@@ -232,9 +233,11 @@ version = "0.12.0"
     fn updates_settings_toml_with_manifest_contents() {
         create_fvm_dir();
 
+        const VERSION: &str = "0.10.0";
+
         let manifest = VersionManifest {
             channel: Channel::Stable,
-            version: Version::parse("0.10.0").unwrap(),
+            version: Version::parse(VERSION).unwrap(),
         };
 
         let mut settings = Settings::open().unwrap();
@@ -245,7 +248,7 @@ version = "0.12.0"
 
         let settings = Settings::open().unwrap();
         assert_eq!(settings.channel, Some(Channel::Stable));
-        assert_eq!(settings.version, Some(Version::parse("0.10.0").unwrap()));
+        assert_eq!(settings.version, Some(VERSION.to_string()));
 
         delete_fvm_dir();
     }

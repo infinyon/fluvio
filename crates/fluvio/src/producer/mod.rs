@@ -154,6 +154,7 @@ impl Drop for ProducerPool {
 /// topic it was initialized for. Once you have a `TopicProducer`,
 /// you can send events to the topic, choosing which partition
 /// each event should be delivered to.
+#[derive(Clone)]
 pub struct TopicProducer {
     inner: Arc<InnerTopicProducer>,
     #[cfg(feature = "smartengine")]

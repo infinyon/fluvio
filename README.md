@@ -33,46 +33,46 @@ On your terminal run
 curl -fsS https://hub.infinyon.cloud/install/install.sh | bash
 ```
 
+Follow the instructions and copy/paste the path to the `bin` directory to your startup script file.
+
 Fluvio version manager will give you the ability to download different versions of Fluvio:
-- Including our read only edge cluster with built in compression, caching, and mirroring to never lose data even with extended downtimes.
+- Including our read-only edge cluster with built-in compression, caching, and mirroring to never lose data even with extended downtimes.
 - Or our Developer Preview of Stateful Streaming which we are building using the web assembly component model to support all web assembly compatible languages.
 
-### Step 2. Add the install directory to path:
-
-Copy paste the last line of the installer log that looks like this on MacOS:
-```bash
-echo 'export PATH="${HOME}/.fvm/bin:${HOME}/.fluvio/bin:${PATH}"' >> ~/.zshrc
-```
-
-It will look different on Linux -
-```bash
-echo 'export PATH="${HOME}/.fvm/bin:${HOME}/.fluvio/bin:${PATH}"' >> ~/.bashrc
-```
-
-### Step 3. Start local cluster:
+### Step 2. Start local cluster:
 
 The following command will start a local cluster by default:
+
 ```bash
 fluvio cluster start
 ```
-Step 4. Create Topic:
+
+### Step 3. Create Topic:
 
 The following command will create a topic called hello-fluvio:
+
 ```bash
 fluvio topic create hello-fluvio
 ```
-Step 5. Produce to Topic, Consume From Topic:
+
+### Step 4. Produce to Topic, Consume From Topic:
 
 Produce data to your topic. Run the command first and then type some messages:
+
 ```bash
 fluvio produce hello-fluvio
 > hello fluvio
+Ok!
 > test message
+Ok!
 ```
+
 Consume data from the topic, Run the following command in a different terminal:
+
 ```bash
 fluvio consume hello-fluvio -B -d
 ```
+
 Just like that! You have a local cluster running.
 
 ## Next Steps
@@ -96,7 +96,7 @@ Using Connector Development Kit, we built our existing connectors in a matter of
 - [Connector Development Kit docs](https://www.fluvio.io/connectors/cdk/overview/)
 
 #### Learn how to build custom smart modules
-Fluvio applies wasm based stream processing and data transformations. We call these reusable transformation functions smart modules. Reusable Smart modules are built using Smart Module Development Kit and can be distrubited using InfinyOn Cloud hub. 
+Fluvio applies wasm based stream processing and data transformations. We call these reusable transformation functions smart modules. Reusable Smart modules are built using Smart Module Development Kit and can be distributed using InfinyOn Cloud hub. 
 
 - [Smart Modules docs](https://www.fluvio.io/smartmodules/)
 - [Smart Modules Development Kit docs](https://www.fluvio.io/smartmodules/)
@@ -106,7 +106,7 @@ There are some limitations on the amount of polyglot development interface suppo
 - Stateful Service Development Kit docs- *Coming Soon* [Request Developer Preview Invite](https://infinyon.com/request/ss-early-access/)
 
 #### Try workflows on InfinyOn Cloud
-InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3000 worth credits to build data flows on InfinyOn Cloud.
+InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3000 worth of credits to build data flows on InfinyOn Cloud.
 - [Check InfinyOn Cloud Guides](https://infinyon.com/docs/guides/)
 - [Check out experimental data flows on InfinyOn Labs Repo](https://github.com/infinyon/labs-projects)
 
@@ -120,8 +120,8 @@ InfinyOn Cloud is Fluvio on the cloud as a managed service. All new users get $3
 - [Java API docs](https://infinyon.github.io/fluvio-client-java/com/infinyon/fluvio/package-summary.html)
 
 **Community Maintained:**
-- [Go API docs]()
-- [Java AIP docs](https://github.com/avinassh/fluvio-go)
+- [Go API docs](https://github.com/avinassh/fluvio-go)
+- [Java API docs](https://github.com/infinyon/fluvio-client-java)
 - [Elixir API docs](https://github.com/viniarck/fluvio-ex)
 
 ## Contributing

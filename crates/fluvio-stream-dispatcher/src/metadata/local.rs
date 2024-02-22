@@ -989,7 +989,7 @@ spec:
         assert_eq!(updates.len(), 3);
 
         assert!(
-            matches!(updates.get(0), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
+            matches!(updates.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
         );
         assert!(
             matches!(updates.get(1), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status"))
@@ -1161,7 +1161,7 @@ spec:
         assert_eq!(updates.len(), 2);
 
         assert!(
-            matches!(updates.get(0), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status2"))
+            matches!(updates.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status2"))
         );
         assert!(matches!(updates.get(1), Some(LSUpdate::Delete(deleted)) if deleted.eq(&obj.key)));
         drop(meta_folder)
@@ -1206,7 +1206,7 @@ spec:
         assert_eq!(updates1.len(), 3);
 
         assert!(
-            matches!(updates1.get(0), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
+            matches!(updates1.first(), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq(""))
         );
         assert!(
             matches!(updates1.get(1), Some(LSUpdate::Mod(obj)) if obj.status.to_string().eq("new status"))

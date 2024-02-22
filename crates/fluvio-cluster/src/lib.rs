@@ -57,8 +57,8 @@ pub use common::*;
 mod common {
 
     use std::{path::PathBuf, borrow::Cow};
-    use std::io::Error as IoError;
 
+    use anyhow::Result;
     use fluvio::config::{TlsPaths, TlsConfig};
 
     /// The result of a successful startup of a Fluvio cluster
@@ -98,7 +98,7 @@ mod common {
         Remote(String),
     }
 
-    pub fn tls_config_to_cert_paths(config: &TlsConfig) -> Result<Cow<TlsPaths>, IoError> {
+    pub fn tls_config_to_cert_paths(config: &TlsConfig) -> Result<Cow<TlsPaths>> {
         use std::fs::write;
         use rand::distributions::Alphanumeric;
         use std::iter;

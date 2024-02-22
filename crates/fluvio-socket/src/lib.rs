@@ -13,7 +13,7 @@ pub use self::error::SocketError;
 pub use self::socket::FluvioSocket;
 pub use multiplexing::*;
 pub use sink::*;
-pub use socket::*;
+
 pub use stream::*;
 pub use versioned::*;
 

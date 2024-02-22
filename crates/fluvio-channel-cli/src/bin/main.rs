@@ -8,7 +8,6 @@ use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
 use std::io::{self, Write};
 
-use colored::Colorize;
 use clap::{Parser, CommandFactory};
 use tracing::debug;
 use cfg_if::cfg_if;
@@ -293,11 +292,7 @@ fn main() -> Result<()> {
         if args.contains(&"update".to_string())
             && fluvio_channel::is_pinned_version_channel(channel_name.as_str())
         {
-            println!(
-                    "{}\n{}\n",
-                    "Unsupported Feature: The `fluvio update` command is not supported when using a pinned version channel. To use a different version run:".yellow(),
-                    "  fluvio version create X.Y.Z\n  fluvio version switch X.Y.Z".italic().yellow()
-                );
+            println!("Unsupported Feature: The `fluvio update` command is not supported use fvm");
             std::process::exit(1);
         }
     }

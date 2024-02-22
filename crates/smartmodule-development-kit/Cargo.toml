@@ -20,6 +20,7 @@ clap = { workspace = true, features = ["std", "derive", "help", "usage", "error-
 current_platform = { workspace = true }
 dirs = { workspace = true }
 toml = { workspace = true }
+tokio = { workspace = true }
 cargo-generate = { workspace = true }
 include_dir = { workspace = true }
 tempfile = { workspace = true }
@@ -35,5 +36,5 @@ fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformati
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
 fluvio-sc-schema = { path = "../fluvio-sc-schema" }
-fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd", "smartmodule-test"] }
+fluvio-cli-common = { path = "../fluvio-cli-common", features = ["file-records", "version-cmd", "serde", "smartmodule-test"] }
 cargo-builder = { path = "../cargo-builder"}

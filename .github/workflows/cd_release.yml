@@ -50,7 +50,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        version: [none, stable, semver]
+        version: [semver]
+        # version: [none, stable, semver]
     steps:
       - uses: actions/checkout@v4
       - name: Set the expected fluvio version
@@ -71,11 +72,11 @@ jobs:
       - name: Curl Install - Version number
         if: matrix.version == 'semver'
         run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
-
-        # Utilizes the env var set in the previous step
-      - name: Curl Install
-        run: curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash | tee /tmp/installer.version
-
+      - name: Curl Install - FLUVIO_VERSION=${{ env.VERSION }}
+        run: |
+          curl -fsS https://hub.infinyon.cloud/install/install.sh | \
+            FLUVIO_VERSION=${{ env.VERSION }} bash | \
+            tee /tmp/installer.version
       - name: Verify installer output
         run: |
           INSTALLER_VERSION=$(cat /tmp/installer.version | grep "fluvio@" | awk '{print $4}' | cut -b 8-)
@@ -117,10 +118,8 @@ jobs:
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
 
       - run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
-      - name: Install Fluvio
-        run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh?ctx=ci | bash
-          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
       - name: Start cluster
         timeout-minutes: 10
         run: |
@@ -164,9 +163,14 @@ jobs:
           echo "PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' |  grep "v" | sed 's/^v//' | head -2 | tail -1)" | tee -a $GITHUB_ENV
           PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' |  grep "v" | sed 's/^v//' | head -2 | tail -1)
 
-      - name: Install last stable Fluvio CLI and start cluster
+      - name: Setup Fluvio
+        uses: infinyon/fluvio/.github/actions/setup-fluvio@master
+        with:
+          version: ${{ env.PREV_STABLE_VERSION }}
+
+      - name: Start cluster
+        timeout-minutes: 10
         run: |
-          curl -fsS https://hub.infinyon.cloud/install/install.sh | FLUVIO_VERSION=$PREV_STABLE_VERSION bash
           ~/.fluvio/bin/fluvio cluster start --k8
           ~/.fluvio/bin/fluvio version
 

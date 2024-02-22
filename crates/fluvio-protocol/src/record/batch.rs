@@ -569,7 +569,7 @@ mod test {
         let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
         println!("batch: {batch:#?}");
 
-        let decoded_record = batch.records.get(0).unwrap();
+        let decoded_record = batch.records.first().unwrap();
         println!("record crc: {}", batch.header.crc);
         assert_eq!(batch.header.crc, 1430948200);
         let b = decoded_record.value.as_ref();
@@ -622,7 +622,7 @@ mod test {
         let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
         println!("batch: {batch:#?}");
 
-        let decoded_record = batch.records.get(0).unwrap();
+        let decoded_record = batch.records.first().unwrap();
         println!("record crc: {}", batch.header.crc);
         assert_eq!(batch.header.crc, 2943551365);
         let b = decoded_record.value.as_ref();
@@ -660,7 +660,7 @@ mod test {
         assert_eq!(
             batch
                 .records
-                .get(0)
+                .first()
                 .expect("index 0 should exists")
                 .get_header()
                 .get_offset_delta(),
@@ -711,7 +711,7 @@ mod test {
         assert_eq!(
             batch
                 .records
-                .get(0)
+                .first()
                 .expect("index 0 should exists")
                 .get_header()
                 .get_offset_delta(),
@@ -756,7 +756,7 @@ mod test {
         assert_eq!(
             batch
                 .records
-                .get(0)
+                .first()
                 .expect("index 0 should exists")
                 .get_header()
                 .get_offset_delta(),

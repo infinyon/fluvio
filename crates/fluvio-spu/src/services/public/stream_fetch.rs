@@ -6,7 +6,10 @@ use tokio::select;
 
 use fluvio_compression::CompressionError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
+use fluvio_types::event::{
+    offsets::{OffsetPublisher, INIT_OFFSET, TOPIC_DELETED},
+    StickyEvent,
+};
 use fluvio_future::task::spawn;
 use fluvio_protocol::{
     api::{RequestMessage, RequestHeader},
@@ -26,10 +29,9 @@ use fluvio_spu_schema::{
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
-use crate::core::{DefaultSharedGlobalContext, metrics::IncreaseValue};
+use crate::core::{metrics::IncreaseValue, DefaultSharedGlobalContext};
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::conn_context::ConnectionContext;
-use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::context::SmartModuleContext;
 use crate::smartengine::batch::process_batch;
 use crate::core::metrics::SpuMetrics;
@@ -68,6 +70,10 @@ impl StreamFetchHandler {
                 .create_new_publisher()
                 .await;
             let consumer_offset_listener = offset_publisher.change_listener();
+
+            leader_state
+                .register_offset_publisher(&offset_publisher)
+                .await;
 
             spawn(async move {
                 if let Err(err) = StreamFetchHandler::fetch(
@@ -246,6 +252,10 @@ impl StreamFetchHandler {
                 consumer_offset_update = self.consumer_offset_listener.listen() => {
                     if consumer_offset_update == INIT_OFFSET {
                         continue;
+                    }
+
+                    if consumer_offset_update == TOPIC_DELETED {
+                        return Err(StreamFetchError::Fetch(ErrorCode::TopicDeleted))
                     }
 
                     // If the consumer offset is not behind, there is no need to send records
@@ -595,9 +605,9 @@ pub mod publishers {
     use std::fmt::Debug;
     use std::ops::AddAssign;
 
-    use super::OffsetPublisher;
+    use fluvio_types::event::offsets::INIT_OFFSET;
 
-    pub const INIT_OFFSET: i64 = -1;
+    use super::OffsetPublisher;
 
     pub struct StreamPublishers {
         publishers: HashMap<u32, Arc<OffsetPublisher>>,

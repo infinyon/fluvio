@@ -1,5 +1,5 @@
 # Use the binary name produced by cargo
-PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk
+PUBLISH_BINARIES=fluvio fluvio-run fluvio-channel fluvio-test smdk fvm
 PUBLISH_BINARIES_HUB=cdk
 
 # CI has to set RELEASE=true to run commands that update public
@@ -59,7 +59,7 @@ PACKAGE?=
 ARTIFACT?=
 
 # Fluvio Cloud Version used to publish pkgsets
-FLUVIO_CLOUD_VERSION=0.2.15
+FLUVIO_CLOUD_VERSION?=stable
 
 #### Testing only
 
@@ -70,7 +70,7 @@ get-tag:
 	echo $(DEV_VERSION_TAG)
 
 clean-publish:
-	rm -vf *.zip *.tgz *.exe 
+	rm -vf *.zip *.tgz *.exe
 	rm -vrf fluvio-* fluvio.* smdk-*
 	rm -vf /tmp/release_notes /tmp/cd_dev_latest.txt
 
@@ -122,7 +122,12 @@ install-fluvio-latest: curl-install-fluvio
 
 install-fluvio-package: FLUVIO_BIN=$(HOME)/.fluvio/bin/fluvio
 install-fluvio-package:
-	$(FLUVIO_BIN) install fluvio-package
+	# temporarily remove deadlock on fluvio-package install
+	# $(FLUVIO_BIN) install fluvio-package
+	mkdir -p ${HOME}/.fluvio/extensions
+	curl https://packages.fluvio.io/v1/packages/fluvio/fluvio-package/0.1.9/x86_64-unknown-linux-musl/fluvio-package \
+	-o ${HOME}/.fluvio/extensions/fluvio-package
+	chmod +x ${HOME}/.fluvio/extensions/fluvio-package
 
 # Requires GH_TOKEN set or `gh auth login`
 download-fluvio-release:
@@ -215,9 +220,9 @@ bump-fluvio: install-fluvio-package
 
 # publishes pkgset for stable e.g. 0.11.0
 # uses FLUVIO_CLOUD_VERSION
-publish-pkgset-stable: PKGSET_NAME=${REPO_VERSION}
-publish-pkgset-stable: FLUVIO_VERSION=${REPO_VERSION}
-publish-pkgset-stable:
+publish-pkgset: PKGSET_NAME=${REPO_VERSION}
+publish-pkgset: FLUVIO_VERSION=${REPO_VERSION}
+publish-pkgset:
 	./actions/publish-pkgset.sh
 
 bump-fluvio-stable: CHANNEL_TAG=stable
@@ -225,7 +230,7 @@ bump-fluvio-stable: VERSION=$(REPO_VERSION)
 # publishes pkgset for "stable"
 bump-fluvio-stable: PKGSET_NAME=stable
 bump-fluvio-stable: FLUVIO_VERSION=${VERSION}
-bump-fluvio-stable: bump-fluvio publish-pkgset-stable
+bump-fluvio-stable: bump-fluvio publish-pkgset
 	./actions/publish-pkgset.sh
 
 bump-fluvio-latest: CHANNEL_TAG=latest

@@ -94,6 +94,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 2006)]
     #[error("the topic name is invalid")]
     TopicInvalidName,
+    #[fluvio(tag = 2007)]
+    #[error("the topic was deleted")]
+    TopicDeleted,
 
     // Partition errors
     #[fluvio(tag = 3000)]

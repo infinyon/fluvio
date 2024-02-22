@@ -16,6 +16,6 @@ smdk load
 
 After that, you can consume from your topic and apply the aggregation as trasnformation:
 ```bash
-fluvio consume test-filter-lookback --transforms-file transforms.yaml
+fluvio consume test-filter-lookback --transforms transforms.yaml
 ```
 

@@ -7,6 +7,7 @@ use std::time::Duration;
 
 pub mod render;
 
+use anyhow::Result;
 use colored::Colorize;
 use fluvio_future::timer::sleep;
 use indicatif::style::TemplateError;
@@ -36,7 +37,7 @@ const RESOURCE_SERVICE_ACCOUNT: &str = "secret";
 /// captured by the `Ok` variant of a `CheckResult`, since the check completed
 /// successfully. If the process of performing the check is what fails, we get
 /// an `Err`.
-pub type CheckResult = std::result::Result<CheckStatus, ClusterCheckError>;
+pub type CheckResult = Result<CheckStatus>;
 
 /// A collection of the successes, failures, and errors of running checks
 pub type CheckResults = Vec<CheckResult>;
@@ -226,7 +227,7 @@ pub enum UnrecoverableCheckStatus {
     #[error("Unhandled K8 client error: {0}")]
     UnhandledK8ClientError(String),
 
-    #[error("Local Fluvio component still exists")]
+    #[error("Local Fluvio cluster still running")]
     ExistingLocalCluster,
 
     #[error("Helm client error")]
@@ -268,13 +269,13 @@ pub trait ClusterCheck: Debug + 'static + Send + Sync {
     }
 
     /// perform check, if successful return success message, if fail, return
-    async fn perform_check(&self, pb: &ProgressRenderer) -> Result<CheckStatus, ClusterCheckError>;
+    async fn perform_check(&self, pb: &ProgressRenderer) -> Result<CheckStatus>;
 }
 
 #[async_trait]
 pub trait ClusterAutoFix: Debug + 'static + Send + Sync {
     /// Attempt to fix a recoverable error. return string
-    async fn attempt_fix(&self, render: &ProgressRenderer) -> Result<String, ClusterAutoFixError>;
+    async fn attempt_fix(&self, render: &ProgressRenderer) -> Result<String>;
 }
 
 /// Check for loading
@@ -498,7 +499,7 @@ impl ClusterCheck for SysChartCheck {
                 UnrecoverableCheckStatus::MultipleSystemCharts,
             ))
         } else {
-            let install_chart = sys_charts.get(0).unwrap();
+            let install_chart = sys_charts.first().unwrap();
             debug!(app_version = %install_chart.app_version,"Sys Chart Version");
             let existing_platform_version = Version::parse(&install_chart.app_version)?;
             if existing_platform_version == self.platform_version {
@@ -542,7 +543,7 @@ pub(crate) struct InstallSysChart {
 
 #[async_trait]
 impl ClusterAutoFix for InstallSysChart {
-    async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
+    async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String> {
         debug!(
             "Fixing by installing Fluvio sys chart with config: {:#?}",
             &self.config
@@ -565,7 +566,7 @@ pub(crate) struct UpgradeSysChart {
 
 #[async_trait]
 impl ClusterAutoFix for UpgradeSysChart {
-    async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
+    async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String> {
         debug!(
             "Fixing by updating Fluvio sys chart with config: {:#?}",
             &self.config
@@ -675,7 +676,7 @@ impl ClusterCheck for LocalClusterCheck {
         sys.refresh_processes(); // Only load what we need.
         let proc_count = sys
             .processes_by_exact_name("fluvio-run")
-            .map(|x| debug!("Found existing fluvio-run process. pid: {}", x.pid()))
+            .map(|x| println!("       found existing fluvio-run process. pid: {}", x.pid()))
             .count();
         if proc_count > 0 {
             return Ok(CheckStatus::Unrecoverable(
@@ -782,11 +783,7 @@ impl ClusterChecker {
     }
 
     /// Performs checks and fixes as required.
-    pub async fn run(
-        self,
-        pb_factory: &ProgressBarFactory,
-        fix_recoverable: bool,
-    ) -> Result<bool, ClusterCheckError> {
+    pub async fn run(self, pb_factory: &ProgressBarFactory, fix_recoverable: bool) -> Result<bool> {
         macro_rules! pad_format {
             ( $e:expr ) => {
                 format!("{:>3} {}", "", $e)
@@ -889,7 +886,7 @@ impl ClusterChecker {
 
         if failed {
             pb_factory.println(format!("💔 {}", "Some pre-flight check failed!".bold()));
-            Err(ClusterCheckError::PreCheckFlightFailure)
+            Err(ClusterCheckError::PreCheckFlightFailure.into())
         } else {
             pb_factory.println(format!("🎉 {}", "All checks passed!".bold()));
             Ok(true)
@@ -939,7 +936,7 @@ fn check_permission(resource: &str, _pb: &ProgressRenderer) -> CheckResult {
     Ok(CheckStatus::pass(format!("Can create {resource}")))
 }
 
-fn check_create_permission(resource: &str) -> Result<bool, ClusterCheckError> {
+fn check_create_permission(resource: &str) -> Result<bool> {
     let check_command = Command::new("kubectl")
         .arg("auth")
         .arg("can-i")

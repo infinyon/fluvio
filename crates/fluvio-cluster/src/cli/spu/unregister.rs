@@ -12,7 +12,6 @@ use clap::Parser;
 use fluvio::Fluvio;
 use fluvio::metadata::customspu::CustomSpuSpec;
 use fluvio::metadata::customspu::CustomSpuKey;
-use crate::cli::ClusterCliError;
 
 // -----------------------------------
 // CLI Options
@@ -43,7 +42,7 @@ impl UnregisterCustomSpuOpt {
     }
 
     /// Validate cli options. Generate target-server and unregister custom spu config.
-    fn validate(self) -> Result<CustomSpuKey, ClusterCliError> {
+    fn validate(self) -> Result<CustomSpuKey> {
         let custom_spu = if let Some(name) = self.name {
             CustomSpuKey::Name(name)
         } else if let Some(id) = self.id {

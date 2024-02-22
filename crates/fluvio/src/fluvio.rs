@@ -76,7 +76,6 @@ impl Fluvio {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         info!(
             fluvio_crate_version = env!("CARGO_PKG_VERSION"),
-            fluvio_git_hash = env!("GIT_HASH"),
             "Connecting to Fluvio cluster"
         );
         Self::connect_with_connector(connector, config).await
