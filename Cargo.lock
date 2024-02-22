@@ -6568,6 +6568,7 @@ dependencies = [
  "include_dir",
  "lib-cargo-crate",
  "tempfile",
+ "tokio",
  "toml 0.8.8",
  "tracing",
 ]
