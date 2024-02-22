@@ -150,7 +150,7 @@ struct PackageSignatureBulder {
 impl PackageSignatureBulder {
     fn new(key: &Keypair) -> Result<Self> {
         let builder = PackageSignatureBulder {
-            signkey: key.clone_with_result()?,
+            signkey: key.clone(),
             pkgsig: PackageSignature {
                 files: Vec::new(),
                 pubkey: key.public().to_hex(),
@@ -476,9 +476,10 @@ fn package_verify_sig_from_readio<R: std::io::Read>(
                 .ok_or_else(|| HubError::PackageVerify(format!("{pkgfile} verify error")))?;
             iv.seen = true;
             let sigbytes = hex::decode(&iv.fsig.sig)
+                .map_err(|_| HubError::PackageVerify(format!("{pkgfile} key decode error")))?
+                .try_into()
                 .map_err(|_| HubError::PackageVerify(format!("{pkgfile} key decode error")))?;
-            let signature = Signature::from_bytes(&sigbytes)
-                .map_err(|_| HubError::PackageVerify(format!("{pkgfile} key decode error")))?;
+            let signature = Signature::from_bytes(&sigbytes);
             iv.verify_ok = pubkey.verify(&buf, &signature).is_ok();
         }
     }
