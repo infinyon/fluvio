@@ -14,16 +14,9 @@ const PRIVATE_KEY_TAG: &str = "PRIVATE KEY";
 const PUBLIC_KEY_TAG: &str = "PUBLIC KEY";
 
 // keypair containing private and public keys
+#[derive(Clone)]
 pub struct Keypair {
     kp: ed25519_dalek::SigningKey,
-}
-
-impl Keypair {
-    // failable clone
-    pub fn clone_with_result(&self) -> Result<Self> {
-        let kp = self.kp.clone();
-        Ok(Keypair { kp })
-    }
 }
 
 // Add a debug impl that hides the contents to make errors a little easier
@@ -176,11 +169,6 @@ impl PublicKey {
         hex::encode(self.pubkey.as_bytes())
     }
 }
-
-// fn slice_to_key(sbytes: &[u8]) -> Result<ed25519_dalek::SecretKey> {
-//     let key = sbytes.try_into().map_err(|e| { HubError::KeyVerify })?;
-//     Ok(key)
-// }
 
 #[cfg(unix)]
 fn set_perms_owner_rw(file: &mut std::fs::File) -> Result<()> {

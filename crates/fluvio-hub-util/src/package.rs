@@ -150,7 +150,7 @@ struct PackageSignatureBulder {
 impl PackageSignatureBulder {
     fn new(key: &Keypair) -> Result<Self> {
         let builder = PackageSignatureBulder {
-            signkey: key.clone_with_result()?,
+            signkey: key.clone(),
             pkgsig: PackageSignature {
                 files: Vec::new(),
                 pubkey: key.public().to_hex(),
