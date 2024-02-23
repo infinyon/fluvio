@@ -422,6 +422,18 @@ setup_file() {
     assert_line --index 2 --partial "    0.10.14  0.10.14"
     assert_success
 
+    # Checks contents for the stable channel
+    run bash -c 'fvm list stable'
+    assert_line --index 0 --partial "Artifacts in channel stable version $STABLE_VERSION"
+    assert_line --index 1 --partial "fluvio@$STABLE_VERSION"
+    assert_success
+
+    # Checks contents for the version 0.10.14
+    run bash -c 'fvm list 0.10.14'
+    assert_line --index 0 --partial "Artifacts in version 0.10.14"
+    assert_line --index 1 --partial "fluvio@0.10.14"
+    assert_success
+
     # Checks current command output
     run bash -c 'fvm current'
     assert_line --index 0 "$STABLE_VERSION (stable)"
