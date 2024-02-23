@@ -17,7 +17,7 @@ use crate::common::workdir::fvm_versions_path;
 
 #[derive(Debug, Parser)]
 pub struct ListOpt {
-    /// Version to install: stable, latest, or named-version x.y.z
+    /// List included artifacts for this installed version if available
     #[arg(index = 1)]
     channel: Option<Channel>,
 }
