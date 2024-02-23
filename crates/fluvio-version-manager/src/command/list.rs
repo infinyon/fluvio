@@ -40,6 +40,19 @@ impl ListOpt {
             let (manifests, _) = VersionDirectory::scan_versions_manifests(versions_path, None)?;
             if let Some(manifest) = manifests.iter().find(|m| m.channel == *channel) {
                 if let Some(contents) = &manifest.contents {
+                    if matches!(manifest.channel, Channel::Tag(_)) {
+                        println!(
+                            "Artifacts in version {}",
+                            manifest.version.to_string().bold()
+                        );
+                    } else {
+                        println!(
+                            "Artifacts in channel {} version {}",
+                            manifest.channel.to_string().bold(),
+                            manifest.version.to_string().bold()
+                        );
+                    }
+
                     for art in contents {
                         println!("{}@{}", art.name, art.version);
                     }
