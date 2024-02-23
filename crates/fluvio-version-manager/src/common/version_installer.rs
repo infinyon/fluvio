@@ -6,7 +6,7 @@ use tempfile::TempDir;
 
 use fluvio_hub_util::fvm::{PackageSet, Download, Channel};
 
-use super::manifest::VersionManifest;
+use super::manifest::{VersionedArtifact, VersionManifest};
 use super::notify::Notify;
 use super::version_directory::VersionDirectory;
 use super::workdir::fvm_versions_path;
@@ -46,8 +46,17 @@ impl VersionInstaller {
         }
 
         let version_path = self.store_artifacts(&tmp_dir, &self.package_set).await?;
-        let manifest =
-            VersionManifest::new(self.channel.to_owned(), self.package_set.pkgset.clone());
+        let contents = self
+            .package_set
+            .artifacts
+            .iter()
+            .map(|art| VersionedArtifact::new(art.name.to_owned(), art.version.to_string()))
+            .collect::<Vec<VersionedArtifact>>();
+        let manifest = VersionManifest::new(
+            self.channel.to_owned(),
+            self.package_set.pkgset.clone(),
+            contents,
+        );
 
         manifest.write(&version_path)?;
         self.notify.done(format!(
