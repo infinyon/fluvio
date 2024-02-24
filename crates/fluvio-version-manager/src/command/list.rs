@@ -7,6 +7,8 @@ use clap::Parser;
 use colored::Colorize;
 use comfy_table::{Table, Row};
 
+use fluvio_hub_util::fvm::Channel;
+
 use crate::common::manifest::VersionManifest;
 use crate::common::notify::Notify;
 use crate::common::settings::Settings;
@@ -14,7 +16,11 @@ use crate::common::version_directory::VersionDirectory;
 use crate::common::workdir::fvm_versions_path;
 
 #[derive(Debug, Parser)]
-pub struct ListOpt;
+pub struct ListOpt {
+    /// List included artifacts for this installed version if available
+    #[arg(index = 1)]
+    channel: Option<Channel>,
+}
 
 impl ListOpt {
     pub async fn process(&self, notify: Notify) -> Result<()> {
@@ -28,6 +34,41 @@ impl ListOpt {
             ));
 
             return Err(anyhow!("No versions installed"));
+        }
+
+        if let Some(channel) = &self.channel {
+            let (manifests, _) = VersionDirectory::scan_versions_manifests(versions_path, None)?;
+            if let Some(manifest) = manifests.iter().find(|m| m.channel == *channel) {
+                if let Some(contents) = &manifest.contents {
+                    if matches!(manifest.channel, Channel::Tag(_)) {
+                        println!(
+                            "Artifacts in version {}",
+                            manifest.version.to_string().bold()
+                        );
+                    } else {
+                        println!(
+                            "Artifacts in channel {} version {}",
+                            manifest.channel.to_string().bold(),
+                            manifest.version.to_string().bold()
+                        );
+                    }
+
+                    for art in contents {
+                        println!("{}@{}", art.name, art.version);
+                    }
+
+                    return Ok(());
+                }
+
+                let suggested_command = format!("{} {}", "fvm install", channel);
+
+                notify.help(format!(
+                    "No version contents recorded. You can upadate included artifact details by reinstalling this version. {}",
+                    suggested_command.bold(),
+                ));
+            }
+
+            return Ok(());
         }
 
         let settings = Settings::open()?;
@@ -45,7 +86,6 @@ impl ListOpt {
         }
 
         Self::render_table(manifests, maybe_active);
-
         Ok(())
     }
 

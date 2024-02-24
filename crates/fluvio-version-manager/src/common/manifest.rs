@@ -18,14 +18,34 @@ use fluvio_hub_util::fvm::Channel;
 pub const PACKAGE_SET_MANIFEST_FILENAME: &str = "manifest.json";
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct VersionedArtifact {
+    pub name: String,
+    pub version: String,
+}
+
+impl VersionedArtifact {
+    pub fn new<S: Into<String>>(name: S, version: S) -> Self {
+        Self {
+            name: name.into(),
+            version: version.into(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct VersionManifest {
     pub channel: Channel,
     pub version: Version,
+    pub contents: Option<Vec<VersionedArtifact>>,
 }
 
 impl VersionManifest {
-    pub fn new(channel: Channel, version: Version) -> Self {
-        Self { channel, version }
+    pub fn new(channel: Channel, version: Version, contents: Vec<VersionedArtifact>) -> Self {
+        Self {
+            channel,
+            version,
+            contents: Some(contents),
+        }
     }
 
     /// Opens the `manifest.json` file and parses it into a `VersionManifest` struct
@@ -67,7 +87,11 @@ mod test {
   "version": "0.8.0"
 }"#;
         let tempdir = TempDir::new().unwrap();
-        let version_manifest = VersionManifest::new(Channel::Stable, Version::new(0, 8, 0));
+        let version_manifest = VersionManifest::new(
+            Channel::Stable,
+            Version::new(0, 8, 0),
+            vec![VersionedArtifact::new("fluvio", "0.11.4")],
+        );
         let manifest = version_manifest.write(tempdir.path()).unwrap();
         let have = read_to_string(manifest).unwrap();
 
@@ -77,7 +101,11 @@ mod test {
     #[test]
     fn reads_manifest_from_json() {
         let tempdir = TempDir::new().unwrap();
-        let version_manifest = VersionManifest::new(Channel::Stable, Version::new(0, 8, 0));
+        let version_manifest = VersionManifest::new(
+            Channel::Stable,
+            Version::new(0, 8, 0),
+            vec![VersionedArtifact::new("fluvio", "0.11.4")],
+        );
         let json = serde_json::to_string_pretty(&version_manifest).unwrap();
         let manifest = version_manifest.write(tempdir.path()).unwrap();
         let read_manifest = VersionManifest::open(manifest).unwrap();

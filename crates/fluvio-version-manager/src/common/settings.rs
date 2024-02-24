@@ -238,6 +238,7 @@ version = "0.12.0"
         let manifest = VersionManifest {
             channel: Channel::Stable,
             version: Version::parse(VERSION).unwrap(),
+            contents: None,
         };
 
         let mut settings = Settings::open().unwrap();
