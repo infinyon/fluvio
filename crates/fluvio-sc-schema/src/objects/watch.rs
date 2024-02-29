@@ -77,7 +77,7 @@ where
     }
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
+#[derive(Debug, Default, Encoder, Decoder, Clone)]
 pub struct WatchResponse<S: AdminSpec>
 where
     S::Status: Encoder + Decoder,
