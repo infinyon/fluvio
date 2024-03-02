@@ -2810,7 +2810,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.21.1"
+version = "0.21.2"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
