@@ -2,16 +2,48 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version VERSION - UNRELEASED
+## Platform Version 0.11.5 - 2024-03-04
 
-### CI
+### Added
 
-* Release fluvio v0.11.4 ([#3839](https://github.com/infinyon/fluvio/issues/3839))
+* Add offset management proposal ([#3856](https://github.com/infinyon/fluvio/issues/3856))
+
+### Changed
+
+* When topic is deleted, connected consumers are notified [#3861](https://github.com/infinyon/fluvio/pull/3861)
+* Update bug issue template ([#3864](https://github.com/infinyon/fluvio/issues/3864))
+* Update deps, cargo-generate ([#3865](https://github.com/infinyon/fluvio/issues/3865))
+* Run cargo update -p curve25519-dalek@4.1.1 ([#3867](https://github.com/infinyon/fluvio/issues/3867))
+* Relax hub access login requirements ([#3850](https://github.com/infinyon/fluvio/issues/3850))
 
 ### Fixed
 
+* `fluvio profile add` w/ no config file ([#3874](https://github.com/infinyon/fluvio/issues/3874))
+* Smdk publish ([#3873](https://github.com/infinyon/fluvio/issues/3873))
+* Fix version ([#3879](https://github.com/infinyon/fluvio/issues/3879))
+* Update dep ed25519-dalek ([#3872](https://github.com/infinyon/fluvio/issues/3872))
+* Update README.md (tiny typo fixed) ([#3849](https://github.com/infinyon/fluvio/issues/3849))
+* Fvm should allow general pkgset labels ([#3854](https://github.com/infinyon/fluvio/issues/3854))
 * Regenerate certificates ([#3841](https://github.com/infinyon/fluvio/issues/3841))
+
+### CI
+
+* Ci publish, fix misaligned sha ([#3855](https://github.com/infinyon/fluvio/issues/3855))
+* Ci, publish fvm as an artifact ([#3871](https://github.com/infinyon/fluvio/issues/3871))
+* Post-release 0.11.4 ([#3845](https://github.com/infinyon/fluvio/issues/3845))
+* Ci, tag stable fluvio releases with stable in docker hub ([#3846](https://github.com/infinyon/fluvio/issues/3846))
+* Ci stability improvements ([#3851](https://github.com/infinyon/fluvio/issues/3851))
 * Ci, fix release ([#3844](https://github.com/infinyon/fluvio/issues/3844))
+
+### Other
+
+* Update VERSION to 0.11.5-dev-1 ([#3878](https://github.com/infinyon/fluvio/issues/3878))
+* :white_check_mark: tests for cli when consuming with format ([#3885](https://github.com/infinyon/fluvio/issues/3885))
+* Prerel 0.11.5-dev-2 ([#3883](https://github.com/infinyon/fluvio/issues/3883))
+* List included artifacts with `fvm list <channel>` ([#3877](https://github.com/infinyon/fluvio/issues/3877))
+* Exit when there is no unzip cmd ([#3852](https://github.com/infinyon/fluvio/issues/3852))
+* Remove unnecessary specialized errors ([#3853](https://github.com/infinyon/fluvio/issues/3853))
+
 
 ## Platform Version 0.11.4 - 2024-01-27
 
@@ -22,6 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+* Release fluvio v0.11.4 ([#3839](https://github.com/infinyon/fluvio/issues/3839))
 * Update README.md ([#3835](https://github.com/infinyon/fluvio/issues/3835))
 
 ### Fixed
