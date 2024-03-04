@@ -68,6 +68,10 @@ setup_file() {
     export TOPIC_NAME_14
     debug_msg "Topic name: $TOPIC_NAME_14"
 
+    KEY="$(random_string 7)"
+    export KEY
+    debug_msg "$KEY"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -163,7 +167,7 @@ teardown_file() {
 @test "Produce message" {
     run bash -c 'echo "$MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     assert_success
-    run bash -c 'echo "$MESSAGE_W_HTML_STR" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_2"'
+    run bash -c 'echo "$MESSAGE_W_HTML_STR" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_2" --key "$KEY"'
     assert_success
     run bash -c 'echo -e "$MULTILINE_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_3"'
     assert_success
@@ -204,15 +208,32 @@ teardown_file() {
     assert_success
 }
 
+@test "Consume message using format: key" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{key}}" -B -d
+    assert_output "$KEY"
+    assert_success
+}
 # Validate that using format doesn't introduce HTML escaping
 # https://github.com/infinyon/fluvio/issues/1628
-@test "Consume message using format" {
+@test "Consume message using format: value" {
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{value}}" -B -d
     assert_output "$MESSAGE_W_HTML_STR"
     assert_success
 }
 
-@test "Consume message display timestamp using format" {
+@test "Consume message using format: offset" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{offset}}" -B -d
+    assert_output "0"
+    assert_success
+}
+
+@test "Consume message using format: partition" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{partition}}" -B -d -p 0
+    assert_output "0"
+    assert_success
+}
+
+@test "Consume message display timestamp using format: time" {
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{time}}" -B -d
     assert_output --partial "$CURRENT_DATE"
     assert_success
