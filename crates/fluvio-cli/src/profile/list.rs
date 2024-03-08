@@ -74,7 +74,7 @@ impl TableOutputHandler for ListConfig<'_> {
                             &*profile.cluster,
                             &*it.endpoint,
                             format_tls(&it.tls),
-                            InstallationType::load_or_default(it).to_string(),
+                            InstallationType::load(it).to_string(),
                         )
                     })
                     .unwrap_or(("", "", "", String::new()));

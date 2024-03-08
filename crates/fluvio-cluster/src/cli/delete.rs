@@ -1,3 +1,4 @@
+use anyhow::bail;
 use anyhow::Result;
 use clap::Parser;
 use tracing::debug;
@@ -34,7 +35,7 @@ impl DeleteOpt {
             builder.uninstall_k8(true);
             builder.uninstall_sys(false);
         } else {
-            let installation_type = get_installation_type()?;
+            let (installation_type, config) = get_installation_type()?;
             debug!(?installation_type);
             match installation_type {
                 InstallationType::K8 => {
@@ -52,12 +53,14 @@ impl DeleteOpt {
                     builder.uninstall_k8(false);
                     builder.uninstall_sys(false);
                 }
-                other => {
-                    return Err(ClusterCliError::Other(format!(
-                        "delete command is not supported for {other} installation type"
-                    ))
-                    .into())
+                InstallationType::Cloud => {
+                    let profile = config.config().current_profile_name().unwrap_or("none");
+                    bail!(
+                        "Error: delete command is not supported for cloud profile \"{profile}\"\n    \
+                        try 'fluvio cloud cluster delete' or 'fluvio profile switch'"
+                    );
                 }
+                other => bail!("Error: delete command is not supported for {other}"),
             }
         }
 

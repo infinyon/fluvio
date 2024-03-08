@@ -1,6 +1,7 @@
 use std::fs::remove_file;
 use std::process::Command;
 
+use anyhow::bail;
 use anyhow::Result;
 use clap::Parser;
 use tracing::debug;
@@ -29,12 +30,16 @@ impl ShutdownOpt {
                 )
             }
         };
-        let installation_type = get_installation_type()?;
+        let (installation_type, config) = get_installation_type()?;
         debug!(?installation_type);
 
         match installation_type {
             InstallationType::Local | InstallationType::LocalK8 | InstallationType::ReadOnly => {
                 Self::kill_local_processes(&installation_type, &pb).await?;
+            }
+            InstallationType::Cloud => {
+                let profile = config.config().current_profile_name().unwrap_or("none");
+                bail!("'fluvio cluster shutdown does not operate on Infinyon cloud cluster \"{profile}\", use `fluvio cloud ...` commands");
             }
             _ => {
                 pb.println("❌ Shutdown is only implemented for local clusters.");

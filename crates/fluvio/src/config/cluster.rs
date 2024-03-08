@@ -91,6 +91,10 @@ impl FluvioConfig {
 
         Ok(())
     }
+
+    pub fn has_metadata(&self, name: &str) -> bool {
+        self.metadata.get(name).is_some()
+    }
 }
 
 impl TryFrom<FluvioConfig> for fluvio_socket::ClientConfig {

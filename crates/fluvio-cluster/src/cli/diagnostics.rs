@@ -25,8 +25,9 @@ pub struct DiagnosticsOpt {
 
 impl DiagnosticsOpt {
     pub async fn process(self) -> Result<()> {
-        let installation_ty = get_installation_type()?;
-        println!("Using installation: {installation_ty:#?}");
+        let (installation_ty, config) = get_installation_type()?;
+        let profile = config.config().current_profile_name().unwrap_or("none");
+        println!("Installation type: {installation_ty:#?}\nProfile: {profile}");
         let temp_dir = tempfile::Builder::new()
             .prefix("fluvio-diagnostics")
             .tempdir()?;
@@ -35,7 +36,7 @@ impl DiagnosticsOpt {
         let spu_specs = match self.copy_fluvio_specs(temp_path).await {
             Ok(specs) => specs,
             Err(err) => {
-                eprintln!("error copying fluivo specs: {err:#?}");
+                eprintln!("error copying fluvio specs: {err:#?}");
                 vec![]
             }
         };

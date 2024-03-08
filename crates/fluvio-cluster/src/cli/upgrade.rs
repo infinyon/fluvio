@@ -16,7 +16,7 @@ pub struct UpgradeOpt {
 
 impl UpgradeOpt {
     pub async fn process(mut self, platform_version: Version) -> Result<()> {
-        let installation_type = get_installation_type()?;
+        let (installation_type, config) = get_installation_type()?;
         debug!(?installation_type);
         if let Some(requested) = self.start.installation_type.get() {
             if installation_type != requested {
@@ -32,6 +32,10 @@ impl UpgradeOpt {
             InstallationType::Local | InstallationType::LocalK8 | InstallationType::ReadOnly => {
                 ShutdownOpt.process().await?;
                 self.start.process(platform_version, true).await?;
+            }
+            InstallationType::Cloud => {
+                let profile = config.config().current_profile_name().unwrap_or("none");
+                bail!("Fluvio cluster upgrade does not operate on cloud cluster \"{profile}\", use 'fluvio cloud ...' commands")
             }
             other => bail!("upgrade command is not supported for {other} installation type"),
         };
