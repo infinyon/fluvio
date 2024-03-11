@@ -3,6 +3,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::collections::BTreeMap;
 use std::io::Read;
+use std::io::Write;
 use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Child;
@@ -11,10 +12,10 @@ use std::time::Duration;
 use std::env;
 use std::time::SystemTime;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use derive_builder::Builder;
 use k8_client::meta_client::NameSpace;
-use tracing::{info, warn, debug, instrument};
+use tracing::{info, warn, error, debug, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
 use semver::Version;
@@ -580,8 +581,17 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self> {
+        let load_result =
+            load_and_share().context("unable to load kubectl context to access k8 cluster");
+
+        if let Err(ref k8_err) = load_result {
+            error!(target: "kubectl", "Error: {k8_err:?}\n");
+        }
+
+        let kube_client = load_result?;
+
         Ok(Self {
-            kube_client: load_and_share()?,
+            kube_client,
             pb_factory: ProgressBarFactory::new(config.hide_spinner),
             config,
         })
@@ -800,7 +810,11 @@ impl ClusterInstaller {
 
             debug!(?helm_lb_config, "helm_lb_config");
 
-            serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)?;
+            let helm_values: String = serde_yaml::to_string(&helm_lb_config)
+                .with_context(|| format!("couldn't serialize helm yaml {:?}", &helm_lb_config))?;
+            debug!(%helm_values, "helm_values");
+            write!(&np_addr_fd, "{helm_values}").with_context(|| "Error writing helm file")?;
+
             Some((np_addr_fd, np_conf_path))
         } else {
             None
