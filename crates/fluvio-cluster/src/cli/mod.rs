@@ -166,9 +166,9 @@ impl ClusterCmd {
     }
 }
 
-pub(crate) fn get_installation_type() -> Result<InstallationType> {
+pub(crate) fn get_installation_type() -> Result<(InstallationType, ConfigFile)> {
     let config = ConfigFile::load_default_or_new()?;
-    Ok(InstallationType::load_or_default(
-        config.config().current_cluster()?,
-    ))
+    let fc = config.config().current_cluster()?;
+    let itype = InstallationType::load(fc);
+    Ok((itype, config))
 }

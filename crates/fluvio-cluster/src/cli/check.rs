@@ -1,3 +1,4 @@
+use anyhow::bail;
 use anyhow::Result;
 use fluvio_extension_common::installation::InstallationType;
 use semver::Version;
@@ -26,7 +27,7 @@ impl CheckOpt {
                 .bold()
                 .yellow()
         );
-        let installation_ty = get_installation_type().ok().unwrap_or_default();
+        let (installation_ty, config) = get_installation_type()?;
         debug!(?installation_ty);
 
         let checker = match installation_ty {
@@ -43,6 +44,11 @@ impl CheckOpt {
                 ClusterChecker::empty().with_no_k8_checks()
             }
             InstallationType::LocalK8 => ClusterChecker::empty().with_local_checks(),
+            InstallationType::Cloud => {
+                let profile = config.config().current_profile_name().unwrap_or("none");
+                bail!("'fluvio cluster check' is invalid with cloud cluster \"{profile}\", use 'fluvio cloud ...' commands");
+            }
+
             _other => ClusterChecker::empty(),
         };
 

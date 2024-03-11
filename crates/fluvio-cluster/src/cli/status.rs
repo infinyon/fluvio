@@ -36,8 +36,7 @@ impl StatusOpt {
 
         let fluvio_config = target.load()?;
         let config_file = ConfigFile::load_default_or_new()?;
-        let installation_type =
-            InstallationType::load_or_default(config_file.config().current_cluster()?);
+        let installation_type = InstallationType::load(config_file.config().current_cluster()?);
         debug!(?installation_type);
 
         pb_factory.println(format!(

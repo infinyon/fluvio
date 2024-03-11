@@ -4,6 +4,7 @@ use fluvio::FluvioConfig;
 use serde::{Serialize, Deserialize};
 
 const INSTALLATION_METADATA_NAME: &str = "installation";
+const CLOUD_METADATA_NAME: &str = "infinyon_cloud_cli";
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -14,6 +15,7 @@ pub enum InstallationType {
     LocalK8,
     ReadOnly,
     Docker,
+    Cloud,
 }
 
 impl FromStr for InstallationType {
@@ -47,7 +49,10 @@ impl FromStr for InstallationType {
         if s.eq_ignore_ascii_case("docker") {
             return Ok(Self::Docker);
         }
-        Err(format!("unsupported instalaltion type '{s}'"))
+        if s.eq_ignore_ascii_case("cloud") {
+            return Ok(Self::Cloud);
+        }
+        Err(format!("unsupported installation type '{s}'"))
     }
 }
 
@@ -58,10 +63,15 @@ impl std::fmt::Display for InstallationType {
 }
 
 impl InstallationType {
-    pub fn load_or_default(config: &FluvioConfig) -> Self {
-        config
-            .query_metadata_by_name(INSTALLATION_METADATA_NAME)
-            .unwrap_or_default()
+    pub fn load(config: &FluvioConfig) -> Self {
+        let install = config.query_metadata_by_name(INSTALLATION_METADATA_NAME);
+        let cloud = config.has_metadata(CLOUD_METADATA_NAME);
+
+        match (install, cloud) {
+            (Some(install), _) => install,
+            (None, true) => InstallationType::Cloud,
+            (None, false) => InstallationType::K8,
+        }
     }
 
     pub fn save_to(&self, config: &mut FluvioConfig) -> anyhow::Result<()> {
@@ -82,14 +92,11 @@ mod tests {
         let installation = InstallationType::Local;
 
         //when
-        assert_eq!(
-            InstallationType::load_or_default(&config),
-            InstallationType::K8
-        );
+        assert_eq!(InstallationType::load(&config), InstallationType::K8);
 
         installation.save_to(&mut config).expect("saved");
 
         //then
-        assert_eq!(InstallationType::load_or_default(&config), installation);
+        assert_eq!(InstallationType::load(&config), installation);
     }
 }
