@@ -141,7 +141,7 @@ tracing = "0.1.19"
 tracing-subscriber = { version = "0.3", default-features = false }
 tui = { version = "0.19.0", default-features = false }
 url = "2.5"
-uuid = { version = "1.1", features = ["serde", "v4"] }
+uuid = { version = "1.7", features = ["serde", "v4"] }
 wasm-bindgen-test = "0.3.24"
 wasmtime = { version = "15.0.0" }
 wasmtime-wasi = { version = "15.0.0" }
