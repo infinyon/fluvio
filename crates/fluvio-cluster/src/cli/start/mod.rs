@@ -107,11 +107,14 @@ pub struct K8Install {
     #[arg(long)]
     pub chart_values: Vec<PathBuf>,
 
-    /// Uses port forwarding for connecting to SC during install
+    /// Uses port forwarding for connecting to SC (only during install)
+    ///
+    /// For connecting to a remote cluster during install and after
+    /// --proxy-addr <IP or DNS> may work better
     #[arg(long)]
     use_k8_port_forwarding: bool,
 
-    /// Uses port forwarding for connecting to SC during install
+    /// Uses ip for connecting to SC (only during install)
     #[arg(long)]
     use_cluster_ip: bool,
 
