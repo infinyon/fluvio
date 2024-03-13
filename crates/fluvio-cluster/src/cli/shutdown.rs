@@ -93,10 +93,12 @@ impl ShutdownOpt {
         let spus = admin.all::<SpuSpec>().await?;
         pb.println(format!("Unregister {} SPUs", spus.len()));
         for s in spus.iter() {
-            let delete_key = CustomSpuKey::Id(s.spec.id);
-            admin.delete::<CustomSpuSpec>(delete_key).await?;
+            kill_proc("fluvio-run", Some(&["spu".into(), "-i".into(), format!("{}", s.spec.id)]));
+
+            admin.delete::<CustomSpuSpec>(CustomSpuKey::Id(s.spec.id)).await?;
         }
 
+        // clean up the rest of the processes
         kill_proc("fluvio-run", None);
 
         if let InstallationType::LocalK8 = installation_type {
