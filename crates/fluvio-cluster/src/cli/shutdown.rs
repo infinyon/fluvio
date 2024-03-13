@@ -4,9 +4,13 @@ use std::process::Command;
 use anyhow::bail;
 use anyhow::Result;
 use clap::Parser;
+use fluvio_controlplane_metadata::spu::CustomSpuKey;
+use fluvio_controlplane_metadata::spu::CustomSpuSpec;
+use fluvio_controlplane_metadata::spu::SpuSpec;
 use tracing::debug;
 use sysinfo::{ProcessExt, System, SystemExt};
 
+use fluvio::Fluvio;
 use fluvio_types::defaults::SPU_MONITORING_UNIX_SOCKET;
 use fluvio_command::CommandExt;
 
@@ -82,6 +86,17 @@ impl ShutdownOpt {
         };
         kill_proc("fluvio", Some(&["cluster".into(), "run".into()]));
         kill_proc("fluvio", Some(&["run".into()]));
+
+        // clean-up SPUs
+        let client = Fluvio::connect().await?;
+        let admin = client.admin().await;
+        let spus = admin.all::<SpuSpec>().await?;
+        pb.println(format!("Unregister {} SPUs", spus.len()));
+        for s in spus.iter() {
+            let delete_key = CustomSpuKey::Id(s.spec.id);
+            admin.delete::<CustomSpuSpec>(delete_key).await?;
+        }
+
         kill_proc("fluvio-run", None);
 
         if let InstallationType::LocalK8 = installation_type {
