@@ -113,7 +113,7 @@ pub struct K8Install {
     #[arg(long)]
     use_k8_port_forwarding: bool,
 
-    /// Uses ip for connecting to SC
+    /// Config option used in kubernetes deployments
     #[arg(long, hide = true)]
     use_cluster_ip: bool,
 
