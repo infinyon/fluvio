@@ -107,12 +107,14 @@ pub struct K8Install {
     #[arg(long)]
     pub chart_values: Vec<PathBuf>,
 
-    /// Uses port forwarding for connecting to SC during install
+    /// Uses port forwarding for connecting to SC (only during install)
+    ///
+    /// For connecting to a cluster during and after install, --proxy-addr <IP or DNS> is recommended
     #[arg(long)]
     use_k8_port_forwarding: bool,
 
-    /// Uses port forwarding for connecting to SC during install
-    #[arg(long)]
+    /// Config option used in kubernetes deployments
+    #[arg(long, hide = true)]
     use_cluster_ip: bool,
 
     /// TLS: Client secret name while adding to Kubernetes
