@@ -367,6 +367,10 @@ impl FileReplica {
             self.prev_segments
                 .find_slice(start_offset, max_offset)
                 .await?
+                .ok_or_else(|| ErrorCode::OffsetEvicted {
+                    offset: start_offset,
+                    next_available: self.get_log_start_offset(),
+                })?
         };
 
         let limited_slice = AsyncFileSlice::new(
@@ -459,6 +463,7 @@ mod tests {
     use std::time::Duration;
 
     use fluvio_spu_schema::Isolation;
+    use fluvio_protocol::link::ErrorCode;
     use fluvio_protocol::record::Batch;
     use fluvio_protocol::record::Offset;
     use fluvio_protocol::{Decoder, Encoder};
@@ -1011,6 +1016,14 @@ mod tests {
         let reader = new_replica.prev_segments.read().await;
         assert_eq!(reader.len(), 0);
         drop(reader);
+
+        assert!(matches!(
+            new_replica.read_records(1, None, 1024).await, //offset must not be available
+            Err(ErrorCode::OffsetEvicted {
+                offset: 1,
+                next_available: 4,
+            })
+        ));
 
         new_replica.remove().await.expect("remove");
         drop(new_replica);
