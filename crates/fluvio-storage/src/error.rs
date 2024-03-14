@@ -21,6 +21,11 @@ pub enum StorageError {
     SendFile(#[from] SendFileError),
     #[error("Batch exceeded maximum bytes: {0}")]
     BatchTooBig(usize),
+    #[error("Batch size {batch_size} exceeded max segment size {max_segment_size}")]
+    BatchExceededSegment {
+        batch_size: u64,
+        max_segment_size: u64,
+    },
     #[error("Batch is empty")]
     EmptyBatch,
 }

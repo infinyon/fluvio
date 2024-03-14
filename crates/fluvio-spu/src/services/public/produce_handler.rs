@@ -203,6 +203,13 @@ async fn handle_produce_partition(
                     error!(%replica_id, "Batch is too big: {:#?}", err);
                     PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
                 }
+                Some(StorageError::BatchExceededSegment {
+                    batch_size,
+                    max_segment_size,
+                }) => {
+                    error!(%replica_id, batch_size, max_segment_size, "Batch size exceeded max segment size");
+                    PartitionWriteResult::error(replica_id, ErrorCode::MessageTooLarge)
+                }
                 _ => {
                     error!(%replica_id, "Error writing to replica: {:#?}", err);
                     PartitionWriteResult::error(replica_id, ErrorCode::StorageError)
