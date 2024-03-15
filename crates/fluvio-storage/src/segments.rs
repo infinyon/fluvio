@@ -124,20 +124,18 @@ impl SharedSegments {
         &self,
         start_offset: Offset,
         max_offset: Option<Offset>,
-    ) -> Result<AsyncFileSlice, ErrorCode> {
+    ) -> Result<Option<AsyncFileSlice>, ErrorCode> {
         let reader = self.read().await;
         if let Some((_offset, segment)) = reader.find_segment(start_offset) {
             if let Some(slice) = segment.records_slice(start_offset, max_offset).await? {
-                Ok(slice)
+                Ok(Some(slice))
             } else {
                 Err(ErrorCode::Other(format!(
                     "slice not found in start_offset: {start_offset}, segment: {segment:#?} "
                 )))
             }
         } else {
-            Err(ErrorCode::Other(format!(
-                "Segment not found for start_offset: {start_offset}"
-            )))
+            Ok(None)
         }
     }
 

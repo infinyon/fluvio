@@ -54,6 +54,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 61)]
     #[error("invalid Delete request")]
     InvalidDeleteRequest,
+    #[fluvio(tag = 71)]
+    #[error("Offset {offset} is evicted. The next available is {next_available}")]
+    OffsetEvicted { offset: i64, next_available: i64 },
 
     // Spu errors
     #[fluvio(tag = 1000)]
