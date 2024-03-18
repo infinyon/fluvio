@@ -1,0 +1,21 @@
+[package]
+name = "fluvio-kv-storage"
+version = "0.0.0"
+edition = "2021"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio Key-Value Storage"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+tracing = { workspace = true }
+futures-util = { workspace = true }
+
+
+
+fluvio-protocol = { workspace = true }
+
+[dev-dependencies]
+fluvio-future = { workspace = true,features = ["fixture"] }

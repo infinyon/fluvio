@@ -21,6 +21,7 @@ members = [
     "crates/fluvio-hub-util",
     "crates/fluvio-hub-protocol",
     "crates/fluvio-extension-common",
+    "crates/fluvio-kv-storage",
     "crates/fluvio-package-index",
     "crates/fluvio-protocol",
     "crates/fluvio-protocol-derive",
