@@ -1,5 +1,6 @@
 mod error;
 mod config;
+mod kv;
 
 cfg_if::cfg_if! {
     if #[cfg(unix)] {

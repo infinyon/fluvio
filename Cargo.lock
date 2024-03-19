@@ -2948,6 +2948,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-future",
+ "fluvio-kv-storage",
  "fluvio-protocol",
  "fluvio-service",
  "fluvio-smartengine",

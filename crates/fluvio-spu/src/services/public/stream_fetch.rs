@@ -67,12 +67,17 @@ impl StreamFetchHandler {
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
             let (stream_id, offset_publisher) = conn_ctx
                 .stream_publishers_mut()
-                .create_new_publisher()
+                .create_new_publisher(
+                    msg.topic.clone(),
+                    msg.partition,
+                    msg.consumer_id.clone(),
+                    msg.consumer_ttl,
+                )
                 .await;
-            let consumer_offset_listener = offset_publisher.change_listener();
+            let consumer_offset_listener = offset_publisher.offset_publisher.change_listener();
 
             leader_state
-                .register_offset_publisher(&offset_publisher)
+                .register_offset_publisher(&offset_publisher.offset_publisher)
                 .await;
 
             spawn(async move {
@@ -601,17 +606,33 @@ impl From<CompressionError> for StreamFetchError {
 }
 pub mod publishers {
 
+    use std::time::Duration;
     use std::{collections::HashMap, sync::Arc};
     use std::fmt::Debug;
     use std::ops::AddAssign;
 
+    use fluvio_types::PartitionId;
     use fluvio_types::event::offsets::INIT_OFFSET;
 
     use super::OffsetPublisher;
 
     pub struct StreamPublishers {
-        publishers: HashMap<u32, Arc<OffsetPublisher>>,
+        publishers: HashMap<u32, StreamPublisher>,
         stream_id_seq: u32,
+    }
+
+    #[derive(Clone)]
+    pub struct StreamPublisher {
+        pub offset_publisher: Arc<OffsetPublisher>,
+        pub topic: String,
+        pub partition: PartitionId,
+        pub consumer: Option<Consumer>,
+    }
+
+    #[derive(Clone)]
+    pub struct Consumer {
+        pub consumer_id: String,
+        pub ttl: Duration,
     }
 
     impl Debug for StreamPublishers {
@@ -634,15 +655,31 @@ pub mod publishers {
             self.stream_id_seq
         }
 
-        pub async fn create_new_publisher(&mut self) -> (u32, Arc<OffsetPublisher>) {
+        pub async fn create_new_publisher(
+            &mut self,
+            topic: String,
+            partition: PartitionId,
+            consumer_id: Option<String>,
+            consumer_ttl: Option<Duration>,
+        ) -> (u32, StreamPublisher) {
             let stream_id = self.next_stream_id();
             let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
-            self.publishers.insert(stream_id, offset_publisher.clone());
-            (stream_id, offset_publisher)
+            let consumer = consumer_id.map(|id| Consumer {
+                consumer_id: id,
+                ttl: consumer_ttl.unwrap_or_default(),
+            });
+            let publisher = StreamPublisher {
+                offset_publisher,
+                topic,
+                partition,
+                consumer,
+            };
+            self.publishers.insert(stream_id, publisher.clone());
+            (stream_id, publisher)
         }
 
         /// get publisher with stream id
-        pub async fn get_publisher(&self, stream_id: u32) -> Option<Arc<OffsetPublisher>> {
+        pub async fn get_publisher(&self, stream_id: u32) -> Option<StreamPublisher> {
             self.publishers.get(&stream_id).cloned()
         }
     }

@@ -86,14 +86,14 @@ macro_rules! api_loop {
 /// wait for a single request
 #[macro_export]
 macro_rules! wait_for_request {
-    ( $api_stream:ident, $matcher:pat => $result:expr) => {{
+    ( $api_stream:ident, $($matcher:pat => $result:expr),+) => {{
         use futures_util::stream::StreamExt;
 
         if let Some(msg) = $api_stream.next().await {
             if let Ok(req_message) = msg {
                 tracing::trace!("received request: {:#?}", req_message);
                 match req_message {
-                    $matcher => $result,
+                    $($matcher => $result,)+
                     _ => {
                         tracing::error!("unexpected request: {:#?}", req_message);
                         return Ok(());
