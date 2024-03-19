@@ -21,6 +21,7 @@ use crate::ApiVersionsRequest;
 use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
 use super::stream_fetch::FileStreamFetchRequest;
+use super::consumer::{UpdateConsumerRequest, DeleteConsumerRequest, FetchConsumersRequest};
 use super::update_offset::UpdateOffsetsRequest;
 
 #[allow(clippy::large_enum_variant)]
@@ -42,6 +43,12 @@ pub enum SpuServerRequest {
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     #[fluvio(tag = 5)]
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
+    #[fluvio(tag = 6)]
+    UpdateConsumerRequest(RequestMessage<UpdateConsumerRequest>),
+    #[fluvio(tag = 7)]
+    DeleteConsumerRequest(RequestMessage<DeleteConsumerRequest>),
+    #[fluvio(tag = 8)]
+    FetchConsumersRequest(RequestMessage<FetchConsumersRequest>),
 }
 
 impl fmt::Display for SpuServerRequest {
@@ -53,6 +60,9 @@ impl fmt::Display for SpuServerRequest {
             Self::FetchOffsetsRequest(_) => write!(f, "FetchOffsetsRequest"),
             Self::FileStreamFetchRequest(_) => write!(f, "FileStreamFetchRequest"),
             Self::UpdateOffsetsRequest(_) => write!(f, "UpdateOffsetsRequest"),
+            Self::UpdateConsumerRequest(_) => write!(f, "UpdateConsumerRequest"),
+            Self::DeleteConsumerRequest(_) => write!(f, "DeleteConsumerRequest"),
+            Self::FetchConsumersRequest(_) => write!(f, "FetchConsumersRequest"),
         }
     }
 }
@@ -85,6 +95,15 @@ impl ApiMessage for SpuServerRequest {
             SpuServerApiKey::FetchOffsets => api_decode!(Self, FetchOffsetsRequest, src, header),
             SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
             SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header),
+            SpuServerApiKey::UpdateConsumer => {
+                api_decode!(Self, UpdateConsumerRequest, src, header)
+            }
+            SpuServerApiKey::DeleteConsumer => {
+                api_decode!(Self, DeleteConsumerRequest, src, header)
+            }
+            SpuServerApiKey::FetchConsumers => {
+                api_decode!(Self, FetchConsumersRequest, src, header)
+            }
         }
     }
 }

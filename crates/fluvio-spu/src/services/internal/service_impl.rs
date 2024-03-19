@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use tracing::trace;
 use tracing::{debug, warn, instrument};
 use anyhow::Result;
 
@@ -9,6 +10,8 @@ use fluvio_socket::FluvioSocket;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::FollowerHandler;
+use crate::services::internal::fetch_consumer_handler::handle_fetch_consumer_request;
+use crate::services::internal::update_consumer_handler::handle_update_consumer_request;
 use super::SpuPeerRequest;
 use super::SPUPeerApiEnum;
 use super::FetchStreamResponse;
@@ -38,7 +41,7 @@ impl FluvioService for InternalService {
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();
 
         // register follower
-        let (follower_id, spu_update) = wait_for_request!(
+        wait_for_request!(
             api_stream,
 
             SpuPeerRequest::FetchStream(req_msg) => {
@@ -56,18 +59,30 @@ impl FluvioService for InternalService {
                     sink
                         .send_response(&res_msg, req_msg.header.api_version())
                         .await?;
-                    (follower_id,spu_update)
+                    drop(api_stream);
+                    FollowerHandler::start(ctx, follower_id, spu_update, sink, stream).await;
                 } else {
                     warn!(follower_id, "unknown spu, dropping connection");
                     return Ok(())
                 }
 
+            },
+            SpuPeerRequest::FetchConsumer(req_msg) => {
+                debug!(consumer_id = req_msg.request.consumer_id, topic=req_msg.request.topic, partition = req_msg.request.partition,
+                       "fetch consumer request");
+                let api_version = req_msg.header.api_version();
+                let response = handle_fetch_consumer_request(req_msg, ctx).await?;
+                sink.send_response(&response, api_version).await?;
+            },
+            SpuPeerRequest::UpdateConsumer(req_msg) => {
+                trace!(consumer_id = req_msg.request.consumer_id, topic=req_msg.request.topic, partition = req_msg.request.partition,
+                       "update consumer request");
+                let api_version = req_msg.header.api_version();
+                let response = handle_update_consumer_request(req_msg, ctx).await?;
+                sink.send_response(&response, api_version).await?;
             }
+
         );
-
-        drop(api_stream);
-
-        FollowerHandler::start(ctx, follower_id, spu_update, sink, stream).await;
 
         debug!("finishing SPU peer loop");
         Ok(())
