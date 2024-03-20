@@ -4,7 +4,7 @@ name:  CD_Dev_Mac
 permissions:
   contents: read
 
-concurrency: 
+concurrency:
   group: cd_dev_mac
   cancel-in-progress: true
 
@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12]
+        os: [macos-14]
         cluster_type: [local,k8]
         run: [r1]
     env:
