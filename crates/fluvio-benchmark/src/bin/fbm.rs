@@ -117,6 +117,7 @@ fn write_stats(stats: AllStats) -> Result<()> {
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
+        .truncate(true)
         .open(historic_run_path()?)
         .map_err(|e| BenchmarkError::ErrorWithExplanation(format!("{e:?}")))?;
     file.write(&encoded)
