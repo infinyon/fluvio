@@ -78,8 +78,8 @@ jobs:
       - name: Print env
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: install rust target
         run: rustup target add ${{ matrix.rust-target }}
       - name: Install LLVM and Clang
@@ -260,8 +260,8 @@ jobs:
       - name: Print env
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: install Rust target
         run: rustup target add ${{ matrix.rust-target }}
       - name: Install zig
@@ -369,8 +369,8 @@ jobs:
       TARGET: ${{ matrix.rust-target }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
 
@@ -429,8 +429,8 @@ jobs:
       RELEASE_NAME: release
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: Swatinem/rust-cache@v2
         timeout-minutes: 10
         with:
@@ -448,8 +448,8 @@ jobs:
       RUST_BACKTRACE: full
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: install wasm target
         run: rustup target add wasm32-unknown-unknown
       - name: Build Regex SmartModule
@@ -474,8 +474,8 @@ jobs:
       RUST_BACKTRACE: full
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: install wasm target
         run: rustup target add wasm32-unknown-unknown
       - name: Build WASM for ${{ matrix.wasm-crate }}
@@ -504,8 +504,8 @@ jobs:
       RUST_BACKTRACE: full
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: check for ${{ matrix.wasm-crate }} with ${{matrix.features}}
         run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --${{matrix.features}}
@@ -528,8 +528,8 @@ jobs:
       RUSTV: ${{ matrix.rust }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust Stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Rust version
         run: rustc --version
       - uses: Swatinem/rust-cache@v2
@@ -937,8 +937,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:

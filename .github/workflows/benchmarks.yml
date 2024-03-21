@@ -23,8 +23,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Cache Rust Cargo files
         uses: Swatinem/rust-cache@v2
@@ -66,8 +66,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Cache Rust Cargo files
         uses: Swatinem/rust-cache@v2
