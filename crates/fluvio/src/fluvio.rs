@@ -128,7 +128,7 @@ impl Fluvio {
                 Ok(Arc::new(pool?))
             })
             .await
-            .map(|pool| pool.clone())
+            .cloned()
     }
 
     /// Creates a new `TopicProducer` for the given topic name
