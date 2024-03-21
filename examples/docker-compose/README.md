@@ -17,9 +17,9 @@ components separately, we can use Docker Compose `service`s to achieve this.
 ## Running Locally
 
 Clone this repo using `git clone https://github.com/infinyon/fluvio.git` and
-cd into `./fluvio/examples/docker-compose`, then run `docker compose up --build`.
+cd into `./fluvio/examples/docker-compose`, then run `docker compose up`.
 
-> Optionally you can run on detached mode `docker compose up --build -d` so
+> Optionally you can run on detached mode `docker compose up -d` so
 > Fluvio runs in the background.
 
 Then use the `fluvio` CLI to connect to the cluster running in Docker, to do
