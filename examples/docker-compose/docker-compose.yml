@@ -9,6 +9,8 @@ services:
     environment:
       - RUST_LOG=info
     command: "./fluvio-run sc --local /fluvio/metadata"
+    volumes:
+      - fluvio-metadata:/fluvio/metadata
   sc-setup:
     build:
       context: .
