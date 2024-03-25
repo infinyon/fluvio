@@ -34,7 +34,8 @@ pub(crate) struct ConsumerOffsetKey {
     replica_id: ReplicaKey,
     consumer_id: String,
 }
-
+/// Consumer offset value. Keeps the last offset seen by a consumer, time-to-live value, and
+/// the expiration time (UTC timestamp in seconds).
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
 pub(crate) struct ConsumerOffset {
     pub offset: i64,
