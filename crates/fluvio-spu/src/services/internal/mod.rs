@@ -1,10 +1,10 @@
 mod api;
 mod service_impl;
 mod fetch_stream_request;
-mod fetch_consumer_request;
-mod fetch_consumer_handler;
-mod update_consumer_request;
-mod update_consumer_handler;
+mod fetch_consumer_offset_request;
+mod fetch_consumer_offset_handler;
+mod update_consumer_offset_request;
+mod update_consumer_offset_handler;
 
 use tracing::info;
 
@@ -15,8 +15,8 @@ use crate::core::DefaultSharedGlobalContext;
 
 pub use self::fetch_stream_request::FetchStreamRequest;
 pub use self::fetch_stream_request::FetchStreamResponse;
-pub use self::fetch_consumer_request::FetchConsumerRequest;
-pub use self::update_consumer_request::UpdateConsumerRequest;
+pub use self::fetch_consumer_offset_request::FetchConsumerOffsetRequest;
+pub use self::update_consumer_offset_request::UpdateConsumerOffsetRequest;
 pub use self::api::SPUPeerApiEnum;
 pub use self::api::SpuPeerRequest;
 

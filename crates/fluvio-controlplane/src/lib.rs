@@ -11,4 +11,4 @@ mod alias {
     pub type PartitionMetadata<C> = MetadataStoreObject<PartitionSpec, C>;
 }
 
-pub const CONSUMER_STORAGE_TOPIC: &str = "fluvio-consumers";
+pub const CONSUMER_STORAGE_TOPIC: &str = "consumer-offset";

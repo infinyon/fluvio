@@ -14,22 +14,21 @@ use tracing::{instrument, trace};
 use crate::{
     core::DefaultSharedGlobalContext,
     replication::leader::LeaderReplicaState,
-    kv::consumer::{Consumer, Key},
+    kv::consumer::{ConsumerOffset, ConsumerOffsetKey},
 };
 
-use super::update_consumer_request::{UpdateConsumerRequest, UpdateConsumerResponse};
+use super::update_consumer_offset_request::{UpdateConsumerOffsetRequest, UpdateConsumerOffsetResponse};
 
 #[instrument(skip(req_msg, ctx))]
-pub async fn handle_update_consumer_request(
-    req_msg: RequestMessage<UpdateConsumerRequest>,
+pub async fn handle_update_consumer_offset_request(
+    req_msg: RequestMessage<UpdateConsumerOffsetRequest>,
     ctx: DefaultSharedGlobalContext,
-) -> Result<ResponseMessage<UpdateConsumerResponse>, IoError> {
-    let UpdateConsumerRequest {
-        topic,
-        partition,
+) -> Result<ResponseMessage<UpdateConsumerOffsetResponse>, IoError> {
+    let UpdateConsumerOffsetRequest {
         consumer_id,
         offset,
         ttl,
+        replica_id,
     } = req_msg.request;
 
     let consumers_replica_id =
@@ -37,33 +36,36 @@ pub async fn handle_update_consumer_request(
 
     let error_code = if let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await
     {
-        match update_offset(ctx, replica, topic, partition, consumer_id, offset, ttl).await {
+        match update_offset(ctx, replica, replica_id, consumer_id, offset, ttl).await {
             Ok(_) => ErrorCode::None,
             Err(e) => ErrorCode::Other(e.to_string()),
         }
     } else {
         ErrorCode::PartitionNotLeader
     };
-    trace!(offset, ?error_code, "consumer update result");
-    let response = UpdateConsumerResponse { error_code };
-    Ok(RequestMessage::<UpdateConsumerRequest>::response_with_header(&req_msg.header, response))
+    trace!(offset, ?error_code, "consumer offset update result");
+    let response = UpdateConsumerOffsetResponse { error_code };
+    Ok(
+        RequestMessage::<UpdateConsumerOffsetRequest>::response_with_header(
+            &req_msg.header,
+            response,
+        ),
+    )
 }
 
 async fn update_offset(
     ctx: DefaultSharedGlobalContext,
     replica: &LeaderReplicaState<FileReplica>,
-    topic: String,
-    partition: PartitionId,
+    target_replica: ReplicaKey,
     consumer_id: String,
     offset: Offset,
     ttl: Duration,
 ) -> anyhow::Result<()> {
     let consumers = ctx
-        .consumers()
+        .consumer_offset()
         .get_or_insert(replica, ctx.follower_notifier())
         .await?;
-    let target_replica: ReplicaKey = (topic, partition).into();
-    let key = Key::new(target_replica, consumer_id);
-    let consumer = Consumer::new(offset, ttl);
+    let key = ConsumerOffsetKey::new(target_replica, consumer_id);
+    let consumer = ConsumerOffset::new(offset, ttl);
     consumers.put(key, consumer).await
 }

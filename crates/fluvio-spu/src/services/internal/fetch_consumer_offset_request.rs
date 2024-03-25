@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::link::ErrorCode;
+use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::{Encoder, Decoder};
 
 use fluvio_spu_schema::COMMON_VERSION;
@@ -11,34 +12,33 @@ use fluvio_types::PartitionId;
 use super::SPUPeerApiEnum;
 
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct FetchConsumerRequest {
-    pub topic: String,
-    pub partition: PartitionId,
+pub struct FetchConsumerOffsetRequest {
+    pub replica_id: ReplicaKey,
     pub consumer_id: String,
 }
 
-impl Request for FetchConsumerRequest {
-    const API_KEY: u16 = SPUPeerApiEnum::FetchConsumer as u16;
+impl Request for FetchConsumerOffsetRequest {
+    const API_KEY: u16 = SPUPeerApiEnum::FetchConsumerOffset as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
-    type Response = FetchConsumerResponse;
+    type Response = FetchConsumerOffsetResponse;
 }
 
-impl FetchConsumerRequest {
+impl FetchConsumerOffsetRequest {
     pub fn new(
         topic: impl Into<String>,
         partition: PartitionId,
         consumer_id: impl Into<String>,
     ) -> Self {
+        let replica_id = ReplicaKey::new(topic, partition);
         Self {
-            topic: topic.into(),
-            partition,
             consumer_id: consumer_id.into(),
+            replica_id,
         }
     }
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct FetchConsumerResponse {
+pub struct FetchConsumerOffsetResponse {
     pub error_code: ErrorCode,
     pub consumer: Option<Consumer>,
 }
@@ -49,7 +49,7 @@ pub struct Consumer {
     pub ttl: Duration,
 }
 
-impl FetchConsumerResponse {
+impl FetchConsumerOffsetResponse {
     pub fn new(error_code: ErrorCode, consumer: Option<Consumer>) -> Self {
         Self {
             error_code,
@@ -64,7 +64,7 @@ impl Consumer {
     }
 }
 
-impl fmt::Display for FetchConsumerResponse {
+impl fmt::Display for FetchConsumerOffsetResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,

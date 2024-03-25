@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::link::ErrorCode;
-use fluvio_protocol::record::Offset;
+use fluvio_protocol::record::{Offset, ReplicaKey};
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_spu_schema::COMMON_VERSION;
 use fluvio_types::PartitionId;
@@ -11,21 +11,20 @@ use fluvio_types::PartitionId;
 use super::SPUPeerApiEnum;
 
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct UpdateConsumerRequest {
-    pub topic: String,
-    pub partition: PartitionId,
+pub struct UpdateConsumerOffsetRequest {
+    pub replica_id: ReplicaKey,
     pub consumer_id: String,
     pub offset: Offset,
     pub ttl: Duration,
 }
 
-impl Request for UpdateConsumerRequest {
-    const API_KEY: u16 = SPUPeerApiEnum::UpdateConsumer as u16;
+impl Request for UpdateConsumerOffsetRequest {
+    const API_KEY: u16 = SPUPeerApiEnum::UpdateConsumerOffset as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
-    type Response = UpdateConsumerResponse;
+    type Response = UpdateConsumerOffsetResponse;
 }
 
-impl UpdateConsumerRequest {
+impl UpdateConsumerOffsetRequest {
     pub fn new(
         topic: impl Into<String>,
         partition: PartitionId,
@@ -33,9 +32,9 @@ impl UpdateConsumerRequest {
         offset: Offset,
         ttl: Duration,
     ) -> Self {
+        let replica_id = ReplicaKey::new(topic, partition);
         Self {
-            topic: topic.into(),
-            partition,
+            replica_id,
             consumer_id: consumer_id.into(),
             offset,
             ttl,
@@ -44,11 +43,11 @@ impl UpdateConsumerRequest {
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct UpdateConsumerResponse {
+pub struct UpdateConsumerOffsetResponse {
     pub error_code: ErrorCode,
 }
 
-impl fmt::Display for UpdateConsumerResponse {
+impl fmt::Display for UpdateConsumerOffsetResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "error: {:#?}", self.error_code)
     }

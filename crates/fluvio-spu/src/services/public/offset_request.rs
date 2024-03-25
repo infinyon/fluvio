@@ -14,7 +14,8 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::services::internal::FetchConsumerRequest;
+use crate::kv::consumer::ConsumerOffsetKey;
+use crate::services::internal::FetchConsumerOffsetRequest;
 use crate::services::public::send_private_request_to_leader;
 
 #[instrument(skip(req_msg, ctx))]
@@ -89,12 +90,14 @@ async fn fetch_consumer_offset(
         ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
     if let Some(leader) = ctx.leaders_state().get(&consumers_replica_id).await {
         let consumers = ctx
-            .consumers()
+            .consumer_offset()
             .get_or_insert(&leader, ctx.follower_notifier())
             .await
             .map_err(|e| ErrorCode::Other(e.to_string()))?;
+        let key =
+            ConsumerOffsetKey::new(ReplicaKey::new(topic.to_string(), partition), consumer_id);
         Ok(consumers
-            .get_by(topic.to_string(), partition, consumer_id.to_string())
+            .get(&key)
             .await
             .map_err(|e| ErrorCode::Other(e.to_string()))?
             .map(|c| c.offset))
@@ -119,7 +122,7 @@ async fn fetch_consumer_offset_from_peer(
 ) -> Result<Option<i64>, ErrorCode> {
     debug!(consumer_id, "fetch consumer from peer");
 
-    let fetch_req = FetchConsumerRequest::new(topic, partition, consumer_id);
+    let fetch_req = FetchConsumerOffsetRequest::new(topic, partition, consumer_id);
     let response = send_private_request_to_leader(ctx, consumers_replica_id, fetch_req)
         .await
         .map_err(|e| ErrorCode::Other(e.to_string()))?;

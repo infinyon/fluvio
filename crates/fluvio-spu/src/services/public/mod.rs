@@ -27,9 +27,9 @@ use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_types::event::StickyEvent;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::services::public::consumer_handler::handle_delete_consumer_request;
-use crate::services::public::consumer_handler::handle_fetch_consumers_request;
-use crate::services::public::consumer_handler::handle_update_consumer_request;
+use crate::services::public::consumer_handler::handle_delete_consumer_offset_request;
+use crate::services::public::consumer_handler::handle_fetch_consumer_offsets_request;
+use crate::services::public::consumer_handler::handle_update_consumer_offset_request;
 use self::api_versions::handle_api_version_request;
 use self::produce_handler::handle_produce_request;
 use self::fetch_handler::handle_fetch_request;
@@ -134,19 +134,23 @@ impl FluvioService for PublicService {
                         ),
                         SpuServerRequest::UpdateConsumerOffsetRequest(request) => call_service!(
                             request,
-                            handle_update_consumer_request(request, context.clone(), &mut conn_ctx),
+                            handle_update_consumer_offset_request(
+                                request,
+                                context.clone(),
+                                &mut conn_ctx
+                            ),
                             shared_sink,
                             "UpdateConsumerRequest"
                         ),
                         SpuServerRequest::DeleteConsumerOffsetRequest(request) => call_service!(
                             request,
-                            handle_delete_consumer_request(request, context.clone()),
+                            handle_delete_consumer_offset_request(request, context.clone()),
                             shared_sink,
                             "DeleteConsumerRequest"
                         ),
                         SpuServerRequest::FetchConsumerOffsetsRequest(request) => call_service!(
                             request,
-                            handle_fetch_consumers_request(request, context.clone()),
+                            handle_fetch_consumer_offsets_request(request, context.clone()),
                             shared_sink,
                             "FetchConsumersRequest"
                         ),
