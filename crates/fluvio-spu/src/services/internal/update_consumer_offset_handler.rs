@@ -20,7 +20,7 @@ use crate::{
 use super::update_consumer_offset_request::{UpdateConsumerOffsetRequest, UpdateConsumerOffsetResponse};
 
 #[instrument(skip(req_msg, ctx))]
-pub async fn handle_update_consumer_offset_request(
+pub(crate) async fn handle_update_consumer_offset_request(
     req_msg: RequestMessage<UpdateConsumerOffsetRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<UpdateConsumerOffsetResponse>, IoError> {
