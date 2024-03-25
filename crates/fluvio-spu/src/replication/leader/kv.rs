@@ -19,6 +19,9 @@ const RECORDS_SERIALIZATION_VERSION: Version = 0;
 
 pub type LeaderKVStorage<K, V, S> = LogBasedKVStorage<K, V, LeaderReplicaLog<S>>;
 
+/// [`Log`] implementation that enables using [`fluvio_kv_storage::KVStorage`] on top of [`LeaderReplicaState`].
+/// Basically, it implements a logic for storing KV operations on the topic, and reading them from
+/// the end of the topic.
 #[derive(Debug)]
 pub struct LeaderReplicaLog<S> {
     replica: LeaderReplicaState<S>,

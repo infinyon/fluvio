@@ -32,7 +32,7 @@ use super::conn_context::ConnectionContext;
 use super::send_private_request_to_leader;
 
 #[instrument(skip(req_msg, ctx, conn_ctx))]
-pub async fn handle_update_consumer_offset_request(
+pub(crate) async fn handle_update_consumer_offset_request(
     req_msg: RequestMessage<UpdateConsumerOffsetRequest>,
     ctx: DefaultSharedGlobalContext,
     conn_ctx: &mut ConnectionContext,
@@ -56,7 +56,7 @@ pub async fn handle_update_consumer_offset_request(
 }
 
 #[instrument(skip(req_msg, ctx))]
-pub async fn handle_delete_consumer_offset_request(
+pub(crate) async fn handle_delete_consumer_offset_request(
     req_msg: RequestMessage<DeleteConsumerOffsetRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<DeleteConsumerOffsetResponse>, IoError> {
@@ -82,7 +82,7 @@ pub async fn handle_delete_consumer_offset_request(
 }
 
 #[instrument(skip(req_msg, ctx))]
-pub async fn handle_fetch_consumer_offsets_request(
+pub(crate) async fn handle_fetch_consumer_offsets_request(
     req_msg: RequestMessage<FetchConsumerOffsetsRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<FetchConsumerOffsetsResponse>, IoError> {
