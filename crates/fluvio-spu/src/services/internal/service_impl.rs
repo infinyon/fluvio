@@ -10,8 +10,8 @@ use fluvio_socket::FluvioSocket;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::FollowerHandler;
-use crate::services::internal::fetch_consumer_handler::handle_fetch_consumer_request;
-use crate::services::internal::update_consumer_handler::handle_update_consumer_request;
+use crate::services::internal::fetch_consumer_offset_handler::handle_fetch_consumer_offset_request;
+use crate::services::internal::update_consumer_offset_handler::handle_update_consumer_offset_request;
 use super::SpuPeerRequest;
 use super::SPUPeerApiEnum;
 use super::FetchStreamResponse;
@@ -67,18 +67,16 @@ impl FluvioService for InternalService {
                 }
 
             },
-            SpuPeerRequest::FetchConsumer(req_msg) => {
-                debug!(consumer_id = req_msg.request.consumer_id, topic=req_msg.request.topic, partition = req_msg.request.partition,
-                       "fetch consumer request");
+            SpuPeerRequest::FetchConsumerOffset(req_msg) => {
+                debug!(consumer_id = req_msg.request.consumer_id, replica = %req_msg.request.replica_id, "fetch consumer offset request");
                 let api_version = req_msg.header.api_version();
-                let response = handle_fetch_consumer_request(req_msg, ctx).await?;
+                let response = handle_fetch_consumer_offset_request(req_msg, ctx).await?;
                 sink.send_response(&response, api_version).await?;
             },
-            SpuPeerRequest::UpdateConsumer(req_msg) => {
-                trace!(consumer_id = req_msg.request.consumer_id, topic=req_msg.request.topic, partition = req_msg.request.partition,
-                       "update consumer request");
+            SpuPeerRequest::UpdateConsumerOffset(req_msg) => {
+                trace!(consumer_id = req_msg.request.consumer_id, replica = %req_msg.request.replica_id, "update consumer offset request");
                 let api_version = req_msg.header.api_version();
-                let response = handle_update_consumer_request(req_msg, ctx).await?;
+                let response = handle_update_consumer_offset_request(req_msg, ctx).await?;
                 sink.send_response(&response, api_version).await?;
             }
 

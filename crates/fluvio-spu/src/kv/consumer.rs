@@ -7,11 +7,11 @@ use std::{
 
 use anyhow::Result;
 use async_rwlock::RwLock;
+use tracing::trace;
+
 use fluvio_kv_storage::KVStorage;
 use fluvio_protocol::{record::ReplicaKey, Encoder, Decoder};
 use fluvio_storage::FileReplica;
-use fluvio_types::PartitionId;
-use tracing::trace;
 
 use crate::replication::leader::{
     LeaderKVStorage, FollowerNotifier, LeaderReplicaState, LeaderReplicaLog,
@@ -22,44 +22,46 @@ pub(crate) type TimestampSecs = u64;
 const DEFAULT_FLUSH_THRESHOLD: usize = 100;
 
 #[derive(Debug, Default)]
-pub(crate) struct SharedConsumerStorages(Arc<RwLock<HashMap<ReplicaKey, SharableConsumerStorage>>>);
+pub(crate) struct SharedConsumerOffsetStorages(
+    Arc<RwLock<HashMap<ReplicaKey, SharableConsumerOffsetStorage>>>,
+);
 
 #[derive(Debug, Clone)]
-pub(crate) struct SharableConsumerStorage(Arc<RwLock<ConsumerStorage>>);
+pub(crate) struct SharableConsumerOffsetStorage(Arc<RwLock<ConsumerOffsetStorage>>);
 
 #[derive(Debug, Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
-pub(crate) struct Key {
+pub(crate) struct ConsumerOffsetKey {
     replica_id: ReplicaKey,
     consumer_id: String,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
-pub(crate) struct Consumer {
+pub(crate) struct ConsumerOffset {
     pub offset: i64,
     pub ttl: Duration,
     pub expire_time: TimestampSecs,
 }
 
 #[derive(Debug)]
-pub(crate) struct ConsumerStorage {
-    kv: LeaderKVStorage<Key, Consumer, FileReplica>,
+pub(crate) struct ConsumerOffsetStorage {
+    kv: LeaderKVStorage<ConsumerOffsetKey, ConsumerOffset, FileReplica>,
     flush_threshold: usize,
     changes_since_flush: usize,
 }
 
-impl SharedConsumerStorages {
+impl SharedConsumerOffsetStorages {
     pub(crate) async fn get_or_insert(
         &self,
         replica: &LeaderReplicaState<FileReplica>,
         notifier: &Arc<FollowerNotifier>,
-    ) -> Result<SharableConsumerStorage> {
+    ) -> Result<SharableConsumerOffsetStorage> {
         let mut write = self.0.write().await;
         match write.entry(replica.id().clone()) {
             Entry::Occupied(entry) => Ok(entry.get().clone()),
             Entry::Vacant(entry) => {
-                let mut storage = ConsumerStorage::new(replica.clone(), notifier.clone());
+                let mut storage = ConsumerOffsetStorage::new(replica.clone(), notifier.clone());
                 storage.kv.sync_from_log().await?;
-                let shared: SharableConsumerStorage = storage.into();
+                let shared: SharableConsumerOffsetStorage = storage.into();
                 entry.insert(shared.clone());
                 Ok(shared)
             }
@@ -67,7 +69,7 @@ impl SharedConsumerStorages {
     }
 }
 
-impl ConsumerStorage {
+impl ConsumerOffsetStorage {
     pub fn new(
         replica: LeaderReplicaState<FileReplica>,
         follower_notifier: Arc<FollowerNotifier>,
@@ -96,13 +98,13 @@ impl ConsumerStorage {
     }
 }
 
-impl KVStorage<Key, Consumer> for ConsumerStorage {
-    async fn get(&self, key: &Key) -> Result<Option<Consumer>> {
+impl KVStorage<ConsumerOffsetKey, ConsumerOffset> for ConsumerOffsetStorage {
+    async fn get(&self, key: &ConsumerOffsetKey) -> Result<Option<ConsumerOffset>> {
         trace!(?key, "get");
         self.kv.get(key).await.map(|op| op.filter(is_not_expired))
     }
 
-    async fn delete(&mut self, key: &Key) -> Result<()> {
+    async fn delete(&mut self, key: &ConsumerOffsetKey) -> Result<()> {
         trace!(?key, "delete");
         let result = self.kv.delete(key).await;
         self.changes_since_flush.add_assign(1);
@@ -110,7 +112,11 @@ impl KVStorage<Key, Consumer> for ConsumerStorage {
         result
     }
 
-    async fn put(&mut self, key: impl Into<Key>, value: impl Into<Consumer>) -> Result<()> {
+    async fn put(
+        &mut self,
+        key: impl Into<ConsumerOffsetKey>,
+        value: impl Into<ConsumerOffset>,
+    ) -> Result<()> {
         let key = key.into();
         let value = value.into();
         trace!(?key, ?value, "put");
@@ -121,7 +127,7 @@ impl KVStorage<Key, Consumer> for ConsumerStorage {
     }
 }
 
-impl Key {
+impl ConsumerOffsetKey {
     pub(crate) fn new(replica_id: impl Into<ReplicaKey>, consumer_id: impl Into<String>) -> Self {
         Self {
             replica_id: replica_id.into(),
@@ -129,7 +135,7 @@ impl Key {
         }
     }
 }
-impl Consumer {
+impl ConsumerOffset {
     pub(crate) fn new(offset: i64, ttl: Duration) -> Self {
         let now = now_timestamp();
         Self::with(offset, ttl, now + ttl.as_secs())
@@ -144,33 +150,26 @@ impl Consumer {
     }
 }
 
-impl From<ConsumerStorage> for SharableConsumerStorage {
-    fn from(value: ConsumerStorage) -> Self {
+impl From<ConsumerOffsetStorage> for SharableConsumerOffsetStorage {
+    fn from(value: ConsumerOffsetStorage) -> Self {
         Self(Arc::new(RwLock::new(value)))
     }
 }
 
-impl SharableConsumerStorage {
-    pub async fn get_by(
-        &self,
-        topic: String,
-        partition: PartitionId,
-        consumer_id: String,
-    ) -> Result<Option<Consumer>> {
-        let replica: ReplicaKey = (topic, partition).into();
-        let key = Key::new(replica, consumer_id);
-        self.get(&key).await
-    }
-
-    pub async fn get(&self, key: &Key) -> Result<Option<Consumer>> {
+impl SharableConsumerOffsetStorage {
+    pub async fn get(&self, key: &ConsumerOffsetKey) -> Result<Option<ConsumerOffset>> {
         self.0.read().await.get(key).await
     }
 
-    pub async fn delete(&self, key: &Key) -> Result<()> {
+    pub async fn delete(&self, key: &ConsumerOffsetKey) -> Result<()> {
         self.0.write().await.delete(key).await
     }
 
-    pub async fn put(&self, key: impl Into<Key>, value: impl Into<Consumer>) -> Result<()> {
+    pub async fn put(
+        &self,
+        key: impl Into<ConsumerOffsetKey>,
+        value: impl Into<ConsumerOffset>,
+    ) -> Result<()> {
         self.0.write().await.put(key, value).await
     }
 }
@@ -182,7 +181,7 @@ fn now_timestamp() -> TimestampSecs {
         .as_secs()
 }
 
-fn is_not_expired(record: &Consumer) -> bool {
+fn is_not_expired(record: &ConsumerOffset) -> bool {
     let now = now_timestamp();
     now <= record.expire_time
 }
@@ -206,13 +205,13 @@ mod tests {
     #[fluvio_future::test]
     async fn test_expiration_checked() {
         //given
-        let leader = create_replica("test_expiration_checked").await;
+        let leader = create_offset_replica("test_expiration_checked").await;
         let notifier = FollowerNotifier::shared();
-        let mut storage = ConsumerStorage::new(leader.clone(), notifier);
-        let key1 = Key::new(("topic1", 0), "consumer1");
-        let value1 = Consumer::with(1, Duration::from_secs(2), now_timestamp() - 100);
-        let key2 = Key::new(("topic2", 1), "consumer1");
-        let value2 = Consumer::with(2, Duration::from_secs(2), now_timestamp() + 100);
+        let mut storage = ConsumerOffsetStorage::new(leader.clone(), notifier);
+        let key1 = ConsumerOffsetKey::new(("topic1", 0), "consumer1");
+        let value1 = ConsumerOffset::with(1, Duration::from_secs(2), now_timestamp() - 100);
+        let key2 = ConsumerOffsetKey::new(("topic2", 1), "consumer1");
+        let value2 = ConsumerOffset::with(2, Duration::from_secs(2), now_timestamp() + 100);
         storage
             .put(key1.clone(), value1)
             .await
@@ -236,10 +235,10 @@ mod tests {
     #[fluvio_future::test]
     async fn test_flush_invoked_no_records() {
         //given
-        let leader = create_replica("test_flush_invoked").await;
+        let leader = create_offset_replica("test_flush_invoked").await;
         let notifier = FollowerNotifier::shared();
-        let mut storage = ConsumerStorage::with(leader.clone(), notifier, 1);
-        let key1 = Key::new(("topic1", 0), "consumer1");
+        let mut storage = ConsumerOffsetStorage::with(leader.clone(), notifier, 1);
+        let key1 = ConsumerOffsetKey::new(("topic1", 0), "consumer1");
 
         //when
         assert_eq!(leader.hw(), 0);
@@ -255,11 +254,11 @@ mod tests {
     #[fluvio_future::test]
     async fn test_flush_invoked_with_records() {
         //given
-        let leader = create_replica("test_flush_invoked_with_records").await;
+        let leader = create_offset_replica("test_flush_invoked_with_records").await;
         let notifier = FollowerNotifier::shared();
-        let mut storage = ConsumerStorage::with(leader.clone(), notifier, 1);
-        let key1 = Key::new(("topic1", 0), "consumer1");
-        let value1 = Consumer::with(1, Duration::from_secs(2), now_timestamp() - 100);
+        let mut storage = ConsumerOffsetStorage::with(leader.clone(), notifier, 1);
+        let key1 = ConsumerOffsetKey::new(("topic1", 0), "consumer1");
+        let value1 = ConsumerOffset::with(1, Duration::from_secs(2), now_timestamp() - 100);
 
         //when
         assert_eq!(leader.hw(), 0);
@@ -275,7 +274,7 @@ mod tests {
         //then
     }
 
-    async fn create_replica(dir: impl AsRef<Path>) -> LeaderReplicaState<FileReplica> {
+    async fn create_offset_replica(dir: impl AsRef<Path>) -> LeaderReplicaState<FileReplica> {
         let base_dir = temp_dir().join(dir);
         ensure_clean_dir(&base_dir);
         let config = ReplicaConfig {

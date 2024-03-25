@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use fluvio_protocol::api::Request;
-use fluvio_protocol::record::Offset;
+use fluvio_protocol::record::{Offset, ReplicaKey};
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_types::PartitionId;
 
@@ -10,79 +10,79 @@ use crate::errors::ErrorCode;
 use super::SpuServerApiKey;
 
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct UpdateConsumerRequest {
+pub struct UpdateConsumerOffsetRequest {
     pub offset: Offset,
     pub session_id: u32,
 }
 
-impl Request for UpdateConsumerRequest {
-    const API_KEY: u16 = SpuServerApiKey::UpdateConsumer as u16;
+impl Request for UpdateConsumerOffsetRequest {
+    const API_KEY: u16 = SpuServerApiKey::UpdateConsumerOffset as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
-    type Response = UpdateConsumerResponse;
+    type Response = UpdateConsumerOffsetResponse;
 }
 
-impl UpdateConsumerRequest {
+impl UpdateConsumerOffsetRequest {
     pub fn new(offset: Offset, session_id: u32) -> Self {
         Self { offset, session_id }
     }
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct UpdateConsumerResponse {
+pub struct UpdateConsumerOffsetResponse {
     pub offset: Offset,
     pub error_code: ErrorCode,
 }
 
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct DeleteConsumerRequest {
-    pub topic: String,
-    pub partition: PartitionId,
+pub struct DeleteConsumerOffsetRequest {
+    pub replica_id: ReplicaKey,
     pub consumer_id: String,
 }
 
-impl DeleteConsumerRequest {
+impl DeleteConsumerOffsetRequest {
     pub fn new(
         topic: impl Into<String>,
         partition: PartitionId,
         consumer_id: impl Into<String>,
     ) -> Self {
+        let replica_id = ReplicaKey::new(topic, partition);
         Self {
-            topic: topic.into(),
-            partition,
+            replica_id,
             consumer_id: consumer_id.into(),
         }
     }
 }
 
-impl Request for DeleteConsumerRequest {
-    const API_KEY: u16 = SpuServerApiKey::DeleteConsumer as u16;
+impl Request for DeleteConsumerOffsetRequest {
+    const API_KEY: u16 = SpuServerApiKey::DeleteConsumerOffset as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
-    type Response = DeleteConsumerResponse;
+    type Response = DeleteConsumerOffsetResponse;
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct DeleteConsumerResponse {
+pub struct DeleteConsumerOffsetResponse {
     pub error_code: ErrorCode,
 }
 
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct FetchConsumersRequest;
+pub struct FetchConsumerOffsetsRequest;
 
-impl Request for FetchConsumersRequest {
-    const API_KEY: u16 = SpuServerApiKey::FetchConsumers as u16;
+impl Request for FetchConsumerOffsetsRequest {
+    const API_KEY: u16 = SpuServerApiKey::FetchConsumerOffsets as u16;
     const DEFAULT_API_VERSION: i16 = COMMON_VERSION;
-    type Response = FetchConsumersResponse;
+    type Response = FetchConsumerOffsetsResponse;
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct FetchConsumersResponse {
+pub struct FetchConsumerOffsetsResponse {
     pub error_code: ErrorCode,
-    pub consumers: Vec<Consumer>,
+    pub consumers: Vec<ConsumerOffset>,
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct Consumer {
+pub struct ConsumerOffset {
     pub id: String,
+    pub offset: Offset,
     pub ttl: Duration,
     pub expire_time: u64,
 }

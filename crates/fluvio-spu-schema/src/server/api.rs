@@ -21,7 +21,9 @@ use crate::ApiVersionsRequest;
 use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
 use super::stream_fetch::FileStreamFetchRequest;
-use super::consumer::{UpdateConsumerRequest, DeleteConsumerRequest, FetchConsumersRequest};
+use super::consumer::{
+    UpdateConsumerOffsetRequest, DeleteConsumerOffsetRequest, FetchConsumerOffsetsRequest,
+};
 use super::update_offset::UpdateOffsetsRequest;
 
 #[allow(clippy::large_enum_variant)]
@@ -44,11 +46,11 @@ pub enum SpuServerRequest {
     #[fluvio(tag = 5)]
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
     #[fluvio(tag = 6)]
-    UpdateConsumerRequest(RequestMessage<UpdateConsumerRequest>),
+    UpdateConsumerOffsetRequest(RequestMessage<UpdateConsumerOffsetRequest>),
     #[fluvio(tag = 7)]
-    DeleteConsumerRequest(RequestMessage<DeleteConsumerRequest>),
+    DeleteConsumerOffsetRequest(RequestMessage<DeleteConsumerOffsetRequest>),
     #[fluvio(tag = 8)]
-    FetchConsumersRequest(RequestMessage<FetchConsumersRequest>),
+    FetchConsumerOffsetsRequest(RequestMessage<FetchConsumerOffsetsRequest>),
 }
 
 impl fmt::Display for SpuServerRequest {
@@ -60,9 +62,9 @@ impl fmt::Display for SpuServerRequest {
             Self::FetchOffsetsRequest(_) => write!(f, "FetchOffsetsRequest"),
             Self::FileStreamFetchRequest(_) => write!(f, "FileStreamFetchRequest"),
             Self::UpdateOffsetsRequest(_) => write!(f, "UpdateOffsetsRequest"),
-            Self::UpdateConsumerRequest(_) => write!(f, "UpdateConsumerRequest"),
-            Self::DeleteConsumerRequest(_) => write!(f, "DeleteConsumerRequest"),
-            Self::FetchConsumersRequest(_) => write!(f, "FetchConsumersRequest"),
+            Self::UpdateConsumerOffsetRequest(_) => write!(f, "UpdateConsumerOffsetRequest"),
+            Self::DeleteConsumerOffsetRequest(_) => write!(f, "DeleteConsumerOffsetRequest"),
+            Self::FetchConsumerOffsetsRequest(_) => write!(f, "FetchConsumerOffsetsRequest"),
         }
     }
 }
@@ -95,14 +97,14 @@ impl ApiMessage for SpuServerRequest {
             SpuServerApiKey::FetchOffsets => api_decode!(Self, FetchOffsetsRequest, src, header),
             SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
             SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header),
-            SpuServerApiKey::UpdateConsumer => {
-                api_decode!(Self, UpdateConsumerRequest, src, header)
+            SpuServerApiKey::UpdateConsumerOffset => {
+                api_decode!(Self, UpdateConsumerOffsetRequest, src, header)
             }
-            SpuServerApiKey::DeleteConsumer => {
-                api_decode!(Self, DeleteConsumerRequest, src, header)
+            SpuServerApiKey::DeleteConsumerOffset => {
+                api_decode!(Self, DeleteConsumerOffsetRequest, src, header)
             }
-            SpuServerApiKey::FetchConsumers => {
-                api_decode!(Self, FetchConsumersRequest, src, header)
+            SpuServerApiKey::FetchConsumerOffsets => {
+                api_decode!(Self, FetchConsumerOffsetsRequest, src, header)
             }
         }
     }

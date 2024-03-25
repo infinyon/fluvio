@@ -5,12 +5,12 @@ use anyhow::Context;
 use anyhow::Result;
 use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 
-use fluvio_spu_schema::server::consumer::DeleteConsumerRequest;
-use fluvio_spu_schema::server::consumer::DeleteConsumerResponse;
-use fluvio_spu_schema::server::consumer::FetchConsumersRequest;
-use fluvio_spu_schema::server::consumer::FetchConsumersResponse;
-use fluvio_spu_schema::server::consumer::UpdateConsumerRequest;
-use fluvio_spu_schema::server::consumer::UpdateConsumerResponse;
+use fluvio_spu_schema::server::consumer::DeleteConsumerOffsetRequest;
+use fluvio_spu_schema::server::consumer::DeleteConsumerOffsetResponse;
+use fluvio_spu_schema::server::consumer::FetchConsumerOffsetsRequest;
+use fluvio_spu_schema::server::consumer::FetchConsumerOffsetsResponse;
+use fluvio_spu_schema::server::consumer::UpdateConsumerOffsetRequest;
+use fluvio_spu_schema::server::consumer::UpdateConsumerOffsetResponse;
 use fluvio_storage::FileReplica;
 use fluvio_types::PartitionId;
 use tracing::debug;
@@ -24,71 +24,85 @@ use tracing::trace;
 use tracing::warn;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::kv::consumer::Consumer;
-use crate::kv::consumer::Key;
+use crate::kv::consumer::ConsumerOffset;
+use crate::kv::consumer::ConsumerOffsetKey;
 use crate::replication::leader::LeaderReplicaState;
 
 use super::conn_context::ConnectionContext;
 use super::send_private_request_to_leader;
 
 #[instrument(skip(req_msg, ctx, conn_ctx))]
-pub async fn handle_update_consumer_request(
-    req_msg: RequestMessage<UpdateConsumerRequest>,
+pub async fn handle_update_consumer_offset_request(
+    req_msg: RequestMessage<UpdateConsumerOffsetRequest>,
     ctx: DefaultSharedGlobalContext,
     conn_ctx: &mut ConnectionContext,
-) -> Result<ResponseMessage<UpdateConsumerResponse>, IoError> {
-    let UpdateConsumerRequest { offset, session_id } = req_msg.request;
+) -> Result<ResponseMessage<UpdateConsumerOffsetResponse>, IoError> {
+    let UpdateConsumerOffsetRequest { offset, session_id } = req_msg.request;
 
     let (offset, error_code) = match handle_update(ctx, conn_ctx, offset, session_id).await {
         Ok(offset) => (offset, ErrorCode::None),
         Err(error) => (i64::default(), error),
     };
 
-    trace!(offset, ?error_code, "update consumer result");
+    trace!(offset, ?error_code, "update consumer offset result");
 
-    let response = UpdateConsumerResponse { error_code, offset };
-    Ok(RequestMessage::<UpdateConsumerRequest>::response_with_header(&req_msg.header, response))
+    let response = UpdateConsumerOffsetResponse { error_code, offset };
+    Ok(
+        RequestMessage::<UpdateConsumerOffsetRequest>::response_with_header(
+            &req_msg.header,
+            response,
+        ),
+    )
 }
 
 #[instrument(skip(req_msg, ctx))]
-pub async fn handle_delete_consumer_request(
-    req_msg: RequestMessage<DeleteConsumerRequest>,
+pub async fn handle_delete_consumer_offset_request(
+    req_msg: RequestMessage<DeleteConsumerOffsetRequest>,
     ctx: DefaultSharedGlobalContext,
-) -> Result<ResponseMessage<DeleteConsumerResponse>, IoError> {
-    let DeleteConsumerRequest {
-        topic,
-        partition,
+) -> Result<ResponseMessage<DeleteConsumerOffsetResponse>, IoError> {
+    let DeleteConsumerOffsetRequest {
         consumer_id,
+        replica_id,
     } = req_msg.request;
 
-    let error_code = match handle_delete(ctx, topic, partition, consumer_id).await {
+    let error_code = match handle_delete(ctx, replica_id, consumer_id).await {
         Ok(_) => ErrorCode::None,
         Err(error_code) => error_code,
     };
 
-    debug!(?error_code, "delete consumer result");
+    debug!(?error_code, "delete consumer offset result");
 
-    let response = DeleteConsumerResponse { error_code };
-    Ok(RequestMessage::<DeleteConsumerRequest>::response_with_header(&req_msg.header, response))
+    let response = DeleteConsumerOffsetResponse { error_code };
+    Ok(
+        RequestMessage::<DeleteConsumerOffsetRequest>::response_with_header(
+            &req_msg.header,
+            response,
+        ),
+    )
 }
 
 #[instrument(skip(req_msg, ctx))]
-pub async fn handle_fetch_consumers_request(
-    req_msg: RequestMessage<FetchConsumersRequest>,
+pub async fn handle_fetch_consumer_offsets_request(
+    req_msg: RequestMessage<FetchConsumerOffsetsRequest>,
     ctx: DefaultSharedGlobalContext,
-) -> Result<ResponseMessage<FetchConsumersResponse>, IoError> {
+) -> Result<ResponseMessage<FetchConsumerOffsetsResponse>, IoError> {
     let (consumers, error_code) = match handle_fetch_consumers(ctx).await {
         Ok(consumers) => (consumers, ErrorCode::None),
         Err(error_code) => (Vec::new(), error_code),
     };
 
-    trace!(?error_code, ?consumers, "fetch consumers result");
+    trace!(?error_code, ?consumers, "fetch consumer offsets result");
 
-    let response = FetchConsumersResponse {
+    let response = FetchConsumerOffsetsResponse {
         error_code,
         consumers,
     };
-    Ok(RequestMessage::<FetchConsumersRequest>::response_with_header(&req_msg.header, response))
+    Ok(
+        RequestMessage::<FetchConsumerOffsetsRequest>::response_with_header(
+            &req_msg.header,
+            response,
+        ),
+    )
 }
 
 async fn handle_update(
@@ -147,8 +161,7 @@ async fn handle_update(
 
 async fn handle_delete(
     ctx: DefaultSharedGlobalContext,
-    topic: String,
-    partition: PartitionId,
+    target_replica: ReplicaKey,
     consumer_id: String,
 ) -> std::result::Result<(), ErrorCode> {
     let consumers_replica_id =
@@ -158,13 +171,12 @@ async fn handle_delete(
     };
 
     let consumers = ctx
-        .consumers()
+        .consumer_offset()
         .get_or_insert(replica, ctx.follower_notifier())
         .await
         .map_err(|e| ErrorCode::Other(e.to_string()))?;
 
-    let target_replica: ReplicaKey = (topic, partition).into();
-    let key = Key::new(target_replica, consumer_id);
+    let key = ConsumerOffsetKey::new(target_replica, consumer_id);
     consumers
         .delete(&key)
         .await
@@ -173,7 +185,7 @@ async fn handle_delete(
 
 async fn handle_fetch_consumers(
     _ctx: DefaultSharedGlobalContext,
-) -> std::result::Result<Vec<fluvio_spu_schema::server::consumer::Consumer>, ErrorCode> {
+) -> std::result::Result<Vec<fluvio_spu_schema::server::consumer::ConsumerOffset>, ErrorCode> {
     unimplemented!()
 }
 
@@ -187,13 +199,13 @@ async fn update_offset_for_leader(
     offset: i64,
 ) -> Result<()> {
     let consumers = ctx
-        .consumers()
+        .consumer_offset()
         .get_or_insert(replica, ctx.follower_notifier())
         .await?;
 
     let target_replica: ReplicaKey = (topic, partition).into();
-    let key = Key::new(target_replica, consumer_id);
-    let consumer = Consumer::new(offset, ttl);
+    let key = ConsumerOffsetKey::new(target_replica, consumer_id);
+    let consumer = ConsumerOffset::new(offset, ttl);
     consumers.put(key, consumer).await
 }
 
@@ -206,7 +218,7 @@ async fn update_offset_in_peer(
     ttl: Duration,
     offset: i64,
 ) -> Result<(), ErrorCode> {
-    let update_req = crate::services::internal::UpdateConsumerRequest::new(
+    let update_req = crate::services::internal::UpdateConsumerOffsetRequest::new(
         topic,
         partition,
         consumer_id,
