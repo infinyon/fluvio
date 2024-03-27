@@ -14,6 +14,10 @@ use fluvio_hub_util::HubAccess;
 use crate::hub::set_hubid;
 use crate::load::DEFAULT_META_LOCATION as SMARTMODULE_META_FILENAME;
 
+// Note: Cargo.toml.liquid files are changed by cargo-generate to Cargo.toml
+// this avoids the problem of cargo trying to parse Cargo.toml template files
+// and generating a lot of parsing errors
+
 static SMART_MODULE_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../smartmodule/cargo_template");
 const FLUVIO_SMARTMODULE_CRATE_NAME: &str = "fluvio-smartmodule";
