@@ -7,6 +7,10 @@ use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use include_dir::{Dir, include_dir};
 use tempfile::TempDir;
 
+// Note: Cargo.toml.liquid files are changed by cargo-generate to Cargo.toml
+// this avoids the problem of cargo trying to parse Cargo.toml template files
+// and generating a lot of parsing errors
+
 static CONNECTOR_TEMPLATE: Dir<'static> =
     include_dir!("$CARGO_MANIFEST_DIR/../../connector/cargo_template");
 
