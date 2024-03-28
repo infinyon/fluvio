@@ -67,12 +67,7 @@ impl StreamFetchHandler {
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
             let (stream_id, offset_publisher) = conn_ctx
                 .stream_publishers_mut()
-                .create_new_publisher(
-                    msg.topic.clone(),
-                    msg.partition,
-                    msg.consumer_id.clone(),
-                    msg.consumer_ttl,
-                )
+                .create_new_publisher(msg.topic.clone(), msg.partition, msg.consumer_id.clone())
                 .await;
             let consumer_offset_listener = offset_publisher.offset_publisher.change_listener();
 
@@ -606,7 +601,6 @@ impl From<CompressionError> for StreamFetchError {
 }
 pub mod publishers {
 
-    use std::time::Duration;
     use std::{collections::HashMap, sync::Arc};
     use std::fmt::Debug;
     use std::ops::AddAssign;
@@ -632,7 +626,6 @@ pub mod publishers {
     #[derive(Clone)]
     pub struct Consumer {
         pub consumer_id: String,
-        pub ttl: Duration,
     }
 
     impl Debug for StreamPublishers {
@@ -660,14 +653,10 @@ pub mod publishers {
             topic: String,
             partition: PartitionId,
             consumer_id: Option<String>,
-            consumer_ttl: Option<Duration>,
         ) -> (u32, StreamPublisher) {
             let stream_id = self.next_stream_id();
             let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
-            let consumer = consumer_id.map(|id| Consumer {
-                consumer_id: id,
-                ttl: consumer_ttl.unwrap_or_default(),
-            });
+            let consumer = consumer_id.map(|id| Consumer { consumer_id: id });
             let publisher = StreamPublisher {
                 offset_publisher,
                 topic,

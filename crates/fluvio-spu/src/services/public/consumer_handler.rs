@@ -1,5 +1,4 @@
 use std::io::Error as IoError;
-use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -125,7 +124,6 @@ async fn handle_update(
         trace!(
             consumer.consumer_id,
             offset,
-            ?consumer.ttl,
             "update consumer offset locally"
         );
         if let Err(err) = update_offset_for_leader(
@@ -134,7 +132,6 @@ async fn handle_update(
             publisher.topic.clone(),
             publisher.partition,
             consumer.consumer_id.clone(),
-            consumer.ttl,
             offset,
         )
         .await
@@ -143,14 +140,17 @@ async fn handle_update(
             return Err(ErrorCode::Other(err.to_string()));
         }
     } else {
-        trace!(consumer.consumer_id, offset, ?consumer.ttl, "update consumer offset remote");
+        trace!(
+            consumer.consumer_id,
+            offset,
+            "update consumer offset remote"
+        );
         update_offset_in_peer(
             ctx,
             &consumers_replica_id,
             publisher.topic,
             publisher.partition,
             consumer.consumer_id,
-            consumer.ttl,
             offset,
         )
         .await?;
@@ -195,7 +195,6 @@ async fn update_offset_for_leader(
     topic: String,
     partition: PartitionId,
     consumer_id: String,
-    ttl: Duration,
     offset: i64,
 ) -> Result<()> {
     let consumers = ctx
@@ -205,7 +204,7 @@ async fn update_offset_for_leader(
 
     let target_replica: ReplicaKey = (topic, partition).into();
     let key = ConsumerOffsetKey::new(target_replica, consumer_id);
-    let consumer = ConsumerOffset::new(offset, ttl);
+    let consumer = ConsumerOffset::new(offset);
     consumers.put(key, consumer).await
 }
 
@@ -215,7 +214,6 @@ async fn update_offset_in_peer(
     topic: String,
     partition: PartitionId,
     consumer_id: String,
-    ttl: Duration,
     offset: i64,
 ) -> Result<(), ErrorCode> {
     let update_req = crate::services::internal::UpdateConsumerOffsetRequest::new(
@@ -223,7 +221,6 @@ async fn update_offset_in_peer(
         partition,
         consumer_id,
         offset,
-        ttl,
     );
 
     let response = send_private_request_to_leader(&ctx, consumers_replica_id, update_req)
