@@ -12,6 +12,7 @@ use fluvio_types::SpuId;
 use fluvio_storage::ReplicaStorage;
 
 use crate::config::SpuConfig;
+use crate::kv::consumer::SharedConsumerOffsetStorages;
 use crate::replication::follower::FollowersState;
 use crate::replication::follower::SharedFollowersState;
 use crate::replication::leader::{
@@ -45,6 +46,7 @@ pub struct GlobalContext<S> {
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
     metrics: Arc<SpuMetrics>,
+    consumer_offset: SharedConsumerOffsetStorages,
 }
 
 // -----------------------------------
@@ -76,6 +78,7 @@ where
             sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
             metrics,
+            consumer_offset: SharedConsumerOffsetStorages::default(),
         }
     }
 
@@ -120,7 +123,7 @@ where
         self.config.clone()
     }
 
-    pub fn follower_notifier(&self) -> &FollowerNotifier {
+    pub fn follower_notifier(&self) -> &Arc<FollowerNotifier> {
         &self.spu_followers
     }
 
@@ -152,6 +155,10 @@ where
 
     pub(crate) fn metrics(&self) -> Arc<SpuMetrics> {
         self.metrics.clone()
+    }
+
+    pub(crate) fn consumer_offset(&self) -> &SharedConsumerOffsetStorages {
+        &self.consumer_offset
     }
 }
 

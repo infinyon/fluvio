@@ -6,6 +6,7 @@ pub mod smartmodule;
 pub mod fetch_offset;
 pub mod stream_fetch;
 pub mod update_offset;
+pub mod consumer;
 
 pub use self::api_key::*;
 
