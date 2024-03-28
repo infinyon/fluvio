@@ -18,6 +18,7 @@ mod start;
 mod status;
 mod remote_cluster;
 mod util;
+mod upgrade;
 
 use check::CheckOpt;
 use delete::DeleteOpt;
@@ -28,6 +29,7 @@ use shutdown::ShutdownOpt;
 use spu::SpuCmd;
 use start::StartOpt;
 use status::StatusOpt;
+use upgrade::UpgradeOpt;
 
 pub use self::error::ClusterCliError;
 
@@ -46,6 +48,10 @@ pub enum ClusterCmd {
     /// Install Fluvio cluster
     #[command(name = "start")]
     Start(Box<StartOpt>),
+
+    /// Upgrades an already-started Fluvio cluster
+    #[command(name = "upgrade")]
+    Upgrade(Box<UpgradeOpt>),
 
     /// Uninstall a Fluvio cluster
     #[command(name = "delete")]
@@ -125,6 +131,22 @@ impl ClusterCmd {
                 };
 
                 start.process(platform_version, false).await?;
+            }
+            Self::Upgrade(mut upgrade) => {
+                if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
+                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value, true)
+                        .unwrap_or(ImageTagStrategy::Version);
+                    match tag_strategy {
+                        ImageTagStrategy::Version => {}
+                        ImageTagStrategy::VersionGit => {
+                            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
+                            upgrade.start.k8_config.image_version = Some(image_version);
+                        }
+                        ImageTagStrategy::Git => upgrade.start.develop = true,
+                    }
+                };
+
+                upgrade.process(platform_version).await?;
             }
             Self::Delete(uninstall) => {
                 uninstall.process().await?;
