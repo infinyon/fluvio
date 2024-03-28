@@ -1,0 +1,11 @@
+# This is to create CRD but not for testing
+apiVersion: fluvio.infinyon.com/v1
+kind: Partition
+metadata:
+  name: test-0
+spec:
+  leader: 5001
+  mirror:
+    target: 
+      remoteCluster: "boat1"
+      sourceReplica: "boats-0"

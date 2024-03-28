@@ -22,6 +22,7 @@ pub enum AdminPublicApiKey {
     Delete = 1002,
     List = 1003,
     Watch = 1004,
+    Cloud = 1005, // Extended?   fluvio_sc_cloud::CLOUD_REG_API_KEY
 }
 
 impl Default for AdminPublicApiKey {

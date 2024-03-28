@@ -20,6 +20,7 @@ use crate::AdminPublicApiKey;
 use crate::objects::{
     ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
 };
+use crate::cloud::ObjectCloudRequest;
 
 /// Non generic AdminRequest, This is typically used Decoding
 #[derive(Debug)]
@@ -29,6 +30,10 @@ pub enum AdminPublicDecodedRequest {
     DeleteRequest(RequestMessage<ObjectApiDeleteRequest>),
     ListRequest(RequestMessage<ObjectApiListRequest>),
     WatchRequest(RequestMessage<ObjectApiWatchRequest>),
+
+    // // todo: should contain a bag of bytes that can later be parsed
+    // // but for now it's mapped to fluvio-sc-cloud objects
+    CloudRequest(RequestMessage<ObjectCloudRequest>),
 }
 
 impl Default for AdminPublicDecodedRequest {
@@ -80,6 +85,11 @@ impl ApiMessage for AdminPublicDecodedRequest {
             AdminPublicApiKey::Watch => Ok(Self::WatchRequest(RequestMessage::new(
                 header,
                 ObjectApiWatchRequest::decode_from(src, version)?,
+            ))),
+
+            AdminPublicApiKey::Cloud => Ok(Self::CloudRequest(RequestMessage::new(
+                header,
+                ObjectCloudRequest::decode_from(src, version)?,
             ))),
         }
     }

@@ -91,6 +91,7 @@ mod display {
                 "TOPIC",
                 "PARTITION",
                 "LEADER",
+                "MIRROR",
                 "REPLICAS",
                 "RESOLUTION",
                 "SIZE",
@@ -126,6 +127,8 @@ mod display {
                         }
                     };
 
+                    // Target(TargetPartitionConfig { remote_cluster: "boat1" }))
+                    // let mirror =
                     let printable_size = match status.size {
                         PartitionStatus::SIZE_NOT_SUPPORTED => "NA".to_string(),
                         PartitionStatus::SIZE_ERROR => "ERROR".to_string(),
@@ -136,6 +139,7 @@ mod display {
                         Cell::new(topic),
                         Cell::new(partition),
                         Cell::new(spec.leader.to_string()),
+                        Cell::new(spec.mirror_string()),
                         Cell::new(format!("{:?}", spec.followers())),
                         Cell::new(format!("{:?}", status.resolution)),
                         Cell::new(printable_size),

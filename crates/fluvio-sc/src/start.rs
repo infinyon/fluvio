@@ -17,6 +17,7 @@ use crate::{
     services::auth::basic::BasicRbacPolicy,
     config::ScConfig,
     config::DEFAULT_NAMESPACE,
+    monitoring::init_monitoring,
 };
 
 pub fn main_loop(opt: ScOpt) {
@@ -101,12 +102,14 @@ fn k8_main_loop<C>(
         crate::k8::controllers::run_k8_operators(
             sc_config.namespace.clone(),
             client,
-            ctx,
+            ctx.clone(),
             tls_option.clone().map(|(_, config)| config),
         )
         .await;
 
         proxy::start_if(sc_config, tls_option).await;
+
+        init_monitoring(ctx.clone());
 
         println!("Streaming Controller started successfully");
         // do infinite loop
@@ -194,6 +197,11 @@ async fn create_memory_client(path: PathBuf) -> Result<Arc<MemoryClient>> {
     info!(topics = config.topics.len(), "loading topics");
     for value in &config.topics {
         info!(name = value.metadata.name, "read topic");
+        client.create_item(value.as_input()).await?;
+    }
+
+    for value in &config.upstream_clusters {
+        info!(name = &value.metadata.name, "read upstream cluster");
         client.create_item(value.as_input()).await?;
     }
 

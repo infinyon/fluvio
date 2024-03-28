@@ -1,0 +1,14 @@
+[
+    {
+        "remoteCluster": "boat1",
+        "sourceReplica": "boat1-0"
+    },
+    {
+        "remoteCluster": "boat2",
+        "sourceReplica": "boat2-0"
+    },
+    {
+        "remoteCluster": "boat1",
+        "sourceReplica": "boat1-1"
+    }
+]

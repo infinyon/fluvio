@@ -1,0 +1,60 @@
+{
+  "topics": [
+    {
+      "apiVersion": "fluvio.infinyon.com/v2",
+      "kind": "Topic",
+      "metadata": {
+        "name": "my-topic"
+      },
+      "spec": {
+        "replicas": {
+          "computed": {
+            "partitions": 1
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "fluvio.infinyon.com/v2",
+      "kind": "Topic",
+      "metadata": {
+        "name": "my-other-topic"
+      },
+      "spec": {
+        "replicas": {
+          "computed": {
+            "partitions": 2
+          }
+        }
+      }
+    }
+  ],
+  "spus": [
+    {
+      "apiVersion": "fluvio.infinyon.com/v1",
+      "kind": "Spu",
+      "metadata": {
+        "name": "spu1"
+      },
+      "spec": {
+        "spuId": 5001,
+        "spuType": "Custom",
+        "publicEndpoint": {
+          "encryption": "PLAINTEXT",
+          "ingress": [
+            {
+              "hostname": "localhost",
+              "ip": null
+            }
+          ],
+          "port": 9010
+        },
+        "privateEndpoint": {
+          "encryption": "PLAINTEXT",
+          "host": "localhost",
+          "port": 9011
+        }
+      }
+    }
+  ]
+}

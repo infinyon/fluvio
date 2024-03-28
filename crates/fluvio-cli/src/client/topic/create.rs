@@ -18,7 +18,7 @@ use fluvio::metadata::topic::ReplicaSpec;
 use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
 use fluvio::metadata::topic::CompressionAlgorithm;
-
+use fluvio_controlplane_metadata::topic::MirrorConfig;
 use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use fluvio_sc_schema::shared::validate_resource_name;
 
@@ -83,9 +83,22 @@ pub struct CreateTopicOpt {
         value_name = "file.json",
         conflicts_with = "partitions",
         conflicts_with = "replication",
+        conflicts_with = "mirror_assignment",
         group = "config-arg"
     )]
     replica_assignment: Option<PathBuf>,
+
+    /// Replica assignment file
+    #[arg(
+        short = 'm',
+        long = "mirror-assignment",
+        value_name = "file.json",
+        conflicts_with = "partitions",
+        conflicts_with = "replication",
+        conflicts_with = "replica_assignment",
+        group = "config-arg"
+    )]
+    mirror_assignment: Option<PathBuf>,
 
     /// Validates configuration, does not provision
     #[arg(short = 'd', long)]
@@ -122,11 +135,19 @@ impl CreateTopicOpt {
             return Ok((config.meta.name.clone(), config.into()));
         }
 
+        let topic_name = self.topic.unwrap_or_default();
+
         use fluvio::metadata::topic::{PartitionMaps, TopicReplicaParam};
         use load::ReadFromJson;
 
         let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
-            ReplicaSpec::Assigned(PartitionMaps::read_from_json_file(replica_assign_file)?)
+            ReplicaSpec::Assigned(PartitionMaps::read_from_json_file(
+                replica_assign_file,
+                &topic_name,
+            )?)
+        } else if let Some(mirror_assign_file) = &self.mirror_assignment {
+            let mirror_map = MirrorConfig::read_from_json_file(mirror_assign_file, &topic_name)?;
+            ReplicaSpec::Mirror(mirror_map)
         } else {
             ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
@@ -160,7 +181,7 @@ impl CreateTopicOpt {
             topic_spec.set_storage(storage);
         }
 
-        Ok((self.topic.unwrap_or_default(), topic_spec))
+        Ok((topic_name, topic_spec))
     }
 }
 
@@ -203,36 +224,95 @@ mod load {
     use std::path::Path;
 
     use anyhow::{anyhow, Result};
-    use fluvio::metadata::topic::PartitionMaps;
+    use fluvio::metadata::topic::{PartitionMaps, MirrorConfig};
+    use fluvio_controlplane_metadata::topic::TargetMirrorConfig;
 
     pub(crate) trait ReadFromJson: Sized {
         /// Read and decode from json file
-        fn read_from_json_file<T: AsRef<Path>>(path: T) -> Result<Self>;
+        fn read_from_json_file<T: AsRef<Path>>(path: T, topic: &str) -> Result<Self>;
     }
 
     impl ReadFromJson for PartitionMaps {
-        fn read_from_json_file<T: AsRef<Path>>(path: T) -> Result<Self> {
+        fn read_from_json_file<T: AsRef<Path>>(path: T, _topic: &str) -> Result<Self> {
             let file_str: String = read_to_string(path)?;
             serde_json::from_str(&file_str)
                 .map_err(|err| anyhow!("error reading replica assignment: {err}"))
         }
     }
 
+    /// convert array of string into target mirror config
+    ///  ["boat1","boat2"]
+    /// turn into partitions of
+    /// [
+    ///     {
+    ///         "remote": "boat1"
+    ///         "replica": "boats-0"
+    ///     },
+    ///     {
+    ///         "remote": "boat2",
+    ///         "replica": "boats-0"
+    ///     }
+    /// ]
+    /// by default,
+    impl ReadFromJson for MirrorConfig {
+        fn read_from_json_file<T: AsRef<Path>>(path: T, topic: &str) -> Result<Self> {
+            let file_str: String = read_to_string(path)?;
+            let clusters: Vec<String> = serde_json::from_str(&file_str)
+                .map_err(|err| anyhow!("error reading mirror assignment: {err}"))?;
+            let target_mirror = TargetMirrorConfig::from_simple(topic, clusters);
+            Ok(MirrorConfig::Target(target_mirror))
+        }
+    }
+
     #[cfg(test)]
     mod test {
 
-        use fluvio_controlplane_metadata::topic::PartitionMaps;
+        use fluvio_controlplane_metadata::{
+            topic::{PartitionMaps, MirrorConfig},
+            partition::TargetPartitionConfig,
+        };
 
         use super::ReadFromJson;
 
         #[test]
         fn test_replica_map_file() {
-            let p_map =
-                PartitionMaps::read_from_json_file("test-data/topics/replica_assignment.json")
-                    .expect("v1 not found");
+            let p_map = PartitionMaps::read_from_json_file(
+                "test-data/topics/replica_assignment.json",
+                "dummytopic",
+            )
+            .expect("v1 not found");
             assert_eq!(p_map.maps().len(), 3);
             assert_eq!(p_map.maps()[0].id, 0);
             assert_eq!(p_map.maps()[0].replicas, vec![5001, 5002, 5003]);
+        }
+
+        #[test]
+        fn test_mirror_map_file() {
+            let m = MirrorConfig::read_from_json_file(
+                "test-data/topics/mirror_assignment.json",
+                "boats",
+            )
+            .expect("v1 not found");
+            let target = match m {
+                MirrorConfig::Target(m) => m,
+                MirrorConfig::Source(_) => panic!("not target"),
+            };
+            let partitions = target.partitions();
+            assert_eq!(partitions.len(), 2);
+            assert_eq!(
+                partitions[0],
+                TargetPartitionConfig {
+                    remote_cluster: "boat1".to_string(),
+                    source_replica: "boats-0".to_string()
+                }
+            );
+            assert_eq!(
+                partitions[1],
+                TargetPartitionConfig {
+                    remote_cluster: "boat2".to_string(),
+                    source_replica: "boats-0".to_string()
+                }
+            );
         }
     }
 }

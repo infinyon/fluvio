@@ -10,6 +10,7 @@ mod init;
 mod error;
 mod services;
 mod controllers;
+mod monitoring;
 
 const VERSION: &str = include_str!("../../../VERSION");
 
