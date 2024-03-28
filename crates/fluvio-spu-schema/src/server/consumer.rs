@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use fluvio_protocol::api::Request;
 use fluvio_protocol::record::{Offset, ReplicaKey};
 use fluvio_protocol::{Encoder, Decoder};
@@ -83,6 +81,5 @@ pub struct FetchConsumerOffsetsResponse {
 pub struct ConsumerOffset {
     pub id: String,
     pub offset: Offset,
-    pub ttl: Duration,
-    pub expire_time: u64,
+    pub modified_time: u64,
 }
