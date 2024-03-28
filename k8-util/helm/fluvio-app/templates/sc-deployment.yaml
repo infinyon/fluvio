@@ -46,7 +46,7 @@ spec:
             - --secret-name
             - {{ .Values.cert.tls }}
             - --bind-non-tls-public
-            - 0.0.0.0:9005
+            - 0.0.0.0:9010
             {{ if .Values.authorizationConfigMap }}
             - --authorization-policy
             - /etc/fluvio/authorization/policy.json

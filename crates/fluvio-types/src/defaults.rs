@@ -25,7 +25,7 @@ pub const SC_RECONCILIATION_INTERVAL_SEC: u64 = 60; // 5 min
 
 pub const SPU_DEFAULT_NAME: &str = "spu";
 pub const SPU_CONFIG_FILE: &str = "spu_server";
-pub const SPU_PUBLIC_PORT: u16 = 9005;
+pub const SPU_PUBLIC_PORT: u16 = 9010;
 pub const SPU_PRIVATE_PORT: u16 = 9006;
 pub const SPU_PUBLIC_HOSTNAME: &str = "0.0.0.0";
 pub const SPU_PRIVATE_HOSTNAME: &str = "0.0.0.0";

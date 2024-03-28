@@ -3,11 +3,12 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
 };
+use tracing::info;
 
 use anyhow::Result;
 use fluvio::config::TlsPolicy;
 use fluvio_command::CommandExt;
-use tracing::info;
+use fluvio_types::defaults::SPU_PUBLIC_PORT;
 
 use super::{FluvioLocalProcess, LocalRuntimeError};
 
@@ -55,7 +56,7 @@ impl ScProcess {
         };
 
         if let TlsPolicy::Verified(tls) = &self.tls_policy {
-            self.set_server_tls(&mut binary, tls, 9005)?;
+            self.set_server_tls(&mut binary, tls, SPU_PUBLIC_PORT)?;
         }
         binary.env("RUST_LOG", &self.rust_log);
 
