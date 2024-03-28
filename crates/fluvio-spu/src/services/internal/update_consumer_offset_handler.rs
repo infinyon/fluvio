@@ -1,4 +1,4 @@
-use std::{io::Error as IoError, time::Duration};
+use std::io::Error as IoError;
 
 use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 use fluvio_protocol::{
@@ -27,7 +27,6 @@ pub(crate) async fn handle_update_consumer_offset_request(
     let UpdateConsumerOffsetRequest {
         consumer_id,
         offset,
-        ttl,
         replica_id,
     } = req_msg.request;
 
@@ -36,7 +35,7 @@ pub(crate) async fn handle_update_consumer_offset_request(
 
     let error_code = if let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await
     {
-        match update_offset(ctx, replica, replica_id, consumer_id, offset, ttl).await {
+        match update_offset(ctx, replica, replica_id, consumer_id, offset).await {
             Ok(_) => ErrorCode::None,
             Err(e) => ErrorCode::Other(e.to_string()),
         }
@@ -59,13 +58,12 @@ async fn update_offset(
     target_replica: ReplicaKey,
     consumer_id: String,
     offset: Offset,
-    ttl: Duration,
 ) -> anyhow::Result<()> {
     let consumers = ctx
         .consumer_offset()
         .get_or_insert(replica, ctx.follower_notifier())
         .await?;
     let key = ConsumerOffsetKey::new(target_replica, consumer_id);
-    let consumer = ConsumerOffset::new(offset, ttl);
+    let consumer = ConsumerOffset::new(offset);
     consumers.put(key, consumer).await
 }

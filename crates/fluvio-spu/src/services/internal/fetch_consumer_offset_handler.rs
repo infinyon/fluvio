@@ -42,8 +42,7 @@ pub(crate) async fn handle_fetch_consumer_offset_request(
             (None, ErrorCode::PartitionNotLeader)
         };
     debug!(?consumer, ?error_code, "consumer offset fetch result");
-    let consumer =
-        consumer.map(|c| super::fetch_consumer_offset_request::Consumer::new(c.offset, c.ttl));
+    let consumer = consumer.map(|c| super::fetch_consumer_offset_request::Consumer::new(c.offset));
     let response = FetchConsumerOffsetResponse::new(error_code, consumer);
     Ok(
         RequestMessage::<FetchConsumerOffsetRequest>::response_with_header(

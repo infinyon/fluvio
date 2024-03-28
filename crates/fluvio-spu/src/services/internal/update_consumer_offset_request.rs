@@ -1,5 +1,4 @@
 use std::fmt;
-use std::time::Duration;
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::link::ErrorCode;
@@ -15,7 +14,6 @@ pub struct UpdateConsumerOffsetRequest {
     pub replica_id: ReplicaKey,
     pub consumer_id: String,
     pub offset: Offset,
-    pub ttl: Duration,
 }
 
 impl Request for UpdateConsumerOffsetRequest {
@@ -30,14 +28,12 @@ impl UpdateConsumerOffsetRequest {
         partition: PartitionId,
         consumer_id: impl Into<String>,
         offset: Offset,
-        ttl: Duration,
     ) -> Self {
         let replica_id = ReplicaKey::new(topic, partition);
         Self {
             replica_id,
             consumer_id: consumer_id.into(),
             offset,
-            ttl,
         }
     }
 }

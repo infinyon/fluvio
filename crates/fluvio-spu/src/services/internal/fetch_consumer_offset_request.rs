@@ -1,5 +1,4 @@
 use std::fmt;
-use std::time::Duration;
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::link::ErrorCode;
@@ -46,7 +45,6 @@ pub struct FetchConsumerOffsetResponse {
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct Consumer {
     pub offset: i64,
-    pub ttl: Duration,
 }
 
 impl FetchConsumerOffsetResponse {
@@ -59,8 +57,8 @@ impl FetchConsumerOffsetResponse {
 }
 
 impl Consumer {
-    pub fn new(offset: i64, ttl: Duration) -> Self {
-        Self { offset, ttl }
+    pub fn new(offset: i64) -> Self {
+        Self { offset }
     }
 }
 

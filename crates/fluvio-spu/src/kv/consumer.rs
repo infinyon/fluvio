@@ -1,5 +1,5 @@
 use std::{
-    time::{Duration, SystemTime},
+    time::SystemTime,
     sync::Arc,
     collections::{HashMap, hash_map::Entry},
     ops::AddAssign,
@@ -34,13 +34,12 @@ pub(crate) struct ConsumerOffsetKey {
     replica_id: ReplicaKey,
     consumer_id: String,
 }
-/// Consumer offset value. Keeps the last offset seen by a consumer, time-to-live value, and
-/// the expiration time (UTC timestamp in seconds).
+/// Consumer offset value. Keeps the last offset seen by a consumer, and
+/// the modification time (UTC timestamp in seconds).
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
 pub(crate) struct ConsumerOffset {
     pub offset: i64,
-    pub ttl: Duration,
-    pub expire_time: TimestampSecs,
+    pub modified_time: TimestampSecs,
 }
 
 #[derive(Debug)]
@@ -102,7 +101,7 @@ impl ConsumerOffsetStorage {
 impl KVStorage<ConsumerOffsetKey, ConsumerOffset> for ConsumerOffsetStorage {
     async fn get(&self, key: &ConsumerOffsetKey) -> Result<Option<ConsumerOffset>> {
         trace!(?key, "get");
-        self.kv.get(key).await.map(|op| op.filter(is_not_expired))
+        self.kv.get(key).await
     }
 
     async fn delete(&mut self, key: &ConsumerOffsetKey) -> Result<()> {
@@ -137,16 +136,15 @@ impl ConsumerOffsetKey {
     }
 }
 impl ConsumerOffset {
-    pub(crate) fn new(offset: i64, ttl: Duration) -> Self {
+    pub(crate) fn new(offset: i64) -> Self {
         let now = now_timestamp();
-        Self::with(offset, ttl, now + ttl.as_secs())
+        Self::with(offset, now)
     }
 
-    pub(crate) fn with(offset: i64, ttl: Duration, expire_time: TimestampSecs) -> Self {
+    pub(crate) fn with(offset: i64, modified_time: TimestampSecs) -> Self {
         Self {
             offset,
-            ttl,
-            expire_time,
+            modified_time,
         }
     }
 }
@@ -182,11 +180,6 @@ fn now_timestamp() -> TimestampSecs {
         .as_secs()
 }
 
-fn is_not_expired(record: &ConsumerOffset) -> bool {
-    let now = now_timestamp();
-    now <= record.expire_time
-}
-
 #[cfg(test)]
 mod tests {
     use std::{env::temp_dir, path::Path};
@@ -202,36 +195,6 @@ mod tests {
     };
 
     use super::*;
-
-    #[fluvio_future::test]
-    async fn test_expiration_checked() {
-        //given
-        let leader = create_offset_replica("test_expiration_checked").await;
-        let notifier = FollowerNotifier::shared();
-        let mut storage = ConsumerOffsetStorage::new(leader.clone(), notifier);
-        let key1 = ConsumerOffsetKey::new(("topic1", 0), "consumer1");
-        let value1 = ConsumerOffset::with(1, Duration::from_secs(2), now_timestamp() - 100);
-        let key2 = ConsumerOffsetKey::new(("topic2", 1), "consumer1");
-        let value2 = ConsumerOffset::with(2, Duration::from_secs(2), now_timestamp() + 100);
-        storage
-            .put(key1.clone(), value1)
-            .await
-            .expect("put record1");
-        storage
-            .put(key2.clone(), value2.clone())
-            .await
-            .expect("put record2");
-
-        //when
-        let record1 = storage.get(&key1).await.expect("record1");
-        let record2 = storage.get(&key2).await.expect("record2");
-
-        //then
-        leader.remove().await.expect("removed");
-
-        assert_eq!(record1, None);
-        assert_eq!(record2, Some(value2));
-    }
 
     #[fluvio_future::test]
     async fn test_flush_invoked_no_records() {
@@ -259,7 +222,7 @@ mod tests {
         let notifier = FollowerNotifier::shared();
         let mut storage = ConsumerOffsetStorage::with(leader.clone(), notifier, 1);
         let key1 = ConsumerOffsetKey::new(("topic1", 0), "consumer1");
-        let value1 = ConsumerOffset::with(1, Duration::from_secs(2), now_timestamp() - 100);
+        let value1 = ConsumerOffset::with(1, now_timestamp() - 100);
 
         //when
         assert_eq!(leader.hw(), 0);
