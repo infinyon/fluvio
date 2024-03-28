@@ -200,6 +200,11 @@ async fn create_memory_client(path: PathBuf) -> Result<Arc<MemoryClient>> {
         client.create_item(value.as_input()).await?;
     }
 
+    for value in &config.upstream_clusters {
+        info!(name = &value.metadata.name, "read upstream cluster");
+        client.create_item(value.as_input()).await?;
+    }
+
     Ok(Arc::new(client))
 }
 
