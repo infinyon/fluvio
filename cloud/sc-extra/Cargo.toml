@@ -17,7 +17,6 @@ tracing = { workspace = true }
 serde = { workspace = true, features = ['derive'] }
 anyhow = { workspace = true }
 
-fluvio-auth = { workspace = true }
 fluvio-controlplane = { workspace = true }
 fluvio-controlplane-metadata = {  workspace = true, features = ["smartmodule"] }
 fluvio-protocol = { workspace = true, features = [

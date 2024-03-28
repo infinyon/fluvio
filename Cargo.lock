@@ -1082,7 +1082,6 @@ name = "cloud-sc-extra"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "fluvio-auth",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-protocol",
