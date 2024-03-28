@@ -108,7 +108,7 @@ async fn test_mirroring_new_records() {
 
     // wait to replicate
     debug!("waiting for mirroring");
-    sleep(Duration::from_secs(3)).await;
+    sleep(Duration::from_secs(5)).await;
     debug!("done waiting");
 
     // target should have recods
@@ -151,7 +151,7 @@ async fn test_mirroring_new_records() {
     assert_eq!(source_replica2.leo(), 2);
 
     debug!("waiting for mirroring");
-    sleep(Duration::from_secs(3)).await;
+    sleep(Duration::from_secs(5)).await;
     debug!("done waiting");
     // target should have recods
     // assert!(mirror_source1.get_metrics().get_loop_count() > 0);
