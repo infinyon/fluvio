@@ -7,6 +7,8 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
+use super::fetch_consumer_offset_request::FetchConsumerOffsetRequest;
+use super::update_consumer_offset_request::UpdateConsumerOffsetRequest;
 use super::fetch_stream_request::FetchStreamRequest;
 
 #[repr(u16)]
@@ -14,6 +16,8 @@ use super::fetch_stream_request::FetchStreamRequest;
 #[fluvio(encode_discriminant)]
 pub enum SPUPeerApiEnum {
     FetchStream = 0,
+    FetchConsumerOffset = 1,
+    UpdateConsumerOffset = 2,
 }
 
 impl Default for SPUPeerApiEnum {
@@ -26,6 +30,10 @@ impl Default for SPUPeerApiEnum {
 pub enum SpuPeerRequest {
     #[fluvio(tag = 0)]
     FetchStream(RequestMessage<FetchStreamRequest>),
+    #[fluvio(tag = 1)]
+    FetchConsumerOffset(RequestMessage<FetchConsumerOffsetRequest>),
+    #[fluvio(tag = 2)]
+    UpdateConsumerOffset(RequestMessage<UpdateConsumerOffsetRequest>),
 }
 
 impl Default for SpuPeerRequest {
@@ -50,6 +58,18 @@ impl ApiMessage for SpuPeerRequest {
                 header,
                 FetchStreamRequest::decode_from(src, version)?,
             ))),
+            SPUPeerApiEnum::FetchConsumerOffset => {
+                Ok(SpuPeerRequest::FetchConsumerOffset(RequestMessage::new(
+                    header,
+                    FetchConsumerOffsetRequest::decode_from(src, version)?,
+                )))
+            }
+            SPUPeerApiEnum::UpdateConsumerOffset => {
+                Ok(SpuPeerRequest::UpdateConsumerOffset(RequestMessage::new(
+                    header,
+                    UpdateConsumerOffsetRequest::decode_from(src, version)?,
+                )))
+            }
         }
     }
 }

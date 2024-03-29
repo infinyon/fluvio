@@ -448,6 +448,11 @@ impl<S: ReplicaStorage> Uninit<LeaderReplicaState<S>> {
         };
         Ok(state)
     }
+
+    #[cfg(test)]
+    pub(crate) fn into_inner(self) -> LeaderReplicaState<S> {
+        self.0
+    }
 }
 
 /// compute leader's updated hw based on follower offset

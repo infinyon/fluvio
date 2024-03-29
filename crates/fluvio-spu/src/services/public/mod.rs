@@ -4,6 +4,7 @@ mod fetch_handler;
 mod offset_request;
 mod offset_update;
 mod stream_fetch;
+mod consumer_handler;
 
 #[cfg(test)]
 mod tests;
@@ -11,6 +12,10 @@ mod conn_context;
 
 use std::sync::Arc;
 use async_trait::async_trait;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::link::ErrorCode;
+use fluvio_protocol::record::ReplicaKey;
 use tracing::{info, debug, trace, instrument};
 use futures_util::StreamExt;
 use anyhow::Result;
@@ -22,6 +27,9 @@ use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_types::event::StickyEvent;
 
 use crate::core::DefaultSharedGlobalContext;
+use crate::services::public::consumer_handler::handle_delete_consumer_offset_request;
+use crate::services::public::consumer_handler::handle_fetch_consumer_offsets_request;
+use crate::services::public::consumer_handler::handle_update_consumer_offset_request;
 use self::api_versions::handle_api_version_request;
 use self::produce_handler::handle_produce_request;
 use self::fetch_handler::handle_fetch_request;
@@ -124,11 +132,28 @@ impl FluvioService for PublicService {
                             shared_sink,
                             "UpdateOffsetsRequest"
                         ),
-                        SpuServerRequest::UpdateConsumerOffsetRequest(_)
-                        | SpuServerRequest::DeleteConsumerOffsetRequest(_)
-                        | SpuServerRequest::FetchConsumerOffsetsRequest(_) => {
-                            unimplemented!()
-                        }
+                        SpuServerRequest::UpdateConsumerOffsetRequest(request) => call_service!(
+                            request,
+                            handle_update_consumer_offset_request(
+                                request,
+                                context.clone(),
+                                &mut conn_ctx
+                            ),
+                            shared_sink,
+                            "UpdateConsumerRequest"
+                        ),
+                        SpuServerRequest::DeleteConsumerOffsetRequest(request) => call_service!(
+                            request,
+                            handle_delete_consumer_offset_request(request, context.clone()),
+                            shared_sink,
+                            "DeleteConsumerRequest"
+                        ),
+                        SpuServerRequest::FetchConsumerOffsetsRequest(request) => call_service!(
+                            request,
+                            handle_fetch_consumer_offsets_request(request, context.clone()),
+                            shared_sink,
+                            "FetchConsumersRequest"
+                        ),
                     }
                 }
                 Some(Err(e)) => {
@@ -149,4 +174,34 @@ impl FluvioService for PublicService {
         debug!("service terminated");
         Ok(())
     }
+}
+
+async fn send_private_request_to_leader<R: Request>(
+    ctx: &DefaultSharedGlobalContext,
+    replica_id: &ReplicaKey,
+    req: R,
+) -> Result<R::Response, ErrorCode> {
+    let spu = match ctx.replica_localstore().spec(replica_id) {
+        Some(replica) => replica.leader,
+        None => return Err(ErrorCode::TopicNotFound),
+    };
+    let Some(spu_spec) = ctx.spu_localstore().spec(&spu) else {
+        return Err(ErrorCode::SpuNotFound);
+    };
+    let leader_endpoint = spu_spec.private_endpoint.to_string();
+    debug!(
+        spu,
+        leader_endpoint, "send private request to replica leader"
+    );
+    let mut socket = FluvioSocket::connect(&leader_endpoint)
+        .await
+        .map_err(|e| ErrorCode::Other(e.to_string()))?;
+
+    let req_msg = RequestMessage::new_request(req);
+    let response = socket
+        .send(&req_msg)
+        .await
+        .map_err(|e| ErrorCode::Other(e.to_string()))?;
+
+    Ok(response.response)
 }
