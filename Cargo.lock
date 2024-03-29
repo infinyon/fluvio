@@ -6426,6 +6426,7 @@ name = "smartmodule-development-kit"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-std",
  "cargo-builder",
  "cargo-generate",
  "clap",
@@ -6444,7 +6445,6 @@ dependencies = [
  "include_dir",
  "lib-cargo-crate",
  "tempfile",
- "tokio",
  "toml 0.8.8",
  "tracing",
 ]
