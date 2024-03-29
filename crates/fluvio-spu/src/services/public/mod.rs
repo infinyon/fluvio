@@ -124,6 +124,11 @@ impl FluvioService for PublicService {
                             shared_sink,
                             "UpdateOffsetsRequest"
                         ),
+                        SpuServerRequest::UpdateConsumerOffsetRequest(_)
+                        | SpuServerRequest::DeleteConsumerOffsetRequest(_)
+                        | SpuServerRequest::FetchConsumerOffsetsRequest(_) => {
+                            unimplemented!()
+                        }
                     }
                 }
                 Some(Err(e)) => {
