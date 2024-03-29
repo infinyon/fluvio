@@ -4,12 +4,12 @@ use anyhow::Context;
 use anyhow::Result;
 use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 
-use fluvio_spu_schema::server::consumer::DeleteConsumerOffsetRequest;
-use fluvio_spu_schema::server::consumer::DeleteConsumerOffsetResponse;
-use fluvio_spu_schema::server::consumer::FetchConsumerOffsetsRequest;
-use fluvio_spu_schema::server::consumer::FetchConsumerOffsetsResponse;
-use fluvio_spu_schema::server::consumer::UpdateConsumerOffsetRequest;
-use fluvio_spu_schema::server::consumer::UpdateConsumerOffsetResponse;
+use fluvio_spu_schema::server::consumer_offset::DeleteConsumerOffsetRequest;
+use fluvio_spu_schema::server::consumer_offset::DeleteConsumerOffsetResponse;
+use fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsRequest;
+use fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsResponse;
+use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
+use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetResponse;
 use fluvio_storage::FileReplica;
 use fluvio_types::PartitionId;
 use tracing::debug;
@@ -185,7 +185,8 @@ async fn handle_delete(
 
 async fn handle_fetch_consumers(
     _ctx: DefaultSharedGlobalContext,
-) -> std::result::Result<Vec<fluvio_spu_schema::server::consumer::ConsumerOffset>, ErrorCode> {
+) -> std::result::Result<Vec<fluvio_spu_schema::server::consumer_offset::ConsumerOffset>, ErrorCode>
+{
     unimplemented!()
 }
 
