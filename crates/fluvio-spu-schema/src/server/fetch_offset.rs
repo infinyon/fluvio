@@ -37,7 +37,7 @@ impl Request for FetchOffsetsRequest {
 
 impl FetchOffsetsRequest {
     /// create request with a single topic and partition
-    pub fn new(topic: String, partition: u32) -> Self {
+    pub fn new(topic: String, partition: u32, consumer_id: Option<String>) -> Self {
         Self {
             topics: vec![FetchOffsetTopic {
                 name: topic,
@@ -45,7 +45,7 @@ impl FetchOffsetsRequest {
                     partition_index: partition,
                 }],
             }],
-            consumer_id: None,
+            consumer_id,
         }
     }
 }
