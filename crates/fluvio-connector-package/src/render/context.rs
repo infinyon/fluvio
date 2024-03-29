@@ -4,6 +4,7 @@ use serde::Serialize;
 use minijinja::value::Value;
 
 use crate::{secret::SecretStore, config::ConnectorConfig};
+use crate::render::identity::IdentityStore;
 
 /// Context for the template engine
 /// This is the data that is available to the template engine
@@ -42,6 +43,17 @@ impl ContextStore for &dyn SecretStore {
 
     fn context_name(&self) -> &'static str {
         "secrets"
+    }
+}
+
+impl ContextStore for IdentityStore<'static> {
+    fn extract_context_values(&self, input: &str) -> anyhow::Result<Value> {
+        let values = HashMap::default();
+        Ok(values.into())
+    }
+
+    fn context_name(&self) -> &'static str {
+        self.context_name()
     }
 }
 

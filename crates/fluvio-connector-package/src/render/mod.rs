@@ -1,4 +1,4 @@
-use minijinja::{Environment};
+use minijinja::Environment;
 use tracing::error;
 
 use crate::{
@@ -12,6 +12,7 @@ use self::{
 
 mod context;
 mod syntax;
+mod identity;
 
 /// Config renderer. This is the main entry point for rendering a config.
 /// It is responsible for resolving secrets and rendering the config.
@@ -67,7 +68,10 @@ impl ConfigRenderer {
     }
 
     fn default_stores() -> anyhow::Result<Vec<Box<dyn ContextStore>>> {
-        Ok(vec![Box::new(secret::default_secret_store()?)])
+        Ok(vec![
+            Box::new(secret::default_secret_store()?),
+            Box::new(identity::IdentityStore::new("record.json")),
+        ])
     }
 
     fn build_context(&self, input: &str) -> anyhow::Result<Context> {
@@ -205,6 +209,8 @@ mod test {
             my_service:
                 api_key: ${{secrets.api_key}}
                 interval: ${{ secrets.interval }}
+                # record.* keyed templates need to have delayed rendering
+                record_templating: ${{ record.json.key1 }}
             "#;
 
         let value_str = render_config_str(value_str).expect("failed to render config");
