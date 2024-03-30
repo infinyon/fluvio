@@ -3186,8 +3186,10 @@ version = "0.4.5"
 dependencies = [
  "event-listener 3.1.0",
  "fluvio-future",
+ "serde",
  "thiserror",
  "tokio",
+ "toml 0.8.8",
  "tracing",
 ]
 

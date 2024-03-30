@@ -14,7 +14,8 @@ events = ["event-listener"]
 event-listener = { workspace = true,  optional = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-
+serde = { workspace = true }
+toml = { workspace = true, features = ["display", "preserve_order"] }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["fixture", "subscriber"] }

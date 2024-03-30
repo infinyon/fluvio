@@ -7,6 +7,7 @@ use anyhow::Result;
 use colored::Colorize;
 use semver::Version;
 use derive_builder::Builder;
+use serde::{Serialize, Deserialize};
 use tracing::{debug, error, instrument, warn};
 use once_cell::sync::Lazy;
 
@@ -15,6 +16,7 @@ use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec, CustomSpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
+use fluvio_types::config_file::SaveLoadConfig;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
@@ -28,6 +30,8 @@ use crate::progress::{InstallProgressMessage, ProgressBarFactory};
 use super::constants::MAX_PROVISION_TIME_SEC;
 use super::common::check_crd;
 
+pub static LOCAL_CONFIG_PATH: Lazy<Option<PathBuf>> =
+    Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/local-config")));
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
     Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
 pub const DEFAULT_METADATA_SUB_DIR: &str = "metadata";
@@ -42,7 +46,7 @@ const LOCAL_SC_PORT: u16 = 9003;
 static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::current_exe().ok());
 
 /// Describes how to install Fluvio locally
-#[derive(Builder, Debug, Clone)]
+#[derive(Builder, Debug, Clone, Serialize, Deserialize)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct LocalConfig {
     /// Platform version
@@ -438,9 +442,6 @@ impl LocalInstaller {
             .result()
             .map_err(|e| LocalInstallError::Other(format!("sync issue: {e:#?}")))?;
 
-        // set host name and port for SC
-        // this should mirror K8
-        let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
         pb.println(format!("{} {}", "✅".bold(), "Local Cluster initialized"));
         pb.finish_and_clear();
         drop(pb);
@@ -448,6 +449,8 @@ impl LocalInstaller {
         self.set_profile()?;
 
         let pb = self.pb_factory.create()?;
+        // set host name and port for SC (this should mirror K8)
+        let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
         let fluvio = self.launch_sc(&address, port, &pb).await?;
         pb.println(InstallProgressMessage::ScLaunched.msg());
         pb.finish_and_clear();
@@ -469,6 +472,8 @@ impl LocalInstaller {
         self.pb_factory
             .println("🎯 Successfully installed Local Fluvio cluster");
 
+        self.save_config_file();
+        
         Ok(StartStatus { address, port })
     }
 
@@ -681,5 +686,19 @@ impl LocalInstaller {
             time.elapsed().unwrap().as_secs()
         ))
         .into())
+    }
+
+    fn save_config_file(&self) {
+        let save_to_res = match LOCAL_CONFIG_PATH.as_ref() {
+            None => {
+                warn!("Local config path");
+                return;
+            },
+            Some(local_config_path) => self.config.save_to(local_config_path)
+        };
+
+        if let Err(err) = save_to_res {
+            warn!("Save error: {:?}", err);
+        }
     }
 }
