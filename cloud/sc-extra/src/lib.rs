@@ -6,7 +6,8 @@ use fluvio_controlplane::remote_cluster::{KeyPair, RemoteClusterType};
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::link::ErrorCode;
 
-pub mod req;
+pub mod remote;
+pub mod upstream;
 
 /// API call from client to SPU
 #[repr(u16)]

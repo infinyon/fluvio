@@ -6,7 +6,7 @@ use fluvio_protocol::{Decoder, Encoder, Version};
 use fluvio_protocol::api::Request;
 use cloud_sc_extra::CloudRemoteClusterSpec;
 use cloud_sc_extra::CloudStatus;
-use cloud_sc_extra::req::CloudRemoteClusterRequest;
+use cloud_sc_extra::remote::CloudRemoteClusterRequest;
 
 use crate::{AdminPublicApiKey, TryEncodableFrom};
 use crate::objects::{COMMON_VERSION, TypeBuffer};

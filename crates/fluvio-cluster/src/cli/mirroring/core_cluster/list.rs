@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Parser;
 use tracing::info;
 
-use cloud_sc_extra::req::RemoteList;
+use cloud_sc_extra::remote::RemoteList;
 
 use crate::cli::common::OutputFormat;
 

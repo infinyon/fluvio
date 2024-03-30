@@ -4,16 +4,16 @@
 // after which specific commands can be sent
 // might need to refactor towards it later
 
-pub mod delete;
+pub mod unregister;
 pub mod list;
-pub mod metadata;
 pub mod register;
+pub mod export;
 
 use anyhow::Result;
 use clap::Parser;
 use tracing::debug;
 
-use delete::DeleteOpt;
+use unregister::UnregisterOpt;
 use list::ListOpt;
 use register::RegisterOpt;
 
@@ -29,7 +29,7 @@ mod common {
 use common::*;
 
 #[derive(Debug, Parser)]
-pub enum RemoteClusterOpt {
+pub enum CoreClusterCmd {
     /// Register a new remote cluster
     #[command(
         name = "register",
@@ -42,15 +42,15 @@ pub enum RemoteClusterOpt {
     List(ListOpt),
 
     /// List all remote clusters
-    #[command(name = "delete")]
-    Delete(DeleteOpt),
+    #[command(name = "unregister")]
+    Unregister(UnregisterOpt),
 
     /// Generate metadata file for remote cluster
-    #[command(subcommand)]
-    Metadata(MetadataOpt),
+    #[command(name = "export")]
+    Export(ExportOpt),
 }
 
-impl RemoteClusterOpt {
+impl CoreClusterCmd {
     pub async fn execute<O: Terminal>(
         self,
         out: Arc<O>,
@@ -58,9 +58,9 @@ impl RemoteClusterOpt {
     ) -> Result<()> {
         match self {
             Self::Register(reg) => reg.execute(out, cluster_target).await,
-            Self::Delete(del) => del.execute(out, cluster_target).await,
+            Self::Unregister(del) => del.execute(out, cluster_target).await,
             Self::List(list) => list.execute(out, cluster_target).await,
-            Self::Metadata(meta) => meta.execute(out, cluster_target).await,
+            Self::Export(meta) => meta.execute(out, cluster_target).await,
         }
     }
 }
@@ -75,9 +75,9 @@ pub async fn get_admin(cluster_target: ClusterTarget) -> Result<FluvioAdmin> {
 }
 
 use fluvio_sc_schema::core::Spec;
-use cloud_sc_extra::{CloudRemoteClusterSpec, req::CloudRemoteClusterRequest, CloudStatus};
+use cloud_sc_extra::{CloudRemoteClusterSpec, remote::CloudRemoteClusterRequest, CloudStatus};
 
-use self::metadata::MetadataOpt;
+use self::export::ExportOpt;
 pub async fn send_request<R: Spec + CloudRemoteClusterSpec>(
     cluster_target: ClusterTarget,
     req: R,

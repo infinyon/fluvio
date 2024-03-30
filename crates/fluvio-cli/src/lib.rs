@@ -65,6 +65,7 @@ mod root {
 
     use clap::{Parser, Command as ClapCommand, CommandFactory};
     use clap_complete::{generate, Shell};
+    use fluvio_cluster::cli::{CoreClusterCmd, EdgeClusterCmd};
     use tracing::debug;
     use anyhow::Result;
 
@@ -173,6 +174,14 @@ mod root {
 
         #[command(external_subcommand)]
         External(Vec<String>),
+
+        #[cfg(feature = "k8s")]
+        #[command(subcommand, name = "core")]
+        Core(Box<CoreClusterCmd>),
+
+        #[cfg(feature = "k8s")]
+        #[command(subcommand, name = "edge")]
+        Edge(Box<EdgeClusterCmd>),
     }
 
     impl RootCmd {
@@ -219,6 +228,12 @@ mod root {
                 Self::External(args) => {
                     process_external_subcommand(args)?;
                 }
+                Self::Core(core) => {
+                    core.execute(out, root.target).await?;
+                }
+                Self::Edge(edge) => {
+                    edge.execute(out, root.target).await?;
+                } 
             }
 
             Ok(())

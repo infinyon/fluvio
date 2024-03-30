@@ -16,7 +16,7 @@ mod shutdown;
 mod spu;
 mod start;
 mod status;
-mod remote_cluster;
+mod mirroring;
 mod util;
 mod upgrade;
 
@@ -24,7 +24,6 @@ use check::CheckOpt;
 use delete::DeleteOpt;
 use diagnostics::DiagnosticsOpt;
 use group::SpuGroupCmd;
-use remote_cluster::RemoteClusterOpt;
 use shutdown::ShutdownOpt;
 use spu::SpuCmd;
 use start::StartOpt;
@@ -41,6 +40,10 @@ use common::output::Terminal;
 use fluvio_channel::{ImageTagStrategy, FLUVIO_IMAGE_TAG_STRATEGY};
 
 pub(crate) const VERSION: &str = include_str!("../../../../VERSION");
+
+
+pub use mirroring::core_cluster::CoreClusterCmd;
+pub use mirroring::edge_cluster::EdgeClusterCmd;
 
 /// Manage and view Fluvio clusters
 #[derive(Debug, Parser)]
@@ -90,15 +93,6 @@ pub enum ClusterCmd {
     /// Shutdown cluster processes without deleting data
     #[command(name = "shutdown")]
     Shutdown(ShutdownOpt),
-
-    /// Remote-cluster commands
-    #[command(
-        subcommand,
-        name = "remote-cluster",
-        visible_alias = "rem",
-        alias = "remote"
-    )]
-    RemoteCluster(RemoteClusterOpt),
 }
 
 impl ClusterCmd {
@@ -170,9 +164,6 @@ impl ClusterCmd {
             }
             Self::Shutdown(opt) => {
                 opt.process().await?;
-            }
-            Self::RemoteCluster(opt) => {
-                opt.execute(out, target).await?;
             }
         }
 

@@ -198,7 +198,7 @@ pub struct IntallationTypeOpt {
     k8: bool,
 
     /// Start SC in read only mode
-    #[arg(long, value_name = "config path")]
+    #[arg(long, value_name = "config path", alias = "file")]
     read_only: Option<PathBuf>,
 }
 

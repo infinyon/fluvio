@@ -2,16 +2,16 @@ use anyhow::Result;
 use clap::Parser;
 use tracing::info;
 
-use cloud_sc_extra::req::RemoteDelete;
+use cloud_sc_extra::remote::RemoteDelete;
 
 use super::common::*;
 // use crate::login::CloudClient;
 
 #[derive(Clone, Debug, Parser)]
-pub struct DeleteOpt {
+pub struct UnregisterOpt {
     pub name: String,
 }
-impl DeleteOpt {
+impl UnregisterOpt {
     pub async fn execute<T: Terminal>(
         self,
         _out: Arc<T>,

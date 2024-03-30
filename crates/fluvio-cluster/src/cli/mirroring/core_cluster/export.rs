@@ -15,7 +15,6 @@ use fluvio_extension_common::{target::ClusterTarget, Terminal};
 #[derive(Debug, Parser)]
 pub struct ExportOpt {
     /// topic name
-    #[arg(long, short = 't')]
     topic: String,
     /// id of mirror cluster
     #[arg(long, short = 'm')]

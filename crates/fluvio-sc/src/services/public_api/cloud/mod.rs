@@ -2,10 +2,10 @@ use anyhow::{anyhow, Result};
 use tracing::{info, instrument};
 
 use cloud_sc_extra::validate_req;
-use cloud_sc_extra::req::RemoteCloudReqs;
+use cloud_sc_extra::remote::RemoteCloudReqs;
 use cloud_sc_extra::{ListItem, CloudStatus};
-// use cloud_sc_extra::req::CloudRemoteClusterRequest;
-use cloud_sc_extra::req::*;
+// use cloud_sc_extra::remote::CloudRemoteClusterRequest;
+use cloud_sc_extra::remote::*;
 
 use fluvio_auth::AuthContext;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
