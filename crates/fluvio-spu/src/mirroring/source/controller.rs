@@ -16,10 +16,8 @@ use adaptive_backoff::prelude::{
 };
 
 use fluvio::config::TlsPolicy;
-use fluvio_controlplane::{
-    spu_api::update_upstream_cluster::UpstreamCluster, upstream_cluster::UpstreamClusterSpec,
-};
-use fluvio_controlplane_metadata::partition::SourcePartitionConfig;
+use fluvio_controlplane::spu_api::update_upstream_cluster::UpstreamCluster;
+use fluvio_controlplane_metadata::{partition::SourcePartitionConfig, upstream_cluster::UpstreamClusterSpec};
 use fluvio_storage::{ReplicaStorage, FileReplica};
 
 use fluvio_socket::{FluvioSocket, FluvioSink};

@@ -9,7 +9,8 @@ pub mod objects;
 pub mod shared;
 pub mod tableformat;
 pub mod edge;
-pub mod cloud;
+pub mod remote;
+pub mod upstream;
 
 mod apis;
 mod request;

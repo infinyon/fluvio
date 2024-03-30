@@ -4,23 +4,23 @@
 //! Maps SC Api Requests with their associated Responses.
 //!
 
-use std::convert::{TryInto};
+use std::convert::TryInto;
 use std::io::Error as IoError;
 use std::fmt::Debug;
 
-use tracing::{debug};
+use tracing::debug;
 
-use fluvio_protocol::bytes::{Buf};
+use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::api::{ApiMessage, RequestHeader, RequestMessage};
 use fluvio_protocol::api::api_decode;
-use fluvio_protocol::core::{Decoder};
+use fluvio_protocol::core::Decoder;
 use fluvio_protocol::link::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
 use crate::objects::{
     ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
 };
-use crate::cloud::ObjectCloudRequest;
+// use crate::remote::ObjectCloudRequest;
 
 /// Non generic AdminRequest, This is typically used Decoding
 #[derive(Debug)]
@@ -30,10 +30,6 @@ pub enum AdminPublicDecodedRequest {
     DeleteRequest(RequestMessage<ObjectApiDeleteRequest>),
     ListRequest(RequestMessage<ObjectApiListRequest>),
     WatchRequest(RequestMessage<ObjectApiWatchRequest>),
-
-    // // todo: should contain a bag of bytes that can later be parsed
-    // // but for now it's mapped to fluvio-sc-cloud objects
-    CloudRequest(RequestMessage<ObjectCloudRequest>),
 }
 
 impl Default for AdminPublicDecodedRequest {
@@ -86,11 +82,6 @@ impl ApiMessage for AdminPublicDecodedRequest {
                 header,
                 ObjectApiWatchRequest::decode_from(src, version)?,
             ))),
-
-            AdminPublicApiKey::Cloud => Ok(Self::CloudRequest(RequestMessage::new(
-                header,
-                ObjectCloudRequest::decode_from(src, version)?,
-            ))),
         }
     }
 }
@@ -102,7 +93,7 @@ mod test {
 
     use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_protocol::api::RequestMessage;
-    use fluvio_protocol::{Encoder};
+    use fluvio_protocol::Encoder;
     use fluvio_protocol::api::ApiMessage;
 
     use crate::objects::{ObjectApiListRequest, ListRequest, COMMON_VERSION};

@@ -1,11 +1,11 @@
 use std::env::temp_dir;
 use std::path::PathBuf;
 
-use fluvio_controlplane::remote_cluster::RemoteClusterSpec;
 use fluvio_controlplane::replica::Replica;
 use fluvio_controlplane::spu_api::update_remote_cluster::RemoteCluster;
 use fluvio_controlplane::spu_api::update_upstream_cluster::UpstreamCluster;
-use fluvio_controlplane::upstream_cluster::{UpstreamClusterSpec, UpstreamTarget};
+use fluvio_controlplane_metadata::remote_cluster::RemoteClusterSpec;
+use fluvio_controlplane_metadata::upstream_cluster::{UpstreamClusterSpec, UpstreamTarget};
 use fluvio_controlplane_metadata::partition::{
     PartitionMirrorConfig, TargetPartitionConfig, SourcePartitionConfig,
 };

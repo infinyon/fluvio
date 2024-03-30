@@ -1,12 +1,12 @@
 use std::fmt;
 
 use fluvio_controlplane_metadata::message::{Message, Messages};
+use fluvio_controlplane_metadata::upstream_cluster::UpstreamClusterSpec;
 use fluvio_protocol::{Encoder, Decoder, api::Request};
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::MetadataStoreObject;
 
 use crate::requests::ControlPlaneRequest;
-use crate::upstream_cluster::UpstreamClusterSpec;
 
 use super::api::InternalSpuApi;
 

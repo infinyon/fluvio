@@ -1,8 +1,8 @@
-use fluvio_controlplane_metadata::message::{Message, Messages};
+use fluvio_controlplane_metadata::{message::{Message, Messages}, remote_cluster::RemoteClusterSpec};
 use fluvio_protocol::{Encoder, Decoder, api::Request};
 use fluvio_stream_model::{store::MetadataStoreObject, core::MetadataItem};
 
-use crate::{requests::ControlPlaneRequest, remote_cluster::RemoteClusterSpec};
+use crate::requests::ControlPlaneRequest;
 
 use super::api::InternalSpuApi;
 

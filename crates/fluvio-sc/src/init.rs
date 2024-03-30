@@ -7,8 +7,8 @@
 use std::sync::Arc;
 
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
-use fluvio_controlplane::remote_cluster::RemoteClusterSpec;
-use fluvio_controlplane::upstream_cluster::UpstreamClusterSpec;
+use fluvio_controlplane_metadata::remote_cluster::RemoteClusterSpec;
+use fluvio_controlplane_metadata::upstream_cluster::UpstreamClusterSpec;
 use fluvio_stream_model::core::MetadataItem;
 
 use crate::core::Context;

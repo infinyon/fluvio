@@ -5,6 +5,8 @@ pub mod spg;
 pub mod smartmodule;
 pub mod tableformat;
 pub mod message;
+pub mod remote_cluster;
+pub mod upstream_cluster;
 
 pub use fluvio_stream_model::core;
 

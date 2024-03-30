@@ -6,8 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use fluvio_controlplane::upstream_cluster::UpstreamClusterSpec;
-use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_controlplane_metadata::{topic::TopicSpec, upstream_cluster::UpstreamClusterSpec};
 use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 
 #[derive(Debug, Default)]

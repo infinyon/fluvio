@@ -2421,7 +2421,6 @@ dependencies = [
  "bytesize",
  "chrono",
  "clap",
- "cloud-sc-extra",
  "color-eyre",
  "colored",
  "comfy-table",
@@ -2812,7 +2811,6 @@ dependencies = [
  "base64 0.21.5",
  "cfg-if",
  "clap",
- "cloud-sc-extra",
  "event-listener 3.1.0",
  "fluvio-auth",
  "fluvio-controlplane",
@@ -2848,7 +2846,6 @@ name = "fluvio-sc-schema"
 version = "0.21.2"
 dependencies = [
  "anyhow",
- "cloud-sc-extra",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-future",

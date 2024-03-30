@@ -9,18 +9,18 @@ mod k8;
 
 mod metadata {
 
-    use fluvio_controlplane_metadata::core::{Spec, Status};
+    use crate::core::{Spec, Status};
 
     use super::*;
 
-    impl Spec for UpstreamClusterSpec {
-        const LABEL: &'static str = "UpstreamCluster";
+    impl Spec for RemoteClusterSpec {
+        const LABEL: &'static str = "RemoteCluster";
         type IndexKey = String;
-        type Status = UpstreamClusterStatus;
+        type Status = RemoteClusterStatus;
         type Owner = Self;
     }
 
-    impl Status for UpstreamClusterStatus {}
+    impl Status for RemoteClusterStatus {}
 
     #[cfg(feature = "k8")]
     mod extended {
@@ -33,9 +33,9 @@ mod metadata {
             k8_types::K8Obj,
         };
 
-        use super::metadata::UpstreamClusterSpec;
+        use super::metadata::RemoteClusterSpec;
 
-        impl K8ExtendedSpec for UpstreamClusterSpec {
+        impl K8ExtendedSpec for RemoteClusterSpec {
             type K8Spec = Self;
 
             fn convert_from_k8(
