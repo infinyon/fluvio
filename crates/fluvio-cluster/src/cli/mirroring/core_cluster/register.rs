@@ -1,14 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
-use tracing::info;
-
-use cloud_sc_extra::remote::RemoteRegister;
-
-use crate::cli::mirroring::core_cluster::send_request;
-
-use super::common::*;
-
-const RS_TYPE: &str = "mirror-edge";
+use fluvio_controlplane_metadata::remote_cluster::{KeyPair, RemoteClusterSpec, RemoteClusterType};
+use super::{common::*, get_admin};
 
 // example: `fluvio cloud remote-cluster register --type mirror-edge boat1`
 
@@ -24,12 +17,28 @@ impl RegisterOpt {
         cluster_target: ClusterTarget,
     ) -> Result<()> {
         let name = self.label.clone();
-        let rs_type = RS_TYPE.to_owned();
-        let req = RemoteRegister { name, rs_type };
-        info!(req=?req, "remote-cluster register request");
-        let resp = send_request(cluster_target, req).await?;
-        info!("remote cluster register resp: {}", resp.name);
-        println!("Edge cluster {} was registered", self.label);
+        // let rs_type = RS_TYPE.to_owned();
+        // // let req = RemoteRegister { name, rs_type };
+
+        // info!(req=?req, "remote-cluster register request");
+        // let resp = send_request(cluster_target, req).await?;
+        // info!("remote cluster register resp: {}", resp.name);
+        // println!("Edge cluster {} was registered", self.label);
+        // Ok(())
+
+        // let (name, spec) = self.validate()?;
+        // let admin = fluvio.admin().await;
+
+        let admin = get_admin(cluster_target).await?;
+
+        let spec = RemoteClusterSpec {
+            remote_type: RemoteClusterType::MirrorEdge,
+            key_pair: KeyPair {
+                public_key: "".into(),
+                private_key: "".into(),
+            },
+        };
+        admin.create(name, false, spec).await?;
         Ok(())
     }
 }

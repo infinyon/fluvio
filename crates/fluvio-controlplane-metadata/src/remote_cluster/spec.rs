@@ -8,6 +8,7 @@ use fluvio_protocol::{Encoder, Decoder};
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
+
 pub struct RemoteClusterSpec {
     pub remote_type: RemoteClusterType,
     pub key_pair: KeyPair,

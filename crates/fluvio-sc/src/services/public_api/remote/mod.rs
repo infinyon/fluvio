@@ -1,3 +1,11 @@
+mod register;
+mod unregister;
+mod list;
+
+pub use register::*;
+pub use unregister::*;
+pub use list::*;
+
 // use anyhow::{anyhow, Result};
 // use tracing::{info, instrument};
 
@@ -112,4 +120,25 @@
 //     }
 
 //     Err(anyhow!("Invalid Cloud Request"))
+// }
+
+// pub fn validate_req(rs_type_str: &str) -> Result<RemoteClusterSpec> {
+//     let remote_type = match rs_type_str {
+//         "mirror-edge" => RemoteClusterType::MirrorEdge,
+//         _ => {
+//             return Err(anyhow!("bad remote cluster type"));
+//         }
+//     };
+
+//     // key_pair todo
+//     let key_pair = KeyPair {
+//         public_key: "".into(),
+//         private_key: "".into(),
+//     };
+//     let spec = RemoteClusterSpec {
+//         remote_type,
+//         key_pair,
+//     };
+
+//     Ok(spec)
 // }

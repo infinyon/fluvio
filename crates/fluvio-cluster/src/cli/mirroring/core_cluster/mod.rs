@@ -11,7 +11,6 @@ pub mod export;
 
 use anyhow::Result;
 use clap::Parser;
-use tracing::debug;
 
 use unregister::UnregisterOpt;
 use list::ListOpt;
@@ -24,7 +23,7 @@ mod common {
     pub use fluvio_extension_common::output::Terminal;
 
     // pub use super::get_admin;
-    pub use super::send_request;
+    // pub use super::send_request;
 }
 use common::*;
 
@@ -74,20 +73,20 @@ pub async fn get_admin(cluster_target: ClusterTarget) -> Result<FluvioAdmin> {
     Ok(admin)
 }
 
-use fluvio_sc_schema::core::Spec;
-use cloud_sc_extra::{CloudRemoteClusterSpec, remote::CloudRemoteClusterRequest, CloudStatus};
+// use fluvio_sc_schema::core::Spec;
+// use cloud_sc_extra::{CloudRemoteClusterSpec, remote::CloudRemoteClusterRequest, CloudStatus};
 
 use self::export::ExportOpt;
-pub async fn send_request<R: Spec + CloudRemoteClusterSpec>(
-    cluster_target: ClusterTarget,
-    req: R,
-) -> Result<CloudStatus> {
-    use fluvio_sc_schema::cloud::ObjectCloudRequest;
-    let req = CloudRemoteClusterRequest { request: req };
-    let admin = get_admin(cluster_target).await?;
-    let resp = admin
-        .send_receive_admin::<ObjectCloudRequest, _>(req)
-        .await?;
-    debug!(resp=?resp, "Response");
-    Ok(resp)
-}
+// pub async fn send_request<R: Spec + CloudRemoteClusterSpec>(
+//     cluster_target: ClusterTarget,
+//     req: R,
+// ) -> Result<CloudStatus> {
+//     use fluvio_sc_schema::cloud::ObjectCloudRequest;
+//     let req = CloudRemoteClusterRequest { request: req };
+//     let admin = get_admin(cluster_target).await?;
+//     let resp = admin
+//         .send_receive_admin::<ObjectCloudRequest, _>(req)
+//         .await?;
+//     debug!(resp=?resp, "Response");
+//     Ok(resp)
+// }

@@ -1,3 +1,4 @@
+use fluvio_controlplane_metadata::remote_cluster::RemoteClusterSpec;
 use fluvio_protocol::link::ErrorCode;
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{instrument, debug, error};
@@ -35,6 +36,8 @@ pub async fn handle_create_request<AC: AuthContext, C: MetadataItem>(
         super::smartmodule::handle_create_smartmodule_request(create, auth_context).await?
     } else if let Some(create) = req.downcast()? as Option<CreateRequest<TableFormatSpec>> {
         super::tableformat::handle_create_tableformat_request(create, auth_context).await?
+    } else if let Some(create) = req.downcast()? as Option<CreateRequest<RemoteClusterSpec>> {
+        super::remote::handle_register_remote(create, auth_context).await?
     } else {
         error!("unknown create request: {:#?}", req);
         Status::new(

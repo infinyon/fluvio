@@ -2,11 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use clap::Parser;
-use tracing::info;
+use fluvio_sc_schema::remote::RemoteClusterSpec;
 
-use cloud_sc_extra::remote::RemoteList;
-
-use crate::cli::common::OutputFormat;
+use crate::cli::{common::OutputFormat, mirroring::core_cluster::get_admin};
 
 use super::common::*;
 
@@ -21,26 +19,21 @@ impl ListOpt {
         out: Arc<T>,
         cluster_target: ClusterTarget,
     ) -> Result<()> {
-        let req = RemoteList {};
-        info!(req=?req, "remote-cluster list request");
-        let resp = send_request(cluster_target, req).await?;
-        info!("remote cluster register resp: {}", resp.name);
+        let admin = get_admin(cluster_target).await?;
+        let list = admin.all::<RemoteClusterSpec>().await?;
 
-        let outlist = if let Some(list) = resp.list {
-            list.iter()
-                .map(|item| {
-                    (
-                        item.name.clone(),
-                        item.remote_type.clone(),
-                        item.pairing.clone(),
-                        item.status.clone(),
-                        item.last.clone(),
-                    )
-                })
-                .collect()
-        } else {
-            Vec::new()
-        };
+        let outlist: Vec<(String, String, String, String, String)> = list
+            .iter()
+            .map(|item| {
+                (
+                    item.name.clone(),
+                    item.spec.remote_type.to_string().clone(),
+                    "-".to_string(), // item.spec.pairing.clone(),
+                    item.status.to_string().clone(),
+                    "-".to_string(), // item.spec.last.clone(),
+                )
+            })
+            .collect();
         output::format(out, outlist, self.output.format)
     }
 }

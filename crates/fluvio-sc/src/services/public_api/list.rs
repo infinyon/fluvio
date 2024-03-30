@@ -1,10 +1,5 @@
 use fluvio_controlplane_metadata::{
-    spu::{CustomSpuSpec, SpuSpec},
-    topic::TopicSpec,
-    spg::SpuGroupSpec,
-    partition::PartitionSpec,
-    smartmodule::SmartModuleSpec,
-    tableformat::TableFormatSpec,
+    partition::PartitionSpec, remote_cluster::RemoteClusterSpec, smartmodule::SmartModuleSpec, spg::SpuGroupSpec, spu::{CustomSpuSpec, SpuSpec}, tableformat::TableFormatSpec, topic::TopicSpec
 };
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, instrument};
@@ -17,7 +12,7 @@ use fluvio_sc_schema::{
 };
 use fluvio_auth::AuthContext;
 
-use crate::services::auth::AuthServiceContext;
+use crate::services::{auth::AuthServiceContext, public_api::remote::handle_list_remote};
 use super::smartmodule::fetch_smart_modules;
 
 #[instrument(skip(request, auth_ctx))]
@@ -72,6 +67,11 @@ pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
                 auth_ctx.global_ctx.tableformats(),
             )
             .await?,
+            header.api_version(),
+        )?
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<RemoteClusterSpec>> {
+        ObjectApiListResponse::try_encode_from(
+            handle_list_remote(req.name_filters, auth_ctx).await?,
             header.api_version(),
         )?
     } else {

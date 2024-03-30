@@ -7,7 +7,6 @@ members = [
     "examples/02-consume",
     "examples/03-echo",
     "examples/04-admin-watch",
-    "cloud/sc-extra",
     "crates/fluvio",
     "crates/fluvio-auth",
     "crates/fluvio-benchmark",

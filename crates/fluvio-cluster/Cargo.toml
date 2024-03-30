@@ -75,7 +75,6 @@ fluvio = { workspace = true  }
 fluvio-extension-common = { workspace = true,  features = ["installation"] }
 fluvio-cli-common = { workspace = true, optional = true }
 fluvio-controlplane-metadata = { workspace = true,  features = ["k8",] }
-# cloud-sc-extra = { path = "../../cloud/sc-extra" }
 fluvio-sc-schema = { workspace = true  }
 fluvio-types = { workspace = true  }
 fluvio-channel = { workspace = true  }

@@ -5,10 +5,9 @@ use clap::Parser;
 
 use k8_types::K8Obj;
 use fluvio::config::{TlsPolicy, TlsConfig};
-use fluvio_controlplane::upstream_cluster::{UpstreamClusterSpec, UpstreamTarget, ClientTls};
+// use fluvio_controlplane::upstream_cluster::{UpstreamClusterSpec, UpstreamTarget, ClientTls};
 use fluvio_controlplane_metadata::{
-    topic::{SourceMirrorConfig, MirrorConfig, ReplicaSpec, TopicSpec},
-    spu::SpuSpec,
+    spu::SpuSpec, topic::{MirrorConfig, ReplicaSpec, SourceMirrorConfig, TopicSpec}, upstream_cluster::{ClientTls, UpstreamClusterSpec, UpstreamTarget}
 };
 use fluvio_extension_common::{target::ClusterTarget, Terminal};
 

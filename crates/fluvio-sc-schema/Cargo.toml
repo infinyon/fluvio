@@ -33,7 +33,6 @@ fluvio-socket = { workspace = true }
 fluvio-stream-model = { workspace = true, features = ["k8"] }
 fluvio-types = { workspace = true }
 fluvio-controlplane = {  workspace = true, features = ["k8"] }
-# cloud-sc-extra = { path = "../../cloud/sc-extra" }
 
 [dev-dependencies]
 fluvio-future = { workspace = true, features = ["subscriber"] }
