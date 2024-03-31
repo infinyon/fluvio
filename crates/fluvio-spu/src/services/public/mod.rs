@@ -137,40 +137,40 @@ impl FluvioService for PublicService {
                                 shared_sink,
                                 "UpdateOffsetsRequest"
                             ),
+                            SpuServerRequest::UpdateConsumerOffsetRequest(request) => {
+                                call_service!(
+                                    request,
+                                    handle_update_consumer_offset_request(
+                                        request,
+                                        context.clone(),
+                                        &mut conn_ctx,
+                                    ),
+                                    shared_sink,
+                                    "UpdateConsumerRequest"
+                                )
+                            }
+                            SpuServerRequest::DeleteConsumerOffsetRequest(request) => {
+                                call_service!(
+                                    request,
+                                    handle_delete_consumer_offset_request(request, context.clone()),
+                                    shared_sink,
+                                    "DeleteConsumerRequest"
+                                )
+                            }
+                            SpuServerRequest::FetchConsumerOffsetsRequest(request) => {
+                                call_service!(
+                                    request,
+                                    handle_fetch_consumer_offsets_request(request, context.clone()),
+                                    shared_sink,
+                                    "FetchConsumersRequest"
+                                )
+                            }
                             SpuServerRequest::StartMirrorRequest(request) => {
                                 // send mirror mode, afer that mirror cycle will be started
                                 mirror_request = Some(request);
                                 break;
                             }
                         }
-                        SpuServerRequest::UpdateOffsetsRequest(request) => call_service!(
-                            request,
-                            handle_offset_update(request, &mut conn_ctx),
-                            shared_sink,
-                            "UpdateOffsetsRequest"
-                        ),
-                        SpuServerRequest::UpdateConsumerOffsetRequest(request) => call_service!(
-                            request,
-                            handle_update_consumer_offset_request(
-                                request,
-                                context.clone(),
-                                &mut conn_ctx
-                            ),
-                            shared_sink,
-                            "UpdateConsumerRequest"
-                        ),
-                        SpuServerRequest::DeleteConsumerOffsetRequest(request) => call_service!(
-                            request,
-                            handle_delete_consumer_offset_request(request, context.clone()),
-                            shared_sink,
-                            "DeleteConsumerRequest"
-                        ),
-                        SpuServerRequest::FetchConsumerOffsetsRequest(request) => call_service!(
-                            request,
-                            handle_fetch_consumer_offsets_request(request, context.clone()),
-                            shared_sink,
-                            "FetchConsumersRequest"
-                        ),
                     }
                     Some(Err(e)) => {
                         debug!(
