@@ -2200,7 +2200,6 @@ dependencies = [
  "dirs 5.0.1",
  "event-listener 3.1.0",
  "fluvio-compression",
- "fluvio-controlplane",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
