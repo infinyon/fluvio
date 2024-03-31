@@ -1,9 +1,0 @@
-apiVersion: fluvio.infinyon.com/v1
-kind: UpstreamCluster
-metadata:
-  name: cloud
-spec:
-  target: 
-    endpoint: "host.orb.internal:9010"
-  keyPair:
-    publicKey: "Bogus"
