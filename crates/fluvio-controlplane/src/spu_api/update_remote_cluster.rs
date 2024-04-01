@@ -1,4 +1,7 @@
-use fluvio_controlplane_metadata::{message::{Message, Messages}, remote_cluster::RemoteClusterSpec};
+use fluvio_controlplane_metadata::{
+    message::{Message, Messages},
+    remote_cluster::RemoteClusterSpec,
+};
 use fluvio_protocol::{Encoder, Decoder, api::Request};
 use fluvio_stream_model::{store::MetadataStoreObject, core::MetadataItem};
 

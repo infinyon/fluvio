@@ -41,7 +41,6 @@ use fluvio_channel::{ImageTagStrategy, FLUVIO_IMAGE_TAG_STRATEGY};
 
 pub(crate) const VERSION: &str = include_str!("../../../../VERSION");
 
-
 pub use mirroring::core_cluster::CoreClusterCmd;
 pub use mirroring::edge_cluster::EdgeClusterCmd;
 

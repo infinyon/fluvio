@@ -233,7 +233,7 @@ mod root {
                 }
                 Self::Edge(edge) => {
                     edge.execute(out, root.target).await?;
-                } 
+                }
             }
 
             Ok(())

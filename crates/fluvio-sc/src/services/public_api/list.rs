@@ -1,5 +1,11 @@
 use fluvio_controlplane_metadata::{
-    partition::PartitionSpec, remote_cluster::RemoteClusterSpec, smartmodule::SmartModuleSpec, spg::SpuGroupSpec, spu::{CustomSpuSpec, SpuSpec}, tableformat::TableFormatSpec, topic::TopicSpec
+    partition::PartitionSpec,
+    remote_cluster::RemoteClusterSpec,
+    smartmodule::SmartModuleSpec,
+    spg::SpuGroupSpec,
+    spu::{CustomSpuSpec, SpuSpec},
+    tableformat::TableFormatSpec,
+    topic::TopicSpec,
 };
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{debug, instrument};
