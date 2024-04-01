@@ -8,11 +8,13 @@ use std::{
 
 use anyhow::{Result, Context, anyhow};
 use clap::{Parser, Subcommand};
+use tempfile::TempDir;
 use tracing::{debug, trace};
 
 use cargo_builder::package::PackageInfo;
 use fluvio_connector_deployer::{Deployment, DeploymentType, LogLevel};
 use fluvio_connector_package::metadata::ConnectorMetadata;
+use fluvio_connector_package::config::ConnectorConfig;
 
 use crate::cmd::PackageCmd;
 use crate::utils::build::{BuildOpts, build_connector};
@@ -197,8 +199,10 @@ fn deploy_local(
         }
     };
 
+    let metaconfig = ConnectorConfig::from_file(&config)
+        .map_err(|e| anyhow!("Couldn't read config file {}: {e}", config.display()))?;
     let mut log_path = std::env::current_dir()?;
-    log_path.push(&connector_metadata.package.name);
+    log_path.push(&metaconfig.name());
     log_path.set_extension("log");
 
     let mut builder = Deployment::builder();
@@ -309,8 +313,10 @@ fn from_ipkg_file(ipkg_file: PathBuf) -> Result<(PathBuf, ConnectorMetadata)> {
         .ok_or_else(|| anyhow!("Package missing {} file", binary_name))?;
 
     let binary_bytes = fluvio_hub_util::package_get_manifest_file(&ipkg_file, binary)?;
-    let mut executable_path = ipkg_file;
-    executable_path.pop();
+    let mut executable_path = TempDir::with_prefix("cdk-deploy-")
+        .map_err(|e| anyhow!("Couldn't create tmpdir for cdk: {e}"))?
+        .into_path();
+    debug!(exe_tmp_dir=?executable_path, "ipkg temp dir");
     executable_path.push(binary_name);
     let mut file = File::create(&executable_path)?;
     set_exec_permissions(&mut file)?;
