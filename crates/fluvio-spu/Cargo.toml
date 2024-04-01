@@ -46,7 +46,7 @@ adaptive_backoff = { workspace = true }
 once_cell = { workspace = true }
 sysinfo = { workspace = true }
 chrono = { workspace = true }
-
+mimalloc = { workspace = true }
 
 # Fluvio dependencies
 fluvio = { workspace = true }

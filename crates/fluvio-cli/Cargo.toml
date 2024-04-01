@@ -64,6 +64,7 @@ tui = { workspace = true, features = ['crossterm'] }
 futures = { workspace = true }
 futures-util = { workspace = true, features = ["sink"] }
 humantime = { workspace = true }
+mimalloc = { workspace = true }
 static_assertions = { workspace = true }
 sysinfo = { workspace = true }
 serde_yaml = { workspace = true }
