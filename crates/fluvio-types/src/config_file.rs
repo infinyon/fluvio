@@ -58,7 +58,7 @@ where
     where
         Self: Sized,
     {
-        let config = toml::from_str(&config).map_err(LoadConfigError::TomlError)?;
+        let config = toml::from_str(config).map_err(LoadConfigError::TomlError)?;
         Ok(config)
     }
 }
