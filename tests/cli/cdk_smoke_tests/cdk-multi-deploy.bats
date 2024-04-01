@@ -53,6 +53,12 @@ setup_file() {
     run cat my-json-test-connector2.log
     assert_output --partial "producing a value"
     assert_success
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector
+    assert_success
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector2
+    assert_success
 }
 
 @test "Run multiple connectors with --ipkg" {
@@ -77,4 +83,10 @@ setup_file() {
     run $CDK_BIN deploy start --ipkg json-test-connector-0.1.0.ipkg --config sample-config2-v2.yaml
     assert_success
     assert_output --partial "Connector runs with process id"
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector
+    assert_success
+
+    run $CDK_BIN deploy shutdown --name my-json-test-connector2
+    assert_success
 }
