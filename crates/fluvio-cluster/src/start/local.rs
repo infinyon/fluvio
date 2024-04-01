@@ -473,7 +473,7 @@ impl LocalInstaller {
             .println("🎯 Successfully installed Local Fluvio cluster");
 
         self.save_config_file();
-        
+
         Ok(StartStatus { address, port })
     }
 
@@ -693,8 +693,8 @@ impl LocalInstaller {
             None => {
                 warn!("Local config path");
                 return;
-            },
-            Some(local_config_path) => self.config.save_to(local_config_path)
+            }
+            Some(local_config_path) => self.config.save_to(local_config_path),
         };
 
         if let Err(err) = save_to_res {

@@ -105,7 +105,7 @@ impl ClusterUninstaller {
 
         let pb = self.pb_factory.create()?;
         pb.set_message("Uninstalling fluvio kubernetes components");
-        let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
+        let uninstall: UninstallArg = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
             .ignore_not_found();
         self.helm_client

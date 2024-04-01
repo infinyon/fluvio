@@ -13,7 +13,6 @@ use crate::{InstallationType, cli::get_installation_type};
 #[derive(Debug, Parser)]
 pub struct ResumeOpt;
 
-
 impl ResumeOpt {
     pub async fn process(self, _platform_version: Version) -> Result<()> {
         let pb_factory = ProgressBarFactory::new(false);
@@ -41,15 +40,15 @@ impl ResumeOpt {
     }
 
     async fn resume() -> Result<()> {
-        
         let local_conf = match LOCAL_CONFIG_PATH.as_ref() {
-            None => return Err(ClusterCliError::Other("Can't find older config".to_string()).into()),
-            Some(local_config_path) => LocalConfig::load_from(local_config_path)
+            None => {
+                return Err(ClusterCliError::Other("Can't find older config".to_string()).into())
+            }
+            Some(local_config_path) => LocalConfig::load_from(local_config_path),
         }?;
 
         let installer = LocalInstaller::from_config(local_conf);
         _ = installer.install().await?;
         Ok(())
     }
-
 }

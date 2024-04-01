@@ -95,15 +95,15 @@ impl ConfigFile {
     /// read from file
     fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
         let path_ref = path.as_ref();
-        let config = Config::load_from(path_ref).map_err(|e|
-            match e {
-                LoadConfigError::IoError(e) => config_file_error(&format!("{:?}", path_ref.as_os_str()), e),
-                LoadConfigError::TomlError(e) => ConfigError::TomlError {
-                    msg: path_ref.display().to_string(),
-                    source: e,
-                },
+        let config = Config::load_from(path_ref).map_err(|e| match e {
+            LoadConfigError::IoError(e) => {
+                config_file_error(&format!("{:?}", path_ref.as_os_str()), e)
             }
-        )?;
+            LoadConfigError::TomlError(e) => ConfigError::TomlError {
+                msg: path_ref.display().to_string(),
+                source: e,
+            },
+        })?;
 
         Ok(Self::new(path_ref.to_owned(), config))
     }
