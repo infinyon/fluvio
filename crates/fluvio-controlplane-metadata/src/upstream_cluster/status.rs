@@ -11,12 +11,37 @@ use fluvio_protocol::{Encoder, Decoder};
 pub struct UpstreamClusterStatus {
     pairing: UpStreamPairStatus,
     connection_status: ConnectionStatus,
-    connection_stat: ConnectionStat,
+    pub connection_stat: ConnectionStat,
 }
 
 impl fmt::Display for UpstreamClusterStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "UpstreamStatus: {:#?}", self)
+        match (self.pairing.clone(), self.connection_status.clone()) {
+            (UpStreamPairStatus::Succesful, ConnectionStatus::Online) => {
+                write!(f, "Online")
+            }
+            (UpStreamPairStatus::Failed, ConnectionStatus::Online) => {
+                write!(f, "Failed")
+            }
+            (UpStreamPairStatus::Disabled, ConnectionStatus::Online) => {
+                write!(f, "Disabled")
+            }
+            (UpStreamPairStatus::Request, ConnectionStatus::Online) => {
+                write!(f, "Waiting")
+            }
+            (UpStreamPairStatus::Succesful, ConnectionStatus::Offline) => {
+                write!(f, "Offline")
+            }
+            (UpStreamPairStatus::Failed, ConnectionStatus::Offline) => {
+                write!(f, "Failed")
+            }
+            (UpStreamPairStatus::Disabled, ConnectionStatus::Offline) => {
+                write!(f, "Disabled")
+            }
+            (UpStreamPairStatus::Request, ConnectionStatus::Offline) => {
+                write!(f, "Waiting")
+            }
+        }
     }
 }
 

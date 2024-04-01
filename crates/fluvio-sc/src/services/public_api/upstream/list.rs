@@ -1,5 +1,5 @@
 use fluvio_auth::AuthContext;
-use fluvio_controlplane_metadata::remote_cluster::RemoteClusterSpec;
+use fluvio_controlplane_metadata::upstream_cluster::UpstreamClusterSpec;
 use fluvio_sc_schema::{
     core::MetadataItem,
     objects::{ListFilters, ListResponse, Metadata},
@@ -9,14 +9,14 @@ use tracing::{debug, info, trace};
 
 use crate::services::auth::AuthServiceContext;
 
-pub async fn handle_list_remote<AC: AuthContext, C: MetadataItem>(
+pub async fn handle_list_upstream<AC: AuthContext, C: MetadataItem>(
     _filters: ListFilters,
     auth_ctx: &AuthServiceContext<AC, C>,
-) -> Result<ListResponse<RemoteClusterSpec>> {
-    info!("remote-cluster list");
-    let remote_list: Vec<Metadata<RemoteClusterSpec>> = auth_ctx
+) -> Result<ListResponse<UpstreamClusterSpec>> {
+    info!("upstream-cluster list");
+    let upstream_list: Vec<Metadata<UpstreamClusterSpec>> = auth_ctx
         .global_ctx
-        .remote_clusters()
+        .upstream_clusters()
         .store()
         .read()
         .await
@@ -30,8 +30,8 @@ pub async fn handle_list_remote<AC: AuthContext, C: MetadataItem>(
             }
         })
         .collect();
-    debug!("flv fetch remote list resp: {} items", remote_list.len());
-    trace!("flv fetch remote list resp {:#?}", remote_list);
+    debug!("flv fetch upstream list resp: {} items", upstream_list.len());
+    trace!("flv fetch upstream list resp {:#?}", upstream_list);
 
-    Ok(ListResponse::new(remote_list))
+    Ok(ListResponse::new(upstream_list))
 }

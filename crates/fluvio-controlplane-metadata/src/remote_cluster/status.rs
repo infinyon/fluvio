@@ -9,7 +9,7 @@ use fluvio_protocol::{Encoder, Decoder};
 pub struct RemoteClusterStatus {
     pairing: RemoteClusterPairStatus,
     connection_status: ConnectionStatus,
-    connection_stat: ConnectionStat,
+    pub connection_stat: ConnectionStat,
 }
 
 #[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq, Default)]
@@ -48,11 +48,32 @@ pub struct ConnectionStat {
 
 impl std::fmt::Display for RemoteClusterStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "RemoteClusterStatus pairing: {} connection: {}",
-            self.pairing, self.connection_status
-        )
+        match (self.pairing.clone(), self.connection_status.clone()) {
+            (RemoteClusterPairStatus::Succesful, ConnectionStatus::Online) => {
+                write!(f, "Online")
+            }
+            (RemoteClusterPairStatus::Failed, ConnectionStatus::Online) => {
+                write!(f, "Failed")
+            }
+            (RemoteClusterPairStatus::Disabled, ConnectionStatus::Online) => {
+                write!(f, "Disabled")
+            }
+            (RemoteClusterPairStatus::Waiting, ConnectionStatus::Online) => {
+                write!(f, "Waiting")
+            }
+            (RemoteClusterPairStatus::Succesful, ConnectionStatus::Offline) => {
+                write!(f, "Offline")
+            }
+            (RemoteClusterPairStatus::Failed, ConnectionStatus::Offline) => {
+                write!(f, "Failed")
+            }
+            (RemoteClusterPairStatus::Disabled, ConnectionStatus::Offline) => {
+                write!(f, "Disabled")
+            }
+            (RemoteClusterPairStatus::Waiting, ConnectionStatus::Offline) => {
+                write!(f, "Waiting")
+            }
+        }
     }
 }
 

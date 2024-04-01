@@ -179,7 +179,6 @@ mod root {
         #[command(subcommand, name = "core")]
         Core(Box<CoreClusterCmd>),
 
-        #[cfg(feature = "k8s")]
         #[command(subcommand, name = "edge")]
         Edge(Box<EdgeClusterCmd>),
     }

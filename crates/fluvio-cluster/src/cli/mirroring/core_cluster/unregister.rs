@@ -13,14 +13,6 @@ impl UnregisterOpt {
         _out: Arc<T>,
         cluster_target: ClusterTarget,
     ) -> Result<()> {
-        // let req = RemoteDelete {
-        // name: self.name.clone(),
-        // };
-        // info!(req=?req, "remote-cluster delete request");
-        // let resp = send_request(cluster_target, req).await?;
-        // info!("remote cluster delete resp: {}", resp.name);
-        // Ok(())
-
         let admin = get_admin(cluster_target).await?;
         admin.delete::<RemoteClusterSpec>(&self.name).await?;
         Ok(())

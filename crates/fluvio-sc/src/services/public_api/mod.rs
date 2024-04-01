@@ -12,6 +12,7 @@ mod watch;
 mod tableformat;
 mod derivedstream;
 mod remote;
+mod upstream;
 
 pub use server::start_public_server;
 

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use clap::Parser;
+use fluvio_controlplane_metadata::remote_cluster::RemoteClusterStatus;
 use fluvio_sc_schema::remote::RemoteClusterSpec;
 
 use crate::cli::{common::OutputFormat, mirroring::core_cluster::get_admin};
@@ -22,15 +23,16 @@ impl ListOpt {
         let admin = get_admin(cluster_target).await?;
         let list = admin.all::<RemoteClusterSpec>().await?;
 
-        let outlist: Vec<(String, String, String, String, String)> = list
+        let outlist: Vec<(String, String, String, String)> = list
             .iter()
             .map(|item| {
+                let status: RemoteClusterStatus = item.status.clone();
+
                 (
                     item.name.clone(),
-                    item.spec.remote_type.to_string().clone(),
-                    "-".to_string(), // item.spec.pairing.clone(),
-                    item.status.to_string().clone(),
-                    "-".to_string(), // item.spec.last.clone(),
+                    item.spec.remote_type.to_string(),
+                    status.to_string(),
+                    status.connection_stat.last_seen.to_string(),
                 )
             })
             .collect();
@@ -56,7 +58,7 @@ mod output {
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
-    type ListVec = Vec<(String, String, String, String, String)>;
+    type ListVec = Vec<(String, String, String, String)>;
 
     #[derive(Serialize)]
     struct TableList(ListVec);
@@ -89,13 +91,7 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from([
-                "RemoteCluster",
-                "RemoteType",
-                "Paired",
-                "Status",
-                "Last Seen",
-            ])
+            Row::from(["RemoteCluster", "RemoteType", "Status", "Last Seen"])
         }
 
         /// return errors in string format
@@ -113,7 +109,6 @@ mod output {
                         Cell::new(&e.1).set_alignment(CellAlignment::Left),
                         Cell::new(&e.2).set_alignment(CellAlignment::Left),
                         Cell::new(&e.3).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.4).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()

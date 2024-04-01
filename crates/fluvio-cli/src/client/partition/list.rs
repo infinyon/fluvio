@@ -127,8 +127,6 @@ mod display {
                         }
                     };
 
-                    // Target(TargetPartitionConfig { remote_cluster: "boat1" }))
-                    // let mirror =
                     let printable_size = match status.size {
                         PartitionStatus::SIZE_NOT_SUPPORTED => "NA".to_string(),
                         PartitionStatus::SIZE_ERROR => "ERROR".to_string(),

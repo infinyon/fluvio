@@ -17,18 +17,6 @@ impl RegisterOpt {
         cluster_target: ClusterTarget,
     ) -> Result<()> {
         let name = self.label.clone();
-        // let rs_type = RS_TYPE.to_owned();
-        // // let req = RemoteRegister { name, rs_type };
-
-        // info!(req=?req, "remote-cluster register request");
-        // let resp = send_request(cluster_target, req).await?;
-        // info!("remote cluster register resp: {}", resp.name);
-        // println!("Edge cluster {} was registered", self.label);
-        // Ok(())
-
-        // let (name, spec) = self.validate()?;
-        // let admin = fluvio.admin().await;
-
         let admin = get_admin(cluster_target).await?;
 
         let spec = RemoteClusterSpec {
