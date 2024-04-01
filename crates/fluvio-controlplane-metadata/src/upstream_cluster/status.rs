@@ -16,32 +16,17 @@ pub struct UpstreamClusterStatus {
 
 impl fmt::Display for UpstreamClusterStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match (self.pairing.clone(), self.connection_status.clone()) {
-            (UpStreamPairStatus::Succesful, ConnectionStatus::Online) => {
-                write!(f, "Online")
-            }
-            (UpStreamPairStatus::Failed, ConnectionStatus::Online) => {
-                write!(f, "Failed")
-            }
-            (UpStreamPairStatus::Disabled, ConnectionStatus::Online) => {
-                write!(f, "Disabled")
-            }
-            (UpStreamPairStatus::Request, ConnectionStatus::Online) => {
-                write!(f, "Waiting")
-            }
-            (UpStreamPairStatus::Succesful, ConnectionStatus::Offline) => {
-                write!(f, "Offline")
-            }
-            (UpStreamPairStatus::Failed, ConnectionStatus::Offline) => {
-                write!(f, "Failed")
-            }
-            (UpStreamPairStatus::Disabled, ConnectionStatus::Offline) => {
-                write!(f, "Disabled")
-            }
-            (UpStreamPairStatus::Request, ConnectionStatus::Offline) => {
-                write!(f, "Waiting")
-            }
-        }
+        let status = match (self.pairing.clone(), self.connection_status.clone()) {
+            (UpStreamPairStatus::Succesful, ConnectionStatus::Online) => "Online",
+            (UpStreamPairStatus::Failed, ConnectionStatus::Online) => "Failed",
+            (UpStreamPairStatus::Disabled, ConnectionStatus::Online) => "Disabled",
+            (UpStreamPairStatus::Request, ConnectionStatus::Online) => "Waiting",
+            (UpStreamPairStatus::Succesful, ConnectionStatus::Offline) => "Offline",
+            (UpStreamPairStatus::Failed, ConnectionStatus::Offline) => "Failed",
+            (UpStreamPairStatus::Disabled, ConnectionStatus::Offline) => "Disabled",
+            (UpStreamPairStatus::Request, ConnectionStatus::Offline) => "Waiting",
+        };
+        write!(f, "{}", status)
     }
 }
 

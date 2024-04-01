@@ -91,7 +91,7 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["RemoteCluster", "RemoteType", "Status", "Last Seen"])
+            Row::from(["Remote Cluster", "Remote Type", "Status", "Last Seen"])
         }
 
         /// return errors in string format

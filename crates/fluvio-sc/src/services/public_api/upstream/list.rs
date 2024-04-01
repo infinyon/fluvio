@@ -30,7 +30,10 @@ pub async fn handle_list_upstream<AC: AuthContext, C: MetadataItem>(
             }
         })
         .collect();
-    debug!("flv fetch upstream list resp: {} items", upstream_list.len());
+    debug!(
+        "flv fetch upstream list resp: {} items",
+        upstream_list.len()
+    );
     trace!("flv fetch upstream list resp {:#?}", upstream_list);
 
     Ok(ListResponse::new(upstream_list))

@@ -48,32 +48,17 @@ pub struct ConnectionStat {
 
 impl std::fmt::Display for RemoteClusterStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match (self.pairing.clone(), self.connection_status.clone()) {
-            (RemoteClusterPairStatus::Succesful, ConnectionStatus::Online) => {
-                write!(f, "Online")
-            }
-            (RemoteClusterPairStatus::Failed, ConnectionStatus::Online) => {
-                write!(f, "Failed")
-            }
-            (RemoteClusterPairStatus::Disabled, ConnectionStatus::Online) => {
-                write!(f, "Disabled")
-            }
-            (RemoteClusterPairStatus::Waiting, ConnectionStatus::Online) => {
-                write!(f, "Waiting")
-            }
-            (RemoteClusterPairStatus::Succesful, ConnectionStatus::Offline) => {
-                write!(f, "Offline")
-            }
-            (RemoteClusterPairStatus::Failed, ConnectionStatus::Offline) => {
-                write!(f, "Failed")
-            }
-            (RemoteClusterPairStatus::Disabled, ConnectionStatus::Offline) => {
-                write!(f, "Disabled")
-            }
-            (RemoteClusterPairStatus::Waiting, ConnectionStatus::Offline) => {
-                write!(f, "Waiting")
-            }
-        }
+        let status = match (self.pairing.clone(), self.connection_status.clone()) {
+            (RemoteClusterPairStatus::Succesful, ConnectionStatus::Online) => "Online",
+            (RemoteClusterPairStatus::Failed, ConnectionStatus::Online) => "Failed",
+            (RemoteClusterPairStatus::Disabled, ConnectionStatus::Online) => "Disabled",
+            (RemoteClusterPairStatus::Waiting, ConnectionStatus::Online) => "Waiting",
+            (RemoteClusterPairStatus::Succesful, ConnectionStatus::Offline) => "Offline",
+            (RemoteClusterPairStatus::Failed, ConnectionStatus::Offline) => "Failed",
+            (RemoteClusterPairStatus::Disabled, ConnectionStatus::Offline) => "Disabled",
+            (RemoteClusterPairStatus::Waiting, ConnectionStatus::Offline) => "Waiting",
+        };
+        write!(f, "{}", status)
     }
 }
 

@@ -50,6 +50,8 @@ impl<C: MetadataItem + 'static> SpuHealthCheckController<C> {
         use tokio::select;
 
         debug!("initializing listeners");
+        let mut spu_listener = self.spus.change_listener();
+        let _ = spu_listener.wait_for_initial_sync().await;
 
         let mut health_listener = self.health_check.listener();
         debug!("finished initializing listeners");
@@ -58,6 +60,11 @@ impl<C: MetadataItem + 'static> SpuHealthCheckController<C> {
             self.sync_store().await?;
 
             select! {
+                _ = spu_listener.listen() => {
+                    debug!("detected changes in spu store");
+                    spu_listener.load_last();
+
+                },
                 _ = health_listener.listen() => {
                     debug!("detected changes in health listener");
 

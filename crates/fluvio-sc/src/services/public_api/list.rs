@@ -19,7 +19,10 @@ use fluvio_sc_schema::{
 };
 use fluvio_auth::AuthContext;
 
-use crate::services::{auth::AuthServiceContext, public_api::{remote::handle_list_remote, upstream::handle_list_upstream}};
+use crate::services::{
+    auth::AuthServiceContext,
+    public_api::{remote::handle_list_remote, upstream::handle_list_upstream},
+};
 use super::smartmodule::fetch_smart_modules;
 
 #[instrument(skip(request, auth_ctx))]
