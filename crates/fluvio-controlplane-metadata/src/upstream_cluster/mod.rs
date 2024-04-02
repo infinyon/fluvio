@@ -9,7 +9,10 @@ mod k8;
 
 mod metadata {
 
-    use crate::core::{Spec, Status};
+    use crate::{
+        core::{Spec, Status},
+        extended::{ObjectType, SpecExt},
+    };
 
     use super::*;
 
@@ -18,6 +21,10 @@ mod metadata {
         type IndexKey = String;
         type Status = UpstreamClusterStatus;
         type Owner = Self;
+    }
+
+    impl SpecExt for UpstreamClusterSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::UpstreamCluster;
     }
 
     impl Status for UpstreamClusterStatus {}
