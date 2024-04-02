@@ -348,6 +348,7 @@ where
 
         debug!(start_absolute_offset, end_absolute_offset, record_count);
 
+        let with_consumer_id = consumer_id.is_some();
         let stream_request = DefaultStreamFetchRequest::builder()
             .topic(self.topic.to_owned())
             .partition(self.partition)
@@ -366,7 +367,7 @@ where
         if stream_fetch_version < CHAIN_SMARTMODULE_API {
             warn!("SPU does not support SmartModule chaining. SmartModules will not be applied to the stream");
         }
-        if stream_fetch_version < OFFSET_MANAGEMENT_API {
+        if with_consumer_id && stream_fetch_version < OFFSET_MANAGEMENT_API {
             warn!("SPU does not support Offset Management API");
         }
 
