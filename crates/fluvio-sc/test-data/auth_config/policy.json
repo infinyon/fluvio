@@ -20,7 +20,13 @@
         ],
         "TableFormat": [
             "All"
-        ]
+        ],
+        "RemoteCluster": [
+            "All"
+        ],
+        "UpstreamCluster": [
+            "All"
+        ],
     },
     "Root": {
         "CustomSpu": [
@@ -46,6 +52,12 @@
         ],
         "TableFormat": [
             "All"
-        ]
+        ],
+        "RemoteCluster": [
+            "All"
+        ],
+        "UpstreamCluster": [
+            "All"
+        ],
     }
 }
