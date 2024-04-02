@@ -186,7 +186,7 @@ fluvio-spu-schema = { version = "0.14.5", path = "crates/fluvio-spu-schema", def
 fluvio-storage = { path = "crates/fluvio-storage" }
 fluvio-stream-dispatcher = { version = "0.13.0", path = "crates/fluvio-stream-dispatcher" }
 fluvio-stream-model = { version = "0.11.0", path = "crates/fluvio-stream-model", default-features = false }
-fluvio-types = { version = "0.4.5", path = "crates/fluvio-types", default-features = false }
+fluvio-types = { version = "0.4.6", path = "crates/fluvio-types", default-features = false }
 fluvio-kv-storage = { path = "crates/fluvio-kv-storage", default-features = false }
 
 # Used to make eyre faster on debug builds
