@@ -106,11 +106,17 @@ where
 
         info!(spu_id, "SPU connected");
 
+        let health_check = context.health().clone();
+
+        health_check.update(spu_id, true).await;
+
         if let Err(err) = dispatch_loop(context, spu_id, api_stream, sink).await {
             error!("error with SPU <{}>, error: {}", spu_id, err);
         }
 
         info!(spu_id, "Terminating connection to SPU");
+
+        health_check.update(spu_id, false).await;
 
         Ok(())
     }
@@ -127,10 +133,6 @@ async fn dispatch_loop<C>(
 where
     C: MetadataItem,
 {
-    let health_check = context.health().clone();
-
-    health_check.update(spu_id, true).await;
-
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
     let mut sm_spec_listener = context.smartmodules().change_listener();
@@ -169,8 +171,6 @@ where
                         match req_message {
                             InternalScRequest::UpdateLrsRequest(msg) => {
                                 receive_lrs_update(&context,msg.request).await;
-                             //   health_check.update(spu_id, true).await;
-
                             },
                             InternalScRequest::RegisterSpuRequest(msg) => {
                                 error!("registration req only valid during initialization: {:#?}",msg);
@@ -205,10 +205,6 @@ where
 
             },
 
-            _ = sm_spec_listener.listen() => {
-                debug!("smartmodule lister changed");
-            },
-
             _ = rm_cluster_listener.listen() => {
                 debug!("remote cluster lister changed");
             },
@@ -219,8 +215,6 @@ where
 
         }
     }
-
-    health_check.update(spu_id, false).await;
 
     Ok(())
 }

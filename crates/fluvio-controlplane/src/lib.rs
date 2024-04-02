@@ -3,8 +3,6 @@ pub mod spu_api;
 pub mod replica;
 pub mod message;
 pub mod requests;
-// pub mod remote_cluster;
-// pub mod upstream_cluster;
 
 pub use alias::*;
 mod alias {
