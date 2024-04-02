@@ -33,6 +33,8 @@ pub mod extended {
         SmartModule,
         TableFormat,
         DerivedStream,
+        RemoteCluster,
+        UpstreamCluster,
     }
 
     pub trait SpecExt: Spec {

@@ -26,7 +26,7 @@
         ],
         "UpstreamCluster": [
             "All"
-        ],
+        ]
     },
     "Root": {
         "CustomSpu": [
@@ -58,6 +58,6 @@
         ],
         "UpstreamCluster": [
             "All"
-        ],
+        ]
     }
 }
