@@ -7,6 +7,7 @@ use tracing::debug;
 use crate::cli::ClusterCliError;
 use crate::progress::ProgressBarFactory;
 use crate::start::local::LOCAL_CONFIG_PATH;
+use crate::ClusterChecker;
 use crate::LocalConfig;
 use crate::LocalInstaller;
 use crate::{InstallationType, cli::get_installation_type};
@@ -30,7 +31,8 @@ impl ResumeOpt {
 
         match installation_type {
             InstallationType::Local | InstallationType::ReadOnly => {
-                Self::resume().await?;
+                let resume = LocalResume {pb_factory: pb_factory};
+                resume.resume().await?
             }
             _ => {
                 pb.println("❌ Resume is only implemented for local clusters.");
@@ -38,17 +40,35 @@ impl ResumeOpt {
         };
         Ok(())
     }
+}
 
-    async fn resume() -> Result<()> {
+#[derive(Debug)]
+struct LocalResume {
+    pb_factory: ProgressBarFactory
+}
+
+impl LocalResume {
+    pub async fn resume(&self) -> Result<()> {
+        self.preflight_check().await?;
+
+        self.resume_previous_config().await
+    }
+
+    async fn resume_previous_config(&self) -> Result<()> {
         let local_conf = match LOCAL_CONFIG_PATH.as_ref() {
             None => {
-                return Err(ClusterCliError::Other("Can't find older config".to_string()).into())
+                return Err(ClusterCliError::Other("Can't find config from a previous run".to_string()).into())
             }
             Some(local_config_path) => LocalConfig::load_from(local_config_path),
         }?;
 
         let installer = LocalInstaller::from_config(local_conf);
         _ = installer.install().await?;
+        Ok(())
+    }
+
+    async fn preflight_check(&self) -> Result<()> {
+        ClusterChecker::empty().with_no_k8_checks().run(&self.pb_factory, false).await?;
         Ok(())
     }
 }
