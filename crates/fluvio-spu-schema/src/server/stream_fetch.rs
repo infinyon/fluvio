@@ -52,6 +52,8 @@ pub const SMARTMODULE_LOOKBACK_AGE: i16 = 21;
 
 pub const SMARTMODULE_TIMESTAMP: i16 = 22;
 
+pub const OFFSET_MANAGEMENT_API: i16 = 23;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[allow(deprecated)]

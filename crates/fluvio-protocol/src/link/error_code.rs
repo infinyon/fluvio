@@ -113,6 +113,12 @@ pub enum ErrorCode {
     #[fluvio(tag = 3002)]
     #[error("the fetch session was not found")]
     FetchSessionNotFoud,
+    #[fluvio(tag = 3003)]
+    #[error("offset flush error: {0}")]
+    OffsetFlushRequestError(String),
+    #[fluvio(tag = 3004)]
+    #[error("the offset management is disable for the stream")]
+    OffsetManagementDisabled,
 
     // Legacy SmartModule errors
     #[cfg(feature = "smartmodule")]

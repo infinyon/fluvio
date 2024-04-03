@@ -303,6 +303,7 @@ impl Offset {
 pub(crate) async fn fetch_offsets(
     client: &mut VersionedSerialSocket,
     replica: &ReplicaKey,
+    consumer_id: Option<String>,
 ) -> Result<FetchOffsetPartitionResponse, FluvioError> {
     debug!("fetching offset for replica: {}", replica);
 
@@ -310,6 +311,7 @@ pub(crate) async fn fetch_offsets(
         .send_receive(FetchOffsetsRequest::new(
             replica.topic.to_owned(),
             replica.partition,
+            consumer_id,
         ))
         .await?;
 

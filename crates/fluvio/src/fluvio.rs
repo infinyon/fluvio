@@ -19,8 +19,9 @@ use crate::PartitionConsumer;
 
 use crate::FluvioError;
 use crate::FluvioConfig;
-use crate::consumer::MultiplePartitionConsumer;
-use crate::consumer::PartitionSelectionStrategy;
+use crate::consumer::{MultiplePartitionConsumer, PartitionSelectionStrategy};
+#[cfg(feature = "unstable")]
+use crate::consumer::{ConsumerStream, MultiplePartitionConsumerStream, Record, ConsumerConfigExt};
 use crate::metrics::ClientMetrics;
 use crate::producer::TopicProducerConfig;
 use crate::spu::SpuPool;
@@ -235,6 +236,32 @@ impl Fluvio {
             self.spu_pool().await?,
             self.metric.clone(),
         ))
+    }
+
+    /// Experimental: The feature is not finalized yet.
+    #[cfg(feature = "unstable")]
+    pub async fn consumer_with_config(
+        &self,
+        config: ConsumerConfigExt,
+    ) -> Result<
+        impl ConsumerStream<Item = std::result::Result<Record, fluvio_protocol::link::ErrorCode>>,
+    > {
+        let spu_pool = self.spu_pool().await?;
+        let topic = &config.topic;
+        let topics = spu_pool.metadata.topics();
+        let topic_spec = topics
+            .lookup_by_key(topic)
+            .await?
+            .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
+            .spec;
+        let partition_count: PartitionId = topic_spec.partitions();
+        let mut consumer_streams = Vec::with_capacity(partition_count as usize);
+        for partition in 0..partition_count {
+            let consumer =
+                PartitionConsumer::new(topic.clone(), partition, spu_pool.clone(), self.metrics());
+            consumer_streams.push(consumer.consumer_stream_with_config(config.clone()).await?);
+        }
+        Ok(MultiplePartitionConsumerStream::new(consumer_streams))
     }
 
     /// Provides an interface for managing a Fluvio cluster
