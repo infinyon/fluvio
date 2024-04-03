@@ -1,3 +1,4 @@
+use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use fluvio_types::config_file::SaveLoadConfig;
@@ -29,22 +30,30 @@ impl ResumeOpt {
         let (installation_type, _config) = get_installation_type()?;
         debug!(?installation_type);
 
-        match installation_type {
+        let resume_result = match installation_type {
             InstallationType::Local | InstallationType::ReadOnly => {
-                let resume = LocalResume {pb_factory: pb_factory};
-                resume.resume().await?
+                let resume = LocalResume {
+                    pb_factory,
+                };
+                resume.resume().await
             }
             _ => {
                 pb.println("❌ Resume is only implemented for local clusters.");
+                Err(ClusterCliError::Other("Resume not implemented".to_string()).into())
             }
         };
+
+        if let Some(err) = resume_result.err() {
+            pb.println(format!("❌ Resume failed with {:#}", err));
+        }
+
         Ok(())
     }
 }
 
 #[derive(Debug)]
 struct LocalResume {
-    pb_factory: ProgressBarFactory
+    pb_factory: ProgressBarFactory,
 }
 
 impl LocalResume {
@@ -57,10 +66,14 @@ impl LocalResume {
     async fn resume_previous_config(&self) -> Result<()> {
         let local_conf = match LOCAL_CONFIG_PATH.as_ref() {
             None => {
-                return Err(ClusterCliError::Other("Can't find config from a previous run".to_string()).into())
+                return Err(ClusterCliError::Other(
+                    "Can't find config from a previous run".to_string(),
+                )
+                .into())
             }
             Some(local_config_path) => LocalConfig::load_from(local_config_path),
-        }?;
+        }
+        .with_context(|| "Couldn't load local counfig file")?;
 
         let installer = LocalInstaller::from_config(local_conf);
         _ = installer.install().await?;
@@ -68,7 +81,10 @@ impl LocalResume {
     }
 
     async fn preflight_check(&self) -> Result<()> {
-        ClusterChecker::empty().with_no_k8_checks().run(&self.pb_factory, false).await?;
+        ClusterChecker::empty()
+            .with_no_k8_checks()
+            .run(&self.pb_factory, false)
+            .await?;
         Ok(())
     }
 }

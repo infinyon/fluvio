@@ -177,21 +177,30 @@ impl ClusterUninstaller {
         kill_proc("fluvio", Some(&["run".into()]));
         kill_proc("fluvio-run", None);
 
-        fn delete_fs<T: AsRef<Path>>(path: Option<T>, tag: &'static str, is_file: bool, pb: Option<&ProgressRenderer>) {
+        fn delete_fs<T: AsRef<Path>>(
+            path: Option<T>,
+            tag: &'static str,
+            is_file: bool,
+            pb: Option<&ProgressRenderer>,
+        ) {
             match path {
                 Some(path) => {
                     let path_ref = path.as_ref();
-                    match if is_file {remove_file(path_ref)} else {remove_dir_all(path_ref)} {
+                    match if is_file {
+                        remove_file(path_ref)
+                    } else {
+                        remove_dir_all(path_ref)
+                    } {
                         Ok(_) => {
                             debug!("Removed {}: {}", tag, path_ref.display());
-                            pb.map(|pb| pb.println(format!("Removed {}", tag)));
+                            if let Some(pb) = pb { pb.println(format!("Removed {}", tag)) }
                         }
                         Err(err) => {
                             warn!("{} can't be removed: {}", tag, err);
-                            pb.map(|pb| pb.println(format!("{tag}, can't be removed: {err}")));
+                            if let Some(pb) = pb { pb.println(format!("{tag}, can't be removed: {err}")) }
                         }
                     }
-                },
+                }
                 None => {
                     warn!("Unable to find {}, cannot remove", tag);
                 }
@@ -203,10 +212,20 @@ impl ClusterUninstaller {
         delete_fs(DEFAULT_DATA_DIR.as_ref(), "data dir", false, None);
 
         // delete local cluster config file
-        delete_fs(LOCAL_CONFIG_PATH.as_ref(), "local cluster config", true, None);
+        delete_fs(
+            LOCAL_CONFIG_PATH.as_ref(),
+            "local cluster config",
+            true,
+            None,
+        );
 
         // remove monitoring socket
-        delete_fs(Some(SPU_MONITORING_UNIX_SOCKET), "SPU monitoring socket", true, Some(&pb));
+        delete_fs(
+            Some(SPU_MONITORING_UNIX_SOCKET),
+            "SPU monitoring socket",
+            true,
+            Some(&pb),
+        );
 
         pb.println("Uninstalled fluvio local components");
         pb.finish_and_clear();
