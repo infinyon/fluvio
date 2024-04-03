@@ -18,6 +18,9 @@ use crate::common::OutputFormat;
 pub struct ListPartitionOpt {
     #[clap(flatten)]
     output: OutputFormat,
+    /// Show hidden partitions
+    #[arg(long, required = false)]
+    show_hidden: bool,
 }
 
 impl ListPartitionOpt {
@@ -30,6 +33,14 @@ impl ListPartitionOpt {
         let admin = fluvio.admin().await;
 
         let partitions = admin.all::<PartitionSpec>().await?;
+        let partitions = if !self.show_hidden {
+            partitions
+                .into_iter()
+                .filter(|metadata| !metadata.spec.hidden)
+                .collect()
+        } else {
+            partitions
+        };
 
         // format and dump to screen
         display::format_partition_response_output(out, partitions, output)?;

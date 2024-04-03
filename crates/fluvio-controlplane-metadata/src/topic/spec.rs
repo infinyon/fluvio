@@ -30,6 +30,9 @@ pub struct TopicSpec {
     #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 12)]
     deduplication: Option<Deduplication>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    #[fluvio(min_version = 13)]
+    hidden: bool,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -107,6 +110,14 @@ impl TopicSpec {
 
     pub fn set_deduplication(&mut self, deduplication: Option<Deduplication>) {
         self.deduplication = deduplication;
+    }
+
+    pub fn is_hidden(&self) -> bool {
+        self.hidden
+    }
+
+    pub fn set_hidden(&mut self, hidden: bool) {
+        self.hidden = hidden;
     }
 
     /// get retention secs that can be displayed

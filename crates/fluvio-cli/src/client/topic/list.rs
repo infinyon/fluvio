@@ -25,6 +25,9 @@ pub struct ListTopicsOpt {
     /// Output
     #[clap(flatten)]
     output: OutputFormat,
+    /// Show hidden topics
+    #[arg(long, required = false)]
+    show_hidden: bool,
 }
 
 impl ListTopicsOpt {
@@ -34,6 +37,14 @@ impl ListTopicsOpt {
         let admin = fluvio.admin().await;
 
         let topics = admin.all::<TopicSpec>().await?;
+        let topics = if !self.show_hidden {
+            topics
+                .into_iter()
+                .filter(|metadata| !metadata.spec.is_hidden())
+                .collect()
+        } else {
+            topics
+        };
         display::format_response_output(out, topics, output_type)?;
         Ok(())
     }
@@ -43,7 +54,7 @@ mod display {
 
     use std::time::Duration;
 
-    use humantime::{format_duration};
+    use humantime::format_duration;
     use comfy_table::{Row, Cell, CellAlignment};
     use serde::Serialize;
 
