@@ -6,6 +6,7 @@ mod partition;
 mod tableformat;
 mod smartmodule;
 mod smartmodule_invocation;
+mod mirroring;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -45,6 +46,7 @@ mod cmd {
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
 
+    use super::mirroring::core::CoreCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;
@@ -134,6 +136,10 @@ mod cmd {
         /// Work with the SmartModule Hub
         #[command(subcommand, name = "hub")]
         Hub(HubCmd),
+
+        #[cfg(feature = "k8s")]
+        #[command(subcommand, name = "core")]
+        Core(Box<CoreCmd>),
     }
 
     impl FluvioCmd {
@@ -164,6 +170,9 @@ mod cmd {
                 }
                 Self::Hub(hub) => {
                     hub.process(out, target).await?;
+                }
+                Self::Core(core) => {
+                    core.process(out, target).await?;
                 }
             }
 
