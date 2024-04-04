@@ -1,0 +1,15 @@
+apiVersion: fluvio.infinyon.com/v1
+kind: Upstream
+metadata:
+  name: somecloud
+spec:
+  sourceId: "edge1"
+  target:
+    endpoint: "somecloud.com:9003"
+    tls:
+      domain: "somecloud.com"
+      caCert: "AJWWZAWW"
+      clientKey: "ZZZ222"
+      clientCert: "ZZZ222"
+  keyPair:
+    publicKey: "public key: TJ33a"

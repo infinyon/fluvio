@@ -8,6 +8,7 @@ pub mod versions;
 pub mod objects;
 pub mod shared;
 pub mod tableformat;
+pub mod remote;
 
 pub mod edge;
 
