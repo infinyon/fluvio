@@ -49,7 +49,10 @@ impl TestCmd {
             .config(self.config)
             .secrets(self.secrets)
             .pkg(connector_metadata)
-            .deployment_type(DeploymentType::Local { output_file: None });
+            .deployment_type(DeploymentType::Local {
+                output_file: None,
+                tmp_dir: None,
+            });
         builder.deploy()?;
         Ok(())
     }

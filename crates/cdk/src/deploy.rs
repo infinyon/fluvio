@@ -78,8 +78,8 @@ enum DeployShutdownCmd {
     #[command(name = "shutdown")]
     #[clap(group(
         clap::ArgGroup::new("name-source")
-            .required(true)
-            .args(&["config", "name"]),
+        .required(true)
+        .args(&["config", "name"]),
     ))]
     Local {
         /// Path to configuration file in YAML format
@@ -107,8 +107,8 @@ enum DeployLogCmd {
     #[command(name = "log")]
     #[clap(group(
         clap::ArgGroup::new("name-source")
-            .required(true)
-            .args(&["config", "name"]),
+        .required(true)
+        .args(&["config", "name"]),
     ))]
     Local {
         /// Path to configuration file in YAML format
@@ -188,9 +188,17 @@ fn deploy_local(
     log_level: LogLevel,
 ) -> Result<()> {
     let opt = package_cmd.as_opt();
+    let mut tmp_dir: Option<PathBuf> = None;
 
     let (executable, connector_metadata) = match ipkg_file {
-        Some(ipkg_file) => from_ipkg_file(ipkg_file).context("Failed to deploy from ipkg file")?,
+        Some(ipkg_file) => {
+            let (exec, cmeta) =
+                from_ipkg_file(ipkg_file).context("Failed to deploy from ipkg file")?;
+            let mut exec_dir = exec.clone();
+            exec_dir.pop();
+            tmp_dir = Some(exec_dir);
+            (exec, cmeta)
+        }
         None => {
             let package_info = PackageInfo::from_options(&opt)?;
             build_connector(&package_info, BuildOpts::with_release(opt.release.as_str()))?;
@@ -214,6 +222,7 @@ fn deploy_local(
         .log_level(log_level)
         .deployment_type(DeploymentType::Local {
             output_file: Some(log_path),
+            tmp_dir,
         });
     let result = builder.deploy()?;
     local_index::store(result)
@@ -348,7 +357,7 @@ mod local_index {
     use comfy_table::Table;
     use serde::{Serialize, Deserialize};
 
-    use anyhow::Result;
+    use anyhow::{anyhow, Result};
     use fluvio_connector_deployer::DeploymentResult;
     use sysinfo::{SystemExt, Pid, PidExt, ProcessExt};
     use tracing::debug;
@@ -365,13 +374,14 @@ mod local_index {
         operator: T,
     }
 
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Serialize, Deserialize, Clone)]
     #[serde(tag = "type", rename_all = "snake_case")]
     enum Entry {
         Local {
             process_id: u32,
             name: String,
             log_file: Option<PathBuf>,
+            tmp_dir: Option<PathBuf>,
         },
     }
 
@@ -416,7 +426,21 @@ mod local_index {
 
         fn remove(&mut self, index: usize) -> Result<()> {
             let entry = self.entries.remove(index);
-            self.operator.kill(&entry)
+            self.operator.kill(&entry)?;
+            match entry {
+                Entry::Local {
+                    process_id: _,
+                    name: _,
+                    log_file: _,
+                    tmp_dir: Some(ref tmp_dir),
+                } => {
+                    // clean up tmp dir used with ipkg
+                    std::fs::remove_dir_all(tmp_dir).map_err(|e| {
+                        anyhow!("could not clean up ipkg dir {}: {e}", tmp_dir.display())
+                    })
+                }
+                _ => Ok(()),
+            }
         }
 
         fn find_by_name(&self, connector_name: &str) -> Option<(usize, &Entry)> {
@@ -425,8 +449,8 @@ mod local_index {
                     process_id: _,
                     name,
                     log_file: _,
+                    tmp_dir: _,
                 } = entry;
-
                 name.eq(connector_name)
             })
         }
@@ -456,8 +480,8 @@ mod local_index {
                     process_id: _,
                     name,
                     log_file: _,
+                    tmp_dir: _,
                 } = connector;
-
                 table.add_row(vec![name, status.to_string()]);
             }
             writeln!(writer, "{table}")?;
@@ -471,6 +495,7 @@ mod local_index {
                 process_id,
                 name: _,
                 log_file: _,
+                tmp_dir: _,
             } = entry;
             let status = if self.system.process(Pid::from_u32(*process_id)).is_some() {
                 ConnectorStatus::Running
@@ -485,6 +510,7 @@ mod local_index {
                 process_id,
                 name: _,
                 log_file: _,
+                tmp_dir: _,
             } = entry;
 
             if let Some(process) = self.system.process(Pid::from_u32(*process_id)) {
@@ -510,10 +536,12 @@ mod local_index {
                     process_id,
                     name,
                     log_file,
+                    tmp_dir,
                 } => Entry::Local {
                     process_id,
                     name,
                     log_file,
+                    tmp_dir,
                 },
             }
         }
@@ -550,6 +578,7 @@ mod local_index {
                     process_id,
                     name,
                     log_file,
+                    tmp_dir: _,
                 },
             )) => {
                 let log_file = match log_file {
@@ -563,7 +592,6 @@ mod local_index {
                     \nLog File: {}",
                     name, process_id, log_file
                 );
-
                 index.remove(i)?;
             }
             None => println!("Connector not found: {}", connector_name),
@@ -580,6 +608,7 @@ mod local_index {
                 process_id: _,
                 name: _,
                 log_file: Some(log_file),
+                tmp_dir: _,
             },
         )) = index.find_by_name(connector_name)
         {
@@ -651,6 +680,7 @@ mod local_index {
                 process_id: 1,
                 name: "test_connector".to_owned(),
                 log_file: None,
+                tmp_dir: None,
             });
             index.flush()?;
 
@@ -689,6 +719,7 @@ mod local_index {
                 process_id: 2,
                 name: "test_connector2".to_owned(),
                 log_file: None,
+                tmp_dir: None,
             });
             index.flush()?;
 
