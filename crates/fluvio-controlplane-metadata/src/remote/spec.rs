@@ -11,6 +11,7 @@ use fluvio_protocol::{Encoder, Decoder};
 
 pub struct RemoteSpec {
     pub remote_type: RemoteType,
+    // TODO: we should add auth
     pub key_pair: KeyPair,
 }
 

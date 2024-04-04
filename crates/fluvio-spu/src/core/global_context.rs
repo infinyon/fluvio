@@ -23,8 +23,6 @@ use crate::core::metrics::SpuMetrics;
 use crate::smartengine::SmartEngine;
 
 use super::leader_client::LeaderConnections;
-use super::remote::RemoteLocalStore;
-use super::remote::SharedRemoteLocalStore;
 use super::smartmodule::SmartModuleLocalStore;
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
@@ -41,7 +39,6 @@ pub struct GlobalContext<S> {
     spu_localstore: SharedSpuLocalStore,
     replica_localstore: SharedReplicaLocalStore,
     smartmodule_localstore: SharedSmartModuleLocalStore,
-    remote_localstore: SharedRemoteLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     spu_followers: SharedSpuUpdates,
@@ -73,7 +70,6 @@ where
             spu_localstore: spus.clone(),
             replica_localstore: replicas.clone(),
             smartmodule_localstore: SmartModuleLocalStore::new_shared(),
-            remote_localstore: RemoteLocalStore::new_shared(),
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
@@ -113,15 +109,6 @@ where
 
     pub fn followers_state(&self) -> &FollowersState<S> {
         &self.followers_state
-    }
-
-    pub fn remote_localstore(&self) -> &RemoteLocalStore {
-        &self.remote_localstore
-    }
-
-    #[allow(dead_code)]
-    pub fn remote_localstore_owned(&self) -> SharedRemoteLocalStore {
-        self.remote_localstore.clone()
     }
 
     pub fn followers_state_owned(&self) -> SharedFollowersState<S> {

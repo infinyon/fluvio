@@ -13,13 +13,10 @@ use fluvio_controlplane::sc_api::api::InternalScRequest;
 use fluvio_controlplane::sc_api::register_spu::RegisterSpuResponse;
 use fluvio_controlplane::sc_api::remove::ReplicaRemovedRequest;
 use fluvio_controlplane::sc_api::update_lrs::UpdateLrsRequest;
-use fluvio_controlplane::spu_api::update_remote::RemoteMsg;
-use fluvio_controlplane::spu_api::update_remote::UpdateRemoteRequest;
 use fluvio_controlplane::spu_api::update_replica::UpdateReplicaRequest;
 use fluvio_controlplane::spu_api::update_smartmodule::UpdateSmartModuleRequest;
 use fluvio_controlplane::spu_api::update_spu::UpdateSpuRequest;
 use fluvio_controlplane_metadata::message::Message;
-use fluvio_sc_schema::remote::RemoteSpec;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::ChangeListener;
 use tracing::warn;
@@ -132,7 +129,6 @@ where
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
     let mut sm_spec_listener = context.smartmodules().change_listener();
-    let mut rm_cluster_listener = context.remote().change_listener();
 
     // send initial changes
 
@@ -145,7 +141,6 @@ where
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_smartmodule_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
-        send_remote_changes(&mut rm_cluster_listener, &mut sink, spu_id).await?;
 
         trace!(spu_id, "waiting for SPU channel");
 
@@ -198,11 +193,6 @@ where
                 debug!("partition lister changed");
 
             }
-
-            _ = rm_cluster_listener.listen() => {
-                debug!("remote cluster lister changed");
-            },
-
         }
     }
 
@@ -460,56 +450,3 @@ async fn send_smartmodule_changes<C: MetadataItem>(
     Ok(())
 }
 
-#[instrument(level = "trace", skip(sink))]
-async fn send_remote_changes<C: MetadataItem>(
-    listener: &mut ChangeListener<RemoteSpec, C>,
-    sink: &mut FluvioSink,
-    spu_id: SpuId,
-) -> Result<(), SocketError> {
-    use crate::stores::ChangeFlag;
-
-    if !listener.has_change() {
-        trace!("changes is empty, skipping");
-        return Ok(());
-    }
-
-    let changes = listener
-        .sync_changes_with_filter(&ChangeFlag {
-            spec: true,
-            status: false,
-            meta: true,
-        })
-        .await;
-    if changes.is_empty() {
-        trace!("spec changes is empty, skipping");
-        return Ok(());
-    }
-
-    let epoch = changes.epoch;
-
-    let is_sync_all = changes.is_sync_all();
-    let (updates, deletes) = changes.parts();
-
-    let request = if is_sync_all {
-        UpdateRemoteRequest::with_all(epoch, updates.into_iter().map(|sm| sm.into()).collect())
-    } else {
-        let mut changes: Vec<RemoteMsg> = updates
-            .into_iter()
-            .map(|sm| Message::update(sm.into()))
-            .collect();
-        let mut deletes = deletes
-            .into_iter()
-            .map(|sm| Message::delete(sm.into()))
-            .collect();
-        changes.append(&mut deletes);
-        UpdateRemoteRequest::with_changes(epoch, changes)
-    };
-
-    debug!(?request, "sending remote to spu");
-
-    let mut message = RequestMessage::new_request(request);
-    message.get_mut_header().set_client_id("sc");
-
-    sink.send_request(&message).await?;
-    Ok(())
-}

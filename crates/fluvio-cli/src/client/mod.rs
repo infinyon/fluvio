@@ -8,7 +8,7 @@ mod smartmodule;
 mod smartmodule_invocation;
 #[cfg(feature = "unstable")]
 mod consumer;
-mod mirroring;
+mod core;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -50,7 +50,7 @@ mod cmd {
 
     #[cfg(feature = "unstable")]
     use super::consumer::ConsumerCmd;
-    use super::mirroring::core::CoreCmd;
+    use super::core::CoreCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;

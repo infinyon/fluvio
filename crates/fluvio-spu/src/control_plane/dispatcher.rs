@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use fluvio_controlplane::spu_api::update_remote::UpdateRemoteRequest;
 use tracing::{info, trace, error, debug, warn, instrument};
 use tokio::select;
 use futures_util::stream::StreamExt;
@@ -30,7 +29,6 @@ struct DispatcherCounter {
     pub spu_changes: u64,     // spu changes received from sc
     pub reconnect: u64,       // number of reconnect to sc
     pub smartmodule: u64,     // number of sm updates from sc
-    pub remote: u64,          // number of remote updates from sc
 }
 
 /// Controller for handling connection to SC
@@ -152,13 +150,6 @@ impl ScDispatcher<FileReplica> {
                             self.counter.smartmodule += 1;
                             if let Err(err) = self.handle_update_smartmodule_request(request).await {
                                 error!(%err, "error handling update SmartModule request", );
-                                break;
-                            }
-                        },
-                        Some(Ok(InternalSpuRequest::UpdateRemoteRequest(request))) => {
-                            self.counter.remote += 1;
-                            if let Err(err) = self.handle_remote_request(request) {
-                                error!(%err, "error handling update remote cluster request", );
                                 break;
                             }
                         },
@@ -364,44 +355,6 @@ impl ScDispatcher<FileReplica> {
         };
 
         debug!(actions = actions.count(), "finished SmartModule update");
-
-        Ok(())
-    }
-
-    ///
-    /// Handle Remote update sent by SC
-    ///
-    #[instrument(skip(self, req_msg), name = "update_remote_request")]
-    fn handle_remote_request(
-        &mut self,
-        req_msg: RequestMessage<UpdateRemoteRequest>,
-    ) -> anyhow::Result<()> {
-        let (_, request) = req_msg.get_header_request();
-
-        debug!( message = ?request,"starting remote cluster update");
-
-        let actions = if !request.all.is_empty() {
-            debug!(
-                epoch = request.epoch,
-                item_count = request.all.len(),
-                "received remote cluster sync all"
-            );
-            trace!("received spu all items: {:#?}", request.all);
-            self.ctx.remote_localstore().sync_all(request.all)
-        } else {
-            debug!(
-                epoch = request.epoch,
-                item_count = request.changes.len(),
-                "received remote cluster changes"
-            );
-            trace!(
-                "received remote cluster change items: {:#?}",
-                request.changes
-            );
-            self.ctx.remote_localstore().apply_changes(request.changes)
-        };
-
-        debug!(actions = actions.count(), "finished remote cluster update");
 
         Ok(())
     }
