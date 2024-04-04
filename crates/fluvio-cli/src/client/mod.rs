@@ -6,7 +6,7 @@ mod partition;
 mod tableformat;
 mod smartmodule;
 mod smartmodule_invocation;
-mod mirroring;
+mod core;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -46,7 +46,7 @@ mod cmd {
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
 
-    use super::mirroring::core::CoreCmd;
+    use super::core::CoreCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;

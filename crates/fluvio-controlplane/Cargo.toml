@@ -19,4 +19,3 @@ tracing = { workspace = true }
 fluvio-types = { workspace = true  }
 fluvio-controlplane-metadata = { workspace = true  }
 fluvio-protocol = { workspace = true,  features = ["api"]}
-fluvio-stream-model = { workspace = true }

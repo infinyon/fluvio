@@ -2552,7 +2552,6 @@ version = "0.0.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-protocol",
- "fluvio-stream-model",
  "fluvio-types",
  "tracing",
 ]
@@ -2836,7 +2835,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.22.1"
+version = "0.22.2"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
