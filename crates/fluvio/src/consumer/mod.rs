@@ -445,7 +445,7 @@ where
                                 };
                             }
                             Err(err) => {
-                                error!("stream to server channel broken: {err:?}");
+                                debug!("stream to server channel closed: {err:?}");
                                 break;
                             }
                         }
