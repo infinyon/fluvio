@@ -1427,7 +1427,7 @@ jobs:
         if: ${{ contains(needs.*.result, 'failure') }}
         run: exit 1
       - name: Don't allow skipped
-        if: ${{ contains(needs.*.result, 'skipped') }}
+        if: ${{ contains(needs.*.result, 'skipped')  && github.event_name == 'merge_group' }}
         run: exit 1
       - name: Successful test and build
         if: ${{ !(contains(needs.*.result, 'failure')) }}
