@@ -6,7 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_controlplane_metadata::{topic::TopicSpec, upstream::UpstreamSpec};
 use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 
 #[derive(Debug, Default)]
@@ -16,8 +16,11 @@ use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
     serde(rename_all = "camelCase")
 )]
 pub struct EdgeMetadata {
+    // TODO: remove it, we should get the topics from the upstreams
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8Obj<TopicSpec>>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub upstreams: Vec<K8Obj<UpstreamSpec>>,
 }
 
 /// Configuration used to inihilize a Cluster locally. This data is copied to
@@ -29,14 +32,18 @@ pub struct EdgeMetadata {
     serde(rename_all = "camelCase")
 )]
 pub struct EdgeMetadataExport {
+    // TODO: remove it, we should get the topics from the upstreams
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8ObjExport<TopicSpec>>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub upstream: Vec<K8ObjExport<UpstreamSpec>>,
 }
 
 impl EdgeMetadataExport {
-    pub fn new(topics: Vec<K8Obj<TopicSpec>>) -> Self {
+    pub fn new(upstream: Vec<K8Obj<UpstreamSpec>>) -> Self {
         Self {
-            topics: topics.into_iter().map(|t| t.into()).collect(),
+            topics: vec![],
+            upstream: upstream.into_iter().map(|u| u.into()).collect(),
         }
     }
 }
@@ -129,23 +136,23 @@ mod tests {
     #[test]
     fn validates_json_config() {
         let config = r#"{
-            "topics": [
-              {
-                "apiVersion": "fluvio.infinyon.com/v2",
-                "kind": "Topic",
+            "upstreams": [
+                {
+                "apiVersion": "fluvio.infinyon.com/v1",
+                "kind": "Upstream",
                 "metadata": {
-                  "name": "my-topic"
+                    "name": "upstream"
                 },
                 "spec": {
-                  "replicas": {
-                    "computed": {
-                      "partitions": 1,
-                      "replicationFactor": 1,
-                      "ignoreRackAssignment": false
+                    "sourceId": "edge1",
+                    "target": {
+                    "endpoint": "localhost:30004"
+                    },
+                    "keyPair": {
+                    "publicKey": ""
                     }
-                  }
                 }
-              }
+                }
             ]
           }
           "#;
@@ -156,6 +163,6 @@ mod tests {
 
         let config: EdgeMetadata = config.unwrap().into();
 
-        assert!(config.topics.len() == 1);
+        assert!(config.upstreams.len() == 1);
     }
 }

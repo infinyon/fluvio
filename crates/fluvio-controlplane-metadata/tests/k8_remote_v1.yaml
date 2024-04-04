@@ -1,0 +1,11 @@
+# full V2 Kubernets CRD
+# 
+apiVersion: fluvio.infinyon.com/v1
+kind: Remote
+metadata:
+  name: onshore
+spec:
+  remoteType: Core
+  keyPair:
+    publicKey: "public key: TJ33a"
+    privateKey: "private key: AC2333"
