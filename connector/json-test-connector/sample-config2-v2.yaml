@@ -1,0 +1,24 @@
+apiVersion: 0.2.0
+meta:
+  version: 0.1.0
+  name: my-json-test-connector2
+  type: json-test-source
+  topic:
+    version: 0.1.0
+    meta:
+      name: test-full-topic
+    partition:
+      count: 1
+      max-size: 4.0 KB
+      replication: 1
+      ignore-rack-assignment: true
+    retention:
+      time: 2m
+      segment-size: 2.0 KB
+    compression:
+      type: Lz4
+json:
+  interval: 5
+  timeout: 15
+  template: '{"template":"test"}'
+

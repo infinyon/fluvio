@@ -16,27 +16,25 @@ setup_file() {
 
     CONNECTOR_DIR="$(pwd)/connector/sink-test-connector"
     export CONNECTOR_DIR
-    LOG_PATH="$CONNECTOR_DIR/sink-test-connector.log"
-    export LOG_PATH
-
-}
-
-setup() {
-    rm $LOG_PATH | true
 }
 
 @test "Topic with 2 partitions. Consumer reads one partition" {
     # Prepare config
     TOPIC_NAME=$(random_string)
     debug_msg "Topic name: $TOPIC_NAME"
+    CONNECTOR_NAME="my-$TOPIC_NAME"
+    debug_msg "Connector name: $CONNECTOR_NAME"
+    export LOG_PATH="$CONNECTOR_NAME.log"
+    debug_msg "Log path: $LOG_PATH"
+
     CONFIG_PATH="$TEST_DIR/$TOPIC_NAME.yaml"
     cat <<EOF >$CONFIG_PATH
 apiVersion: 0.2.0
 meta:
   version: 0.1.0
-  name: $TOPIC_NAME
+  name: $CONNECTOR_NAME
   type: test-sink
-  topic: 
+  topic:
     meta:
       name: $TOPIC_NAME
     partition:
@@ -52,7 +50,7 @@ EOF
     run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start --config $CONFIG_PATH --log-level info
     assert_success
     assert_output --partial "Connector runs with process id"
-    
+
     wait_for_line_in_file "succesfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
@@ -65,7 +63,7 @@ EOF
 
     refute_output --partial 'Received record: 1'
 
-    run $CDK_BIN deploy shutdown --name $TOPIC_NAME
+    run $CDK_BIN deploy shutdown --name $CONNECTOR_NAME
     assert_success
 }
 
@@ -73,14 +71,19 @@ EOF
     # Prepare config
     TOPIC_NAME=$(random_string)
     debug_msg "Topic name: $TOPIC_NAME"
+    CONNECTOR_NAME="my-$TOPIC_NAME"
+    debug_msg "Connector name: $CONNECTOR_NAME"
+    export LOG_PATH="$CONNECTOR_NAME.log"
+    debug_msg "Log path: $LOG_PATH"
+
     CONFIG_PATH="$TEST_DIR/$TOPIC_NAME.yaml"
     cat <<EOF >$CONFIG_PATH
 apiVersion: 0.2.0
 meta:
   version: 0.1.0
-  name: $TOPIC_NAME
+  name: $CONNECTOR_NAME
   type: test-sink
-  topic: 
+  topic:
     meta:
       name: $TOPIC_NAME
     partition:
@@ -96,7 +99,7 @@ EOF
     run $CDK_BIN deploy --target x86_64-unknown-linux-gnu  start --config $CONFIG_PATH --log-level info
     assert_success
     assert_output --partial "Connector runs with process id"
-    
+
     wait_for_line_in_file "succesfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
@@ -106,7 +109,7 @@ EOF
     wait_for_line_in_file "Received record: 4" $LOG_PATH 30
     wait_for_line_in_file "Received record: 1" $LOG_PATH 2
 
-    run $CDK_BIN deploy shutdown --name $TOPIC_NAME
+    run $CDK_BIN deploy shutdown --name $CONNECTOR_NAME
     assert_success
 }
 
@@ -114,20 +117,25 @@ EOF
     # Prepare config
     TOPIC_NAME=$(random_string)
     debug_msg "Topic name: $TOPIC_NAME"
+    CONNECTOR_NAME="my-$TOPIC_NAME"
+    debug_msg "Connector name: $CONNECTOR_NAME"
+    export LOG_PATH="$CONNECTOR_NAME.log"
+    debug_msg "Log path: $LOG_PATH"
+
     CONFIG_PATH="$TEST_DIR/$TOPIC_NAME.yaml"
     cat <<EOF >$CONFIG_PATH
 apiVersion: 0.2.0
 meta:
   version: 0.1.0
-  name: $TOPIC_NAME
+  name: $CONNECTOR_NAME
   type: test-sink
-  topic: 
+  topic:
     meta:
       name: $TOPIC_NAME
     partition:
       count: 3
   consumer:
-    partition: 
+    partition:
       - 1
       - 2
 custom:
@@ -139,7 +147,7 @@ EOF
     run $CDK_BIN deploy --target x86_64-unknown-linux-gnu  start --config $CONFIG_PATH --log-level info
     assert_success
     assert_output --partial "Connector runs with process id"
-    
+
     wait_for_line_in_file "succesfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
@@ -153,7 +161,7 @@ EOF
     run cat $LOG_PATH
     refute_output --partial 'Received record: 3'
 
-    run $CDK_BIN deploy shutdown --name $TOPIC_NAME
+    run $CDK_BIN deploy shutdown --name $CONNECTOR_NAME
     assert_success
 }
 
