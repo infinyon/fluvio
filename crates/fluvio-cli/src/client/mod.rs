@@ -8,6 +8,7 @@ mod smartmodule;
 mod smartmodule_invocation;
 mod consumer;
 mod core;
+mod edge;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -49,6 +50,7 @@ mod cmd {
 
     use super::consumer::ConsumerCmd;
     use super::core::CoreCmd;
+    use super::edge::EdgeCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;
@@ -147,6 +149,9 @@ mod cmd {
         //TODO: Remove hide when we have this mirroring complete
         #[command(subcommand, name = "core", hide = true)]
         Core(Box<CoreCmd>),
+
+        #[command(subcommand, name = "edge", hide = true)]
+        Edge(Box<EdgeCmd>),
     }
 
     impl FluvioCmd {
@@ -183,6 +188,9 @@ mod cmd {
                 }
                 Self::Core(core) => {
                     core.process(out, target).await?;
+                }
+                Self::Edge(edge) => {
+                    edge.process(out, target).await?;
                 }
             }
 

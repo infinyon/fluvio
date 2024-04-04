@@ -6,7 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use fluvio_controlplane_metadata::{remote::RemoteSpec, topic::TopicSpec};
+use fluvio_controlplane_metadata::{remote::Core, topic::TopicSpec};
 use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 
 #[derive(Debug, Default)]
@@ -20,7 +20,7 @@ pub struct EdgeMetadata {
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8Obj<TopicSpec>>,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub remotes: Vec<K8Obj<RemoteSpec>>,
+    pub core: Core,
 }
 
 /// Configuration used to inihilize a Cluster locally. This data is copied to
@@ -36,14 +36,14 @@ pub struct EdgeMetadataExport {
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8ObjExport<TopicSpec>>,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub remotes: Vec<K8ObjExport<RemoteSpec>>,
+    pub core: Core,
 }
 
 impl EdgeMetadataExport {
-    pub fn new(remote: Vec<K8Obj<RemoteSpec>>) -> Self {
+    pub fn new(core: Core) -> Self {
         Self {
             topics: vec![],
-            remotes: remote.into_iter().map(|u| u.into()).collect(),
+            core,
         }
     }
 }
@@ -136,22 +136,11 @@ mod tests {
     #[test]
     fn validates_json_config() {
         let config = r#"{
-            "remotes": [
-                {
-                    "apiVersion": "fluvio.infinyon.com/v1",
-                    "kind": "Remote",
-                    "metadata": {
-                        "name": "remote"
-                    },
-                    "spec": {
-                        "remoteType": {
-                            "edge": {
-                                "id": "edge1"
-                            }
-                        }
-                    }
-                }
-            ]
+            "core": {
+                "id": "core",
+                "edgeId": "edge1",
+                "publicEndpoint": "localhost:30003"
+            }
           }
           "#;
 
@@ -161,6 +150,8 @@ mod tests {
 
         let config: EdgeMetadata = config.unwrap().into();
 
-        assert!(config.remotes.len() == 1);
+        assert_eq!(config.core.id, "core");
+        assert_eq!(config.core.edge_id, "edge1");
+        assert_eq!(config.core.public_endpoint, "localhost:30003");
     }
 }
