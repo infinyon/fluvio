@@ -81,7 +81,7 @@ spec:
                         age:
                           type: string
                           nullable: true
-                hidden:
+                system:
                   type: boolean
             status:
               type: object

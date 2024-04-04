@@ -32,7 +32,7 @@ pub struct PartitionSpec {
     pub deduplication: Option<Deduplication>,
     #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 13)]
-    pub hidden: bool,
+    pub system: bool,
 }
 
 impl PartitionSpec {
@@ -55,7 +55,7 @@ impl PartitionSpec {
             storage: topic.get_storage().cloned(),
             compression_type: topic.get_compression_type().clone(),
             deduplication: topic.get_deduplication().cloned(),
-            hidden: topic.is_hidden(),
+            system: topic.is_system(),
         }
     }
 

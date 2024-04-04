@@ -249,8 +249,18 @@ impl FluvioAdmin {
         let filter_list: Vec<ListFilter> = filters.into_iter().map(Into::into).collect();
         let list_request: ListRequest<S> = ListRequest::new(filter_list, summary);
 
+        self.list_with_config(list_request).await
+    }
+
+    #[instrument(skip(self, config))]
+    pub async fn list_with_config<S, F>(&self, config: ListRequest<S>) -> Result<Vec<Metadata<S>>>
+    where
+        S: AdminSpec,
+        ListFilter: From<F>,
+        S::Status: Encoder + Decoder + Debug,
+    {
         let response = self
-            .send_receive_admin::<ObjectApiListRequest, _>(list_request)
+            .send_receive_admin::<ObjectApiListRequest, _>(config)
             .await?;
         trace!("list response: {:#?}", response);
         response
