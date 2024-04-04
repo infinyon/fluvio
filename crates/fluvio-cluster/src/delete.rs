@@ -193,11 +193,15 @@ impl ClusterUninstaller {
                     } {
                         Ok(_) => {
                             debug!("Removed {}: {}", tag, path_ref.display());
-                            if let Some(pb) = pb { pb.println(format!("Removed {}", tag)) }
+                            if let Some(pb) = pb {
+                                pb.println(format!("Removed {}", tag))
+                            }
                         }
                         Err(err) => {
                             warn!("{} can't be removed: {}", tag, err);
-                            if let Some(pb) = pb { pb.println(format!("{tag}, can't be removed: {err}")) }
+                            if let Some(pb) = pb {
+                                pb.println(format!("{tag}, can't be removed: {err}"))
+                            }
                         }
                     }
                 }

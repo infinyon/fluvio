@@ -32,9 +32,7 @@ impl ResumeOpt {
 
         let resume_result = match installation_type {
             InstallationType::Local | InstallationType::ReadOnly => {
-                let resume = LocalResume {
-                    pb_factory,
-                };
+                let resume = LocalResume { pb_factory };
                 resume.resume().await
             }
             _ => {
