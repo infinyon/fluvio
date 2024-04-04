@@ -4,11 +4,16 @@
 //! Reconcile Topics
 
 use fluvio_controlplane_metadata::spu::SpuSpec;
+use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
+use fluvio_controlplane_metadata::topic::CleanupPolicy;
+use fluvio_controlplane_metadata::topic::SegmentBasedPolicy;
+use fluvio_controlplane_metadata::topic::TopicStorageConfig;
+use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::ChangeListener;
 use fluvio_stream_model::store::k8::K8MetaItem;
-use tracing::debug;
-use tracing::instrument;
+use fluvio_types::defaults::STORAGE_RETENTION_SECONDS;
+use tracing::{info, instrument, trace, debug};
 
 use fluvio_future::task::spawn;
 
@@ -19,6 +24,10 @@ use crate::stores::StoreContext;
 
 use super::actions::TopicActions;
 use super::reducer::TopicReducer;
+
+const OFFSET_TOPIC_SEGMENT_SIZE: u32 = 512_000_000; // 512MB
+const OFFSET_TOPIC_PARTITION_SIZE: u64 = OFFSET_TOPIC_SEGMENT_SIZE as u64 * 4; // 2GB
+const OFFSET_TOPIC_RETENTION_SEC: u32 = STORAGE_RETENTION_SECONDS; // 7 days
 
 #[derive(Debug)]
 pub struct TopicController<C: MetadataItem = K8MetaItem> {
@@ -66,6 +75,7 @@ impl<C: MetadataItem> TopicController<C> {
 
         let mut topics_listener = self.topics.change_listener();
         let mut spus_listener = self.spus.change_listener();
+
         loop {
             self.sync_topics(&mut topics_listener).await;
             self.sync_spus(&mut spus_listener).await;
@@ -76,9 +86,11 @@ impl<C: MetadataItem> TopicController<C> {
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
+                _ = sleep(Duration::from_secs(15)) => {
+                    self.ensure_offsets_topic_exists().await;
+                },
                 _ = topics_listener.listen() => {
                     debug!("detected topic changes");
-
                 }
                 _ = spus_listener.listen() => {
                     debug!("detected spu changes");
@@ -150,6 +162,36 @@ impl<C: MetadataItem> TopicController<C> {
             for action in actions.partitions.into_iter() {
                 self.partitions.send_action(action).await;
             }
+        }
+    }
+
+    async fn ensure_offsets_topic_exists(&mut self) {
+        if self
+            .topics
+            .store()
+            .read()
+            .await
+            .values()
+            .any(|value| value.key().eq(CONSUMER_STORAGE_TOPIC))
+        {
+            trace!(CONSUMER_STORAGE_TOPIC, "topic exists");
+        } else {
+            let mut spec = TopicSpec::new_computed(1, 1, None);
+            spec.set_system(true);
+            spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
+                time_in_seconds: OFFSET_TOPIC_RETENTION_SEC,
+            }));
+            spec.set_storage(TopicStorageConfig {
+                segment_size: Some(OFFSET_TOPIC_SEGMENT_SIZE),
+                max_partition_size: Some(OFFSET_TOPIC_PARTITION_SIZE),
+            });
+            self.topics
+                .send_action(WSAction::UpdateSpec((
+                    CONSUMER_STORAGE_TOPIC.to_string(),
+                    spec,
+                )))
+                .await;
+            info!(CONSUMER_STORAGE_TOPIC, "topic created");
         }
     }
 }
