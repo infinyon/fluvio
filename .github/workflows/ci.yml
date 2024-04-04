@@ -1393,12 +1393,11 @@ jobs:
           gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.rust-target }}.zip"
 
   # Job that follows the success of all required jobs in this workflow.
-  # Used by Bors to detect that all required jobs have completed successfully
   done:
     name: Done
     permissions:
       contents: write
-    if: github.event_name == 'merge_group'
+    if: always()
     needs:
       - check
       - check_wasm
@@ -1415,8 +1414,24 @@ jobs:
       - publish_github_helm_pkg
     runs-on: ubuntu-latest
     steps:
-      - name: Done
-        run: echo "Done!"
+      - name: Dump needs context
+        env:
+          CONTEXT: ${{ toJson(needs) }}
+        run: |
+          echo -e "\033[33;1;4mDump context\033[0m"
+          echo -e "$CONTEXT\n"
+      - name: Report failure on cancellation
+        if: ${{ contains(needs.*.result, 'cancelled') || cancelled() }}
+        run: exit 1
+      - name: Failing test and build
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
+      - name: Don't allow skipped
+        if: ${{ contains(needs.*.result, 'skipped') }}
+        run: exit 1
+      - name: Successful test and build
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        run: exit 0
       - name: Repo dispatch ci-success
         uses: peter-evans/repository-dispatch@v3
         with:
