@@ -193,6 +193,7 @@ where
                 debug!("partition lister changed");
 
             }
+
         }
     }
 
@@ -449,4 +450,3 @@ async fn send_smartmodule_changes<C: MetadataItem>(
     sink.send_request(&message).await?;
     Ok(())
 }
-

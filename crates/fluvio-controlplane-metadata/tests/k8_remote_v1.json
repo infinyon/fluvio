@@ -10,11 +10,11 @@
         "uid": "0115f1f9-a17b-446a-8b9d-45ac67a4627b"
     },
     "spec": {
-        "keyPair": {
-            "privateKey": "private key: AC2333",
-            "publicKey": "public key: TJ33a"
-        },
-        "remoteType": "Edge"
+        "remoteType": {
+            "edge": {
+                "id": "offshore-edge-1"
+            }
+        }
     }
 }
 

@@ -18,8 +18,7 @@ impl UnregisterOpt {
     ) -> Result<()> {
         let admin = get_admin(cluster_target).await?;
         admin.delete::<RemoteSpec>(&self.name).await?;
-
-        println!("Edge cluster {} was unregistered", self.name);
+        println!("edge cluster {:?} was unregistered", self.name);
         Ok(())
     }
 }

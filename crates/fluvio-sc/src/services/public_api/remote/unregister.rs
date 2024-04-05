@@ -24,8 +24,8 @@ pub async fn handle_unregister_remote<AC: AuthContext, C: MetadataItem>(
     if (ctx.remote().store().value(&name).await).is_none() {
         return Ok(Status::new(
             name.clone(),
-            ErrorCode::Other("remote cluster not found".to_owned()),
-            Some(format!("remote cluster {} not found", name)),
+            ErrorCode::RemoteNotFound,
+            Some(format!("remote cluster {:?} not found", name)),
         ));
     }
 

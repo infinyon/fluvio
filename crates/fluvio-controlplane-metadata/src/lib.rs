@@ -5,10 +5,7 @@ pub mod spg;
 pub mod smartmodule;
 pub mod tableformat;
 pub mod message;
-
-// #[cfg(feature = "mirroing")]
 pub mod remote;
-pub mod upstream;
 
 pub use fluvio_stream_model::core;
 
@@ -36,7 +33,6 @@ pub mod extended {
         TableFormat,
         DerivedStream,
         Remote,
-        Upstream,
     }
 
     pub trait SpecExt: Spec {

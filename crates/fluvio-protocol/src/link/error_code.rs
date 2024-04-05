@@ -207,6 +207,14 @@ pub enum ErrorCode {
     #[fluvio(tag = 10001)]
     #[error("Deduplication SmartModule name is invalid: {0}")]
     DeduplicationSmartModuleNameInvalid(String),
+
+    // Remote
+    #[fluvio(tag = 11001)]
+    #[error("the remote was not found")]
+    RemoteNotFound,
+    #[fluvio(tag = 11002)]
+    #[error("the remote already exists")]
+    RemoteAlreadyExists,
 }
 
 impl ErrorCode {

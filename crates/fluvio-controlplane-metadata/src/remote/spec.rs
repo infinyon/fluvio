@@ -8,11 +8,18 @@ use fluvio_protocol::{Encoder, Decoder};
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-
 pub struct RemoteSpec {
     pub remote_type: RemoteType,
     // TODO: we should add auth
-    pub key_pair: KeyPair,
+}
+
+impl RemoteSpec {
+    pub fn type_name(&self) -> &str {
+        match &self.remote_type {
+            RemoteType::Edge(_) => "edge",
+            RemoteType::Core(_) => "core",
+        }
+    }
 }
 
 impl fmt::Display for RemoteSpec {
@@ -21,33 +28,50 @@ impl fmt::Display for RemoteSpec {
     }
 }
 
-#[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum RemoteType {
-    #[default]
+    #[cfg_attr(feature = "use_serde", serde(rename = "edge"))]
     #[fluvio(tag = 0)]
-    Edge,
+    Edge(Edge),
+    #[cfg_attr(feature = "use_serde", serde(rename = "core"))]
     #[fluvio(tag = 1)]
-    Core,
+    Core(Core),
 }
 
 impl fmt::Display for RemoteType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = match self {
-            RemoteType::Edge => "edge",
-            RemoteType::Core => "core",
+            RemoteType::Edge(edge) => format!("edge: {}", edge.id),
+            RemoteType::Core(core) => format!("core: {}", core.id),
         };
         write!(f, "{}", ts)
     }
 }
 
-#[derive(Decoder, Default, Encoder, Debug, Clone, Eq, PartialEq)]
+impl Default for RemoteType {
+    fn default() -> Self {
+        Self::Edge(Edge::default())
+    }
+}
+
+#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct KeyPair {
-    pub public_key: String,
-    pub private_key: String,
+pub struct Edge {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Default, Eq, PartialEq, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct Core {
+    pub id: String,
+    pub public_endpoint: String,
 }

@@ -6,7 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use fluvio_controlplane_metadata::{topic::TopicSpec, upstream::UpstreamSpec};
+use fluvio_controlplane_metadata::{remote::RemoteSpec, topic::TopicSpec};
 use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 
 #[derive(Debug, Default)]
@@ -16,11 +16,11 @@ use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
     serde(rename_all = "camelCase")
 )]
 pub struct EdgeMetadata {
-    // TODO: remove it, we should get the topics from the upstreams
+    // TODO: remove it, we should get the topics from the upstreams/core
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8Obj<TopicSpec>>,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub upstreams: Vec<K8Obj<UpstreamSpec>>,
+    pub remotes: Vec<K8Obj<RemoteSpec>>,
 }
 
 /// Configuration used to inihilize a Cluster locally. This data is copied to
@@ -32,18 +32,18 @@ pub struct EdgeMetadata {
     serde(rename_all = "camelCase")
 )]
 pub struct EdgeMetadataExport {
-    // TODO: remove it, we should get the topics from the upstreams
+    // TODO: remove it, we should get the topics from the upstreams/core
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8ObjExport<TopicSpec>>,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub upstream: Vec<K8ObjExport<UpstreamSpec>>,
+    pub remotes: Vec<K8ObjExport<RemoteSpec>>,
 }
 
 impl EdgeMetadataExport {
-    pub fn new(upstream: Vec<K8Obj<UpstreamSpec>>) -> Self {
+    pub fn new(remote: Vec<K8Obj<RemoteSpec>>) -> Self {
         Self {
             topics: vec![],
-            upstream: upstream.into_iter().map(|u| u.into()).collect(),
+            remotes: remote.into_iter().map(|u| u.into()).collect(),
         }
     }
 }
@@ -136,22 +136,20 @@ mod tests {
     #[test]
     fn validates_json_config() {
         let config = r#"{
-            "upstreams": [
+            "remotes": [
                 {
-                "apiVersion": "fluvio.infinyon.com/v1",
-                "kind": "Upstream",
-                "metadata": {
-                    "name": "upstream"
-                },
-                "spec": {
-                    "sourceId": "edge1",
-                    "target": {
-                    "endpoint": "localhost:30004"
+                    "apiVersion": "fluvio.infinyon.com/v1",
+                    "kind": "Remote",
+                    "metadata": {
+                        "name": "remote"
                     },
-                    "keyPair": {
-                    "publicKey": ""
+                    "spec": {
+                        "remoteType": {
+                            "edge": {
+                                "id": "edge1"
+                            }
+                        }
                     }
-                }
                 }
             ]
           }
@@ -163,6 +161,6 @@ mod tests {
 
         let config: EdgeMetadata = config.unwrap().into();
 
-        assert!(config.upstreams.len() == 1);
+        assert!(config.remotes.len() == 1);
     }
 }

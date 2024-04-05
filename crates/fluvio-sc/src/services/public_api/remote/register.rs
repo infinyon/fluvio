@@ -13,7 +13,10 @@ pub async fn handle_register_remote<AC: AuthContext, C: MetadataItem>(
     let (create, spec) = req.clone().parts();
     let name = create.name;
     info!(name = name, "remote-cluster register");
-    if auth_ctx.global_ctx.config().read_only_metadata {
+
+    let ctx = auth_ctx.global_ctx.clone();
+
+    if ctx.config().read_only_metadata {
         info!(req=?req, "change requested in read-only config");
         return Ok(Status::new(
             name.clone(),
@@ -21,7 +24,14 @@ pub async fn handle_register_remote<AC: AuthContext, C: MetadataItem>(
             Some(String::from("read-only error")),
         ));
     }
-    let ctx = auth_ctx.global_ctx.clone();
+
+    if (ctx.remote().store().value(&name).await).is_some() {
+        return Ok(Status::new(
+            name.clone(),
+            ErrorCode::RemoteAlreadyExists,
+            Some(format!("remote cluster {:?} already exists", name)),
+        ));
+    }
     ctx.remote()
         .create_spec(name.clone(), spec)
         .await
