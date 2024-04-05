@@ -4,7 +4,7 @@ use clap::Parser;
 use fluvio_controlplane_metadata::remote::{RemoteSpec, RemoteType};
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::Terminal;
-use fluvio_sc_schema::remote::Core;
+use fluvio_sc_schema::remote::Edge;
 
 #[derive(Debug, Parser)]
 pub struct RegisterOpt {
@@ -22,14 +22,13 @@ impl RegisterOpt {
             .await?
             .admin()
             .await;
-        let public_endpoint = fluvio_config.endpoint;
 
         let spec = RemoteSpec {
-            remote_type: RemoteType::Core(Core {
+            remote_type: RemoteType::Edge(Edge {
                 id: self.name.clone(),
-                public_endpoint,
             }),
         };
+
         admin.create(self.name.clone(), false, spec).await?;
         println!("edge cluster {:?} was registered", self.name);
         Ok(())
