@@ -111,7 +111,9 @@ spec:
                           minimum: 0
                         age:
                           type: string
-                          nullable: true  
+                          nullable: true
+                system:
+                  type: boolean
       subresources:
           status: {}
       additionalPrinterColumns:

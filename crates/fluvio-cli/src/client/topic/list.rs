@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
+use fluvio_sc_schema::objects::ListRequest;
 use tracing::debug;
 use anyhow::Result;
 
@@ -25,6 +26,9 @@ pub struct ListTopicsOpt {
     /// Output
     #[clap(flatten)]
     output: OutputFormat,
+    /// Show system topics only
+    #[arg(long, short, required = false)]
+    system: bool,
 }
 
 impl ListTopicsOpt {
@@ -33,7 +37,9 @@ impl ListTopicsOpt {
         debug!("list topics {:#?} ", output_type);
         let admin = fluvio.admin().await;
 
-        let topics = admin.all::<TopicSpec>().await?;
+        let topics = admin
+            .list_with_config::<TopicSpec, String>(ListRequest::default().system(self.system))
+            .await?;
         display::format_response_output(out, topics, output_type)?;
         Ok(())
     }
@@ -43,7 +49,7 @@ mod display {
 
     use std::time::Duration;
 
-    use humantime::{format_duration};
+    use humantime::format_duration;
     use comfy_table::{Row, Cell, CellAlignment};
     use serde::Serialize;
 

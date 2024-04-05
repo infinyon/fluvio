@@ -13,6 +13,7 @@ use crate::services::auth::AuthServiceContext;
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_topics_request<AC: AuthContext, C: MetadataItem>(
     filters: ListFilters,
+    system: bool,
     auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<ListResponse<TopicSpec>> {
     debug!("retrieving topic list: {:#?}", filters);
@@ -37,6 +38,7 @@ pub async fn handle_fetch_topics_request<AC: AuthContext, C: MetadataItem>(
         .read()
         .await
         .values()
+        .filter(|value| value.inner().spec().is_system() == system)
         .filter_map(|value| {
             if filters.filter(value.key()) {
                 Some(value.inner().clone().into())

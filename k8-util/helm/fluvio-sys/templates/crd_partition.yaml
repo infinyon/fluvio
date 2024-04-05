@@ -81,6 +81,8 @@ spec:
                         age:
                           type: string
                           nullable: true
+                system:
+                  type: boolean
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

@@ -30,7 +30,8 @@ pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
 
     let response = if let Some(req) = req.downcast()? as Option<ListRequest<TopicSpec>> {
         ObjectApiListResponse::try_encode_from(
-            super::topic::handle_fetch_topics_request(req.name_filters, auth_ctx).await?,
+            super::topic::handle_fetch_topics_request(req.name_filters, req.system, auth_ctx)
+                .await?,
             header.api_version(),
         )?
     } else if let Some(req) = req.downcast()? as Option<ListRequest<SpuSpec>> {
@@ -50,7 +51,7 @@ pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
         )?
     } else if let Some(req) = req.downcast()? as Option<ListRequest<PartitionSpec>> {
         ObjectApiListResponse::try_encode_from(
-            super::partition::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            super::partition::handle_fetch_request(req.name_filters, req.system, auth_ctx).await?,
             header.api_version(),
         )?
     } else if let Some(req) = req.downcast()? as Option<ListRequest<SmartModuleSpec>> {
