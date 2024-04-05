@@ -207,6 +207,9 @@ cli-fluvio-smoke:
 cli-fluvio-read-only-smoke:
 	bats $(shell ls -1 ./tests/cli/fluvio_read_only/*.bats | sort -R)
 
+cli-fluvio-mirroring-smoke:
+	bats $(shell ls -1 ./tests/cli/mirroring_smoke_tests/*.bats | sort -R)
+
 cli-smdk-smoke:
 	bats $(shell ls -1 ./tests/cli/smdk_smoke_tests/*.bats | sort -R)
 
