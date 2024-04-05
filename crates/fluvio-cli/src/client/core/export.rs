@@ -10,12 +10,12 @@ use k8_types::K8Obj;
 
 #[derive(Debug, Parser)]
 pub struct ExportOpt {
-    // /// Edge id
+    /// id of the remote cluster
     remote_id: String,
     /// name of the file where we should put the file
     #[arg(long, short = 'f')]
     file: Option<String>,
-    /// override endpoint of the main cluster
+    /// override endpoint of the core cluster
     #[arg(long, short = 'e')]
     public_endpoint: Option<String>,
 }
