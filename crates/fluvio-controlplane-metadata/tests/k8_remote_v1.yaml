@@ -8,5 +8,6 @@ spec:
   remoteType: 
     core: 
       id: onshore-core-1
+      edgeId: offshore-edge-1
       publicEndpoint: fluvio.com:9000
     
