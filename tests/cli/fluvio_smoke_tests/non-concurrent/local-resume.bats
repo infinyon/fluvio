@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-TEST_HELPER_DIR="$BATS_TEST_DIRNAME/../test_helper"
+TEST_HELPER_DIR="$BATS_TEST_DIRNAME/../../test_helper"
 export TEST_HELPER_DIR
 
 load "$TEST_HELPER_DIR"/tools_check.bash
