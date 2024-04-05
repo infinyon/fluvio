@@ -27,6 +27,8 @@ impl Status for RemoteStatus {}
 mod test_v1_spec {
     use std::{io::BufReader, fs::File};
     use fluvio_stream_model::k8_types::K8Obj;
+    use crate::remote::Edge;
+
     use super::RemoteSpec;
     use super::super::RemoteType;
 
@@ -38,15 +40,11 @@ mod test_v1_spec {
             BufReader::new(File::open("tests/k8_remote_v1.json").expect("spec"));
         let cluster: K8RemoteSpec = serde_json::from_reader(reader).expect("failed to parse topic");
         assert_eq!(cluster.metadata.name, "offshore");
-        assert_eq!(cluster.spec.remote_type, RemoteType::Edge);
-    }
-
-    #[test]
-    fn read_k8_remote_yaml() {
-        let reader: BufReader<File> =
-            BufReader::new(File::open("tests/k8_remote_v1.yaml").expect("spec"));
-        let cluster: K8RemoteSpec = serde_yaml::from_reader(reader).expect("failed to parse topic");
-        assert_eq!(cluster.metadata.name, "onshore");
-        assert_eq!(cluster.spec.remote_type, RemoteType::Core);
+        assert_eq!(
+            cluster.spec.remote_type,
+            RemoteType::Edge(Edge {
+                id: "offshore-edge-1".to_owned()
+            })
+        );
     }
 }

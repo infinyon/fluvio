@@ -5,7 +5,8 @@ kind: Remote
 metadata:
   name: onshore
 spec:
-  remoteType: Core
-  keyPair:
-    publicKey: "public key: TJ33a"
-    privateKey: "private key: AC2333"
+  remoteType: 
+    core: 
+      id: onshore-core-1
+      publicEndpoint: fluvio.com:9000
+    

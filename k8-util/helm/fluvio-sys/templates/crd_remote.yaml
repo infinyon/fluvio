@@ -28,10 +28,22 @@ spec:
               required: ["remoteType"]
               properties:
                 remoteType:
-                  type: string
-                  enum:
-                    - Edge
-                    - Core
+                  type: object
+                  properties:
+                    edge:
+                      type: object
+                      required: ["id"]
+                      properties:
+                        id:
+                          type: string
+                    core:
+                      type: object
+                      required: ["id"]
+                      properties:
+                        id:
+                          type: string
+                        publicEndpoint:
+                          type: string
                 keyPair:
                   type: object
                   required: ["privateKey", "publicKey"]

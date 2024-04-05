@@ -26,10 +26,9 @@ impl ListOpt {
             .iter()
             .map(|item| {
                 let status: RemoteStatus = item.status.clone();
-
                 (
                     item.name.clone(),
-                    item.spec.remote_type.to_string(),
+                    item.spec.type_name().to_string(),
                     status.to_string(),
                     status.connection_stat.last_seen.to_string(),
                 )
