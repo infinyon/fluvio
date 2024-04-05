@@ -43,7 +43,7 @@ mod test_v1_spec {
         assert_eq!(
             cluster.spec.remote_type,
             RemoteType::Edge(Edge {
-                id: "offshore-edge-1".to_owned()
+                id: "offshore-edge-1".to_owned(),
             })
         );
     }

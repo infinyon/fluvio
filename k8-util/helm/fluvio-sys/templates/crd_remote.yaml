@@ -38,9 +38,11 @@ spec:
                           type: string
                     core:
                       type: object
-                      required: ["id"]
+                      required: ["id", "edgeId", "publicEndpoint"]
                       properties:
                         id:
+                          type: string
+                        edgeId:
                           type: string
                         publicEndpoint:
                           type: string

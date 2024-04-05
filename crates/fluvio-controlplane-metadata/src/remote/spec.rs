@@ -73,5 +73,6 @@ pub struct Edge {
 )]
 pub struct Core {
     pub id: String,
+    pub edge_id: String,
     pub public_endpoint: String,
 }
