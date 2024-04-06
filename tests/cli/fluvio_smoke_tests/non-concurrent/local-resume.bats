@@ -49,13 +49,13 @@ setup_file() {
 
     run_resume
 
-    for retry in $(seq 1 5); do
+    for retry in $(seq 1 10); do
         run_list_spus
         if [ "$status" -ne 0 ]; then 
-            debug_msg "retry listing SPUs..."
-            sleep 1
+            echo "retry listing SPUs..." >&3
+            sleep 3
         else
-            debug_msg "Got $output SPUs after ${retry} retries. It is expected to be the same as $CLUSTER_SPUS"
+            echo "Got $output SPUs after ${retry} retries. It is expected to be the same as $CLUSTER_SPUS" >&3
             current_spus=$output
             break;
         fi;
