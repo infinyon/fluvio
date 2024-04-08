@@ -15,6 +15,7 @@ run_list_spus() {
 }
 
 run_resume() {
+    OUTPUT_FILE=${1:-/dev/null}
     # Since `fluvio run sc` runs sc as a child process without daemonizing it, all the FDs
     # are inherited to the children. That includes FD3 and other FDs that causes the test to hang. 
     # see: https://bats-core.readthedocs.io/en/stable/writing-tests.html#file-descriptor-3-read-this-if-bats-hangs
@@ -24,7 +25,8 @@ run_resume() {
     # Example: https://github.com/bats-core/bats-core/blob/master/test/fixtures/bats/issue-205.bats
     # TODO: Consider daemonizing the local cluster SC, which should solve this problem properly.
     close_fd_cmd='for fd in $(seq 3 100); do eval exec "$fd>&-"; done'
-    run_resume_cmd="nohup $FLUVIO_BIN cluster resume 0<&-"
+    run_resume_cmd="nohup $FLUVIO_BIN cluster resume 0<&- &>${OUTPUT_FILE}"
+    echo "Running resume command: ${run_resume_cmd}" >&3
     run bash -c "${close_fd_cmd} && ${run_resume_cmd} &" 3>&-
 }
 
@@ -47,7 +49,9 @@ setup_file() {
     # Cluster is not running so run should fail
     assert_failure
 
-    run_resume
+    run mktemp
+    resume_output=$output
+    run_resume $resume_output
 
     for retry in $(seq 1 10); do
         run_list_spus
@@ -61,5 +65,7 @@ setup_file() {
         fi;
     done;
 
+    echo "Resume output ($resume_output):" >&3
+    cat $resume_output >&3
     assert_equal $CLUSTER_SPUS $current_spus
 }
