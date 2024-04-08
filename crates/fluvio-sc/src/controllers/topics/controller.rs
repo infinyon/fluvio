@@ -3,6 +3,9 @@
 //!
 //! Reconcile Topics
 
+use std::cmp::min;
+use std::ops::Add;
+
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 use fluvio_controlplane_metadata::topic::CleanupPolicy;
@@ -86,9 +89,6 @@ impl<C: MetadataItem> TopicController<C> {
                 _ = sleep(Duration::from_secs(60)) => {
                     debug!("timer expired");
                 },
-                _ = sleep(Duration::from_secs(15)) => {
-                    self.ensure_offsets_topic_exists().await;
-                },
                 _ = topics_listener.listen() => {
                     debug!("detected topic changes");
                 }
@@ -162,6 +162,45 @@ impl<C: MetadataItem> TopicController<C> {
             for action in actions.partitions.into_iter() {
                 self.partitions.send_action(action).await;
             }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SystemTopicController<C: MetadataItem = K8MetaItem> {
+    topics: StoreContext<TopicSpec, C>,
+}
+
+impl<C> SystemTopicController<C>
+where
+    C: MetadataItem + 'static,
+    C::UId: Send + Sync,
+{
+    pub fn start(ctx: SharedContext<C>) {
+        let topics = ctx.topics().clone();
+
+        let controller = Self { topics };
+
+        spawn(controller.dispatch_loop());
+    }
+
+    #[instrument(name = "SystemTopicController", skip(self))]
+    async fn dispatch_loop(mut self) {
+        use std::time::Duration;
+
+        use fluvio_future::timer::sleep;
+
+        debug!("starting system topic dispatch loop");
+
+        const INTERVAL_STEP: u64 = 15;
+        const MAX_INTERVAL: u64 = 120;
+
+        let mut interval_secs = INTERVAL_STEP;
+
+        loop {
+            sleep(Duration::from_secs(interval_secs)).await;
+            self.ensure_offsets_topic_exists().await;
+            interval_secs = min(MAX_INTERVAL, interval_secs.add(INTERVAL_STEP));
         }
     }
 

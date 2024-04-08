@@ -13,7 +13,7 @@ use crate::core::Context;
 use crate::core::SharedContext;
 use crate::controllers::partitions::PartitionController;
 use crate::controllers::spus::SpuController;
-use crate::controllers::topics::controller::TopicController;
+use crate::controllers::topics::controller::{TopicController, SystemTopicController};
 use crate::config::ScConfig;
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::MetadataDispatcher;
@@ -92,6 +92,7 @@ where
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
+    whitelist!(config, "topic", SystemTopicController::start(ctx.clone()));
     whitelist!(
         config,
         "partition",
