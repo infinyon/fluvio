@@ -36,9 +36,6 @@ setup_file() {
     assert_success
     CLUSTER_SPUS=$output
     export CLUSTER_SPUS
-
-    BATS_TEST_TIMEOUT=10
-    export BATS_TEST_TIMEOUT
 }
 
 @test "Resume SPU instances" {
