@@ -23,7 +23,7 @@ impl ListOpt {
         let list = admin.all::<RemoteSpec>().await?;
 
         let outlist: Vec<(String, String, String, String)> = list
-            .iter()
+            .into_iter()
             .map(|item| {
                 let status: RemoteStatus = item.status.clone();
                 (

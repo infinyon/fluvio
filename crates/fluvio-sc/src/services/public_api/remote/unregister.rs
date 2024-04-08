@@ -11,7 +11,7 @@ pub async fn handle_unregister_remote<AC: AuthContext, C: MetadataItem>(
     auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let name = key;
-    info!(name = name, "remote-cluster delete");
+    info!(name = name, "unregister remote cluster");
     if auth_ctx.global_ctx.config().read_only_metadata {
         return Ok(Status::new(
             name.clone(),
@@ -32,7 +32,7 @@ pub async fn handle_unregister_remote<AC: AuthContext, C: MetadataItem>(
     if let Err(err) = ctx.remote().delete(name.clone()).await {
         return Ok(Status::new(
             name.clone(),
-            ErrorCode::Other("unable to delete remote cluster".to_owned()),
+            ErrorCode::Other("unable to unregister remote cluster".to_owned()),
             Some(err.to_string()),
         ));
     }
