@@ -21,14 +21,7 @@ pub async fn handle_list_remote<AC: AuthContext, C: MetadataItem>(
         .read()
         .await
         .values()
-        .map(|item| {
-            let name = item.key.clone();
-            Metadata {
-                name,
-                spec: item.spec.clone(),
-                status: item.status.clone(),
-            }
-        })
+        .map(|item| item.inner().clone().into())
         .collect();
     debug!("flv fetch remote list resp: {} items", remote_list.len());
     trace!("flv fetch remote list resp {:#?}", remote_list);

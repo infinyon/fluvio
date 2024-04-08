@@ -30,7 +30,7 @@ impl RegisterOpt {
         };
 
         admin.create(self.name.clone(), false, spec).await?;
-        println!("edge cluster {:?} was registered", self.name);
+        println!("edge cluster \"{}\" was registered", self.name);
         Ok(())
     }
 }
