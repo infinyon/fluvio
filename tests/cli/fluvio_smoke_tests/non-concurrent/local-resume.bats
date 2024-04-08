@@ -39,10 +39,7 @@ setup_file() {
 }
 
 @test "Resume cluster maintains SPU replica number" {
-    run "$FLUVIO_BIN" cluster resume --help
-    if [ "$status" -ne 0 ]; then 
-        skip "don't run when resume is not available (i.e: stable)"
-    fi
+    skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
 
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
