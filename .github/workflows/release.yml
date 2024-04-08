@@ -93,8 +93,8 @@ jobs:
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.ORG_AWS_PKG_USER_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.ORG_AWS_PKG_USER_SECRET_KEY }}
       AWS_DEFAULT_REGION: us-west-2
       TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
@@ -198,8 +198,8 @@ jobs:
     needs: [setup_job]
     runs-on: ubuntu-latest
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.ORG_AWS_PKG_USER_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.ORG_AWS_PKG_USER_SECRET_KEY }}
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
       BPKG_TOKEN: ${{ secrets.BPKG_TOKEN }}
@@ -274,8 +274,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !inputs.pre_release }}
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.ORG_AWS_PKG_USER_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.ORG_AWS_PKG_USER_SECRET_KEY }}
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
       TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
