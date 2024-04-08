@@ -38,7 +38,12 @@ setup_file() {
     export CLUSTER_SPUS
 }
 
-@test "Resume SPU instances" {
+@test "Resume cluster maintains SPU replica number" {
+    run "$FLUVIO_BIN" cluster resume --help
+    if [ "$status" -ne 0 ]; then 
+        skip "don't run when resume is not available (i.e: stable)"
+    fi
+
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
 
