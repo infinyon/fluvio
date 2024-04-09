@@ -2,11 +2,13 @@ use std::sync::atomic::AtomicI64;
 
 use async_channel::{Sender, bounded};
 use anyhow::Result;
+use fluvio_types::PartitionId;
+use serde::Serialize;
+
 use fluvio_protocol::link::ErrorCode;
+use fluvio_spu_schema::server::consumer_offset::ConsumerOffset as ConsumerOffsetRequest;
 
-use crate::consumer::StreamToServer;
-
-use super::StreamToServerCallback;
+use super::{StreamToServer, StreamToServerCallback};
 
 const DEFAULT_ORDERING: std::sync::atomic::Ordering = std::sync::atomic::Ordering::Relaxed;
 
@@ -84,6 +86,34 @@ impl OffsetLocalStore {
 
     fn set_flushed(&self, val: i64) {
         self.flushed.store(val, DEFAULT_ORDERING)
+    }
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ConsumerOffset {
+    pub consumer_id: String,
+    pub topic: String,
+    pub partition: PartitionId,
+    pub offset: i64,
+    pub modified_time: u64,
+}
+
+impl From<ConsumerOffsetRequest> for ConsumerOffset {
+    fn from(value: ConsumerOffsetRequest) -> Self {
+        let ConsumerOffsetRequest {
+            consumer_id,
+            replica_id,
+            offset,
+            modified_time,
+        } = value;
+
+        Self {
+            topic: replica_id.topic,
+            partition: replica_id.partition,
+            consumer_id,
+            offset,
+            modified_time,
+        }
     }
 }
 

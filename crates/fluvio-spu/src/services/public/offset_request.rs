@@ -1,7 +1,5 @@
 use std::io::Error as IoError;
 
-use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
-use fluvio_types::PartitionId;
 use tracing::{debug, error};
 use tracing::{trace, instrument};
 
@@ -12,6 +10,7 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetsResponse;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_protocol::link::ErrorCode;
+use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::kv::consumer::ConsumerOffsetKey;

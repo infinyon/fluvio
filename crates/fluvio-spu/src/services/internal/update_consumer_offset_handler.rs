@@ -1,6 +1,5 @@
 use std::io::Error as IoError;
 
-use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 use fluvio_protocol::{
     api::{RequestMessage, ResponseMessage},
     link::ErrorCode,
@@ -8,7 +7,7 @@ use fluvio_protocol::{
     record::Offset,
 };
 use fluvio_storage::FileReplica;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
 use tracing::{instrument, trace};
 
 use crate::{

@@ -31,8 +31,8 @@ pub(crate) struct SharableConsumerOffsetStorage(Arc<RwLock<ConsumerOffsetStorage
 
 #[derive(Debug, Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
 pub(crate) struct ConsumerOffsetKey {
-    replica_id: ReplicaKey,
-    consumer_id: String,
+    pub replica_id: ReplicaKey,
+    pub consumer_id: String,
 }
 /// Consumer offset value. Keeps the last offset seen by a consumer, and
 /// the modification time (UTC timestamp in seconds).
@@ -125,6 +125,11 @@ impl KVStorage<ConsumerOffsetKey, ConsumerOffset> for ConsumerOffsetStorage {
         self.maybe_flush().await?;
         result
     }
+
+    async fn entries(&self) -> Result<Vec<(ConsumerOffsetKey, ConsumerOffset)>> {
+        trace!("entries");
+        self.kv.entries().await
+    }
 }
 
 impl ConsumerOffsetKey {
@@ -170,6 +175,10 @@ impl SharableConsumerOffsetStorage {
         value: impl Into<ConsumerOffset>,
     ) -> Result<()> {
         self.0.write().await.put(key, value).await
+    }
+
+    pub async fn list(&self) -> Result<Vec<(ConsumerOffsetKey, ConsumerOffset)>> {
+        self.0.read().await.entries().await
     }
 }
 
