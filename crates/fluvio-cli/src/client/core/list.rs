@@ -25,9 +25,9 @@ impl ListOpt {
         let outlist: Vec<(String, String, String, String)> = list
             .into_iter()
             .map(|item| {
-                let status: RemoteStatus = item.status.clone();
+                let status: RemoteStatus = item.status;
                 (
-                    item.name.clone(),
+                    item.name,
                     item.spec.type_name().to_string(),
                     status.to_string(),
                     status.connection_stat.last_seen.to_string(),
