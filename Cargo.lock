@@ -3198,12 +3198,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.4.5"
+version = "0.4.6"
 dependencies = [
  "event-listener 3.1.0",
  "fluvio-future",
+ "serde",
  "thiserror",
  "tokio",
+ "toml 0.8.8",
  "tracing",
 ]
 

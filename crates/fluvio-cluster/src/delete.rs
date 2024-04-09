@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::process::Command;
 use std::fs::{remove_dir_all, remove_file};
 
@@ -15,7 +16,7 @@ use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
 use crate::DEFAULT_NAMESPACE;
 use crate::error::UninstallError;
-use crate::start::local::DEFAULT_DATA_DIR;
+use crate::start::local::{DEFAULT_DATA_DIR, LOCAL_CONFIG_PATH};
 use anyhow::Result;
 
 /// Uninstalls different flavors of fluvio
@@ -105,7 +106,7 @@ impl ClusterUninstaller {
 
         let pb = self.pb_factory.create()?;
         pb.set_message("Uninstalling fluvio kubernetes components");
-        let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
+        let uninstall: UninstallArg = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
             .ignore_not_found();
         self.helm_client
@@ -176,35 +177,59 @@ impl ClusterUninstaller {
         kill_proc("fluvio", Some(&["run".into()]));
         kill_proc("fluvio-run", None);
 
-        // delete fluvio file
-        debug!("Removing fluvio directory");
-        match &*DEFAULT_DATA_DIR {
-            Some(data_dir) => match remove_dir_all(data_dir) {
-                Ok(_) => {
-                    debug!("Removed data dir: {}", data_dir.display());
+        fn delete_fs<T: AsRef<Path>>(
+            path: Option<T>,
+            tag: &'static str,
+            is_file: bool,
+            pb: Option<&ProgressRenderer>,
+        ) {
+            match path {
+                Some(path) => {
+                    let path_ref = path.as_ref();
+                    match if is_file {
+                        remove_file(path_ref)
+                    } else {
+                        remove_dir_all(path_ref)
+                    } {
+                        Ok(_) => {
+                            debug!("Removed {}: {}", tag, path_ref.display());
+                            if let Some(pb) = pb {
+                                pb.println(format!("Removed {}", tag))
+                            }
+                        }
+                        Err(err) => {
+                            warn!("{} can't be removed: {}", tag, err);
+                            if let Some(pb) = pb {
+                                pb.println(format!("{tag}, can't be removed: {err}"))
+                            }
+                        }
+                    }
                 }
-                Err(err) => {
-                    warn!("fluvio dir can't be removed: {}", err);
+                None => {
+                    warn!("Unable to find {}, cannot remove", tag);
                 }
-            },
-            None => {
-                warn!("Unable to find data dir, cannot remove");
             }
         }
 
+        // delete fluvio file
+        debug!("Removing fluvio directory");
+        delete_fs(DEFAULT_DATA_DIR.as_ref(), "data dir", false, None);
+
+        // delete local cluster config file
+        delete_fs(
+            LOCAL_CONFIG_PATH.as_ref(),
+            "local cluster config",
+            true,
+            None,
+        );
+
         // remove monitoring socket
-        match remove_file(SPU_MONITORING_UNIX_SOCKET) {
-            Ok(_) => {
-                pb.println(format!(
-                    "Removed spu monitoring socket: {SPU_MONITORING_UNIX_SOCKET}"
-                ));
-            }
-            Err(err) => {
-                pb.println(format!(
-                    "SPU monitoring socket  {SPU_MONITORING_UNIX_SOCKET}, can't be removed: {err}"
-                ));
-            }
-        }
+        delete_fs(
+            Some(SPU_MONITORING_UNIX_SOCKET),
+            "SPU monitoring socket",
+            true,
+            Some(&pb),
+        );
 
         pb.println("Uninstalled fluvio local components");
         pb.finish_and_clear();
