@@ -214,6 +214,38 @@ impl FluvioAdmin {
         Ok(())
     }
 
+    /// Forcibly delete object by key
+    /// key is dependent on spec, most are string but some allow multiple types.
+    ///
+    /// This method allows to delete objects marked as 'system'.
+    ///
+    /// For example, to delete a system topic:
+    ///
+    /// ```edition2021
+    /// use fluvio::Fluvio;
+    /// use fluvio::metadata::topic::TopicSpec;
+    ///
+    /// async fn delete_system_topic(name: String) -> anyhow::Result<()> {
+    ///     let fluvio = Fluvio::connect().await?;
+    ///     let admin = fluvio.admin().await;
+    ///     admin.force_delete::<TopicSpec>(name).await?;
+    ///     Ok(())
+    /// }
+    /// ```
+    #[instrument(skip(self, key))]
+    pub async fn force_delete<S>(&self, key: impl Into<S::DeleteKey>) -> Result<()>
+    where
+        S: DeletableAdminSpec + Sync + Send,
+    {
+        let delete_request: DeleteRequest<S> = DeleteRequest::with(key.into(), true);
+        debug!("sending force delete request: {:#?}", delete_request);
+
+        self.send_receive_admin::<ObjectApiDeleteRequest, _>(delete_request)
+            .await?
+            .as_result()?;
+        Ok(())
+    }
+
     /// return all instance of this spec
     #[instrument(skip(self))]
     pub async fn all<S>(&self) -> Result<Vec<Metadata<S>>>
