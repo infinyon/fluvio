@@ -148,7 +148,6 @@ mod cmd {
 
         /// Manage and view Core mirroring
         //TODO: Remove hide when we have this mirroring complete
-        #[cfg(feature = "k8s")]
         #[command(subcommand, name = "core", hide = true)]
         Core(Box<CoreCmd>),
     }
