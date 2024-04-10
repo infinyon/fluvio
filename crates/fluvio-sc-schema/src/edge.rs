@@ -6,7 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_controlplane_metadata::{remote::RemoteSpec, topic::TopicSpec};
 use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 
 #[derive(Debug, Default)]
@@ -16,8 +16,11 @@ use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
     serde(rename_all = "camelCase")
 )]
 pub struct EdgeMetadata {
+    // TODO: remove it, we should get the topics from the upstreams/core
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8Obj<TopicSpec>>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub remotes: Vec<K8Obj<RemoteSpec>>,
 }
 
 /// Configuration used to inihilize a Cluster locally. This data is copied to
@@ -29,14 +32,18 @@ pub struct EdgeMetadata {
     serde(rename_all = "camelCase")
 )]
 pub struct EdgeMetadataExport {
+    // TODO: remove it, we should get the topics from the upstreams/core
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8ObjExport<TopicSpec>>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    pub remotes: Vec<K8ObjExport<RemoteSpec>>,
 }
 
 impl EdgeMetadataExport {
-    pub fn new(topics: Vec<K8Obj<TopicSpec>>) -> Self {
+    pub fn new(remote: Vec<K8Obj<RemoteSpec>>) -> Self {
         Self {
-            topics: topics.into_iter().map(|t| t.into()).collect(),
+            topics: vec![],
+            remotes: remote.into_iter().map(|u| u.into()).collect(),
         }
     }
 }
@@ -129,23 +136,21 @@ mod tests {
     #[test]
     fn validates_json_config() {
         let config = r#"{
-            "topics": [
-              {
-                "apiVersion": "fluvio.infinyon.com/v2",
-                "kind": "Topic",
-                "metadata": {
-                  "name": "my-topic"
-                },
-                "spec": {
-                  "replicas": {
-                    "computed": {
-                      "partitions": 1,
-                      "replicationFactor": 1,
-                      "ignoreRackAssignment": false
+            "remotes": [
+                {
+                    "apiVersion": "fluvio.infinyon.com/v1",
+                    "kind": "Remote",
+                    "metadata": {
+                        "name": "remote"
+                    },
+                    "spec": {
+                        "remoteType": {
+                            "edge": {
+                                "id": "edge1"
+                            }
+                        }
                     }
-                  }
                 }
-              }
             ]
           }
           "#;
@@ -156,6 +161,6 @@ mod tests {
 
         let config: EdgeMetadata = config.unwrap().into();
 
-        assert!(config.topics.len() == 1);
+        assert!(config.remotes.len() == 1);
     }
 }

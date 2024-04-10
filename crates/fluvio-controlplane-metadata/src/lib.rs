@@ -5,6 +5,7 @@ pub mod spg;
 pub mod smartmodule;
 pub mod tableformat;
 pub mod message;
+pub mod remote;
 
 pub use fluvio_stream_model::core;
 
@@ -31,6 +32,7 @@ pub mod extended {
         SmartModule,
         TableFormat,
         DerivedStream,
+        Remote,
     }
 
     pub trait SpecExt: Spec {

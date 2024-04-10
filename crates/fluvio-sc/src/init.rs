@@ -6,6 +6,7 @@
 //!
 use std::sync::Arc;
 
+use fluvio_sc_schema::remote::RemoteSpec;
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
 use fluvio_stream_model::core::MetadataItem;
 
@@ -74,6 +75,12 @@ where
         namespace.clone(),
         metadata_client.clone(),
         ctx.smartmodules().clone(),
+    );
+
+    MetadataDispatcher::<RemoteSpec, C, M>::start(
+        namespace.clone(),
+        metadata_client.clone(),
+        ctx.remote().clone(),
     );
 
     start_main_loop_services(ctx, auth_policy).await

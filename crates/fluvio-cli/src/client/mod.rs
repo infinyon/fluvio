@@ -8,6 +8,7 @@ mod smartmodule;
 mod smartmodule_invocation;
 #[cfg(feature = "unstable")]
 mod consumer;
+mod core;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -49,6 +50,7 @@ mod cmd {
 
     #[cfg(feature = "unstable")]
     use super::consumer::ConsumerCmd;
+    use super::core::CoreCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;
@@ -143,6 +145,11 @@ mod cmd {
         /// Manage and view Consumers
         #[command(subcommand, name = "consumer")]
         Consumer(ConsumerCmd),
+
+        /// Manage and view Core mirroring
+        //TODO: Remove hide when we have this mirroring complete
+        #[command(subcommand, name = "core", hide = true)]
+        Core(Box<CoreCmd>),
     }
 
     impl FluvioCmd {
@@ -177,6 +184,9 @@ mod cmd {
                 #[cfg(feature = "unstable")]
                 Self::Consumer(consumer) => {
                     consumer.process(out, target).await?;
+                }
+                Self::Core(core) => {
+                    core.process(out, target).await?;
                 }
             }
 
