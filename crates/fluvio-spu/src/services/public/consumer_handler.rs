@@ -2,7 +2,6 @@ use std::io::Error as IoError;
 
 use anyhow::Context;
 use anyhow::Result;
-use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 
 use fluvio_spu_schema::server::consumer_offset::DeleteConsumerOffsetRequest;
 use fluvio_spu_schema::server::consumer_offset::DeleteConsumerOffsetResponse;
@@ -10,8 +9,9 @@ use fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsRequest;
 use fluvio_spu_schema::server::consumer_offset::FetchConsumerOffsetsResponse;
 use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetRequest;
 use fluvio_spu_schema::server::consumer_offset::UpdateConsumerOffsetResponse;
+use fluvio_spu_schema::server::consumer_offset::ConsumerOffset as ConsumerOffsetResponse;
 use fluvio_storage::FileReplica;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
 use tracing::debug;
 use tracing::error;
 use tracing::instrument;
@@ -184,10 +184,32 @@ async fn handle_delete(
 }
 
 async fn handle_fetch_consumers(
-    _ctx: DefaultSharedGlobalContext,
-) -> std::result::Result<Vec<fluvio_spu_schema::server::consumer_offset::ConsumerOffset>, ErrorCode>
-{
-    unimplemented!()
+    ctx: DefaultSharedGlobalContext,
+) -> std::result::Result<Vec<ConsumerOffsetResponse>, ErrorCode> {
+    let consumers_replica_id =
+        ReplicaKey::new(CONSUMER_STORAGE_TOPIC, <PartitionId as Default>::default());
+    let Some(ref replica) = ctx.leaders_state().get(&consumers_replica_id).await else {
+        return Err(ErrorCode::PartitionNotLeader);
+    };
+
+    Ok(ctx
+        .consumer_offset()
+        .get_or_insert(replica, ctx.follower_notifier())
+        .await
+        .map_err(|e| ErrorCode::Other(e.to_string()))?
+        .list()
+        .await
+        .map_err(|e| ErrorCode::Other(format!("unable to list consumers: {e:?}")))?
+        .into_iter()
+        .map(|(key, consumer)| {
+            ConsumerOffsetResponse::new(
+                key.consumer_id,
+                key.replica_id,
+                consumer.offset,
+                consumer.modified_time,
+            )
+        })
+        .collect())
 }
 
 async fn update_offset_for_leader(

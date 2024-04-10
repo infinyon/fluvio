@@ -1,14 +1,13 @@
 use std::io::Error as IoError;
 
 use anyhow::Result;
-use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 use fluvio_protocol::{
     api::{RequestMessage, ResponseMessage},
     record::ReplicaKey,
     link::ErrorCode,
 };
 use fluvio_storage::FileReplica;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, defaults::CONSUMER_STORAGE_TOPIC};
 use tracing::{instrument, debug};
 
 use crate::{

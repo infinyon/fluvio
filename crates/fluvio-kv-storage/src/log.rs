@@ -30,7 +30,7 @@ pub struct LogBasedKVStorage<K, V, L> {
 
 impl<K, V, L> KVStorage<K, V> for LogBasedKVStorage<K, V, L>
 where
-    K: Encoder + Decoder + Hash + Eq,
+    K: Encoder + Decoder + Hash + Eq + Clone,
     V: Encoder + Decoder + Clone,
     L: Log,
 {
@@ -56,6 +56,14 @@ where
             .await?;
         self.cache.insert(key, value);
         Ok(())
+    }
+
+    async fn entries(&self) -> Result<Vec<(K, V)>> {
+        Ok(self
+            .cache
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect())
     }
 }
 
@@ -360,5 +368,32 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("Unknown Entry type"));
+    }
+
+    #[fluvio_future::test]
+    async fn test_list_all_entries() {
+        //given
+        let mut log: Vec<Vec<u8>> = Vec::new();
+        let mut storage = LogBasedKVStorage::<String, String, _>::new(&mut log);
+        let key1 = "key1".to_string();
+        let key2 = "key2".to_string();
+        let key3 = "key3".to_string();
+        //when
+        storage.put(&key1, "value").await.expect("inserted");
+        storage.put(&key1, "another_value").await.expect("updated");
+        storage.put(&key2, "value2").await.expect("inserted 2");
+        storage.put(&key3, "value3").await.expect("inserted 3");
+        storage.delete(&key3).await.expect("deleted");
+
+        //then
+        let mut entries = storage.entries().await.expect("entries");
+        entries.sort();
+        assert_eq!(
+            entries,
+            vec![
+                (key1, "another_value".to_string()),
+                (key2, "value2".to_string())
+            ]
+        );
     }
 }

@@ -53,6 +53,8 @@ pub const STORAGE_MAX_BATCH_SIZE: u32 = 33_554_432;
 
 pub const SPU_SMARTENGINE_STORE_MAX_BYTES: usize = 1_073_741_824; //1Gb
 
+pub const CONSUMER_STORAGE_TOPIC: &str = "consumer-offset";
+
 // CLI config
 pub const CLI_PROFILES_DIR: &str = "profiles";
 pub const CLI_DEFAULT_PROFILE: &str = "default";

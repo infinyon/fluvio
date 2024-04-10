@@ -7,7 +7,6 @@ use std::cmp::min;
 use std::ops::Add;
 
 use fluvio_controlplane_metadata::spu::SpuSpec;
-use fluvio_controlplane::CONSUMER_STORAGE_TOPIC;
 use fluvio_controlplane_metadata::topic::CleanupPolicy;
 use fluvio_controlplane_metadata::topic::SegmentBasedPolicy;
 use fluvio_controlplane_metadata::topic::TopicStorageConfig;
@@ -15,7 +14,7 @@ use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_stream_model::store::ChangeListener;
 use fluvio_stream_model::store::k8::K8MetaItem;
-use fluvio_types::defaults::STORAGE_RETENTION_SECONDS;
+use fluvio_types::defaults::{STORAGE_RETENTION_SECONDS, CONSUMER_STORAGE_TOPIC};
 use tracing::{info, instrument, trace, debug};
 
 use fluvio_future::task::spawn;

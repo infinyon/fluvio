@@ -36,6 +36,7 @@ k8s = [
 ]
 smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
+unstable = ["fluvio/unstable"]
 
 [dependencies]
 
@@ -45,6 +46,7 @@ anyhow = { workspace = true }
 bytesize = { workspace = true, features = ['serde'] }
 clap = { workspace = true, features = ["std", "derive", "string", "help", "usage", "env", "error-context"] }
 clap_complete = { workspace = true }
+cfg-if = { workspace = true }
 dirs = { workspace = true }
 indicatif = { workspace = true }
 eyre = { workspace = true }
@@ -83,7 +85,7 @@ k8-client = { workspace = true, optional = true }
 k8-types = { workspace = true , features = ["core"] }
 fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
 
-fluvio = { workspace = true  }
+fluvio = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-command = { workspace = true  }
 fluvio-package-index = { workspace = true }

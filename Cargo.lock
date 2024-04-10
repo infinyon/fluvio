@@ -2322,6 +2322,7 @@ dependencies = [
  "async-trait",
  "atty",
  "bytesize",
+ "cfg-if",
  "clap",
  "clap_complete",
  "colored",

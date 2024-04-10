@@ -79,7 +79,24 @@ pub struct FetchConsumerOffsetsResponse {
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct ConsumerOffset {
-    pub id: String,
+    pub consumer_id: String,
+    pub replica_id: ReplicaKey,
     pub offset: Offset,
     pub modified_time: u64,
+}
+
+impl ConsumerOffset {
+    pub fn new(
+        consumer_id: impl Into<String>,
+        replica_id: impl Into<ReplicaKey>,
+        offset: Offset,
+        modified_time: u64,
+    ) -> Self {
+        Self {
+            consumer_id: consumer_id.into(),
+            replica_id: replica_id.into(),
+            offset,
+            modified_time,
+        }
+    }
 }
