@@ -145,10 +145,11 @@ mod cmd {
         /// Manage and view Consumers
         #[command(subcommand, name = "consumer")]
         Consumer(ConsumerCmd),
-        
+
         /// Manage and view Core mirroring
+        //TODO: Remove hide when we have this mirroring complete
         #[cfg(feature = "k8s")]
-        #[command(subcommand, name = "core")]
+        #[command(subcommand, name = "core", hide = true)]
         Core(Box<CoreCmd>),
     }
 
