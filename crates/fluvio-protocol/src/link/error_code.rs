@@ -215,6 +215,11 @@ pub enum ErrorCode {
     #[fluvio(tag = 11002)]
     #[error("the remote already exists")]
     RemoteAlreadyExists,
+
+    // Specs
+    #[fluvio(tag = 12001)]
+    #[error("system {kind} '{name}' can only be deleted forcibly")]
+    SystemSpecDeletionAttempt { kind: String, name: String },
 }
 
 impl ErrorCode {

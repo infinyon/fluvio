@@ -34,7 +34,8 @@ pub async fn handle_delete_request<AC: AuthContext, C: MetadataItem>(
     debug!(?del_req, "del request");
 
     let status = if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TopicSpec>> {
-        super::topic::handle_delete_topic(req.key(), auth_ctx).await?
+        let force = req.is_force();
+        super::topic::handle_delete_topic(req.key(), force, auth_ctx).await?
     } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<CustomSpuSpec>> {
         super::spu::handle_un_register_custom_spu_request(req.key(), auth_ctx).await?
     } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<SpuGroupSpec>> {

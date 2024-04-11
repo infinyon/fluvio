@@ -4,7 +4,7 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use fluvio_stream_model::core::MetadataItem;
+use fluvio_stream_model::core::{MetadataItem, Spec};
 use tracing::{info, trace, instrument};
 use std::io::{Error, ErrorKind};
 
@@ -20,6 +20,7 @@ use crate::services::auth::AuthServiceContext;
 #[instrument(skip(topic_name, auth_ctx))]
 pub async fn handle_delete_topic<AC: AuthContext, C: MetadataItem>(
     topic_name: String,
+    force: bool,
     auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status, Error> {
     info!(%topic_name, "Deleting topic");
@@ -41,15 +42,23 @@ pub async fn handle_delete_topic<AC: AuthContext, C: MetadataItem>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let status = if auth_ctx
+    let status = if let Some(spec) = auth_ctx
         .global_ctx
         .topics()
         .store()
         .value(&topic_name)
         .await
-        .is_some()
     {
-        if let Err(err) = auth_ctx
+        if !force && spec.spec().is_system() {
+            Status::new(
+                topic_name.clone(),
+                ErrorCode::SystemSpecDeletionAttempt {
+                    kind: TopicSpec::LABEL.to_lowercase(),
+                    name: topic_name,
+                },
+                None,
+            )
+        } else if let Err(err) = auth_ctx
             .global_ctx
             .topics()
             .delete(topic_name.clone())
