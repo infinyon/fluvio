@@ -21,7 +21,6 @@ mod cmd {
     use std::sync::Arc;
 
     use fluvio_protocol::link::ErrorCode;
-    use futures_util::Stream;
     use tracing::{debug, trace, instrument};
     use clap::{Parser, ValueEnum};
     use futures::{select, FutureExt};
@@ -43,10 +42,7 @@ mod cmd {
     use fluvio::metadata::tableformat::TableFormatSpec;
     use fluvio_future::io::StreamExt;
     use fluvio::{Fluvio, Offset, FluvioError};
-    #[cfg(not(feature = "unstable"))]
-    use fluvio::{ConsumerConfig, MultiplePartitionConsumer, consumer::PartitionSelectionStrategy};
-    #[cfg(feature = "unstable")]
-    use fluvio::consumer::{ConsumerConfigExt, OffsetManagementStrategy};
+    use fluvio::consumer::{ConsumerConfigExt, ConsumerStream, OffsetManagementStrategy};
 
     use fluvio::consumer::Record;
     use fluvio_spu_schema::Isolation;
@@ -83,10 +79,6 @@ mod cmd {
         pub topic: String,
 
         /// Partition id
-        #[cfg(not(feature = "unstable"))]
-        #[arg(short = 'p', long, value_name = "integer")]
-        pub partition: Vec<PartitionId>,
-        #[cfg(feature = "unstable")]
         #[arg(short = 'p', long, value_name = "integer")]
         pub partition: Option<PartitionId>,
 
@@ -225,7 +217,6 @@ mod cmd {
         #[arg(long, conflicts_with_all = &["output", "format"])]
         pub truncate: bool,
 
-        #[cfg(feature = "unstable")]
         /// Consumer id
         #[arg(short, long)]
         pub consumer: Option<String>,
@@ -276,28 +267,7 @@ mod cmd {
                 None
             };
 
-            cfg_if::cfg_if! {
-                if #[cfg(not(feature = "unstable"))] {
-                    if self.all_partitions || self.partition.is_empty() {
-                        let consumer = fluvio
-                            .consumer(PartitionSelectionStrategy::All(self.topic.clone()))
-                            .await?;
-                        self.consume_records(consumer, maybe_tableformat).await?;
-                    } else {
-                        let consumer = fluvio
-                            .consumer(PartitionSelectionStrategy::Multiple(
-                                self.partition
-                                    .iter()
-                                    .map(|p| (self.topic.clone(), *p))
-                                    .collect(),
-                            ))
-                            .await?;
-                        self.consume_records(consumer, maybe_tableformat).await?;
-                    };
-                } else {
-                    self.consume_records(fluvio, maybe_tableformat).await?;
-                }
-            }
+            self.consume_records(fluvio, maybe_tableformat).await?;
 
             Ok(())
         }
@@ -323,97 +293,6 @@ mod cmd {
             }
         }
 
-        #[cfg(not(feature = "unstable"))]
-        pub async fn consume_records(
-            &self,
-            consumer: MultiplePartitionConsumer,
-            tableformat: Option<TableFormatSpec>,
-        ) -> Result<()> {
-            trace!(config = ?self, "Starting consumer:");
-            self.init_ctrlc()?;
-            let offset = self.calculate_offset()?;
-
-            let mut builder = ConsumerConfig::builder();
-            if let Some(max_bytes) = self.max_bytes {
-                builder.max_bytes(max_bytes);
-            }
-
-            let initial_param = match &self.params {
-                None => BTreeMap::default(),
-                Some(params) => params.clone().into_iter().collect(),
-            };
-
-            let smart_module = if let Some(smart_module_name) = &self.smartmodule {
-                vec![create_smartmodule(
-                    smart_module_name,
-                    self.smart_module_ctx(),
-                    initial_param,
-                )]
-            } else if let Some(path) = &self.smartmodule_path {
-                vec![create_smartmodule_from_path(
-                    path,
-                    self.smart_module_ctx(),
-                    initial_param,
-                )?]
-            } else if !self.transforms_line.is_empty() {
-                let config = TransformationConfig::try_from(self.transforms_line.clone()).map_err(
-                    |err| {
-                        CliError::InvalidArg(format!("unable to parse `transform` argument: {err}"))
-                    },
-                )?;
-                create_smartmodule_list(config)?
-            } else if let Some(transforms) = &self.transforms {
-                let config = TransformationConfig::from_file(transforms).map_err(|err| {
-                    CliError::InvalidArg(format!("unable to process `transforms` argument: {err}"))
-                })?;
-                create_smartmodule_list(config)?
-            } else {
-                Vec::new()
-            };
-
-            builder.smartmodule(smart_module);
-
-            if self.disable_continuous {
-                builder.disable_continuous(true);
-            }
-
-            if let Some(end_offset) = self.end {
-                if let Some(start_offset) = self.start {
-                    if end_offset < start_offset {
-                        eprintln!(
-                            "Argument end-offset must be greater than or equal to specified start offset"
-                        );
-                        return Err(CliError::from(FluvioError::CrossingOffsets(
-                            start_offset,
-                            end_offset,
-                        ))
-                        .into());
-                    }
-                }
-            }
-
-            if let Some(isolation) = self.isolation {
-                builder.isolation(isolation);
-            }
-
-            let consume_config = builder.build()?;
-            debug!("consume config: {:#?}", consume_config);
-
-            self.print_status();
-            self.consume_records_stream(
-                consumer.stream_with_config(offset, consume_config).await?,
-                tableformat,
-            )
-            .await?;
-
-            if !self.disable_continuous {
-                eprintln!("Consumer stream has closed");
-            }
-
-            Ok(())
-        }
-
-        #[cfg(feature = "unstable")]
         pub async fn consume_records(
             &self,
             fluvio: &Fluvio,
@@ -500,14 +379,17 @@ mod cmd {
             debug!("consume config: {:#?}", consume_config);
 
             self.print_status();
-            self.consume_records_stream(
-                fluvio.consumer_with_config(consume_config).await?,
-                tableformat,
-            )
-            .await?;
+            let mut stream = fluvio.consumer_with_config(consume_config).await?;
+            self.consume_records_stream(&mut stream, tableformat)
+                .await?;
 
             if !self.disable_continuous {
                 eprintln!("Consumer stream has closed");
+            }
+
+            if self.consumer.is_some() {
+                stream.offset_commit()?;
+                stream.offset_flush().await?;
             }
 
             Ok(())
@@ -516,7 +398,7 @@ mod cmd {
         /// Consume records as a stream, waiting for new records to arrive
         async fn consume_records_stream(
             &self,
-            mut stream: impl Stream<Item = Result<Record, ErrorCode>> + Unpin,
+            stream: &mut (impl ConsumerStream<Item = Result<Record, ErrorCode>> + Unpin),
             tableformat: Option<TableFormatSpec>,
         ) -> Result<()> {
             let maybe_potential_end_offset: Option<u32> = self.end;
@@ -905,7 +787,6 @@ mod cmd {
                 transforms: Default::default(),
                 transforms_line: Default::default(),
                 truncate: Default::default(),
-                #[cfg(feature = "unstable")]
                 consumer: Default::default(),
             }
         }

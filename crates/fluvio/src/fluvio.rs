@@ -20,7 +20,6 @@ use crate::PartitionConsumer;
 use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::consumer::{MultiplePartitionConsumer, PartitionSelectionStrategy};
-#[cfg(feature = "unstable")]
 use crate::consumer::{
     ConsumerStream, MultiplePartitionConsumerStream, Record, ConsumerConfigExt, ConsumerOffset,
 };
@@ -240,8 +239,74 @@ impl Fluvio {
         ))
     }
 
-    /// Experimental: The feature is not finalized yet.
-    #[cfg(feature = "unstable")]
+    /// Creates a new [ConsumerStream] instance.
+    ///
+    /// The stream can read data from one topic partition or all partitions. Records across different partitions are not guaranteed to be ordered.
+    ///
+    /// The [ConsumerStream] provides the offset management capabilities. If configured, it allows
+    /// to store consumed offsets in the Fluvio cluster, and use it later to continue reading from
+    /// the last seen record.
+    ///
+    /// If the `offset_consumer` property of `ConsumerConfigExt` is specified, the Fluvio fetches
+    /// the offset by id and starts the stream from the next available record. If the offset does not exist, the Fluvio creates it.
+    /// To read all existing consumers offsets one could use [`Self::consumer_offsets()`] function, to delete - [`Self::delete_consumer_offset()`] function.
+    ///
+    /// The Fluvio saves offsets once one called [`ConsumerStream::offset_commit()`] method followed by [`ConsumerStream::offset_flush()`].
+    /// There is support for auto-commits if [`crate::consumer::OffsetManagementStrategy::Auto`] is used.
+    /// # Example
+    /// #### Manually commit offsets
+    ///
+    /// ```no_run
+    /// use fluvio::{
+    ///    consumer::{ConsumerConfigExtBuilder, ConsumerStream, OffsetManagementStrategy},
+    ///    Fluvio, Offset,
+    /// };
+    /// use futures_util::StreamExt;
+    /// async fn do_consume_with_manual_commits(fluvio: &Fluvio) -> anyhow::Result<()> {
+    ///    let mut stream = fluvio
+    ///        .consumer_with_config(
+    ///            ConsumerConfigExtBuilder::default()
+    ///                .topic("my-topic".to_string())
+    ///                .offset_consumer("my-consumer".to_string())
+    ///                .offset_start(Offset::beginning())
+    ///                .offset_strategy(OffsetManagementStrategy::Manual)
+    ///                .build()?,
+    ///        )
+    ///        .await?;
+    ///    while let Some(Ok(record)) = stream.next().await {
+    ///        println!("{}", String::from_utf8_lossy(record.as_ref()));
+    ///        stream.offset_commit()?;
+    ///        stream.offset_flush().await?;
+    ///    }
+    ///    Ok(())
+    /// }
+    /// ```
+    /// #### Auto-commits
+    ///
+    /// ```no_run
+    /// use fluvio::{
+    ///    consumer::{ConsumerConfigExtBuilder, ConsumerStream, OffsetManagementStrategy},
+    ///    Fluvio, Offset,
+    /// };
+    /// use futures_util::StreamExt;
+    /// async fn do_consume_with_auto_commits(fluvio: &Fluvio) -> anyhow::Result<()> {
+    ///    let mut stream = fluvio
+    ///        .consumer_with_config(
+    ///            ConsumerConfigExtBuilder::default()
+    ///                .topic("my-topic".to_string())
+    ///                .offset_consumer("my-consumer".to_string())
+    ///                .offset_start(Offset::beginning())
+    ///                .offset_strategy(OffsetManagementStrategy::Auto)
+    ///                .build()?,
+    ///        )
+    ///        .await?;
+    ///    while let Some(Ok(record)) = stream.next().await {
+    ///        println!("{}", String::from_utf8_lossy(record.as_ref()));
+    ///    }
+    ///    Ok(())
+    /// }
+    /// ```
+
     pub async fn consumer_with_config(
         &self,
         config: ConsumerConfigExt,
@@ -279,8 +344,7 @@ impl Fluvio {
         Ok(MultiplePartitionConsumerStream::new(partition_streams))
     }
 
-    /// Experimental: The feature is not finalized yet.
-    #[cfg(feature = "unstable")]
+    /// Returns all consumers offsets that currently available in the cluster.
     pub async fn consumer_offsets(&self) -> Result<Vec<ConsumerOffset>> {
         use fluvio_protocol::{link::ErrorCode, record::ReplicaKey};
         use crate::spu::SpuDirectory;
@@ -307,8 +371,7 @@ impl Fluvio {
             .collect())
     }
 
-    /// Experimental: The feature is not finalized yet.
-    #[cfg(feature = "unstable")]
+    /// Delete a consumer offset for the given name and the replica.
     pub async fn delete_consumer_offset(
         &self,
         consumer_id: impl Into<String>,

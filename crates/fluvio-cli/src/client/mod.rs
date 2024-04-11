@@ -6,7 +6,6 @@ mod partition;
 mod tableformat;
 mod smartmodule;
 mod smartmodule_invocation;
-#[cfg(feature = "unstable")]
 mod consumer;
 mod core;
 
@@ -48,7 +47,6 @@ mod cmd {
     use crate::common::target::ClusterTarget;
     use crate::common::Terminal;
 
-    #[cfg(feature = "unstable")]
     use super::consumer::ConsumerCmd;
     use super::core::CoreCmd;
     use super::smartmodule::SmartModuleCmd;
@@ -141,7 +139,6 @@ mod cmd {
         #[command(subcommand, name = "hub")]
         Hub(HubCmd),
 
-        #[cfg(feature = "unstable")]
         /// Manage and view Consumers
         #[command(subcommand, name = "consumer")]
         Consumer(ConsumerCmd),
@@ -181,7 +178,6 @@ mod cmd {
                 Self::Hub(hub) => {
                     hub.process(out, target).await?;
                 }
-                #[cfg(feature = "unstable")]
                 Self::Consumer(consumer) => {
                     consumer.process(out, target).await?;
                 }

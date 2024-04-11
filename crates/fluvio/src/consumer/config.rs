@@ -43,9 +43,13 @@ impl ConsumerConfigBuilder {
 
 #[derive(Debug, Default, Copy, Clone)]
 pub enum OffsetManagementStrategy {
+    /// Offsets are not saved
     #[default]
     None,
+    /// All operations must be invoked explicitly.
     Manual,
+    /// Before yielding a new record to the caller, the previous record is committed and flushed if the configured interval is passed.
+    /// Additionally, the commit and the flush are triggered when the stream object gets dropped.
     Auto,
 }
 

@@ -329,14 +329,14 @@ teardown_file() {
     assert_success
 }
 
-@test "Consume subset of partitions" {
+@test "Consume one partition only" {
     if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
         skip "don't run on stable version"
     fi
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_14" -p 1 -p 2 -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_14" -p 1 -B -d
 
     assert_output --partial "1"
-    assert_output --partial "2"
+    refute_output --partial "2"
     refute_output --partial "3"
     assert_success
 }

@@ -122,6 +122,13 @@ reconnection-test: REPL=1
 reconnection-test: test-setup
 	$(TEST_BIN) reconnection  ${TEST_ARG_COMMON}
 
+consumer-offsets-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+consumer-offsets-test: DEFAULT_SPU=1
+consumer-offsets-test: REPL=1
+consumer-offsets-test: test-setup
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 1 --topic-name consumer-offset-single
+	$(TEST_BIN) consumer_offsets  ${TEST_ARG_COMMON} --partition 5 --topic-name consumer-offset-multiple
+
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
 SC_HOST=localhost
