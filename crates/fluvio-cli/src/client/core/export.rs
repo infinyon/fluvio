@@ -6,7 +6,6 @@ use fluvio_sc_schema::{
     edge::EdgeMetadataExport,
     remote::{Core, RemoteSpec, RemoteType},
 };
-use k8_types::K8Obj;
 use anyhow::anyhow;
 
 use super::get_admin;
@@ -51,19 +50,13 @@ impl ExportOpt {
 
         let core_id = self.core_id.clone().unwrap_or_else(|| "core".to_owned());
 
-        let metadata_name = format!("edge-{}", self.edge_id);
-        let edge_metadata = vec![K8Obj::new(
-            metadata_name,
-            RemoteSpec {
-                remote_type: RemoteType::Core(Core {
-                    id: core_id,
-                    edge_id: self.edge_id,
-                    public_endpoint,
-                }),
-            },
-        )];
+        let core_metadata = Core {
+            id: core_id,
+            edge_id: self.edge_id,
+            public_endpoint,
+        };
 
-        let metadata = EdgeMetadataExport::new(edge_metadata);
+        let metadata = EdgeMetadataExport::new(core_metadata);
 
         if let Some(filename) = self.file {
             std::fs::write(filename, serde_json::to_string_pretty(&metadata)?)

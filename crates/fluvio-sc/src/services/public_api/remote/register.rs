@@ -1,6 +1,11 @@
 use fluvio_auth::AuthContext;
 use fluvio_protocol::link::ErrorCode;
-use fluvio_sc_schema::{core::MetadataItem, objects::CreateRequest, remote::RemoteSpec, Status};
+use fluvio_sc_schema::{
+    core::MetadataItem,
+    objects::CreateRequest,
+    remote::{RemoteSpec, RemoteType},
+    Status,
+};
 use anyhow::Result;
 use tracing::info;
 
@@ -25,13 +30,18 @@ pub async fn handle_register_remote<AC: AuthContext, C: MetadataItem>(
         ));
     }
 
-    if (ctx.remote().store().value(&name).await).is_some() {
-        return Ok(Status::new(
-            name.clone(),
-            ErrorCode::RemoteAlreadyExists,
-            Some(format!("remote cluster {:?} already exists", name)),
-        ));
+    // if it's a Edge, check if it already exists
+    // if it's a Core, just update it
+    if let Some(remote) = ctx.remote().store().value(&name).await {
+        if let RemoteType::Edge(_) = remote.spec().remote_type {
+            return Ok(Status::new(
+                name.clone(),
+                ErrorCode::RemoteAlreadyExists,
+                Some(format!("remote cluster {:?} already exists", name)),
+            ));
+        }
     }
+
     ctx.remote()
         .create_spec(name.clone(), spec)
         .await
