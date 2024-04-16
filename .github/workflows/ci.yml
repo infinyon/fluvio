@@ -573,6 +573,7 @@ jobs:
             reconnection,
             batch-failure,
             batch,
+            consumer-offsets
           ]
         run-mode: [local, local-k8]
     steps:
@@ -675,6 +676,9 @@ jobs:
       - name: Client stats validation
         if: matrix.test == 'stats-validation'
         run: make stats-test
+      - name: Run consumer-offsets
+        if: matrix.test == 'consumer-offsets'
+        run: make consumer-offsets-test
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5

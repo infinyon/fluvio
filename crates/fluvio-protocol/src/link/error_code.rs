@@ -117,7 +117,7 @@ pub enum ErrorCode {
     #[error("offset flush error: {0}")]
     OffsetFlushRequestError(String),
     #[fluvio(tag = 3004)]
-    #[error("the offset management is disable for the stream")]
+    #[error("the offset management is disabled for the stream")]
     OffsetManagementDisabled,
 
     // Legacy SmartModule errors
