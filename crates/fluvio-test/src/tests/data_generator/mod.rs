@@ -108,14 +108,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
             println!("setup");
 
-            let sync_consumer = test_driver
-                .get_consumer(&sync_topic, 0)
-                .await;
-
-            let mut sync_stream = sync_consumer
-                .stream(Offset::from_end(0))
-                .await
-                .expect("Unable to open stream");
+            let mut sync_stream = test_driver.get_consumer_with_start(&sync_topic, 0, Offset::from_end(0)).await;
 
             let sync_producer = test_driver
                 .create_producer(&sync_topic)

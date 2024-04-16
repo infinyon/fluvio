@@ -121,8 +121,9 @@ impl ConsumerConfigExt {
 }
 
 impl ConsumerConfigExtBuilder {
-    pub fn partition(&mut self, value: PartitionId) {
+    pub fn partition(&mut self, value: PartitionId) -> &mut Self {
         self.partition.get_or_insert(Vec::new()).push(value);
+        self
     }
 }
 

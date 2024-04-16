@@ -142,6 +142,11 @@ where
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`stream_with_config`]: struct.ConsumerConfig.html#method.stream_with_config
     #[instrument(skip(self, offset))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
+    #[allow(deprecated)]
     pub async fn stream(
         &self,
         offset: Offset,
@@ -191,6 +196,10 @@ where
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     #[instrument(skip(self, offset, config))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
     pub async fn stream_with_config(
         &self,
         offset: Offset,
@@ -246,6 +255,10 @@ where
     /// # }
     /// ```
     #[instrument(skip(self, offset, config))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
     pub async fn stream_batches_with_config(
         &self,
         offset: Offset,
@@ -743,6 +756,11 @@ impl MultiplePartitionConsumer {
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`stream_with_config`]: struct.ConsumerConfig.html#method.stream_with_config
     #[instrument(skip(self, offset))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
+    #[allow(deprecated)]
     pub async fn stream(
         &self,
         offset: Offset,
@@ -792,6 +810,11 @@ impl MultiplePartitionConsumer {
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     #[instrument(skip(self, offset, config))]
+    #[deprecated(
+        since = "0.21.8",
+        note = "use `Fluvio::consumer_with_config()` instead"
+    )]
+    #[allow(deprecated)]
     pub async fn stream_with_config(
         &self,
         offset: Offset,

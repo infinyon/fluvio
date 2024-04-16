@@ -193,6 +193,7 @@ impl Fluvio {
     /// all of the events in all of the partitions, use `consumer` instead.
     ///
     ///
+    #[deprecated(since = "0.21.8", note = "use `consumer_with_config()` instead")]
     pub async fn partition_consumer(
         &self,
         topic: impl Into<String>,
@@ -228,6 +229,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[deprecated(since = "0.21.8", note = "use `consumer_with_config()` instead")]
     pub async fn consumer(
         &self,
         strategy: PartitionSelectionStrategy,

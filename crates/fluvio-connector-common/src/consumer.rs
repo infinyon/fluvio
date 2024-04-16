@@ -1,4 +1,5 @@
-use fluvio::{FluvioConfig, Fluvio, PartitionSelectionStrategy};
+use fluvio::consumer::ConsumerConfigExtBuilder;
+use fluvio::{FluvioConfig, Fluvio};
 use fluvio::dataplane::record::ConsumerRecord;
 use fluvio_connector_package::config::ConsumerPartitionConfig;
 use fluvio_sc_schema::errors::ErrorCode;
@@ -26,49 +27,33 @@ pub async fn consumer_stream_from_config(
     let fluvio = Fluvio::connect_with_config(&cluster_config).await?;
     ensure_topic_exists(config).await?;
 
-    let mut builder = fluvio::ConsumerConfig::builder();
+    let consumer_partition = config
+        .meta()
+        .consumer()
+        .map(|c| c.partition.clone())
+        .unwrap_or_default();
+    let mut builder = ConsumerConfigExtBuilder::default();
+    builder.topic(config.meta().topic());
+    builder.offset_start(fluvio::Offset::end());
+    match consumer_partition {
+        ConsumerPartitionConfig::One(partition) => {
+            builder.partition(partition);
+        }
+        ConsumerPartitionConfig::All => (),
+        ConsumerPartitionConfig::Many(partitions) => {
+            for partition in partitions {
+                builder.partition(partition);
+            }
+        }
+    };
     if let Some(max_bytes) = config.meta().consumer().and_then(|c| c.max_bytes) {
         builder.max_bytes(max_bytes.as_u64() as i32);
     }
     if let Some(smartmodules) = smartmodule_vec_from_config(config) {
         builder.smartmodule(smartmodules);
     }
-    let consumer_config = builder.build()?;
-    let consumer_partition = config
-        .meta()
-        .consumer()
-        .map(|c| c.partition.clone())
-        .unwrap_or_default();
-    let offset = fluvio::Offset::end();
-    let topic = config.meta().topic().to_string();
-    let stream = match consumer_partition {
-        ConsumerPartitionConfig::One(partition) => {
-            let consumer = fluvio.partition_consumer(topic, partition).await?;
-            consumer
-                .stream_with_config(offset, consumer_config)
-                .await?
-                .boxed()
-        }
-        ConsumerPartitionConfig::All => {
-            let consumer = fluvio
-                .consumer(PartitionSelectionStrategy::All(topic))
-                .await?;
-            consumer
-                .stream_with_config(offset, consumer_config)
-                .await?
-                .boxed()
-        }
-        ConsumerPartitionConfig::Many(partitions) => {
-            let partitions = partitions.into_iter().map(|p| (topic.clone(), p)).collect();
-            let consumer = fluvio
-                .consumer(PartitionSelectionStrategy::Multiple(partitions))
-                .await?;
-            consumer
-                .stream_with_config(offset, consumer_config)
-                .await?
-                .boxed()
-        }
-    };
+
+    let stream = fluvio.consumer_with_config(builder.build()?).await?.boxed();
 
     Ok((fluvio, stream))
 }

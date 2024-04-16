@@ -80,15 +80,14 @@ pub async fn validate_consume_message_api(
             "starting fetch stream for: {topic_name} base offset: {base_offset}, expected new records: {producer_iteration}"
         );
 
-        let consumer = test_driver.get_consumer(&topic_name, 0).await;
-
-        let mut stream = consumer
-            .stream(
+        let mut stream = test_driver
+            .get_consumer_with_start(
+                &topic_name,
+                0,
                 Offset::absolute(*base_offset)
                     .unwrap_or_else(|_| panic!("creating stream for iteration: {i}")),
             )
-            .await
-            .expect("stream");
+            .await;
 
         let mut total_records: u32 = 0;
 
@@ -206,15 +205,14 @@ pub async fn validate_consume_message_api(
             "performing complete  fetch stream for: {topic_name} base offset: {base_offset}, expected new records: {producer_iteration}"
         );
 
-        let consumer = test_driver.get_consumer(&topic_name, 0).await;
-
-        let mut stream = consumer
-            .stream(
+        let mut stream = test_driver
+            .get_consumer_with_start(
+                &topic_name,
+                0,
                 Offset::absolute(*base_offset)
                     .unwrap_or_else(|_| panic!("creating stream for iteration: {i}")),
             )
-            .await
-            .expect("stream");
+            .await;
 
         let mut total_records: u32 = 0;
 

@@ -1,6 +1,7 @@
 use std::time::SystemTime;
 use std::time::Duration;
 
+use fluvio::consumer::ConsumerConfigExtBuilder;
 use futures::FutureExt;
 use futures_lite::StreamExt;
 use futures::future::try_join_all;
@@ -46,16 +47,15 @@ pub async fn consumer_stream(test_driver: TestDriver, option: MyTestCase, consum
             format!("{}-{}", option.environment.base_topic_name(), t)
         };
 
-        let consumer = test_driver.get_all_partitions_consumer(&topic_name).await;
-
         // create a channel
         // pass recv end to function
-
-        // TODO: Support starting stream from consumer offset
-        let stream = consumer
-            .stream(Offset::from_end(0))
-            .await
-            .expect("Unable to open stream");
+        let config = ConsumerConfigExtBuilder::default()
+            .offset_consumer(consumer_id.to_string())
+            .topic(topic_name)
+            .offset_start(Offset::from_end(0))
+            .build()
+            .expect("config");
+        let stream = test_driver.get_consumer_with_config(config).await;
 
         let shared = Box::pin(consume_from_stream(s.clone(), stream)).shared();
 
