@@ -55,10 +55,11 @@ pub enum OffsetManagementStrategy {
 
 #[derive(Debug, Builder, Clone)]
 pub struct ConsumerConfigExt {
+    #[builder(setter(into))]
     pub topic: String,
-    #[builder(default, setter(strip_option))]
-    pub partition: Option<PartitionId>,
-    #[builder(default, setter(strip_option))]
+    #[builder(default, setter(custom))]
+    pub partition: Vec<PartitionId>,
+    #[builder(default, setter(strip_option, into))]
     pub offset_consumer: Option<String>,
     pub offset_start: Offset,
     #[builder(default)]
@@ -116,6 +117,12 @@ impl ConsumerConfigExt {
             offset_strategy,
             offset_flush,
         )
+    }
+}
+
+impl ConsumerConfigExtBuilder {
+    pub fn partition(&mut self, value: PartitionId) {
+        self.partition.get_or_insert(Vec::new()).push(value);
     }
 }
 
