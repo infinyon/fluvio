@@ -93,8 +93,8 @@ async fn produce_records(client: &Fluvio, topic: &str, partitions: usize) -> Res
 
 async fn test_strategy_none(client: &Fluvio, topic: &str, partitions: usize) -> Result<()> {
     let mut builder = ConsumerConfigExtBuilder::default();
-    if partitions == 1 {
-        builder.partition(0);
+    for partition in 0..partitions {
+        builder.partition(partition as u32);
     }
     let mut stream = client
         .consumer_with_config(

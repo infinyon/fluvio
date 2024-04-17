@@ -321,26 +321,17 @@ impl Fluvio {
             .await?
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
             .spec;
-        let partition_streams = if let Some(partition) = config.partition {
-            vec![
-                PartitionConsumer::new(topic.clone(), partition, spu_pool.clone(), self.metrics())
-                    .consumer_stream_with_config(config.clone())
-                    .await?,
-            ]
+        let partitions = if config.partition.is_empty() {
+            (0..topic_spec.partitions()).collect()
         } else {
-            let partition_count: PartitionId = topic_spec.partitions();
-            let mut streams = Vec::with_capacity(partition_count as usize);
-            for partition in 0..partition_count {
-                let consumer = PartitionConsumer::new(
-                    topic.clone(),
-                    partition,
-                    spu_pool.clone(),
-                    self.metrics(),
-                );
-                streams.push(consumer.consumer_stream_with_config(config.clone()).await?);
-            }
-            streams
+            config.partition.clone()
         };
+        let mut partition_streams = Vec::with_capacity(partitions.len());
+        for partition in partitions {
+            let consumer =
+                PartitionConsumer::new(topic.clone(), partition, spu_pool.clone(), self.metrics());
+            partition_streams.push(consumer.consumer_stream_with_config(config.clone()).await?);
+        }
         Ok(MultiplePartitionConsumerStream::new(partition_streams))
     }
 

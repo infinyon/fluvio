@@ -80,7 +80,7 @@ mod cmd {
 
         /// Partition id
         #[arg(short = 'p', long, value_name = "integer")]
-        pub partition: Option<PartitionId>,
+        pub partition: Vec<PartitionId>,
 
         /// Consume records from all partitions
         #[arg(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
@@ -303,10 +303,10 @@ mod cmd {
             let offset = self.calculate_offset()?;
 
             let mut builder = ConsumerConfigExt::builder();
-            builder.topic(self.topic.clone());
+            builder.topic(&self.topic);
             builder.offset_start(offset);
-            if let Some(partition) = self.partition {
-                builder.partition(partition);
+            for partition in &self.partition {
+                builder.partition(*partition);
             }
             if let Some(ref consumer) = self.consumer {
                 builder.offset_consumer(consumer.clone());
