@@ -165,3 +165,87 @@ EOF
     assert_success
 }
 
+@test "Consumer Offsets topic exist" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+    end_time=$((SECONDS + 65))
+    while [ $SECONDS -lt $end_time ]; do
+      SYSTEM_TOPIC_NAME="$($FLUVIO_BIN topic list --system -O json | jq '.[0].name' | tr -d '"')"
+      if [ -z "$SYSTEM_TOPIC_NAME" ]; then
+          debug_msg "$SYSTEM_TOPIC_NAME"
+          sleep 1
+      else
+          debug_msg "System topic $SYSTEM_TOPIC_NAME found"
+          break
+      fi
+    done
+    assert [ ! -z "$SYSTEM_TOPIC_NAME" ]
+}
+
+@test "Connector with managed consumer offsets" {
+    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on fluvio cli stable version"
+    fi
+    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
+        skip "don't run on cluster stable version"
+    fi
+    # Prepare config
+    TOPIC_NAME=$(random_string)
+    CONSUMER_NAME=$(random_string)
+    debug_msg "Topic name: $TOPIC_NAME"
+    CONNECTOR_NAME="my-$TOPIC_NAME"
+    debug_msg "Connector name: $CONNECTOR_NAME"
+    export LOG_PATH="$CONNECTOR_NAME.log"
+    debug_msg "Log path: $LOG_PATH"
+
+    CONFIG_PATH="$TEST_DIR/$TOPIC_NAME.yaml"
+    cat <<EOF >$CONFIG_PATH
+apiVersion: 0.2.0
+meta:
+  version: 0.1.0
+  name: $CONNECTOR_NAME
+  type: test-sink
+  topic:
+    meta:
+      name: $TOPIC_NAME
+    partition:
+      count: 1
+  consumer:
+    partition: 0
+    id: $CONSUMER_NAME
+    offset:
+      strategy: auto
+      flush-period:
+        secs: 1
+        nanos: 0
+custom:
+  api_key: api_key
+  client_id: client_id
+EOF
+    # Test
+    cd $CONNECTOR_DIR
+    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start --config $CONFIG_PATH --log-level info
+    assert_success
+    assert_output --partial "Connector runs with process id"
+
+    wait_for_line_in_file "succesfully created" $LOG_PATH 30
+    wait_for_line_in_file "monitoring started" $LOG_PATH 30
+
+    echo 1:1 | fluvio produce $TOPIC_NAME --key-separator ":"
+    sleep 2
+    echo 4:4 | fluvio produce $TOPIC_NAME --key-separator ":"
+    sleep 2
+
+    wait_for_line_in_file "Received record: 1" $LOG_PATH 30
+    wait_for_line_in_file "Received record: 4" $LOG_PATH 30
+
+    OFFSET=$("$FLUVIO_BIN" consumer list -O json | jq ".[] | select(.consumer_id == \"$CONSUMER_NAME\") | .offset")
+    assert [ ! -z $OFFSET ]
+
+    run $CDK_BIN deploy shutdown --name $CONNECTOR_NAME
+    assert_success
+}
