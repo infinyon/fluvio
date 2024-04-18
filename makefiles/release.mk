@@ -238,6 +238,7 @@ bump-fluvio-latest: VERSION=$(subst -$(GIT_COMMIT_SHA),+$(GIT_COMMIT_SHA),$(DEV_
 # publishes pkgset for "latest"
 bump-fluvio-latest: PKGSET_NAME=latest
 bump-fluvio-latest: FLUVIO_VERSION=${VERSION}
+bump-fluvio-latest: FLUVIO_CLOUD_VERSION=latest
 bump-fluvio-latest: bump-fluvio
 	./actions/publish-pkgset.sh
 
