@@ -168,7 +168,7 @@ pub async fn push_package_conn(pkgpath: &str, access: &HubAccess, target: &str) 
     push_package_api(&url, pkgpath, access).await
 }
 
-async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) -> Result<()> {
+pub async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) -> Result<()> {
     let pm = package_get_meta(pkgpath)?;
     packagename_validate(&pm.name)?;
 
