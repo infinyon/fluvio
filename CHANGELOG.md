@@ -1,7 +1,51 @@
 # Release Notes
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
-## Platform Version 0.11.6 - UNRELEASED
+
+## Platform Version 0.11.6-dev - 2024-04-19
+
+### Added
+
+* Added fluvio kv storage crate ([#3905](https://github.com/infinyon/fluvio/issues/3905))
+* Add docker compose example ([#3910](https://github.com/infinyon/fluvio/issues/3910))
+* Added public SPU requests for offset mngt ([#3918](https://github.com/infinyon/fluvio/issues/3918))
+* Add consumer storage to spu ([#3915](https://github.com/infinyon/fluvio/issues/3915))
+* Added offset management to consumer api(unstable) ([#3928](https://github.com/infinyon/fluvio/issues/3928))
+* Added hidden topics and partitions ([#3930](https://github.com/infinyon/fluvio/issues/3930))
+* Added auto-creation of offsets topic ([#3935](https://github.com/infinyon/fluvio/issues/3935))
+* Added consumer offset to cli ([#3941](https://github.com/infinyon/fluvio/issues/3941))
+* Support subset of partitions in consumer ext ([#3948](https://github.com/infinyon/fluvio/issues/3948))
+* Added consumer offset to connector config ([#3950](https://github.com/infinyon/fluvio/issues/3950))
+
+### CI
+
+* Ci, update fluvio publish workflows ([#3939](https://github.com/infinyon/fluvio/issues/3939))
+* Release `v0.11.6
+
+### Changed
+
+* Update some dep ([#3929](https://github.com/infinyon/fluvio/issues/3929))
+
+### Fixed
+
+* Check if batch size exceeds segment size ([#3900](https://github.com/infinyon/fluvio/issues/3900))
+* Improve kubectl access errors ([#3895](https://github.com/infinyon/fluvio/issues/3895))
+* Use specialized error for evicted offset case ([#3902](https://github.com/infinyon/fluvio/issues/3902))
+* Fvm switch bug #3765 ([#3912](https://github.com/infinyon/fluvio/issues/3912))
+* Cargo_template Cargo.toml noise ([#3919](https://github.com/infinyon/fluvio/issues/3919))
+* Cdk deploy, fix contention on ipkg binary and/or log path ([#3926](https://github.com/infinyon/fluvio/issues/3926))
+
+### Other
+
+* Enable minallocator to improve perf ([#3924](https://github.com/infinyon/fluvio/issues/3924))
+* Avoid merging PR if a job was skipped/failed ([#3934](https://github.com/infinyon/fluvio/issues/3934))
+* Disallow deletion system topic unless forced ([#3942](https://github.com/infinyon/fluvio/issues/3942))
+* Mark consumers offset feature as stable ([#3945](https://github.com/infinyon/fluvio/issues/3945))
+* Ci, bind latest to latest fluvio-cloud ([#3949](https://github.com/infinyon/fluvio/issues/3949))
+
+### Removed
+
+* Set old consumer API deprecated ([#3947](https://github.com/infinyon/fluvio/issues/3947))
 
 ## Platform Version 0.11.5 - 2024-03-04
 
