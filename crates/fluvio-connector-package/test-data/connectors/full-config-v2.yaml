@@ -31,6 +31,14 @@ meta:
   consumer:
     partition: 10
     max_bytes: "1 MB"
+    id: "consumer_id_1"
+    offset:
+      start:
+        absolute: 100
+      strategy: auto
+      flush-period:
+        secs: 160
+        nanos: 0
   secrets:
     - name: secret1
 transforms:

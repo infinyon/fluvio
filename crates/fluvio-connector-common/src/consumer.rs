@@ -1,7 +1,7 @@
-use fluvio::consumer::ConsumerConfigExtBuilder;
-use fluvio::{FluvioConfig, Fluvio};
+use fluvio::consumer::{ConsumerConfigExtBuilder, OffsetManagementStrategy};
+use fluvio::{Fluvio, FluvioConfig, Offset};
 use fluvio::dataplane::record::ConsumerRecord;
-use fluvio_connector_package::config::ConsumerPartitionConfig;
+use fluvio_connector_package::config::{ConsumerPartitionConfig, OffsetConfig, OffsetStrategyConfig};
 use fluvio_sc_schema::errors::ErrorCode;
 use futures::StreamExt;
 use crate::{config::ConnectorConfig, Result};
@@ -35,6 +35,31 @@ pub async fn consumer_stream_from_config(
     let mut builder = ConsumerConfigExtBuilder::default();
     builder.topic(config.meta().topic());
     builder.offset_start(fluvio::Offset::end());
+    if let Some(consumer_id) = config.meta().consumer().and_then(|c| c.id.as_ref()) {
+        builder.offset_consumer(consumer_id);
+    }
+    if let Some(consumer_offset) = config.meta().consumer().and_then(|c| c.offset.as_ref()) {
+        let offset_strategy = match consumer_offset.strategy {
+            OffsetStrategyConfig::None => OffsetManagementStrategy::None,
+            OffsetStrategyConfig::Manual => OffsetManagementStrategy::Manual,
+            OffsetStrategyConfig::Auto => OffsetManagementStrategy::Auto,
+        };
+        builder.offset_strategy(offset_strategy);
+        if let Some(flush) = consumer_offset.flush_period {
+            builder.offset_flush(flush);
+        }
+        if let Some(start) = &consumer_offset.start {
+            let offsset_start = match start {
+                OffsetConfig::Absolute(abs) => Offset::absolute(*abs)?,
+                OffsetConfig::Beginning => Offset::beginning(),
+                OffsetConfig::FromBeginning(index) => Offset::from_beginning(*index),
+                OffsetConfig::End => Offset::end(),
+                OffsetConfig::FromEnd(index) => Offset::from_end(*index),
+            };
+            builder.offset_start(offsset_start);
+        }
+    }
+
     match consumer_partition {
         ConsumerPartitionConfig::One(partition) => {
             builder.partition(partition);
