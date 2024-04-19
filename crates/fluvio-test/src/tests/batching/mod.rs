@@ -34,11 +34,9 @@ pub async fn batching(
 
     println!("Found leader {leader}");
 
-    let consumer = test_driver.get_consumer(&topic_name, 0).await;
-    let mut stream = consumer
-        .stream(Offset::end())
-        .await
-        .expect("Failed to create consumer stream");
+    let mut stream = test_driver
+        .get_consumer_with_start(&topic_name, 0, Offset::end())
+        .await;
 
     for _ in 0..150 {
         // Ensure record is sent after the linger time even if we dont call flush()

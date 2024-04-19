@@ -13,10 +13,13 @@ pub async fn consumer_stream(
     option: MyTestCase,
     digests: Receiver<String>,
 ) {
-    let consumer = test_driver
-        .get_consumer(&option.environment.base_topic_name(), 0)
+    let mut stream = test_driver
+        .get_consumer_with_start(
+            &option.environment.base_topic_name(),
+            0,
+            Offset::beginning(),
+        )
         .await;
-    let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 
     let mut index: i32 = 0;
     while let Some(Ok(record)) = stream.next().await {

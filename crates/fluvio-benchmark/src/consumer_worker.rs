@@ -4,7 +4,9 @@ use std::time::{Duration, Instant};
 use async_channel::{Sender, Receiver};
 use anyhow::Result;
 
-use fluvio::{consumer::ConsumerConfigBuilder, Offset, dataplane::link::ErrorCode};
+use fluvio::consumer::ConsumerConfigExtBuilder;
+use fluvio::Fluvio;
+use fluvio::{Offset, dataplane::link::ErrorCode};
 use fluvio::dataplane::record::ConsumerRecord;
 use fluvio_future::future::timeout;
 use futures_util::{Stream, StreamExt};
@@ -28,16 +30,17 @@ impl ConsumerWorker {
         assigned_partition: u64,
         preallocation_hint: u64,
     ) -> Result<Self> {
-        let mut config_builder = ConsumerConfigBuilder::default();
-        config_builder.max_bytes(config.consumer_max_bytes as i32);
-        config_builder.isolation(config.consumer_isolation);
-
-        let fluvio_config = config_builder.build()?;
-
-        let fluvio_consumer =
-            fluvio::consumer(config.topic_name.clone(), assigned_partition as u32).await?;
-        let stream = fluvio_consumer
-            .stream_with_config(Offset::absolute(0)?, fluvio_config)
+        let fluvio = Fluvio::connect().await?;
+        let stream = fluvio
+            .consumer_with_config(
+                ConsumerConfigExtBuilder::default()
+                    .topic(config.topic_name)
+                    .partition(assigned_partition as u32)
+                    .offset_start(Offset::absolute(0)?)
+                    .max_bytes(config.consumer_max_bytes as i32)
+                    .isolation(config.consumer_isolation)
+                    .build()?,
+            )
             .await?;
 
         Ok(Self {
