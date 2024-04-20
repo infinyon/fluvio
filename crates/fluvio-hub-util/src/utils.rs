@@ -185,8 +185,11 @@ pub async fn push_package_api(put_url: &str, pkgpath: &str, access: &HubAccess) 
         )));
     }
 
+    tracing::debug!("get action token");
     let pkg_bytes = std::fs::read(pkgpath)?;
     let actiontoken = access.get_publish_token().await?;
+
+    tracing::debug!(url = put_url, "put package");
     let req = http::Request::put(put_url)
         .header("Authorization", &actiontoken)
         .header(http::header::CONTENT_TYPE, mime::OCTET_STREAM.as_str())
