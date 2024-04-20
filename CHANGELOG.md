@@ -2,7 +2,7 @@
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## Platform Version 0.11.6-dev - 2024-04-19
+## Platform Version 0.11.6 - 2024-04-20
 
 ### Added
 
