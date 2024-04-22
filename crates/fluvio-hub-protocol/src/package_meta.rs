@@ -28,7 +28,6 @@ pub struct PackageMeta {
 
     #[serde(default = "PackageMeta::visibility_if_missing")]
     pub visibility: PkgVisibility, // private is default if missing
-
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
