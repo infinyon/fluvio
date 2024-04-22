@@ -2,6 +2,7 @@ use std::default::Default;
 
 use serde::{Deserialize, Serialize};
 use tracing::{info, error};
+use url::Url;
 
 use fluvio_controlplane_metadata::smartmodule::FluvioSemVersion;
 use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
@@ -18,16 +19,16 @@ pub struct PackageMeta {
     pub name: String,
     pub version: String, // SemVer?, package version
     pub group: String,
-    // author: Option<String>,
     pub description: String,
     pub license: String,
+    pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
+    pub repository_url: Option<Url>,
+    pub repository_commit_sha: Option<String>,
+    pub tags: Option<Vec<PkgTag>>,
 
     #[serde(default = "PackageMeta::visibility_if_missing")]
     pub visibility: PkgVisibility, // private is default if missing
-    pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
-    // repository: optional url
-    // repository-commit: optional hash
-    pub tags: Option<Vec<PkgTag>>,
+
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
@@ -56,6 +57,8 @@ impl Default for PackageMeta {
             visibility: PkgVisibility::Private,
             manifest: Vec::new(),
             tags: None,
+            repository_url: None,
+            repository_commit_sha: None,
         }
     }
 }
