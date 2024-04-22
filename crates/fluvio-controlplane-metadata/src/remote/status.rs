@@ -1,3 +1,4 @@
+use std::time::Duration;
 use fluvio_protocol::{Encoder, Decoder};
 
 #[derive(Encoder, Decoder, Default, Debug, Clone, Eq, PartialEq)]
@@ -46,6 +47,24 @@ pub struct ConnectionStat {
     pub last_seen: u64, // number of milliseconds since last seen
 }
 
+impl RemoteStatus {
+    #[cfg(feature = "use_serde")]
+    pub fn last_seen(&self, since: Duration) -> String {
+        use humantime_serde::re::humantime;
+
+        let since_sec = since.as_secs();
+
+        if self.connection_stat.last_seen == 0 {
+            return "-".to_string();
+        }
+
+        let last_seen_sec =
+            std::time::Duration::from_millis(self.connection_stat.last_seen).as_secs();
+        humantime::Duration::from(std::time::Duration::from_secs(since_sec - last_seen_sec))
+            .to_string()
+    }
+}
+
 impl std::fmt::Display for RemoteStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let status = match (self.pairing.clone(), self.connection_status.clone()) {
@@ -81,5 +100,33 @@ impl std::fmt::Display for ConnectionStatus {
             ConnectionStatus::Offline => "offline",
         };
         write!(f, "{}", status)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_last_seen() {
+        let status = RemoteStatus {
+            pairing: RemotePairStatus::Succesful,
+            connection_status: ConnectionStatus::Online,
+            connection_stat: ConnectionStat {
+                last_seen: 1713902927812,
+            },
+        };
+
+        let since = Duration::from_millis(1713902932152);
+        let last_seen = status.last_seen(since);
+        assert_eq!(last_seen, "5s");
+
+        let default_status = RemoteStatus {
+            pairing: RemotePairStatus::Succesful,
+            connection_status: ConnectionStatus::Online,
+            connection_stat: ConnectionStat { last_seen: 0 },
+        };
+        let last_seen = default_status.last_seen(since);
+        assert_eq!(last_seen, "-");
     }
 }

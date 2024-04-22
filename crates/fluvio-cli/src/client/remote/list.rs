@@ -1,4 +1,5 @@
 pub use std::sync::Arc;
+use std::time::SystemTime;
 
 use anyhow::Result;
 use clap::Parser;
@@ -9,11 +10,11 @@ use fluvio_sc_schema::remote::{RemoteSpec, RemoteStatus, RemoteType};
 use super::get_admin;
 
 #[derive(Debug, Parser)]
-pub struct StatusOpt {
+pub struct ListOpt {
     #[clap(flatten)]
     output: OutputFormat,
 }
-impl StatusOpt {
+impl ListOpt {
     pub async fn execute<T: Terminal>(
         self,
         out: Arc<T>,
@@ -21,22 +22,17 @@ impl StatusOpt {
     ) -> Result<()> {
         let admin = get_admin(cluster_target).await?;
         let list = admin.all::<RemoteSpec>().await?;
+        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
-        let outlist: Vec<(String, String, String, String)> = list
+        let outlist: Vec<(String, String, String)> = list
             .into_iter()
-            .filter_map(|item| {
-                match item.spec.remote_type {
-                    RemoteType::Core(core) => {
-                        let status: RemoteStatus = item.status;
-                        Some((
-                            core.id.to_string(),                          // Source ID
-                            core.public_endpoint,                         // Route
-                            status.to_string(),                           // Status
-                            status.connection_stat.last_seen.to_string(), // Last-Seen
-                        ))
-                    }
-                    _ => None,
+            .filter_map(|item| match item.spec.remote_type {
+                RemoteType::Edge(edge) => {
+                    let status: RemoteStatus = item.status.clone();
+                    let last_seen = item.status.last_seen(now);
+                    Some((edge.id, status.to_string(), last_seen))
                 }
+                _ => None,
             })
             .collect();
         output::format(out, outlist, self.output.format)
@@ -59,7 +55,7 @@ mod output {
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
-    type ListVec = Vec<(String, String, String, String)>;
+    type ListVec = Vec<(String, String, String)>;
 
     #[derive(Serialize)]
     struct TableList(ListVec);
@@ -91,7 +87,7 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["REMOTE", "ROUTE", "STATUS", "LAST-SEEN"])
+            Row::from(["REMOTE", "STATUS", "LAST SEEN"])
         }
 
         /// return errors in string format
@@ -108,7 +104,6 @@ mod output {
                         Cell::new(&e.0).set_alignment(CellAlignment::Left),
                         Cell::new(&e.1).set_alignment(CellAlignment::Left),
                         Cell::new(&e.2).set_alignment(CellAlignment::Left),
-                        Cell::new(&e.3).set_alignment(CellAlignment::Left),
                     ])
                 })
                 .collect()

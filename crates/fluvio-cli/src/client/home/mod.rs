@@ -12,16 +12,16 @@ use self::connect::ConnectOpt;
 use self::status::StatusOpt;
 
 #[derive(Debug, Parser)]
-pub enum EdgeCmd {
-    /// Connect to a remote cluster
+pub enum HomeCmd {
+    /// Connect to a home cluster
     #[command(name = "connect")]
     Connect(ConnectOpt),
-    /// Get the status of a remote cluster
+    /// Get the status of a home cluster
     #[command(name = "status")]
     Status(StatusOpt),
 }
 
-impl EdgeCmd {
+impl HomeCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,

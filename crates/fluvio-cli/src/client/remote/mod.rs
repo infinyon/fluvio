@@ -15,7 +15,7 @@ use fluvio_extension_common::output::Terminal;
 use self::export::ExportOpt;
 
 #[derive(Debug, Parser)]
-pub enum CoreCmd {
+pub enum RemoteCmd {
     /// Register a new remote cluster
     #[command(name = "register")]
     Register(RegisterOpt),
@@ -25,12 +25,12 @@ pub enum CoreCmd {
     /// List all remote clusters
     #[command(name = "unregister")]
     Unregister(UnregisterOpt),
-    // /// Generate metadata file for remote cluster
+    /// Generate metadata file for remote cluster
     #[command(name = "export")]
     Export(ExportOpt),
 }
 
-impl CoreCmd {
+impl RemoteCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,
