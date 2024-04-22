@@ -13,7 +13,7 @@ use super::config::OffsetManagementStrategy;
 use super::{offset::OffsetLocalStore, StreamToServer};
 
 /// Extension of [`Stream`] trait with offset management capabilities.
-pub trait ConsumerStream: Stream {
+pub trait ConsumerStream: Stream<Item = Result<Record, ErrorCode>> + Unpin {
     /// Mark the offset of the last yelded record as committed. Depending on [`OffsetManagementStrategy`]
     /// it may require a subsequent `offset_flush()` call to take any effect.
     fn offset_commit(&mut self) -> Result<(), ErrorCode>;
