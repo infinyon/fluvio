@@ -9,6 +9,7 @@ pub mod objects;
 pub mod shared;
 pub mod tableformat;
 pub mod mirror;
+pub mod mirroring;
 
 pub mod remote_file;
 

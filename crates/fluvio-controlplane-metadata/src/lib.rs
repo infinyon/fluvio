@@ -6,6 +6,7 @@ pub mod smartmodule;
 pub mod tableformat;
 pub mod message;
 pub mod mirror;
+pub mod mirroring;
 
 pub use fluvio_stream_model::core;
 

@@ -2806,6 +2806,7 @@ dependencies = [
  "cfg-if",
  "clap",
  "event-listener 3.1.0",
+ "fluvio",
  "fluvio-auth",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",

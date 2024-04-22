@@ -66,6 +66,7 @@ fluvio-protocol = { workspace = true }
 fluvio-socket = { workspace = true }
 fluvio-service = { workspace = true  }
 flv-tls-proxy = { workspace = true }
+fluvio = { workspace = true }
 
 [dev-dependencies]
 rand = { workspace = true }
