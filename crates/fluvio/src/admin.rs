@@ -3,9 +3,10 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
+use fluvio_socket::AsyncResponse;
 use futures_util::{Stream, StreamExt};
 use tracing::{debug, trace, instrument};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result, Context};
 
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_protocol::api::{Request, RequestMessage};
@@ -339,6 +340,26 @@ impl FluvioAdmin {
                 format!("socket error {err}"),
             )),
         }))
+    }
+
+    /// Create a stream for a specific request
+    #[instrument(skip(self))]
+    pub async fn create_stream<S, R>(&self, req: R) -> Result<AsyncResponse<S>>
+    where
+        S: TryEncodableFrom<R> + Request,
+        R: Request,
+    {
+        let version = self
+            .socket
+            .lookup_version::<S>()
+            .ok_or(anyhow!("no version found watch request {}", S::API_KEY))?;
+        let req = S::try_encode_from(req, version)?;
+        let req_msg = RequestMessage::new_request(req);
+        let inner_socket = self.socket.new_socket();
+        inner_socket
+            .create_stream(req_msg, 10)
+            .await
+            .map_err(|err| anyhow!("socket error: {}", err))
     }
 }
 
