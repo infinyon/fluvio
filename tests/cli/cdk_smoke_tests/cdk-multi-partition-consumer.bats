@@ -54,8 +54,8 @@ EOF
     wait_for_line_in_file "succesfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
-    echo 1:1 | fluvio produce $TOPIC_NAME --key-separator ":"
-    echo 4:4 | fluvio produce $TOPIC_NAME --key-separator ":"
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 4:4 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
 
     wait_for_line_in_file "Received record: 4" $LOG_PATH 30
 
@@ -103,8 +103,8 @@ EOF
     wait_for_line_in_file "succesfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
-    echo 1:1 | fluvio produce $TOPIC_NAME --key-separator ":"
-    echo 4:4 | fluvio produce $TOPIC_NAME --key-separator ":"
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 4:4 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
 
     wait_for_line_in_file "Received record: 4" $LOG_PATH 30
     wait_for_line_in_file "Received record: 1" $LOG_PATH 2
@@ -151,9 +151,9 @@ EOF
     wait_for_line_in_file "succesfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
-    echo 3:3 | fluvio produce $TOPIC_NAME --key-separator ":"
-    echo 1:1 | fluvio produce $TOPIC_NAME --key-separator ":"
-    echo 2:2 | fluvio produce $TOPIC_NAME --key-separator ":"
+    echo 3:3 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 2:2 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
 
     wait_for_line_in_file "Received record: 2" $LOG_PATH 30
     wait_for_line_in_file "Received record: 1" $LOG_PATH 2
@@ -235,9 +235,9 @@ EOF
     wait_for_line_in_file "succesfully created" $LOG_PATH 30
     wait_for_line_in_file "monitoring started" $LOG_PATH 30
 
-    echo 1:1 | fluvio produce $TOPIC_NAME --key-separator ":"
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
     sleep 2
-    echo 4:4 | fluvio produce $TOPIC_NAME --key-separator ":"
+    echo 4:4 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
     sleep 2
 
     wait_for_line_in_file "Received record: 1" $LOG_PATH 30
