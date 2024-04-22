@@ -23,7 +23,6 @@ pub struct PackageMeta {
     pub license: String,
     pub manifest: Vec<String>, // Files in package, package-meta is implied, signature is omitted
     pub repository_url: Option<Url>,
-    pub repository_commit_sha: Option<String>,
     pub tags: Option<Vec<PkgTag>>,
 
     #[serde(default = "PackageMeta::visibility_if_missing")]
@@ -57,7 +56,6 @@ impl Default for PackageMeta {
             manifest: Vec::new(),
             tags: None,
             repository_url: None,
-            repository_commit_sha: None,
         }
     }
 }
