@@ -39,9 +39,11 @@ where
         let replica_map = &self.status.replica_map;
         trace!(?replica_map, "creating new partitions for topic");
         for (idx, replicas) in replica_map.iter() {
+            let mirror = self.status.mirror_map.get(idx);
+
             let replica_key = ReplicaKey::new(self.key(), *idx);
 
-            let partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec);
+            let partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec, mirror);
             if !partition_store.contains_key(&replica_key).await {
                 debug!(?replica_key, ?partition_spec, "creating new partition");
                 partitions.push(

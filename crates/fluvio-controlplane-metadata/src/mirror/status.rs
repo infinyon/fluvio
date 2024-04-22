@@ -8,9 +8,23 @@ use fluvio_protocol::{Encoder, Decoder};
     serde(rename_all = "camelCase")
 )]
 pub struct MirrorStatus {
-    pairing: MirrorPairStatus,
-    connection_status: ConnectionStatus,
+    pub pairing: MirrorPairStatus,
+    pub connection_status: ConnectionStatus,
     pub connection_stat: ConnectionStat,
+}
+
+impl MirrorStatus {
+    pub fn new(
+        pairing: MirrorPairStatus,
+        connection_status: ConnectionStatus,
+        last_seen: u64,
+    ) -> Self {
+        Self {
+            pairing,
+            connection_status,
+            connection_stat: ConnectionStat { last_seen },
+        }
+    }
 }
 
 #[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq, Default)]

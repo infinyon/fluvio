@@ -24,8 +24,8 @@ use fluvio_controlplane_metadata::smartmodule::SmartModulePackageKey;
 use fluvio_stream_model::core::MetadataItem;
 
 use crate::controllers::topics::policy::{
-    validate_computed_topic_parameters, validate_assigned_topic_parameters,
-    update_replica_map_for_assigned_topic,
+    update_replica_map_for_assigned_topic, validate_assigned_topic_parameters,
+    validate_computed_topic_parameters, validate_mirror_topic_parameter,
 };
 use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
@@ -172,6 +172,19 @@ async fn validate_topic_request<C: MetadataItem>(
                 }
             }
         }
+        ReplicaSpec::Mirror(ref mirror) => {
+            let next_state = validate_mirror_topic_parameter::<C>(mirror);
+            trace!("validating, mirror topic: {:#?}", next_state);
+            if next_state.resolution.is_invalid() {
+                Status::new(
+                    name.to_string(),
+                    ErrorCode::TopicError,
+                    Some(next_state.reason),
+                )
+            } else {
+                Status::new_ok(name.to_owned())
+            }
+        }
     }
 }
 
@@ -198,7 +211,7 @@ async fn process_topic_request<AC: AuthContext, C: MetadataItem>(
     let topic_instance = match auth_ctx
         .global_ctx
         .topics()
-        .create_spec(name.clone(), topic_spec)
+        .create_spec(name.clone(), topic_spec.clone())
         .await
     {
         Ok(instance) => instance,
@@ -210,6 +223,12 @@ async fn process_topic_request<AC: AuthContext, C: MetadataItem>(
             )
         }
     };
+
+    // Mirror topics are not provisioned by the SC
+    if let ReplicaSpec::Mirror(_) = topic_spec.replicas() {
+        info!(topic = %name, "Topic created successfully");
+        return Status::new_ok(name);
+    }
 
     let partition_count = topic_instance.spec.partitions();
     debug!(

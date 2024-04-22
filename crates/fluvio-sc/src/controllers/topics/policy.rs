@@ -1,8 +1,14 @@
+use std::collections::BTreeMap;
 use std::fmt;
 
+use fluvio_controlplane_metadata::partition::PartitionMirrorConfig;
+use fluvio_controlplane_metadata::partition::SourcePartitionConfig;
+use fluvio_types::PartitionId;
 use tracing::{debug, instrument};
 
 use fluvio_controlplane::PartitionMetadata;
+use fluvio_controlplane_metadata::topic::MirrorConfig;
+use fluvio_controlplane_metadata::topic::MirrorMap;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_controlplane_metadata::topic::TopicReplicaParam;
 use fluvio_controlplane_metadata::topic::TopicResolution;
@@ -50,6 +56,21 @@ pub(crate) fn validate_computed_topic_parameters<C: MetadataItem>(
 }
 
 ///
+/// Validate mirror topic spec parameters and update topic status
+///  * error is passed to the topic reason.
+///
+pub(crate) fn validate_mirror_topic_parameter<C>(mirror: &MirrorConfig) -> TopicNextState<C>
+where
+    C: MetadataItem + Send + Sync,
+{
+    if let Err(err) = mirror.validate() {
+        TopicStatus::next_resolution_invalid_config(err.to_string()).into()
+    } else {
+        TopicStatus::next_resolution_pending().into()
+    }
+}
+
+///
 /// Compare assigned SPUs versus local SPUs. If all assigned SPUs are live,
 /// update topic status to ok. otherwise, mark as waiting for live SPUs
 ///
@@ -88,6 +109,7 @@ pub(crate) struct TopicNextState<C: MetadataItem> {
     pub reason: String,
     pub replica_map: ReplicaPartitionMap,
     pub partitions: Vec<PartitionMetadata<C>>,
+    pub mirror_map: MirrorMap,
 }
 
 impl<C: MetadataItem> fmt::Display for TopicNextState<C> {
@@ -140,6 +162,9 @@ impl<C: MetadataItem> TopicNextState<C> {
         topic.status.reason = self.reason;
         if !self.replica_map.is_empty() {
             topic.status.set_replica_map(self.replica_map.into());
+        }
+        if !self.mirror_map.is_empty() {
+            topic.status.set_mirror_map(self.mirror_map);
         }
         self.partitions
     }
@@ -220,6 +245,85 @@ impl<C: MetadataItem> TopicNextState<C> {
                     );
                     let mut next_state = TopicNextState::same_next_state(topic);
                     if next_state.resolution == TopicResolution::Provisioned {
+                        next_state.partitions =
+                            topic.create_new_partitions(scheduler.partitions()).await;
+                    }
+                    next_state
+                }
+            },
+
+            // Mirror Topic
+            ReplicaSpec::Mirror(ref mirror_config) => match topic.status.resolution {
+                // same logic for computed topic
+                // should collapse
+                TopicResolution::Init | TopicResolution::InvalidConfig => {
+                    validate_mirror_topic_parameter(mirror_config)
+                }
+                TopicResolution::Pending | TopicResolution::InsufficientResources => {
+                    let partitions = mirror_config.partition_count();
+                    // create pseudo normal replica map
+                    let replica_param = TopicReplicaParam {
+                        partitions,
+                        replication_factor: 1,
+                        ..Default::default()
+                    };
+
+                    let replica_map = scheduler
+                        .generate_replica_map_for_topic(&replica_param)
+                        .await;
+
+                    if replica_map.scheduled() {
+                        debug!(
+                            topic = %topic.key(),
+                            "generated replica map for mirror topic"
+                        );
+                        let mut mirror_map = BTreeMap::new();
+
+                        // generate mirror map
+                        match mirror_config {
+                            MirrorConfig::Source(src) => {
+                                for (partition, spu) in src.spus().iter().enumerate() {
+                                    mirror_map.insert(
+                                        partition as PartitionId,
+                                        PartitionMirrorConfig::Source(SourcePartitionConfig {
+                                            target_spu: *spu,
+                                            upstream_cluster: src.upstream_cluster.clone(),
+                                        }),
+                                    );
+                                }
+                            }
+                            MirrorConfig::Target(tgt) => {
+                                for (partition, config) in tgt.partitions().iter().enumerate() {
+                                    mirror_map.insert(
+                                        partition as PartitionId,
+                                        PartitionMirrorConfig::Target(config.clone()),
+                                    );
+                                }
+                            }
+                        }
+
+                        TopicNextState {
+                            resolution: TopicResolution::Provisioned,
+                            mirror_map,
+                            replica_map,
+                            ..Default::default()
+                        }
+                    } else {
+                        TopicNextState {
+                            resolution: TopicResolution::InsufficientResources,
+                            ..Default::default()
+                        }
+                    }
+                }
+                _ => {
+                    debug!(
+                        topic = %topic.key(),
+                        status = ?topic.status.resolution,
+                        "partition generation status"
+                    );
+                    let mut next_state = TopicNextState::same_next_state(topic);
+                    if next_state.resolution == TopicResolution::Provisioned {
+                        debug!("creating new partitions");
                         next_state.partitions =
                             topic.create_new_partitions(scheduler.partitions()).await;
                     }
