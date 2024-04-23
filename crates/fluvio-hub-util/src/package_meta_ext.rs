@@ -43,7 +43,7 @@ impl PackageMetaExt for PackageMeta {
         Ok(())
     }
 
-    /// Pull pacakge-meta info from Cargo.toml,
+    /// Pull package-meta info from Cargo.toml,
     /// particularly package name and version
     fn update_from_cargo_toml<P: AsRef<Path>>(&mut self, fpath: P) -> Result<()> {
         let ctoml = cargo_toml::Manifest::from_path(fpath)?;
