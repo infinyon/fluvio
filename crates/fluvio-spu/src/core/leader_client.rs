@@ -4,8 +4,9 @@ use async_lock::Mutex;
 use async_trait::async_trait;
 
 use fluvio::metrics::ClientMetrics;
+use fluvio::stream_socket::StreamSocket;
 use fluvio::{FluvioError, PartitionConsumer};
-use fluvio::spu::{SpuDirectory, SpuSocket};
+use fluvio::spu::SpuDirectory;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_socket::{MultiplexerSocket, ClientConfig, VersionedSerialSocket};
 use fluvio_types::{SpuId, PartitionId};
@@ -20,7 +21,7 @@ use super::spus::SharedSpuLocalStore;
 pub struct LeaderConnections {
     spus: SharedSpuLocalStore,
     replicas: SharedReplicaLocalStore,
-    leaders: Arc<Mutex<HashMap<SpuId, SpuSocket>>>,
+    leaders: Arc<Mutex<HashMap<SpuId, StreamSocket>>>,
     metrics: Arc<ClientMetrics>,
 }
 
@@ -39,13 +40,13 @@ impl LeaderConnections {
 
     /// create a connection to leader, it can't find it, return
     #[instrument(skip(self))]
-    async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
+    async fn connect_to_leader(&self, leader: SpuId) -> Result<StreamSocket, FluvioError> {
         if let Some(spu) = self.spus.spec(&leader) {
             debug!("connecting to spu : {:#?}", spu);
             let client_config = ClientConfig::with_addr(spu.public_endpoint.addr());
             let versioned_socket = client_config.connect().await?;
             let (socket, config, versions) = versioned_socket.split();
-            Ok(SpuSocket::new(
+            Ok(StreamSocket::new(
                 config,
                 MultiplexerSocket::shared(socket),
                 versions,
