@@ -41,6 +41,9 @@ meta:
       count: 2
   consumer:
     partition: 1
+    id: $CONNECTOR_NAME
+    offset:
+      strategy: manual
 custom:
   api_key: api_key
   client_id: client_id
@@ -90,13 +93,16 @@ meta:
       count: 2
   consumer:
     partition: all
+    id: $CONNECTOR_NAME
+    offset:
+      strategy: manual
 custom:
   api_key: api_key
   client_id: client_id
 EOF
     # Test
     cd $CONNECTOR_DIR
-    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu  start --config $CONFIG_PATH --log-level info
+    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start --config $CONFIG_PATH --log-level info
     assert_success
     assert_output --partial "Connector runs with process id"
 
@@ -135,6 +141,9 @@ meta:
     partition:
       count: 3
   consumer:
+    id: $CONNECTOR_NAME
+    offset:
+      strategy: manual
     partition:
       - 1
       - 2
@@ -144,7 +153,7 @@ custom:
 EOF
     # Test
     cd $CONNECTOR_DIR
-    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu  start --config $CONFIG_PATH --log-level info
+    run $CDK_BIN deploy --target x86_64-unknown-linux-gnu start --config $CONFIG_PATH --log-level info
     assert_success
     assert_output --partial "Connector runs with process id"
 
@@ -166,12 +175,6 @@ EOF
 }
 
 @test "Consumer Offsets topic exist" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on fluvio cli stable version"
-    fi
-    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on cluster stable version"
-    fi
     end_time=$((SECONDS + 65))
     while [ $SECONDS -lt $end_time ]; do
       SYSTEM_TOPIC_NAME="$($FLUVIO_BIN topic list --system -O json | jq '.[0].name' | tr -d '"')"
@@ -187,12 +190,6 @@ EOF
 }
 
 @test "Connector with managed consumer offsets" {
-    if [ "$FLUVIO_CLI_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on fluvio cli stable version"
-    fi
-    if [ "$FLUVIO_CLUSTER_RELEASE_CHANNEL" == "stable" ]; then
-        skip "don't run on cluster stable version"
-    fi
     # Prepare config
     TOPIC_NAME=$(random_string)
     CONSUMER_NAME=$(random_string)

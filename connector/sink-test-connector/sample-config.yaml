@@ -6,6 +6,10 @@ meta:
   secrets:
     - name: TEST_API_KEY
     - name: TEST_API_CLIENT_ID
+  consumer:
+    id: "sink-test-connector"
+    offset:
+      strategy: manual
 custom:
   api_key:
     secret:

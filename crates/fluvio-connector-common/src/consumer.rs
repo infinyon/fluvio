@@ -1,22 +1,11 @@
 use fluvio::consumer::{ConsumerConfigExtBuilder, OffsetManagementStrategy};
 use fluvio::{Fluvio, FluvioConfig, Offset};
-use fluvio::dataplane::record::ConsumerRecord;
 use fluvio_connector_package::config::{ConsumerPartitionConfig, OffsetConfig, OffsetStrategyConfig};
-use fluvio_sc_schema::errors::ErrorCode;
-use futures::StreamExt;
 use crate::{config::ConnectorConfig, Result};
 use crate::ensure_topic_exists;
 use crate::smartmodule::smartmodule_vec_from_config;
 
-pub trait ConsumerStream:
-    StreamExt<Item = std::result::Result<ConsumerRecord, ErrorCode>> + std::marker::Unpin
-{
-}
-
-impl<T: StreamExt<Item = std::result::Result<ConsumerRecord, ErrorCode>> + std::marker::Unpin>
-    ConsumerStream for T
-{
-}
+pub use fluvio::consumer::ConsumerStream;
 
 pub async fn consumer_stream_from_config(
     config: &ConnectorConfig,
@@ -78,7 +67,7 @@ pub async fn consumer_stream_from_config(
         builder.smartmodule(smartmodules);
     }
 
-    let stream = fluvio.consumer_with_config(builder.build()?).await?.boxed();
+    let stream = fluvio.consumer_with_config(builder.build()?).await?;
 
     Ok((fluvio, stream))
 }
