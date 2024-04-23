@@ -14,10 +14,10 @@ setup_file() {
     debug_msg "Topic name: $TOPIC_NAME"
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME" --partitions 2
 
-    echo 1:1 | fluvio produce $TOPIC_NAME --key-separator ":"
-    echo 2:2 | fluvio produce $TOPIC_NAME --key-separator ":"
-    echo 4:4 | fluvio produce $TOPIC_NAME --key-separator ":"
-    echo 8:8 | fluvio produce $TOPIC_NAME --key-separator ":"
+    echo 1:1 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 2:2 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 4:4 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
+    echo 8:8 | "$FLUVIO_BIN" produce $TOPIC_NAME --key-separator ":"
 }
 
 @test "Consumer Offsets topic exist" {
