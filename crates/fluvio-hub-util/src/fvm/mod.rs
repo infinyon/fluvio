@@ -22,7 +22,7 @@ pub enum Error {
     InvalidChannel(String),
 }
 
-/// Pacakge Set Channels based on Fluvio Channels
+/// Package Set Channels based on Fluvio Channels
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Channel {
