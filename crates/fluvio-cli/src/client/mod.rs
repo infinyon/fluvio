@@ -7,8 +7,8 @@ mod tableformat;
 mod smartmodule;
 mod smartmodule_invocation;
 mod consumer;
-mod core;
-mod edge;
+mod remote;
+mod home;
 
 pub use metadata::client_metadata;
 pub use cmd::FluvioCmd;
@@ -49,8 +49,8 @@ mod cmd {
     use crate::common::Terminal;
 
     use super::consumer::ConsumerCmd;
-    use super::core::CoreCmd;
-    use super::edge::EdgeCmd;
+    use super::remote::RemoteCmd;
+    use super::home::HomeCmd;
     use super::smartmodule::SmartModuleCmd;
     use super::consume::ConsumeOpt;
     use super::produce::ProduceOpt;
@@ -145,13 +145,15 @@ mod cmd {
         #[command(subcommand, name = "consumer")]
         Consumer(ConsumerCmd),
 
-        /// Manage and view Core mirroring
+        /// Manage and view remote mirroring
         //TODO: Remove hide when we have this mirroring complete
-        #[command(subcommand, name = "core", hide = true)]
-        Core(Box<CoreCmd>),
+        #[command(subcommand, name = "remote", hide = true)]
+        Remote(Box<RemoteCmd>),
 
-        #[command(subcommand, name = "edge", hide = true)]
-        Edge(Box<EdgeCmd>),
+        /// Commands to interact with the home cluster
+        //TODO: Remove hide when we have this mirroring complete
+        #[command(subcommand, name = "home", hide = true)]
+        Home(Box<HomeCmd>),
     }
 
     impl FluvioCmd {
@@ -186,11 +188,11 @@ mod cmd {
                 Self::Consumer(consumer) => {
                     consumer.process(out, target).await?;
                 }
-                Self::Core(core) => {
-                    core.process(out, target).await?;
+                Self::Remote(remote) => {
+                    remote.process(out, target).await?;
                 }
-                Self::Edge(edge) => {
-                    edge.process(out, target).await?;
+                Self::Home(home) => {
+                    home.process(out, target).await?;
                 }
             }
 

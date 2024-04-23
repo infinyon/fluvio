@@ -26,28 +26,28 @@ teardown_file() {
 }
 
 @test "Can register an edge cluster" {
-    run timeout 15s "$FLUVIO_BIN" core register "$EDGE_NAME"
+    run timeout 15s "$FLUVIO_BIN" remote register "$EDGE_NAME"
 
     assert_output "edge cluster \"$EDGE_NAME\" was registered"
     assert_success
 }
 
 @test "Can't register an edge cluster with the same name" {
-    run timeout 15s "$FLUVIO_BIN" core register "$EDGE_NAME"
+    run timeout 15s "$FLUVIO_BIN" remote register "$EDGE_NAME"
 
     assert_output "remote cluster \"$EDGE_NAME\" already exists"
     assert_failure
 }
 
 @test "Can unregister an edge cluster" {
-    run timeout 15s "$FLUVIO_BIN" core unregister "$EDGE_NAME"
+    run timeout 15s "$FLUVIO_BIN" remote unregister "$EDGE_NAME"
 
     assert_output "edge cluster \"$EDGE_NAME\" was unregistered"
     assert_success
 }
 
 @test "Can't unregister an edge cluster that doesn't exist" {
-    run timeout 15s "$FLUVIO_BIN" core unregister "$EDGE_NAME"
+    run timeout 15s "$FLUVIO_BIN" remote unregister "$EDGE_NAME"
 
     assert_output "remote cluster \"$EDGE_NAME\" not found"
     assert_failure

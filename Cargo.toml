@@ -172,7 +172,7 @@ fluvio-cli-common = { path = "crates/fluvio-cli-common"}
 fluvio-compression = { version = "0.3", path = "crates/fluvio-compression" }
 fluvio-connector-package = { path = "crates/fluvio-connector-package/" }
 fluvio-controlplane = { path = "crates/fluvio-controlplane" }
-fluvio-controlplane-metadata = { version = "0.27.0", default-features = false, path = "crates/fluvio-controlplane-metadata" }
+fluvio-controlplane-metadata = { version = "0.27.1", default-features = false, path = "crates/fluvio-controlplane-metadata" }
 fluvio-extension-common = { path = "crates/fluvio-extension-common", default-features = false }
 fluvio-hub-util = { path = "crates/fluvio-hub-util" }
 fluvio-package-index = { version = "0.7.0", path = "crates/fluvio-package-index", default-features = false }

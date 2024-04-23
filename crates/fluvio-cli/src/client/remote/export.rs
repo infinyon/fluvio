@@ -17,10 +17,10 @@ pub struct ExportOpt {
     /// name of the file where we should put the file
     #[arg(long, short = 'f')]
     file: Option<String>,
-    /// override endpoint of the core cluster
+    /// override endpoint of the home cluster
     #[arg(long, short = 'e')]
     public_endpoint: Option<String>,
-    // id of the core cluster to share
+    // id of the home cluster to share
     #[arg(name = "c")]
     core_id: Option<String>,
 }

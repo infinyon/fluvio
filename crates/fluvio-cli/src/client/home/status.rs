@@ -1,19 +1,20 @@
 pub use std::sync::Arc;
+use std::time::SystemTime;
 
 use anyhow::Result;
 use clap::Parser;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::{OutputFormat, Terminal};
-use fluvio_sc_schema::remote::{RemoteSpec, RemoteStatus, RemoteType};
+use fluvio_sc_schema::remote::{RemoteSpec, RemoteType};
 
 use super::get_admin;
 
 #[derive(Debug, Parser)]
-pub struct ListOpt {
+pub struct StatusOpt {
     #[clap(flatten)]
     output: OutputFormat,
 }
-impl ListOpt {
+impl StatusOpt {
     pub async fn execute<T: Terminal>(
         self,
         out: Arc<T>,
@@ -21,20 +22,22 @@ impl ListOpt {
     ) -> Result<()> {
         let admin = get_admin(cluster_target).await?;
         let list = admin.all::<RemoteSpec>().await?;
+        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
         let outlist: Vec<(String, String, String, String)> = list
             .into_iter()
-            .filter_map(|item| match item.spec.remote_type {
-                RemoteType::Edge(edge) => {
-                    let status: RemoteStatus = item.status;
-                    Some((
-                        edge.id,
-                        "Edge".to_string(),
-                        status.to_string(),
-                        status.connection_stat.last_seen.to_string(),
-                    ))
+            .filter_map(|item| {
+                match item.spec.remote_type {
+                    RemoteType::Core(core) => {
+                        Some((
+                            core.id.to_string(),        // Source ID
+                            core.public_endpoint,       // Route
+                            item.status.to_string(),    // Status
+                            item.status.last_seen(now), // Last-Seen
+                        ))
+                    }
+                    _ => None,
                 }
-                _ => None,
             })
             .collect();
         output::format(out, outlist, self.output.format)
@@ -89,7 +92,7 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["REMOTE ", "TYPE", "STATUS", "LAST-SEEN"])
+            Row::from(["REMOTE", "ROUTE", "STATUS", "LAST SEEN"])
         }
 
         /// return errors in string format
