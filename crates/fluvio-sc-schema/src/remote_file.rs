@@ -6,7 +6,7 @@ use anyhow::Result;
 #[cfg(feature = "use_serde")]
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use fluvio_controlplane_metadata::{remote::Core, topic::TopicSpec};
+use fluvio_controlplane_metadata::{mirror::Home, topic::TopicSpec};
 use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
 
 #[derive(Debug, Default)]
@@ -15,12 +15,12 @@ use fluvio_stream_model::k8_types::{K8Obj, Spec, ObjectMeta};
     derive(Deserialize, Serialize),
     serde(rename_all = "camelCase")
 )]
-pub struct EdgeMetadata {
+pub struct RemoteMetadata {
     // TODO: remove it, we should get the topics from the upstreams/core
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8Obj<TopicSpec>>,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub core: Core,
+    pub home: Home,
 }
 
 /// Configuration used to inihilize a Cluster locally. This data is copied to
@@ -31,24 +31,24 @@ pub struct EdgeMetadata {
     derive(Deserialize, Serialize),
     serde(rename_all = "camelCase")
 )]
-pub struct EdgeMetadataExport {
+pub struct RemoteMetadataExport {
     // TODO: remove it, we should get the topics from the upstreams/core
     #[cfg_attr(feature = "use_serde", serde(default))]
     pub topics: Vec<K8ObjExport<TopicSpec>>,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub core: Core,
+    pub home: Home,
 }
 
-impl EdgeMetadataExport {
-    pub fn new(core: Core) -> Self {
+impl RemoteMetadataExport {
+    pub fn new(home: Home) -> Self {
         Self {
             topics: vec![],
-            core,
+            home,
         }
     }
 }
 
-impl EdgeMetadata {
+impl RemoteMetadata {
     pub fn validate(&self) -> Result<()> {
         Ok(())
     }
@@ -57,10 +57,10 @@ impl EdgeMetadata {
 /// Represents a ClusterConfig that is read from a file. Usually a JSON file.
 #[cfg(feature = "json")]
 #[derive(Debug, Default)]
-pub struct EdgeMetadataFile(EdgeMetadata);
+pub struct RemoteMetadataFile(RemoteMetadata);
 
 #[cfg(feature = "json")]
-impl EdgeMetadataFile {
+impl RemoteMetadataFile {
     pub fn open<P: AsRef<std::path::Path>>(path: P) -> Result<Self> {
         let path = path.as_ref();
         let contents = std::fs::read_to_string(path)?;
@@ -69,7 +69,7 @@ impl EdgeMetadataFile {
     }
 
     fn from_json(json: &str) -> Result<Self> {
-        let config: EdgeMetadata = serde_json::from_str(json)?;
+        let config: RemoteMetadata = serde_json::from_str(json)?;
 
         config.validate()?;
 
@@ -78,8 +78,8 @@ impl EdgeMetadataFile {
 }
 
 #[cfg(feature = "json")]
-impl Deref for EdgeMetadataFile {
-    type Target = EdgeMetadata;
+impl Deref for RemoteMetadataFile {
+    type Target = RemoteMetadata;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -87,8 +87,8 @@ impl Deref for EdgeMetadataFile {
 }
 
 #[cfg(feature = "json")]
-impl From<EdgeMetadataFile> for EdgeMetadata {
-    fn from(file: EdgeMetadataFile) -> Self {
+impl From<RemoteMetadataFile> for RemoteMetadata {
+    fn from(file: RemoteMetadataFile) -> Self {
         file.0
     }
 }
@@ -128,30 +128,30 @@ impl<S: Spec> From<K8Obj<S>> for K8ObjExport<S> {
 
 #[cfg(test)]
 mod tests {
-    use super::EdgeMetadata;
+    use super::RemoteMetadata;
     #[cfg(feature = "json")]
-    use super::EdgeMetadataFile;
+    use super::RemoteMetadataFile;
 
     #[cfg(feature = "json")]
     #[test]
     fn validates_json_config() {
         let config = r#"{
-            "core": {
-                "id": "core",
-                "edgeId": "edge1",
+            "home": {
+                "id": "home",
+                "remoteId": "remote1",
                 "publicEndpoint": "localhost:30003"
             }
           }
           "#;
 
-        let config = EdgeMetadataFile::from_json(config);
+        let config = RemoteMetadataFile::from_json(config);
 
         assert!(config.is_ok());
 
-        let config: EdgeMetadata = config.unwrap().into();
+        let config: RemoteMetadata = config.unwrap().into();
 
-        assert_eq!(config.core.id, "core");
-        assert_eq!(config.core.edge_id, "edge1");
-        assert_eq!(config.core.public_endpoint, "localhost:30003");
+        assert_eq!(config.home.id, "home");
+        assert_eq!(config.home.remote_id, "remote1");
+        assert_eq!(config.home.public_endpoint, "localhost:30003");
     }
 }

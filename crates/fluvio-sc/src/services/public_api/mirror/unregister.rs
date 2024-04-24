@@ -6,12 +6,12 @@ use tracing::info;
 
 use crate::services::auth::AuthServiceContext;
 
-pub async fn handle_unregister_remote<AC: AuthContext, C: MetadataItem>(
+pub async fn handle_unregister_mirror<AC: AuthContext, C: MetadataItem>(
     key: String,
     auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let name = key;
-    info!(name = name, "unregister remote cluster");
+    info!(name = name, "unregister mirror cluster");
     if auth_ctx.global_ctx.config().read_only_metadata {
         return Ok(Status::new(
             name.clone(),
@@ -21,18 +21,18 @@ pub async fn handle_unregister_remote<AC: AuthContext, C: MetadataItem>(
     }
 
     let ctx = auth_ctx.global_ctx.clone();
-    if (ctx.remote().store().value(&name).await).is_none() {
+    if (ctx.mirrors().store().value(&name).await).is_none() {
         return Ok(Status::new(
             name.clone(),
-            ErrorCode::RemoteNotFound,
+            ErrorCode::MirrorNotFound,
             Some(format!("remote cluster {:?} not found", name)),
         ));
     }
 
-    if let Err(err) = ctx.remote().delete(name.clone()).await {
+    if let Err(err) = ctx.mirrors().delete(name.clone()).await {
         return Ok(Status::new(
             name.clone(),
-            ErrorCode::Other("unable to unregister remote cluster".to_owned()),
+            ErrorCode::Other("remote to unregister remote cluster".to_owned()),
             Some(err.to_string()),
         ));
     }

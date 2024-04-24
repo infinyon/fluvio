@@ -7,15 +7,15 @@ use fluvio_protocol::{Encoder, Decoder};
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct RemoteStatus {
-    pairing: RemotePairStatus,
+pub struct MirrorStatus {
+    pairing: MirrorPairStatus,
     connection_status: ConnectionStatus,
     pub connection_stat: ConnectionStat,
 }
 
 #[derive(Encoder, Decoder, Debug, Clone, Eq, PartialEq, Default)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum RemotePairStatus {
+pub enum MirrorPairStatus {
     #[default]
     #[fluvio(tag = 0)]
     Waiting,
@@ -47,7 +47,7 @@ pub struct ConnectionStat {
     pub last_seen: u64, // number of milliseconds since last seen
 }
 
-impl RemoteStatus {
+impl MirrorStatus {
     #[cfg(feature = "use_serde")]
     pub fn last_seen(&self, since: Duration) -> String {
         use humantime_serde::re::humantime;
@@ -65,29 +65,29 @@ impl RemoteStatus {
     }
 }
 
-impl std::fmt::Display for RemoteStatus {
+impl std::fmt::Display for MirrorStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let status = match (self.pairing.clone(), self.connection_status.clone()) {
-            (RemotePairStatus::Succesful, ConnectionStatus::Online) => "Online",
-            (RemotePairStatus::Failed, ConnectionStatus::Online) => "Failed",
-            (RemotePairStatus::Disabled, ConnectionStatus::Online) => "Disabled",
-            (RemotePairStatus::Waiting, ConnectionStatus::Online) => "Waiting",
-            (RemotePairStatus::Succesful, ConnectionStatus::Offline) => "Offline",
-            (RemotePairStatus::Failed, ConnectionStatus::Offline) => "Failed",
-            (RemotePairStatus::Disabled, ConnectionStatus::Offline) => "Disabled",
-            (RemotePairStatus::Waiting, ConnectionStatus::Offline) => "Waiting",
+            (MirrorPairStatus::Succesful, ConnectionStatus::Online) => "Online",
+            (MirrorPairStatus::Failed, ConnectionStatus::Online) => "Failed",
+            (MirrorPairStatus::Disabled, ConnectionStatus::Online) => "Disabled",
+            (MirrorPairStatus::Waiting, ConnectionStatus::Online) => "Waiting",
+            (MirrorPairStatus::Succesful, ConnectionStatus::Offline) => "Offline",
+            (MirrorPairStatus::Failed, ConnectionStatus::Offline) => "Failed",
+            (MirrorPairStatus::Disabled, ConnectionStatus::Offline) => "Disabled",
+            (MirrorPairStatus::Waiting, ConnectionStatus::Offline) => "Waiting",
         };
         write!(f, "{}", status)
     }
 }
 
-impl std::fmt::Display for RemotePairStatus {
+impl std::fmt::Display for MirrorPairStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let status = match self {
-            RemotePairStatus::Succesful => "successful",
-            RemotePairStatus::Disabled => "disabled",
-            RemotePairStatus::Failed => "failed",
-            RemotePairStatus::Waiting => "waiting",
+            MirrorPairStatus::Succesful => "successful",
+            MirrorPairStatus::Disabled => "disabled",
+            MirrorPairStatus::Failed => "failed",
+            MirrorPairStatus::Waiting => "waiting",
         };
         write!(f, "{}", status)
     }
@@ -109,8 +109,8 @@ mod test {
 
     #[test]
     fn test_last_seen() {
-        let status = RemoteStatus {
-            pairing: RemotePairStatus::Succesful,
+        let status = MirrorStatus {
+            pairing: MirrorPairStatus::Succesful,
             connection_status: ConnectionStatus::Online,
             connection_stat: ConnectionStat {
                 last_seen: 1713902927812,
@@ -121,8 +121,8 @@ mod test {
         let last_seen = status.last_seen(since);
         assert_eq!(last_seen, "5s");
 
-        let default_status = RemoteStatus {
-            pairing: RemotePairStatus::Succesful,
+        let default_status = MirrorStatus {
+            pairing: MirrorPairStatus::Succesful,
             connection_status: ConnectionStatus::Online,
             connection_stat: ConnectionStat { last_seen: 0 },
         };

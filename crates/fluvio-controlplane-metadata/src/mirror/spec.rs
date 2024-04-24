@@ -8,50 +8,50 @@ use fluvio_protocol::{Encoder, Decoder};
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct RemoteSpec {
-    pub remote_type: RemoteType,
+pub struct MirrorSpec {
+    pub mirror_type: MirrorType,
     // TODO: we should add auth
 }
 
-impl RemoteSpec {
+impl MirrorSpec {
     pub fn type_name(&self) -> &str {
-        match &self.remote_type {
-            RemoteType::Edge(_) => "edge",
-            RemoteType::Core(_) => "core",
+        match &self.mirror_type {
+            MirrorType::Remote(_) => "remote",
+            MirrorType::Home(_) => "home",
         }
     }
 }
 
-impl fmt::Display for RemoteSpec {
+impl fmt::Display for MirrorSpec {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Remote: {:?}", self)
+        write!(f, "Mirror: {:?}", self)
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum RemoteType {
-    #[cfg_attr(feature = "use_serde", serde(rename = "edge"))]
+pub enum MirrorType {
+    #[cfg_attr(feature = "use_serde", serde(rename = "remote"))]
     #[fluvio(tag = 0)]
-    Edge(Edge),
-    #[cfg_attr(feature = "use_serde", serde(rename = "core"))]
+    Remote(Remote),
+    #[cfg_attr(feature = "use_serde", serde(rename = "home"))]
     #[fluvio(tag = 1)]
-    Core(Core),
+    Home(Home),
 }
 
-impl fmt::Display for RemoteType {
+impl fmt::Display for MirrorType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = match self {
-            RemoteType::Edge(edge) => format!("edge: {}", edge.id),
-            RemoteType::Core(core) => format!("core: {}", core.id),
+            MirrorType::Remote(remote) => format!("remote: {}", remote.id),
+            MirrorType::Home(home) => format!("home: {}", home.id),
         };
         write!(f, "{}", ts)
     }
 }
 
-impl Default for RemoteType {
+impl Default for MirrorType {
     fn default() -> Self {
-        Self::Edge(Edge::default())
+        Self::Remote(Remote::default())
     }
 }
 
@@ -61,7 +61,7 @@ impl Default for RemoteType {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct Edge {
+pub struct Remote {
     pub id: String,
 }
 
@@ -71,8 +71,8 @@ pub struct Edge {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct Core {
+pub struct Home {
     pub id: String,
-    pub edge_id: String,
+    pub remote_id: String,
     pub public_endpoint: String,
 }
