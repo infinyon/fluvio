@@ -6,7 +6,7 @@
 //!
 
 use fluvio_protocol::link::ErrorCode;
-use fluvio_sc_schema::remote::RemoteSpec;
+use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_stream_model::core::MetadataItem;
 use tracing::{instrument, trace, debug, error};
 use anyhow::Result;
@@ -44,8 +44,8 @@ pub async fn handle_delete_request<AC: AuthContext, C: MetadataItem>(
         super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
     } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<TableFormatSpec>> {
         super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
-    } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<RemoteSpec>> {
-        super::remote::handle_unregister_remote(req.key(), auth_ctx).await?
+    } else if let Some(req) = del_req.downcast()? as Option<DeleteRequest<MirrorSpec>> {
+        super::mirror::handle_unregister_mirror(req.key(), auth_ctx).await?
     } else {
         error!("unknown create request: {:#?}", del_req);
         Status::new(

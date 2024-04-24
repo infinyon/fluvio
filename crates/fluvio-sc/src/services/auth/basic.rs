@@ -178,6 +178,7 @@ mod policy {
             root_policy.insert(ObjectType::Topic, vec![Action::All]);
             root_policy.insert(ObjectType::Partition, vec![Action::All]);
             root_policy.insert(ObjectType::TableFormat, vec![Action::All]);
+            root_policy.insert(ObjectType::Mirror, vec![Action::All]);
 
             let mut policy = HashMap::new();
 

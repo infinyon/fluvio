@@ -3,8 +3,8 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use fluvio_extension_common::{target::ClusterTarget, Terminal};
 use fluvio_sc_schema::{
-    edge::EdgeMetadataExport,
-    remote::{Core, RemoteSpec, RemoteType},
+    mirror::{Home, MirrorSpec, MirrorType},
+    remote_file::RemoteMetadataExport,
 };
 use anyhow::anyhow;
 
@@ -12,8 +12,8 @@ use super::get_admin;
 
 #[derive(Debug, Parser)]
 pub struct ExportOpt {
-    /// id of the edge cluster to export
-    edge_id: String,
+    /// id of the remote cluster to export
+    remote_id: String,
     /// name of the file where we should put the file
     #[arg(long, short = 'f')]
     file: Option<String>,
@@ -22,7 +22,7 @@ pub struct ExportOpt {
     public_endpoint: Option<String>,
     // id of the home cluster to share
     #[arg(name = "c")]
-    core_id: Option<String>,
+    home_id: Option<String>,
 }
 
 impl ExportOpt {
@@ -39,24 +39,24 @@ impl ExportOpt {
         };
 
         let admin = get_admin(cluster_target).await?;
-        let all_remotes = admin.all::<RemoteSpec>().await?;
-        let _edge = all_remotes
+        let all_remotes = admin.all::<MirrorSpec>().await?;
+        let _remote = all_remotes
             .iter()
-            .find(|remote| match &remote.spec.remote_type {
-                RemoteType::Edge(edge) => edge.id == self.edge_id,
+            .find(|remote| match &remote.spec.mirror_type {
+                MirrorType::Remote(remote) => remote.id == self.remote_id,
                 _ => false,
             })
-            .ok_or_else(|| anyhow!("edge cluster not found"))?;
+            .ok_or_else(|| anyhow!("remote cluster not found"))?;
 
-        let core_id = self.core_id.clone().unwrap_or_else(|| "core".to_owned());
+        let home_id = self.home_id.clone().unwrap_or_else(|| "home".to_owned());
 
-        let core_metadata = Core {
-            id: core_id,
-            edge_id: self.edge_id,
+        let home_metadata = Home {
+            id: home_id,
+            remote_id: self.remote_id,
             public_endpoint,
         };
 
-        let metadata = EdgeMetadataExport::new(core_metadata);
+        let metadata = RemoteMetadataExport::new(home_metadata);
 
         if let Some(filename) = self.file {
             std::fs::write(filename, serde_json::to_string_pretty(&metadata)?)

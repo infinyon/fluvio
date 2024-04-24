@@ -8,9 +8,9 @@ pub mod versions;
 pub mod objects;
 pub mod shared;
 pub mod tableformat;
-pub mod remote;
+pub mod mirror;
 
-pub mod edge;
+pub mod remote_file;
 
 mod apis;
 mod request;

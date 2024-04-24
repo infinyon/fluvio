@@ -2744,7 +2744,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.12"
+version = "0.10.13"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -2836,7 +2836,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.23.0"
+version = "0.23.1"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",

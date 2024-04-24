@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::{OutputFormat, Terminal};
-use fluvio_sc_schema::remote::{RemoteSpec, RemoteStatus, RemoteType};
+use fluvio_sc_schema::mirror::{MirrorSpec, MirrorType};
 
 use super::get_admin;
 
@@ -21,16 +21,16 @@ impl ListOpt {
         cluster_target: ClusterTarget,
     ) -> Result<()> {
         let admin = get_admin(cluster_target).await?;
-        let list = admin.all::<RemoteSpec>().await?;
+        let list = admin.all::<MirrorSpec>().await?;
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
         let outlist: Vec<(String, String, String)> = list
             .into_iter()
-            .filter_map(|item| match item.spec.remote_type {
-                RemoteType::Edge(edge) => {
-                    let status: RemoteStatus = item.status.clone();
+            .filter_map(|item| match item.spec.mirror_type {
+                MirrorType::Remote(r) => {
+                    let status = item.status.clone();
                     let last_seen = item.status.last_seen(now);
-                    Some((edge.id, status.to_string(), last_seen))
+                    Some((r.id, status.to_string(), last_seen))
                 }
                 _ => None,
             })

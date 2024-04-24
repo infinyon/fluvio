@@ -210,11 +210,11 @@ pub enum ErrorCode {
 
     // Remote
     #[fluvio(tag = 11001)]
-    #[error("the remote was not found")]
-    RemoteNotFound,
+    #[error("the mirror was not found")]
+    MirrorNotFound,
     #[fluvio(tag = 11002)]
-    #[error("the remote already exists")]
-    RemoteAlreadyExists,
+    #[error("the mirror already exists")]
+    MirrorAlreadyExists,
 
     // Specs
     #[fluvio(tag = 12001)]

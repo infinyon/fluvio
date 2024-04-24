@@ -5,7 +5,7 @@
 //!
 use std::sync::Arc;
 
-use fluvio_sc_schema::remote::RemoteSpec;
+use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_stream_model::core::MetadataItem;
 
 use crate::config::ScConfig;
@@ -30,7 +30,7 @@ pub struct Context<C: MetadataItem> {
     spgs: StoreContext<SpuGroupSpec, C>,
     smartmodules: StoreContext<SmartModuleSpec, C>,
     tableformats: StoreContext<TableFormatSpec, C>,
-    remote: StoreContext<RemoteSpec, C>,
+    mirrors: StoreContext<MirrorSpec, C>,
     health: SharedHealthCheck,
     config: ScConfig,
 }
@@ -53,7 +53,7 @@ impl<C: MetadataItem> Context<C> {
             spgs: StoreContext::new(),
             smartmodules: StoreContext::new(),
             tableformats: StoreContext::new(),
-            remote: StoreContext::new(),
+            mirrors: StoreContext::new(),
             health: HealthCheck::shared(),
             config,
         }
@@ -86,8 +86,8 @@ impl<C: MetadataItem> Context<C> {
         &self.tableformats
     }
 
-    pub fn remote(&self) -> &StoreContext<RemoteSpec, C> {
-        &self.remote
+    pub fn mirrors(&self) -> &StoreContext<MirrorSpec, C> {
+        &self.mirrors
     }
 
     /// spu health channel

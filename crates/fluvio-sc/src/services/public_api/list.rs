@@ -13,12 +13,12 @@ use anyhow::Result;
 use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{
     objects::{ListRequest, ObjectApiListRequest, ObjectApiListResponse},
-    remote::RemoteSpec,
+    mirror::MirrorSpec,
     TryEncodableFrom,
 };
 use fluvio_auth::AuthContext;
 
-use crate::services::{auth::AuthServiceContext, public_api::remote::handle_list_remote};
+use crate::services::{auth::AuthServiceContext, public_api::mirror::handle_list_mirror};
 use super::smartmodule::fetch_smart_modules;
 
 #[instrument(skip(request, auth_ctx))]
@@ -76,9 +76,9 @@ pub async fn handle_list_request<AC: AuthContext, C: MetadataItem>(
             .await?,
             header.api_version(),
         )?
-    } else if let Some(req) = req.downcast()? as Option<ListRequest<RemoteSpec>> {
+    } else if let Some(req) = req.downcast()? as Option<ListRequest<MirrorSpec>> {
         ObjectApiListResponse::try_encode_from(
-            handle_list_remote(req.name_filters, auth_ctx).await?,
+            handle_list_mirror(req.name_filters, auth_ctx).await?,
             header.api_version(),
         )?
     } else {
