@@ -65,13 +65,13 @@ impl LocalResume {
         let local_conf = match LOCAL_CONFIG_PATH.as_ref() {
             None => {
                 return Err(ClusterCliError::Other(
-                    "Can't find config from a previous run".to_string(),
+                    "Configuration file for local cluster not found from previous run".to_string(),
                 )
                 .into())
             }
             Some(local_config_path) => LocalConfig::load_from(local_config_path),
         }
-        .with_context(|| "Couldn't load local counfig file")?;
+        .with_context(|| "Unable to load configuration file for local cluster")?;
 
         let installer = LocalInstaller::from_config(local_conf);
         _ = installer.install().await?;
