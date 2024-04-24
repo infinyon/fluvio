@@ -26,6 +26,10 @@ spec:
               properties:
                 replicas:
                   type: object
+                  oneOf:
+                    - required: ["computed"]
+                    - required: ["assigned"]
+                    - required: ["mirror"]
                   properties:
                     computed:
                       type: object
@@ -56,9 +60,33 @@ spec:
                             items:
                               type: integer
                               minimum: 0
-                  oneOf:
-                    - required: ["computed"]
-                    - required: ["assigned"]
+                    mirror:
+                      type: object
+                      oneOf:
+                        - required: ["home"]
+                        - required: ["remote"]
+                      properties:
+                        home:
+                          type: array
+                          items:
+                            type: object
+                            required: ["remoteCluster","remoteReplica"]
+                            properties:
+                              remoteCluster:
+                                type: string
+                              remoteReplica:
+                                type: string
+                        remote:
+                          type: object
+                          required: ["homeCluster","homeSpus"]
+                          properties:
+                            homeCluster:
+                              type: string
+                            homeSpus:
+                              type: array
+                              items:
+                                type: integer
+                                minimum: 0
                 cleanupPolicy:
                   type: object
                   properties:

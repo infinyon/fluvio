@@ -20,7 +20,7 @@ spec:
           properties:
             spec:
               type: object
-              required: ["leader", "replicas"]
+              required: ["leader"]
               properties:
                 leader:
                   type: integer
@@ -28,6 +28,31 @@ spec:
                   type: array
                   items:
                     type: integer
+                mirror:
+                  type: object
+                  oneOf:
+                    - required: ["home"]
+                    - required: ["remote"]
+                  properties:
+                    home:
+                      type: object
+                      required: ["remoteCluster","remoteReplica"]
+                      properties:
+                        remoteReplica:
+                          type: string
+                        remoteCluster:
+                          type: string
+                    remote:
+                      type: object
+                      required: ["homeCluster","homeSpu"]
+                      properties:
+                        homeCluster:
+                          type: string
+                        homeTopic:
+                          type: string
+                        homeSpu:
+                          type: integer
+                          minimum: 0
                 cleanupPolicy:
                   type: object
                   properties:

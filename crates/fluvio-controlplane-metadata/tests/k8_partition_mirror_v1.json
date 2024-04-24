@@ -1,0 +1,24 @@
+{
+    "apiVersion": "fluvio.infinyon.com/v1",
+    "kind": "Partition",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v1\",\"kind\":\"Partition\",\"metadata\":{\"annotations\":{},\"name\":\"test-0\",\"namespace\":\"default\"},\"spec\":{\"leader\":5001,\"mirror\":{\"home\":{\"remoteCluster\":\"boat1\"}}}}\n"
+        },
+        "creationTimestamp": "2023-08-17T18:53:04Z",
+        "generation": 1,
+        "name": "test-0",
+        "namespace": "default",
+        "resourceVersion": "255222",
+        "uid": "e948ce04-91e8-471f-8ae8-7dc0a5013443"
+    },
+    "spec": {
+        "leader": 5001,
+        "mirror": {
+            "home": {
+                "remoteCluster": "boat1",
+                "remoteReplica": "boats-0"
+            }
+        }
+    }
+}
