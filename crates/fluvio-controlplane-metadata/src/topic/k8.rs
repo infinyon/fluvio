@@ -32,7 +32,7 @@ mod test_spec {
     use fluvio_stream_model::k8_types::K8Obj;
 
     use crate::{
-        partition::TargetPartitionConfig,
+        partition::HomePartitionConfig,
         topic::{MirrorConfig, ReplicaSpec},
     };
 
@@ -57,15 +57,15 @@ mod test_spec {
         assert_eq!(topic.metadata.name, "downstream-topic");
         assert_eq!(
             topic.spec.replicas().to_owned(),
-            ReplicaSpec::Mirror(MirrorConfig::Target(
+            ReplicaSpec::Mirror(MirrorConfig::Home(
                 vec![
-                    TargetPartitionConfig {
+                    HomePartitionConfig {
                         remote_cluster: "boat1".to_string(),
-                        source_replica: "boats-0".to_string()
+                        remote_replica: "boats-0".to_string()
                     },
-                    TargetPartitionConfig {
+                    HomePartitionConfig {
                         remote_cluster: "boat2".to_string(),
-                        source_replica: "boats-0".to_string()
+                        remote_replica: "boats-0".to_string()
                     }
                 ]
                 .into()

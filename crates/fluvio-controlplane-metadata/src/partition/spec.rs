@@ -113,36 +113,36 @@ pub struct PartitionConfig {
 )]
 pub enum PartitionMirrorConfig {
     #[fluvio(tag = 0)]
-    Source(SourcePartitionConfig),
+    Remote(RemotePartitionConfig),
     #[fluvio(tag = 1)]
-    Target(TargetPartitionConfig),
+    Home(HomePartitionConfig),
 }
 
 impl Default for PartitionMirrorConfig {
     fn default() -> Self {
-        Self::Source(SourcePartitionConfig::default())
+        Self::Remote(RemotePartitionConfig::default())
     }
 }
 
 impl PartitionMirrorConfig {
-    pub fn source(&self) -> Option<&SourcePartitionConfig> {
+    pub fn remote(&self) -> Option<&RemotePartitionConfig> {
         match self {
-            Self::Source(source) => Some(source),
+            Self::Remote(e) => Some(e),
             _ => None,
         }
     }
 
-    pub fn target(&self) -> Option<&TargetPartitionConfig> {
+    pub fn home(&self) -> Option<&HomePartitionConfig> {
         match self {
-            Self::Target(target) => Some(target),
+            Self::Home(c) => Some(c),
             _ => None,
         }
     }
 
     pub fn external_cluster(&self) -> String {
         match self {
-            Self::Source(source) => format!("{}:{}", source.upstream_cluster, source.target_spu),
-            Self::Target(target) => target.remote_cluster.clone(),
+            Self::Remote(r) => format!("{}:{}", r.home_cluster, r.home_spu),
+            Self::Home(h) => h.remote_cluster.clone(),
         }
     }
 }
@@ -150,8 +150,8 @@ impl PartitionMirrorConfig {
 impl std::fmt::Display for PartitionMirrorConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            PartitionMirrorConfig::Source(cfg) => write!(f, "{}", cfg),
-            PartitionMirrorConfig::Target(cfg) => write!(f, "{}", cfg),
+            PartitionMirrorConfig::Remote(cfg) => write!(f, "{}", cfg),
+            PartitionMirrorConfig::Home(cfg) => write!(f, "{}", cfg),
         }
     }
 }
@@ -162,14 +162,14 @@ impl std::fmt::Display for PartitionMirrorConfig {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct TargetPartitionConfig {
+pub struct HomePartitionConfig {
     pub remote_cluster: String,
-    pub source_replica: String,
+    pub remote_replica: String,
 }
 
-impl std::fmt::Display for TargetPartitionConfig {
+impl std::fmt::Display for HomePartitionConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Target:{}", self.remote_cluster)
+        write!(f, "{}", self.remote_cluster)
     }
 }
 
@@ -179,14 +179,14 @@ impl std::fmt::Display for TargetPartitionConfig {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct SourcePartitionConfig {
-    pub upstream_cluster: String,
+pub struct RemotePartitionConfig {
+    pub home_cluster: String,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub target_spu: SpuId,
+    pub home_spu: SpuId,
 }
 
-impl std::fmt::Display for SourcePartitionConfig {
+impl std::fmt::Display for RemotePartitionConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Source:{}:{}", self.upstream_cluster, self.target_spu)
+        write!(f, "{}:{}", self.home_cluster, self.home_spu)
     }
 }

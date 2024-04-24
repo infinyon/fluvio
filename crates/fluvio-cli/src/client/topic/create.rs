@@ -6,10 +6,6 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use fluvio::FluvioAdmin;
-use fluvio_sc_schema::remote::RemoteSpec;
-use fluvio_sc_schema::topic::MirrorConfig;
-use fluvio_sc_schema::topic::TargetMirrorConfig;
 use tracing::debug;
 use clap::Parser;
 use humantime::parse_duration;
@@ -25,8 +21,12 @@ use fluvio::metadata::topic::CompressionAlgorithm;
 
 use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use fluvio_sc_schema::shared::validate_resource_name;
+use fluvio_sc_schema::mirror::MirrorSpec;
+use fluvio_sc_schema::topic::MirrorConfig;
+use fluvio_sc_schema::topic::HomeMirrorConfig;
 
 use fluvio::Fluvio;
+use fluvio::FluvioAdmin;
 use fluvio::metadata::topic::TopicSpec;
 use crate::CliError;
 
@@ -165,41 +165,41 @@ impl CreateTopicOpt {
         } else if let Some(mirror_assign_file) = &self.mirror_apply {
             let config = MirrorConfig::read_from_json_file(mirror_assign_file, &topic_name)?;
             let targets = match config {
-                MirrorConfig::Target(ref target) => target
+                MirrorConfig::Home(ref c) => c
                     .partitions()
                     .iter()
                     .map(|p| p.remote_cluster.clone())
                     .collect::<Vec<String>>(),
-                MirrorConfig::Source(_) => {
+                MirrorConfig::Remote(_) => {
                     return Err(
                         CliError::InvalidArg("Invalid mirror configuration".to_string()).into(),
                     )
                 }
             };
 
-            // validate if all remotes are registered
-            let remotes = admin
-                .all::<RemoteSpec>()
+            // validate if all mirrors are registered
+            let mirrors = admin
+                .all::<MirrorSpec>()
                 .await?
                 .iter()
                 .map(|r| r.name.clone())
                 .collect::<Vec<String>>();
-            let not_registered_remotes = targets
+            let not_registered_mirros = targets
                 .iter()
-                .filter(|t| !remotes.contains(t))
+                .filter(|t| !mirrors.contains(t))
                 .collect::<Vec<&String>>();
 
-            if !not_registered_remotes.is_empty() {
+            if !not_registered_mirros.is_empty() {
                 return Err(CliError::InvalidArg(format!(
                     "Remote clusters not registered: {:?}",
-                    not_registered_remotes
+                    not_registered_mirros
                 ))
                 .into());
             }
 
             ReplicaSpec::Mirror(config)
         } else if self.mirror {
-            let mirror_map = MirrorConfig::Target(TargetMirrorConfig::from(vec![]));
+            let mirror_map = MirrorConfig::Home(HomeMirrorConfig::from(vec![]));
             ReplicaSpec::Mirror(mirror_map)
         } else {
             ReplicaSpec::Computed(TopicReplicaParam {
@@ -278,7 +278,7 @@ mod load {
 
     use anyhow::{anyhow, Result};
     use fluvio::metadata::topic::{PartitionMaps, MirrorConfig};
-    use fluvio_controlplane_metadata::topic::TargetMirrorConfig;
+    use fluvio_controlplane_metadata::topic::HomeMirrorConfig;
 
     pub(crate) trait ReadFromJson: Sized {
         /// Read and decode from json file
@@ -298,8 +298,8 @@ mod load {
             let file_str: String = read_to_string(path)?;
             let clusters: Vec<String> = serde_json::from_str(&file_str)
                 .map_err(|err| anyhow!("error reading mirror assignment: {err}"))?;
-            let target_mirror = TargetMirrorConfig::from_simple(topic, clusters);
-            Ok(MirrorConfig::Target(target_mirror))
+            let core_mirror = HomeMirrorConfig::from_simple(topic, clusters);
+            Ok(MirrorConfig::Home(core_mirror))
         }
     }
 
@@ -308,7 +308,7 @@ mod load {
 
         use fluvio_controlplane_metadata::{
             topic::{PartitionMaps, MirrorConfig},
-            partition::TargetPartitionConfig,
+            partition::HomePartitionConfig,
         };
 
         use super::ReadFromJson;
@@ -332,24 +332,24 @@ mod load {
                 "boats",
             )
             .expect("v1 not found");
-            let target = match m {
-                MirrorConfig::Target(m) => m,
-                MirrorConfig::Source(_) => panic!("not target"),
+            let core = match m {
+                MirrorConfig::Home(m) => m,
+                MirrorConfig::Remote(_) => panic!("not core"),
             };
-            let partitions = target.partitions();
+            let partitions = core.partitions();
             assert_eq!(partitions.len(), 2);
             assert_eq!(
                 partitions[0],
-                TargetPartitionConfig {
+                HomePartitionConfig {
                     remote_cluster: "boat1".to_string(),
-                    source_replica: "boats-0".to_string()
+                    remote_replica: "boats-0".to_string()
                 }
             );
             assert_eq!(
                 partitions[1],
-                TargetPartitionConfig {
+                HomePartitionConfig {
                     remote_cluster: "boat2".to_string(),
-                    source_replica: "boats-0".to_string()
+                    remote_replica: "boats-0".to_string()
                 }
             );
         }

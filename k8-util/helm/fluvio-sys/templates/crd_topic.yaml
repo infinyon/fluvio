@@ -63,26 +63,26 @@ spec:
                     mirror:
                       type: object
                       oneOf:
-                        - required: ["target"]
-                        - required: ["source"]
+                        - required: ["home"]
+                        - required: ["remote"]
                       properties:
-                        target:
+                        home:
                           type: array
                           items:
                             type: object
-                            required: ["remoteCluster","sourceReplica"]
+                            required: ["remoteCluster","remoteReplica"]
                             properties:
                               remoteCluster:
                                 type: string
-                              sourceReplica:
+                              remoteReplica:
                                 type: string
-                        source:
+                        remote:
                           type: object
-                          required: ["upstreamCluster","targetSpus"]
+                          required: ["homeCluster","homeSpus"]
                           properties:
-                            upstreamCluster:
+                            homeCluster:
                               type: string
-                            targetSpus:
+                            homeSpus:
                               type: array
                               items:
                                 type: integer

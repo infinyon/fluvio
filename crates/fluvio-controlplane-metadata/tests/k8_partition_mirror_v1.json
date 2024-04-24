@@ -3,7 +3,7 @@
     "kind": "Partition",
     "metadata": {
         "annotations": {
-            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v1\",\"kind\":\"Partition\",\"metadata\":{\"annotations\":{},\"name\":\"test-0\",\"namespace\":\"default\"},\"spec\":{\"leader\":5001,\"mirror\":{\"target\":{\"remoteCluster\":\"boat1\"}}}}\n"
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v1\",\"kind\":\"Partition\",\"metadata\":{\"annotations\":{},\"name\":\"test-0\",\"namespace\":\"default\"},\"spec\":{\"leader\":5001,\"mirror\":{\"home\":{\"remoteCluster\":\"boat1\"}}}}\n"
         },
         "creationTimestamp": "2023-08-17T18:53:04Z",
         "generation": 1,
@@ -15,9 +15,9 @@
     "spec": {
         "leader": 5001,
         "mirror": {
-            "target": {
+            "home": {
                 "remoteCluster": "boat1",
-                "sourceReplica": "boats-0"
+                "remoteReplica": "boats-0"
             }
         }
     }

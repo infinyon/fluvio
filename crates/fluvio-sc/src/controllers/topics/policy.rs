@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 use std::fmt;
+use tracing::{debug, instrument};
 
 use fluvio_controlplane_metadata::partition::PartitionMirrorConfig;
-use fluvio_controlplane_metadata::partition::SourcePartitionConfig;
+use fluvio_controlplane_metadata::partition::RemotePartitionConfig;
 use fluvio_types::PartitionId;
-use tracing::{debug, instrument};
 
 use fluvio_controlplane::PartitionMetadata;
 use fluvio_controlplane_metadata::topic::MirrorConfig;
@@ -281,22 +281,22 @@ impl<C: MetadataItem> TopicNextState<C> {
 
                         // generate mirror map
                         match mirror_config {
-                            MirrorConfig::Source(src) => {
+                            MirrorConfig::Remote(src) => {
                                 for (partition, spu) in src.spus().iter().enumerate() {
                                     mirror_map.insert(
                                         partition as PartitionId,
-                                        PartitionMirrorConfig::Source(SourcePartitionConfig {
-                                            target_spu: *spu,
-                                            upstream_cluster: src.upstream_cluster.clone(),
+                                        PartitionMirrorConfig::Remote(RemotePartitionConfig {
+                                            home_spu: *spu,
+                                            home_cluster: src.home_cluster.clone(),
                                         }),
                                     );
                                 }
                             }
-                            MirrorConfig::Target(tgt) => {
+                            MirrorConfig::Home(tgt) => {
                                 for (partition, config) in tgt.partitions().iter().enumerate() {
                                     mirror_map.insert(
                                         partition as PartitionId,
-                                        PartitionMirrorConfig::Target(config.clone()),
+                                        PartitionMirrorConfig::Home(config.clone()),
                                     );
                                 }
                             }

@@ -31,26 +31,26 @@ spec:
                 mirror:
                   type: object
                   oneOf:
-                    - required: ["target"]
-                    - required: ["source"]
+                    - required: ["home"]
+                    - required: ["remote"]
                   properties:
-                    target:
+                    home:
                       type: object
-                      required: ["remoteCluster","sourceReplica"]
+                      required: ["remoteCluster","remoteReplica"]
                       properties:
-                        sourceReplica:
+                        remoteReplica:
                           type: string
                         remoteCluster:
                           type: string
-                    source:
+                    remote:
                       type: object
-                      required: ["upstreamCluster","targetSpu"]
+                      required: ["homeCluster","homeSpu"]
                       properties:
-                        upstreamCluster:
+                        homeCluster:
                           type: string
-                        targetTopic:
+                        homeTopic:
                           type: string
-                        targetSpu:
+                        homeSpu:
                           type: integer
                           minimum: 0
                 cleanupPolicy:

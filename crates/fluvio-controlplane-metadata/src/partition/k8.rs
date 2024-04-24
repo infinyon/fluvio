@@ -30,7 +30,7 @@ mod test_spec {
 
     use fluvio_stream_model::k8_types::K8Obj;
 
-    use crate::partition::{TargetPartitionConfig, PartitionMirrorConfig};
+    use crate::partition::{HomePartitionConfig, PartitionMirrorConfig};
 
     use super::PartitionSpec;
 
@@ -48,9 +48,9 @@ mod test_spec {
         let mirror = partition.spec.mirror.unwrap();
         assert_eq!(
             mirror,
-            PartitionMirrorConfig::Target(TargetPartitionConfig {
+            PartitionMirrorConfig::Home(HomePartitionConfig {
                 remote_cluster: "boat1".to_string(),
-                source_replica: "boats-0".to_string()
+                remote_replica: "boats-0".to_string()
             })
         );
     }

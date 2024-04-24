@@ -3,7 +3,7 @@
     "kind": "Topic",
     "metadata": {
         "annotations": {
-            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v2\",\"kind\":\"Topic\",\"metadata\":{\"annotations\":{},\"name\":\"test3\",\"namespace\":\"default\"},\"spec\":{\"compressionType\":\"Any\",\"replicas\":{\"mirror\":{\"target\":{\"remoteClusters\":[\"boat1\",\"boat2\"]}}}}}\n"
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"fluvio.infinyon.com/v2\",\"kind\":\"Topic\",\"metadata\":{\"annotations\":{},\"name\":\"test3\",\"namespace\":\"default\"},\"spec\":{\"compressionType\":\"Any\",\"replicas\":{\"mirror\":{\"home\":{\"remoteClusters\":[\"boat1\",\"boat2\"]}}}}}\n"
         },
         "creationTimestamp": "2023-08-17T17:43:09Z",
         "generation": 1,
@@ -16,14 +16,14 @@
         "compressionType": "Any",
         "replicas": {
             "mirror": {
-                "target": [
+                "home": [
                     {
                         "remoteCluster": "boat1",
-                        "sourceReplica": "boats-0"
+                        "remoteReplica": "boats-0"
                     },
                     {
                         "remoteCluster": "boat2",
-                        "sourceReplica": "boats-0"
+                        "remoteReplica": "boats-0"
                     }
                 ]
             }
