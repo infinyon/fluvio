@@ -10,7 +10,7 @@ use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
 use fluvio_stream_model::core::MetadataItem;
 
-use crate::controllers::mirroring::controller::MirroringController;
+use crate::controllers::mirroring::controller::RemoteMirrorController;
 use crate::core::Context;
 use crate::core::SharedContext;
 use crate::controllers::partitions::PartitionController;
@@ -113,7 +113,11 @@ where
         "public",
         pub_server::start(ctx.clone(), auth_policy)
     );
-    whitelist!(config, "mirroring", MirroringController::start(ctx.clone()));
+    whitelist!(
+        config,
+        "mirroring",
+        RemoteMirrorController::start(ctx.clone())
+    );
 
     mod pub_server {
 

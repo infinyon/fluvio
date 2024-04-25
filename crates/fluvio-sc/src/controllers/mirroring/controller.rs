@@ -1,7 +1,8 @@
 use std::time::{Duration, SystemTime};
-use fluvio_controlplane_metadata::mirroring::{MirrorConnect, MirroringRemoteClusterRequest};
+use tracing::{debug, error, info, instrument};
+use anyhow::{anyhow, Context, Result};
 
-use fluvio_socket::{ClientConfig, MultiplexerSocket};
+use fluvio_socket::{ClientConfig, MultiplexerSocket, StreamSocket};
 use futures_util::StreamExt;
 use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_sc_schema::{
@@ -12,8 +13,7 @@ use fluvio_sc_schema::{
     TryEncodableFrom,
 };
 use fluvio_stream_dispatcher::store::StoreContext;
-use tracing::{debug, error, info, instrument};
-use anyhow::{anyhow, Context, Result};
+use fluvio_controlplane_metadata::mirroring::{MirrorConnect, MirroringRemoteClusterRequest};
 
 use crate::core::SharedContext;
 
@@ -22,12 +22,12 @@ const MIRRORING_CONTROLLER_RETRY_INTERVAL: u64 = 10;
 
 // This is the main controller for the mirroring feature.
 // Remote Clusters will connect to the home clusters.
-pub struct MirroringController<C: MetadataItem> {
+pub struct RemoteMirrorController<C: MetadataItem> {
     mirrors: StoreContext<MirrorSpec, C>,
     topics: StoreContext<TopicSpec, C>,
 }
 
-impl<C: MetadataItem> MirroringController<C> {
+impl<C: MetadataItem> RemoteMirrorController<C> {
     pub fn start(ctx: SharedContext<C>) {
         let controller = Self {
             mirrors: ctx.mirrors().clone(),
@@ -58,7 +58,7 @@ impl<C: MetadataItem> MirroringController<C> {
         debug!("initializing listeners");
 
         loop {
-            let mirrors_from_home = self
+            let home_mirrors = self
                 .mirrors
                 .store()
                 .read()
@@ -70,26 +70,22 @@ impl<C: MetadataItem> MirroringController<C> {
                 })
                 .collect::<Vec<_>>();
 
-            //TODO: we need to have a strategy to choose which home to connect
-            if let Some(mirror) = mirrors_from_home.first() {
+            if let Some(home) = home_mirrors.first() {
                 //send to home cluster the connect request
                 //TODO: handle TLS
 
-                let home_config = ClientConfig::with_addr(mirror.public_endpoint.clone());
+                let home_config = ClientConfig::with_addr(home.public_endpoint.clone());
                 let versioned_socket = home_config.connect().await?;
                 let (socket, config, versions) = versioned_socket.split();
-                info!("connecting to home: {}", mirror.public_endpoint);
+                info!("connecting to home: {}", home.public_endpoint);
 
                 let request = MirrorConnect {
-                    name: mirror.remote_id.clone(),
+                    remote_id: home.remote_id.clone(),
                 };
                 debug!("sending connect request: {:#?}", request);
 
-                let mut stream_socket = fluvio::stream_socket::StreamSocket::new(
-                    config,
-                    MultiplexerSocket::shared(socket),
-                    versions.clone(),
-                );
+                let mut stream_socket =
+                    StreamSocket::new(config, MultiplexerSocket::shared(socket), versions.clone());
 
                 let version = versions
                     .lookup_version::<ObjectMirroringRequest>()
@@ -126,26 +122,21 @@ impl<C: MetadataItem> MirroringController<C> {
                                     {
                                         // generate topic spec for remote topic
                                         // count all remote clusters that are pointing to the given mirror cluster
-                                        let partition = mirror_config
+                                        let partition_id = mirror_config
                                             .partitions()
                                             .iter()
-                                            .position(|rc| rc.remote_cluster == mirror.remote_id);
-
-                                        if partition.is_none() {
-                                            return Err(anyhow::anyhow!(
+                                            .position(|rc| rc.remote_cluster == home.remote_id)
+                                            .context(format!(
                                                 "Topic {} is not a mirror home for cluster {}",
-                                                topic.key,
-                                                mirror.id
-                                            ));
-                                        }
+                                                topic.key, home.remote_id
+                                            ))?
+                                            as u32;
 
-                                        let partition = partition.unwrap() as u32;
-
-                                        let topic_replica_map = &topic.replica_map;
-                                        let home_spu_id = topic_replica_map
-                                            .get(&partition)
+                                        let home_spu_id = topic
+                                            .replica_map
+                                            .get(&partition_id)
                                             .context(
-                                                "Topic does not have a replica for {partition}",
+                                                "Topic does not have a replica for {partition_id}",
                                             )?
                                             .first()
                                             .context("Topic does not have any replicas")?;
@@ -153,7 +144,7 @@ impl<C: MetadataItem> MirroringController<C> {
                                         let replica: ReplicaSpec = ReplicaSpec::Mirror(
                                             MirrorConfig::Remote(RemoteMirrorConfig {
                                                 home_spus: vec![*home_spu_id; 1],
-                                                home_cluster: mirror.id.clone(),
+                                                home_cluster: home.id.clone(),
                                             }),
                                         );
 
@@ -189,9 +180,7 @@ impl<C: MetadataItem> MirroringController<C> {
                                 ConnectionStatus::Online,
                                 now as u64,
                             );
-                            self.mirrors
-                                .update_status(mirror.id.clone(), status)
-                                .await?;
+                            self.mirrors.update_status(home.id.clone(), status).await?;
                         }
                         Err(err) => {
                             debug!("received error: {:#?}", err);
@@ -200,9 +189,7 @@ impl<C: MetadataItem> MirroringController<C> {
                                 ConnectionStatus::Online,
                                 now as u64,
                             );
-                            self.mirrors
-                                .update_status(mirror.id.clone(), status)
-                                .await?;
+                            self.mirrors.update_status(home.id.clone(), status).await?;
 
                             return Err(err.into());
                         }

@@ -2806,7 +2806,6 @@ dependencies = [
  "cfg-if",
  "clap",
  "event-listener 3.1.0",
- "fluvio",
  "fluvio-auth",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
@@ -2916,7 +2915,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.7"
+version = "0.14.8"
 dependencies = [
  "async-channel 1.9.0",
  "async-lock 2.8.0",

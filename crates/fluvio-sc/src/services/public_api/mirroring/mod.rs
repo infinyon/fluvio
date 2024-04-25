@@ -13,7 +13,7 @@ use fluvio_sc_schema::mirroring::ObjectMirroringRequest;
 use fluvio_sc_schema::TryEncodableFrom;
 use fluvio_types::event::StickyEvent;
 use crate::services::auth::AuthServiceContext;
-use crate::services::public_api::mirroring::connect::MirroringConnectController;
+use crate::services::public_api::mirroring::connect::RemoteFetchingFromHomeController;
 
 pub enum MirrorRequests {
     Connect(MirrorConnect),
@@ -37,7 +37,7 @@ pub fn handle_mirroring_request<AC: AuthContext, C: MetadataItem>(
 
     match req {
         MirrorRequests::Connect(req) => {
-            MirroringConnectController::start(req, sink, end_event, ctx, header);
+            RemoteFetchingFromHomeController::start(req, sink, end_event, ctx, header);
         }
     };
 

@@ -4,11 +4,10 @@ use async_lock::Mutex;
 use async_trait::async_trait;
 
 use fluvio::metrics::ClientMetrics;
-use fluvio::stream_socket::StreamSocket;
 use fluvio::{FluvioError, PartitionConsumer};
 use fluvio::spu::SpuDirectory;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_socket::{MultiplexerSocket, ClientConfig, VersionedSerialSocket};
+use fluvio_socket::{ClientConfig, MultiplexerSocket, StreamSocket, VersionedSerialSocket};
 use fluvio_types::{SpuId, PartitionId};
 use tracing::{debug, instrument};
 
@@ -116,7 +115,8 @@ impl SpuDirectory for LeaderConnections {
             if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
                 return spu_socket
                     .create_stream_with_version(request, version)
-                    .await;
+                    .await
+                    .map_err(|err| err.into());
             }
 
             let mut spu_socket = self.connect_to_leader(leader_id).await?;

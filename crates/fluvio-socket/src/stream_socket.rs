@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use fluvio_protocol::api::{Request, RequestMessage};
-use fluvio_socket::{
-    AsyncResponse, ClientConfig, SharedMultiplexerSocket, VersionedSerialSocket, Versions,
+use crate::{
+    AsyncResponse, ClientConfig, SharedMultiplexerSocket, SocketError, VersionedSerialSocket,
+    Versions,
 };
 
-use crate::FluvioError;
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 /// Stream Socket
@@ -45,7 +45,7 @@ impl StreamSocket {
         &mut self,
         request: R,
         version: i16,
-    ) -> Result<AsyncResponse<R>, FluvioError> {
+    ) -> Result<AsyncResponse<R>, SocketError> {
         let mut req_msg = RequestMessage::new_request(request);
         req_msg.header.set_api_version(version);
         req_msg
@@ -54,6 +54,5 @@ impl StreamSocket {
         self.socket
             .create_stream(req_msg, DEFAULT_STREAM_QUEUE_SIZE)
             .await
-            .map_err(|err| err.into())
     }
 }

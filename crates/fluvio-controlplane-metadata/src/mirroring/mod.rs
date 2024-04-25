@@ -23,7 +23,7 @@ impl<S> MirroringRemoteClusterSpec for MirroringRemoteClusterRequest<S> where S:
     serde(rename_all = "camelCase")
 )]
 pub struct MirrorConnect {
-    pub name: String,
+    pub remote_id: String,
 }
 
 impl MirroringRemoteClusterSpec for MirrorConnect {}

@@ -22,7 +22,7 @@ use crate::core::Context;
 
 // This is the entry point for handling mirroring requests
 // Home clusters will receive requests from remote clusters
-pub struct MirroringConnectController<C: MetadataItem> {
+pub struct RemoteFetchingFromHomeController<C: MetadataItem> {
     req: MirrorConnect,
     response_sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
@@ -32,7 +32,7 @@ pub struct MirroringConnectController<C: MetadataItem> {
 
 const MIRRORING_CONTROLLER_INTERVAL: u64 = 5;
 
-impl<C: MetadataItem> MirroringConnectController<C> {
+impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
     pub fn start(
         req: MirrorConnect,
         response_sink: ExclusiveFlvSink,
@@ -51,10 +51,13 @@ impl<C: MetadataItem> MirroringConnectController<C> {
         spawn(controller.dispatch_loop());
     }
 
-    #[instrument(skip(self), name = "MirroringConnectControllerLoop")]
+    #[instrument(skip(self), name = "RemoteFetchingFromHomeControllerLoop")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
-        info!(name = self.req.name, "received mirroring connect request");
+        info!(
+            name = self.req.remote_id,
+            "received mirroring connect request"
+        );
 
         let mut topics_listener = self.ctx.topics().change_listener();
 
@@ -68,7 +71,7 @@ impl<C: MetadataItem> MirroringConnectController<C> {
                 break;
             }
 
-            trace!("{}: waiting for changes", self.req.name);
+            trace!("{}: waiting for changes", self.req.remote_id);
             select! {
                 _ = self.end_event.listen() => {
                     debug!("connection has been terminated");
@@ -76,7 +79,7 @@ impl<C: MetadataItem> MirroringConnectController<C> {
                 },
 
                 _ = topics_listener.listen() => {
-                    debug!("mirroring: {}, topic changes has been detected", self.req.name);
+                    debug!("mirroring: {}, topic changes has been detected", self.req.remote_id);
                 }
             }
 
@@ -102,16 +105,16 @@ impl<C: MetadataItem> MirroringConnectController<C> {
             .map(|topic| {
                 MirroringSpecWrapper::new(topic.key.clone(), topic.spec, topic.status.replica_map)
             })
-            .filter(|topic| match topic.spec.replicas() {
-                ReplicaSpec::Mirror(MirrorConfig::Home(t)) => t
+            .filter(|wrapper| match wrapper.spec.replicas() {
+                ReplicaSpec::Mirror(MirrorConfig::Home(h)) => h
                     .partitions()
                     .iter()
-                    .any(|p| p.remote_cluster == self.req.name),
+                    .any(|p| p.remote_cluster == self.req.remote_id),
                 _ => false,
             })
             .collect::<Vec<_>>();
 
-        match self.ctx.mirrors().store().value(&self.req.name).await {
+        match self.ctx.mirrors().store().value(&self.req.remote_id).await {
             Some(remote) => {
                 let now = SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
@@ -140,7 +143,7 @@ impl<C: MetadataItem> MirroringConnectController<C> {
                         .await?;
                     error!(
                         "error mirroring sending {}, correlation_id: {}, err: {}",
-                        self.req.name,
+                        self.req.remote_id,
                         self.header.correlation_id(),
                         err
                     );
@@ -161,8 +164,8 @@ impl<C: MetadataItem> MirroringConnectController<C> {
                 return Ok(());
             }
             None => {
-                error!("remote cluster not found: {}", self.req.name);
-                return Err(anyhow!("remote cluster not found: {}", self.req.name));
+                error!("remote cluster not found: {}", self.req.remote_id);
+                return Err(anyhow!("remote cluster not found: {}", self.req.remote_id));
             }
         }
     }
