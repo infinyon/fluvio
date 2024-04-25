@@ -13,6 +13,7 @@ pub use cmd::ConsumeOpt;
 
 mod cmd {
 
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::time::{UNIX_EPOCH, Duration};
     use std::{io::Error as IoError, path::PathBuf};
     use std::io::{self, ErrorKind, Stdout};
@@ -21,6 +22,7 @@ mod cmd {
     use std::sync::Arc;
 
     use fluvio_protocol::link::ErrorCode;
+    use futures_util::{Stream, StreamExt};
     use tracing::{debug, trace, instrument};
     use clap::{Parser, ValueEnum};
     use futures::{select, FutureExt};
@@ -40,7 +42,6 @@ mod cmd {
     use fluvio_spu_schema::server::smartmodule::SmartModuleContextData;
     use fluvio_protocol::record::NO_TIMESTAMP;
     use fluvio::metadata::tableformat::TableFormatSpec;
-    use fluvio_future::io::StreamExt;
     use fluvio::{Fluvio, Offset, FluvioError};
     use fluvio::consumer::{ConsumerConfigExt, ConsumerStream, OffsetManagementStrategy};
 
@@ -299,7 +300,7 @@ mod cmd {
             tableformat: Option<TableFormatSpec>,
         ) -> Result<()> {
             trace!(config = ?self, "Starting consumer:");
-            self.init_ctrlc()?;
+            let stop_signal = self.init_ctrlc()?;
             let offset = self.calculate_offset()?;
 
             let mut builder = ConsumerConfigExt::builder();
@@ -379,7 +380,10 @@ mod cmd {
             debug!("consume config: {:#?}", consume_config);
 
             self.print_status();
-            let mut stream = fluvio.consumer_with_config(consume_config).await?;
+            let mut stream = fluvio
+                .consumer_with_config(consume_config)
+                .await?
+                .take_until(stop_signal.recv());
             self.consume_records_stream(&mut stream, tableformat)
                 .await?;
 
@@ -388,8 +392,8 @@ mod cmd {
             }
 
             if self.consumer.is_some() {
-                stream.offset_commit()?;
-                stream.offset_flush().await?;
+                stream.get_mut().offset_commit()?;
+                stream.get_mut().offset_flush().await?;
             }
 
             Ok(())
@@ -398,7 +402,7 @@ mod cmd {
         /// Consume records as a stream, waiting for new records to arrive
         async fn consume_records_stream(
             &self,
-            stream: &mut (impl ConsumerStream<Item = Result<Record, ErrorCode>> + Unpin),
+            stream: &mut (impl Stream<Item = Result<Record, ErrorCode>> + Unpin),
             tableformat: Option<TableFormatSpec>,
         ) -> Result<()> {
             let maybe_potential_end_offset: Option<u32> = self.end;
@@ -702,10 +706,19 @@ mod cmd {
         }
 
         /// Initialize Ctrl-C event handler
-        fn init_ctrlc(&self) -> Result<()> {
+        fn init_ctrlc(&self) -> Result<async_channel::Receiver<()>> {
+            let (s, r) = async_channel::bounded(1);
+            let invoked = AtomicBool::new(false);
             let result = ctrlc::set_handler(move || {
                 debug!("detected control c, setting end");
-                std::process::exit(0);
+                if invoked.load(Ordering::SeqCst) {
+                    std::process::exit(0);
+                } else {
+                    invoked.store(true, Ordering::SeqCst);
+                    let _ = s.try_send(());
+                    std::thread::sleep(Duration::from_secs(2));
+                    std::process::exit(0);
+                }
             });
 
             if let Err(err) = result {
@@ -715,7 +728,7 @@ mod cmd {
                 )
                 .into());
             }
-            Ok(())
+            Ok(r)
         }
 
         /// Calculate the Offset to use with the consumer based on the provided offset number
