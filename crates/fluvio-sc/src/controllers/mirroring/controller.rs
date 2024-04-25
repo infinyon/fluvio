@@ -109,12 +109,6 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                         Ok(response) => {
                             debug!("received response: {:#?}", response);
                             for topic in response.topics.iter() {
-                                // Check if the topic already exists
-                                if self.topics.store().read().await.contains_key(&topic.key) {
-                                    debug!("topic {} already exists", topic.key);
-                                    continue;
-                                }
-
                                 // find home spu id
                                 let remote_topic_spec =
                                     if let ReplicaSpec::Mirror(MirrorConfig::Home(mirror_config)) =
@@ -141,14 +135,38 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                                             .first()
                                             .context("Topic does not have any replicas")?;
 
-                                        let replica: ReplicaSpec = ReplicaSpec::Mirror(
+                                        let new_replica: ReplicaSpec = ReplicaSpec::Mirror(
                                             MirrorConfig::Remote(RemoteMirrorConfig {
                                                 home_spus: vec![*home_spu_id; 1],
                                                 home_cluster: home.id.clone(),
                                             }),
                                         );
 
-                                        let mut remote_topic: TopicSpec = replica.into();
+                                        // Check if the topic already exists
+                                        let mut remote_topic = if let Some(t) =
+                                            self.topics.store().read().await.get(&topic.key)
+                                        {
+                                            let mut topic_spec = t.spec.clone();
+                                            topic_spec.set_replicas(new_replica.clone());
+
+                                            if topic_spec == t.spec().clone() {
+                                                debug!("topic {} is already up to date", topic.key);
+                                                continue;
+                                            }
+
+                                            info!("updating topic {} with new replica", topic.key);
+                                            topic_spec
+                                        } else {
+                                            info!(
+                                                "creating new topic {} with new replica",
+                                                topic.key
+                                            );
+
+                                            let mut topic_spec = topic.spec.clone();
+                                            topic_spec.set_replicas(new_replica);
+                                            topic_spec
+                                        };
+
                                         if let Some(cleanup_policy) = topic.spec.get_clean_policy()
                                         {
                                             remote_topic.set_cleanup_policy(cleanup_policy.clone())
