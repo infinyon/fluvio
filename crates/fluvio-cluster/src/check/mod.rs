@@ -777,13 +777,17 @@ impl ClusterChecker {
         self
     }
 
-    pub fn with_no_k8_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
-            Box::new(LocalClusterCheck),
-            Box::new(CleanLocalClusterCheck),
-        ];
-        self.checks.extend(checks);
-        self
+    pub fn with_no_k8_checks(self) -> Self {
+        self.without_installed_local_cluster()
+            .with_clean_local_cluster()
+    }
+
+    pub fn without_installed_local_cluster(self) -> Self {
+        self.with_check(LocalClusterCheck)
+    }
+
+    pub fn with_clean_local_cluster(self) -> Self {
+        self.with_check(CleanLocalClusterCheck)
     }
 
     /// Adds all checks required for starting a cluster on minikube.
