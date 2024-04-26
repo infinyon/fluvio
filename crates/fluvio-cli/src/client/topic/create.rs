@@ -22,8 +22,8 @@ use fluvio::metadata::topic::CompressionAlgorithm;
 use fluvio_controlplane_metadata::topic::config::TopicConfig;
 use fluvio_sc_schema::shared::validate_resource_name;
 use fluvio_sc_schema::mirror::MirrorSpec;
-use fluvio_sc_schema::topic::MirrorConfig;
 use fluvio_sc_schema::topic::HomeMirrorConfig;
+use fluvio_sc_schema::topic::MirrorConfig;
 
 use fluvio::Fluvio;
 use fluvio::FluvioAdmin;

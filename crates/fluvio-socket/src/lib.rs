@@ -4,6 +4,7 @@ mod sink;
 mod socket;
 mod stream;
 mod versioned;
+mod stream_socket;
 
 #[cfg(test)]
 pub mod test_request;
@@ -15,6 +16,7 @@ pub use multiplexing::*;
 pub use sink::*;
 
 pub use stream::*;
+pub use stream_socket::*;
 pub use versioned::*;
 
 use fluvio_protocol::api::Request;

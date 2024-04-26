@@ -19,7 +19,6 @@ use anyhow::Result;
 use fluvio_service::ConnectInfo;
 use fluvio_types::event::StickyEvent;
 use fluvio_auth::Authorization;
-//use fluvio_service::aAuthorization;
 use fluvio_stream_model::core::MetadataItem;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
@@ -110,8 +109,9 @@ where
                 shared_sink,
                 "list handler"
             ),
+            AdminPublicDecodedRequest::MirroringRequest(request) =>
+                super::mirroring::handle_mirroring_request(request, &service_context, shared_sink.clone(), end_event.clone())?,
             AdminPublicDecodedRequest::WatchRequest(request) =>
-
                 super::watch::handle_watch_request(
                     request,
                     &service_context,

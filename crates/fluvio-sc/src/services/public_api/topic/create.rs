@@ -63,6 +63,7 @@ pub(crate) async fn handle_create_topics_request<AC: AuthContext, C: MetadataIte
     if status.is_error() {
         return Ok(status);
     }
+
     if !create.dry_run {
         status = process_topic_request(auth_ctx, name, topic).await;
     }

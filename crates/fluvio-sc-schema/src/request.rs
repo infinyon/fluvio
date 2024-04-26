@@ -16,6 +16,7 @@ use fluvio_protocol::api::api_decode;
 use fluvio_protocol::core::{Decoder};
 use fluvio_protocol::link::versions::ApiVersionsRequest;
 
+use crate::mirroring::ObjectMirroringRequest;
 use crate::AdminPublicApiKey;
 use crate::objects::{
     ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
@@ -29,6 +30,7 @@ pub enum AdminPublicDecodedRequest {
     DeleteRequest(RequestMessage<ObjectApiDeleteRequest>),
     ListRequest(RequestMessage<ObjectApiListRequest>),
     WatchRequest(RequestMessage<ObjectApiWatchRequest>),
+    MirroringRequest(RequestMessage<ObjectMirroringRequest>),
 }
 
 impl Default for AdminPublicDecodedRequest {
@@ -80,6 +82,10 @@ impl ApiMessage for AdminPublicDecodedRequest {
             AdminPublicApiKey::Watch => Ok(Self::WatchRequest(RequestMessage::new(
                 header,
                 ObjectApiWatchRequest::decode_from(src, version)?,
+            ))),
+            AdminPublicApiKey::Mirroring => Ok(Self::MirroringRequest(RequestMessage::new(
+                header,
+                ObjectMirroringRequest::decode_from(src, version)?,
             ))),
         }
     }
