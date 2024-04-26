@@ -38,7 +38,7 @@ smartengine = ["fluvio-smartengine/default"]
 producer-file-io = ["fluvio-cli-common/file-records"]
 
 [dependencies]
-
+async-channel = { workspace = true }
 async-net = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }

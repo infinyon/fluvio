@@ -2318,6 +2318,7 @@ name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-channel 1.9.0",
  "async-net",
  "async-trait",
  "atty",
