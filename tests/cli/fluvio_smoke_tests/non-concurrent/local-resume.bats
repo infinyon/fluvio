@@ -30,16 +30,30 @@ run_resume() {
     run bash -c "${close_fd_cmd} && ${run_resume_cmd} &" 3>&-
 }
 
+wait_for_spus() {
+    for retry in $(seq 1 10); do
+        run_list_spus
+        if [ "$status" -ne 0 ]; then 
+            echo "retry listing SPUs..." >&3
+            sleep 3
+        else
+            echo "Got $output SPUs after ${retry} retries. It is expected to be the same as $CLUSTER_SPUS" >&3
+            break;
+        fi;
+    done;
+}
+
 setup_file() {
-    run_list_spus
     # Expecting to have a running cluster
+    run_list_spus
     assert_success
+
     CLUSTER_SPUS=$output
     export CLUSTER_SPUS
 }
 
 @test "Resume cluster maintains SPU replica number" {
-    skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
+    # skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
 
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
@@ -52,19 +66,43 @@ setup_file() {
     resume_output=$output
     run_resume $resume_output
 
-    for retry in $(seq 1 10); do
-        run_list_spus
-        if [ "$status" -ne 0 ]; then 
-            echo "retry listing SPUs..." >&3
-            sleep 3
-        else
-            echo "Got $output SPUs after ${retry} retries. It is expected to be the same as $CLUSTER_SPUS" >&3
-            current_spus=$output
-            break;
-        fi;
-    done;
+    wait_for_spus
+    current_spus=$output
 
     echo "Resume output ($resume_output):" >&3
     cat $resume_output >&3
     assert_equal $CLUSTER_SPUS $current_spus
+}
+
+@test "Can not start a running cluster" {
+    # skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
+
+    run_list_spus
+    assert_success
+
+    run timeout 15s "$FLUVIO_BIN" cluster start
+    assert_failure
+}
+
+@test "Can not start a shutdown cluster" {
+    # skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
+
+    # Ensure cluster is running
+    run_list_spus
+    assert_success
+
+    run timeout 15s "$FLUVIO_BIN" cluster shutdown
+    assert_success
+
+    # Start should fail, since cluster wasn't deleted
+    run timeout 15s "$FLUVIO_BIN" cluster start
+    assert_failure
+
+    # Restore cluster to clean the test
+    run mktemp
+    resume_output=$output
+    run_resume $resume_output
+
+    wait_for_spus
+    assert_success
 }
