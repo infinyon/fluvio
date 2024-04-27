@@ -23,6 +23,8 @@ use crate::core::metrics::SpuMetrics;
 use crate::smartengine::SmartEngine;
 
 use super::leader_client::LeaderConnections;
+use super::mirror::MirrorLocalStore;
+use super::mirror::SharedMirrorLocalStore;
 use super::smartmodule::SmartModuleLocalStore;
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
@@ -45,6 +47,7 @@ pub struct GlobalContext<S> {
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
     leaders: Arc<LeaderConnections>,
+    mirrors: SharedMirrorLocalStore,
     metrics: Arc<SpuMetrics>,
     consumer_offset: SharedConsumerOffsetStorages,
 }
@@ -77,6 +80,7 @@ where
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::new(),
             leaders: LeaderConnections::shared(spus, replicas),
+            mirrors: MirrorLocalStore::new_shared(),
             metrics,
             consumer_offset: SharedConsumerOffsetStorages::default(),
         }
@@ -101,6 +105,15 @@ where
 
     pub fn smartmodule_localstore(&self) -> &SmartModuleLocalStore {
         &self.smartmodule_localstore
+    }
+
+    pub fn mirrors_localstore(&self) -> &MirrorLocalStore {
+        &self.mirrors
+    }
+
+    #[allow(dead_code)]
+    pub fn mirrors_localstore_owned(&self) -> SharedMirrorLocalStore {
+        self.mirrors.clone()
     }
 
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {

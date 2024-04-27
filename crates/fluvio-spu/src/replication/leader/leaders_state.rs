@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use tracing::{error, instrument};
 use anyhow::Result;
 
-use fluvio_controlplane_metadata::partition::ReplicaKey;
-use fluvio_storage::FileReplica;
+use fluvio_controlplane_metadata::partition::{PartitionMirrorConfig, ReplicaKey};
+use fluvio_storage::{FileReplica, ReplicaStorage};
 
 use crate::{control_plane::SharedStatusUpdate, core::GlobalContext};
 use crate::config::ReplicationConfig;
@@ -61,6 +61,42 @@ impl<S> ReplicaLeadersState<S> {
     ) -> Option<SharedLeaderState<S>> {
         let mut writer = self.write().await;
         writer.insert(replica, state)
+    }
+}
+
+impl<S> ReplicaLeadersState<S>
+where
+    S: ReplicaStorage,
+{
+    /// find all replica configs
+    //#[cfg(test)]
+    //pub(crate) async fn replica_configs(&self) -> Vec<Replica> {
+    //    let read = self.read().await;
+    //
+    //    let mut replicas = Vec::new();
+    //    for (_replica_key, state) in read.iter() {
+    //        let replica_config = state.get_replica();
+    //        replicas.push(replica_config.clone());
+    //    }
+    //    replicas
+    //}
+
+    /// find replica with mirror target that matches remote cluster and sourcre replica
+    pub async fn find_mirror_home_leader(
+        &self,
+        remote_cluster: &str,
+        home_replica: &str,
+    ) -> Option<SharedLeaderState<S>> {
+        let read = self.read().await;
+        for (_replica_key, state) in read.iter() {
+            let replica_config = state.get_replica();
+            if let Some(PartitionMirrorConfig::Home(home)) = &replica_config.mirror {
+                if home.remote_cluster == remote_cluster && home.remote_replica == home_replica {
+                    return Some(state.clone());
+                }
+            }
+        }
+        None
     }
 }
 

@@ -9,7 +9,7 @@ mod spu;
 mod kv;
 
 pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
-pub use self::replica_state::{SharedFileLeaderState, LeaderReplicaState};
+pub use self::replica_state::{SharedFileLeaderState, SharedLeaderState, LeaderReplicaState};
 pub use self::connection::FollowerHandler;
 pub use self::api_key::LeaderPeerApiEnum;
 pub use self::peer_api::LeaderPeerRequest;
