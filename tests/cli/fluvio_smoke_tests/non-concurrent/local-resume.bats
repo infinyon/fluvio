@@ -53,8 +53,6 @@ setup_file() {
 }
 
 @test "Resume cluster maintains SPU replica number" {
-    # skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
-
     run timeout 15s "$FLUVIO_BIN" cluster shutdown
     assert_success
 
@@ -75,8 +73,6 @@ setup_file() {
 }
 
 @test "Can not start a running cluster" {
-    # skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
-
     run_list_spus
     assert_success
 
@@ -85,8 +81,6 @@ setup_file() {
 }
 
 @test "Can not start a shutdown cluster" {
-    # skip "until 'resume' is released into a stable version; Otherwise, the CLI can't separate between stable and dev clusters, and the former is yet to support the new command"
-
     # Ensure cluster is running
     run_list_spus
     assert_success
@@ -98,7 +92,7 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" cluster start
     assert_failure
 
-    # Restore cluster to clean the test
+    # Restore cluster to restore test state
     run mktemp
     resume_output=$output
     run_resume $resume_output
