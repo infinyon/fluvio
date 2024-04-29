@@ -10,6 +10,7 @@ description = "Fluvio Connector Common SDK"
 [features]
 default = []
 derive = ["fluvio-connector-derive"]
+wasi = ["fluvio-smartengine/wasi"]
 
 [[test]]
 name = "derive-test"
