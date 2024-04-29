@@ -3,7 +3,7 @@ use fluvio_protocol::link::ErrorCode;
 use fluvio_sc_schema::{
     core::MetadataItem,
     objects::CreateRequest,
-    remote::{RemoteSpec, RemoteType},
+    mirror::{MirrorSpec, MirrorType},
     Status,
 };
 use anyhow::Result;
@@ -11,8 +11,8 @@ use tracing::info;
 
 use crate::services::auth::AuthServiceContext;
 
-pub async fn handle_register_remote<AC: AuthContext, C: MetadataItem>(
-    req: CreateRequest<RemoteSpec>,
+pub async fn handle_register_mirror<AC: AuthContext, C: MetadataItem>(
+    req: CreateRequest<MirrorSpec>,
     auth_ctx: &AuthServiceContext<AC, C>,
 ) -> Result<Status> {
     let (create, spec) = req.clone().parts();
@@ -30,19 +30,19 @@ pub async fn handle_register_remote<AC: AuthContext, C: MetadataItem>(
         ));
     }
 
-    // if it's a Edge, check if it already exists
-    // if it's a Core, just update it
-    if let Some(remote) = ctx.remote().store().value(&name).await {
-        if let RemoteType::Edge(_) = remote.spec().remote_type {
+    // if it's a Remote, check if it already exists
+    // if it's a Home, just update it
+    if let Some(mirror) = ctx.mirrors().store().value(&name).await {
+        if let MirrorType::Remote(_) = mirror.spec().mirror_type {
             return Ok(Status::new(
                 name.clone(),
-                ErrorCode::RemoteAlreadyExists,
+                ErrorCode::MirrorAlreadyExists,
                 Some(format!("remote cluster {:?} already exists", name)),
             ));
         }
     }
 
-    ctx.remote()
+    ctx.mirrors()
         .create_spec(name.clone(), spec)
         .await
         .map(|_| ())?;

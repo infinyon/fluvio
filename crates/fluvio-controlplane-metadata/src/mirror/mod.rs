@@ -16,18 +16,18 @@ mod metadata {
 
     use super::*;
 
-    impl Spec for RemoteSpec {
-        const LABEL: &'static str = "Remote";
+    impl Spec for MirrorSpec {
+        const LABEL: &'static str = "Mirror";
         type IndexKey = String;
-        type Status = RemoteStatus;
+        type Status = MirrorStatus;
         type Owner = Self;
     }
 
-    impl SpecExt for RemoteSpec {
-        const OBJECT_TYPE: ObjectType = ObjectType::Remote;
+    impl SpecExt for MirrorSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::Mirror;
     }
 
-    impl Status for RemoteStatus {}
+    impl Status for MirrorStatus {}
 
     #[cfg(feature = "k8")]
     mod extended {
@@ -40,9 +40,9 @@ mod metadata {
             k8_types::K8Obj,
         };
 
-        use super::metadata::RemoteSpec;
+        use super::metadata::MirrorSpec;
 
-        impl K8ExtendedSpec for RemoteSpec {
+        impl K8ExtendedSpec for MirrorSpec {
             type K8Spec = Self;
 
             fn convert_from_k8(

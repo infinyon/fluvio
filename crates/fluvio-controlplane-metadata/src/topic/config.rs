@@ -300,6 +300,7 @@ compression:
         let mut test_spec = TopicSpec::new_assigned(vec![PartitionMap {
             id: 1,
             replicas: vec![1, 2],
+            ..Default::default()
         }]);
         test_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
             time_in_seconds: 120,
@@ -328,6 +329,7 @@ compression:
                 maps: Some(vec![PartitionMap {
                     id: 1,
                     replicas: vec![1, 2],
+                    ..Default::default()
                 }]),
             },
             retention: RetentionConfig {

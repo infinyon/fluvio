@@ -184,10 +184,10 @@ mod proxy {
 
 async fn create_memory_client(path: PathBuf) -> Result<Arc<MemoryClient>> {
     use std::ops::Deref;
-    use fluvio_sc_schema::edge::EdgeMetadataFile;
+    use fluvio_sc_schema::remote_file::RemoteMetadataFile;
     use k8_client::meta_client::MetadataClient;
 
-    let metadata_file = EdgeMetadataFile::open(path)?;
+    let metadata_file = RemoteMetadataFile::open(path)?;
     let config = metadata_file.deref();
     let client = MemoryClient::default();
 

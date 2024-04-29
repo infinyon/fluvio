@@ -6,10 +6,11 @@
 //!
 use std::sync::Arc;
 
-use fluvio_sc_schema::remote::RemoteSpec;
+use fluvio_sc_schema::mirror::MirrorSpec;
 use fluvio_stream_dispatcher::metadata::{SharedClient, MetadataClient};
 use fluvio_stream_model::core::MetadataItem;
 
+use crate::controllers::mirroring::controller::RemoteMirrorController;
 use crate::core::Context;
 use crate::core::SharedContext;
 use crate::controllers::partitions::PartitionController;
@@ -77,10 +78,10 @@ where
         ctx.smartmodules().clone(),
     );
 
-    MetadataDispatcher::<RemoteSpec, C, M>::start(
+    MetadataDispatcher::<MirrorSpec, C, M>::start(
         namespace.clone(),
         metadata_client.clone(),
-        ctx.remote().clone(),
+        ctx.mirrors().clone(),
     );
 
     start_main_loop_services(ctx, auth_policy).await
@@ -111,6 +112,11 @@ where
         config,
         "public",
         pub_server::start(ctx.clone(), auth_policy)
+    );
+    whitelist!(
+        config,
+        "mirroring",
+        RemoteMirrorController::start(ctx.clone())
     );
 
     mod pub_server {

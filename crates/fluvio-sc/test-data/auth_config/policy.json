@@ -21,7 +21,7 @@
         "TableFormat": [
             "All"
         ],
-        "Remote": [
+        "Mirror": [
             "All"
         ]
     },
@@ -50,7 +50,7 @@
         "TableFormat": [
             "All"
         ],
-        "Remote": [
+        "Mirror": [
             "All"
         ]
     }

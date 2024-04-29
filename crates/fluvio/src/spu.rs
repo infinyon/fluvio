@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use anyhow::Result;
 
 use tracing::{debug, trace, instrument};
 use async_lock::Mutex;
@@ -9,9 +10,9 @@ use fluvio_protocol::record::ReplicaKey;
 use fluvio_protocol::api::Request;
 use fluvio_types::SpuId;
 use fluvio_socket::{
-    VersionedSerialSocket, ClientConfig, MultiplexerSocket, SocketError, AsyncResponse,
+    AsyncResponse, ClientConfig, MultiplexerSocket, SocketError, StreamSocket,
+    VersionedSerialSocket,
 };
-use crate::stream_socket::StreamSocket;
 use crate::FluvioError;
 use crate::sync::MetadataStores;
 
@@ -190,7 +191,8 @@ impl SpuDirectory for SpuPool {
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
             return spu_socket
                 .create_stream_with_version(request, version)
-                .await;
+                .await
+                .map_err(|err| err.into());
         }
 
         let mut spu_socket = self.connect_to_leader(leader_id).await?;

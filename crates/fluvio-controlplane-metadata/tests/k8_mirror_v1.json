@@ -1,6 +1,6 @@
 {
     "apiVersion": "fluvio.infinyon.com/v1",
-    "kind": "Remote",
+    "kind": "Mirror",
     "metadata": {
         "creationTimestamp": "2023-08-16T17:36:58Z",
         "generation": 1,
@@ -10,8 +10,8 @@
         "uid": "0115f1f9-a17b-446a-8b9d-45ac67a4627b"
     },
     "spec": {
-        "remoteType": {
-            "edge": {
+        "mirrorType": {
+            "remote": {
                 "id": "offshore-edge-1"
             }
         }

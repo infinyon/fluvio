@@ -1,10 +1,10 @@
 use std::sync::Arc;
 use anyhow::Result;
 use clap::Parser;
-use fluvio_controlplane_metadata::remote::{RemoteSpec, RemoteType};
+use fluvio_controlplane_metadata::mirror::{MirrorSpec, MirrorType};
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::Terminal;
-use fluvio_sc_schema::remote::Edge;
+use fluvio_sc_schema::mirror::Remote;
 
 #[derive(Debug, Parser)]
 pub struct RegisterOpt {
@@ -23,14 +23,14 @@ impl RegisterOpt {
             .admin()
             .await;
 
-        let spec = RemoteSpec {
-            remote_type: RemoteType::Edge(Edge {
+        let spec = MirrorSpec {
+            mirror_type: MirrorType::Remote(Remote {
                 id: self.name.clone(),
             }),
         };
 
         admin.create(self.name.clone(), false, spec).await?;
-        println!("edge cluster \"{}\" was registered", self.name);
+        println!("remote cluster \"{}\" was registered", self.name);
         Ok(())
     }
 }

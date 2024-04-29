@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use fluvio_sc_schema::remote::RemoteSpec;
+use fluvio_sc_schema::mirror::MirrorSpec;
 use std::sync::Arc;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::Terminal;
@@ -17,8 +17,8 @@ impl UnregisterOpt {
         cluster_target: ClusterTarget,
     ) -> Result<()> {
         let admin = get_admin(cluster_target).await?;
-        admin.delete::<RemoteSpec>(&self.name).await?;
-        println!("edge cluster \"{}\" was unregistered", self.name);
+        admin.delete::<MirrorSpec>(&self.name).await?;
+        println!("remote cluster \"{}\" was unregistered", self.name);
         Ok(())
     }
 }

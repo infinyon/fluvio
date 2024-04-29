@@ -16,7 +16,6 @@ pub mod config;
 pub mod consumer;
 pub mod metrics;
 pub mod spu;
-pub mod stream_socket;
 
 pub use error::FluvioError;
 pub use config::FluvioConfig;

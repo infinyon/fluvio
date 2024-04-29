@@ -416,7 +416,7 @@ mod create {
 
     use anyhow::{anyhow, Result};
 
-    use fluvio_controlplane_metadata::remote::RemoteSpec;
+    use fluvio_controlplane_metadata::mirror::MirrorSpec;
     use fluvio_protocol::bytes::{BufMut, Buf};
     use fluvio_protocol::{Encoder, Decoder};
     use fluvio_protocol::Version;
@@ -455,7 +455,7 @@ mod create {
         SmartModule(SmartModuleSpec),
         SpuGroup(SpuGroupSpec),
         TableFormat(TableFormatSpec),
-        RemoteFormat(RemoteSpec),
+        MirrorFormat(MirrorSpec),
     }
 
     impl Default for ClassicObjectCreateRequest {
@@ -472,7 +472,7 @@ mod create {
                 Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
                 Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
                 Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
-                Self::RemoteFormat(_) => RemoteSpec::CREATE_TYPE,
+                Self::MirrorFormat(_) => MirrorSpec::CREATE_TYPE,
             }
         }
 
@@ -484,7 +484,7 @@ mod create {
                 Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
                 Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                 Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
-                Self::RemoteFormat(_) => crate::remote::RemoteSpec::LABEL,
+                Self::MirrorFormat(_) => crate::mirror::MirrorSpec::LABEL,
             }
         }
     }
@@ -500,7 +500,7 @@ mod create {
                     Self::SmartModule(s) => s.write_size(version),
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::TableFormat(s) => s.write_size(version),
-                    Self::RemoteFormat(s) => s.write_size(version),
+                    Self::MirrorFormat(s) => s.write_size(version),
                 }
         }
 
@@ -515,7 +515,7 @@ mod create {
                 Self::SmartModule(s) => s.encode(dest, version)?,
                 Self::SpuGroup(s) => s.encode(dest, version)?,
                 Self::TableFormat(s) => s.encode(dest, version)?,
-                Self::RemoteFormat(s) => s.encode(dest, version)?,
+                Self::MirrorFormat(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -660,16 +660,16 @@ mod create {
         }
     }
 
-    impl ClassicCreatableAdminSpec for RemoteSpec {
+    impl ClassicCreatableAdminSpec for MirrorSpec {
         const CREATE_TYPE: u8 = 6;
 
         fn try_classic_convert(spec: Self) -> anyhow::Result<ClassicObjectCreateRequest> {
-            Ok(ClassicObjectCreateRequest::RemoteFormat(spec))
+            Ok(ClassicObjectCreateRequest::MirrorFormat(spec))
         }
 
         fn try_convert_from_classic(request: ClassicObjectCreateRequest) -> Option<Self> {
             match request {
-                ClassicObjectCreateRequest::RemoteFormat(spec) => Some(spec),
+                ClassicObjectCreateRequest::MirrorFormat(spec) => Some(spec),
                 _ => None,
             }
         }

@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use fluvio_extension_common::target::ClusterTarget;
 use fluvio_extension_common::{OutputFormat, Terminal};
-use fluvio_sc_schema::remote::{RemoteSpec, RemoteType};
+use fluvio_sc_schema::mirror::{MirrorSpec, MirrorType};
 
 use super::get_admin;
 
@@ -21,17 +21,17 @@ impl StatusOpt {
         cluster_target: ClusterTarget,
     ) -> Result<()> {
         let admin = get_admin(cluster_target).await?;
-        let list = admin.all::<RemoteSpec>().await?;
+        let list = admin.all::<MirrorSpec>().await?;
         let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
 
         let outlist: Vec<(String, String, String, String)> = list
             .into_iter()
             .filter_map(|item| {
-                match item.spec.remote_type {
-                    RemoteType::Core(core) => {
+                match item.spec.mirror_type {
+                    MirrorType::Home(home) => {
                         Some((
-                            core.id.to_string(),        // Source ID
-                            core.public_endpoint,       // Route
+                            home.id.to_string(),        // Source ID
+                            home.public_endpoint,       // Route
                             item.status.to_string(),    // Status
                             item.status.last_seen(now), // Last-Seen
                         ))
@@ -92,7 +92,7 @@ mod output {
     impl TableOutputHandler for TableList {
         /// table header implementation
         fn header(&self) -> Row {
-            Row::from(["REMOTE", "ROUTE", "STATUS", "LAST SEEN"])
+            Row::from(["HOME", "ROUTE", "STATUS", "LAST SEEN"])
         }
 
         /// return errors in string format

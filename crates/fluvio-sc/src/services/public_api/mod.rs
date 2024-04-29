@@ -11,7 +11,8 @@ mod list;
 mod watch;
 mod tableformat;
 mod derivedstream;
-mod remote;
+mod mirror;
+mod mirroring;
 
 pub use server::start_public_server;
 

@@ -2318,6 +2318,7 @@ name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-channel 1.9.0",
  "async-net",
  "async-trait",
  "atty",
@@ -2558,7 +2559,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.27.1"
+version = "0.28.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2744,7 +2745,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.10.12"
+version = "0.10.13"
 dependencies = [
  "bytes",
  "content_inspector",
@@ -2836,7 +2837,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
@@ -2914,7 +2915,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.7"
+version = "0.14.8"
 dependencies = [
  "async-channel 1.9.0",
  "async-lock 2.8.0",

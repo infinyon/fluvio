@@ -1,3 +1,4 @@
+use fluvio_sc_schema::mirroring::ObjectMirroringRequest;
 use tracing::{trace, instrument, debug};
 use semver::Version;
 use once_cell::sync::Lazy;
@@ -50,6 +51,12 @@ pub async fn handle_api_versions_request(
         AdminPublicApiKey::Watch,
         ObjectApiWatchRequest::MIN_API_VERSION,
         ObjectApiWatchRequest::MAX_API_VERSION,
+    ));
+
+    response.api_keys.push(make_version_key(
+        AdminPublicApiKey::Mirroring,
+        ObjectMirroringRequest::MIN_API_VERSION,
+        ObjectMirroringRequest::MAX_API_VERSION,
     ));
 
     trace!("flv api versions response: {:#?}", response);
