@@ -32,7 +32,7 @@ fluvio = { path = "../fluvio", default-features = false }
 fluvio-hub-util = { path = "../fluvio-hub-util" }
 fluvio-protocol = { path = "../fluvio-protocol", features=["record","api"] }
 fluvio-future = { workspace = true, features = ["subscriber"]}
-fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation"] }
+fluvio-smartengine = { path = "../fluvio-smartengine", features = ["transformation", "wasi"] }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["smartmodule"] }
 fluvio-sc-schema = { path = "../fluvio-sc-schema" }

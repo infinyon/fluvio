@@ -156,8 +156,9 @@ impl SmartModuleChainInstance {
                 debug!(fuel_used, "fuel used");
                 metric.add_fuel_used(fuel_used);
 
-                if output.error.is_some() {
+                if let Some(ref smerr) = output.error {
                     // encountered error, we stop processing and return partial output
+                    tracing::error!(err=?smerr);
                     return Ok(output);
                 } else {
                     next_input =
@@ -169,6 +170,9 @@ impl SmartModuleChainInstance {
 
             self.store.top_up_fuel();
             let output = last.process(next_input, &mut self.store)?;
+            if let Some(ref smerr) = output.error {
+                tracing::error!(err=?smerr);
+            }
             let fuel_used = self.store.get_used_fuel();
             debug!(fuel_used, "fuel used");
             metric.add_fuel_used(fuel_used);
@@ -239,7 +243,7 @@ mod chaining_test {
 
     use fluvio_protocol::record::Record;
     use fluvio_protocol::link::smartmodule::SmartModuleLookbackRuntimeError;
-    use fluvio_smartmodule::{dataplane::smartmodule::SmartModuleInput};
+    use fluvio_smartmodule::dataplane::smartmodule::SmartModuleInput;
 
     use crate::engine::error::EngineError;
     use crate::engine::config::{Lookback, DEFAULT_SMARTENGINE_VERSION};
