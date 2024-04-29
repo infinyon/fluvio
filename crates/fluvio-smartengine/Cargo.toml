@@ -15,7 +15,7 @@ description = "The official Fluvio SmartEngine"
 engine = ["wasmtime"]
 wasi = ["wasmtime-wasi", "engine"]
 transformation = ["serde_json", "serde_yaml", "humantime-serde"]
-default = ["engine"]
+default = ["engine", "wasi"]
 
 
 [dependencies]
