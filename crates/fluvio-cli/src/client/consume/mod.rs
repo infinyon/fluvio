@@ -67,6 +67,7 @@ mod cmd {
     use fluvio_smartengine::transformation::TransformationConfig;
 
     const USER_TEMPLATE: &str = "user_template";
+    const DEFAULT_OFFSET_FLUSH_INTERVAL: Duration = Duration::from_secs(2);
 
     /// Read messages from a topic/partition
     ///
@@ -312,6 +313,7 @@ mod cmd {
             if let Some(ref consumer) = self.consumer {
                 builder.offset_consumer(consumer.clone());
                 builder.offset_strategy(OffsetManagementStrategy::Auto);
+                builder.offset_flush(DEFAULT_OFFSET_FLUSH_INTERVAL);
             }
 
             if let Some(max_bytes) = self.max_bytes {
