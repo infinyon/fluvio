@@ -731,7 +731,18 @@ pub struct HomeMirrorPartition {
 )]
 pub struct RemoteMirrorConfig {
     pub home_cluster: String,
-    pub home_spus: Vec<SpuId>,
+    pub home_spus: Vec<SpuMirrorConfig>,
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct SpuMirrorConfig {
+    pub id: SpuId,
+    pub endpoint: String,
 }
 
 impl RemoteMirrorConfig {
@@ -743,7 +754,7 @@ impl RemoteMirrorConfig {
         None
     }
 
-    pub fn spus(&self) -> &Vec<SpuId> {
+    pub fn spus(&self) -> &Vec<SpuMirrorConfig> {
         &self.home_spus
     }
 
@@ -753,8 +764,9 @@ impl RemoteMirrorConfig {
             maps.push(PartitionMap {
                 id: partition_id as u32,
                 mirror: Some(PartitionMirrorConfig::Remote(RemotePartitionConfig {
-                    home_spu: *home_spu,
+                    home_spu_id: home_spu.id,
                     home_cluster: self.home_cluster.clone(),
+                    home_spu_endpoint: home_spu.endpoint.clone(),
                 })),
                 ..Default::default()
             });

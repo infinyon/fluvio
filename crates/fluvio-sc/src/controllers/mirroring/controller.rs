@@ -1,6 +1,6 @@
 use std::time::{Duration, SystemTime};
 use tracing::{debug, error, info, instrument};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 
 use fluvio_socket::{ClientConfig, MultiplexerSocket, StreamSocket};
 use futures_util::StreamExt;
@@ -9,7 +9,7 @@ use fluvio_sc_schema::{
     core::MetadataItem,
     mirror::{ConnectionStatus, MirrorPairStatus, MirrorSpec, MirrorStatus, MirrorType},
     mirroring::ObjectMirroringRequest,
-    topic::{MirrorConfig, RemoteMirrorConfig, ReplicaSpec, TopicSpec},
+    topic::{MirrorConfig, RemoteMirrorConfig, ReplicaSpec, SpuMirrorConfig, TopicSpec},
     TryEncodableFrom,
 };
 use fluvio_stream_dispatcher::store::StoreContext;
@@ -101,7 +101,6 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                     .await?;
 
                 while let Some(response) = stream.next().await {
-                    // Change status to connected
                     let now = SystemTime::now()
                         .duration_since(SystemTime::UNIX_EPOCH)?
                         .as_millis();
@@ -109,87 +108,60 @@ impl<C: MetadataItem> RemoteMirrorController<C> {
                         Ok(response) => {
                             debug!("received response: {:#?}", response);
                             for topic in response.topics.iter() {
-                                // find home spu id
-                                let remote_topic_spec =
-                                    if let ReplicaSpec::Mirror(MirrorConfig::Home(mirror_config)) =
-                                        topic.spec.replicas()
-                                    {
-                                        // generate topic spec for remote topic
-                                        // count all remote clusters that are pointing to the given mirror cluster
-                                        let partition_id = mirror_config
-                                            .partitions()
-                                            .iter()
-                                            .position(|rc| rc.remote_cluster == home.remote_id)
-                                            .context(format!(
-                                                "Topic {} is not a mirror home for cluster {}",
-                                                topic.key, home.remote_id
-                                            ))?
-                                            as u32;
+                                // Create a new replica spec for the topic
+                                let new_replica: ReplicaSpec =
+                                    ReplicaSpec::Mirror(MirrorConfig::Remote(RemoteMirrorConfig {
+                                        home_spus: vec![
+                                            SpuMirrorConfig {
+                                                id: topic.spu_id,
+                                                endpoint: topic.spu_endpoint.clone(),
+                                            };
+                                            1
+                                        ],
+                                        home_cluster: home.id.clone(),
+                                    }));
 
-                                        let home_spu_id = topic
-                                            .replica_map
-                                            .get(&partition_id)
-                                            .context(
-                                                "Topic does not have a replica for {partition_id}",
-                                            )?
-                                            .first()
-                                            .context("Topic does not have any replicas")?;
+                                // Check if the topic already exists
+                                // If it does, update the replica spec
+                                // If it doesn't, create a new topic with the replica spec
+                                let mut remote_topic = if let Some(t) =
+                                    self.topics.store().read().await.get(&topic.key)
+                                {
+                                    let mut topic_spec = t.spec.clone();
+                                    topic_spec.set_replicas(new_replica.clone());
 
-                                        let new_replica: ReplicaSpec = ReplicaSpec::Mirror(
-                                            MirrorConfig::Remote(RemoteMirrorConfig {
-                                                home_spus: vec![*home_spu_id; 1],
-                                                home_cluster: home.id.clone(),
-                                            }),
-                                        );
+                                    if topic_spec == t.spec().clone() {
+                                        debug!("topic {} is already up to date", topic.key);
+                                        continue;
+                                    }
 
-                                        // Check if the topic already exists
-                                        let mut remote_topic = if let Some(t) =
-                                            self.topics.store().read().await.get(&topic.key)
-                                        {
-                                            let mut topic_spec = t.spec.clone();
-                                            topic_spec.set_replicas(new_replica.clone());
+                                    info!("updating topic {} with new replica", topic.key);
+                                    topic_spec
+                                } else {
+                                    info!("creating new topic {} with new replica", topic.key);
 
-                                            if topic_spec == t.spec().clone() {
-                                                debug!("topic {} is already up to date", topic.key);
-                                                continue;
-                                            }
+                                    let mut topic_spec = topic.spec.clone();
+                                    topic_spec.set_replicas(new_replica);
+                                    topic_spec
+                                };
 
-                                            info!("updating topic {} with new replica", topic.key);
-                                            topic_spec
-                                        } else {
-                                            info!(
-                                                "creating new topic {} with new replica",
-                                                topic.key
-                                            );
+                                if let Some(cleanup_policy) = topic.spec.get_clean_policy() {
+                                    remote_topic.set_cleanup_policy(cleanup_policy.clone())
+                                }
 
-                                            let mut topic_spec = topic.spec.clone();
-                                            topic_spec.set_replicas(new_replica);
-                                            topic_spec
-                                        };
+                                remote_topic.set_compression_type(
+                                    topic.spec.get_compression_type().clone(),
+                                );
 
-                                        if let Some(cleanup_policy) = topic.spec.get_clean_policy()
-                                        {
-                                            remote_topic.set_cleanup_policy(cleanup_policy.clone())
-                                        }
+                                remote_topic
+                                    .set_deduplication(topic.spec.get_deduplication().cloned());
 
-                                        remote_topic.set_compression_type(
-                                            topic.spec.get_compression_type().clone(),
-                                        );
-
-                                        remote_topic.set_deduplication(
-                                            topic.spec.get_deduplication().cloned(),
-                                        );
-
-                                        if let Some(storage) = topic.spec.get_storage() {
-                                            remote_topic.set_storage(storage.clone());
-                                        }
-                                        remote_topic
-                                    } else {
-                                        return Err(anyhow::anyhow!("Topic is not a mirror home"));
-                                    };
+                                if let Some(storage) = topic.spec.get_storage() {
+                                    remote_topic.set_storage(storage.clone());
+                                }
 
                                 self.topics
-                                    .create_spec(topic.key.clone(), remote_topic_spec)
+                                    .create_spec(topic.key.clone(), remote_topic)
                                     .await?;
                             }
 

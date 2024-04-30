@@ -3,13 +3,14 @@ use std::{
     time::{Duration, SystemTime},
 };
 use fluvio_controlplane_metadata::mirroring::{
-    MirrorConnect, MirroringStatusResponse, MirroringSpecWrapper,
+    MirrorConnect, MirroringSpecWrapper, MirroringStatusResponse,
 };
 use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_protocol::api::{RequestHeader, ResponseMessage};
 use fluvio_sc_schema::{
     core::MetadataItem,
     mirror::{ConnectionStatus, MirrorPairStatus, MirrorStatus},
+    spu::SpuSpec,
     store::ChangeListener,
     topic::{MirrorConfig, ReplicaSpec, TopicSpec},
 };
@@ -60,10 +61,11 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
         );
 
         let mut topics_listener = self.ctx.topics().change_listener();
+        let mut spus_listerner = self.ctx.spus().change_listener();
 
         loop {
             if self
-                .sync_and_send_topics(&mut topics_listener)
+                .sync_and_send_topics(&mut topics_listener, &mut spus_listerner)
                 .await
                 .is_err()
             {
@@ -81,6 +83,10 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
                 _ = topics_listener.listen() => {
                     debug!("mirroring: {}, topic changes has been detected", self.req.remote_id);
                 }
+
+                _ = spus_listerner.listen() => {
+                    debug!("mirroring: {}, spu changes has been detected", self.req.remote_id);
+                }
             }
 
             // sleep for a while
@@ -93,24 +99,54 @@ impl<C: MetadataItem> RemoteFetchingFromHomeController<C> {
     async fn sync_and_send_topics(
         &mut self,
         topics_listener: &mut ChangeListener<TopicSpec, C>,
+        spus_listener: &mut ChangeListener<SpuSpec, C>,
     ) -> Result<()> {
-        if !topics_listener.has_change() {
+        if !topics_listener.has_change() && !spus_listener.has_change() {
             debug!("no changes, skipping");
             return Ok(());
         }
 
+        let spus = self.ctx.spus().store().clone_values().await;
+
         let topics = self.ctx.topics().store().clone_values().await;
         let mirror_topics = topics
             .into_iter()
-            .map(|topic| {
-                MirroringSpecWrapper::new(topic.key.clone(), topic.spec, topic.status.replica_map)
-            })
-            .filter(|wrapper| match wrapper.spec.replicas() {
-                ReplicaSpec::Mirror(MirrorConfig::Home(h)) => h
-                    .partitions()
-                    .iter()
-                    .any(|p| p.remote_cluster == self.req.remote_id),
-                _ => false,
+            .filter_map(|topic| match topic.spec.replicas() {
+                ReplicaSpec::Mirror(MirrorConfig::Home(h)) => {
+                    let partition_id = h
+                        .partitions()
+                        .iter()
+                        .position(|p| p.remote_cluster == self.req.remote_id);
+
+                    match partition_id {
+                        Some(id) => {
+                            let replica_map = topic.status.replica_map;
+                            let partition_id = id as u32;
+                            let spu_id = replica_map
+                                .get(&partition_id)
+                                .and_then(|ids| ids.first().cloned());
+
+                            match spu_id {
+                                Some(spu_id) => {
+                                    let spu_endpoint = spus
+                                        .iter()
+                                        .find(|s| s.spec.id == spu_id)
+                                        .map(|s| s.spec.public_endpoint.addr())
+                                        .unwrap_or_default();
+                                    Some(MirroringSpecWrapper::new(
+                                        topic.key.clone(),
+                                        topic.spec,
+                                        spu_id,
+                                        spu_endpoint,
+                                    ))
+                                }
+                                None => None,
+                            }
+                        }
+                        None => None,
+                    }
+                }
+                _ => None,
             })
             .collect::<Vec<_>>();
 

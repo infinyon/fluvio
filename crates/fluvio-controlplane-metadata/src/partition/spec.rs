@@ -141,7 +141,10 @@ impl PartitionMirrorConfig {
 
     pub fn external_cluster(&self) -> String {
         match self {
-            Self::Remote(r) => format!("{}:{}", r.home_cluster, r.home_spu),
+            Self::Remote(r) => format!(
+                "{}:{}:{}",
+                r.home_cluster, r.home_spu_id, r.home_spu_endpoint
+            ),
             Self::Home(h) => h.remote_cluster.clone(),
         }
     }
@@ -182,11 +185,16 @@ impl std::fmt::Display for HomePartitionConfig {
 pub struct RemotePartitionConfig {
     pub home_cluster: String,
     #[cfg_attr(feature = "use_serde", serde(default))]
-    pub home_spu: SpuId,
+    pub home_spu_id: SpuId,
+    pub home_spu_endpoint: String,
 }
 
 impl std::fmt::Display for RemotePartitionConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}:{}", self.home_cluster, self.home_spu)
+        write!(
+            f,
+            "{}:{}:{}",
+            self.home_cluster, self.home_spu_id, self.home_spu_endpoint
+        )
     }
 }
