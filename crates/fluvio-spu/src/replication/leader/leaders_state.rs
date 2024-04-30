@@ -69,17 +69,17 @@ where
     S: ReplicaStorage,
 {
     /// find all replica configs
-    //#[cfg(test)]
-    //pub(crate) async fn replica_configs(&self) -> Vec<Replica> {
-    //    let read = self.read().await;
-    //
-    //    let mut replicas = Vec::new();
-    //    for (_replica_key, state) in read.iter() {
-    //        let replica_config = state.get_replica();
-    //        replicas.push(replica_config.clone());
-    //    }
-    //    replicas
-    //}
+    #[cfg(test)]
+    pub(crate) async fn replica_configs(&self) -> Vec<Replica> {
+        let read = self.read().await;
+
+        let mut replicas = Vec::new();
+        for (_replica_key, state) in read.iter() {
+            let replica_config = state.get_replica();
+            replicas.push(replica_config.clone());
+        }
+        replicas
+    }
 
     /// find replica with mirror target that matches remote cluster and sourcre replica
     pub async fn find_mirror_home_leader(

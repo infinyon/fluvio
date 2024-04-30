@@ -34,7 +34,7 @@ where
     C: MetadataItem,
 {
     fn from(mso: MetadataStoreObject<MirrorSpec, C>) -> Self {
-        let name = mso.key_owned();
+        let name = mso.key;
         let spec = mso.spec;
         Self { name, spec }
     }

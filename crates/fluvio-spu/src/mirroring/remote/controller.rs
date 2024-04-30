@@ -25,7 +25,7 @@ use fluvio_socket::{FluvioSocket, FluvioSink};
 use fluvio_spu_schema::{Isolation, server::mirror::StartMirrorRequest};
 use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_protocol::{record::Offset, api::RequestMessage};
-use fluvio_types::event::{StickyEvent, offsets::OffsetChangeListener};
+use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::{
     core::{mirror::SharedMirrorLocalStore, GlobalContext},
@@ -88,9 +88,6 @@ impl MirrorControllerMetrics {
 #[derive(Debug)]
 pub(crate) struct MirrorControllerState {
     metrics: MirrorControllerMetrics,
-
-    #[allow(dead_code)]
-    shutdown: Arc<StickyEvent>,
 }
 
 impl MirrorControllerState {
@@ -102,7 +99,6 @@ impl MirrorControllerState {
                 connect_count: AtomicU64::new(0),
                 connect_failure: AtomicU64::new(0),
             },
-            shutdown: StickyEvent::shared(),
         }
     }
 
@@ -112,7 +108,7 @@ impl MirrorControllerState {
     }
 }
 
-const CLUSTER_LOOKUP_SEC: u64 = 5; // 1 sec
+const CLUSTER_LOOKUP_SEC: u64 = 5;
 
 /// This controller run on mirror remote.
 /// It's main responsbility is to synchronize mirror home from remote.
@@ -434,10 +430,7 @@ where
         backoff: &mut ExponentialBackoff,
         _home: &Home,
     ) -> (FluvioSocket, bool) {
-        //TODO: remove the comments bellow when we have tls support
-
-        //let tlspolicy = option_tlspolicy(mirror);
-
+        //TODO: implement tls
         loop {
             self.state.metrics.increase_conn_count();
 
@@ -448,32 +441,11 @@ where
                 "trying connect to home",
             );
 
-            //let res = if let Some(tlspolicy) = &tlspolicy {
-            //    match DomainConnector::try_from(tlspolicy.clone()) {
-            //        Ok(connector) => {
-            //            // box connector?
-            //            FluvioSocket::connect_with_connector(endpoint, &(*connector)).await
-            //        }
-            //        Err(err) => {
-            //            error!(
-            //                "error establishing tls with leader at: <{}> err: {}",
-            //                endpoint, err
-            //            );
-            //            self.backoff_and_wait(backoff).await;
-            //            continue;
-            //        }
-            //    }
-            //    // FluvioSocket::connect(&endpoint)
-            //} else {
-            //    FluvioSocket::connect(endpoint).await
-            //};
-
             let res = FluvioSocket::connect(endpoint).await;
 
             match res {
                 Ok(socket) => {
                     debug!("connected");
-                    //return (socket, tlspolicy.is_some());
                     return (socket, false);
                 }
 
@@ -501,23 +473,3 @@ fn create_backoff() -> ExponentialBackoff {
         .build()
         .unwrap()
 }
-
-//fn option_tlspolicy(mirror: &MirrorSpec) -> Option<TlsPolicy> {
-//    use fluvio::config::{TlsCerts, TlsConfig};
-//
-//    let ct = match &mirror.home.tls {
-//        Some(ct) => ct,
-//        _ => {
-//            return None;
-//        }
-//    };
-//
-//    let certs = TlsCerts {
-//        domain: ct.domain.clone(),
-//        key: ct.client_key.clone(),
-//        cert: ct.client_cert.clone(),
-//        ca_cert: ct.ca_cert.clone(),
-//    };
-//    let tlscfg = TlsConfig::Inline(certs);
-//    Some(TlsPolicy::from(tlscfg))
-//}
